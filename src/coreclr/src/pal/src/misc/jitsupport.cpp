@@ -122,7 +122,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif
 #else // !HAVE_AUXV_HWCAP_H
     // CoreCLR SIMD and FP support is included in ARM64 baseline
-    // On exceptional basis platforms may leave out support, but CoreCLR does not 
+    // On exceptional basis platforms may leave out support, but CoreCLR does not
     // yet support such platforms
     // Set baseline flags if OS has not exposed mechanism for us to determine CPU capabilities
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);

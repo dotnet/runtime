@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 ////////////////////////////////////////////////////////////////////////////////
 // COMDynamic.h
-//  This module defines the native methods that are used for Dynamic IL generation  
+//  This module defines the native methods that are used for Dynamic IL generation
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -23,25 +23,25 @@ struct ExceptionInstance;
 
 // COMDynamicWrite
 // This class defines all the methods that implement the dynamic IL creation process
-//  inside reflection.  
+//  inside reflection.
 class COMDynamicWrite
 {
 public:
-    // This function will create the class's metadata definition  
+    // This function will create the class's metadata definition
     static
     INT32 QCALLTYPE DefineType(QCall::ModuleHandle pModule,
-                               LPCWSTR wszFullName, 
-                               INT32 tkParent,                               
+                               LPCWSTR wszFullName,
+                               INT32 tkParent,
                                INT32 attributes,
                                INT32 tkEnclosingType,
                                INT32 * pInterfaceTokens);
 
     static
     INT32 QCALLTYPE DefineGenericParam(QCall::ModuleHandle pModule,
-                                       LPCWSTR wszFullName, 
-                                       INT32 tkParent, 
-                                       INT32 attributes, 
-                                       INT32 position, 
+                                       LPCWSTR wszFullName,
+                                       INT32 tkParent,
+                                       INT32 attributes,
+                                       INT32 position,
                                        INT32 * pConstraintTokens);
 
     // This function will reset the parent class in metadata
@@ -53,13 +53,13 @@ public:
     void QCALLTYPE AddInterfaceImpl(QCall::ModuleHandle pModule, INT32 tdType, INT32 tkInterface);
 
     // This function will create a method within the class
-    static 
+    static
     INT32 QCALLTYPE DefineMethod(QCall::ModuleHandle pModule, INT32 tkParent, LPCWSTR wszName, LPCBYTE pSignature, INT32 sigLength, INT32 attributes);
 
     static
     INT32 QCALLTYPE DefineMethodSpec(QCall::ModuleHandle pModule, INT32 tkParent, LPCBYTE pSignature, INT32 sigLength);
-    
-    // This function will create a method within the class   
+
+    // This function will create a method within the class
     static
     void QCALLTYPE SetMethodIL(QCall::ModuleHandle pModule,
                                INT32 tk,
@@ -68,7 +68,7 @@ public:
                                INT32 cbBody,
                                LPCBYTE pLocalSig,
                                INT32 sigLength,
-                               UINT16 maxStackSize,                                        
+                               UINT16 maxStackSize,
                                ExceptionInstance * pExceptions,
                                INT32 numExceptions,
                                INT32 * pTokenFixups,
@@ -126,4 +126,4 @@ public:
     void QCALLTYPE SetConstantValue(QCall::ModuleHandle pModule, UINT32 tk, DWORD valueType, LPVOID pValue);
 };
 
-#endif  // _COMDYNAMIC_H_   
+#endif  // _COMDYNAMIC_H_

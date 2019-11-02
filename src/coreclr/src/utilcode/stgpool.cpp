@@ -5,7 +5,7 @@
 // StgPool.cpp
 //
 
-// 
+//
 // Pools are used to reduce the amount of data actually required in the database.
 // This allows for duplicate string and binary values to be folded into one
 // copy shared by the rest of the database.  Strings are tracked in a hash
@@ -50,8 +50,8 @@ StgPool::~StgPool()
 //*****************************************************************************
 // Init the pool for use.  This is called for both the create empty case.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::InitNew(
     ULONG cbSize,       // Estimated size.
     ULONG cItems)       // Estimated item count.
@@ -70,18 +70,18 @@ StgPool::InitNew(
     _ASSERTE(m_cbCurSegOffset == 0);
     _ASSERTE(m_cbSegSize == 0);
     _ASSERTE(m_cbSegNext == 0);
-    
+
     m_bReadOnly = false;
     m_bFree = false;
-    
+
     return S_OK;
 } // StgPool::InitNew
 
 //*****************************************************************************
 // Init the pool from existing data.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::InitOnMem(
     void *pData,        // Predefined data.
     ULONG iSize,        // Size of data.
@@ -111,17 +111,17 @@ StgPool::InitOnMem(
     m_pSegData = reinterpret_cast<BYTE*>(pData);
     m_cbSegSize = iSize;
     m_cbSegNext = iSize;
-    
+
     m_bFree = false;
-    
+
     return (S_OK);
 } // StgPool::InitOnMem
 
 //*****************************************************************************
 // Called when the pool must stop accessing memory passed to InitOnMem().
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::TakeOwnershipOfInitMem()
 {
     CONTRACTL
@@ -194,8 +194,8 @@ void StgPool::Uninit()
 //*****************************************************************************
 // Called to copy the pool to writable memory, reset the r/o bit.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::ConvertToRW()
 {
     CONTRACTL
@@ -218,8 +218,8 @@ StgPool::ConvertToRW()
 //*****************************************************************************
 // Turn hashing off or on.  Real implementation as required in subclass.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::SetHash(int bHash)
 {
     CONTRACTL
@@ -258,7 +258,7 @@ void StgPool::Trim()
 
         // Free the empty segment.
         delete [] (BYTE*) m_pCurSeg;
-        
+
         // Fix the pCurSeg pointer.
         pPrev->m_pNextSeg = 0;
         m_pCurSeg = pPrev;
@@ -352,7 +352,7 @@ bool StgPool::Grow(         // true if successful.
 
         // Free the empty segment.
         delete [] (BYTE *) m_pCurSeg;
-        
+
         // Link in the new segment.
         pPrev->m_pNextSeg = pNew;
         m_pCurSeg = pNew;
@@ -373,8 +373,8 @@ bool StgPool::Grow(         // true if successful.
 //*****************************************************************************
 // Add a segment to the chain of segments.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::AddSegment(
     const void *pData,      // The data.
     ULONG       cbData,     // Size of the data.
@@ -386,10 +386,10 @@ StgPool::AddSegment(
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
-    
+
     StgPoolSeg *pNew;   // Temp pointer for malloc.
-    
-    
+
+
     // If we need to copy the data, just grow the heap by enough to take the
     //  the new data, and copy it in.
     if (bCopy)
@@ -399,7 +399,7 @@ StgPool::AddSegment(
         memcpy(pDataToAdd, pData, cbData);
         pData = pDataToAdd;
     }
-    
+
     // If first time, handle specially.
     if (m_pSegData == m_zeros)
     {   // Data was passed in.
@@ -407,38 +407,38 @@ StgPool::AddSegment(
         m_cbSegSize = cbData;
         m_cbSegNext = cbData;
         _ASSERTE(m_pNextSeg == NULL);
-        
+
         // Will not delete it.
         m_bFree = false;
-        
+
         return S_OK;
     }
-    
+
     // Not first time.  Handle a completely empty tail segment.
     Trim();
-    
+
     // Abandon any space past the end of the current live data.
     _ASSERTE(m_pCurSeg->m_cbSegSize >= m_pCurSeg->m_cbSegNext);
     m_pCurSeg->m_cbSegSize = m_pCurSeg->m_cbSegNext;
-    
+
     // Allocate a new segment header.
     pNew = (StgPoolSeg *) new (nothrow) BYTE[sizeof(StgPoolSeg)];
     IfNullRet(pNew);
-    
+
     // Set the fields in the new segment.
     pNew->m_pSegData = reinterpret_cast<BYTE*>(const_cast<void*>(pData));
     pNew->m_pNextSeg = NULL;
     pNew->m_cbSegSize = cbData;
     pNew->m_cbSegNext = cbData;
-    
+
     // Calculate the base offset of the new segment.
     m_cbCurSegOffset = m_cbCurSegOffset + m_pCurSeg->m_cbSegNext;
-    
+
     // Link the segment into the chain.
     _ASSERTE(m_pCurSeg->m_pNextSeg == NULL);
     m_pCurSeg->m_pNextSeg = pNew;
     m_pCurSeg = pNew;
-    
+
     return S_OK;
 } // StgPool::AddSegment
 
@@ -447,8 +447,8 @@ StgPool::AddSegment(
 // The entire string pool is written to the given stream. The stream is aligned
 // to a 4 byte boundary.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::PersistToStream(
     IStream *pIStream)      // The stream to write to.
 {
@@ -481,7 +481,7 @@ StgPool::PersistToStream(
                     break;
                 cbTotal += pSeg->m_cbSegNext;
             }
-    
+
             // Get the next segment.
             pSeg = pSeg->m_pNextSeg;
         }
@@ -510,7 +510,7 @@ StgPool::PersistToStream(
         hr = E_FAIL;
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
     return hr;
 } // StgPool::PersistToStream
 #endif //!DACCESS_COMPILE
@@ -519,8 +519,8 @@ StgPool::PersistToStream(
 // The entire string pool is written to the given stream. The stream is aligned
 // to a 4 byte boundary.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::PersistPartialToStream(
     IStream *pIStream,      // The stream to write to.
     ULONG    iOffset)       // Starting offset.
@@ -563,7 +563,7 @@ StgPool::PersistPartialToStream(
         // Get the next segment.
         pSeg = pSeg->m_pNextSeg;
     }
-    
+
     // Align to variable (0-4 byte) boundary.
     UINT32 cbTotalAligned;
     if (FAILED(Align(cbTotal, &cbTotalAligned)))
@@ -576,21 +576,21 @@ StgPool::PersistPartialToStream(
         hr = 0;
         hr = pIStream->Write(&hr, cbTotalAligned - cbTotal, 0);
     }
-    
+
     return hr;
 } // StgPool::PersistPartialToStream
 
 // Copies data from pSourcePool starting at index nStartSourceIndex.
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::CopyPool(
-    UINT32         nStartSourceIndex, 
+    UINT32         nStartSourceIndex,
     const StgPool *pSourcePool)
 {
     HRESULT hr;
     UINT32 cbDataSize;
     BYTE  *pbData = NULL;
-    
+
     if (nStartSourceIndex == pSourcePool->GetRawSize())
     {   // There's nothing to copy
         return S_OK;
@@ -600,18 +600,18 @@ StgPool::CopyPool(
         Debug_ReportInternalError("The caller should not pass invalid start index in the pool.");
         IfFailGo(METADATA_E_INDEX_NOTFOUND);
     }
-    
+
     // Allocate new segment
     cbDataSize = pSourcePool->GetRawSize() - nStartSourceIndex;
     pbData = new (nothrow) BYTE[cbDataSize];
     IfNullGo(pbData);
-    
+
     // Copy data to the new segment
     UINT32 cbCopiedDataSize;
     IfFailGo(pSourcePool->CopyData(
-        nStartSourceIndex, 
-        pbData, 
-        cbDataSize, 
+        nStartSourceIndex,
+        pbData,
+        cbDataSize,
         &cbCopiedDataSize));
     // Check that we copied everything
     if (cbDataSize != cbCopiedDataSize)
@@ -619,13 +619,13 @@ StgPool::CopyPool(
         Debug_ReportInternalError("It is expected to copy everything from the source pool.");
         IfFailGo(E_FAIL);
     }
-    
+
     // Add the newly allocated segment to the pool
     IfFailGo(AddSegment(
-        pbData, 
-        cbDataSize, 
+        pbData,
+        cbDataSize,
         false));        // fCopyData
-    
+
 ErrExit:
     if (FAILED(hr))
     {
@@ -638,12 +638,12 @@ ErrExit:
 } // StgPool::CopyPool
 
 // Copies data from the pool into a buffer. It will correctly walk all segments for the copy.
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::CopyData(
-    UINT32  nOffset, 
-    BYTE   *pBuffer, 
-    UINT32  cbBuffer, 
+    UINT32  nOffset,
+    BYTE   *pBuffer,
+    UINT32  cbBuffer,
     UINT32 *pcbWritten) const
 {
     CONTRACTL
@@ -653,16 +653,16 @@ StgPool::CopyData(
         PRECONDITION(CheckPointer(pcbWritten));
     }
     CONTRACTL_END
-    
+
     HRESULT           hr = S_OK;
     const StgPoolSeg *pSeg;     // A segment being written.
-    
+
     _ASSERTE(m_pSegData != m_zeros);
-    
+
     // Start with the base segment.
     pSeg = this;
     *pcbWritten = 0;
-    
+
     // As long as there is data, write it.
     while (pSeg != NULL)
     {
@@ -681,18 +681,18 @@ StgPool::CopyData(
                     _ASSERTE(!"Buffer isn't big enough to copy everything!");
                     nNumBytesToCopy = cbBuffer - *pcbWritten;
                 }
-                
+
                 memcpy(pBuffer + *pcbWritten, pSeg->m_pSegData+nOffset, nNumBytesToCopy);
-                
+
                 *pcbWritten += nNumBytesToCopy;
                 nOffset = 0;
             }
         }
-        
+
         // Get the next segment.
         pSeg = pSeg->m_pNextSeg;
     }
-    
+
     return hr;
 } // StgPool::CopyData
 
@@ -703,24 +703,24 @@ StgPool::CopyData(
 // This is an internal accessor, and should only be called when the data
 //  is not in the base segment.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgPool::GetData_i(
-    UINT32              nOffset, 
+    UINT32              nOffset,
     MetaData::DataBlob *pData)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     // Shouldn't be called on base segment.
     _ASSERTE(nOffset >= m_cbSegNext);
     StgPoolSeg *pSeg = this;
-    
+
     while ((nOffset > 0) && (nOffset >= pSeg->m_cbSegNext))
     {
         // On to next segment.
         nOffset -= pSeg->m_cbSegNext;
         pSeg = pSeg->m_pNextSeg;
-        
+
         // Is there a next?
         if (pSeg == NULL)
         {
@@ -729,7 +729,7 @@ StgPool::GetData_i(
             return CLDB_E_INDEX_NOTFOUND;
         }
     }
-    
+
     // For the case where we want to read the first item and the pool is empty.
     if (nOffset == pSeg->m_cbSegNext)
     {   // Can only be if both == 0
@@ -737,9 +737,9 @@ StgPool::GetData_i(
         pData->Clear();
         return CLDB_E_INDEX_NOTFOUND;
     }
-    
+
     pData->Init(pSeg->m_pSegData + nOffset, pSeg->m_cbSegNext - nOffset);
-    
+
     return S_OK;
 } // StgPool::GetData_i
 
@@ -753,8 +753,8 @@ StgPool::GetData_i(
 //*****************************************************************************
 // Create a new, empty string pool.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::InitNew(
     ULONG cbSize,       // Estimated size.
     ULONG cItems)       // Estimated item count.
@@ -765,13 +765,13 @@ StgStringPool::InitNew(
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
-    
+
     HRESULT hr;
     UINT32  nEmptyStringOffset;
-    
+
     // Let base class intialize.
     IfFailRet(StgPool::InitNew());
-    
+
     // Set initial table sizes, if specified.
     if (cbSize > 0)
     {
@@ -784,12 +784,12 @@ StgStringPool::InitNew(
     {
         m_Hash.SetBuckets(cItems);
     }
-    
+
     // Init with empty string.
     IfFailRet(AddString("", &nEmptyStringOffset));
     // Empty string had better be at offset 0.
     _ASSERTE(nEmptyStringOffset == 0);
-    
+
     return hr;
 } // StgStringPool::InitNew
 
@@ -798,8 +798,8 @@ StgStringPool::InitNew(
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new strings.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::InitOnMem(
     void *pData,        // Predefined data.
     ULONG iSize,        // Size of data.
@@ -811,24 +811,24 @@ StgStringPool::InitOnMem(
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
-    
+
     HRESULT hr = S_OK;
-    
+
     // There may be up to three extra '\0' characters appended for padding.  Trim them.
     char *pchData = reinterpret_cast<char*>(pData);
     while (iSize > 1 && pchData[iSize-1] == 0 && pchData[iSize-2] == 0)
         --iSize;
-    
+
     // Let base class init our memory structure.
     IfFailRet(StgPool::InitOnMem(pData, iSize, bReadOnly));
-    
+
     //<TODO>@todo: defer this until we hand out a pointer.</TODO>
     if (!bReadOnly)
     {
         IfFailRet(TakeOwnershipOfInitMem());
         IfFailRet(RehashStrings());
     }
-    
+
     return hr;
 } // StgStringPool::InitOnMem
 
@@ -855,8 +855,8 @@ void StgStringPool::Uninit()
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::SetHash(int bHash)
 {
     CONTRACTL
@@ -881,8 +881,8 @@ StgStringPool::SetHash(int bHash)
 // is returned in *piOffset.  If the string is already in the pool, then the
 // offset will be to the existing copy of the string.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::AddString(
     LPCSTR  szString,       // The string to add to pool.
     UINT32 *pnOffset)       // Return offset of string here.
@@ -898,7 +898,7 @@ StgStringPool::AddString(
     ULONG       iLen;                   // To handle non-null strings.
     LPSTR       pData;                  // Pointer to location for new string.
     HRESULT     hr;
-    
+
     _ASSERTE(!m_bReadOnly);
 
     // Null pointer is an error.
@@ -907,7 +907,7 @@ StgStringPool::AddString(
 
     // Find the real length we need in buffer.
     iLen = (ULONG)(strlen(szString) + 1);
-    
+
     // Where to put the new string?
     if (iLen > GetCbSegAvailable())
     {
@@ -915,10 +915,10 @@ StgStringPool::AddString(
             return (PostError(OutOfMemory()));
     }
     pData = reinterpret_cast<LPSTR>(GetNextLocation());
-    
+
     // Copy the data into the buffer.
     strcpy_s(pData, iLen, szString);
-    
+
     // If the hash table is to be kept built (default).
     if (m_bHash)
     {
@@ -932,7 +932,7 @@ StgStringPool::AddString(
         {
             *pnOffset = pHash->iOffset = GetNextOffset();
             SegAllocate(iLen);
-            
+
             // Check for hash chains that are too long.
             if (m_Hash.MaxChainLength() > MAX_CHAIN_LENGTH)
             {
@@ -957,8 +957,8 @@ StgStringPool::AddString(
 //*****************************************************************************
 // Add a string to the pool with Unicode to UTF8 conversion.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::AddStringW(
     LPCWSTR szString,           // The string to add to pool.
     UINT32 *pnOffset)           // Return offset of string here.
@@ -975,7 +975,7 @@ StgStringPool::AddStringW(
     LPSTR       pData;                  // Pointer to location for new string.
 
     _ASSERTE(!m_bReadOnly);
-    
+
     // Null pointer is an error.
     if (szString == 0)
         return (PostError(E_INVALIDARG));
@@ -989,16 +989,16 @@ StgStringPool::AddStringW(
 
     // How many bytes will be required in the heap?
     iLen = ::WszWideCharToMultiByte(
-        CP_UTF8, 
-        0, 
-        szString, 
+        CP_UTF8,
+        0,
+        szString,
         -1,     // null-terminated string
-        NULL, 
-        0, 
-        NULL, 
+        NULL,
+        0,
+        NULL,
         NULL);
     // WCTMB includes trailing 0 if (when passing parameter #4 (length) -1.
-    
+
     // Check for room.
     if (iLen > GetCbSegAvailable())
     {
@@ -1009,17 +1009,17 @@ StgStringPool::AddStringW(
 
     // Convert the data in place to the correct location.
     iLen = ::WszWideCharToMultiByte(
-        CP_UTF8, 
-        0, 
-        szString, 
-        -1, 
-        pData, 
-        GetCbSegAvailable(), 
-        NULL, 
+        CP_UTF8,
+        0,
+        szString,
+        -1,
+        pData,
+        GetCbSegAvailable(),
+        NULL,
         NULL);
     if (iLen == 0)
         return (BadError(HRESULT_FROM_NT(GetLastError())));
-    
+
     // If the hash table is to be kept built (default).
     if (m_bHash)
     {
@@ -1054,8 +1054,8 @@ StgStringPool::AddStringW(
 // Clears out the existing hash table used to eliminate duplicates.  Then
 // rebuilds the hash table from scratch based on the current data.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgStringPool::RehashStrings()
 {
     CONTRACTL
@@ -1080,7 +1080,7 @@ StgStringPool::RehashStrings()
     iBuckets = m_Hash.Buckets();
     iCount = m_Hash.Count();
     iNewBuckets = max(iCount, iBuckets+iBuckets/2+1);
-        
+
     // Remove any stale data.
     m_Hash.Clear();
     m_Hash.SetBuckets(iNewBuckets);
@@ -1117,8 +1117,8 @@ StgStringPool::RehashStrings()
 //
 //
 
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::InitNew(
     ULONG cbSize,       // Estimated size.
     ULONG cItems)       // Estimated item count.
@@ -1150,8 +1150,8 @@ StgGuidPool::InitNew(
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new Guids.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::InitOnMem(
     void *pData,        // Predefined data.
     ULONG iSize,        // Size of data.
@@ -1168,7 +1168,7 @@ StgGuidPool::InitOnMem(
 
     // Let base class init our memory structure.
     IfFailRet(StgPool::InitOnMem(pData, iSize, bReadOnly));
-    
+
     // For init on existing mem case.
     if (pData && iSize)
     {
@@ -1178,7 +1178,7 @@ StgGuidPool::InitOnMem(
 
         //<TODO>@todo: defer this until we hand out a pointer.</TODO>
         IfFailRet(TakeOwnershipOfInitMem());
-        
+
         // Build the hash table on the data.
         if (FAILED(hr = RehashGuids()))
         {
@@ -1186,7 +1186,7 @@ StgGuidPool::InitOnMem(
             return hr;
         }
     }
-    
+
     return S_OK;
 } // StgGuidPool::InitOnMem
 
@@ -1212,8 +1212,8 @@ void StgGuidPool::Uninit()
 //*****************************************************************************
 // Add a segment to the chain of segments.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::AddSegment(
     const void *pData,      // The data.
     ULONG       cbData,     // Size of the data.
@@ -1237,8 +1237,8 @@ StgGuidPool::AddSegment(
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::SetHash(int bHash)
 {
     CONTRACTL
@@ -1263,8 +1263,8 @@ StgGuidPool::SetHash(int bHash)
 // is returned in *piIndex.  If the Guid is already in the pool, then the
 // index will be to the existing copy of the Guid.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::AddGuid(
     const GUID *pGuid,          // The Guid to add to pool.
     UINT32     *pnIndex)        // Return 1-based index of Guid here.
@@ -1275,19 +1275,19 @@ StgGuidPool::AddGuid(
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
-    
+
     GUIDHASH *pHash = NULL;                  // Hash item for add.
-    
+
     GUID guid = *pGuid;
     SwapGuid(&guid);
-    
+
     // Special case for GUID_NULL
     if (guid == GUID_NULL)
     {
         *pnIndex = 0;
         return S_OK;
     }
-    
+
     // If the hash table is to be kept built (default).
     if (m_bHash)
     {
@@ -1295,7 +1295,7 @@ StgGuidPool::AddGuid(
         pHash = m_Hash.Find(&guid, true);
         if (!pHash)
             return (PostError(OutOfMemory()));
-        
+
         // If the guid was found, just use it.
         if (pHash->iIndex != 0xffffffff)
         {   // Return 1-based index.
@@ -1303,35 +1303,35 @@ StgGuidPool::AddGuid(
             return S_OK;
         }
     }
-    
+
     // Space on heap for new guid?
     if (sizeof(GUID) > GetCbSegAvailable())
     {
         if (!Grow(sizeof(GUID)))
             return (PostError(OutOfMemory()));
     }
-    
+
     // Copy the guid to the heap.
     *reinterpret_cast<GUID*>(GetNextLocation()) = guid;
-    
+
     // Give the 1-based index back to caller.
     *pnIndex = (GetNextOffset() / sizeof(GUID)) + 1;
 
     // If hashing, save the 1-based index in the hash.
     if (m_bHash)
         pHash->iIndex = *pnIndex;
-    
+
     // Update heap counters.
     SegAllocate(sizeof(GUID));
-    
+
     return S_OK;
 } // StgGuidPool::AddGuid
 
 //*****************************************************************************
 // Recompute the hashes for the pool.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgGuidPool::RehashGuids()
 {
     CONTRACTL
@@ -1387,8 +1387,8 @@ StgGuidPool::RehashGuids()
 //*****************************************************************************
 // Create a new, empty blob pool.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::InitNew(
     ULONG cbSize,           // Estimated size.
     ULONG cItems,           // Estimated item count.
@@ -1402,10 +1402,10 @@ StgBlobPool::InitNew(
     CONTRACTL_END
 
     HRESULT hr;
-    
+
     // Let base class intialize.
     IfFailRet(StgPool::InitNew());
-    
+
     // Set initial table sizes, if specified.
     if (cbSize > 0)
     {
@@ -1414,9 +1414,9 @@ StgBlobPool::InitNew(
     }
     if (cItems > 0)
         m_Hash.SetBuckets(cItems);
-    
+
     // Init with empty blob.
-    
+
     // Normally must do this, regardless if we currently have anything in the pool.
     // If we don't do this, the first blob that gets added to the pool will
     // have an offset of 0. This will cause this blob to have a token of
@@ -1445,8 +1445,8 @@ StgBlobPool::InitNew(
 // If there is existing data and bCopyData is true, then the data is rehashed
 // to eliminate dupes in future adds.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::InitOnMem(
     void *pBuf,             // Predefined data.
     ULONG iBufSize,         // Size of data.
@@ -1458,30 +1458,30 @@ StgBlobPool::InitOnMem(
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
-    
+
     HRESULT hr;
-    
+
     // Let base class init our memory structure.
     IfFailRet(StgPool::InitOnMem(pBuf, iBufSize, bReadOnly));
-    
+
     // Init hash table from existing data.
     // If we cannot update, we don't need a hash table.
     if (bReadOnly)
     {
         return S_OK;
     }
-    
+
     //<TODO>@todo: defer this until we hand out a pointer.</TODO>
     IfFailRet(TakeOwnershipOfInitMem());
-    
+
     UINT32 nMaxOffset = GetNextOffset();
     for (UINT32 nOffset = 0; nOffset < nMaxOffset; )
     {
         MetaData::DataBlob blob;
         BLOBHASH          *pHash;
-        
+
         IfFailRet(GetBlobWithSizePrefix(nOffset, &blob));
-        
+
         // Add the blob to the hash table.
         if ((pHash = m_Hash.Add(blob.GetDataPointer())) == NULL)
         {
@@ -1489,7 +1489,7 @@ StgBlobPool::InitOnMem(
             return E_OUTOFMEMORY;
         }
         pHash->iOffset = nOffset;
-        
+
         nOffset += blob.GetSize();
     }
     return S_OK;
@@ -1520,10 +1520,10 @@ void StgBlobPool::Uninit()
 // is returned in *piOffset.  If the blob is already in the pool, then the
 // offset will be to the existing copy of the blob.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::AddBlob(
-    const MetaData::DataBlob *pData, 
+    const MetaData::DataBlob *pData,
     UINT32                   *pnOffset)  // Return offset of blob here.
 {
     BLOBHASH *pHash;            // Hash item for add.
@@ -1532,7 +1532,7 @@ StgBlobPool::AddBlob(
     ULONG     iRequired;        // How much buffer for this blob?
     ULONG     iFillerLen;       // space to fill to make byte-aligned
     HRESULT   hr;
-    
+
     CONTRACTL
     {
         NOTHROW;
@@ -1551,27 +1551,27 @@ StgBlobPool::AddBlob(
         if (!Grow(iRequired))
             return (PostError(OutOfMemory()));
     }
-    
+
     // unless changed due to alignment, the location of the blob is just
     // the value returned by GetNextLocation(), which is also a iFillerLen of
     // 0
-    
+
     pStartLoc = (BYTE *)GetNextLocation();
     iFillerLen = 0;
-    
+
     // technichally, only the data portion must be DWORD-aligned.  So, if the
     // data length is zero, we don't need to worry about alignment.
-    
+
     // Pack in the length at pStartLoc (the start location)
     pBytes = CPackedLen::PutLength(pStartLoc, pData->GetSize());
-    
+
     // Put the bytes themselves.
     memcpy(pBytes, pData->GetDataPointer(), pData->GetSize());
-    
+
     // Find or add the entry.
     if ((pHash = m_Hash.Find(GetNextLocation() + iFillerLen, true)) == NULL)
         return (PostError(OutOfMemory()));
-    
+
     // If the entry was new, keep the new blob.
     if (pHash->iOffset == 0xffffffff)
     {
@@ -1579,7 +1579,7 @@ StgBlobPool::AddBlob(
         pHash->iOffset = *pnOffset = GetNextOffset() + iFillerLen;
         // only SegAllocate what we actually used, rather than what we requested
         SegAllocate(pData->GetSize() + CPackedLen::Size(pData->GetSize()) + iFillerLen);
-        
+
         // Check for hash chains that are too long.
         if (m_Hash.MaxChainLength() > MAX_CHAIN_LENGTH)
         {
@@ -1591,35 +1591,35 @@ StgBlobPool::AddBlob(
     {
         *pnOffset = pHash->iOffset;
     }
-    
+
     return S_OK;
 } // StgBlobPool::AddBlob
 
 //*****************************************************************************
 // Return a pointer to a blob, and the size of the blob.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::GetBlob(
     UINT32              nOffset,    // Offset of blob in pool.
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     HRESULT hr;
-    
+
     if (nOffset == 0)
     {
-        // TODO: It would be nice to remove it, but people read behind the end of buffer, 
+        // TODO: It would be nice to remove it, but people read behind the end of buffer,
         // e.g. VBC reads 2 zeros even though the size is 0 when it's storing string in the blob.
         // Nice to have: Move this to the public API only as a compat layer.
         pData->Init((BYTE *)m_zeros, 0);
         return S_OK;
     }
-    
+
     IfFailGo(StgPool::GetData(nOffset, pData));
-    
+
     UINT32 cbBlobContentSize;
     if (!pData->GetCompressedU(&cbBlobContentSize))
     {
@@ -1629,7 +1629,7 @@ StgBlobPool::GetBlob(
     {
         IfFailGo(COR_E_BADIMAGEFORMAT);
     }
-    
+
     return S_OK;
 ErrExit:
     pData->Clear();
@@ -1639,26 +1639,26 @@ ErrExit:
 //*****************************************************************************
 // Return a pointer to a blob, and the size of the blob.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::GetBlobWithSizePrefix(
     UINT32              nOffset,    // Offset of blob in pool.
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     HRESULT hr;
-    
+
     if (nOffset == 0)
     {
         // TODO: Should be a static empty blob once we get rid of m_zeros
         pData->Init((BYTE *)m_zeros, 1);
         return S_OK;
     }
-    
+
     IfFailGo(StgPool::GetData(nOffset, pData));
-    
+
     UINT32  cbBlobContentSize;
     UINT32  cbBlobSizePrefixSize;
     if (!pData->PeekCompressedU(&cbBlobContentSize, &cbBlobSizePrefixSize))
@@ -1667,7 +1667,7 @@ StgBlobPool::GetBlobWithSizePrefix(
     }
     //_ASSERTE(cbBlobSizePrefixSize <= 4);
     //_ASSERTE(cbBlobContentSize <= CompressedInteger::const_Max);
-    
+
     // Cannot overflow, because previous asserts hold (in comments)
     UINT32 cbBlobSize;
     cbBlobSize = cbBlobContentSize + cbBlobSizePrefixSize;
@@ -1675,7 +1675,7 @@ StgBlobPool::GetBlobWithSizePrefix(
     {
         IfFailGo(COR_E_BADIMAGEFORMAT);
     }
-    
+
     return S_OK;
 ErrExit:
     pData->Clear();
@@ -1686,8 +1686,8 @@ ErrExit:
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
 // thrown away and all data is rehashed during this call.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::SetHash(int bHash)
 {
     CONTRACTL
@@ -1711,8 +1711,8 @@ StgBlobPool::SetHash(int bHash)
 // Clears out the existing hash table used to eliminate duplicates.  Then
 // rebuilds the hash table from scratch based on the current data.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 StgBlobPool::RehashBlobs()
 {
     CONTRACTL
@@ -1738,11 +1738,11 @@ StgBlobPool::RehashBlobs()
     iBuckets = m_Hash.Buckets();
     iCount = m_Hash.Count();
     iNewBuckets = max(iCount, iBuckets+iBuckets/2+1);
-        
+
     // Remove any stale data.
     m_Hash.Clear();
     m_Hash.SetBuckets(iNewBuckets);
-    
+
     // How far should the loop go.
     iMax = GetNextOffset();
 
@@ -1751,32 +1751,32 @@ StgBlobPool::RehashBlobs()
     {
         // Get the string from the pool.
         pBlob = pSeg->m_pSegData + iSeg;
-        
+
         cbBlob = CPackedLen::GetLength(pBlob, &iSizeLen);
         if (cbBlob == (ULONG)-1)
         {   // Invalid blob size encoding
-            
+
             //#GarbageInBlobHeap
             // Note that this is allowed in ECMA spec (see chapter "#US and #Blob heaps"):
-            //     Both these heaps can contain garbage, as long as any part that is reachable from any of 
+            //     Both these heaps can contain garbage, as long as any part that is reachable from any of
             //     the tables contains a valid 'blob'.
-            
+
             // The hash is incomplete, which means that we might emit duplicate blob entries ... that is fine
             return S_OK;
         }
         //_ASSERTE((iSizeLen >= 1) && (iSizeLen <= 4) && (cbBlob <= 0x1fffffff));
-        
+
         // Make it blob size incl. its size encoding (cannot integer overflow)
         cbBlob += iSizeLen;
         // Check for integer overflow and that the entire blob entry is in this segment
         if ((iSeg > (iSeg + cbBlob)) || ((iSeg + cbBlob) > pSeg->m_cbSegNext))
         {   // Invalid blob size
-            
+
             // See code:#GarbageInBlobHeap
             // The hash is incomplete, which means that we might emit duplicate blob entries ... that is fine
             return S_OK;
         }
-        
+
         // Add the blob to the hash table.
         if ((pHash = m_Hash.Add(pBlob)) == 0)
         {
@@ -1803,7 +1803,7 @@ StgBlobPool::RehashBlobs()
 //
 
 
-ULONG 
+ULONG
 STDMETHODCALLTYPE CInMemoryStream::Release()
 {
     CONTRACTL
@@ -1819,14 +1819,14 @@ STDMETHODCALLTYPE CInMemoryStream::Release()
     {
         if (m_dataCopy != NULL)
             delete [] m_dataCopy;
-        
+
         delete this;
     }
     return (cRef);
 } // CInMemoryStream::Release
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CInMemoryStream::QueryInterface(REFIID riid, PVOID *ppOut)
 {
     CONTRACTL
@@ -1853,8 +1853,8 @@ CInMemoryStream::QueryInterface(REFIID riid, PVOID *ppOut)
 
 } // CInMemoryStream::QueryInterface
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CInMemoryStream::Read(
     void  *pv,
     ULONG  cb,
@@ -1874,8 +1874,8 @@ CInMemoryStream::Read(
     return (S_OK);
 } // CInMemoryStream::Read
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CInMemoryStream::Write(
     const void *pv,
     ULONG       cb,
@@ -1893,8 +1893,8 @@ CInMemoryStream::Write(
     return (S_OK);
 } // CInMemoryStream::Write
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CInMemoryStream::Seek(
     LARGE_INTEGER   dlibMove,
     DWORD           dwOrigin,
@@ -1924,12 +1924,12 @@ CInMemoryStream::Seek(
     return (m_cbCurrent < m_cbSize) ? (S_OK) : E_FAIL;
 } // CInMemoryStream::Seek
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CInMemoryStream::CopyTo(
-    IStream        *pstm, 
-    ULARGE_INTEGER  cb, 
-    ULARGE_INTEGER *pcbRead, 
+    IStream        *pstm,
+    ULARGE_INTEGER  cb,
+    ULARGE_INTEGER *pcbRead,
     ULARGE_INTEGER *pcbWritten)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1965,7 +1965,7 @@ CInMemoryStream::CopyTo(
     return (S_OK);
 } // CInMemoryStream::CopyTo
 
-HRESULT 
+HRESULT
 CInMemoryStream::CreateStreamOnMemory(
     void     *pMem,                     // Memory to create stream on.
     ULONG     cbSize,                   // Size of data.
@@ -1992,10 +1992,10 @@ CInMemoryStream::CreateStreamOnMemory(
     return (S_OK);
 } // CInMemoryStream::CreateStreamOnMemory
 
-HRESULT 
+HRESULT
 CInMemoryStream::CreateStreamOnMemoryCopy(
-    void     *pMem, 
-    ULONG     cbSize, 
+    void     *pMem,
+    ULONG     cbSize,
     IStream **ppIStream)
 {
     CONTRACTL
@@ -2021,7 +2021,7 @@ CInMemoryStream::CreateStreamOnMemoryCopy(
         delete pIStream;
         return (PostError(OutOfMemory()));
     }
-    
+
     pIStream->m_pMem = pIStream->m_dataCopy;
     memcpy(pIStream->m_dataCopy, pMem, cbSize);
 
@@ -2070,7 +2070,7 @@ CGrowableStream::CGrowableStream(float multiplicativeGrowthRate, DWORD additiveG
 
 #ifndef DACCESS_COMPILE
 
-CGrowableStream::~CGrowableStream() 
+CGrowableStream::~CGrowableStream()
 {
     CONTRACTL
     {
@@ -2118,7 +2118,7 @@ HRESULT CGrowableStream::EnsureCapacity(DWORD newLogicalSize)
         {
             multSize = (DWORD)multSizeF;
         }
-        
+
         DWORD newBufferSize = max(max(newLogicalSize, multSize), addSize.Value());
 
         char *tmp = new (nothrow) char[newBufferSize];
@@ -2126,7 +2126,7 @@ HRESULT CGrowableStream::EnsureCapacity(DWORD newLogicalSize)
         {
             return E_OUTOFMEMORY;
         }
-        
+
         if (m_swBuffer) {
             memcpy (tmp, m_swBuffer, m_dwBufferSize);
             delete [] m_swBuffer;
@@ -2147,25 +2147,25 @@ HRESULT CGrowableStream::EnsureCapacity(DWORD newLogicalSize)
     return S_OK;
 }
 
-ULONG 
-STDMETHODCALLTYPE 
+ULONG
+STDMETHODCALLTYPE
 CGrowableStream::Release()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     ULONG cRef = InterlockedDecrement(&m_cRef);
-    
+
     if (cRef == 0)
         delete this;
-    
+
     return cRef;
 } // CGrowableStream::Release
 
-HRESULT 
-STDMETHODCALLTYPE 
+HRESULT
+STDMETHODCALLTYPE
 CGrowableStream::QueryInterface(
-    REFIID riid, 
+    REFIID riid,
     PVOID *ppOut)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -2179,10 +2179,10 @@ CGrowableStream::QueryInterface(
     return (S_OK);
 } // CGrowableStream::QueryInterface
 
-HRESULT 
+HRESULT
 CGrowableStream::Read(
-    void  *pv, 
-    ULONG  cb, 
+    void  *pv,
+    ULONG  cb,
     ULONG *pcbRead)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -2227,10 +2227,10 @@ CGrowableStream::Read(
     return hr;
 } // CGrowableStream::Read
 
-HRESULT 
+HRESULT
 CGrowableStream::Write(
-    const void *pv, 
-    ULONG       cb, 
+    const void *pv,
+    ULONG       cb,
     ULONG      *pcbWritten)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -2249,7 +2249,7 @@ CGrowableStream::Write(
     // Check if our buffer is large enough
     _ASSERTE(m_dwBufferIndex <= m_dwStreamLength);
     _ASSERTE(m_dwStreamLength <= m_dwBufferSize);
-    
+
     // If there is no enough space left in the buffer, grow it
     if (cb > (m_dwStreamLength - m_dwBufferIndex))
     {
@@ -2267,7 +2267,7 @@ CGrowableStream::Write(
             goto Error;
         }
     }
-    
+
     if ((pv != NULL) && (cb > 0))
     {
         // write to current position in the buffer
@@ -2287,10 +2287,10 @@ Error:
     return hr;
 } // CGrowableStream::Write
 
-STDMETHODIMP 
+STDMETHODIMP
 CGrowableStream::Seek(
-    LARGE_INTEGER   dlibMove, 
-    DWORD           dwOrigin, 
+    LARGE_INTEGER   dlibMove,
+    DWORD           dwOrigin,
     ULARGE_INTEGER *plibNewPosition)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -2328,7 +2328,7 @@ Error:
     return S_OK;
 } // CGrowableStream::Seek
 
-STDMETHODIMP 
+STDMETHODIMP
 CGrowableStream::SetSize(
     ULARGE_INTEGER libNewSize)
 {
@@ -2353,13 +2353,13 @@ CGrowableStream::SetSize(
     // and SetSize is allowed to shrink the stream too. Note that we won't
     // release physical memory here, we just appear to get smaller
     m_dwStreamLength = dwNewSize;
-        
+
     return S_OK;
 } // CGrowableStream::SetSize
 
-STDMETHODIMP 
+STDMETHODIMP
 CGrowableStream::Stat(
-    STATSTG *pstatstg, 
+    STATSTG *pstatstg,
     DWORD    grfStatFlag)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -2384,16 +2384,16 @@ CGrowableStream::Stat(
     return S_OK;
 } // CGrowableStream::Stat
 
-// 
+//
 // Clone - Make a deep copy of the stream into a new cGrowableStream instance
-// 
+//
 // Arguments:
 //   ppStream - required output parameter for the new stream instance
-// 
+//
 // Returns:
 //   S_OK on succeess, or an error code on failure.
-// 
-HRESULT 
+//
+HRESULT
 CGrowableStream::Clone(
     IStream **ppStream)
 {
@@ -2409,7 +2409,7 @@ CGrowableStream::Clone(
     {
         return E_OUTOFMEMORY;
     }
-    
+
     HRESULT hr = newStream->Write(m_swBuffer, m_dwStreamLength, NULL);
     if (FAILED(hr))
     {

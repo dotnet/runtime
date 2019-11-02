@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEEMAIN.H
-// 
+//
 
-// 
+//
 //
 
 // CEEMAIN.H defines the entrypoints into the Virtual Execution Engine and
@@ -120,7 +120,7 @@ private:
 
     // Free TLS memory block and make callback
     VOID STDMETHODCALLTYPE TLS_ThreadDetaching();
-    
+
     //***************************************************************************
     // IExecutionEngine methods for locking
     //***************************************************************************
@@ -175,7 +175,7 @@ private:
     BOOL STDMETHODCALLTYPE ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem);
     BOOL STDMETHODCALLTYPE ClrHeapValidate(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem);
     HANDLE STDMETHODCALLTYPE ClrGetProcessExecutableHeap();
-    
+
 };
 
 void SetLatchedExitCode (INT32 code);

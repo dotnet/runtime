@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// 
+//
 
 #ifndef _SimpleRWLock_hpp_
 #define _SimpleRWLock_hpp_
@@ -18,7 +18,7 @@ class SimpleRWLock;
 // Contract differs when acquiring the lock depending on its lock mode.
 //
 // GC/MODE
-//     A SimpleRWLock can be one of the following modes. We only want to see the "PREEMPTIVE" 
+//     A SimpleRWLock can be one of the following modes. We only want to see the "PREEMPTIVE"
 //     type used in new code. Other types, kept for legacy reasons, are listed in
 //     order from least objectionable to most objectionable.
 //
@@ -31,9 +31,9 @@ class SimpleRWLock;
 //
 //
 //
-//         COOPERATIVE (equivalent to CRST_UNSAFE_COOPGC) 
-//            You can only attempt to acquire this crst if you're already in coop mode. It is 
-//            guaranteed no GC will occur while waiting to acquire the lock.  While you hold 
+//         COOPERATIVE (equivalent to CRST_UNSAFE_COOPGC)
+//            You can only attempt to acquire this crst if you're already in coop mode. It is
+//            guaranteed no GC will occur while waiting to acquire the lock.  While you hold
 //            the lock, your thread is in a GCFORBID state.
 //
 //            MODE_COOP
@@ -41,8 +41,8 @@ class SimpleRWLock;
 //
 //
 //
-//         COOPERATIVE_OR_PREEMPTIVE (equivalent to CRST_UNSAFE_ANYMODE) 
-//            You can attempt to acquire this in either mode. Entering the crst will not change 
+//         COOPERATIVE_OR_PREEMPTIVE (equivalent to CRST_UNSAFE_ANYMODE)
+//            You can attempt to acquire this in either mode. Entering the crst will not change
 //            your thread mode but it will increment the GCNoTrigger count.
 //
 //            MODE_ANY
@@ -85,7 +85,7 @@ private:
 #endif  //ENABLE_CONTRACTS_IMPL
 
     // lock used for R/W synchronization
-    Volatile<LONG>                m_RWLock;     
+    Volatile<LONG>                m_RWLock;
 
     // Does this lock require to be taken in PreemptiveGC mode?
     const GC_MODE          m_gcMode;
@@ -94,7 +94,7 @@ private:
     LONG                m_spinCount;
 
     // used to prevent writers from being starved by readers
-    // we currently do not prevent writers from starving readers since writers 
+    // we currently do not prevent writers from starving readers since writers
     // are supposed to be rare.
     BOOL                m_WriterWaiting;
 
@@ -104,7 +104,7 @@ private:
 
 #ifdef BIT64
     // ensures that we are a multiple of 8-bytes
-    UINT32 pad;      
+    UINT32 pad;
 #endif
 
     void                PostEnter ();
@@ -120,16 +120,16 @@ private:
     static void ReleaseWriteLock(SimpleRWLock *s) { LIMITED_METHOD_CONTRACT; s->LeaveWrite(); }
 #else // DACCESS_COMPILE
     // in DAC builds, we don't actually acquire the lock, we just determine whether the LS
-    // already holds it. If so, we assume the data is inconsistent and throw an exception. 
-    // Argument: 
-    //     input: s - the lock to be checked. 
+    // already holds it. If so, we assume the data is inconsistent and throw an exception.
+    // Argument:
+    //     input: s - the lock to be checked.
     // Note: Throws
-    static void AcquireReadLock(SimpleRWLock *s) 
+    static void AcquireReadLock(SimpleRWLock *s)
     {
         SUPPORTS_DAC;
-        if (s->IsWriterLock()) 
+        if (s->IsWriterLock())
         {
-            ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED); 
+            ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
         }
     };
     static void ReleaseReadLock(SimpleRWLock *s) { };
@@ -157,7 +157,7 @@ public:
     }
 
     // Special empty CTOR for DAC. We still need to assign to const fields, but they won't actually be used.
-    SimpleRWLock()  
+    SimpleRWLock()
         : m_gcMode(COOPERATIVE_OR_PREEMPTIVE)
     {
         LIMITED_METHOD_CONTRACT;
@@ -166,7 +166,7 @@ public:
         m_countNoTriggerGC = 0;
 #endif //_DEBUG
     }
-    
+
 #ifndef DACCESS_COMPILE
     // Acquire the reader lock.
     void EnterRead();
@@ -190,7 +190,7 @@ public:
     // Leave the writer lock.
     void LeaveWrite()
     {
-        LIMITED_METHOD_CONTRACT;        
+        LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
         PreLeave ();
 #endif //_DEBUG
@@ -218,14 +218,14 @@ public:
         return m_RWLock > 0;
     }
 
-#endif  
+#endif
 
     BOOL IsWriterLock ()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_RWLock < 0;
     }
-    
+
 };
 
 typedef SimpleRWLock::SimpleReadLockHolder SimpleReadLockHolder;
@@ -233,10 +233,10 @@ typedef SimpleRWLock::SimpleWriteLockHolder SimpleWriteLockHolder;
 typedef DPTR(SimpleRWLock) PTR_SimpleRWLock;
 
 #ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held. 
+// used for test purposes. Determines if a crst is held.
 // Arguments:
 //     input: pLock - the lock to test
-// Note: Throws if the lock is held    
+// Note: Throws if the lock is held
 
 FORCEINLINE void DebugTryRWLock(SimpleRWLock * pLock)
 {

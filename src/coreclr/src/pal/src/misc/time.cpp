@@ -77,8 +77,8 @@ time. The system time is expressed in Coordinated Universal Time
 
 Parameters
 
-lpSystemTime 
-       [out] Pointer to a SYSTEMTIME structure to receive the current system date and time. 
+lpSystemTime
+       [out] Pointer to a SYSTEMTIME structure to receive the current system date and time.
 
 Return Values
 
@@ -103,10 +103,10 @@ GetSystemTime(
 
     tt = time(NULL);
 
-    /* We can't get millisecond resolution from time(), so we get it from 
+    /* We can't get millisecond resolution from time(), so we get it from
        gettimeofday() */
     timeofday_retval = gettimeofday(&timeval,NULL);
-    
+
 #if HAVE_GMTIME_R
     utPtr = &ut;
     if (gmtime_r(&tt, utPtr) == NULL)
@@ -136,20 +136,20 @@ GetSystemTime(
     {
         int old_seconds;
         int new_seconds;
-    
+
         lpSystemTime->wMilliseconds = timeval.tv_usec/tccMillieSecondsToMicroSeconds;
-    
+
         old_seconds = utPtr->tm_sec;
         new_seconds = timeval.tv_sec%60;
-   
-        /* just in case we reached the next second in the interval between 
+
+        /* just in case we reached the next second in the interval between
            time() and gettimeofday() */
         if( old_seconds!=new_seconds )
         {
             TRACE("crossed seconds boundary; setting milliseconds to 999\n");
             lpSystemTime->wMilliseconds = 999;
-        }  
-    }                        
+        }
+    }
 EXIT:
     LOGEXIT("GetSystemTime returns void\n");
     PERF_EXIT(GetSystemTime);
@@ -166,7 +166,7 @@ use the GetSystemTimeAdjustment function.
 
 Parameters
 
-This function has no parameters. 
+This function has no parameters.
 
 Return Values
 
@@ -213,7 +213,7 @@ QueryPerformanceCounter(
     if (result != 0)
     {
         ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
-        retval = FALSE;     
+        retval = FALSE;
     }
     else
     {
@@ -357,7 +357,7 @@ GetTickCount64()
 #else
         ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
 #endif
-        retval = FALSE;     
+        retval = FALSE;
     }
     else
     {

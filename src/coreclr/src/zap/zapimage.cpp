@@ -7,7 +7,7 @@
 
 //
 // NGEN-specific infrastructure for writing PE files.
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -111,16 +111,16 @@ ZapImage::~ZapImage()
     // Destruction of auxiliary tables in alphabetical order
     //
 
-    if (m_pImportTable != NULL) 
+    if (m_pImportTable != NULL)
         m_pImportTable->~ZapImportTable();
 
-    if (m_pInnerPtrs != NULL) 
+    if (m_pInnerPtrs != NULL)
         m_pInnerPtrs->~ZapInnerPtrTable();
 
     if (m_pMethodEntryPoints != NULL)
         m_pMethodEntryPoints->~ZapMethodEntryPointTable();
 
-    if (m_pWrappers != NULL) 
+    if (m_pWrappers != NULL)
         m_pWrappers->~ZapWrapperTable();
 }
 
@@ -188,7 +188,7 @@ void ZapImage::InitializeSections()
     m_pWrappers = new (GetHeap()) ZapWrapperTable(this);
 
     // Place the virtual sections tables in debug section. It exists for diagnostic purposes
-    // only and should not be touched under normal circumstances    
+    // only and should not be touched under normal circumstances
     m_pVirtualSectionsTable = new (GetHeap()) ZapVirtualSectionsTable(this);
     m_pDebugSection->Place(m_pVirtualSectionsTable);
 
@@ -298,7 +298,7 @@ void ZapImage::AllocateVirtualSections()
     //
     // Allocate all virtual sections in the order they will appear in the final image
     //
-    // To maximize packing of the data in the native image, the number of named physical sections is minimized -  
+    // To maximize packing of the data in the native image, the number of named physical sections is minimized -
     // the named physical sections are used just for memory protection control. All items with the same memory
     // protection are packed together in one physical section.
     //
@@ -317,7 +317,7 @@ void ZapImage::AllocateVirtualSections()
 
         // These are all known to be hot or writeable
         m_pPreloadSections[CORCOMPILE_SECTION_WRITE] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | WriteDataSection);
-        m_pPreloadSections[CORCOMPILE_SECTION_HOT_WRITEABLE] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | WriteableDataSection); // hot for reading, potentially written to 
+        m_pPreloadSections[CORCOMPILE_SECTION_HOT_WRITEABLE] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | WriteableDataSection); // hot for reading, potentially written to
         m_pPreloadSections[CORCOMPILE_SECTION_WRITEABLE] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | WriteableDataSection); // Cold based on IBC profiling data.
         m_pPreloadSections[CORCOMPILE_SECTION_HOT] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | DataSection);
 
@@ -353,7 +353,7 @@ void ZapImage::AllocateVirtualSections()
 
         m_pStubDispatchCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | StubDispatchDataSection, TARGET_POINTER_SIZE);
 
-        // Earlier we placed the HOT corCompile tables. Now place the cold ones after the stub dispatch cell section. 
+        // Earlier we placed the HOT corCompile tables. Now place the cold ones after the stub dispatch cell section.
         for (int i=0; i<ZapImportSectionType_Count; i++)
         {
             m_pDelayLoadInfoTableSection[ZapImportSectionType_Cold + i] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | DelayLoadInfoTableSection, TARGET_POINTER_SIZE);
@@ -400,7 +400,7 @@ void ZapImage::AllocateVirtualSections()
 
         // Some sections are placed in a sorted order. Hot items are placed first,
         // then cold items. These sections are marked as HotColdSortedRange since
-        // they are neither completely hot, nor completely cold. 
+        // they are neither completely hot, nor completely cold.
         m_pVirtualImportThunkSection        = NewVirtualSection(pXDataSection, IBCProfiledSection | HotColdSortedRange | VirtualImportThunkSection, HELPER_TABLE_ALIGN);
         m_pExternalMethodThunkSection       = NewVirtualSection(pXDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodThunkSection, HELPER_TABLE_ALIGN);
         m_pHelperTableSection               = NewVirtualSection(pXDataSection, IBCProfiledSection | HotColdSortedRange| HelperTableSection, HELPER_TABLE_ALIGN);
@@ -417,8 +417,8 @@ void ZapImage::AllocateVirtualSections()
     }
 
     {
-        // code:NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod and code:NativeImageJitManager::GetFunctionEntry expects 
-        // sentinel value right after end of .pdata section. 
+        // code:NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod and code:NativeImageJitManager::GetFunctionEntry expects
+        // sentinel value right after end of .pdata section.
         static const DWORD dwRuntimeFunctionSectionSentinel = (DWORD)-1;
 
 
@@ -438,10 +438,10 @@ void ZapImage::AllocateVirtualSections()
         m_pTextSection = pTextSection;
 
         // Marked as HotRange since it contains items that are always touched by
-        // the OS during NGEN image loading (i.e. VersionInfo) 
+        // the OS during NGEN image loading (i.e. VersionInfo)
         m_pWin32ResourceSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | HotRange | Win32ResourcesSection);
 
-        // Marked as a HotRange since it is always touched during Ngen image load. 
+        // Marked as a HotRange since it is always touched during Ngen image load.
         m_pHeaderSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | HotRange | HeaderSection);
 
         // Marked as a HotRange since it is always touched during Ngen image binding.
@@ -475,7 +475,7 @@ void ZapImage::AllocateVirtualSections()
         m_pRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange  | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
         m_pColdRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
 
-        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
+        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification
         NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD))
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
 #endif  // defined(FEATURE_EH_FUNCLETS)
@@ -491,7 +491,7 @@ void ZapImage::AllocateVirtualSections()
 #if !defined(FEATURE_EH_FUNCLETS)
         m_pHotRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | RuntimeFunctionSection, sizeof(DWORD));
 
-        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
+        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification
         NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | RuntimeFunctionSection, sizeof(DWORD))
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
 #endif
@@ -541,7 +541,7 @@ void ZapImage::AllocateVirtualSections()
 #if !defined(FEATURE_EH_FUNCLETS)
         m_pRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange  | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
 
-        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
+        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification
         NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange  | ColdRange | RuntimeFunctionSection, sizeof(DWORD))
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
 #endif
@@ -553,7 +553,7 @@ void ZapImage::AllocateVirtualSections()
             m_pAvailableTypesSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ReadonlySection);
             m_pAttributePresenceSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ReadonlyDataSection, 16/* Must be 16 byte aligned */);
         }
-#endif    
+#endif
 
 #if defined(FEATURE_EH_FUNCLETS)
         m_pUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | UnwindDataSection, sizeof(DWORD));
@@ -595,7 +595,7 @@ void ZapImage::AllocateVirtualSections()
 #if !defined(FEATURE_EH_FUNCLETS)
         m_pColdRuntimeFunctionSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD));
 
-        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification 
+        // The following sentinel section is just a padding for RuntimeFunctionSection - Apply same classification
         NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | RuntimeFunctionSection, sizeof(DWORD))
             ->Place(new (GetHeap()) ZapBlobPtr((PVOID)&dwRuntimeFunctionSectionSentinel, sizeof(DWORD)));
 #endif
@@ -629,7 +629,7 @@ void ZapImage::AllocateVirtualSections()
         ZapPhysicalSection * pRelocSection = NewPhysicalSection(".reloc", IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE | IMAGE_SCN_MEM_READ);
 
         // .reloc section is always read by the OS when the image is opted in ASLR
-        // (Vista+ default behavior). 
+        // (Vista+ default behavior).
         m_pBaseRelocsSection = NewVirtualSection(pRelocSection, IBCUnProfiledSection | HotRange | BaseRelocsSection);
 
     }
@@ -741,7 +741,7 @@ void ZapImage::ComputeRVAs()
     SetRuntimeFunctionsDirectoryEntry();
 #endif
 
-#if defined(_DEBUG) 
+#if defined(_DEBUG)
 #ifdef FEATURE_SYMDIFF
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SymDiffDump))
     {
@@ -752,22 +752,22 @@ void ZapImage::ComputeRVAs()
         {
             bool fCold = false;
             //if(curMethod >= m_iUntrainedMethod) fCold = true;
-    		
+
             ZapMethodHeader * pMethod = m_MethodCompilationOrder[curMethod];
 
             ZapBlobWithRelocs * pCode = fCold ? pMethod->m_pColdCode : pMethod->m_pCode;
             if (pCode == NULL)
-            {            
+            {
                 continue;
             }
             CORINFO_METHOD_HANDLE handle = pMethod->GetHandle();
             mdMethodDef token;
             GetCompileInfo()->GetMethodDef(handle, &token);
-            GetSvcLogger()->Printf(W("(EntryPointRVAMap (MethodToken %0X) (RVA %0X) (SIZE %0X))\n"), token, pCode->GetRVA(), pCode->GetSize()); 
+            GetSvcLogger()->Printf(W("(EntryPointRVAMap (MethodToken %0X) (RVA %0X) (SIZE %0X))\n"), token, pCode->GetRVA(), pCode->GetSize());
         }
 
     }
-#endif // FEATURE_SYMDIFF 
+#endif // FEATURE_SYMDIFF
 #endif //_DEBUG
 }
 
@@ -849,7 +849,7 @@ public:
     // IStream methods:
     STDMETHODIMP Seek(LARGE_INTEGER dlibMove, DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition)
     {
-        HRESULT hr = S_OK;        
+        HRESULT hr = S_OK;
 
         _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
 
@@ -858,15 +858,15 @@ public:
             case STREAM_SEEK_SET:
                 dwFileOrigin = FILE_BEGIN;
                 break;
-                
+
             case STREAM_SEEK_CUR:
                 dwFileOrigin = FILE_CURRENT;
                 break;
-                
+
             case STREAM_SEEK_END:
                 dwFileOrigin = FILE_END;
                 break;
-                
+
             default:
                 hr = E_UNEXPECTED;
                 goto Exit;
@@ -1000,7 +1000,7 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
     if (m_pNativeHeader != NULL)
     {
         // Write back the updated CORCOMPILE_HEADER (relocs and guid is not correct the first time around)
-        filePos.QuadPart = m_pTextSection->GetFilePos() + 
+        filePos.QuadPart = m_pTextSection->GetFilePos() +
             (m_pNativeHeader->GetRVA() - m_pTextSection->GetRVA());
         IfFailThrow(outputStream.Seek(filePos, STREAM_SEEK_SET, NULL));
         m_pNativeHeader->Save(this);
@@ -1012,16 +1012,16 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
     static_assert_no_msg(sizeof(GUID) == sizeof(MD5HASHDATA));
     outputStream.GetHash((MD5HASHDATA*)&signature);
 
-    {    
+    {
         // Write the debug directory entry for the NGEN PDB
         RSDS rsds = {0};
 
         rsds.magic = VAL32(0x53445352); // "SDSR";
         rsds.age = 1;
-        // our PDB signature will be the same as our NGEN signature.  
+        // our PDB signature will be the same as our NGEN signature.
         // However we want the printed version of the GUID to be be the same as the
-        // byte dump of the signature so we swap bytes to make this work.  
-        // 
+        // byte dump of the signature so we swap bytes to make this work.
+        //
         // * See code:CCorSvcMgr::CreatePdb for where this is used.
         BYTE* asBytes = (BYTE*) &signature;
         rsds.signature.Data1 = ((asBytes[0] * 256 + asBytes[1]) * 256 + asBytes[2]) * 256 + asBytes[3];
@@ -1031,16 +1031,16 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
 
         _ASSERTE(!m_pdbFileName.IsEmpty());
         ZeroMemory(&rsds.path[0], sizeof(rsds.path));
-        if (WideCharToMultiByte(CP_UTF8, 
-                                0, 
+        if (WideCharToMultiByte(CP_UTF8,
+                                0,
                                 m_pdbFileName.GetUnicode(),
-                                m_pdbFileName.GetCount(), 
-                                &rsds.path[0], 
+                                m_pdbFileName.GetCount(),
+                                &rsds.path[0],
                                 sizeof(rsds.path) - 1, // -1 to keep the buffer zero terminated
-                                NULL, 
+                                NULL,
                                 NULL) == 0)
             ThrowHR(E_FAIL);
-        
+
         ULONG cbWritten = 0;
         filePos.QuadPart = m_pTextSection->GetFilePos() + (m_pNGenPdbDebugData->GetRVA() - m_pTextSection->GetRVA());
         IfFailThrow(outputStream.Seek(filePos, STREAM_SEEK_SET, NULL));
@@ -1051,8 +1051,8 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
     {
         ULONG cbWritten;
 
-        filePos.QuadPart = m_pTextSection->GetFilePos() + 
-            (m_pVersionInfo->GetRVA() - m_pTextSection->GetRVA()) + 
+        filePos.QuadPart = m_pTextSection->GetFilePos() +
+            (m_pVersionInfo->GetRVA() - m_pTextSection->GetRVA()) +
             offsetof(CORCOMPILE_VERSION_INFO, signature);
         IfFailThrow(outputStream.Seek(filePos, STREAM_SEEK_SET, NULL));
         IfFailThrow(outputStream.Write(&signature, sizeof(signature), &cbWritten));
@@ -1082,11 +1082,11 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, LPCWSTR wszDllPath, CORCOM
     // Create a empty export table.  This makes tools like symchk not think
     // that native images are resoure-only DLLs.  It is important to NOT
     // be a resource-only DLL because those DLL's PDBS are not put up on the
-    // symbol server and we want NEN PDBS to be placed there.  
+    // symbol server and we want NEN PDBS to be placed there.
     ZapPEExports* exports = new(GetHeap()) ZapPEExports(wszDllPath);
     m_pDebugSection->Place(exports);
     SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT, exports);
-    
+
     ComputeRVAs();
 
     if (!IsReadyToRunCompilation())
@@ -1208,7 +1208,7 @@ void ZapImage::CalculateZapBaseAddress()
         MapViewHolder base(MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 0));
         if (base == NULL)
             ThrowLastError();
-    
+
         DWORD dwFileLen = SafeGetFileSize(hFile, 0);
         if (dwFileLen == INVALID_FILE_SIZE)
             ThrowLastError();
@@ -1224,7 +1224,7 @@ void ZapImage::CalculateZapBaseAddress()
         if (m_fManifestModule)
         {
             // Set the base address for the main assembly with the manifest
-        
+
             if (!m_ModuleDecoder.IsDll())
             {
 #if defined(_TARGET_X86_)
@@ -1251,14 +1251,14 @@ void ZapImage::CalculateZapBaseAddress()
         else // is dependent assembly of a multi-module assembly
         {
             // Set the base address for a dependant multi module assembly
-                
+
             // We should have already set the nextBaseAddressForMultiModule
             // when we compiled the manifest module
             _ASSERTE(nextBaseAddressForMultiModule != 0);
             baseAddress = nextBaseAddressForMultiModule;
         }
     }
-    else 
+    else
     {
         //
         // For some assemblies we have to move the ngen image base address up
@@ -1291,7 +1291,7 @@ void ZapImage::CalculateZapBaseAddress()
     tempBaseAddress += (SIZE_T) (CODE_EXPANSION_FACTOR * (double) m_ModuleDecoder.GetVirtualSize());
     tempBaseAddress += BASE_ADDRESS_ALIGNMENT;
     tempBaseAddress = (tempBaseAddress + BASE_ADDRESS_ALIGNMENT) & ~BASE_ADDRESS_ALIGNMENT;
-    
+
     nextBaseAddressForMultiModule = tempBaseAddress;
 
     //
@@ -1342,7 +1342,7 @@ void ZapImage::Open(CORINFO_MODULE_HANDLE hModule,
 
     //
     // Load the IBC Profile data for the assembly if it exists
-    // 
+    //
     LoadProfileData();
 
     //
@@ -1523,7 +1523,7 @@ void ZapImage::OutputTables()
 #endif
 
         // Copy over selected DLL characteristics bits from IL image
-        dllCharacteristics |= (m_ModuleDecoder.GetDllCharacteristics() & 
+        dllCharacteristics |= (m_ModuleDecoder.GetDllCharacteristics() &
             (IMAGE_DLLCHARACTERISTICS_NX_COMPAT | IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE | IMAGE_DLLCHARACTERISTICS_APPCONTAINER));
 
 #ifdef _DEBUG
@@ -1575,12 +1575,12 @@ ZapImage::CompileStatus ZapImage::CompileProfileDataWorker(mdToken token, unsign
     if ((g_NgenOrder.val(CLRConfig::INTERNAL_NgenOrder) & 2) == 2)
     {
         const ProfileDataHashEntry * foundEntry = profileDataHashTable.LookupPtr(token);
-    
+
         if (foundEntry == NULL)
             return NOT_COMPILED;
 
         // The md must match.
-        _ASSERTE(foundEntry->md == token); 
+        _ASSERTE(foundEntry->md == token);
         // The target position cannot be 0.
         _ASSERTE(foundEntry->pos > 0);
     }
@@ -1616,7 +1616,7 @@ void ZapImage::ProfileDisableInlining()
             {
                 // Disable the inlining of this method
                 //
-                // @ToDo: Figure out how to disable inlining for this method.               
+                // @ToDo: Figure out how to disable inlining for this method.
             }
         }
     }
@@ -1634,7 +1634,7 @@ void ZapImage::CompileHotRegion()
     BeginRegion(CORINFO_REGION_HOT);
 
     CorProfileData* pProfileData = GetProfileData();
-        
+
     ProfileDataSection* methodProfileData = &(m_profileDataSections[MethodProfilingData]);
     if (methodProfileData->tableSize > 0)
     {
@@ -1657,16 +1657,16 @@ void ZapImage::CompileHotRegion()
             {
                 //
                 // Compile a non-generic method
-                // 
+                //
                 compileResult = CompileProfileDataWorker(token, methodProfilingDataFlags);
             }
             else if (TypeFromToken(token) == ibcMethodSpec)
             {
                 //
                 //  compile a generic/parameterized method
-                // 
+                //
                 CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry = pProfileData->GetBlobSigEntry(token);
-                
+
                 if (pBlobSigEntry == NULL)
                 {
                     m_zapper->Info(W("Warning: Did not find definition for method token %08x in profile data.\n"), token);
@@ -1677,7 +1677,7 @@ void ZapImage::CompileHotRegion()
 
                     // decode method desc
                     CORINFO_METHOD_HANDLE pMethod = m_pPreloader->FindMethodForProfileEntry(pBlobSigEntry);
-                   
+
                     if (pMethod)
                     {
                         m_pPreloader->AddMethodToTransitiveClosureOfInstantiations(pMethod);
@@ -1721,12 +1721,12 @@ void ZapImage::CompileColdRegion()
     //
 
     BeginRegion(CORINFO_REGION_COLD);
-    
+
     IMDInternalImport * pMDImport = m_pMDImport;
-    
+
     HENUMInternalHolder hEnum(pMDImport);
     hEnum.EnumAllInit(mdtMethodDef);
-    
+
     mdMethodDef md;
     while (pMDImport->EnumNext(&hEnum, &md))
     {
@@ -1744,7 +1744,7 @@ void ZapImage::CompileColdRegion()
         TryCompileInstantiatedMethod(handle, 0);
         handle = m_pPreloader->NextUncompiledMethod();
     }
-    
+
     EndRegion(CORINFO_REGION_COLD);
 }
 
@@ -1753,21 +1753,21 @@ void ZapImage::CompileColdRegion()
 //
 void ZapImage::PlaceMethodIL()
 {
-    // Place the IL for all of the methods 
+    // Place the IL for all of the methods
     //
     IMDInternalImport * pMDImport = m_pMDImport;
     HENUMInternalHolder hEnum(pMDImport);
     hEnum.EnumAllInit(mdtMethodDef);
-    
+
     mdMethodDef md;
     while (pMDImport->EnumNext(&hEnum, &md))
     {
         if (m_pILMetaData != NULL)
         {
-            // Copy IL for all methods. We treat errors during copying IL 
-            // over as fatal error. These errors are typically caused by 
+            // Copy IL for all methods. We treat errors during copying IL
+            // over as fatal error. These errors are typically caused by
             // corrupted IL images.
-            // 
+            //
             m_pILMetaData->EmitMethodIL(md);
         }
     }
@@ -1866,7 +1866,7 @@ struct CompileMethodStubContext
 // that we don't want set when compiling IL_STUBS.
 //-----------------------------------------------------------------------------
 
-// static void __stdcall 
+// static void __stdcall
 void ZapImage::TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub, CORJIT_FLAGS jitFlags)
 {
     STANDARD_VM_CONTRACT;
@@ -1901,7 +1901,7 @@ void ZapImage::TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub
 //-----------------------------------------------------------------------------
 BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
 {
-#ifdef FEATURE_COMINTEROP 
+#ifdef FEATURE_COMINTEROP
     HRESULT hr;
     DWORD dwAttributes;
 
@@ -1916,7 +1916,7 @@ BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
     // Now check the name of the method. All vtable gap methods will have a prefix of "_VtblGap".
     LPCSTR szMethod;
     PCCOR_SIGNATURE pvSigBlob;
-    ULONG cbSigBlob;    
+    ULONG cbSigBlob;
     hr = m_pMDImport->GetNameAndSigOfMethodDef(md, &pvSigBlob, &cbSigBlob, &szMethod);
     if (FAILED(hr) || (strncmp(szMethod, "_VtblGap", 8) != 0))
         return FALSE;
@@ -1982,7 +1982,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
 // These could be methods defined in other assemblies too.
 //-----------------------------------------------------------------------------
 
-ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HANDLE handle, 
+ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HANDLE handle,
                                                                unsigned methodProfilingDataFlags)
 {
     if (IsReadyToRunCompilation())
@@ -1996,7 +1996,7 @@ ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HA
 
     // If we compiling this method because it was specified by the IBC profile data
     // then issue an warning if this method is not on our uncompiled method list
-    // 
+    //
     if (methodProfilingDataFlags != 0)
     {
         if (methodProfilingDataFlags & (1 << ReadMethodCode))
@@ -2017,7 +2017,7 @@ ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HA
             }
         }
     }
-   
+
     CompileStatus methodCompileStatus = TryCompileMethodWorker(handle, mdMethodDefNil, methodProfilingDataFlags);
 
     // Don't bother compiling the IL_STUBS if we failed to compile the parent IL method
@@ -2028,7 +2028,7 @@ ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HA
 
         // compile stubs associated with the method
         m_pPreloader->GenerateMethodStubs(handle, m_zapper->m_pOpt->m_ngenProfileImage,
-                                          &TryCompileMethodStub, 
+                                          &TryCompileMethodStub,
                                           &context);
     }
 
@@ -2037,7 +2037,7 @@ ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HA
 
 //-----------------------------------------------------------------------------
 
-ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE handle, mdMethodDef md, 
+ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE handle, mdMethodDef md,
                                                          unsigned methodProfilingDataFlags)
 {
     _ASSERTE(handle != NULL);
@@ -2097,7 +2097,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     {
         // Retrieve any information that we have about a previous compilation attempt of this method
         const ProfileDataHashEntry* pEntry = profileDataHashTable.LookupPtr(md);
-        
+
         // When Partial Ngen is specified we will omit the AOT native code for every
         // method that does not have profile data
         //
@@ -2108,7 +2108,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         }
 
         if (pEntry != nullptr)
-        { 
+        {
             if ((pEntry->status == COMPILE_HOT_EXCLUDED) || (pEntry->status == COMPILE_COLD_EXCLUDED))
             {
                 // returning COMPILE_HOT_EXCLUDED excludes this method from the AOT native image
@@ -2124,7 +2124,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     _ASSERTE(m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB) || IsNilToken(md) || handle == m_pPreloader->LookupMethodDef(md));
 
     CompileStatus result = NOT_COMPILED;
-    
+
     CORINFO_MODULE_HANDLE module;
 
     // We only compile IL_STUBs from the current assembly
@@ -2168,7 +2168,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         if (IsReadyToRunCompilation())
         {
             // When compiling the method we may receive an exeception when the
-            // method uses a feature that is Not Implemented for ReadyToRun 
+            // method uses a feature that is Not Implemented for ReadyToRun
             // or a Type Load exception if the method uses for a SIMD type.
             //
             // We skip the compilation of such methods and we don't want to
@@ -2185,7 +2185,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
             StackSString message;
             ex->GetMessage(message);
 
-            // FileNotFound errors here can be converted into a single error string per ngen compile, 
+            // FileNotFound errors here can be converted into a single error string per ngen compile,
             //  and the detailed error is available with verbose logging
             if (hrException == COR_E_FILENOTFOUND)
             {
@@ -2207,7 +2207,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         }
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
     return result;
 }
 
@@ -2227,19 +2227,19 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
         if (methodPercentageVal <= partialNGenStressVal)
             return FALSE;
     }
-    
+
     mdTypeDef td;
     IfFailThrow(m_pMDImport->GetParentToken(md, &td));
-    
+
 #ifdef FEATURE_COMINTEROP
     mdToken tkExtends;
     if (td != mdTypeDefNil)
     {
         IfFailThrow(m_pMDImport->GetTypeDefProps(td, NULL, &tkExtends));
-        
+
         mdAssembly tkAssembly;
         DWORD dwAssemblyFlags;
-        
+
         IfFailThrow(m_pMDImport->GetAssemblyFromScope(&tkAssembly));
         if (TypeFromToken(tkAssembly) == mdtAssembly)
         {
@@ -2249,7 +2249,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
                                             NULL,           // Name
                                             NULL,           // MetaData
                                             &dwAssemblyFlags));
-            
+
             if (IsAfContentType_WindowsRuntime(dwAssemblyFlags))
             {
                 if (TypeFromToken(tkExtends) == mdtTypeRef)
@@ -2257,7 +2257,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
                     LPCSTR szNameSpace = NULL;
                     LPCSTR szName = NULL;
                     IfFailThrow(m_pMDImport->GetNameOfTypeRef(tkExtends, &szNameSpace, &szName));
-                    
+
                     if (!strcmp(szNameSpace, "System") && !_stricmp((szName), "Attribute"))
                     {
                         return FALSE;
@@ -2281,7 +2281,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
     // Get the name of the current method and its class
     LPCSTR szMethod;
     IfFailThrow(m_pMDImport->GetNameAndSigOfMethodDef(md, &pvSigBlob, &cbSigBlob, &szMethod));
-    
+
     LPCWSTR wszClass = W("");
     SString sClass;
 
@@ -2289,9 +2289,9 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
     {
         LPCSTR szNameSpace = NULL;
         LPCSTR szName = NULL;
-        
+
         IfFailThrow(m_pMDImport->GetNameOfTypeDef(td, &szName, &szNameSpace));
-        
+
         const SString nameSpace(SString::Utf8, szNameSpace);
         const SString name(SString::Utf8, szName);
         sClass.MakeFullNamespacePath(nameSpace, name);
@@ -2313,8 +2313,8 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
     }
 
     LOG((LF_ZAP, LL_INFO1000, "Compiling method %08x, %s::%s\n", md, szClass, szMethod));
-#endif    
-    
+#endif
+
     return TRUE;
 }
 
@@ -2377,7 +2377,7 @@ HRESULT ZapImage::PrintTokenDescription(CorZapLogLevel level, mdToken token)
             }
 
             case mdtTypeRef:
-            {   
+            {
                 IfFailRet(m_pMDImport->GetNameOfTypeRef(token, &szNameSpace, &szName));
                 break;
             }
@@ -2390,7 +2390,7 @@ HRESULT ZapImage::PrintTokenDescription(CorZapLogLevel level, mdToken token)
 
             default:
                 break;
-        }      
+        }
     }
     else
     {
@@ -2539,7 +2539,7 @@ HRESULT ZapImage::parseProfileData()
     bool convertFromV1 = false;
     bool minified = false;
 
-    if (fileHeader->Magic != CORBBTPROF_MAGIC) 
+    if (fileHeader->Magic != CORBBTPROF_MAGIC)
     {
         _ASSERTE(!"ibcHeader contains bad values");
         return E_FAIL;
@@ -2777,24 +2777,24 @@ HRESULT ZapImage::convertProfileDataFromV1()
     {
         //
         // Compute the size of the method block count stream
-        // 
+        //
         BYTE *  dstPtr           = NULL;
         BYTE *  srcPtr           = m_profileDataSections[MethodBlockCounts].pData;
         DWORD   maxSizeToRead    = m_profileDataSections[MethodBlockCounts].dataSize;
-        DWORD   totalSizeNeeded  = 0; 
+        DWORD   totalSizeNeeded  = 0;
         DWORD   totalSizeRead    = 0;
-       
+
         mbcSectionHeader = (CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER_V1 *) srcPtr;
 
         totalSizeRead   += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER_V1);
-        totalSizeNeeded += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER); 
+        totalSizeNeeded += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER);
         srcPtr          += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER_V1);
 
         if (totalSizeRead > maxSizeToRead)
         {
             return E_FAIL;
         }
-       
+
         for (DWORD i=0; (i < mbcSectionHeader->NumMethods); i++)
         {
             CORBBTPROF_METHOD_HEADER_V1* methodEntry = (CORBBTPROF_METHOD_HEADER_V1 *) srcPtr;
@@ -2807,7 +2807,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
             sizeWrite += methodEntry->Size;
 
             totalSizeRead   += sizeRead;
-            totalSizeNeeded += sizeWrite;            
+            totalSizeNeeded += sizeWrite;
 
             if (totalSizeRead > maxSizeToRead)
             {
@@ -2820,7 +2820,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
 
         // Reset the srcPtr
         srcPtr = m_profileDataSections[MethodBlockCounts].pData;
-       
+
         BYTE * newMethodData = new (GetHeap()) BYTE[totalSizeNeeded];
 
         dstPtr = newMethodData;
@@ -2828,7 +2828,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
         memcpy(dstPtr, srcPtr, sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER));
         srcPtr += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER_V1);
         dstPtr += sizeof(CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER);
-        
+
         for (DWORD i=0; (i < mbcSectionHeader->NumMethods); i++)
         {
             CORBBTPROF_METHOD_HEADER_V1 *  methodEntryV1 = (CORBBTPROF_METHOD_HEADER_V1 *) srcPtr;
@@ -2839,13 +2839,13 @@ HRESULT ZapImage::convertProfileDataFromV1()
             methodEntry->method.token   = methodEntryV1->MethodToken;
             methodEntry->method.ILSize  = 0;
             methodEntry->method.cBlock  = (methodEntryV1->Size / sizeof(CORBBTPROF_BLOCK_DATA));
-            sizeRead  += methodEntryV1->HeaderSize; 
+            sizeRead  += methodEntryV1->HeaderSize;
             sizeWrite += sizeof(CORBBTPROF_METHOD_HEADER);
 
             memcpy( dstPtr + sizeof(CORBBTPROF_METHOD_HEADER),
-                    srcPtr + sizeof(CORBBTPROF_METHOD_HEADER_V1), 
+                    srcPtr + sizeof(CORBBTPROF_METHOD_HEADER_V1),
                     (methodEntry->method.cBlock * sizeof(CORBBTPROF_BLOCK_DATA)));
-            sizeRead  += methodEntryV1->Size; 
+            sizeRead  += methodEntryV1->Size;
             sizeWrite += (methodEntry->method.cBlock * sizeof(CORBBTPROF_BLOCK_DATA));
 
             methodEntry->size    = sizeWrite;
@@ -2853,7 +2853,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
             srcPtr += sizeRead;
             dstPtr += sizeWrite;
         }
-       
+
         m_profileDataSections[MethodBlockCounts].pData    = newMethodData;
         m_profileDataSections[MethodBlockCounts].dataSize = totalSizeNeeded;
     }
@@ -2867,7 +2867,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
         BYTE *  dstPtr      = newData;
         {
             CORBBTPROF_SCENARIO_INFO_SECTION_HEADER *siHeader = (CORBBTPROF_SCENARIO_INFO_SECTION_HEADER *) dstPtr;
-            
+
             if (mbcSectionHeader != NULL)
                 siHeader->TotalNumRuns = mbcSectionHeader->NumRuns;
             else
@@ -2884,7 +2884,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
             sHeader->scenario.mask     = 1;
             sHeader->scenario.priority = 0;
             sHeader->scenario.numRuns  = 0;
-            sHeader->scenario.cName    = 0; 
+            sHeader->scenario.cName    = 0;
 
             sHeader->size = sHeader->Size();
 
@@ -2895,21 +2895,21 @@ HRESULT ZapImage::convertProfileDataFromV1()
     }
 
     //
-    // Convert the BlobStream format from V1 to V2 
-    //   
+    // Convert the BlobStream format from V1 to V2
+    //
     if (m_profileDataSections[BlobStream].dataSize > 0)
     {
         //
         // Compute the size of the blob stream
-        // 
-        
+        //
+
         BYTE *  srcPtr           = m_profileDataSections[BlobStream].pData;
         BYTE *  dstPtr           = NULL;
         DWORD   maxSizeToRead    = m_profileDataSections[BlobStream].dataSize;
         DWORD   totalSizeNeeded  = 0;
         DWORD   totalSizeRead    = 0;
         bool    done             = false;
-        
+
         while (!done)
         {
             CORBBTPROF_BLOB_ENTRY_V1* blobEntry = (CORBBTPROF_BLOB_ENTRY_V1 *) srcPtr;
@@ -2929,7 +2929,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
                 sizeWrite += blobEntry->cBuffer;
                 if (blobEntry->blobType == ParamMethodSpec)
                 {
-                    sizeWrite -= 1;  // Adjust for 
+                    sizeWrite -= 1;  // Adjust for
                 }
                 sizeRead  += sizeof(CORBBTPROF_BLOB_ENTRY_V1);
                 sizeRead  += blobEntry->cBuffer;
@@ -2944,15 +2944,15 @@ HRESULT ZapImage::convertProfileDataFromV1()
             {
                 return E_FAIL;
             }
-            
+
             totalSizeNeeded += sizeWrite;
             totalSizeRead   += sizeRead;
-            
+
             if (sizeRead > maxSizeToRead)
             {
                 return E_FAIL;
             }
-            
+
             srcPtr += sizeRead;
         }
 
@@ -2960,27 +2960,27 @@ HRESULT ZapImage::convertProfileDataFromV1()
 
         // Reset the srcPtr
         srcPtr = m_profileDataSections[BlobStream].pData;
-        
+
         BYTE * newBlobData = new (GetHeap()) BYTE[totalSizeNeeded];
 
         dstPtr = newBlobData;
         done = false;
-        
+
         while (!done)
         {
             CORBBTPROF_BLOB_ENTRY_V1* blobEntryV1 = (CORBBTPROF_BLOB_ENTRY_V1 *) srcPtr;
             DWORD sizeWrite  = 0;
             DWORD sizeRead   = 0;
-            
+
             if ((blobEntryV1->blobType >= MetadataStringPool) && (blobEntryV1->blobType <= MetadataUserStringPool))
             {
                 CORBBTPROF_BLOB_POOL_ENTRY* blobPoolEntry = (CORBBTPROF_BLOB_POOL_ENTRY*) dstPtr;
-                
+
                 blobPoolEntry->blob.type = blobEntryV1->blobType;
                 blobPoolEntry->blob.size = sizeof(CORBBTPROF_BLOB_POOL_ENTRY) + blobEntryV1->cBuffer;
                 blobPoolEntry->cBuffer   = blobEntryV1->cBuffer;
                 memcpy(blobPoolEntry->buffer, blobEntryV1->pBuffer, blobEntryV1->cBuffer);
-                
+
                 sizeWrite += sizeof(CORBBTPROF_BLOB_POOL_ENTRY);
                 sizeWrite += blobEntryV1->cBuffer;
                 sizeRead  += sizeof(CORBBTPROF_BLOB_ENTRY_V1);
@@ -2993,16 +2993,16 @@ HRESULT ZapImage::convertProfileDataFromV1()
                 blobSigEntry->blob.type  = blobEntryV1->blobType;
                 blobSigEntry->blob.size  = sizeof(CORBBTPROF_BLOB_PARAM_SIG_ENTRY) + blobEntryV1->cBuffer;
                 blobSigEntry->blob.token = 0;
-                blobSigEntry->cSig       = blobEntryV1->cBuffer; 
+                blobSigEntry->cSig       = blobEntryV1->cBuffer;
 
                 if (blobEntryV1->blobType == ParamMethodSpec)
                 {
                     // Adjust cSig and blob.size
-                    blobSigEntry->cSig--; 
+                    blobSigEntry->cSig--;
                     blobSigEntry->blob.size--;
                 }
                 memcpy(blobSigEntry->sig, blobEntryV1->pBuffer, blobSigEntry->cSig);
-                
+
                 sizeWrite += sizeof(CORBBTPROF_BLOB_PARAM_SIG_ENTRY);
                 sizeWrite += blobSigEntry->cSig;
                 sizeRead  += sizeof(CORBBTPROF_BLOB_ENTRY_V1);
@@ -3014,7 +3014,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
 
                 blobEntry->type = blobEntryV1->blobType;
                 blobEntry->size = sizeof(CORBBTPROF_BLOB_ENTRY);
-                
+
                 sizeWrite += sizeof(CORBBTPROF_BLOB_ENTRY);
                 sizeRead  += sizeof(CORBBTPROF_BLOB_ENTRY_V1);
                 done = true;
@@ -3026,7 +3026,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
             srcPtr += sizeRead;
             dstPtr += sizeWrite;
         }
-       
+
         m_profileDataSections[BlobStream].pData    = newBlobData;
         m_profileDataSections[BlobStream].dataSize = totalSizeNeeded;
     }
@@ -3150,7 +3150,7 @@ void ZapImage::RehydrateTokenSection(int sectionFormat, unsigned int flagTable[2
     }
 
     _ASSERTE(writer.GetWrittenSize() == dataLength);
-    
+
     section.pData = writer.GetBuffer();
     section.dataSize = writer.GetWrittenSize();
     section.pTable = (CORBBTPROF_TOKEN_INFO *)(section.pData + sizeof(unsigned int));
@@ -3181,7 +3181,7 @@ void ZapImage::RehydrateBlobStream()
 
         unsigned int sizeToRead = reader.Read7BitEncodedInt();
         unsigned int startPositionRead = reader.GetCurrentPos();
-    
+
         blobType = reader.Read7BitEncodedInt();
         mdToken token = reader.ReadTokenWithMemory(LastBlobToken);
 
@@ -3253,7 +3253,7 @@ HRESULT ZapImage::RehydrateProfileData()
     HRESULT hr = S_OK;
     unsigned int flagTable[255];
     memset(flagTable, 0xFF, sizeof(flagTable));
-    
+
     EX_TRY
     {
         RehydrateBasicBlockSection();
@@ -3291,7 +3291,7 @@ HRESULT ZapImage::hashMethodBlockCounts()
     {
         ProfileDataHashEntry newEntry;
         newEntry.pos = profileReader.GetCurrentPos();
-        
+
         CORBBTPROF_METHOD_HEADER *methodHeader;
         READ(methodHeader,CORBBTPROF_METHOD_HEADER);
         newEntry.md   = methodHeader->method.token;
@@ -3348,7 +3348,7 @@ void ZapImage::LoadProfileData()
     EX_TRY
     {
         hr = LocateProfileData();
-        
+
         if (hr == S_OK)
         {
             hr = parseProfileData();
@@ -3363,7 +3363,7 @@ void ZapImage::LoadProfileData()
         hr = E_FAIL;
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
     if (hr != S_OK)
     {
         m_fHaveProfileData = false;
@@ -3576,8 +3576,8 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
 
         // Supress printing of "The generic type/method specified by the IBC data is not available to this assembly"
         level = CORZAP_LOGLEVEL_INFO;
-    }   
-#endif        
+    }
+#endif
 
     if (m_zapper->m_pOpt->m_ignoreErrors)
     {
@@ -3639,20 +3639,20 @@ ZapNode * ZapImage::GetHelperThunk(CorInfoHelpFunc ftnNum)
 }
 
 //
-// Compute a class-layout order based on a breadth-first traversal of 
+// Compute a class-layout order based on a breadth-first traversal of
 // the class graph (based on what classes contain calls to other classes).
 // We cannot afford time or space to build the graph, so we do processing
 // in place.
-// 
+//
 void ZapImage::ComputeClassLayoutOrder()
 {
-    // In order to make the computation efficient, we need to store per-class 
+    // In order to make the computation efficient, we need to store per-class
     // intermediate values in the class layout field.  These come in two forms:
-    // 
+    //
     //   - An entry with the UNSEEN_CLASS_FLAG set is one that is yet to be encountered.
     //   - An entry with METHOD_INDEX_FLAG set is an index into the m_MethodCompilationOrder list
     //     indicating where the unprofiled methods of this class begin
-    //   
+    //
     // Both flags begin set (by InitializeClassLayoutOrder) since the value initialized is
     // the method index and the class has not been encountered by the algorithm.
     // When a class layout has been computed, both of these flags will have been stripped.
@@ -3684,7 +3684,7 @@ void ZapImage::ComputeClassLayoutOrder()
         ZapMethodHeader * pMethod = m_MethodCompilationOrder[i];
         const ClassLayoutOrderEntry * pEntry = m_ClassLayoutOrder.LookupPtr(pMethod->m_classHandle);
         _ASSERTE(pEntry);
-        
+
         if ((pEntry->m_order & UNSEEN_CLASS_FLAG) == 0)
         {
             continue;
@@ -3702,7 +3702,7 @@ void ZapImage::ComputeClassLayoutOrder()
             //
             // Dequeue a class and pull out the index of its first method
             //
-            
+
             CORINFO_CLASS_HANDLE dequeuedClassHandle = classQueue[classQueueNext++];
             _ASSERTE(dequeuedClassHandle != NULL);
 
@@ -3717,9 +3717,9 @@ void ZapImage::ComputeClassLayoutOrder()
             //
             // Set the real layout order of the class, and examine its unprofiled methods
             //
-            
+
             ((ClassLayoutOrderEntry *)pEntry)->m_order = ++classOrder;
-                
+
             pMethod = m_MethodCompilationOrder[methodIndex];
             _ASSERTE(pMethod->m_classHandle == dequeuedClassHandle);
 
@@ -3754,7 +3754,7 @@ void ZapImage::ComputeClassLayoutOrder()
                 {
                     break;
                 }
-                    
+
                 pMethod = m_MethodCompilationOrder[methodIndex];
             }
         }

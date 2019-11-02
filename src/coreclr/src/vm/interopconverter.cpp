@@ -45,9 +45,9 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
     if (*poref == NULL)
         RETURN NULL;
 
-    
+
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
-    
+
     InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
 
     // If we have a CCW, or a NULL CCW but the RCW field was never used,
@@ -66,7 +66,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
     {
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
-        
+
         // The interface will be returned addref'ed.
         pUnk = pRCW->GetComIPFromRCW(pMT);
 
@@ -116,11 +116,11 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
     InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
-    
+
     if ( (NULL != pInteropInfo->GetCCW()) || (!pInteropInfo->RCWWasUsed()) )
     {
         CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
-        
+
         // If the user requested IDispatch, then check for IDispatch first.
         if (ReqIpType & ComIpType_Dispatch)
         {
@@ -128,7 +128,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             if (pUnk)
                 FetchedIpType = ComIpType_Dispatch;
         }
-        
+
         if (ReqIpType & ComIpType_Inspectable)
         {
             WinMDAdapter::RedirectedTypeIndex redirectedTypeIndex;
@@ -139,13 +139,13 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             // Check whether this object is of a legal WinRT type (including array)
             //
             // Note that System.RuntimeType is a weird case - we only redirect System.Type at type
-            // level, but when we boxing the actual instance, we expect it to be a System.RuntimeType 
+            // level, but when we boxing the actual instance, we expect it to be a System.RuntimeType
             // instance, which is not redirected and not a legal WinRT type
-            // 
+            //
             // Therefore, special case for System.RuntimeType and treat it as a legal WinRT type
             // only for boxing
             //
-            if (pMT->IsLegalWinRTType(poref) || 
+            if (pMT->IsLegalWinRTType(poref) ||
                 MscorlibBinder::IsClass(pMT, CLASS__CLASS))
             {
                 // The managed signature contains Object, and native signature is IInspectable.
@@ -170,7 +170,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                     MethodDescCallSite boxHelper(method);
 
                     ARG_SLOT Args[] =
-                    { 
+                    {
                         ObjToArgSlot(*poref),
                     };
                     OBJECTREF orCLRKeyValuePair = boxHelper.Call_RetOBJECTREF(Args);
@@ -180,16 +180,16 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                     pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHoldBoxed, IID_IInspectable, NULL);
                     GCPROTECT_END();
                 }
-                else if ((pMT->IsValueType() || 
+                else if ((pMT->IsValueType() ||
                      pMT->IsStringOrArray() ||
-                     pMT->IsDelegate() || 
+                     pMT->IsDelegate() ||
                      MscorlibBinder::IsClass(pMT, CLASS__CLASS)))
                 {
                     OBJECTREF orBoxedIReference = NULL;
                     MethodDescCallSite createIReference(METHOD__FACTORYFORIREFERENCE__CREATE_IREFERENCE);
 
                     ARG_SLOT Args[] =
-                    { 
+                    {
                         ObjToArgSlot(*poref),
                     };
 
@@ -203,7 +203,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                 }
                 else if (WinRTTypeNameConverter::ResolveRedirectedType(pMT, &redirectedTypeIndex))
                 {
-                    // This is a redirected type - see if we need to manually marshal it                    
+                    // This is a redirected type - see if we need to manually marshal it
                     if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Uri)
                     {
                         UriMarshalingInfo *pUriMarshalInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
@@ -230,7 +230,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                         LPCWSTR wszRawUri = gc.refRawUri->GetBuffer();
 
                         {
-                            GCX_PREEMP();                
+                            GCX_PREEMP();
                             pUnk = CreateWinRTUri(wszRawUri, static_cast<INT32>(cchRawUri));
                         }
 
@@ -270,12 +270,12 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             else
             {
                 //
-                // Marshal non-WinRT types as IInspectable* to enable round-tripping (for example, TextBox.Tag property)                
+                // Marshal non-WinRT types as IInspectable* to enable round-tripping (for example, TextBox.Tag property)
                 // By default, this returns ICustomPropertyProvider;
                 //
                 pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
             }
-            
+
             if (pUnk)
                 FetchedIpType = ComIpType_Inspectable;
         }
@@ -316,7 +316,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             if (pUnk)
                 FetchedIpType = ComIpType_Dispatch;
         }
-        
+
         if (ReqIpType & ComIpType_Inspectable)
         {
             pUnk = pRCW->GetIInspectable();
@@ -333,7 +333,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                 FetchedIpType = ComIpType_Unknown;
         }
     }
-    
+
     // If we failed to retrieve an IP then throw an exception.
     if (pUnk == NULL)
         COMPlusThrowHR(hr);
@@ -362,7 +362,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
         POSTCONDITION((*poref) != NULL ? CheckPointer(RETVAL, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
-    
+
     ASSERT_PROTECTED(poref);
 
     // COM had better be started up at this point.
@@ -372,7 +372,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     HRESULT     hr              = E_NOINTERFACE;
     IUnknown*   pUnk            = NULL;
     size_t      ul              = 0;
-    
+
     if (*poref == NULL)
         RETURN NULL;
 
@@ -393,7 +393,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
-                
+
         // The interface will be returned addref'ed.
         pUnkHolder = pRCW->GetComIPFromRCW(iid);
 
@@ -401,7 +401,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
         pUnk = pUnkHolder.Extract();
     }
-    
+
     if (throwIfNoComIP && pUnk == NULL)
         COMPlusThrowHR(hr);
 
@@ -439,7 +439,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     *pObjOut = NULL;
     IUnknown* pOuter = pUnk;
     SafeComHolder<IUnknown> pAutoOuterUnk = NULL;
-    
+
     if (pUnk != NULL)
     {
         // get CCW for IUnknown
@@ -452,7 +452,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             IfFailThrow(hr);
 
             // store the outer in the auto pointer
-            pAutoOuterUnk = pOuter; 
+            pAutoOuterUnk = pOuter;
             ccw = GetCCWFromIUnknown(pOuter);
         }
 
@@ -470,7 +470,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         {
             if (!(dwFlags & ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING))
             {
-                // Unbox objects from a CLRIReferenceImpl<T> or CLRIReferenceArrayImpl<T>.  
+                // Unbox objects from a CLRIReferenceImpl<T> or CLRIReferenceArrayImpl<T>.
                 MethodTable *pMT = (*pObjOut)->GetMethodTable();
                 if (pMT->HasInstantiation())
                 {
@@ -499,7 +499,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         }
         else
         {
-            // Only pass in the class method table to the interface marshaler if 
+            // Only pass in the class method table to the interface marshaler if
             // it is a COM import (or COM import derived) class or a WinRT delegate.
             MethodTable *pComClassMT = NULL;
             if (pMTClass)

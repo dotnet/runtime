@@ -6184,7 +6184,7 @@ struct GenCondition
         UGT  = Unsigned | SGT,  // = 13
         C    = Unsigned | S,    // = 14
         NC   = Unsigned | NS,   // = 15
-                                
+
         FEQ  = Float | 0,       // = 16
         FNE  = Float | 1,       // = 17
         FLT  = Float | SLT,     // = 18
@@ -6193,7 +6193,7 @@ struct GenCondition
         FGT  = Float | SGT,     // = 21
         O    = Float | S,       // = 22
         NO   = Float | NS,      // = 23
-                                
+
         FEQU = Unordered | FEQ, // = 24
         FNEU = Unordered | FNE, // = 25
         FLTU = Unordered | FLT, // = 26

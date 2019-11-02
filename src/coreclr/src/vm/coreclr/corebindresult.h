@@ -4,7 +4,7 @@
 // ============================================================
 //
 // CoreBindResult.h
-// 
+//
 
 //
 // Declares the CoreBindResult class
@@ -23,8 +23,8 @@ protected:
     ReleaseHolder<ICLRPrivAssembly> m_pAssembly;
     HRESULT m_hrBindResult;
     LONG m_cRef;
-    
-public: 	
+
+public:
 
     // IUnknown methods
     STDMETHOD(QueryInterface)(REFIID riid,
@@ -35,10 +35,10 @@ public:
     // CoreBindResult methods
     CoreBindResult() : m_cRef(1) {}
     virtual ~CoreBindResult() {}
-    
+
     void Init(ICLRPrivAssembly* pAssembly);
     void Reset();
-	
+
     BOOL Found();
     PEImage* GetPEImage();
     BOOL IsMscorlib();

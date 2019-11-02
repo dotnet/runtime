@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // =============================================================================================
 // Code for tracking method inlinings in NGen and R2R images.
-// The only information stored is "who" got inlined "where", no offsets or inlining depth tracking. 
+// The only information stored is "who" got inlined "where", no offsets or inlining depth tracking.
 // (No good for debugger yet.)
 // This information is later exposed to profilers and can be useful for ReJIT.
 // Runtime inlining is not being tracked because profilers can deduce it via callbacks anyway.
@@ -23,7 +23,7 @@ bool MethodInModule::operator <(const MethodInModule& other) const
     }
     else
     {
-        // Since NGen images are supposed to be determenistic, 
+        // Since NGen images are supposed to be determenistic,
         // we need stable sort order that isn't changing between different runs
         // That's why we use names and GUIDs instead of just doing m_module < other.m_module
 
@@ -31,7 +31,7 @@ bool MethodInModule::operator <(const MethodInModule& other) const
         LPCUTF8 simpleName = m_module ? m_module->GetSimpleName() : "";
         LPCUTF8 otherSimpleName = other.m_module ? other.m_module->GetSimpleName() : "";
         int nameCmpResult = strcmp(simpleName, otherSimpleName);
-        
+
         if (nameCmpResult == 0)
         {
             // Names are equal but module addresses aren't, it's suspicious
@@ -82,7 +82,7 @@ bool MethodInModule::operator !=(const MethodInModule& other) const
 void InlineTrackingEntry::SortAndDeduplicate()
 {
     STANDARD_VM_CONTRACT;
-    
+
     //Sort
     MethodInModule *begin = &m_inliners[0];
     MethodInModule *end = begin + m_inliners.GetCount();
@@ -132,9 +132,9 @@ void InlineTrackingEntry::Add(PTR_MethodDesc inliner)
     MethodInModule method(inliner->GetModule(), inliner->GetMemberDef());
 
     // Going through last 10 inliners to check if a given inliner has recently been registered.
-    // It allows to filter out most duplicates without having to scan through hundreds of inliners 
-    // for methods like Object.ctor or Monitor.Enter. 
-    // We are OK to keep occasional duplicates in m_inliners, we'll get rid of them 
+    // It allows to filter out most duplicates without having to scan through hundreds of inliners
+    // for methods like Object.ctor or Monitor.Enter.
+    // We are OK to keep occasional duplicates in m_inliners, we'll get rid of them
     // in SortAndDeduplicate() anyway.
     int count = static_cast<int>(m_inliners.GetCount());
     int start = max(0, count - 10);
@@ -252,14 +252,14 @@ COUNT_T PersistentInlineTrackingMapNGen::GetInliners(PTR_Module inlineeOwnerMod,
             DWORD inlinerModuleZapIndex = stream.ReadEncodedU32(); //read inliner module, it is same for all inliners
             Module *inlinerModule = GetModuleByIndex(inlinerModuleZapIndex);
 
-            if (inlinerModule != NULL) 
+            if (inlinerModule != NULL)
             {
                 DWORD inlinersCount = stream.ReadEncodedU32();
                 _ASSERTE(inlinersCount > 0);
 
                 RID inlinerRid = 0;
                 // Reading inliner RIDs one by one, each RID is represented as an adjustment (diff) to the previous one.
-                // Adding inliners module and coping to the output buffer 
+                // Adding inliners module and coping to the output buffer
                 for (DWORD i = 0; i < inlinersCount && outputIndex < inlinersSize; i++)
                 {
                     inlinerRid += stream.ReadEncodedU32();
@@ -296,9 +296,9 @@ Module *PersistentInlineTrackingMapNGen::GetModuleByIndex(DWORD index)
     }
     CONTRACTL_END;
 
-    // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag 
+    // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
     // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
-    // This is useful when ngen image was compiler against a different assembly version than the one loaded now. 
+    // This is useful when ngen image was compiler against a different assembly version than the one loaded now.
     ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
     return m_module->GetModuleFromIndexIfLoaded(index);
@@ -364,7 +364,7 @@ void SerializeInlineTrackingEntry(DataImage* image, SBuffer *inlinersBuffer, SAr
             prevMethodRid = methodRid;
         }
         inlinersStream.Flush();
-        
+
         // Copy output of NibbleWriter into a big buffer (inlinersBuffer) for inliners from the same module
         // and create an InlineeRecord with correct offset
         DWORD inlinersStreamSize;
@@ -395,7 +395,7 @@ void SerializeTrackingMapBuffers(ZapHeap* heap, DataImage *image, SBuffer *inlin
     STANDARD_VM_CONTRACT;
     _ASSERTE(runtimeMap != NULL);
 
-    // Sort records from runtimeMap, because we need to make sure 
+    // Sort records from runtimeMap, because we need to make sure
     // we save everything in deterministic order. Hashtable iteration is not deterministic.
     COUNT_T runtimeMapCount = runtimeMap->GetCount();
     InlineTrackingEntry **inlinees = new (heap) InlineTrackingEntry *[runtimeMapCount];
@@ -430,7 +430,7 @@ void PersistentInlineTrackingMapNGen::Save(DataImage *image, InlineTrackingMap* 
 
     m_inlineeIndexSize = inlineeIndex.GetCount();
     m_inlinersBufferSize = inlinersBuffer.GetSize();
-    _ASSERTE((m_inlineeIndexSize == 0) == (m_inlinersBufferSize == 0)); 
+    _ASSERTE((m_inlineeIndexSize == 0) == (m_inlinersBufferSize == 0));
 
     if (m_inlineeIndexSize != 0 && m_inlinersBufferSize != 0)
     {
@@ -442,7 +442,7 @@ void PersistentInlineTrackingMapNGen::Save(DataImage *image, InlineTrackingMap* 
         m_inlinersBuffer = new (image->GetHeap()) BYTE[m_inlinersBufferSize];
         inlinersBuffer.Copy(m_inlinersBuffer, inlinersBuffer.Begin(), m_inlinersBufferSize);
 
-        //Sort m_inlineeIndex so we can later use binary search 
+        //Sort m_inlineeIndex so we can later use binary search
         util::sort(m_inlineeIndex, m_inlineeIndex + m_inlineeIndexSize);
 
         //Making sure all this memory actually gets saved into NGEN image
@@ -492,7 +492,7 @@ void PersistentInlineTrackingMapR2R::Save(ZapHeap* pHeap, SBuffer* pSaveTarget, 
 
     InliningHeader header;
     header.SizeOfInlineeIndex = inlineeIndex.GetCount() * sizeof(ZapInlineeRecord);
-    
+
     pSaveTarget->Insert(pSaveTarget->End(), SBuffer(SBuffer::Immutable, (const BYTE*) &header, sizeof(header)));
     DWORD unused = 0;
     pSaveTarget->Insert(pSaveTarget->End(), SBuffer(SBuffer::Immutable, (const BYTE*) inlineeIndex.GetElements(), header.SizeOfInlineeIndex));
@@ -505,7 +505,7 @@ void PersistentInlineTrackingMapR2R::Save(ZapHeap* pHeap, SBuffer* pSaveTarget, 
 
 #endif //FEATURE_NATIVE_IMAGE_GENERATION
 
-BOOL PersistentInlineTrackingMapR2R::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, 
+BOOL PersistentInlineTrackingMapR2R::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer,
 	                                         AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap)
 {
     InliningHeader* pHeader = (InliningHeader*)pBuffer;
@@ -558,7 +558,7 @@ COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, 
         //No inlines saved in this image.
         return 0;
     }
-    if(inlineeOwnerMod != m_module) 
+    if(inlineeOwnerMod != m_module)
     {
         // no cross module inlining (yet?)
         return 0;
@@ -585,7 +585,7 @@ COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, 
 
         RID inlinerRid = 0;
         // Reading inliner RIDs one by one, each RID is represented as an adjustment (diff) to the previous one.
-        // Adding inliners module and coping to the output buffer 
+        // Adding inliners module and coping to the output buffer
         for (DWORD i = 0; i < inlinersCount && outputIndex < inlinersSize; i++)
         {
             inlinerRid += stream.ReadEncodedU32();

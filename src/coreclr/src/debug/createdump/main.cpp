@@ -4,12 +4,12 @@
 
 #include "createdump.h"
 
-const char* g_help = "createdump [options] pid\n" 
+const char* g_help = "createdump [options] pid\n"
 "-f, --name - dump path and file name. The pid can be placed in the name with %d. The default is '/tmp/coredump.%d'\n"
 "-n, --normal - create minidump.\n"
-"-h, --withheap - create minidump with heap (default).\n" 
-"-t, --triage - create triage minidump.\n" 
-"-u, --full - create full core dump.\n" 
+"-h, --withheap - create minidump with heap (default).\n"
+"-t, --triage - create triage minidump.\n"
+"-u, --full - create full core dump.\n"
 "-d, --diag - enable diagnostic messages.\n";
 
 bool CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo);
@@ -69,7 +69,7 @@ int __cdecl main(const int argc, const char* argv[])
     }
 
     if (pid != 0)
-    { 
+    {
         if (dumpPathTemplate == nullptr)
         {
             char tmpPath[MAX_LONGPATH];
@@ -97,7 +97,7 @@ int __cdecl main(const int argc, const char* argv[])
                 exitCode = -1;
             }
         }
-        else 
+        else
         {
             exitCode = -1;
         }

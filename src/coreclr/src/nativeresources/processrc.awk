@@ -1,5 +1,5 @@
-# Parse string resources from Windows native resource file 
-# and pass them to the writestringentry function that 
+# Parse string resources from Windows native resource file
+# and pass them to the writestringentry function that
 # is responsible for writing the resource id and string
 # to a platform specific resource file.
 # A script containing this function needs to be specified
@@ -28,7 +28,7 @@ BEGIN {
     }
     else if (inBeginEnd && $1 != "")
     {
-        # combine all items until the first string and remove them 
+        # combine all items until the first string and remove them
         # from the line
         i = 1
         expression = ""

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
-#if defined(__i386) || defined(__ARM_EABI__) 
+#if defined(__i386) || defined(__ARM_EABI__)
 typedef Elf32_auxv_t elf_aux_entry;
 #define PRIx PRIx32
 #define PRIu PRIu32

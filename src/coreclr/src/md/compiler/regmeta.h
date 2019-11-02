@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RegMeta.h
-// 
+//
 
 //
-// This is the code for the MetaData coclass including both the emit and 
+// This is the code for the MetaData coclass including both the emit and
 // import API's.
 //
 // This provides an implementation of the public Metadata interfaces via the RegMeta class. It's
@@ -28,7 +28,7 @@
 
 class FilterManager;
 
-// Support for symbol binding meta data.  This is a custom value hung off of 
+// Support for symbol binding meta data.  This is a custom value hung off of
 // the Module entry.  The CORDBG_SYMBOL_URL needs to be allocated on top of
 // a buffer large enough to hold it.
 //
@@ -48,7 +48,7 @@ struct CORDBG_SYMBOL_URL
     {
         return (ULONG)(sizeof(GUID) + ((wcslen(rcName) + 1) * 2));
     }
-    
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
@@ -107,7 +107,7 @@ class CCustAttrHash : public CClosedHashEx<CCustAttrHashKey, CCustAttrHash>
     using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Status;
     using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::SetStatus;
     using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::GetKey;
-    
+
 public:
     CCustAttrHash(int iBuckets=37) : CClosedHashEx<CCustAttrHashKey,CCustAttrHash>(iBuckets) {}
     unsigned int Hash(const T *pData);
@@ -128,50 +128,50 @@ struct CaNamedArg;
 #endif
 
 // The RegMeta class implements the public metadata interfaces.
-// 
+//
 // Notes:
 //    This object is primarily consumed by tools, not the runtime itself. (The runtime should be
 //    using the internal metadata interfaces, not the public ones implemented here).
 //    The VM uses it for IMetaDataEmit* interfaces. Define* methods are not exposed to the VM
 //    (eg for Reflection) otherwise.
 //    This object is a thin veneer exposing a public interface on top of the real storage.
-//    The runtime also has internal interfaces to access that storage. 
+//    The runtime also has internal interfaces to access that storage.
 //
 //    This is included outside of md\compiler; so be very careful about using #ifdef to change class layout
 //    (adding removing interfaces changes class layout)
-// 
-//    This exists in both the full and standalone versions of the metadata. 
+//
+//    This exists in both the full and standalone versions of the metadata.
 //
 
 class RegMeta :
-    public IMetaDataImport2, 
-    public IMetaDataAssemblyImport, 
+    public IMetaDataImport2,
+    public IMetaDataAssemblyImport,
     public IMetaDataTables2
 
-    , public IMetaDataInfo 
+    , public IMetaDataInfo
 
 #ifdef FEATURE_METADATA_EMIT
-    , public IMetaDataEmit2 
-    , public IMetaDataAssemblyEmit 
+    , public IMetaDataEmit2
+    , public IMetaDataAssemblyEmit
 #endif
 
 #ifdef FEATURE_METADATA_EMIT_ALL
-    , public IMetaDataFilter 
+    , public IMetaDataFilter
 #endif
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
-    , public IMetaDataHelper 
+    , public IMetaDataHelper
     , public IMDInternalEmit
     , public IGetIMDInternalImport
 #endif
 
 #if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
-    , public IMetaDataEmitHelper 
+    , public IMetaDataEmitHelper
 #endif
 
 #if defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)
-    , public IMetaDataCorProfileData 
-    , public IMDInternalMetadataReorderingOptions 
+    , public IMetaDataCorProfileData
+    , public IMDInternalMetadataReorderingOptions
 #endif
     , public IMDCommon
 {
@@ -194,7 +194,7 @@ public:
 // IUnknown methods
 //*****************************************************************************
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
-    STDMETHODIMP_(ULONG) AddRef(void); 
+    STDMETHODIMP_(ULONG) AddRef(void);
     STDMETHODIMP_(ULONG) Release(void);
 
 //*****************************************************************************
@@ -293,7 +293,7 @@ public:
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
         ULONG       *pcTokens);             // [OUT] Put # put here.
 
-    
+
     STDMETHODIMP EnumParams(                // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdMethodDef mb,                     // [IN] MethodDef to scope the enumeration.
@@ -459,12 +459,12 @@ public:
         mdTypeSpec typespec,                // [IN] TypeSpec token.
         PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to TypeSpec signature
         ULONG       *pcbSig);               // [OUT] return size of signature.
-    
+
     STDMETHODIMP GetNameFromToken(          // S_OK or error.
         mdToken     tk,                     // [IN] Token to get name from.  Must have a name.
         MDUTF8CSTR  *pszUtf8NamePtr);       // [OUT] Return pointer to UTF8 name in heap.
 
-    STDMETHODIMP EnumUnresolvedMethods(     // S_OK, S_FALSE, or error. 
+    STDMETHODIMP EnumUnresolvedMethods(     // S_OK, S_FALSE, or error.
         HCORENUM    *phEnum,                // [IN|OUT] Pointer to the enum.
         mdToken     rMethods[],             // [OUT] Put MemberDefs here.
         ULONG       cMax,                   // [IN] Max MemberDefs to put.
@@ -535,17 +535,17 @@ public:
 
     STDMETHODIMP GetMemberProps(
         mdToken     mb,                     // The member for which to get props.
-        mdTypeDef   *pClass,                // Put member's class here. 
+        mdTypeDef   *pClass,                // Put member's class here.
         __out_ecount_opt (cchMember) LPWSTR szMember, // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
-        ULONG       *pchMember,             // Put actual size here 
+        ULONG       *pchMember,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         ULONG       *pulCodeRVA,            // [OUT] codeRVA
         DWORD       *pdwImplFlags,          // [OUT] Impl. Flags
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcbValue);             // [OUT] size of constant value
 
     STDMETHODIMP GetFieldProps(
@@ -553,25 +553,25 @@ public:
         mdTypeDef   *pClass,                // Put field's class here.
         __out_ecount_opt (cchField) LPWSTR szField, // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
-        ULONG       *pchField,              // Put actual size here 
+        ULONG       *pchField,              // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob,            // [OUT] actual size of signature blob
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppValue,             // [OUT] constant value 
+        UVCP_CONSTANT *ppValue,             // [OUT] constant value
         ULONG       *pcbValue);             // [OUT] size of constant value
 
-    STDMETHODIMP GetPropertyProps(          // S_OK, S_FALSE, or error. 
+    STDMETHODIMP GetPropertyProps(          // S_OK, S_FALSE, or error.
         mdProperty  prop,                   // [IN] property token
-        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion. 
+        mdTypeDef   *pClass,                // [OUT] typedef containing the property declarion.
         LPCWSTR     szProperty,             // [OUT] Property name
         ULONG       cchProperty,            // [IN] the count of wchar of szProperty
         ULONG       *pchProperty,           // [OUT] actual count of wchar for property name
         DWORD       *pdwPropFlags,          // [OUT] property flags.
-        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob 
+        PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
         ULONG       *pbSig,                 // [OUT] count of bytes in *ppvSig
         DWORD       *pdwCPlusTypeFlag,      // [OUT] flag for value type. selected ELEMENT_TYPE_*
-        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value 
+        UVCP_CONSTANT *ppDefaultValue,      // [OUT] constant value
         ULONG       *pcbValue,              // [OUT] size of constant value
         mdMethodDef *pmdSetter,             // [OUT] setter method of the property
         mdMethodDef *pmdGetter,             // [OUT] getter method of the property
@@ -602,7 +602,7 @@ public:
         void const  *pvSig,                 // [IN] Pointer to signature.
         ULONG       cbSig,                  // [IN] Count of signature bytes.
         ULONG       *pCallConv);            // [OUT] Put calling conv here (see CorPinvokemap).
-    
+
     STDMETHODIMP IsGlobal(                  // S_OK or error.
         mdToken     pd,                     // [IN] Type, Field, or Method token.
         int         *pbGlobal);             // [OUT] Put 1 if global, 0 otherwise.
@@ -651,7 +651,7 @@ public:
         mdMethodSpec rMethodSpecs[],        // [OUT] Put MethodSpecs here.
         ULONG       cMax,                   // [IN] Max tokens to put.
         ULONG       *pcMethodSpecs);        // [OUT] Put actual count here.
-    
+
     STDMETHODIMP GetPEKind(                 // S_OK or error.
         DWORD* pdwPEKind,                   // [OUT] The kind of PE (0 - not a PE)
         DWORD* pdwMAchine);                 // [OUT] Machine as defined in NT header
@@ -660,7 +660,7 @@ public:
         __out_ecount_opt (cchBufSize) LPWSTR pwzBuf, // [OUT] Put version string here.
         DWORD       cchBufSize,             // [IN] size of the buffer, in wide chars
         DWORD       *pchBufSize);           // [OUT] Size of the version string, wide chars, including terminating nul.
-    
+
 //*****************************************************************************
 // IMetaDataAssemblyImport
 //*****************************************************************************
@@ -781,7 +781,7 @@ public:
     STDMETHODIMP SetMethodImplFlags(        // [IN] S_OK or error.
         mdMethodDef md,                     // [IN] Method for which to set impl flags
         DWORD       dwImplFlags);
-    
+
     STDMETHODIMP SetFieldRVA(               // [IN] S_OK or error.
         mdFieldDef  fd,                     // [IN] Field for which to set offset
         ULONG       ulRVA);                 // [IN] The offset
@@ -873,7 +873,7 @@ public:
         PCCOR_SIGNATURE pvSig,              // [IN] ArraySpec Signature to define.
         ULONG       cbSig,                  // [IN] Size of signature data.
         mdTypeSpec *ptypespec);             // [OUT] returned TypeSpec token.
-        
+
     STDMETHODIMP SaveToMemory(              // S_OK or error.
         void        *pbData,                // [OUT] Location to write data.
         ULONG       cbData);                // [IN] Max size of data buffer.
@@ -895,7 +895,7 @@ public:
     STDMETHODIMP DefineNestedType(          // S_OK or error.
         LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
         DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
         mdToken     rtkImplements[],        // [IN] Implements interfaces
         mdTypeDef   tdEncloser,             // [IN] TypeDef token of the enclosing type.
         mdTypeDef   *ptd);                  // [OUT] Put TypeDef token here
@@ -949,35 +949,35 @@ public:
         void const  *pCustomAttribute,      // [IN] The custom value data.
         ULONG       cbCustomAttribute);     // [IN] The custom value data length.
 
-    STDMETHODIMP DefineField(               // S_OK or error. 
+    STDMETHODIMP DefineField(               // S_OK or error.
         mdTypeDef   td,                     // Parent TypeDef
         LPCWSTR     szName,                 // Name of member
         DWORD       dwFieldFlags,           // Member attributes
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature 
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
         ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
         mdFieldDef  *pmd);                  // [OUT] Put member token here
 
-    STDMETHODIMP DefineProperty( 
+    STDMETHODIMP DefineProperty(
         mdTypeDef   td,                     // [IN] the class/interface on which the property is being defined
         LPCWSTR     szProperty,             // [IN] Name of the property
-        DWORD       dwPropFlags,            // [IN] CorPropertyAttr 
-        PCCOR_SIGNATURE pvSig,              // [IN] the required type signature 
-        ULONG       cbSig,                  // [IN] the size of the type signature blob 
+        DWORD       dwPropFlags,            // [IN] CorPropertyAttr
+        PCCOR_SIGNATURE pvSig,              // [IN] the required type signature
+        ULONG       cbSig,                  // [IN] the size of the type signature blob
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
         ULONG       cchValue,               // [IN] size of constant value (string, in wide chars).
-        mdMethodDef mdSetter,               // [IN] optional setter of the property 
-        mdMethodDef mdGetter,               // [IN] optional getter of the property 
+        mdMethodDef mdSetter,               // [IN] optional setter of the property
+        mdMethodDef mdGetter,               // [IN] optional getter of the property
         mdMethodDef rmdOtherMethods[],      // [IN] an optional array of other methods
         mdProperty  *pmdProp);              // [OUT] output property token
 
     STDMETHODIMP DefineParam(
         mdMethodDef md,                     // [IN] Owning method
-        ULONG       ulParamSeq,             // [IN] Which param 
-        LPCWSTR     szName,                 // [IN] Optional param name 
+        ULONG       ulParamSeq,             // [IN] Which param
+        LPCWSTR     szName,                 // [IN] Optional param name
         DWORD       dwParamFlags,           // [IN] Optional param flags
         DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
         void const  *pValue,                // [IN] constant value
@@ -1066,7 +1066,7 @@ public:
     STDMETHODIMP DefineTypeDef(             // S_OK or error.
         LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
         DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
         mdToken     rtkImplements[],        // [IN] Implements interfaces
         mdTypeDef   *ptd);                  // [OUT] Put TypeDef token here
 
@@ -1158,7 +1158,7 @@ public:
         LPCWSTR     szName,                 // [IN] Name of the assembly.
         const ASSEMBLYMETADATA *pMetaData,  // [IN] Assembly MetaData.
         DWORD       dwAssemblyFlags);       // [IN] Flags.
-    
+
     STDMETHODIMP SetAssemblyRefProps(       // S_OK or error.
         mdAssemblyRef ar,                   // [IN] AssemblyRefToken.
         const void  *pbPublicKeyOrToken,    // [IN] Public key or token of the assembly.
@@ -1208,7 +1208,7 @@ public:
 
 //*****************************************************************************
 // IMetaDataEmitHelper
-//***************************************************************************** 
+//*****************************************************************************
     STDMETHODIMP DefineMethodSemanticsHelper(
         mdToken     tkAssociation,          // [IN] property or event token
         DWORD       dwFlags,                // [IN] semantics
@@ -1219,11 +1219,11 @@ public:
         ULONG       ulOffset);              // [IN] the offset for the field
 
     STDMETHODIMP DefineEventHelper(
-        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined 
+        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
         LPCWSTR     szEvent,                // [IN] Name of the event
         DWORD       dwEventFlags,           // [IN] CorEventAttr
-        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class 
-        mdEvent     *pmdEvent);             // [OUT] output event token 
+        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
+        mdEvent     *pmdEvent);             // [OUT] output event token
 
     STDMETHODIMP AddDeclarativeSecurityHelper(
         mdToken     tk,                     // [IN] Parent token (typedef/methoddef)
@@ -1234,11 +1234,11 @@ public:
 
     STDMETHODIMP SetResolutionScopeHelper(  // Return hresult.
         mdTypeRef   tr,                     // [IN] TypeRef record to update
-        mdToken     rs);                    // [IN] new ResolutionScope 
+        mdToken     rs);                    // [IN] new ResolutionScope
 
     STDMETHODIMP SetManifestResourceOffsetHelper(  // Return hresult.
         mdManifestResource mr,              // [IN] The manifest token
-        ULONG       ulOffset);              // [IN] new offset 
+        ULONG       ulOffset);              // [IN] new offset
 
     STDMETHODIMP SetTypeParent(             // Return hresult.
         mdTypeDef   td,                     // [IN] Type definition
@@ -1254,7 +1254,7 @@ public:
 
     STDMETHODIMP ChangeMvid(                // S_OK or error.
         REFGUID newMvid);                   // GUID to use as the MVID
-    
+
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode);
 
@@ -1291,7 +1291,7 @@ public:
         ULONG       cbTranslatedSigMax,
         ULONG       *pcbTranslatedSig);     // [OUT] count of bytes in the translated signature
 #endif //!FEATURE_METADATA_EMIT
-    
+
     //*****************************************************************************
     // IGetIMDInternalImport methods
     //*****************************************************************************
@@ -1304,42 +1304,42 @@ public:
 //*****************************************************************************
 // IMetaDataTables
 //*****************************************************************************
-    
+
     // Fills size (*pcbStringsHeapSize) of internal strings heap (#String).
     // Returns S_OK or error code. Fills *pcbStringsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetStringHeapSize.
     STDMETHODIMP GetStringHeapSize(
         __out ULONG *pcbStringsHeapSize);       // [OUT] Size of the string heap.
-    
+
     // Fills size (*pcbBlobsHeapSize) of blobs heap (#Blob).
     // Returns S_OK or error code. Fills *pcbBlobsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetBlobHeapSize.
     STDMETHODIMP GetBlobHeapSize(
         __out ULONG *pcbBlobsHeapSize);         // [OUT] Size of the blob heap.
-    
+
     // Fills size (*pcbGuidsHeapSize) of guids heap (#GUID).
     // Returns S_OK or error code. Fills *pcbGuidsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetGuidHeapSize.
     STDMETHODIMP GetGuidHeapSize(
         __out ULONG *pcbGuidsHeapSize);         // [OUT] Size of the Guid heap.
-    
+
     // Fills size (*pcbUserStringsHeapSize) of user strings heap (#US) (referenced from IL).
     // Returns S_OK or error code. Fills *pcbUserStringsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetUserStringHeapSize.
-    // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified 
+    // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified
     // in CLI ECMA specification.
     STDMETHODIMP GetUserStringHeapSize(
         __out ULONG *pcbUserStringsHeapSize);   // [OUT] Size of the user string heap.
-    
+
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetNumTables(
         __out ULONG *pcTables);         // [OUT] Count of tables.
-    
+
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetTableIndex(
               ULONG  token,             // [IN] Token for which to get table index.
         __out ULONG *pixTbl);           // [OUT] Put table index here.
-    
+
     // Implements public API code:IMetaDataTables::GetTableInfo.
     STDMETHODIMP GetTableInfo(
         ULONG        ixTbl,             // [IN] Which table.
@@ -1348,7 +1348,7 @@ public:
         ULONG       *pcCols,            // [OUT] Number of columns in each row.
         ULONG       *piKey,             // [OUT] Key column, or -1 if none.
         const char **ppName);           // [OUT] Name of the table.
-    
+
     // Implements public API code:IMetaDataTables::GetColumnInfo.
     STDMETHODIMP GetColumnInfo(
         ULONG        ixTbl,             // [IN] Which Table.
@@ -1357,27 +1357,27 @@ public:
         ULONG       *pcbCol,            // [OUT] Size of a column, bytes.
         ULONG       *pType,             // [OUT] Type of the column.
         const char **ppName);           // [OUT] Name of the Column.
-    
+
     // Implements public API code:IMetaDataTables::GetCodedTokenInfo.
     STDMETHODIMP GetCodedTokenInfo(
         ULONG        ixCdTkn,           // [IN] Which kind of coded token.
         ULONG       *pcTokens,          // [OUT] Count of tokens.
         ULONG      **ppTokens,          // [OUT] List of tokens.
         const char **ppName);           // [OUT] Name of the CodedToken.
-    
+
     // Implements public API code:IMetaDataTables::GetRow.
     STDMETHODIMP GetRow(
         ULONG  ixTbl,                   // [IN] Which table.
         ULONG  rid,                     // [IN] Which row.
         void **ppRow);                  // [OUT] Put pointer to row here.
-    
+
     // Implements public API code:IMetaDataTables::GetColumn.
     STDMETHODIMP GetColumn(
         ULONG  ixTbl,                   // [IN] Which table.
         ULONG  ixCol,                   // [IN] Which column.
         ULONG  rid,                     // [IN] Which row.
         ULONG *pVal);                   // [OUT] Put the column contents here.
-    
+
     //#GetString_IMetaDataTables
     // Fills internal null-terminated string (*pszString) at index ixString from string heap (#String).
     // Returns S_OK (even for index 0) or error code (if index is invalid, fills *pszString with NULL then).
@@ -1385,7 +1385,7 @@ public:
     STDMETHODIMP GetString(
         ULONG        ixString,                  // [IN] Value from a string column.
         const char **pszString);                // [OUT] Put a pointer to the string here.
-    
+
     //#GetBlob_IMetaDataTables
     // Fills blob entry (*ppvData of size *pcbDataSize) at index ixBlob from blob heap (#Blob).
     // Returns S_OK (even for index 0) or error code (if index is invalid, fills NULL and o then).
@@ -1394,19 +1394,19 @@ public:
         ULONG        ixBlob,                    // [IN] Value from a blob column.
         ULONG       *pcbDataSize,               // [OUT] Put size of the blob here.
         const void **ppvData);                  // [OUT] Put a pointer to the blob here.
-    
+
     //#GetGuid_IMetaDataTables
     // Fills guid (*ppGuid) at index ixGuid from guid heap (#GUID).
-    // Returns S_OK and fills *ppGuid. Returns S_OK even for (invalid) index 0 (fills *ppGuid with pointer 
+    // Returns S_OK and fills *ppGuid. Returns S_OK even for (invalid) index 0 (fills *ppGuid with pointer
     // to zeros then).
     // Retruns error code (if index is invalid except 0, fills NULL and o then).
     // Implements public API code:IMetaDataTables::GetGuid.
-    // Backward compatibility: returns S_OK even if the index is 0 which is invalid as specified in CLI ECMA 
+    // Backward compatibility: returns S_OK even if the index is 0 which is invalid as specified in CLI ECMA
     // specification. In that case returns pointer to GUID from zeros.
     STDMETHODIMP GetGuid(
         ULONG        ixGuid,                    // [IN] Value from a guid column.
         const GUID **ppGuid);                   // [OUT] Put a pointer to the GUID here.
-    
+
     //#GetUserString_IMetaDataTables
     // Fills user string (*ppvData of size *pcbDataSize) at index ixUserString.
     // Returns S_OK (even for index 0) or error code (if index is invalid, fills NULL and o then).
@@ -1415,16 +1415,16 @@ public:
                         ULONG        ixUserString,  // [IN] Value from a UserString column.
         __out           ULONG       *pcbData,       // [OUT] Put size of the UserString here.
         __deref_out_opt const void **ppData);       // [OUT] Put a pointer to the UserString here.
-    
+
     //#GetNextString_IMetaDataTables
-    // Fills index of string (*pixNextString) from the internal strings heap (#String) starting behind 
+    // Fills index of string (*pixNextString) from the internal strings heap (#String) starting behind
     // string at index ixString.
     // Returns S_OK or S_FALSE (if either index is invalid). Fills *pixNextString with 0 on S_FALSE.
     // Implements public API code:IMetaDataTables::.GetNextString.
     STDMETHODIMP GetNextString(
               ULONG  ixString,                  // [IN] Value from a string column.
         __out ULONG *pixNextString);            // [OUT] Put the index of the next string here.
-    
+
     //#GetNextBlob_IMetaDataTables
     // Fills index of blob (*pixNextBlob) from the blobs heap (#Blob) starting behind blob at index ixBlob.
     // Returns S_OK or S_FALSE (if either index is invalid). Fills *pixNextBlob with 0 on S_FALSE.
@@ -1432,33 +1432,33 @@ public:
     STDMETHODIMP GetNextBlob(
               ULONG  ixBlob,                    // [IN] Value from a blob column.
         __out ULONG *pixNextBlob);              // [OUT] Put the index of the next blob here.
-    
+
     //#GetNextGuid_IMetaDataTables
     // Fills index of guid (*pixNextGuid) from the guids heap (#GUID) starting behind guid at index ixGuid.
     // Returns S_OK or S_FALSE (if the new index is invalid). Fills *pixNextGuid with 0 on S_FALSE.
     // Implements public API code:IMetaDataTables::GetNextGuid.
-    // Backward compatibility: returns S_OK even if the guid index (ixGuid) is 0 which is invalid as 
+    // Backward compatibility: returns S_OK even if the guid index (ixGuid) is 0 which is invalid as
     // specified in CLI ECMA specification.
     STDMETHODIMP GetNextGuid(
               ULONG  ixGuid,                    // [IN] Value from a guid column.
         __out ULONG *pixNextGuid);              // [OUT] Put the index of the next guid here.
-    
+
     //#GetNextUserString_IMetaDataTables
-    // Fills index of user string (*pixNextUserString) from the user strings heap (#US) starting behind string 
+    // Fills index of user string (*pixNextUserString) from the user strings heap (#US) starting behind string
     // at index ixUserString.
     // Returns S_OK or S_FALSE (if either index is invalid). Fills *pixNextUserString with 0 on S_FALSE.
     // Implements public API code:IMetaDataTables::GetNextUserString.
-    // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified 
+    // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified
     // in CLI ECMA specification.
     STDMETHODIMP GetNextUserString(
               ULONG  ixUserString,              // [IN] Value from a UserString column.
         __out ULONG *ixpNextUserString);        // [OUT] Put the index of the next user string here.
-    
+
     // Implements public API code:IMetaDataTables2::GetMetaDataStorage.
     STDMETHODIMP GetMetaDataStorage(
         const void **ppvMd,                     // [OUT] put pointer to MD section here (aka, 'BSJB').
         ULONG       *pcbMd);                    // [OUT] put size of the stream here.
-    
+
     // Implements public API code:IMetaDataTables2::GetMetaDataStreamInfo.
     STDMETHODIMP GetMetaDataStreamInfo(         // Get info about the MD stream.
         ULONG        ix,                        // [IN] Stream ordinal desired.
@@ -1470,13 +1470,13 @@ public:
 //*****************************************************************************
 // IMetaDataInfo
 //*****************************************************************************
-    
-    // Returns the memory region of the mapped file and type of its mapping. The choice of the file mapping 
+
+    // Returns the memory region of the mapped file and type of its mapping. The choice of the file mapping
     // type for each scope is CLR implementation specific and user cannot explicitly set it.
-    // 
-    // The memory is valid only as long as the underlying MetaData scope is opened (there's a reference to 
+    //
+    // The memory is valid only as long as the underlying MetaData scope is opened (there's a reference to
     // a MetaData interface for this scope).
-    // 
+    //
     // Returns S_OK, COR_E_NOTSUPPORTED (.obj files, etc.), or E_INVALIDARG (if NULL is passed).
     // Implements public API code:IMetaDataInfo::GetFileMapping.
     STDMETHODIMP GetFileMapping(
@@ -1523,7 +1523,7 @@ public:
 
 
     // returns the "built for" version of a metadata scope.
-    __checkReturn 
+    __checkReturn
     STDMETHOD(GetVersionString)(    // S_OK or error.
         LPCSTR      *pVer);         // [OUT] Put version string here.
 
@@ -1580,7 +1580,7 @@ public:
     FORCEINLINE CMiniMdRW* GetMiniMd() { return &m_pStgdb->m_MiniMd; }
 
 //*****************************************************************************
-    
+
     bool IsTypeDefDirty() { return m_fIsTypeDefDirty;}
     void SetTypeDefDirty(bool fDirty) { m_fIsTypeDefDirty = fDirty;}
 
@@ -1643,11 +1643,11 @@ protected:
         DWORD       dwImplFlags);
 
     HRESULT _DefineEvent(          // Return hresult.
-        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined 
+        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
         LPCWSTR     szEvent,                // [IN] Name of the event
         DWORD       dwEventFlags,           // [IN] CorEventAttr
-        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class 
-        mdEvent     *pmdEvent);             // [OUT] output event token 
+        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
+        mdEvent     *pmdEvent);             // [OUT] output event token
 
     // Creates and sets a row in the InterfaceImpl table.  Optionally clear
     // pre-existing records for the owning class.
@@ -1655,7 +1655,7 @@ protected:
         mdToken     rTk[],                  // Array of TypeRef or TypeDef tokens for implemented interfaces.
         mdTypeDef   td,                     // Implementing TypeDef.
         BOOL        bClear);                // Specifies whether to clear the existing records.
- 
+
     // Sets flags, name and constraints for a single GenericParam record
     HRESULT _SetGenericParamProps(      // S_OK or error.
         mdGenericParam  tkGP,               // [IN] Formal parameter token
@@ -1695,7 +1695,7 @@ protected:
         DWORD       dwMappingFlags,         // [IN] Flags used for mapping.
         LPCWSTR     szImportName,           // [IN] Import name.
         mdModuleRef mrImportDLL);           // [IN] ModuleRef token for the target DLL.
-    
+
     HRESULT _DefineSetConstant(             // Return hresult.
         mdToken     tk,                     // [IN] Parent token.
         DWORD       dwCPlusTypeFlag,        // [IN] Flag for the value type, selected ELEMENT_TYPE_*
@@ -1720,11 +1720,11 @@ protected:
         mdTypeDef   td,                     // [IN] The class.
         ULONG       dwPackSize,             // [IN] The packing size.
         ULONG       ulClassSize);           // [IN, OPTIONAL] The class size.
-    
+
     HRESULT _SetFieldOffset(                // S_OK or error.
         mdFieldDef  fd,                     // [IN] The field.
         ULONG       ulOffset);              // [IN] The offset of the field.
-    
+
     HRESULT _SetPropertyProps(              // S_OK or error.
         mdProperty  pr,                     // [IN] Property token.
         DWORD       dwPropFlags,            // [IN] CorPropertyAttr.
@@ -1751,7 +1751,7 @@ protected:
         LPCWSTR     szName,                 // [IN] Name of the assembly.
         const ASSEMBLYMETADATA *pMetaData,  // [IN] Assembly MetaData.
         DWORD       dwAssemblyFlags);       // [IN] Flags.
-    
+
     HRESULT _SetAssemblyRefProps(           // S_OK or error.
         mdAssemblyRef ar,                   // [IN] AssemblyRefToken.
         const void  *pbPublicKeyOrToken,    // [IN] Public key or token of the assembly.
@@ -1779,11 +1779,11 @@ protected:
         mdToken     tkImplementation,       // [IN] mdFile or mdAssemblyRef that provides the resource.
         DWORD       dwOffset,               // [IN] Offset to the beginning of the resource within the file.
         DWORD       dwResourceFlags);       // [IN] Flags.
-    
+
     HRESULT _DefineTypeDef(                 // S_OK or error.
         LPCWSTR     szTypeDef,              // [IN] Name of TypeDef
         DWORD       dwTypeDefFlags,         // [IN] CustomAttribute flags
-        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref 
+        mdToken     tkExtends,              // [IN] extends this TypeDef or typeref
         mdToken     rtkImplements[],        // [IN] Implements interfaces
         mdTypeDef   tdEncloser,             // [IN] TypeDef token of the Enclosing Type.
         mdTypeDef   *ptd);                  // [OUT] Put TypeDef token here
@@ -1792,11 +1792,11 @@ protected:
         mdToken     tk,                     // [IN] given a fieldDef or paramDef token
         PCCOR_SIGNATURE pvNativeType,       // [IN] native type specification
         ULONG       cbNativeType);          // [IN] count of bytes of pvNativeType
-    
+
     HRESULT _IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
         mdToken     tkType,                 // [IN] Token of custom attribute's type.
         int         *pca);                  // [OUT] Put value from KnownCustAttr enum here.
-    
+
     HRESULT _DefineModuleRef(               // S_OK or error.
         LPCWSTR     szName,                 // [IN] DLL name
         mdModuleRef *pmur);                 // [OUT] returned module ref token
@@ -1807,7 +1807,7 @@ protected:
         ULONG       cbData,                 // [IN] Count of bytes in the data.
         int         ca,                     // [IN] Value from KnownCustAttr enum.
         int         *bKeep);                // [OUT} Keep the known CA?
-    
+
     HRESULT _HandleNativeTypeCustomAttribute(// S_OK or error.
         mdToken     tkObj,                  // Object being attributed.
         CaArg       *pArgs,                 // Pointer to args.
@@ -1838,7 +1838,7 @@ protected:
         mdToken     rTk[],                  // Array of TypeRef or TypeDef tokens for implemented interfaces.
         mdTypeDef   td,                     // Implementing TypeDef.
         CQuickBytes *pcqbTk);               // Quick Byte object for placing the array of unique tokens.
-        
+
     // Helper : convert a text field signature to a com format
     HRESULT _ConvertTextElementTypeToComSig(// Return hresult.
         IMetaDataEmit *emit,                // [IN] emit interface.
@@ -1847,22 +1847,22 @@ protected:
         CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
         ULONG       cbStart,                // [IN] bytes that are already in pqbNewSig
         ULONG       *pcbCount);             // [OUT] count of bytes put into the QuickBytes buffer
-    
+
     HRESULT _CheckCmodForCallConv(          // S_OK, -1 if found, or error.
         PCCOR_SIGNATURE pbSig,              // [IN] Signature to check.
         ULONG       *pcbTotal,              // [OUT] Put bytes consumed here.
         ULONG       *pCallConv);            // [OUT] If found, put calling convention here.
-    
+
     HRESULT _SearchOneArgForCallConv(		// S_OK, -1 if found, or error.
         PCCOR_SIGNATURE pbSig,              // [IN] Signature to check.
         ULONG       *pcbTotal,              // [OUT] Put bytes consumed here.
         ULONG       *pCallConv);            // [OUT] If found, put calling convention here.
-    
 
-    
+
+
     int inline IsGlobalMethodParent(mdTypeDef *ptd)
     {
-        if (IsGlobalMethodParentTk(*ptd)) 
+        if (IsGlobalMethodParentTk(*ptd))
         {
             *ptd = m_tdModule;
             return (true);
@@ -1889,7 +1889,7 @@ protected:
 
     FORCEINLINE BOOL CheckDups(CorCheckDuplicatesFor checkdup)
     {
-        return ((m_OptionValue.m_DupCheck & checkdup) || 
+        return ((m_OptionValue.m_DupCheck & checkdup) ||
             (m_OptionValue.m_UpdateMode == MDUpdateIncremental ||
              m_OptionValue.m_UpdateMode == MDUpdateENC) );
     }
@@ -1970,7 +1970,7 @@ protected:
 
 
 protected:
-    
+
     // This scope's Stgdb. This stores the actual data which the class then exposes.
     // This storage may be shared by an internal metadata object too.
     // This is read-write so that the RegMeta class can implement the emit interfaces.
@@ -1979,7 +1979,7 @@ protected:
     CLiteWeightStgdbRW  *m_pStgdbFreeList;  // This scope's Stgdb.
     mdTypeDef   m_tdModule;                 // The global module.
     IUnknown    *m_pUnk;                    // The IUnknown that owns the Stgdb.
-    FilterManager *m_pFilterManager;        // Contains helper functions for marking 
+    FilterManager *m_pFilterManager;        // Contains helper functions for marking
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
     // Pointer to internal interface. This is a weak reference (it doesn't addref/release).
@@ -1996,19 +1996,19 @@ protected:
     bool        m_fIsTypeDefDirty;          // This flag is set when the TypeRef to TypeDef map is not valid
     bool        m_fIsMemberDefDirty;        // This flag is set when the MemberRef to MemberDef map is not valid
     bool        m_fStartedEE;               // Set when EE runtime has been started up.
-    IUnknown    *m_pAppDomain;              // AppDomain in which managed security code will be run. 
+    IUnknown    *m_pAppDomain;              // AppDomain in which managed security code will be run.
 
 private:
     ULONG       m_OpenFlags;                // Open time flags.
 
     LONG        m_cRef;                     // Ref count.
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
-    
+
 #ifdef FEATURE_METADATA_PERF_STATS
     MDCompilerPerf m_MDCompilerPerf;        // Compiler perf object to store all stats.
 #endif
 
-    // If true, cached in list of global scopes. This is very dangerous because it may allow 
+    // If true, cached in list of global scopes. This is very dangerous because it may allow
     // unpredictable state sharing between seemingly unrelated dispensers.
     bool        m_bCached;
 
@@ -2023,7 +2023,7 @@ private:
 
     CorValidatorModuleType      m_ModuleType;
     CCustAttrHash               m_caHash;   // Hashed list of custom attribute types seen.
-    
+
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?
 
     CorProfileData  *m_pCorProfileData;
@@ -2036,14 +2036,14 @@ private:
                               // There is an equivalent state in MiniMD, and both must be
                               // TRUE in order to delete safely.
 #endif
-    
+
 private:
     // Returns pointer to zeros of size (cbSize).
     // Used by public APIs to return compatible values with previous releases.
     static const BYTE *GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize);
     // Returns pointer to zeros typed as type T.
     // Used by public APIs to return compatible values with previous releases.
-    template<class T> 
+    template<class T>
     T *GetPublicApiCompatibilityZeros()
     {
         static_assert_no_msg(sizeof(T) <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros));
@@ -2054,7 +2054,7 @@ private:
     //  * code:RegMeta::GetPublicApiCompatibilityZeros, and
     //  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
     static const BYTE s_rgMetaDataPublicApiCompatibilityZeros[64];
-    
+
 };  // class RegMeta
 
 

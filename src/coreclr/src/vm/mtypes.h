@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: mtypes.h
 //
 
@@ -38,7 +38,7 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DECIMAL_PTR,     DecimalPtrMarshaler,        
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID,            GuidMarshaler,                       true)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID_PTR,        GuidPtrMarshaler,                    false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DATE,            DateMarshaler,                       false)
- 
+
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPWSTR,          WSTRMarshaler,                       false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPSTR,           CSTRMarshaler,                       false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPUTF8STR,       CUTF8Marshaler,                      false)
@@ -60,7 +60,7 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_UTF8_BUFFER,     UTF8BufferMarshaler,        
 // CoreCLR doesn't have any support for marshalling interface pointers.
 // Not even support for fake CCWs.
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_INTERFACE,       InterfaceMarshaler,                  true)
-#endif // defined(FEATURE_COMINTEROP) 
+#endif // defined(FEATURE_COMINTEROP)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEARRAY,       SafeArrayMarshaler,                  false)
@@ -112,7 +112,7 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SYSTEMTYPE,                      SystemTypeMa
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_KEYVALUEPAIR,                    KeyValuePairMarshaler,         true)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_EXCEPTION,                       HResultExceptionMarshaler,     true)  // For WinRT, marshal exceptions as Windows.Foundation.HResult
 #endif // FEATURE_COMINTEROP
-          
+
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_ARRAY,                     FixedArrayMarshaler,           false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_WSTR,                      FixedWSTRMarshaler,            false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_CSTR,                      FixedCSTRMarshaler,            false)

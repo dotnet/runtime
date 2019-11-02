@@ -75,12 +75,12 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
 
 **You have to set the correct values for `RuntimeIdentifier` (RI), `RuntimeFrameworkVersion` and versions of both packages.**
 
-You can generally figure that out by looking at the packages you found in your output. 
+You can generally figure that out by looking at the packages you found in your output.
 In our example you will see there is a package with the name `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-0.nupkg`
 
 ```
 runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-0.nupkg
-       ^--RI---^                                 ^--------version-------^  
+       ^--RI---^                                 ^--------version-------^
 ```
 
 ### 4. Change Program.cs
@@ -136,7 +136,7 @@ Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: ht
 The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
-**Congratulations! You have just run your first app against local CoreCLR build!** 
+**Congratulations! You have just run your first app against local CoreCLR build!**
 
 ## Update CoreCLR using runtime nuget package
 

@@ -6,7 +6,7 @@
 
 //
 // All literal MetaData signatures should be defined here.
-// 
+//
 
 
 // Generic sig's based on types.
@@ -50,10 +50,10 @@
 //   B  -- SByt -- signed byte
 //   F  -- Bool -- boolean
 //   j  -- Obj  -- System.Object
-//   s  -- Str  -- System.String 
+//   s  -- Str  -- System.String
 //   C  --      -- class
 //   g  --      -- struct
-//   T  -- TypedReference -- TypedReference 
+//   T  -- TypedReference -- TypedReference
 //   G  --      -- Generic type variable
 //   M  --      -- Generic method variable
 //   GI --      -- Generic type instantiation
@@ -64,11 +64,11 @@
 // Use DEFINE_METASIG_T for signatures that reference other types (contains C or g)
 
 
-// This part of the file is included multiple times with different macro definitions 
+// This part of the file is included multiple times with different macro definitions
 // to generate the hardcoded metasigs.
 
 
-// SM, IM and Fld macros have often a very similar definitions. METASIG_BODY is 
+// SM, IM and Fld macros have often a very similar definitions. METASIG_BODY is
 // a helper to avoid these redundant SM, IM and Fld definitions.
 #ifdef METASIG_BODY
 #ifndef DEFINE_METASIG
@@ -92,7 +92,7 @@
 
 // One letter shortcuts are defined for all types that can occur in the signature.
 // The shortcuts are defined indirectly through METASIG_ATOM. METASIG_ATOM is
-// designed to control whether to generate the initializer for the signature or 
+// designed to control whether to generate the initializer for the signature or
 // just compute the size of the signature.
 
 #define b METASIG_ATOM(ELEMENT_TYPE_U1)
@@ -115,9 +115,9 @@
 #define T METASIG_ATOM(ELEMENT_TYPE_TYPEDBYREF)
 
 
-// METASIG_RECURSE controls whether to recurse into the complex types 
-// in the macro expansion. METASIG_RECURSE is designed to control 
-// whether to compute the byte size of the signature or just compute 
+// METASIG_RECURSE controls whether to recurse into the complex types
+// in the macro expansion. METASIG_RECURSE is designed to control
+// whether to compute the byte size of the signature or just compute
 // the number of arguments in the signature.
 
 #if METASIG_RECURSE

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: hash.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -199,8 +199,8 @@ CordbHashTableEnum::CordbHashTableEnum(
 //     pHolder - holder to get ownership.
 //
 void CordbHashTableEnum::BuildOrThrow(
-    CordbBase * pOwnerObj, 
-    NeuterList * pOwnerList, 
+    CordbBase * pOwnerObj,
+    NeuterList * pOwnerList,
     CordbHashTable *pTable,
     const _GUID &id,
     RSInitHolder<CordbHashTableEnum> * pHolder)
@@ -211,7 +211,7 @@ void CordbHashTableEnum::BuildOrThrow(
     // If no neuter-list supplied, then our owner is manually managing us.
     // It also means we can't be cloned.
     if (pOwnerList != NULL)
-    {        
+    {
         pOwnerList->Add(pOwnerObj->GetProcess(), pEnum);
     }
 
@@ -242,7 +242,7 @@ CordbHashTableEnum::CordbHashTableEnum(CordbHashTableEnum *cloneSrc)
 
     HRESULT hr = S_OK;
     EX_TRY
-    {       
+    {
         // Add to neuter list
         if (m_pOwnerObj->GetProcess() != NULL)
         {
@@ -252,11 +252,11 @@ CordbHashTableEnum::CordbHashTableEnum(CordbHashTableEnum *cloneSrc)
         else
         {
             // For Process-list enums that have broken neuter semantics.
-            // @dbgtodo: this goes away once we remove the top-level ICorDebug interface, 
+            // @dbgtodo: this goes away once we remove the top-level ICorDebug interface,
             // and thus no longer have a Process enumerator.
             m_pOwnerNeuterList->UnsafeAdd(NULL, this);
         }
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 
@@ -621,7 +621,7 @@ void CordbHashTableEnum::AssertValid()
 }
 
 
-// 
+//
 void CordbHashTable::AssertIsProtected()
 {
 #ifdef RSCONTRACTS

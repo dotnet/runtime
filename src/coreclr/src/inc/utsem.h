@@ -32,19 +32,19 @@ class UTSemReadWrite
 public:
     UTSemReadWrite();   // Constructor
 	~UTSemReadWrite();  // Destructor
-    
+
     HRESULT Init();
-    
+
     HRESULT LockRead();     // Lock the object for reading
     HRESULT LockWrite();    // Lock the object for writing
     void UnlockRead();      // Unlock the object for reading
     void UnlockWrite();     // Unlock the object for writing
-    
+
 #ifdef _DEBUG
     BOOL Debug_IsLockedForRead();
     BOOL Debug_IsLockedForWrite();
 #endif //_DEBUG
-    
+
 private:
     Semaphore * GetReadWaiterSemaphore()
     {
@@ -54,7 +54,7 @@ private:
     {
         return m_pWriteWaiterEvent;
     }
-    
+
     Volatile<ULONG> m_dwFlag;               // internal state, see implementation
     Semaphore *     m_pReadWaiterSemaphore; // semaphore for awakening read waiters
     Event *         m_pWriteWaiterEvent;    // event for awakening write waiters

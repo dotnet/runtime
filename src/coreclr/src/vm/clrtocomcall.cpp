@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: CLRtoCOMCall.cpp
 //
 
-// 
+//
 // CLR to COM call support.
-// 
+//
 
 
 #include "common.h"
@@ -203,7 +203,7 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
 
-    // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes 
+    // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
     // are not going to affect the marshaling behavior.
     if (!fIsWinRT)
     {
@@ -220,7 +220,7 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     // fill in out param
     //
     *pdwStubFlags = dwStubFlags;
-    
+
     return pComInfo;
 }
 
@@ -251,7 +251,7 @@ MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL 
     DWORD cSig;
     pMDCtor->GetSig(&pSig, &cSig);
     SigParser ctorSig(pSig, cSig);
-    
+
     ULONG numArgs;
 
     IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
@@ -268,9 +268,9 @@ MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL 
         return MscorlibBinder::GetMethod(METHOD__IACTIVATIONFACTORY__ACTIVATE_INSTANCE);
     }
 
-    // Composition factory methods have two additional arguments 
+    // Composition factory methods have two additional arguments
     // For now a class has either composition factories or regular factories but never both.
-    // In future versions it's possible we may want to allow a class to become unsealed, in 
+    // In future versions it's possible we may want to allow a class to become unsealed, in
     // which case we'll probably need to support both and change how we find factory methods.
     if (fComposition)
     {
@@ -293,7 +293,7 @@ MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL 
     {
         // in: outer IInspectable to delegate to, or null
         sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
-    
+
         // out: non-delegating IInspectable for the created object
         sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);
         sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
@@ -338,7 +338,7 @@ MethodDesc *ComPlusCall::GetWinRTFactoryMethodForStatic(MethodDesc *pMDStatic)
     DWORD cSig;
     pMDStatic->GetSig(&pSig, &cSig);
     SigParser ctorSig(pSig, cSig);
-    
+
     IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
 
     // use the "has this" calling convention because we're looking for an instance method
@@ -377,9 +377,9 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
 
     return NDirect::CreateCLRToNativeILStub(
                     &sigDesc,
-                    (CorNativeLinkType)0, 
-                    (CorNativeLinkFlags)0, 
-                    (CorPinvokeMap)0, 
+                    (CorNativeLinkType)0,
+                    (CorNativeLinkFlags)0,
+                    (CorPinvokeMap)0,
                     dwStubFlags);
 }
 
@@ -426,7 +426,7 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     }
     else
     {
-        DWORD dwStubFlags; 
+        DWORD dwStubFlags;
         pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
 
         if (!pComInfo->m_pStubMD.IsNull())
@@ -569,7 +569,7 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
         OBJECTREF ThisObj;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
-    
+
 
     LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
@@ -603,7 +603,7 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
 
         // Retrieve the event handler passed in.
         OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
-       
+
         ARG_SLOT EventMethArgs[] =
         {
             ObjToArgSlot(gc.EventProviderObj),
@@ -1049,7 +1049,7 @@ TADDR ComPlusCall::GetFrameCallIP(FramedMethodFrame *frame)
     //
 
 #ifndef DACCESS_COMPILE
-    
+
     Thread* thread = GetThread();
     if (thread == NULL)
     {
@@ -1111,9 +1111,9 @@ void ComPlusMethodFrame::GetUnmanagedCallSite(TADDR* ip,
         *ip = ComPlusCall::GetFrameCallIP(this);
 
     TADDR retSP = NULL;
-    // We can't assert retSP here because the debugger may actually call this function even when 
-    // the frame is not fully initiailzed.  It is ok because the debugger has code to handle this 
-    // case.  However, other callers may not be tolerant of this case, so we should push this assert 
+    // We can't assert retSP here because the debugger may actually call this function even when
+    // the frame is not fully initiailzed.  It is ok because the debugger has code to handle this
+    // case.  However, other callers may not be tolerant of this case, so we should push this assert
     // to the callers
     //_ASSERTE(retSP != NULL);
 

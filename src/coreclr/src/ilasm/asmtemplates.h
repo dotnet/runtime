@@ -30,20 +30,20 @@ public:
     LIST_EL <T> *m_Next;
     LIST_EL(T *item) {m_Next = NULL; m_Ptr = item; };
 };
-    
+
 template <class T>
 class LIFO
 {
 public:
     inline LIFO() { m_pHead = NULL; };
     inline ~LIFO() {T *val; while((val = POP()) != NULL) delete val; };
-    void PUSH(T *item) 
+    void PUSH(T *item)
     {
-        m_pTemp = new LIST_EL <T>(item); 
-        m_pTemp->m_Next = m_pHead; 
+        m_pTemp = new LIST_EL <T>(item);
+        m_pTemp->m_Next = m_pHead;
         m_pHead = m_pTemp;
     };
-    T* POP() 
+    T* POP()
     {
         T* ret = NULL;
         if((m_pTemp = m_pHead) != NULL)
@@ -83,7 +83,7 @@ public:
             m_ulOffset= 0;
         }
     };
-    void PUSH(T *item) 
+    void PUSH(T *item)
     {
 		if(item)
 		{
@@ -115,7 +115,7 @@ public:
 		}
     };
     ULONG COUNT() { return m_ulCount; };
-    T* POP() 
+    T* POP()
     {
         T* ret = NULL;
         if(m_ulCount)
@@ -177,7 +177,7 @@ template <class T> struct Indx256
         }
         return (T*)(table[0]); // if i==0
     };
-    
+
     void ClearAll(bool DeleteObj)
     {
         if(DeleteObj) delete (T*)(table[0]);
@@ -230,7 +230,7 @@ public:
             m_ulOffset= 0;
         }
     };
-    void PUSH(T *item) 
+    void PUSH(T *item)
     {
 		if(item)
 		{
@@ -263,7 +263,7 @@ public:
 		}
     };
     ULONG COUNT() { return m_ulCount; };
-    T* POP() 
+    T* POP()
     {
         T* ret = NULL;
         if(m_ulCount)
@@ -311,7 +311,7 @@ public:
             m_ulOffset= 0;
         }
     };
-    void PUSH(T *item) 
+    void PUSH(T *item)
     {
 		if(item)
 		{
@@ -344,21 +344,21 @@ public:
                 T** low = &m_Arr[m_ulOffset];
                 T** high = &m_Arr[m_ulOffset+m_ulCount-1];
                 T** mid;
-            
+
                 if(item->ComparedTo(*high) > 0) mid = high+1;
                 else if(item->ComparedTo(*low) < 0) mid = low;
-                else for(;;) 
+                else for(;;)
                 {
                     mid = &low[(high - low) >> 1];
-            
+
                     int cmp = item->ComparedTo(*mid);
-            
+
                     if (mid == low)
                     {
                         if(cmp > 0) mid++;
                         break;
                     }
-            
+
                     if (cmp > 0) low = mid;
                     else        high = mid;
                 }
@@ -372,7 +372,7 @@ public:
 		}
     };
     ULONG COUNT() { return m_ulCount; };
-    T* POP() 
+    T* POP()
     {
         T* ret = NULL;
         if(m_ulCount)
@@ -391,7 +391,7 @@ public:
             T** high = &m_Arr[m_ulOffset+m_ulCount-1];
             T** mid;
             if(item->ComparedTo(*high) == 0) return(*high);
-            for(;;) 
+            for(;;)
             {
                 mid = &low[(high - low) >> 1];
                 int cmp = item->ComparedTo(*mid);
@@ -412,7 +412,7 @@ public:
             T** high = &m_Arr[m_ulOffset+m_ulCount-1];
             T** mid;
             if((*high)->Compare(item) == 0) return(*high);
-            for(;;) 
+            for(;;)
             {
                 mid = &low[(high - low) >> 1];
                 int cmp = (*mid)->Compare(item);
@@ -438,12 +438,12 @@ public:
                 m_ulCount--;
                 return TRUE;
             }
-            for(;;) 
+            for(;;)
             {
                 mid = &low[(high - low) >> 1];
                 int cmp = item->ComparedTo(*mid);
                 if (cmp == 0)
-                { 
+                {
                     delete (*mid);
                     memcpy(mid,mid+1,(BYTE*)&m_Arr[m_ulOffset+m_ulCount]-(BYTE*)mid-1);
                     m_ulCount--;
@@ -508,9 +508,9 @@ public:
     };
 
     ~RBNODEBUCKET() { if(pNext) delete pNext; };
-    
+
     bool CanAlloc() { return (alloc_count < BUCKETCOUNT); };
-    
+
     RBNODE<T>* AllocNode()
     {
         RBNODE<T>* pRet;
@@ -528,7 +528,7 @@ public:
         _ASSERTE(!"AllocNode returns NULL");
         return NULL;
     };
-    
+
     bool FreeNode(RBNODE<T>* ptr)
     {
         size_t idx = ((size_t)ptr - (size_t)bucket)/sizeof(RBNODE<T>);
@@ -540,9 +540,9 @@ public:
         }
         return false;
     };
-    
+
     RBNODEBUCKET<T>* Next() { return pNext; };
-    
+
     void Append(RBNODEBUCKET<T>* ptr) { pNext = ptr; };
 };
 
@@ -561,7 +561,7 @@ public:
     {
         RBNODEBUCKET<T>* pBucket = &base;
         RBNODEBUCKET<T>* pLastBucket = &base;
-        do 
+        do
         {
             if(pBucket->CanAlloc())
             {
@@ -569,7 +569,7 @@ public:
             }
             pLastBucket = pBucket;
             pBucket = pBucket->Next();
-        } 
+        }
         while (pBucket != NULL);
         pLastBucket->Append(new RBNODEBUCKET<T>);
         return pLastBucket->Next()->AllocNode();
@@ -710,7 +710,7 @@ public:
         RBNODE<T>* pX;
         RBNODE<T>* pY;
         RBNODE<T>* pNewNode = NodePool.AllocNode();
-        
+
         pNewNode->tVal = pT;
         pNewNode->SetRed();
 

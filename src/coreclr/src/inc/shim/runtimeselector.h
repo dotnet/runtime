@@ -44,7 +44,7 @@ public:
 
     // has any useful data
     bool HasUsefulRuntimeInfo();
-    
+
     // is 1st better than 2nd
     static bool IsBetter(const RuntimeInfo& ri1, const RuntimeInfo& ri2);
 };

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // TargetTypes.h
-// 
+//
 
 //
 //*****************************************************************************
@@ -63,9 +63,9 @@ public:
 private:
     // don't copy this type - avoids needing to deep copy m_pColDefs
     Target_CMiniTableDef(const Target_CMiniTableDef & rhs) { _ASSERTE(!"Don't copy"); }
-    Target_CMiniTableDef & operator=(const Target_CMiniTableDef &) 
-    { 
-        _ASSERTE(!"Don't copy"); 
+    Target_CMiniTableDef & operator=(const Target_CMiniTableDef &)
+    {
+        _ASSERTE(!"Don't copy");
         return *this;
     }
 };

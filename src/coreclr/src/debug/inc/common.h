@@ -9,7 +9,7 @@
 // Conversions between pointers and CORDB_ADDRESS
 // These are 3gb safe - we use zero-extension for CORDB_ADDRESS.
 // Note that this is a different semantics from CLRDATA_ADDRESS which is sign-extended.
-// 
+//
 // @dbgtodo : This confuses the host and target address spaces.  Ideally we'd have
 // conversions between PTR types (eg. DPTR) and CORDB_ADDRESS, and not need conversions
 // from host pointer types to CORDB_ADDRESS.
@@ -18,15 +18,15 @@
 inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(const void* ptr)
 {
     SUPPORTS_DAC;
-    // Cast a void* to a ULONG is not 64-bit safe and triggers compiler warning C3411. 
-    // But this is x86 only, so we know it's ok. Use PtrToUlong to do the conversion 
+    // Cast a void* to a ULONG is not 64-bit safe and triggers compiler warning C3411.
+    // But this is x86 only, so we know it's ok. Use PtrToUlong to do the conversion
     // without invoking the error.
     return (CORDB_ADDRESS)(PtrToUlong(ptr));
 }
 inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(UINT_PTR ptr)
 {
     SUPPORTS_DAC;
-    // PtrToUlong 
+    // PtrToUlong
     return (CORDB_ADDRESS)(ULONG)(ptr);
 }
 #else
@@ -90,7 +90,7 @@ extern void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
 //    On WIN64 platforms this function will always return sizeof(CONTEXT).
 //
 
-inline 
+inline
 ULONG32 ContextSizeForFlags(ULONG32 flags)
 {
 #if defined(CONTEXT_EXTENDED_REGISTERS) && defined(_TARGET_X86_)
@@ -110,11 +110,11 @@ ULONG32 ContextSizeForFlags(ULONG32 flags)
 
 //---------------------------------------------------------------------------------------
 //
-// Given the size of a buffer and the context flags, check whether the buffer is sufficient large 
+// Given the size of a buffer and the context flags, check whether the buffer is sufficient large
 // to hold the CONTEXT.
 //
 // Arguments:
-//    size  - size of a buffer 
+//    size  - size of a buffer
 //    flags - this is the equivalent of the ContextFlags field of a CONTEXT
 //
 // Return Value:
@@ -129,7 +129,7 @@ BOOL CheckContextSizeForFlags(ULONG32 size, ULONG32 flags)
 
 //---------------------------------------------------------------------------------------
 //
-// Given the size of a buffer and the BYTE array representation of a CONTEXT, 
+// Given the size of a buffer and the BYTE array representation of a CONTEXT,
 // check whether the buffer is sufficient large to hold the CONTEXT.
 //
 // Arguments:
@@ -235,13 +235,13 @@ void ExportILToNativeMap(ULONG32 cMap,
              COR_DEBUG_IL_TO_NATIVE_MAP mapExt[],
              struct DebuggerILToNativeMap mapInt[],
              SIZE_T sizeOfCode);
-             
+
 #include <primitives.h>
 
 // ----------------------------------------------------------------------------
 // IsPatchInRequestedRange
 //
-// Description: 
+// Description:
 //    This function checks if a patch falls (fully or partially) in the requested range of memory.
 //
 // Arguments:
@@ -254,7 +254,7 @@ void ExportILToNativeMap(ULONG32 cMap,
 //    Return TRUE if the patch is fully or partially in the requested memory range.
 //
 // Notes:
-//    Currently this function is called both from the RS (via code:CordbProcess.ReadMemory and 
+//    Currently this function is called both from the RS (via code:CordbProcess.ReadMemory and
 //    code:CordbProcess.WriteMemory) and from DAC.  When we DACize the two functions mentioned above,
 //    this function should be called from DAC only, and we should use a MemoryRange here.
 //
@@ -287,9 +287,9 @@ inline bool IsPatchInRequestedRange(CORDB_ADDRESS requestedAddr,
 inline CORDB_ADDRESS ALIGN_ADDRESS( CORDB_ADDRESS val, CORDB_ADDRESS alignment )
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
-    _ASSERTE( 0 == (alignment & (alignment - 1)) ); 
+    _ASSERTE( 0 == (alignment & (alignment - 1)) );
     CORDB_ADDRESS result = (val + (alignment - 1)) & ~(alignment - 1);
     _ASSERTE( result >= val );      // check for overflow
     return result;

@@ -34,7 +34,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 #if defined(FEATURE_HIJACK) && (!defined(_TARGET_X86_) || defined(FEATURE_PAL))
 
-// General purpose functions for use on an IP in jitted code. 
+// General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
 
@@ -48,7 +48,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 //   Swallow if: the EEPolicy->UnhandledExceptionPolicy is "eHostDeterminedPolicy"
 //           or: the app config value LegacyUnhandledExceptionPolicy() is set.
 //
-//  Parameters: 
+//  Parameters:
 //    none
 //
 //  Return value:
@@ -158,7 +158,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly);
 BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT);
 
 // Removes source file names/paths and line information from a stack trace.
-void StripFileInfoFromStackTrace(SString &ssStackTrace); 
+void StripFileInfoFromStackTrace(SString &ssStackTrace);
 
 #ifdef _DEBUG
 // C++ EH cracking material gleaned from the debugger:
@@ -267,7 +267,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 // Throw an object.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable 
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity = NotCorrupting
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
@@ -291,14 +291,14 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 // Throw a decorated runtime exception.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID, 
-                                        LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL, LPCWSTR wszArg3 = NULL, 
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID,
+                                        LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL, LPCWSTR wszArg3 = NULL,
                                         LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL, LPCWSTR wszArg6 = NULL);
 
 
 //==========================================================================
-// Throw a runtime exception based on an HResult. Note that for the version 
-// of RealCOMPlusThrowHR that takes a resource ID, the HRESULT will be 
+// Throw a runtime exception based on an HResult. Note that for the version
+// of RealCOMPlusThrowHR that takes a resource ID, the HRESULT will be
 // passed as the first substitution string (%1).
 //==========================================================================
 
@@ -310,8 +310,8 @@ enum tagGetErrorInfo
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException = NULL);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL, 
-                                          LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL, 
+VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL,
+                                          LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL,
                                           LPCWSTR wszArg6 = NULL);
 
 #ifdef FEATURE_COMINTEROP
@@ -351,7 +351,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32(HRESULT hr);
 // pThrowable is an OUT param.
 //==========================================================================
 void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
-                                             OBJECTREF *pInnerException, 
+                                             OBJECTREF *pInnerException,
                                              OBJECTREF *pInitException,
                                              OBJECTREF *pThrowable);
 
@@ -426,14 +426,14 @@ struct FrameHandlerExRecord
 
     Frame *m_pEntryFrame;
 
-    Frame *GetCurrFrame() 
+    Frame *GetCurrFrame()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pEntryFrame;
     }
 };
 
-struct NestedHandlerExRecord : public FrameHandlerExRecord 
+struct NestedHandlerExRecord : public FrameHandlerExRecord
 {
     ExInfo m_handlerInfo;
     BOOL   m_ActiveForUnwind;
@@ -468,10 +468,10 @@ public:
                                       int         linenum)
     {
         SCAN_SCOPE_BEGIN;
-        STATIC_CONTRACT_NOTHROW;  
+        STATIC_CONTRACT_NOTHROW;
 
         m_fCond = fCond;
-        
+
         if (m_fCond)
         {
             m_pClrDebugState = GetClrDebugState();
@@ -809,12 +809,12 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 // See implementation for detailed comments in excep.cpp
 LONG AppDomainTransitionExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);         
+    PVOID               pParam);
 
 // See implementation for detailed comments in excep.cpp
 LONG ReflectionInvocationExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);         
+    PVOID               pParam);
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 // -----------------------------------------------------------------------
@@ -828,7 +828,7 @@ LONG ReflectionInvocationExceptionFilter(
 #define HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME 2
 #endif // HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME
 
-// This helper class contains static method to support working with Corrupted State Exceptions, 
+// This helper class contains static method to support working with Corrupted State Exceptions,
 // including checking if a method can handle it or not, copy state across throwables, etc.
 class CEHelper
 {
@@ -846,7 +846,7 @@ public:
     void static SetupCorruptionSeverityForActiveException(BOOL fIsRethrownException, BOOL fIsNestedException, BOOL fShouldTreatExceptionAsNonCorrupting = FALSE);
 #ifdef FEATURE_EH_FUNCLETS
     typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
-    void static SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCurThread, PTR_ExceptionTracker pEHTracker, BOOL fIsFirstPass, 
+    void static SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCurThread, PTR_ExceptionTracker pEHTracker, BOOL fIsFirstPass,
                                                                      DWORD dwExceptionCode);
 #endif // FEATURE_EH_FUNCLETS
     void static ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread);
@@ -877,24 +877,24 @@ private:
 
     void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
-    void static InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs, 
+    void static InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
         OBJECTREF *pAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
 public:
     BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-    
+
     void static DeliverNotification(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
@@ -904,7 +904,7 @@ public:
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, 
+    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
         OBJECTREF *pAppDomain, OBJECTREF *pEventArgs);
     void static DeliverFirstChanceNotification();
 };

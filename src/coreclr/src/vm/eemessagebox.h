@@ -8,7 +8,7 @@
 //
 // This module contains the definition for the message box utility code for use
 // inside the Execution Engine. These APIs ensure the GC mode is properly
-// toggled to preemptive before the dialog is displayed. 
+// toggled to preemptive before the dialog is displayed.
 //
 //*****************************************************************************
 
@@ -16,9 +16,9 @@
 #define _H_EEMESSAGEBOX
 
 //========================================================================
-// APIs to pop messages boxes. These should be used instead of the UtilXXX 
-// versions since they ensure we properly switch to preemptive GC mode and 
-// validate that the thread can tolerate GC transitions before calling 
+// APIs to pop messages boxes. These should be used instead of the UtilXXX
+// versions since they ensure we properly switch to preemptive GC mode and
+// validate that the thread can tolerate GC transitions before calling
 // out.
 //========================================================================
 

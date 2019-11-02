@@ -13,11 +13,11 @@ namespace System.Threading
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             private const int GateThreadRunningMask = 0x4;
-            
+
             private static int s_runningState;
 
             private static AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(true);
-          
+
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
             private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
@@ -116,7 +116,7 @@ namespace System.Threading
                     {
                         if (!created)
                         {
-                            Interlocked.Exchange(ref s_runningState, 0); 
+                            Interlocked.Exchange(ref s_runningState, 0);
                         }
                     }
                 }

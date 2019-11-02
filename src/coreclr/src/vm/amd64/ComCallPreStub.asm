@@ -118,7 +118,7 @@ ComCallPreStub_XMM_SAVE_OFFSET              = ComCallPreStub_STACK_FRAME_SIZE - 
         ;
         mov             rcx, r10
         lea             rdx, [rsp + ComCallPreStub_ERRORRETVAL_OFFSET]
-        call            ComPreStubWorker	
+        call            ComPreStubWorker
         test            rax, rax
         jz              ExitError
 

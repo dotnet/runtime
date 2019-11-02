@@ -34,7 +34,7 @@ void GetResourceCultureCallbacks(
 {
     WRAPPER_NO_CONTRACT;
     CCompRC::GetDefaultCallbacks(
-        fpGetThreadUICultureNames, 
+        fpGetThreadUICultureNames,
         fpGetThreadUICultureId
     );
 }
@@ -42,7 +42,7 @@ void GetResourceCultureCallbacks(
 // Set callbacks to get culture info
 //*****************************************************************************
 void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,    
+    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
     FPGETTHREADUICULTUREID fpGetThreadUICultureId       // TODO: Don't rely on the LCID, only the name
 )
 {
@@ -58,9 +58,9 @@ void SetResourceCultureCallbacks(
 // Public function to load a resource string
 //*****************************************************************************
 STDAPI UtilLoadStringRC(
-    UINT iResourceID, 
-    __out_ecount(iMax) LPWSTR szBuffer, 
-    int iMax, 
+    UINT iResourceID,
+    __out_ecount(iMax) LPWSTR szBuffer,
+    int iMax,
     int bQuiet
 )
 {
@@ -102,11 +102,11 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
 //*****************************************************************************
 // Format a Runtime Error message.
 //*****************************************************************************
-HRESULT __cdecl FormatRuntimeErrorVa(        
-    __inout_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.         
-    ULONG       cchMsg,                 // Size of buffer, characters.          
-    HRESULT     hrRpt,                  // The HR to report.                    
-    va_list     marker)                 // Optional args.                       
+HRESULT __cdecl FormatRuntimeErrorVa(
+    __inout_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
+    ULONG       cchMsg,                 // Size of buffer, characters.
+    HRESULT     hrRpt,                  // The HR to report.
+    va_list     marker)                 // Optional args.
 {
     CONTRACTL
     {
@@ -114,10 +114,10 @@ HRESULT __cdecl FormatRuntimeErrorVa(
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-        
+
     WCHAR       rcBuf[512];             // Resource string.
     HRESULT     hr;
-    
+
     // Ensure nul termination.
     *rcMsg = W('\0');
 
@@ -156,7 +156,7 @@ HRESULT __cdecl FormatRuntimeErrorVa(
         DEBUG_STMT(DbgWriteEx(rcMsg));
     }
 
-    return hrRpt;    
+    return hrRpt;
 } // FormatRuntimeErrorVa
 
 //*****************************************************************************
@@ -176,7 +176,7 @@ HRESULT __cdecl FormatRuntimeError(
     return hrRpt;
 }
 
-#ifdef FEATURE_COMINTEROP        
+#ifdef FEATURE_COMINTEROP
 //*****************************************************************************
 // Create, fill out and set an error info object.  Note that this does not fill
 // out the IID for the error object; that is done elsewhere.
@@ -218,7 +218,7 @@ HRESULT FillErrorInfo(                  // Return status.
     // suppress PreFast warning about passing literal string to non-const API.
     // This API (ICreateErrorInfo::SetHelpFile) is documented to take a const argument, but
     // we can't put const in the signature because it would break existing implementors of
-    // the API. 
+    // the API.
 #ifdef _PREFAST_
 #pragma prefast(push)
 #pragma warning(disable:6298)
@@ -252,7 +252,7 @@ Exit1:
     }
     return hr;
 }
-#endif // FEATURE_COMINTEROP        
+#endif // FEATURE_COMINTEROP
 
 //*****************************************************************************
 // This function will post an error for the client.  If the LOWORD(hrRpt) can
@@ -275,7 +275,7 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP        
+#ifdef FEATURE_COMINTEROP
 
     const DWORD cchMsg = 4096;
     WCHAR      *rcMsg = (WCHAR*)alloca(cchMsg * sizeof(WCHAR));             // Error message.
@@ -285,7 +285,7 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
 
     // Return warnings without text.
     if (!FAILED(hrRpt))
-        goto ErrExit;        
+        goto ErrExit;
 
     // If we are already out of memory or out of stack or the thread is in some bad state,
     // we don't want throw gasoline on the fire by calling ErrorInfo stuff below (which can
@@ -309,7 +309,7 @@ ErrExit:
 
     END_ENTRYPOINT_NOTHROW;
 
-#endif // FEATURE_COMINTEROP        
+#endif // FEATURE_COMINTEROP
 
     return (hrRpt);
 } // PostErrorVA

@@ -67,7 +67,7 @@ private:
 
         return TRUE;
     }
-    
+
     BOOL HasAvailableMemory(SIZE_T count)
     {
         return (count < m_size);
@@ -81,12 +81,12 @@ private:
         {
             m_buffer = m_innerBuffer;
         }
-        
+
         if (HasAvailableMemory(count))
         {
             m_count = count;
         }
-        else 
+        else
         {
             if (count > STACKCOUNT)
             {
@@ -139,7 +139,7 @@ public:
     {
         return m_count;
     }
-    
+
     SIZE_T GetSizeOf() const
     {
         return m_size * sizeof(T);
@@ -177,13 +177,13 @@ public:
         NullTerminate();
         return;
     }
-    
+
     //Call this with the best estimate if you want to
-    //prevent possible reallocations on further operations 
+    //prevent possible reallocations on further operations
     BOOL Reserve(SIZE_T count)
     {
         SIZE_T endpos = m_count;
-        
+
         if (!Resize(count))
             return FALSE;
 
@@ -246,23 +246,23 @@ public:
 
 #if _DEBUG
 typedef StackString<32, CHAR> PathCharString;
-typedef StackString<32, WCHAR> PathWCharString; 
+typedef StackString<32, WCHAR> PathWCharString;
 #else
 typedef StackString<MAX_PATH, CHAR> PathCharString;
-typedef StackString<MAX_PATH, WCHAR> PathWCharString; 
+typedef StackString<MAX_PATH, WCHAR> PathWCharString;
 #endif
 #endif
 
 // Some Helper Definitions
-BOOL 
+BOOL
 PAL_GetPALDirectoryW(
         PathWCharString& lpDirectoryName);
-BOOL 
+BOOL
 PAL_GetPALDirectoryA(
         PathCharString& lpDirectoryName);
 DWORD
 GetCurrentDirectoryA(
          PathCharString& lpBuffer);
-void 
+void
 FILEDosToUnixPathA(
         PathCharString& lpPath);

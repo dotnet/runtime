@@ -3036,7 +3036,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(pTgtObjectSynchData);
 
-        pwtlnNode =  fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pTgtObjectSynchData->GetWTLHeadShmPtr()) 
+        pwtlnNode =  fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pTgtObjectSynchData->GetWTLHeadShmPtr())
                                    : pTgtObjectSynchData->GetWTLHeadPtr();
 
         while (pwtlnNode)
@@ -3044,7 +3044,7 @@ namespace CorUnix
             VALIDATEOBJECT(pwtlnNode);
 
             pwtlnNode->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-            pwtlnNode = fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pwtlnNode->ptrNext.shrid) 
+            pwtlnNode = fSharedObject ? SharedIDToTypePointer(WaitingThreadsListNode, pwtlnNode->ptrNext.shrid)
                                       : pwtlnNode->ptrNext.ptr;
         }
     }
@@ -4585,7 +4585,7 @@ namespace CorUnix
         }
         else
         {
-#endif        
+#endif
 #if HAVE_WORKING_CLOCK_GETTIME
             // Not every platform implements a (working) clock_gettime
             iRet = clock_gettime(CLOCK_REALTIME, ptsAbsTmo);

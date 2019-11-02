@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // Implementation for CBlobFetcher
-// 
+//
 
 //
 //
@@ -37,7 +37,7 @@ CBlobFetcher::CPillar::CPillar()
     m_dataStart = NULL;
     m_dataCur = NULL;
     m_dataEnd = NULL;
-    
+
     // Default initial size is 4K bytes.
     m_nTargetSize = 0x1000;
 }
@@ -78,7 +78,7 @@ void CBlobFetcher::CPillar::StealDataFrom(CBlobFetcher::CPillar & src)
 //-----------------------------------------------------------------------------
 /* make a new block 'len' bytes long'  However, move the pointer 'pad' bytes
    over so that the memory has the correct alignment characteristics.
-   
+
    If the return value is NULL, there are two possibilities:
    - This CPillar reserved less memory than needed for the current allocation.
    - We are out-of-memory. In this case, CPillar:GetDataLen() will be 0.
@@ -97,9 +97,9 @@ char * CBlobFetcher::CPillar::MakeNewBlock(unsigned len, unsigned pad) {
         //
         // We need to allocate memory with an offset of "pad" from
         // being "maxAlign" aligned. (data % maxAlign == pad).
-        // Since "new" doesn't do this, allocate some extra 
+        // Since "new" doesn't do this, allocate some extra
         // to handle the worst possible alignment case.
-        // 
+        //
         unsigned allocationSize = nNewTargetSize + (maxAlign-1);
         // Check for integer overflow
         if (allocationSize < nNewTargetSize)
@@ -119,13 +119,13 @@ char * CBlobFetcher::CPillar::MakeNewBlock(unsigned len, unsigned pad) {
 
         m_nTargetSize = nNewTargetSize;
 
-        m_dataStart = m_dataAlloc + 
+        m_dataStart = m_dataAlloc +
           ((pad - (UINT_PTR)(m_dataAlloc)) & (((UINT_PTR)maxAlign)-1));
 
         _ASSERTE((UINT_PTR)(m_dataStart) % maxAlign == pad);
-        
+
         m_dataCur = m_dataStart;
-    
+
         m_dataEnd = &m_dataStart[m_nTargetSize];
     }
 
@@ -133,10 +133,10 @@ char * CBlobFetcher::CPillar::MakeNewBlock(unsigned len, unsigned pad) {
     _ASSERTE((int) len > 0);
 
     // If this block is full, then get out, we'll have to try another block
-    if (m_dataCur + len > m_dataEnd)  { 
+    if (m_dataCur + len > m_dataEnd)  {
         return NULL;
     }
-    
+
     char* ret = m_dataCur;
     m_dataCur += len;
     _ASSERTE(m_dataCur <= m_dataEnd);
@@ -153,7 +153,7 @@ CBlobFetcher::CBlobFetcher()
 {
     // Setup storage
     m_pIndex = NULL;
-    m_nIndexMax = 1; // start off with arbitrary small size  @@@ (minimum is 1) 
+    m_nIndexMax = 1; // start off with arbitrary small size  @@@ (minimum is 1)
     m_nIndexUsed = 0;
     _ASSERTE(m_nIndexUsed < m_nIndexMax); // use <, not <=
 
@@ -181,7 +181,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
     _ASSERTE(m_pIndex);
     _ASSERTE(0 < align && align <= maxAlign);
 
-    // deal with alignment 
+    // deal with alignment
     unsigned pad = padForAlign(m_nDataLen, align);
     char* pChRet = NULL;
     if (pad != 0) {
@@ -190,7 +190,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
         // Did we run out of memory?
         if (pChRet == NULL && m_pIndex[m_nIndexUsed].GetDataLen() == 0)
             return NULL;
-        
+
         // if don't have space for the pad, then need to allocate a new pillar
         // the allocation will handle the padding for the alignment of m_nDataLen
         if (pChRet) {
@@ -210,18 +210,18 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
     unsigned nPreDataLen = m_nDataLen - m_pIndex[m_nIndexUsed].GetDataLen();
 
     pChRet = m_pIndex[m_nIndexUsed].MakeNewBlock(len + pad, 0);
-    
+
     // Did we run out of memory?
     if (pChRet == NULL &&  m_pIndex[m_nIndexUsed].GetDataLen() == NULL)
         return NULL;
 
     if (pChRet == NULL) {
-        
+
         nPreDataLen = m_nDataLen;
 
         if (m_nIndexUsed + 1 == m_nIndexMax) {
             // entire array of pillars are full, re-org
-            
+
             const unsigned nNewMax = m_nIndexMax * 2; // arbitrary new size
 
             CPillar* pNewIndex = new (nothrow) CPillar[nNewMax];
@@ -231,7 +231,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
             // Copy old stuff
             for(unsigned i = 0; i < m_nIndexMax; i++)
                 pNewIndex[i].StealDataFrom(m_pIndex[i]);
-            
+
             delete [] m_pIndex;
 
             m_nIndexMax = nNewMax;
@@ -241,7 +241,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
         }
 
         m_nIndexUsed ++; // current pillar is full, move to next
-    
+
         // Make sure the new pillar is large enough to hold the data
         // How we do this is *totally arbitrary* and has been optimized for how
         // we intend to use this.
@@ -249,12 +249,12 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
         unsigned minSizeOfNewPillar = (3 * m_nDataLen) / 2;
         if (minSizeOfNewPillar < len)
             minSizeOfNewPillar = len;
-        
+
         if (m_pIndex[m_nIndexUsed].GetAllocateSize() < minSizeOfNewPillar) {
             m_pIndex[m_nIndexUsed].SetAllocateSize(roundUp(minSizeOfNewPillar, maxAlign));
         }
 
-        // Under stress, we have seen that m_pIndex[0] is empty, but 
+        // Under stress, we have seen that m_pIndex[0] is empty, but
         // m_pIndex[1] is not. This assert tries to catch that scenario.
         _ASSERTE(m_pIndex[0].GetDataLen() != 0);
 
@@ -267,7 +267,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
         // The current pointer picks up at the same alignment that the last block left off
         _ASSERTE(nPreDataLen % maxAlign == ((UINT_PTR) pChRet) % maxAlign);
     }
-    
+
     if (pad != 0) {
         memset(pChRet, 0, pad);
         pChRet += pad;
@@ -360,7 +360,7 @@ unsigned CBlobFetcher::ComputeOffset(__in char *ptr) const
 }
 
 
-//Take the data from our previous blob and copy it into our new blob 
+//Take the data from our previous blob and copy it into our new blob
 //after whatever was already in that blob.
 HRESULT CBlobFetcher::Merge(CBlobFetcher *destination) {
     unsigned dataLen;
@@ -383,7 +383,7 @@ HRESULT CBlobFetcher::Merge(CBlobFetcher *destination) {
     if (dataBlock == NULL) {
         return E_OUTOFMEMORY;
     }
-    
+
     //Copy all of the bytes using the write algorithm from PEWriter.cpp
     dataCurr=dataBlock;
     for (idx=0; idx<=m_nIndexUsed;  idx++) {

@@ -216,12 +216,12 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 {                                                                               \
     INSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));                \
     /* work around unreachable code warning */                                  \
-    if (true) {                                                                 
+    if (true) {
 
 #define UNINSTALL_COMPLUS_EXCEPTION_HANDLER()                                   \
     }                                                                           \
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));              \
-}                                                                               
+}
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
@@ -254,7 +254,7 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 // -----------------------------------------------------------------------
 // Support for Corrupted State Exceptions
 // -----------------------------------------------------------------------
-// This enumeration defines the corruption severity of an exception and 
+// This enumeration defines the corruption severity of an exception and
 // whether it should be reused for the next exception thrown or not.
 enum CorruptionSeverity
 {
@@ -272,7 +272,7 @@ enum CorruptionSeverity
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow 
+VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
@@ -314,7 +314,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
-        try {                                                                                   
+        try {
 
 // Uninstall trap that catches unhandled managed exception and dumps its stack
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                                  \

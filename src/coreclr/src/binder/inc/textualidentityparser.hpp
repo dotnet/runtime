@@ -51,7 +51,7 @@ namespace BINDER_SPACE
 
         BOOL ParseString(/* in */  SString &textualString,
                          /* out */ SString &contentString);
-        
+
     protected:
         BOOL Parse(/* in */  SString &textualIdentity,
                    /* in */  BOOL     fPermitUnescapedQuotes = FALSE);

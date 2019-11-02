@@ -24,7 +24,7 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeEvent &event, 
+    EventPipeEventInstance(EventPipeEvent &event,
                            unsigned int procNumber,
                            ULONGLONG threadID,
                            BYTE *pData,
@@ -172,7 +172,7 @@ typedef MapSHash<EventPipeThreadSessionState *, unsigned int> ThreadSequenceNumb
 // prior to any events after the sequence point
 struct EventPipeSequencePoint
 {
-    // Entry in EventPipeBufferManager m_sequencePointList 
+    // Entry in EventPipeBufferManager m_sequencePointList
     SLink m_Link;
 
     // The timestamp the sequence point was captured

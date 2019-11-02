@@ -8,7 +8,7 @@
 //
 // Purpose: Native methods on System.Object
 //
-// 
+//
 
 #ifndef _OBJECTNATIVE_H_
 #define _OBJECTNATIVE_H_

@@ -9,7 +9,7 @@
 
 #include <stdio.h>		// for FILE
 
-#include "assembler.h"	// for ErrorReporter Labels 
+#include "assembler.h"	// for ErrorReporter Labels
 //class Assembler;
 //class BinStr;
 
@@ -26,10 +26,10 @@ public:
     // read at most 'buffLen' bytes into 'buff', Return the
         // number of characters read.  On EOF return 0
     virtual unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen) = 0;
-        
-        // Return the name of the stream, (for error reporting).  
+
+        // Return the name of the stream, (for error reporting).
     //virtual const char* name() = 0;
-        // Return the Unicode name of the stream  
+        // Return the Unicode name of the stream
     virtual const WCHAR* namew() = 0;
 		//return ptr to buffer containing specified source line
 	virtual char* getLine(int lineNum) = 0;
@@ -55,7 +55,7 @@ public:
         *ppbuff = m_pStart;
         return m_pBS->length();
     };
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen) 
+    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -77,9 +77,9 @@ public:
 
     BOOL IsValid()
     {
-        return(m_pStart != NULL); 
+        return(m_pStart != NULL);
     }
-    
+
 	char* getLine(int lineNum)
 	{
         return NULL; // this function is not used
@@ -96,7 +96,7 @@ private:
 /**************************************************************************/
 class MappedFileStream : public ReadStream {
 public:
-    MappedFileStream(__in __nullterminated WCHAR* wFileName) 
+    MappedFileStream(__in __nullterminated WCHAR* wFileName)
     {
         fileNameW = wFileName;
         m_hFile = INVALID_HANDLE_VALUE;
@@ -130,7 +130,7 @@ public:
         *pbuff = m_pStart;
         return m_FileSize;
     }
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen) 
+    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -145,9 +145,9 @@ public:
         return Len;
     }
 
-    //const char* name() 
-    //{ 
-    //    return(&fileNameANSI[0]); 
+    //const char* name()
+    //{
+    //    return(&fileNameANSI[0]);
     //}
 
     const WCHAR* namew()
@@ -162,9 +162,9 @@ public:
 
     BOOL IsValid()
     {
-        return(m_pStart != NULL); 
+        return(m_pStart != NULL);
     }
-    
+
 	char* getLine(int lineNum)
 	{
         return NULL; // this function is not used
@@ -174,17 +174,17 @@ private:
     char* map_file()
     {
         DWORD dwFileSizeLow;
-        
-        dwFileSizeLow = GetFileSize( m_hFile, NULL); 
+
+        dwFileSizeLow = GetFileSize( m_hFile, NULL);
         if (dwFileSizeLow == INVALID_FILE_SIZE)
             return NULL;
         m_FileSize = dwFileSizeLow;
-    
+
         // No difference between A and W in this case: last param (LPCTSTR) is NULL
         m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
         if (m_hMapFile == NULL)
             return NULL;
-    
+
         return (char*)(HMODULE) MapViewOfFile(m_hMapFile, FILE_MAP_READ, 0, 0, 0);
     }
     char* open(const WCHAR* moduleName)
@@ -192,7 +192,7 @@ private:
         _ASSERTE(moduleName);
         if (!moduleName)
             return NULL;
-    
+
         m_hFile = WszCreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ,
                              0, OPEN_EXISTING, 0, 0);
         return (m_hFile == INVALID_HANDLE_VALUE) ? NULL : map_file();
@@ -270,18 +270,18 @@ struct PARSING_ENVIRONMENT
 typedef LIFO<PARSING_ENVIRONMENT> PARSING_ENVIRONMENT_STACK;
 
 /**************************************************************************/
-/* AsmParse does all the parsing.  It also builds up simple data structures,  
+/* AsmParse does all the parsing.  It also builds up simple data structures,
    (like signatures), but does not do the any 'heavy lifting' like define
    methods or classes.  Instead it calls to the Assembler object to do that */
 
-class AsmParse : public ErrorReporter 
+class AsmParse : public ErrorReporter
 {
 public:
     AsmParse(ReadStream* stream, Assembler *aAssem);
     virtual ~AsmParse();
     void CreateEnvironment(ReadStream* stream);
-	void ParseFile(ReadStream* stream); 
-        // The parser knows how to put line numbers on things and report the error 
+	void ParseFile(ReadStream* stream);
+        // The parser knows how to put line numbers on things and report the error
     virtual void error(const char* fmt, ...);
     virtual void warn(const char* fmt, ...);
     virtual void msg(const char* fmt, ...);

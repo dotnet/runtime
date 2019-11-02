@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Implementation of event synchronization object as described in 
+    Implementation of event synchronization object as described in
     the WIN32 API
 
 Revision History:
@@ -105,7 +105,7 @@ CreateEventA(
           lpEventAttributes, bManualReset, bInitialState, lpName, lpName?lpName:"NULL");
 
     pthr = InternalGetCurrentThread();
-    
+
     if (lpName != nullptr)
     {
         ASSERT("lpName: Cross-process named objects are not supported in PAL");
@@ -131,7 +131,7 @@ CreateEventA(
     //
 
     pthr->SetLastError(palError);
-    
+
     LOGEXIT("CreateEventA returns HANDLE %p\n", hEvent);
     PERF_EXIT(CreateEventA);
     return hEvent;
@@ -147,7 +147,7 @@ Note:
   -- Win32 object security not supported
   -- handles to event objects are not inheritable
 
-Parameters:  
+Parameters:
   See MSDN doc.
 --*/
 
@@ -165,14 +165,14 @@ CreateEventW(
 
     PERF_ENTRY(CreateEventW);
     ENTRY("CreateEventW(lpEventAttr=%p, bManualReset=%d, "
-          "bInitialState=%d, lpName=%p (%S)\n", lpEventAttributes, bManualReset, 
+          "bInitialState=%d, lpName=%p (%S)\n", lpEventAttributes, bManualReset,
            bInitialState, lpName, lpName?lpName:W16_NULLSTRING);
 
     pthr = InternalGetCurrentThread();
 
     palError = InternalCreateEvent(
         pthr,
-        lpEventAttributes, 
+        lpEventAttributes,
         bManualReset,
         bInitialState,
         lpName,
@@ -203,7 +203,7 @@ Note:
   -- handles to event objects are not inheritable
   -- Access rights are not supported
 
-Parameters:  
+Parameters:
   See MSDN doc.
 --*/
 
@@ -311,7 +311,7 @@ CorUnix::InternalCreateEvent(
     palError = g_pObjectManager->RegisterObject(
         pthr,
         pobjEvent,
-        &aotEvent, 
+        &aotEvent,
         phEvent,
         &pobjRegisteredEvent
         );
@@ -321,7 +321,7 @@ CorUnix::InternalCreateEvent(
     // out here to ensure that we don't try to release a reference on
     // it down the line.
     //
-    
+
     pobjEvent = NULL;
 
 InternalCreateEventExit:
@@ -361,14 +361,14 @@ SetEvent(
     ENTRY("SetEvent(hEvent=%p)\n", hEvent);
 
     pthr = InternalGetCurrentThread();
-    
+
     palError = InternalSetEvent(pthr, hEvent, TRUE);
 
     if (NO_ERROR != palError)
     {
         pthr->SetLastError(palError);
     }
-    
+
     LOGEXIT("SetEvent returns BOOL %d\n", (NO_ERROR == palError));
     PERF_EXIT(SetEvent);
     return (NO_ERROR == palError);
@@ -401,7 +401,7 @@ ResetEvent(
     {
         pthr->SetLastError(palError);
     }
-    
+
     LOGEXIT("ResetEvent returns BOOL %d\n", (NO_ERROR == palError));
     PERF_EXIT(ResetEvent);
     return (NO_ERROR == palError);
@@ -495,7 +495,7 @@ Note:
   dwDesiredAccess is currently ignored (no Win32 object security support)
   bInheritHandle is currently ignored (handles to events are not inheritable)
 
-Parameters:  
+Parameters:
   See MSDN doc.
 --*/
 
@@ -511,7 +511,7 @@ OpenEventW(
     CPalThread *pthr = NULL;
 
     PERF_ENTRY(OpenEventW);
-    ENTRY("OpenEventW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n", 
+    ENTRY("OpenEventW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n",
           dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:W16_NULLSTRING);
 
     pthr = InternalGetCurrentThread();
@@ -521,7 +521,7 @@ OpenEventW(
     {
         ERROR("name is NULL\n");
         palError = ERROR_INVALID_PARAMETER;
-        goto OpenEventWExit;            
+        goto OpenEventWExit;
     }
     else
     {

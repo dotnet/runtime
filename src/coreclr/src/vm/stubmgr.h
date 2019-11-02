@@ -5,8 +5,8 @@
 //
 
 //
-// The stub manager exists so that the debugger can accurately step through 
-// the myriad stubs & wrappers which exist in the EE, without imposing undue 
+// The stub manager exists so that the debugger can accurately step through
+// the myriad stubs & wrappers which exist in the EE, without imposing undue
 // overhead on the stubs themselves.
 //
 // Each type of stub (except those which the debugger can treat as atomic operations)
@@ -17,9 +17,9 @@
 //              (i) a managed code address
 //              (ii) an unmanaged code address
 //              (iii) another stub address
-//              (iv) a "frame patch" address - that is, an address in the stub, 
+//              (iv) a "frame patch" address - that is, an address in the stub,
 //                      which the debugger can patch. When the patch is hit, the debugger
-//                      will query the topmost frame to trace itself.  (Thus this is 
+//                      will query the topmost frame to trace itself.  (Thus this is
 //                      a way of deferring the trace logic to the frame which the stub
 //                      will push.)
 //
@@ -27,11 +27,11 @@
 // as they are currently linearly searched & queried for each stub.
 //
 //
-// IMPORTANT IMPLEMENTATION NOTE: Due to code versioning, tracing through a jitted code 
-// call is a speculative exercise. A trace could predict that calling method Foo would run 
+// IMPORTANT IMPLEMENTATION NOTE: Due to code versioning, tracing through a jitted code
+// call is a speculative exercise. A trace could predict that calling method Foo would run
 // jitted code at address 0x1234, however afterwards code versioning redirects Foo to call
 // an alternate jitted code body at address 0x5678. To handle this stub managers should
-// either: 
+// either:
 //  a) stop tracing at offset zero of the newly called jitted code. The debugger knows
 //     to treat offset 0 in jitted code as potentially being any jitted code instance
 //  b) trace all the way through the jitted method such that regardless of which jitted
@@ -53,14 +53,14 @@
 // TraceType indicates what this 'target' is
 enum TraceType
 {
-    TRACE_ENTRY_STUB,               // Stub goes to an unmanaged entry stub 
+    TRACE_ENTRY_STUB,               // Stub goes to an unmanaged entry stub
     TRACE_STUB,                     // Stub goes to another stub
     TRACE_UNMANAGED,                // Stub goes to unmanaged code
     TRACE_MANAGED,                  // Stub goes to Jitted code
     TRACE_UNJITTED_METHOD,          // Is the prestub, since there is no code, the address will actually be a MethodDesc*
 
     TRACE_FRAME_PUSH,               // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
-    TRACE_MGR_PUSH,                 // Don't know where stub goes, stop at address then call TraceManager() below to find out 
+    TRACE_MGR_PUSH,                 // Don't know where stub goes, stop at address then call TraceManager() below to find out
 
     TRACE_OTHER                     // We are going somewhere you can't step into (eg. ee helper function)
 };
@@ -79,13 +79,13 @@ class TraceDestination
 {
 public:
     friend class DebuggerRCThread;
-    
+
     TraceDestination() { }
 
 #ifdef _DEBUG
     // Get a string representation of this TraceDestination
     // Uses the supplied buffer to store the memory (or may return a string literal).
-    // This will also print the TD's arguments.    
+    // This will also print the TD's arguments.
     const WCHAR * DbgToString(SString &buffer);
 #endif
 
@@ -95,7 +95,7 @@ public:
     {
         this->type = TRACE_UNMANAGED;
         this->address = addr;
-        this->stubManager = NULL;        
+        this->stubManager = NULL;
     }
 
     // The addr is inside jitted code (eg, there's a JitManaged that will claim it)
@@ -160,18 +160,18 @@ public:
 
     // Accessors
     TraceType GetTraceType() { return type; }
-    PCODE GetAddress() 
+    PCODE GetAddress()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(type != TRACE_UNJITTED_METHOD);
-        return address; 
+        return address;
     }
     MethodDesc* GetMethodDesc()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(type == TRACE_UNJITTED_METHOD);
         return pDesc;
-    }    
+    }
 
     StubManager * GetStubManager()
     {
@@ -186,7 +186,7 @@ public:
     }
 private:
     TraceType                       type;               // The kind of code the stub is going to
-    PCODE                           address;            // Where the stub is going    
+    PCODE                           address;            // Where the stub is going
     StubManager                     *stubManager;       // The manager that claims this stub
     MethodDesc                      *pDesc;
 };
@@ -196,7 +196,7 @@ private:
     void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination * pTrace);
     #define LOG_TRACE_DESTINATION(_tracedestination, stubAddr, _stHint)  LogTraceDestination(_stHint, stubAddr, _tracedestination)
 #else
-    #define LOG_TRACE_DESTINATION(_tracedestination, stubAddr, _stHint)    
+    #define LOG_TRACE_DESTINATION(_tracedestination, stubAddr, _stHint)
 #endif
 
 typedef VPTR(class StubManager) PTR_StubManager;
@@ -207,7 +207,7 @@ class StubManager
     friend class StubManagerIterator;
 
     VPTR_BASE_VTABLE_CLASS(StubManager)
-    
+
   public:
     // Startup and shutdown the global stubmanager service.
     static void InitializeStubManagers();
@@ -222,14 +222,14 @@ class StubManager
 
     // Find stub manager for given code address
     static PTR_StubManager FindStubManager(PCODE stubAddress);
-        
-    // Look for stubAddress, if found return TRUE, and set 'trace' to 
+
+    // Look for stubAddress, if found return TRUE, and set 'trace' to
     static BOOL TraceStub(PCODE stubAddress, TraceDestination *trace);
-    
+
     // if 'trace' indicates TRACE_STUB, keep calling TraceStub on 'trace', until you get out of all stubs
     // returns true if successfull
     static BOOL FollowTrace(TraceDestination *trace);
-    
+
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -239,7 +239,7 @@ class StubManager
     // NOTE: Very important when using this. It is not thread safe, except in this very
     //       limited scenario: the thread must have the runtime suspended.
     static void UnlinkStubManager(StubManager *mgr);
-    
+
 #ifndef DACCESS_COMPILE
     StubManager();
     virtual ~StubManager();
@@ -253,7 +253,7 @@ class StubManager
 
     // Only Stubmanagers that return 'TRACE_MGR_PUSH' as a trace type need to implement this function
     // Fills in 'trace' (the target), and 'pRetAddr' (the method that called the stub) (this is needed
-    // as a 'fall back' so that the debugger can at least stop when the stub returns.  
+    // as a 'fall back' so that the debugger can at least stop when the stub returns.
     virtual BOOL TraceManager(Thread *thread, TraceDestination *trace,
                               T_CONTEXT *pContext, BYTE **pRetAddr)
     {
@@ -263,7 +263,7 @@ class StubManager
         return FALSE;
     }
 
-    // The worker for IsStub. This calls CheckIsStub_Internal, but wraps it w/ 
+    // The worker for IsStub. This calls CheckIsStub_Internal, but wraps it w/
     // a try-catch.
     BOOL CheckIsStub_Worker(PCODE stubStartAddress);
 
@@ -278,26 +278,26 @@ public:
     // informative asserts. this log is not thread-safe, but we really only expect
     // a single stub-manager usage at a time.
     //
-    // A stub manager for a step-in operation may be used across 
+    // A stub manager for a step-in operation may be used across
     // both the helper thread and then the managed thread doing the step-in.
     // These threads will coordinate to have exclusive access (helper will only access
     // when stopped; and managed thread will only access when running).
     //
     // It's also possible (but rare) for a single thread to have multiple step-in operations.
-    // Since that's so rare, no present need to expand our logging to support it.    
+    // Since that's so rare, no present need to expand our logging to support it.
     //-----------------------------------------------------------------------------
 
 
     static bool IsStubLoggingEnabled();
 
-    // Call to reset the log. This is used at the start of a new step-operation.    
+    // Call to reset the log. This is used at the start of a new step-operation.
     static void DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget);
     static void DbgFinishLog();
-    
+
     // Log arbitrary string. This is a nop if it's outside the Begin/Finish window.
     // We could consider making each log entry type-safe (and thus avoid the string operations).
     static void DbgWriteLog(const CHAR *format, ...);
-    
+
     // Get the log as a string.
     static void DbgGetLog(SString * pStringOut);
 
@@ -309,11 +309,11 @@ protected:
 
 #endif
 
-        
+
 protected:
 
-    // Each stubmanaged implements this. 
-    // This may throw, AV, etc depending on the implementation. This should not 
+    // Each stubmanaged implements this.
+    // This may throw, AV, etc depending on the implementation. This should not
     // be called directly unless you know exactly what you're doing.
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress) = 0;
 
@@ -331,7 +331,7 @@ public:
     // This is used by DAC to provide more information on who owns a stub.
     virtual LPCWSTR GetStubManagerName(PCODE addr) = 0;
 #endif
- 
+
 private:
     SPTR_DECL(StubManager, g_pFirstManager);
     PTR_StubManager m_pNextManager;
@@ -349,7 +349,7 @@ class LockedRangeList : public RangeList
 {
   public:
     VPTR_VTABLE_CLASS(LockedRangeList, RangeList)
-    
+
     LockedRangeList() : RangeList(), m_RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT)
     {
         LIMITED_METHOD_CONTRACT;
@@ -396,7 +396,7 @@ class LockedRangeList : public RangeList
 class ThePreStubManager : public StubManager
 {
     VPTR_VTABLE_CLASS(ThePreStubManager, StubManager)
-    
+
   public:
 #ifndef DACCESS_COMPILE
     ThePreStubManager() { LIMITED_METHOD_CONTRACT; }
@@ -489,7 +489,7 @@ class StubLinkStubManager : public StubManager
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "StubLinkStubManager"; }
-#endif    
+#endif
 
 
     SPTR_DECL(StubLinkStubManager, g_pManager);
@@ -500,12 +500,12 @@ class StubLinkStubManager : public StubManager
     StubLinkStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
     ~StubLinkStubManager() {WRAPPER_NO_CONTRACT;}
 #endif
-  
+
   protected:
     LockedRangeList m_rangeList;
   public:
     // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList() 
+    PTR_RangeList GetRangeList()
     {
         SUPPORTS_DAC;
 
@@ -560,7 +560,7 @@ class ThunkHeapStubManager : public StubManager
     LockedRangeList m_rangeList;
   public:
     // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList() 
+    PTR_RangeList GetRangeList()
     {
         SUPPORTS_DAC;
         TADDR addr = PTR_HOST_MEMBER_TADDR(ThunkHeapStubManager, this, m_rangeList);
@@ -601,7 +601,7 @@ class JumpStubStubManager : public StubManager
     ~JumpStubStubManager() {WRAPPER_NO_CONTRACT;}
 
 #endif
-  
+
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "JumpStubStubManager"; }
 #endif
@@ -620,7 +620,7 @@ class JumpStubStubManager : public StubManager
 };
 
 //
-// Stub manager for code sections. It forwards the query to the more appropriate 
+// Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.
 //
 typedef VPTR(class RangeSectionStubManager) PTR_RangeSectionStubManager;
@@ -642,7 +642,7 @@ class RangeSectionStubManager : public StubManager
     static StubCodeBlockKind GetStubKind(PCODE stubStartAddress);
 
     static PCODE GetMethodThunkTarget(PCODE stubStartAddress);
-  
+
   public:
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "RangeSectionStubManager"; }
@@ -820,7 +820,7 @@ class DelegateInvokeStubManager : public StubManager
     LockedRangeList m_rangeList;
    public:
     // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList() 
+    PTR_RangeList GetRangeList()
     {
         SUPPORTS_DAC;
 
@@ -958,16 +958,16 @@ public:
     {
         /*
                 Following is the callstack corresponding to context  received by ILStubManager::TraceManager.
-                This function returns the return address (user code address) where control should return after all 
+                This function returns the return address (user code address) where control should return after all
                 delegates in multicast delegate have been executed.
-              
+
                 StubHelpers::MulticastDebuggerTraceHelper
                 IL_STUB_MulticastDelegate_Invoke
                 UserCode which invokes multicast delegate <---
               */
 
 #if defined(_TARGET_X86_)
-        return *((PCODE *)pContext->Ebp + 1);      
+        return *((PCODE *)pContext->Ebp + 1);
 #elif defined(_TARGET_AMD64_)
         T_CONTEXT context(*pContext);
         Thread::VirtualUnwindCallFrame(&context);
@@ -977,7 +977,7 @@ public:
 #elif defined(_TARGET_ARM_)
         return *((PCODE *)((TADDR)pContext->R11) + 1);
 #elif defined(_TARGET_ARM64_)
-        return *((PCODE *)pContext->Fp + 1);      
+        return *((PCODE *)pContext->Fp + 1);
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
         return NULL;

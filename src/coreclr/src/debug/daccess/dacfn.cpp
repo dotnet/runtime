@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacfn.cpp
-// 
+//
 
 //
 // Dac function implementations.
@@ -119,7 +119,7 @@ DacError(HRESULT err)
 }
 
 // Ideally DacNoImpl and DacError would be marked no-return, but that will require changing a bunch of existing
-// code to avoid "unreachable code" warnings. 
+// code to avoid "unreachable code" warnings.
 void DECLSPEC_NORETURN
 DacError_NoRet(HRESULT err)
 {
@@ -161,7 +161,7 @@ DacReadAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     unsigned __int64  nStart, nEnd;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     status = g_dacImpl->m_pTarget->
         ReadVirtual(addr, (PBYTE)buffer, size, &returned);
 
@@ -169,7 +169,7 @@ DacReadAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     nEnd = GetCycleCount();
     g_nReadVirtualTotalTime += nEnd - nStart;
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     if (status != S_OK)
     {
         // Regardless of what status is, it's very important for dump debugging to
@@ -245,7 +245,7 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
     return TRUE;
 }
 
-HRESULT 
+HRESULT
 DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
@@ -269,7 +269,7 @@ DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POI
     {
         hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
     }
-    else 
+    else
 #endif
     {
         SIZE_T baseAddress = DacGlobalBase();
@@ -378,10 +378,10 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
         return (PVOID)addr;
     }
 
-    // DacInstanceManager::Alloc will assert (with a non-obvious message) on 0-size instances. 
+    // DacInstanceManager::Alloc will assert (with a non-obvious message) on 0-size instances.
     // Fail sooner and more obviously here.
     _ASSERTE_MSG( size > 0, "DAC coding error: instance size cannot be 0" );
-    
+
     // Do not attempt to allocate more than 64megs for one object instance.  While we should
     // never even come close to this size, in cases of heap corruption or bogus data passed
     // into the dac, we can allocate huge amounts of data if we are unlucky.  This santiy
@@ -422,7 +422,7 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
             // be superseded.
             if (inst->usage == DAC_VPTR)
             {
-                // The same address has already been marshalled as a VPTR, now we're trying to marshal as a 
+                // The same address has already been marshalled as a VPTR, now we're trying to marshal as a
                 // DPTR.  This is not allowed.
                 _ASSERTE_MSG(false, "DAC coding error: DPTR/VPTR usage conflict");
                 DacError(E_INVALIDARG);
@@ -471,7 +471,7 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
     {
         g_dacImpl->m_instances.ReturnAlloc(inst);
         DacError(E_OUTOFMEMORY);
-        UNREACHABLE();        
+        UNREACHABLE();
     }
 
     if (oldInst)
@@ -517,7 +517,7 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     {
         return (PVOID)addr;
     }
-    
+
     // Do not attempt to allocate more than 64megs for one object instance.  While we should
     // never even come close to this size, in cases of heap corruption or bogus data passed
     // into the dac, we can allocate huge amounts of data if we are unlucky.  This santiy
@@ -546,7 +546,7 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
         if (inst->usage == DAC_VPTR)
         {
             // Sanity check that the object we're returning is big enough to fill the PTR type it's being
-            // accessed with.  For more information, see the similar check below for the case when the 
+            // accessed with.  For more information, see the similar check below for the case when the
             // object isn't already cached
             _ASSERTE_MSG(inst->size >= minSize, "DAC coding error: Attempt to instantiate a VPTR from an object that is too small");
 
@@ -616,7 +616,7 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     // Sanity check that the object we're returning is big enough to fill the PTR type it's being
     // accessed with.
     // If this is not true, it means the type being marshalled isn't a sub-type (or the same type)
-    // as the PTR type it's being used as.  For example, trying to marshal an instance of a SystemDomain 
+    // as the PTR type it's being used as.  For example, trying to marshal an instance of a SystemDomain
     // object into a PTR_AppDomain will cause this ASSERT to fire (because both SystemDomain and AppDomain
     // derived from BaseDomain, and SystemDomain is smaller than AppDomain).
     _ASSERTE_MSG(size >= minSize, "DAC coding error: Attempt to instantiate a VPTR from an object that is too small");
@@ -651,7 +651,7 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     {
         g_dacImpl->m_instances.ReturnAlloc(inst);
         DacError(E_OUTOFMEMORY);
-        UNREACHABLE();        
+        UNREACHABLE();
     }
 
     if (oldInst)
@@ -689,8 +689,8 @@ DacInstantiateStringA(TADDR addr, ULONG32 maxChars, bool throwEx)
     {
         return (PSTR)addr;
     }
-    
-    
+
+
     // Do not attempt to allocate more than 64megs for a string.  While we should
     // never even come close to this size, in cases of heap corruption or bogus data passed
     // into the dac, we can allocate huge amounts of data if we are unlucky.  This santiy
@@ -821,7 +821,7 @@ DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx)
     {
         return (PWSTR)addr;
     }
-    
+
     // Do not attempt to allocate more than 64megs for a string.  While we should
     // never even come close to this size, in cases of heap corruption or bogus data passed
     // into the dac, we can allocate huge amounts of data if we are unlucky.  This santiy
@@ -978,7 +978,7 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
 
             if (throwEx)
             {
-                // This means a pointer was supplied which doesn't actually point to the beginning of 
+                // This means a pointer was supplied which doesn't actually point to the beginning of
                 // a marshalled DAC instance.
                 _ASSERTE_MSG(false, "DAC coding error: Attempt to get target address from a host pointer "
                                     "which is not an instance marshalled by DAC!");
@@ -1182,9 +1182,9 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
     return 0;
 }
 
-// 
+//
 // DacEnumMemoryRegion - report a region of memory to the dump generation code
-// 
+//
 // Parameters:
 //   addr           - target address of the beginning of the memory region
 //   size           - number of bytes to report
@@ -1200,7 +1200,7 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
 //                    the size of the commit region for every block).  In these special cases,
 //                    we pass false to indicate that we're happy reporting up to the first
 //                    unreadable byte.  This should be avoided if at all possible.
-//                    
+//
 bool DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess /*=true*/)
 {
     if (!g_dacImpl)
@@ -1214,7 +1214,7 @@ bool DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess /*=true*/
 
 //
 // DacUpdateMemoryRegion - updates/poisons a region of memory of generated dump
-// 
+//
 // Parameters:
 //   addr           - target address of the beginning of the memory region
 //   bufferSize     - number of bytes to update/poison
@@ -1294,7 +1294,7 @@ DacSetMethodDescEnumerated(LPCVOID pMD)
     return MDEnumed;
 }
 
-// This gets called from DAC-ized code in the VM. 
+// This gets called from DAC-ized code in the VM.
 IMDInternalImport*
 DacGetMDImport(const PEFile* peFile, bool throwEx)
 {
@@ -1339,7 +1339,7 @@ DacGetIlMethod(TADDR methAddr)
 }
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-void 
+void
 DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName)
 {
     if (!g_dacImpl)
@@ -1350,7 +1350,7 @@ DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName)
 
     g_dacImpl->MdCacheAddEEName(taEE, ssEEName);
 }
-bool 
+bool
 DacMdCacheGetEEName(TADDR taEE, SString & eeName)
 {
     if (!g_dacImpl)
@@ -1390,9 +1390,9 @@ DacAllocHostOnlyInstance(ULONG32 size, bool throwEx)
 // Queries whether ASSERTs should be raised when inconsistencies in the target are detected
 //
 // Return Value:
-//   true if ASSERTs should be raised in DACized code.  
+//   true if ASSERTs should be raised in DACized code.
 //   false if ASSERTs should be ignored.
-//   
+//
 // Notes:
 //   See code:ClrDataAccess::TargetConsistencyAssertsEnabled for details.
 bool DacTargetConsistencyAssertsEnabled()
@@ -1401,25 +1401,25 @@ bool DacTargetConsistencyAssertsEnabled()
     {
         // No ClrDataAccess instance available (maybe we're still initializing).  Any asserts when this is
         // the case should only be host-asserts (i.e. always bugs), and so we should just return true.
-        return true; 
+        return true;
     }
 
     return g_dacImpl->TargetConsistencyAssertsEnabled();
 }
 
-// 
+//
 // DacEnumCodeForStackwalk
 // This is a helper function to enumerate the instructions around a call site to aid heuristics
 // used by debugger stack walkers.
-// 
+//
 // Arguments:
 //     taCallEnd - target address of the instruction just after the call instruction for the stack
 //                 frame we want to examine(i.e. the return address for the next frame).
-// 
-// Note that this is shared by our two stackwalks during minidump generation, 
-// code:Thread::EnumMemoryRegionsWorker and code:ClrDataAccess::EnumMemWalkStackHelper.  Ideally 
-// we'd only have one stackwalk, but we currently have two different APIs for stackwalking 
-// (CLR StackFrameIterator and IXCLRDataStackWalk), and we must ensure that the memory needed 
+//
+// Note that this is shared by our two stackwalks during minidump generation,
+// code:Thread::EnumMemoryRegionsWorker and code:ClrDataAccess::EnumMemWalkStackHelper.  Ideally
+// we'd only have one stackwalk, but we currently have two different APIs for stackwalking
+// (CLR StackFrameIterator and IXCLRDataStackWalk), and we must ensure that the memory needed
 // for either is captured in a minidump.  Eventually, all clients should get moved over to the
 // arrowhead debugging architecture, at which time we can rip out all the IXCLRData APIs, and
 // so this logic could just be private to the EnumMem code for Thread.
@@ -1448,14 +1448,14 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
     // quantify exactly what debuggers need and why, and try and avoid these ugly heuristics.
     // It seems like these heuristics are too tightly coupled to the implementation details
     // of some specific debugger stackwalking algorithm.
-    //  
+    //
     DacEnumMemoryRegion(taCallEnd - MAX_INSTRUCTION_LENGTH, MAX_INSTRUCTION_LENGTH * 2, false);
 
 #if defined(_TARGET_X86_)
     // If it was an indirect call we also need to save the data indirected through.
     // Note that this only handles absolute indirect calls (ModR/M byte of 0x15), all the other forms of
     // indirect calls are register-relative, and so we'd have to do a much more complicated decoding based
-    // on the register context.  Regardless, it seems like this is fundamentally error-prone because it's 
+    // on the register context.  Regardless, it seems like this is fundamentally error-prone because it's
     // aways possible that the call instruction was not 6 bytes long, and we could have some other instructions
     // that happen to match the pattern we're looking for.
     PTR_BYTE callCode = PTR_BYTE(taCallEnd - 6);
@@ -1475,9 +1475,9 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
 // ----------------------------------------------------------------------------
 // DacReplacePatches
 //
-// Description: 
-//    Given the address and the size of a memory range which is stored in the buffer, replace all the patches 
-//    in the buffer with the real opcodes.  This is especially important on X64 where the unwinder needs to 
+// Description:
+//    Given the address and the size of a memory range which is stored in the buffer, replace all the patches
+//    in the buffer with the real opcodes.  This is especially important on X64 where the unwinder needs to
 //    disassemble the native instructions.
 //
 // Arguments:
@@ -1511,9 +1511,9 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer)
     DebuggerControllerPatch * pPatch = pTable->GetFirstPatch(&info);
 
     // <PERF>
-    // The unwinder needs to read the stack very often to restore pushed registers, retrieve the 
+    // The unwinder needs to read the stack very often to restore pushed registers, retrieve the
     // return addres, etc.  However, stack addresses should never be patched.
-    // One way to optimize this code is to pass the stack base and the stack limit of the thread to this 
+    // One way to optimize this code is to pass the stack base and the stack limit of the thread to this
     // function and use those two values to filter out stack addresses.
     //
     // Another thing we can do is instead of enumerating the patches, we could enumerate the address.

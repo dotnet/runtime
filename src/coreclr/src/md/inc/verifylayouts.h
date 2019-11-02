@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // VerifyLayouts.h
-// 
+//
 
 //
 // Make sure that layouts of MD data strucutres doesn't change accidentally
@@ -41,14 +41,14 @@
 // d) If your changes affect what a debugger should be reading in order to fetch
 //    metadata then you probably need to change other parts of the debugger
 //    implementation as well. In general the debugger cares about the schema,
-//    TableDefs, storage signature, table records, and storage pools. 
+//    TableDefs, storage signature, table records, and storage pools.
 //
 // e) AFTER you have fixed up the debugger stuff above, now its time to update
 //    layout definitions so the static asserts will quiet down. Check out
 //    the comments in VerifyLayouts.inc for how to do that.
 //
 //  Thanks for helping us keep the debugger working :)
-// 
+//
 
 
 
@@ -74,7 +74,7 @@
 //      316;
 //      ... many more lines like this covering all fields in all marked up types ...
 //
-//      
+//
 //      static const int alignment_of_first_field_in_CMiniMdRW =
 //      4;
 //      static const int alignment_of_field_after_CMiniMdRW_m_Schema =
@@ -95,7 +95,7 @@
 //
 //
 //
-// 
+//
 
 #ifdef FEATURE_METADATA_VERIFY_LAYOUTS
 
@@ -162,7 +162,7 @@ class VerifyLayoutsMD
 #undef END_TYPE_ESCAPED
 #undef BITFIELD
 
-    
+
 #define BEGIN_TYPE_ESCAPED(typeName, escapedTypeName, initialFieldOffset) \
     static_assert_no_msg(expected_offset_of_first_field_in_##escapedTypeName == actual_offset_of_first_field_in_##escapedTypeName);
 
@@ -174,7 +174,7 @@ class VerifyLayoutsMD
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     static_assert_no_msg(offset_of_field_after_##typeName##_##fieldName == \
     ALIGN_UP(fieldOffset + fieldSize, alignment_of_field_after_##typeName##_##fieldName));
-        
+
 #define END_TYPE_ESCAPED(typeName, escapedTypeName, typeAlignmentSize)
 #include "VerifyLayouts.inc"
 

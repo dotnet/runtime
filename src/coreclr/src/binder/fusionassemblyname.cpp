@@ -34,7 +34,7 @@ namespace
 {
     HRESULT GetPublicKeyTokenFromPKBlob(LPBYTE pbPublicKeyToken, DWORD cbPublicKeyToken,
                                         LPBYTE *ppbSN, LPDWORD pcbSN)
-    {    
+    {
         HRESULT hr = S_OK;
 
         // Generate the hash of the public key.
@@ -77,12 +77,12 @@ CPropertyArray::~CPropertyArray()
 // ---------------------------------------------------------------------------
 // CPropertyArray::Set
 // ---------------------------------------------------------------------------
-HRESULT CPropertyArray::Set(DWORD PropertyId, 
+HRESULT CPropertyArray::Set(DWORD PropertyId,
     LPCVOID pvProperty, DWORD cbProperty)
 {
     HRESULT hr = S_OK;
     FusionProperty *pItem = NULL;
-        
+
     pItem = &(_rProp[PropertyId]);
 
     if (!cbProperty && !pvProperty)
@@ -102,7 +102,7 @@ HRESULT CPropertyArray::Set(DWORD PropertyId,
             hr = E_OUTOFMEMORY;
             goto exit;
         }
-        
+
         if (pItem->cb > sizeof(DWORD))
             FUSION_DELETE_ARRAY((LPBYTE) pItem->pv);
 
@@ -118,7 +118,7 @@ HRESULT CPropertyArray::Set(DWORD PropertyId,
 
 #ifdef _DEBUG
         if (PropertyId == ASM_NAME_ARCHITECTURE) {
-            PEKIND pe = * ((PEKIND *)pvProperty);        
+            PEKIND pe = * ((PEKIND *)pvProperty);
             _ASSERTE(pe != peInvalid);
         }
 #endif
@@ -127,12 +127,12 @@ HRESULT CPropertyArray::Set(DWORD PropertyId,
 
 exit:
     return hr;
-}     
+}
 
 // ---------------------------------------------------------------------------
 // CPropertyArray::Get
 // ---------------------------------------------------------------------------
-HRESULT CPropertyArray::Get(DWORD PropertyId, 
+HRESULT CPropertyArray::Get(DWORD PropertyId,
     LPVOID pvProperty, LPDWORD pcbProperty)
 {
     HRESULT hr = S_OK;
@@ -146,21 +146,21 @@ HRESULT CPropertyArray::Get(DWORD PropertyId,
         _ASSERTE(!"Invalid Argument! Passed in NULL buffer with size non-zero!");
         hr = E_INVALIDARG;
         goto exit;
-    }        
+    }
 
     pItem = &(_rProp[PropertyId]);
 
     if (pItem->cb > *pcbProperty)
         hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     else if (pItem->cb)
-        memcpy(pvProperty, (pItem->cb > sizeof(DWORD) ? 
+        memcpy(pvProperty, (pItem->cb > sizeof(DWORD) ?
             pItem->pv : (LPBYTE) &(pItem->pv)), pItem->cb);
 
     *pcbProperty = pItem->cb;
-        
+
 exit:
     return hr;
-}     
+}
 
 // ---------------------------------------------------------------------------
 // CPropertyArray::operator []
@@ -194,7 +194,7 @@ STDMETHODIMP_(ULONG)
 CAssemblyName::Release()
 {
     ULONG ulRef = InterlockedDecrement(&_cRef);
-    if (ulRef == 0) 
+    if (ulRef == 0)
     {
         delete this;
     }
@@ -244,7 +244,7 @@ CAssemblyName::QueryInterface(REFIID riid, void** ppv)
 // CAssemblyName::SetProperty
 // ---------------------------------------------------------------------------
 STDMETHODIMP
-CAssemblyName::SetProperty(DWORD PropertyId, 
+CAssemblyName::SetProperty(DWORD PropertyId,
                            LPCVOID pvProperty,
                            DWORD cbProperty)
 {
@@ -262,7 +262,7 @@ CAssemblyName::SetProperty(DWORD PropertyId,
 // CAssemblyName::GetProperty
 // ---------------------------------------------------------------------------
 STDMETHODIMP
-CAssemblyName::GetProperty(DWORD PropertyId, 
+CAssemblyName::GetProperty(DWORD PropertyId,
     LPVOID pvProperty, LPDWORD pcbProperty)
 {
     HRESULT hr = S_OK;
@@ -283,7 +283,7 @@ CAssemblyName::GetProperty(DWORD PropertyId,
             hr = (_fCustom && !_rProp[PropertyId].cb) ? S_OK : S_FALSE;
             break;
         }
-        default:        
+        default:
         {
             hr = _rProp.Get(PropertyId, pvProperty, pcbProperty);
             break;
@@ -317,7 +317,7 @@ CAssemblyName::GetName(
 // ---------------------------------------------------------------------------
 // CAssemblyName::SetPropertyInternal
 // ---------------------------------------------------------------------------
-HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId, 
+HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
                                            LPCVOID pvProperty,
                                            DWORD  cbProperty)
 {
@@ -331,7 +331,7 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
         _ASSERTE(!"Invalid Argument! Passed in NULL buffer with size non-zero!");
         hr = E_INVALIDARG;
         goto exit;
-    }        
+    }
 
     // <REVISIT_TODO> - make this a switch statement.</REVISIT_TODO>
     if (PropertyId == ASM_NAME_MAJOR_VERSION ||
@@ -358,7 +358,7 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
 
             // Set the public key token property.
             if (FAILED(hr = SetPropertyInternal(ASM_NAME_PUBLIC_KEY_TOKEN, pbSN, cbSN)))
-                goto exit;        
+                goto exit;
         }
         // Otherwise expect call to reset property.
         else if (!cbProperty)
@@ -366,7 +366,7 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
             if (FAILED(hr = SetPropertyInternal(ASM_NAME_PUBLIC_KEY_TOKEN, pvProperty, cbProperty)))
                 goto exit;
         }
-            
+
     }
     // Setting NULL public key clears values in public key,
     // public key token and sets public key token flag.
@@ -381,7 +381,7 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
     else if (PropertyId == ASM_NAME_PUBLIC_KEY_TOKEN)
     {
         // Defensive: invalid sized public key tokens should be avoided.
-        if (cbProperty > PUBLIC_KEY_TOKEN_LEN) 
+        if (cbProperty > PUBLIC_KEY_TOKEN_LEN)
         {
             hr = SetPropertyInternal(ASM_NAME_NULL_PUBLIC_KEY_TOKEN, NULL, 0);
             hr = E_INVALIDARG;
@@ -494,7 +494,7 @@ CreateAssemblyNameObject(
         hr = pName->Init(szAssemblyName, NULL);
     }
 
-    if (FAILED(hr)) 
+    if (FAILED(hr))
     {
         SAFERELEASE(pName);
         goto exit;
@@ -528,8 +528,8 @@ CreateAssemblyNameObjectFromMetaData(
     }
 
     hr = pName->Init(szAssemblyName, pamd);
-        
-    if (FAILED(hr)) 
+
+    if (FAILED(hr))
     {
         SAFERELEASE(pName);
         goto exit;
@@ -574,9 +574,9 @@ CAssemblyName::Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd)
     HRESULT hr = S_OK;
 
     // Name
-    if (pszAssemblyName) 
+    if (pszAssemblyName)
     {
-        hr = SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName, 
+        hr = SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName,
             (DWORD)((wcslen(pszAssemblyName)+1) * sizeof(TCHAR)));
         if (FAILED(hr))
             goto exit;
@@ -586,19 +586,19 @@ CAssemblyName::Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd)
             // Major version
         if (FAILED(hr = SetProperty(ASM_NAME_MAJOR_VERSION,
                 &pamd->usMajorVersion, sizeof(WORD)))
-    
+
             // Minor version
-            || FAILED(hr = SetProperty(ASM_NAME_MINOR_VERSION, 
+            || FAILED(hr = SetProperty(ASM_NAME_MINOR_VERSION,
                 &pamd->usMinorVersion, sizeof(WORD)))
-    
+
             // Revision number
-            || FAILED(hr = SetProperty(ASM_NAME_REVISION_NUMBER, 
+            || FAILED(hr = SetProperty(ASM_NAME_REVISION_NUMBER,
                 &pamd->usRevisionNumber, sizeof(WORD)))
-    
+
             // Build number
-            || FAILED(hr = SetProperty(ASM_NAME_BUILD_NUMBER, 
+            || FAILED(hr = SetProperty(ASM_NAME_BUILD_NUMBER,
                 &pamd->usBuildNumber, sizeof(WORD)))
-    
+
             // Culture
             || FAILED(hr = SetProperty(ASM_NAME_CULTURE,
                 pamd->szLocale, pamd->cbLocale * sizeof(WCHAR)))
@@ -734,7 +734,7 @@ HRESULT CAssemblyName::Parse(__in_z LPCWSTR szDisplayName)
         // Set content type.
         if (assemblyIdentity.Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE)) {
             DWORD dwContentType = assemblyIdentity.m_kContentType;
-            
+
             hr = SetProperty(ASM_NAME_CONTENT_TYPE, &dwContentType, sizeof(dwContentType));
             IfFailGoto(hr, exit);
         }
@@ -845,7 +845,7 @@ namespace fusion
             DWORD cbBuf = 0;
             if (pcbBuf == nullptr)
                 pcbBuf = &cbBuf;
-    
+
             hr = GetProperty(pName, dwProperty, *ppBuf, pcbBuf);
 
             // No provided buffer constitutes a request for one to be allocated.

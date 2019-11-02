@@ -21,7 +21,7 @@
 #undef SERVER_GC
 #endif
 
-namespace WKS { 
+namespace WKS {
 #include "gcimpl.h"
 #include "gc.cpp"
 }

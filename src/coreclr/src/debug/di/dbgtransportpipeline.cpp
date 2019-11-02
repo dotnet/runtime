@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: DbgTransportPipeline.cpp
-// 
+//
 
 //
 // Implements the native pipeline for Mac debugging.
@@ -43,16 +43,16 @@ BOOL IsExceptionEvent(const DEBUG_EVENT * pEvent, BOOL * pfFirstChance, const EX
 //
 // INativeEventPipeline is an abstraction over the Windows native debugging pipeline.  This class is an
 // implementation which works over an SSL connection for debugging a target process on a Mac remotely.
-// It builds on top of code:DbgTransportTarget (which is a connection to the debugger proxy on the Mac) and 
+// It builds on top of code:DbgTransportTarget (which is a connection to the debugger proxy on the Mac) and
 // code:DbgTransportSession (which is a connection to the target process on the Mac).  See
 // code:IEventChannel for more information.
 //
 // Assumptions:
-//    This class is NOT thread-safe.  Caller is assumed to have taken the appropriate measures for 
+//    This class is NOT thread-safe.  Caller is assumed to have taken the appropriate measures for
 //    synchronization.
 //
 
-class DbgTransportPipeline : 
+class DbgTransportPipeline :
     public INativeEventPipeline
 {
 public:
@@ -178,7 +178,7 @@ void DbgTransportPipeline::Delete()
 BOOL DbgTransportPipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
 {
     // This is not supported or necessary for Mac debugging.  The only reason we need this on Windows is to
-    // ask the OS not to terminate the debuggee when the debugger exits.  The Mac debugging pipeline doesn't 
+    // ask the OS not to terminate the debuggee when the debugger exits.  The Mac debugging pipeline doesn't
     // automatically kill the debuggee when the debugger exits.
     return TRUE;
 }
@@ -227,8 +227,8 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
         ProcessDescriptor processDescriptor = ProcessDescriptor::Create(lpProcessInformation->dwProcessId, NULL);
 
         // Establish a connection to the actual runtime to be debugged.
-        hr = m_pProxy->GetTransportForProcess(&processDescriptor, 
-                                              &m_pTransport, 
+        hr = m_pProxy->GetTransportForProcess(&processDescriptor,
+                                              &m_pTransport,
                                               &m_hProcess);
         if (SUCCEEDED(hr))
         {
@@ -256,16 +256,16 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
         // For Mac remote debugging, we don't actually have a process handle to hand back to the debugger.
         // Instead, we return a handle to an event as the "process handle".  The Win32 event thread also waits
         // on this event handle, and the event will be signaled when the proxy notifies us that the process
-        // on the remote machine is terminated.  However, normally the debugger calls CloseHandle() immediately 
+        // on the remote machine is terminated.  However, normally the debugger calls CloseHandle() immediately
         // on the "process handle" after CreateProcess() returns.  Doing so causes the Win32 event thread to
-        // continue waiting on a closed event handle, and so it will never wake up.  
+        // continue waiting on a closed event handle, and so it will never wake up.
         // (In fact, in Whidbey, we also duplicate the process handle in code:CordbProcess::Init.)
-        if (!DuplicateHandle(GetCurrentProcess(), 
+        if (!DuplicateHandle(GetCurrentProcess(),
                              m_hProcess,
-                             GetCurrentProcess(), 
-                             &(lpProcessInformation->hProcess), 
+                             GetCurrentProcess(),
+                             &(lpProcessInformation->hProcess),
                              0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                             FALSE, 
+                             FALSE,
                              DUPLICATE_SAME_ACCESS))
         {
             hr = HRESULT_FROM_GetLastError();
@@ -365,8 +365,8 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
         // The Windows implementation stores the target address of the IPC event in the debug event.
         // We can do that for Mac debugging, but that would require the caller to do another cross-machine
         // ReadProcessMemory(). Since we have all the data in-proc already, we just store a local address.
-        // 
-        // @dbgtodo  Mac - We are using -1 as a dummy base address right now.  
+        //
+        // @dbgtodo  Mac - We are using -1 as a dummy base address right now.
         // Currently Mac remote debugging doesn't really support multi-instance.
         InitEventForDebuggerNotification(pEvent, PTR_TO_CORDB_ADDRESS(reinterpret_cast<LPVOID>(-1)), m_pIPCEvent);
 
@@ -415,12 +415,12 @@ HANDLE DbgTransportPipeline::GetProcessHandle()
 {
     HANDLE hProcessTerminated;
 
-    if (!DuplicateHandle(GetCurrentProcess(), 
+    if (!DuplicateHandle(GetCurrentProcess(),
                          m_hProcess,
-                         GetCurrentProcess(), 
+                         GetCurrentProcess(),
                          &hProcessTerminated,
                          0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE, 
+                         FALSE,
                          DUPLICATE_SAME_ACCESS))
     {
         return NULL;

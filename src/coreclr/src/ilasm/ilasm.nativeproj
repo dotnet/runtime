@@ -20,7 +20,7 @@
     <LinkGenerateManifest>true</LinkGenerateManifest>
     <LinkAdditionalOptions>$(LinkAdditionalOptions) /MANIFEST -HEAP:4194304 </LinkAdditionalOptions>
     <LinkStackReserve>4194304</LinkStackReserve>
-    
+
     <!-- PCH baloney -->
     <EnableCxxPCHHeaders>true</EnableCxxPCHHeaders>
     <PCHCompile>ilasmpch.cpp</PCHCompile>
@@ -66,14 +66,14 @@
   </ItemGroup>
   <!--Import the targets-->
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
-  
+
   <PropertyGroup>
     <BuildGeneratedDependsOn>
       $(BuildGeneratedDependsOn);
       GenerateAsmParseC
     </BuildGeneratedDependsOn>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Clean Include="$O\asmparse.c" />
     <Clean Include="$O\asmparse.grammar" />

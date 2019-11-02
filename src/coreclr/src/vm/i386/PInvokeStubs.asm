@@ -8,7 +8,7 @@
 ; ***********************************************************************
 ;
 ;  *** NOTE:  If you make changes to this file, propagate the changes to
-;             PInvokeStubs.s in this directory                            
+;             PInvokeStubs.s in this directory
 
 ; This contains JITinterface routines that are 100% x86 assembly
 
@@ -20,7 +20,7 @@
 
         option  casemap:none
         .code
-        
+
 extern _s_gsCookie:DWORD
 extern ??_7InlinedCallFrame@@6B@:DWORD
 extern _g_TrapReturningThreads:DWORD
@@ -32,12 +32,12 @@ extern @JIT_PInvokeEndRarePath@0:proc
 
 ;
 ; in:
-; InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+; InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 ;                          before actual InlinedCallFrame data)
 ;
 ;
 _JIT_PInvokeBegin@4 PROC public
-        
+
         mov             eax, dword ptr [_s_gsCookie]
         mov             dword ptr [ecx], eax
         add             ecx, SIZEOF_GSCookie
@@ -48,7 +48,7 @@ _JIT_PInvokeBegin@4 PROC public
 
         mov             dword ptr [ecx + InlinedCallFrame__m_Datum], 0
 
-        
+
         mov             eax, esp
         add             eax, 4
         mov             dword ptr [ecx + InlinedCallFrame__m_pCallSiteSP], eax
@@ -76,7 +76,7 @@ _JIT_PInvokeBegin@4 ENDP
 
 ;
 ; in:
-; InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+; InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 ;                          before actual InlinedCallFrame data)
 ;
 ;

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // ProfDetach.h
-// 
+//
 
 //
 // Declaration of helper classes and structures used for Profiling API Detaching
@@ -15,10 +15,10 @@
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 
-// The struct below is the medium by which RequestProfilerDetach communicates with 
-// the DetachThread about a profiler being detached.  Initial core attach / 
-// detach feature crew will have only one global instance of this struct. 
-// When we allow re-attach with neutered profilers, there will likely be a 
+// The struct below is the medium by which RequestProfilerDetach communicates with
+// the DetachThread about a profiler being detached.  Initial core attach /
+// detach feature crew will have only one global instance of this struct.
+// When we allow re-attach with neutered profilers, there will likely be a
 // linked list of these, one per profiler in the act of being detached.
 struct ProfilerDetachInfo
 {
@@ -27,7 +27,7 @@ struct ProfilerDetachInfo
 
     // NULL if we're not trying to detach a profiler.  Otherwise, this is the
     // EEToProfInterfaceImpl instance we're detaching.
-    // 
+    //
     // FUTURE: Although m_pEEToProf, when non-NULL, is always the same as
     // g_profControlBlock.pProfInterface, that will no longer be the case once we allow
     // re-attach with neutered profilers.
@@ -41,7 +41,7 @@ struct ProfilerDetachInfo
 };
 
 //--------------------------------------------------------------------------
-// Static-only class to coordinate initialization of the various profiling 
+// Static-only class to coordinate initialization of the various profiling
 // API detaching structures, plus other utility stuff.
 //
 class ProfilingAPIDetach
@@ -60,7 +60,7 @@ public:
 private:
     static ProfilerDetachInfo s_profilerDetachInfo;
 
-    // Signaled by RequestProfilerDetach() when there is detach work ready to be 
+    // Signaled by RequestProfilerDetach() when there is detach work ready to be
     // done by the DetachThread
     static CLREvent           s_eventDetachWorkAvailable;
 

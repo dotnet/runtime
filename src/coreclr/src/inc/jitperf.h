@@ -4,10 +4,10 @@
 //-----------------------------------------------------------------------------
 // JitPerf.h
 // Internal interface for gathering JIT perfmormance stats. These stats are
-// logged (or displayed) in two ways. If PERF_COUNTERS are enabled the 
+// logged (or displayed) in two ways. If PERF_COUNTERS are enabled the
 // perfmon etc. would display the jit stats. If ENABLE_PERF_LOG is enabled
-// and PERF_OUTPUT env var is defined then the jit stats are displayed on the 
-// stdout. (The jit stats are outputted in a specific format to a file for 
+// and PERF_OUTPUT env var is defined then the jit stats are displayed on the
+// stdout. (The jit stats are outputted in a specific format to a file for
 // automated perf tests.)
 //
 
@@ -52,7 +52,7 @@ void StopNonJITPerfWorker(LARGE_INTEGER * pCycleStart);
         ClrFlsSetValue (TlsIdx_JitPerf, (LPVOID)0);                     \
         g_dwTlsx86CodeSize = 0;                                         \
         ClrFlsSetValue (TlsIdx_JitX86Perf, (LPVOID)g_dwTlsx86CodeSize); \
-    } 
+    }
 
 
 #define STOP_JIT_PERF()                                                 \
@@ -91,7 +91,7 @@ void StopNonJITPerfWorker(LARGE_INTEGER * pCycleStart);
 #define STOP_JIT_PERF()
 #define START_NON_JIT_PERF()
 #define STOP_NON_JIT_PERF()
-#define JIT_PERF_UPDATE_X86_CODE_SIZE(size)                 
+#define JIT_PERF_UPDATE_X86_CODE_SIZE(size)
 #endif //ENABLE_JIT_PERF
 
 #endif //__JITPERF_H__

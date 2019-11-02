@@ -13,11 +13,11 @@
 
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Iterates next MethodDesc. Updates the holder only if the assembly differs from the previous one.
-// Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible 
+// Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible
 // assembly might be without a reference and get deallocated (even the native part).
-// 
+//
 BOOL LoadedMethodDescIterator::Next(
     CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder)
 {
@@ -28,11 +28,11 @@ BOOL LoadedMethodDescIterator::Next(
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END
-    
+
     if (!m_fFirstTime)
     {
         // This is the 2nd or more time we called Next().
-        
+
         // If the method + type is not generic, then nothing more to iterate.
         if (!m_mainMD->HasClassOrMethodInstantiation())
         {
@@ -43,7 +43,7 @@ BOOL LoadedMethodDescIterator::Next(
     }
 
     m_fFirstTime = FALSE;
-    
+
     // This is the 1st time we've called Next(). must Initialize iterator
     if (m_mainMD == NULL)
     {
@@ -86,7 +86,7 @@ ADVANCE_MODULE:
 
     if (GetCurrentModule()->IsResource())
         goto ADVANCE_MODULE;
-    
+
     if (m_mainMD->HasClassInstantiation())
     {
         m_typeIterator.Reset();
@@ -95,7 +95,7 @@ ADVANCE_MODULE:
     {
         m_startedNonGenericType = FALSE;
     }
-    
+
 ADVANCE_TYPE:
     if (m_mainMD->HasClassInstantiation())
     {
@@ -106,16 +106,16 @@ ADVANCE_TYPE:
 
         //if (m_typeIteratorEntry->data != TypeHandle(m_mainMD->GetMethodTable()))
         //    goto ADVANCE_TYPE;
-        
+
         // When looking up the AvailableParamTypes table we have to be really careful since
         // the entries may be unrestored, and may have all sorts of encoded tokens in them.
-        // Similar logic occurs in the Lookup function for that table.  We will clean this 
+        // Similar logic occurs in the Lookup function for that table.  We will clean this
         // up in Whidbey Beta2.
         TypeHandle th = m_typeIteratorEntry->GetTypeHandle();
-        
+
         if (th.IsEncodedFixup())
             goto ADVANCE_TYPE;
-        
+
         if (th.IsTypeDesc())
             goto ADVANCE_TYPE;
 
@@ -124,7 +124,7 @@ ADVANCE_TYPE:
         if (!pMT->IsRestored())
             goto ADVANCE_TYPE;
 
-        // Check the class token 
+        // Check the class token
         if (pMT->GetTypeDefRid() != m_mainMD->GetMethodTable()->GetTypeDefRid())
             goto ADVANCE_TYPE;
 
@@ -140,7 +140,7 @@ ADVANCE_TYPE:
     {
         m_startedNonGenericType = TRUE;
     }
-    
+
     if (m_mainMD->HasMethodInstantiation())
     {
         m_methodIterator.Reset();
@@ -149,7 +149,7 @@ ADVANCE_TYPE:
     {
         m_startedNonGenericMethod = FALSE;
     }
-    
+
 ADVANCE_METHOD:
     if (m_mainMD->HasMethodInstantiation())
     {
@@ -172,14 +172,14 @@ ADVANCE_METHOD:
     {
         m_startedNonGenericMethod = TRUE;
     }
-    
+
     // Note: We don't need to keep the assembly alive in DAC - see code:CollectibleAssemblyHolder#CAH_DAC
 #ifndef DACCESS_COMPILE
     _ASSERTE_MSG(
         *pDomainAssemblyHolder == dbg_m_pDomainAssembly,
         "Caller probably modified the assembly holder, which he shouldn't - see method comment.");
 #endif //DACCESS_COMPILE
-    
+
     return TRUE;
 } // LoadedMethodDescIterator::Next
 
@@ -206,24 +206,24 @@ MethodDesc *LoadedMethodDescIterator::Current()
         PRECONDITION(CheckPointer(m_mainMD));
     }
     CONTRACTL_END
-    
-    
+
+
     if (m_mainMD->HasMethodInstantiation())
     {
         _ASSERTE(m_methodIteratorEntry);
         return m_methodIteratorEntry->GetMethod();
     }
-    
+
     if (!m_mainMD->HasClassInstantiation())
-    {   
+    {
         // No Method or Class instantiation,then it's not generic.
         return m_mainMD;
     }
-    
+
     MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
     _ASSERTE(pMT);
-    
+
     return pMT->GetMethodDescForSlot(m_mainMD->GetSlot());
 }
 
@@ -231,7 +231,7 @@ MethodDesc *LoadedMethodDescIterator::Current()
 // but it is not EnC aware.
 void
 LoadedMethodDescIterator::Start(
-    AppDomain * pAppDomain, 
+    AppDomain * pAppDomain,
     Module *pModule,
     mdMethodDef md,
     AssemblyIterationFlags assemblyIterationFlags,
@@ -259,10 +259,10 @@ LoadedMethodDescIterator::Start(
 }
 
 // This is special init for DAC only
-// @TODO:: change it to dac compile only. 
+// @TODO:: change it to dac compile only.
 void
 LoadedMethodDescIterator::Start(
-    AppDomain     *pAppDomain, 
+    AppDomain     *pAppDomain,
     Module          *pModule,
     mdMethodDef     md,
     MethodDesc      *pMethodDesc)

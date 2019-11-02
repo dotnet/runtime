@@ -79,9 +79,9 @@ class CrstStatic;
 
 class CorHost2 :
     public CorRuntimeHostBase
-#ifndef FEATURE_PAL    
+#ifndef FEATURE_PAL
     , public IPrivateManagedExceptionReporting /* This interface is for internal Watson testing only*/
-#endif // FEATURE_PAL    
+#endif // FEATURE_PAL
     , public ICLRRuntimeHost4
 {
     friend struct _DacGlobals;
@@ -102,10 +102,10 @@ public:
 
     // *** ICorRuntimeHost methods ***
 
-#ifndef FEATURE_PAL    
+#ifndef FEATURE_PAL
     // defined in IPrivateManagedExceptionReporting interface for internal Watson testing only
     STDMETHODIMP GetBucketParametersForCurrentException(BucketParameters *pParams);
-#endif // FEATURE_PAL    
+#endif // FEATURE_PAL
 
     // Starts the runtime. This is equivalent to CoInitializeCor().
     STDMETHODIMP Start();
@@ -147,17 +147,17 @@ public:
     STDMETHODIMP CreateAppDomainWithManager(
         LPCWSTR wszFriendlyName,
         DWORD  dwSecurityFlags,
-        LPCWSTR wszAppDomainManagerAssemblyName, 
-        LPCWSTR wszAppDomainManagerTypeName, 
-        int nProperties, 
-        LPCWSTR* pPropertyNames, 
-        LPCWSTR* pPropertyValues, 
+        LPCWSTR wszAppDomainManagerAssemblyName,
+        LPCWSTR wszAppDomainManagerTypeName,
+        int nProperties,
+        LPCWSTR* pPropertyNames,
+        LPCWSTR* pPropertyValues,
         DWORD* pAppDomainID);
 
     STDMETHODIMP CreateDelegate(
         DWORD appDomainID,
-        LPCWSTR wszAssemblyName,     
-        LPCWSTR wszClassName,     
+        LPCWSTR wszAssemblyName,
+        LPCWSTR wszClassName,
         LPCWSTR wszMethodName,
         INT_PTR* fnPtr);
 
@@ -166,7 +166,7 @@ public:
     STDMETHODIMP RegisterMacEHPort();
     STDMETHODIMP SetStartupFlags(STARTUP_FLAGS flag);
     STDMETHODIMP DllGetActivationFactory(
-        DWORD appDomainID, 
+        DWORD appDomainID,
         LPCWSTR wszTypeName,
         IActivationFactory ** factory);
 
@@ -196,17 +196,17 @@ private:
     HRESULT _CreateAppDomain(
         LPCWSTR wszFriendlyName,
         DWORD  dwFlags,
-        LPCWSTR wszAppDomainManagerAssemblyName, 
-        LPCWSTR wszAppDomainManagerTypeName, 
-        int nProperties, 
-        LPCWSTR* pPropertyNames, 
+        LPCWSTR wszAppDomainManagerAssemblyName,
+        LPCWSTR wszAppDomainManagerTypeName,
+        int nProperties,
+        LPCWSTR* pPropertyNames,
         LPCWSTR* pPropertyValues,
         DWORD* pAppDomainID);
 
     HRESULT _CreateDelegate(
         DWORD appDomainID,
-        LPCWSTR wszAssemblyName,     
-        LPCWSTR wszClassName,     
+        LPCWSTR wszAssemblyName,
+        LPCWSTR wszClassName,
         LPCWSTR wszMethodName,
         INT_PTR* fnPtr);
 
@@ -221,8 +221,8 @@ private:
 #ifdef FEATURE_COMINTEROP
 extern "C"
 HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(
-                                                      LPCWSTR wszAssemblyName, 
-                                                      LPCWSTR wszTypeName, 
+                                                      LPCWSTR wszAssemblyName,
+                                                      LPCWSTR wszTypeName,
                                                       LPCWSTR wszCodeBase,
                                                       IActivationFactory ** factory);
 

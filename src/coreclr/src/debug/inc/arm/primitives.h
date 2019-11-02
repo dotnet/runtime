@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.h
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -56,7 +56,7 @@ inline T _ClearThumbBit(T addr)
 
 #define CORDbgGetInstructionEx(_buffer, _requestedAddr, _patchAddr, _dummy1, _dummy2)                          \
     CORDbgGetInstructionExImpl((CORDB_ADDRESS_TYPE *)((_buffer) + (_ClearThumbBit(_patchAddr) - (_requestedAddr))));
-                    
+
 #define CORDbgSetInstructionEx(_buffer, _requestedAddr, _patchAddr, _opcode, _dummy2)                          \
     CORDbgSetInstructionExImpl((CORDB_ADDRESS_TYPE *)((_buffer) + (_ClearThumbBit(_patchAddr) - (_requestedAddr))), (_opcode));
 

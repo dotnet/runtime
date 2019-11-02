@@ -675,7 +675,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     // occurs.
     st = madvise(address, size, MADV_FREE);
     if (st != 0)
-#endif    
+#endif
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = madvise(address, size, MADV_DONTNEED);
@@ -919,7 +919,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
 // Remarks:
-//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
+//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
 //  specified, it returns amount of actual physical memory.
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
@@ -945,7 +945,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     // Get the physical memory size
 #if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
     long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1) 
+    if (pages == -1)
     {
         return 0;
     }
@@ -1099,7 +1099,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
             // We do this only when we have the total physical memory available.
             if (GetPhysicalMemoryUsed(&used))
             {
-                available = total > used ? total-used : 0; 
+                available = total > used ? total-used : 0;
                 load = (uint32_t)(((float)used * 100) / (float)total);
             }
         }

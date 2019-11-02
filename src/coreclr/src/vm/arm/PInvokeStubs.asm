@@ -28,12 +28,12 @@
 ; Macro to generate PInvoke Stubs.
 ; $__PInvokeStubFuncName : function which calls the actual stub obtained from VASigCookie
 ; $__PInvokeGenStubFuncName : function which generates the IL stubs for PInvoke
-; 
+;
 ; Params :-
 ; $FuncPrefix : prefix of the function name for the stub
 ;                     Eg. VarargPinvoke, GenericPInvokeCalli
 ; $VASigCookieReg : register which contains the VASigCookie
-; $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs 
+; $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
 ;                        So need not save FP Args registers for vararg Pinvoke
         MACRO
 
@@ -78,7 +78,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 
         NESTED_END
 
-        
+
         NESTED_ENTRY $__PInvokeGenStubFuncName
 
         PROLOG_WITH_TRANSITION_BLOCK 0, $SaveFPArgs
@@ -92,7 +92,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
         ENDIF
 
         ; r0 =  pTransitionBlock
-        add                 r0, sp, #__PWTB_TransitionBlock     
+        add                 r0, sp, #__PWTB_TransitionBlock
 
         ; save hidden arg
         mov                 r4, r12
@@ -105,9 +105,9 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         EPILOG_BRANCH   $__PInvokeStubFuncName
-     
+
         NESTED_END
-        
+
         MEND
 
 
@@ -117,25 +117,25 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 ; JIT_PInvokeBegin helper
 ;
 ; in:
-; r0 = InlinedCallFrame*: pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+; r0 = InlinedCallFrame*: pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 ;                         before actual InlinedCallFrame data)
-; 
+;
         LEAF_ENTRY JIT_PInvokeBegin
 
             ldr     r1, =s_gsCookie
             ldr     r1, [r1]
             str     r1, [r0]
             add     r0, r0, SIZEOF__GSCookie
-                        
+
             ;; r0 = pFrame
-            
+
             ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
             ldr     r1, =$InlinedCallFrame_vftable
             str     r1, [r0]
 
             mov     r1, 0
             str     r1, [r0, #InlinedCallFrame__m_Datum]
-        
+
             str     sp, [r0, #InlinedCallFrame__m_pCallSiteSP]
             str     r11, [r0, #InlinedCallFrame__m_pCalleeSavedFP]
             str     lr, [r0, #InlinedCallFrame__m_pCallerReturnAddress]
@@ -156,7 +156,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
             str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
 
             bx      lr
-            
+
         LEAF_END
 
 ; ------------------------------------------------------------------
@@ -164,7 +164,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 ;
 ; in:
 ; r0 = InlinedCallFrame*
-; 
+;
         LEAF_ENTRY JIT_PInvokeEnd
 
             add     r0, r0, SIZEOF__GSCookie
@@ -174,7 +174,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 
             ;; r0 = pFrame
             ;; r1 = pThread
-            
+
             ;; pThread->m_fPreemptiveGCDisabled = 1
             mov     r2, 1
             str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
@@ -192,9 +192,9 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 
 RarePath
             b       JIT_PInvokeEndRarePath
-        
+
         LEAF_END
-        
+
         INLINE_GETTHREAD_CONSTANT_POOL
 
 ; ------------------------------------------------------------------
@@ -203,14 +203,14 @@ RarePath
 ;
 ; in:
 ; r0 = VASigCookie*
-; r12 = MethodDesc *       
+; r12 = MethodDesc *
 ;
         PINVOKE_STUB VarargPInvoke, r0, {false}
 
 
 ; ------------------------------------------------------------------
 ; GenericPInvokeCalliHelper & GenericPInvokeCalliGenILStub
-; Helper for generic pinvoke calli instruction 
+; Helper for generic pinvoke calli instruction
 ;
 ; in:
 ; r4 = VASigCookie*
@@ -224,10 +224,10 @@ RarePath
 ;
 ; in:
 ; r1 = VASigCookie*
-; r12 = MethodDesc*       
-; 
+; r12 = MethodDesc*
+;
         PINVOKE_STUB VarargPInvoke, r1, {false}
 
 
-; Must be at very end of file 
+; Must be at very end of file
         END

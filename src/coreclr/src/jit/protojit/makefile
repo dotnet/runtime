@@ -4,4 +4,3 @@
 # This file merely allows the MSBuild project file in this directory to be integrated with Build.Exe
 #
 !INCLUDE $(NTMAKEENV)\msbuild.def
-    

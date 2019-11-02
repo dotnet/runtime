@@ -14,10 +14,10 @@ Abstract:
     Fast hash table classes,
 --*/
 
-#ifndef _HASH_H_ 
+#ifndef _HASH_H_
 #define _HASH_H_
 
-#ifndef ASSERT 
+#ifndef ASSERT
 #define ASSERT _ASSERTE
 #endif
 
@@ -147,7 +147,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifndef _DEBUG 
+#ifndef _DEBUG
         CONTRACTL
         {
             DISABLED(THROWS);       // This is not a bug, we cannot decide, since the function ptr called may be either.
@@ -175,7 +175,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifndef _DEBUG 
+#ifndef _DEBUG
         CONTRACTL
         {
             DISABLED(THROWS);       // This is not a bug, we cannot decide, since the function ptr called may be either.
@@ -300,14 +300,14 @@ public:
     // Remove all entries from the hash tablex
     void Clear();
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
     // inline helper, in non HASHTABLE_PROFILE mode becomes a NO-OP
     void        ProfileLookup(UPTR ntry, UPTR retValue);
     // data members used for profiling
-#ifdef HASHTABLE_PROFILE 
+#ifdef HASHTABLE_PROFILE
     unsigned    m_cbRehash;    // number of times rehashed
     unsigned    m_cbRehashSlots; // number of slots that were rehashed
     unsigned    m_cbObsoleteTables;
@@ -320,7 +320,7 @@ public:
 #endif // HASHTABLE_PROFILE
 
 #if 0 // Test-only code for debugging this class.
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     static void LookupPerfTest(HashMap * table, const unsigned int MinThreshold);
     static void HashMapTest();
 #endif // !DACCESS_COMPILE
@@ -333,7 +333,7 @@ private:
 
     DWORD       GetNearestIndex(DWORD cbInitialSize);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     static void            Enter(HashMap *);        // check valid to enter
     static void            Leave(HashMap *);        // check valid to leave
 
@@ -369,13 +369,13 @@ private:
     // mode of operation, synchronus or single user
     bool            m_fAsyncMode;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     LPVOID          m_lockData;
     FnLockOwner     m_pfnLockOwner;
     EEThreadId      m_writerThreadId;
 #endif // _DEBUG
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     // A thread must own a lock for a hash if it is a writer.
     BOOL OwnLock();
 #endif // _DEBUG
@@ -552,7 +552,7 @@ class PtrHashMap
     }
 
 public:
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *p);
 #endif // !DACCESS_COMPILE
@@ -775,7 +775,7 @@ public:
         return m_HashMap.GetCount();
     }
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         SUPPORTS_DAC;

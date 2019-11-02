@@ -34,7 +34,7 @@ public:
 
     // Returns MethodTable (typical instantiation) of the Framework copy of the specified redirected WinRT interface.
     static MethodTable *GetWinRTTypeForRedirectedInterfaceIndex(WinMDAdapter::RedirectedTypeIndex index);
-    
+
     // Loads a method from the given Framework assembly.
     static MethodDesc *LoadMethodFromRedirectedAssembly(LPCUTF8 szAssemblyQualifiedTypeName, LPCUTF8 szMethodName);
 
@@ -57,7 +57,7 @@ public:
         if (!inst[0].IsTypeDesc())
         {
             MethodTable *pInstArgMT = inst[0].AsMethodTable();
-            
+
             if (pInstArgMT == g_pObjectClass)
                 return BaseType_Object;
 

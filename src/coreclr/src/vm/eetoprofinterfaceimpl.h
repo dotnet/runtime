@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 //
 // EEToProfInterfaceImpl.h
-// 
+//
 
 //
 // Declaration of class that wraps calling into the profiler's implementation
 // of ICorProfilerCallback*
-// 
+//
 
 // ======================================================================================
 
@@ -39,14 +39,14 @@ public:
     //
     // Internal initialization / cleanup
     //
-   
+
     EEToProfInterfaceImpl();
     ~EEToProfInterfaceImpl();
 
     HRESULT Init(
         ProfToEEInterfaceImpl * pProfToEE,
         const CLSID * pClsid,
-        __inout_z LPCWSTR wszClsid, 
+        __inout_z LPCWSTR wszClsid,
         __in_z LPCWSTR wszProfileDLL,
         BOOL fLoadedViaAttach,
         DWORD dwConcurrentGCWaitTimeoutInMs);
@@ -133,14 +133,14 @@ public:
     HRESULT InitializeForAttach(void * pvClientData, UINT cbClientData);
 
     HRESULT ProfilerAttachComplete();
-    
+
     //
     // Thread Events
     //
-    
+
     HRESULT ThreadCreated(
         ThreadID    threadID);
-    
+
     HRESULT ThreadDestroyed(
         ThreadID    threadID);
 
@@ -154,18 +154,18 @@ public:
     //
     // Startup/Shutdown Events
     //
-    
+
     HRESULT Shutdown();
 
     //
     // JIT/Function Events
     //
-    
+
     HRESULT FunctionUnloadStarted(
         FunctionID  functionId);
 
     HRESULT JITCompilationFinished(
-        FunctionID  functionId, 
+        FunctionID  functionId,
         HRESULT     hrStatus,
         BOOL        fIsSafeToBlock);
 
@@ -228,22 +228,22 @@ public:
     //
     // Module Events
     //
-    
+
     HRESULT ModuleLoadStarted(
         ModuleID    moduleId);
 
     HRESULT ModuleLoadFinished(
-        ModuleID    moduleId, 
+        ModuleID    moduleId,
         HRESULT     hrStatus);
-    
+
     HRESULT ModuleUnloadStarted(
         ModuleID    moduleId);
 
     HRESULT ModuleUnloadFinished(
-        ModuleID    moduleId, 
+        ModuleID    moduleId,
         HRESULT     hrStatus);
-    
-    HRESULT ModuleAttachedToAssembly( 
+
+    HRESULT ModuleAttachedToAssembly(
         ModuleID    moduleId,
         AssemblyID  AssemblyId);
 
@@ -253,7 +253,7 @@ public:
     //
     // Class Events
     //
-    
+
     HRESULT ClassLoadStarted(
         ClassID      classId);
 
@@ -261,28 +261,28 @@ public:
         ClassID      classId,
         HRESULT     hrStatus);
 
-    HRESULT ClassUnloadStarted( 
+    HRESULT ClassUnloadStarted(
         ClassID classId);
 
-    HRESULT ClassUnloadFinished( 
+    HRESULT ClassUnloadFinished(
         ClassID classId,
         HRESULT hrStatus);
 
     //
     // AppDomain Events
     //
-    
-    HRESULT AppDomainCreationStarted( 
+
+    HRESULT AppDomainCreationStarted(
         AppDomainID appDomainId);
-    
-    HRESULT AppDomainCreationFinished( 
+
+    HRESULT AppDomainCreationFinished(
         AppDomainID appDomainId,
         HRESULT     hrStatus);
-    
-    HRESULT AppDomainShutdownStarted( 
+
+    HRESULT AppDomainShutdownStarted(
         AppDomainID appDomainId);
-    
-    HRESULT AppDomainShutdownFinished( 
+
+    HRESULT AppDomainShutdownFinished(
         AppDomainID appDomainId,
         HRESULT     hrStatus);
 
@@ -290,17 +290,17 @@ public:
     // Assembly Events
     //
 
-    HRESULT AssemblyLoadStarted( 
+    HRESULT AssemblyLoadStarted(
         AssemblyID  assemblyId);
-    
-    HRESULT AssemblyLoadFinished( 
+
+    HRESULT AssemblyLoadFinished(
         AssemblyID  assemblyId,
         HRESULT     hrStatus);
-    
-    HRESULT AssemblyUnloadStarted( 
+
+    HRESULT AssemblyUnloadStarted(
         AssemblyID  assemblyId);
-    
-    HRESULT AssemblyUnloadFinished( 
+
+    HRESULT AssemblyUnloadFinished(
         AssemblyID  assemblyId,
         HRESULT     hrStatus);
 
@@ -346,12 +346,12 @@ public:
         FunctionID functionId);
 
     HRESULT ExceptionUnwindFunctionLeave();
-    
+
     HRESULT ExceptionUnwindFinallyEnter(
         FunctionID functionId);
 
     HRESULT ExceptionUnwindFinallyLeave();
-    
+
     HRESULT ExceptionCatcherEnter(
         FunctionID functionId,
         ObjectID objectId);
@@ -362,13 +362,13 @@ public:
     // CCW Events
     //
 
-    HRESULT COMClassicVTableCreated( 
+    HRESULT COMClassicVTableCreated(
         /* [in] */ ClassID wrappedClassId,
         /* [in] */ REFGUID implementedIID,
         /* [in] */ void * pVTable,
         /* [in] */ ULONG cSlots);
-    
-    HRESULT COMClassicVTableDestroyed( 
+
+    HRESULT COMClassicVTableDestroyed(
         /* [in] */ ClassID wrappedClassId,
         /* [in] */ REFGUID implementedIID,
         /* [in] */ void * pVTable);
@@ -378,22 +378,22 @@ public:
     //
 
     HRESULT RemotingClientInvocationStarted();
-    
+
     HRESULT RemotingClientSendingMessage(GUID * pCookie,
                                          BOOL fIsAsync);
 
     HRESULT RemotingClientReceivingReply(GUID * pCookie,
                                          BOOL fIsAsync);
-    
+
     HRESULT RemotingClientInvocationFinished();
 
     HRESULT RemotingServerReceivingMessage(GUID * pCookie,
                                            BOOL fIsAsync);
-    
+
     HRESULT RemotingServerInvocationStarted();
 
     HRESULT RemotingServerInvocationReturned();
-    
+
     HRESULT RemotingServerSendingReply(GUID * pCookie,
                                        BOOL fIsAsync);
 
@@ -403,20 +403,20 @@ public:
     //
 
     HRESULT RuntimeSuspendStarted(COR_PRF_SUSPEND_REASON suspendReason);
-    
+
     HRESULT RuntimeSuspendFinished();
-    
+
     HRESULT RuntimeSuspendAborted();
-    
+
     HRESULT RuntimeResumeStarted();
-    
+
     HRESULT RuntimeResumeFinished();
 
     HRESULT RuntimeThreadSuspended(ThreadID suspendedThreadId);
 
     HRESULT RuntimeThreadResumed(ThreadID resumedThreadId);
 
-    HRESULT ObjectAllocated( 
+    HRESULT ObjectAllocated(
         /* [in] */ ObjectID objectId,
         /* [in] */ ClassID classId);
 
@@ -437,14 +437,14 @@ public:
     HRESULT RootReference2(BYTE * objectId,
                            EtwGCRootKind dwEtwRootKind,
                            EtwGCRootFlags dwEtwRootFlags,
-                           void * rootID, 
+                           void * rootID,
                            void * pHeapId);
 
     HRESULT EndRootReferences2(void * pHeapId);
 
     HRESULT ConditionalWeakTableElementReference(BYTE * primaryObjectId,
-                           BYTE * secondaryObjectId, 
-                           void * rootID, 
+                           BYTE * secondaryObjectId,
+                           void * rootID,
                            void * pHeapId);
 
     HRESULT EndConditionalWeakTableElementReferences(void * pHeapId);
@@ -478,7 +478,7 @@ public:
 
     //
     // Detach
-    // 
+    //
     HRESULT ProfilerDetachSucceeded();
 
     BOOL HasTimedOutWaitingForConcurrentGC();
@@ -497,7 +497,7 @@ private:
         ClassID         m_clsId;        // The class ID (also the key)
         size_t          m_count;        // How many of this class have been counted
     };
-    
+
     // This is a simple implementation of CHashTable to provide a very simple
     // implementation of the Cmp pure virtual function
     class CHashTableImpl : public CHashTable
@@ -505,7 +505,7 @@ private:
     public:
         CHashTableImpl(ULONG iBuckets);
         virtual ~CHashTableImpl();
-        
+
     protected:
         virtual BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2);
     };
@@ -605,7 +605,7 @@ private:
 
     // Remember whether the profiler has enabled Rejit, and prevent detach if it has.
     BOOL                    m_fModifiedRejitState;
-    
+
     GCReferencesData * AllocateMovedReferencesData();
 
     void FreeMovedReferencesData(GCReferencesData * pData);
@@ -620,7 +620,7 @@ private:
 
     HRESULT CreateProfiler(
         const CLSID * pClsid,
-        __in_z LPCWSTR wszClsid, 
+        __in_z LPCWSTR wszClsid,
         __in_z LPCWSTR wszProfileDLL);
 
     HRESULT DetermineAndSetEnterLeaveFunctionHooksForJit();
@@ -644,16 +644,16 @@ private:
         typedef DefaultSHashTraits<FunctionIDAndClientID *>::count_t count_t;
         typedef UINT_PTR key_t;
 
-        static key_t GetKey(FunctionIDAndClientID e) 
-        { 
+        static key_t GetKey(FunctionIDAndClientID e)
+        {
             LIMITED_METHOD_CONTRACT;
-            return e.functionID; 
+            return e.functionID;
         }
 
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
-            return k1 == k2; 
+            return k1 == k2;
         }
 
         static count_t Hash(key_t k)
@@ -671,9 +671,9 @@ private:
             return functionIDAndClientID;
         }
 
-        static bool IsNull(const FunctionIDAndClientID &functionIDAndClientID) 
-        { 
-            LIMITED_METHOD_CONTRACT; 
+        static bool IsNull(const FunctionIDAndClientID &functionIDAndClientID)
+        {
+            LIMITED_METHOD_CONTRACT;
             _ASSERTE((functionIDAndClientID.functionID != NULL) || (functionIDAndClientID.clientID == NULL));
             return functionIDAndClientID.functionID == NULL;
         }
@@ -681,16 +681,16 @@ private:
 
     typedef SHash<FunctionIDHashTableTraits> FunctionIDHashTable;
 
-    // ELT3 no long keeps track of FunctionID of current managed method.  Therefore, a hash table of bookkeeping 
-    // the mapping from FunctionID to clientID is needed to build up ELT2 on top of ELT3.  When ELT2 (slow-path 
-    // or fast-path) is registered by the profiler and the profiler's IDFunctionMapper requests to hook up the 
-    // function being loading, the clientID returned by FunctionIDMapper will be saved as the value to be looked 
+    // ELT3 no long keeps track of FunctionID of current managed method.  Therefore, a hash table of bookkeeping
+    // the mapping from FunctionID to clientID is needed to build up ELT2 on top of ELT3.  When ELT2 (slow-path
+    // or fast-path) is registered by the profiler and the profiler's IDFunctionMapper requests to hook up the
+    // function being loading, the clientID returned by FunctionIDMapper will be saved as the value to be looked
     // up by the corresponding FunctionID in the hash table.  FunctionIDs can be recycled after an app domain
-    // that contains the function bodies is unloaded so this hash table needs to replace the existing FunctionID 
+    // that contains the function bodies is unloaded so this hash table needs to replace the existing FunctionID
     // with new FunctionID if a duplication is found in the hash table.
     FunctionIDHashTable * m_pFunctionIDHashTable;
 
-    // Since the hash table can be read and writen concurrently, a reader-writer lock is used to synchronize 
+    // Since the hash table can be read and writen concurrently, a reader-writer lock is used to synchronize
     // all accesses to the hash table.
     SimpleRWLock * m_pFunctionIDHashTableRWLock;
 

@@ -13,10 +13,10 @@
 #include "corpriv.h"
 
 //---------------------------------------------------------------------------------------
-// 
+//
 static LONG FilterAllExceptions(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    if ((pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) ||  
+    if ((pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) ||
         (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_ARRAY_BOUNDS_EXCEEDED) ||
         (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_IN_PAGE_ERROR))
         return EXCEPTION_EXECUTE_HANDLER;
@@ -25,15 +25,15 @@ static LONG FilterAllExceptions(PEXCEPTION_POINTERS pExceptionPointers, LPVOID l
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
-    COR_ILMETHOD *  header, 
-    void *          pInternalImport, 
+    COR_ILMETHOD *  header,
+    void *          pInternalImport,
     DecoderStatus * wbStatus)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    
+
     // Can't put contract because of SEH
     // CONTRACTL
     // {
@@ -42,7 +42,7 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
     //    FORBID_FAULT;
     // }
     // CONTRACTL_END
-    
+
     bool fErrorInInit = false;
     struct Param
     {
@@ -51,7 +51,7 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
     } param;
     param.pThis = this;
     param.header = header;
-    
+
     PAL_TRY(Param *, pParam, &param)
     {
         // Decode the COR header into a more convenient form
@@ -68,28 +68,28 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
         }
     }
     PAL_ENDTRY
-    
+
     if (fErrorInInit)
     {
         return;
     }
-    
+
     // If there is a local variable sig, fetch it into 'LocalVarSig'
     if ((GetLocalVarSigTok() != 0) && (pInternalImport != NULL))
     {
         IMDInternalImport * pMDI = reinterpret_cast<IMDInternalImport *>(pInternalImport);
-        
+
         if (wbStatus != NULL)
         {
-            if ((!pMDI->IsValidToken(GetLocalVarSigTok())) || 
-                (TypeFromToken(GetLocalVarSigTok()) != mdtSignature) || 
+            if ((!pMDI->IsValidToken(GetLocalVarSigTok())) ||
+                (TypeFromToken(GetLocalVarSigTok()) != mdtSignature) ||
                 (RidFromToken(GetLocalVarSigTok()) == 0))
             {
                 *wbStatus = FORMAT_ERROR;         // failure bad local variable signature token
                 return;
             }
         }
-        
+
         if (FAILED(pMDI->GetSigFromToken(GetLocalVarSigTok(), &cbLocalVarSig, &LocalVarSig)))
         {
             // Failure bad local variable signature token
@@ -101,10 +101,10 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
             cbLocalVarSig = 0;
             return;
         }
-        
+
         if (wbStatus != NULL)
         {
-            if (FAILED(validateTokenSig(GetLocalVarSigTok(), LocalVarSig, cbLocalVarSig, 0, pMDI)) || 
+            if (FAILED(validateTokenSig(GetLocalVarSigTok(), LocalVarSig, cbLocalVarSig, 0, pMDI)) ||
                 (*LocalVarSig != IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
             {
                 *wbStatus = VERIFICATION_ERROR;   // failure validating local variable signature
@@ -112,7 +112,7 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
             }
         }
     }
-    
+
     if (wbStatus != NULL)
     {
         *wbStatus = SUCCESS;

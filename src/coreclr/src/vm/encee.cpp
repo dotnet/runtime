@@ -48,7 +48,7 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken module
     CONTRACTL_END
 
     LOG((LF_ENC,LL_INFO100,"EACM::ctor 0x%x\n", this));
-    
+
     m_applyChangesCount = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
 }
 
@@ -95,7 +95,7 @@ void EditAndContinueModule::Destruct()
 //
 // Return Value:
 //    S_OK on success.
-//    if the edit fails for any reason, at any point in this function, 
+//    if the edit fails for any reason, at any point in this function,
 //    we are toasted, so return out and IDE will end debug session.
 //
 
@@ -163,7 +163,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     SafeComHolder<IMetaDataEmit> pEmitter;
 
     // Apply the changes. Note that ApplyEditAndContinue() requires read/write metadata. If the metadata is
-    // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current 
+    // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current
     // metadata importer, and return us a new one.  We can't let that happen. Other parts of the system are
     // already using the current metadata importer, some possibly in preemptive GC mode at this very moment.
     // Instead, we ensure that the metadata is RW by calling ConvertMDInternalToReadWrite(), which will make
@@ -189,7 +189,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailGo(pMDImport->ApplyEditAndContinue(pDeltaMD, cbDeltaMD, &pNewMDImport));
 
     // The importer should not have changed!  We assert that, and back-stop in a retail build just to be sure.
-    if (pNewMDImport != pMDImport) 
+    if (pNewMDImport != pMDImport)
     {
         _ASSERTE( !"ApplyEditAndContinue should not have needed to create a new metadata importer!" );
         IfFailGo(CORDBG_E_ENC_INTERNAL_ERROR);
@@ -205,34 +205,34 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     pLocalILMemory = new BYTE[cbDeltaIL];
     memcpy(pLocalILMemory, pDeltaIL, cbDeltaIL);
 
-    // Enumerate all of the EnC delta tokens 
+    // Enumerate all of the EnC delta tokens
     memset(&enumENC, 0, sizeof(HENUMInternal));
     IfFailGo(pIMDInternalImportENC->EnumDeltaTokensInit(&enumENC));
 
     mdToken token;
-    while (pIMDInternalImportENC->EnumNext(&enumENC, &token)) 
+    while (pIMDInternalImportENC->EnumNext(&enumENC, &token))
     {
         STRESS_LOG3(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%x; type 0x%x; rid 0x%x\n", token, TypeFromToken(token), RidFromToken(token));
 
-        switch (TypeFromToken(token)) 
+        switch (TypeFromToken(token))
         {
             case mdtMethodDef:
-                
+
                 // MethodDef token - update/add a method
                 LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method 0x%x\n", token));
-        
-                ULONG dwMethodRVA;  
+
+                ULONG dwMethodRVA;
                 DWORD dwMethodFlags;
                 IfFailGo(pMDImport->GetMethodImplProps(token, &dwMethodRVA, &dwMethodFlags));
-                
+
                 if (dwMethodRVA >= cbDeltaIL)
                 {
                     LOG((LF_ENC, LL_INFO10000, "EACM::AEAC:   failure RVA of %d with cbDeltaIl %d\n", dwMethodRVA, cbDeltaIL));
                     IfFailGo(E_INVALIDARG);
                 }
-                
+
                 SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA), FALSE);
-                
+
                 // use module to resolve to method
                 MethodDesc *pMethod;
                 pMethod = LookupMethodDef(token);
@@ -248,22 +248,22 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 }
 
                 break;
-                
+
             case mdtFieldDef:
-            
+
                 // FieldDef token - add a new field
                 LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%x\n", token));
 
-                if (LookupFieldDef(token)) 
+                if (LookupFieldDef(token))
                 {
                     // Field already exists - just ignore for now
                     continue;
                 }
 
-                // Field is new - add it 
+                // Field is new - add it
                 IfFailGo(AddField(token));
                 break;
-                
+
             case mdtTypeRef:
                 EnsureTypeRefCanBeStored(token);
                 break;
@@ -285,7 +285,7 @@ ErrExit:
 //
 // UpdateMethod - called when a method has been updated by EnC.
 //
-// The module's metadata has already been updated.  Here we notify the 
+// The module's metadata has already been updated.  Here we notify the
 // debugger of the update, and swap the new IL in as the current
 // version of the method.
 //
@@ -294,7 +294,7 @@ ErrExit:
 //
 // Return Value:
 //    S_OK on success.
-//    if the edit fails for any reason, at any point in this function, 
+//    if the edit fails for any reason, at any point in this function,
 //    we are toasted, so return out and IDE will end debug session.
 //
 // Assumptions:
@@ -337,7 +337,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 //
 // AddMethod - called when a new method is added by EnC.
 //
-// The module's metadata has already been updated.  Here we notify the 
+// The module's metadata has already been updated.  Here we notify the
 // debugger of the update, and create and add a new MethodDesc to the class.
 //
 // Arguments:
@@ -345,7 +345,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 //
 // Return Value:
 //    S_OK on success.
-//    if the edit fails for any reason, at any point in this function, 
+//    if the edit fails for any reason, at any point in this function,
 //    we are toasted, so return out and IDE will end debug session.
 //
 // Assumptions:
@@ -362,14 +362,14 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     CONTRACTL_END;
 
     mdTypeDef   parentTypeDef;
-    HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef); 
+    HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef);
     if (FAILED(hr))
     {
         LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AM can't find parent token for method token %p\n", token));
         return E_FAIL;
     }
 
-    // see if the class is loaded yet. 
+    // see if the class is loaded yet.
     MethodTable * pParentType = LookupTypeDef(parentTypeDef).AsMethodTable();
     if (pParentType == NULL)
     {
@@ -399,23 +399,23 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         _ASSERTE(!"Failed to add function");
         LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
     }
-    
-    return hr;    
+
+    return hr;
 }
 
 //---------------------------------------------------------------------------------------
 //
 // AddField - called when a new field is added by EnC.
 //
-// The module's metadata has already been updated.  Here we notify the 
-// debugger of the update, 
+// The module's metadata has already been updated.  Here we notify the
+// debugger of the update,
 //
 // Arguments:
 //   token    - fieldDef for the field being added
 //
 // Return Value:
 //    S_OK on success.
-//    if the edit fails for any reason, at any point in this function, 
+//    if the edit fails for any reason, at any point in this function,
 //    we are toasted, so return out and IDE will end debug session.
 //
 // Assumptions:
@@ -432,7 +432,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     CONTRACTL_END;
 
     mdTypeDef   parentTypeDef;
-    HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef); 
+    HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef);
 
     if (FAILED(hr))
     {
@@ -440,7 +440,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
         return E_FAIL;
     }
 
-    // see if the class is loaded yet. If not we don't need to do anything.  When this class is 
+    // see if the class is loaded yet. If not we don't need to do anything.  When this class is
     // loaded (with the updated metadata), it will have this field like any other normal field.
     // If the class hasn't been loaded, than the debugger shouldn't know anything about it
     // so there shouldn't be any harm in not notifying it of the update.  For completeness,
@@ -494,13 +494,13 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
                                                  CONTEXT *pOrigContext)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s\n",
         pMD->m_pszDebugMethodName));
@@ -516,9 +516,9 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
         _ASSERTE(!"EncJitUpdatedFunction");
     }
 #endif
-    
+
     // Setup a frame so that has context for the exception
-    // so that gc can crawl the stack and do the right thing.  
+    // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
     Thread *pCurThread = GetThread();
     _ASSERTE(pCurThread);
@@ -534,8 +534,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // Since we're in cooperative mode here, we can swap the two non-atomically here.
     pCtxTemp = pCurThread->GetFilterContext();
     _ASSERTE(pCtxTemp != NULL); // currently called from within a filter context, protects us during GC-toggle.
-    pCurThread->SetFilterContext(NULL); 
-    
+    pCurThread->SetFilterContext(NULL);
+
     // get the code address (may jit the fcn if not already jitted)
     EX_TRY {
         if (!pMD->IsPointingToNativeCode())
@@ -556,7 +556,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             // This function is no-throw, and we can't put an EX_TRY inside an EX_CATCH block, so
             // we just have the violation.
             CONTRACT_VIOLATION(ThrowsViolation);
-        
+
             StackSString exceptionMessage;
             SString errorMessage;
             GetExceptionMessage(GET_THROWABLE(), exceptionMessage);
@@ -567,14 +567,14 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
             LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
         }
-#endif        
+#endif
     } EX_END_CATCH(SwallowAllExceptions)
 
     resFrame.Pop(pCurThread);
 
     // Restore the filter context here (see comment above)
-    pCurThread->SetFilterContext(pCtxTemp); 
-    
+    pCurThread->SetFilterContext(pCtxTemp);
+
     return jittedCode;
 }
 
@@ -582,7 +582,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 //-----------------------------------------------------------------------------
 // Called by EnC to resume the code in a new version of the function.
 // This will:
-// 1) jit the new function 
+// 1) jit the new function
 // 2) set the IP to newILOffset within that new function
 // 3) adjust local variables (particularly enregistered vars) to the new func.
 // It will not return.
@@ -593,18 +593,18 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 //    This is enc-version aware.
 //  newILOffset - the IL offset to resume execution at within the new function.
 //  pOrigContext - context of thread pointing into original version of the function.
-//  
+//
 // This function must be called on the thread that's executing the old function.
 // This function does not return. Instead, it will remap this thread directly
 // to be executing the new function.
 //-----------------------------------------------------------------------------
 HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
-    MethodDesc *pMD, 
+    MethodDesc *pMD,
     void *oldDebuggerFuncHandle,
-    SIZE_T newILOffset, 
+    SIZE_T newILOffset,
     CONTEXT *pOrigContext)
-{   
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ", 
+{
+    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
         pMD->m_pszDebugMethodName, newILOffset));
 
 #ifdef _DEBUG
@@ -616,12 +616,12 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 #endif
 
     HRESULT hr = E_FAIL;
-    
+
     // JIT-compile the updated version of the method
     PCODE jittedCode = JitUpdatedFunction(pMD, pOrigContext);
     if ( jittedCode == NULL )
         return CORDBG_E_ENC_JIT_CANT_UPDATE;
-    
+
     GCX_COOP();
 
     // This will create a new frame and copy old vars to it
@@ -633,9 +633,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Get the new native offset & IP from the new IL offset
     LOG((LF_ENC, LL_INFO10000, "EACM::RIUF: About to map IL forwards!\n"));
     SIZE_T newNativeOffset = 0;
-    g_pDebugInterface->MapILInfoToCurrentNative(pMD, 
-                                                newILOffset, 
-                                                jittedCode, 
+    g_pDebugInterface->MapILInfoToCurrentNative(pMD,
+                                                newILOffset,
+                                                jittedCode,
                                                 &newNativeOffset);
 
     EECodeInfo newCodeInfo(jittedCode + newNativeOffset);
@@ -653,10 +653,10 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // frame sits will be wiped out. This could include anything on the stack right up to or beyond our
     // current stack from in ResumeInUpdatedFunction. In order to prevent our current frame from being
     // trashed we determine the maximum amount that the stack could grow by and allocate this as a buffer using
-    // alloca. Then we call FixContextAndResume which can safely rely on the stack because none of it's frames 
-    // state or anything lower can be reached by the new frame. 
+    // alloca. Then we call FixContextAndResume which can safely rely on the stack because none of it's frames
+    // state or anything lower can be reached by the new frame.
 
-    if( newFrameSize > oldFrameSize) 
+    if( newFrameSize > oldFrameSize)
     {
         DWORD frameIncrement = newFrameSize - oldFrameSize;
         (void)alloca(frameIncrement);
@@ -664,11 +664,11 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that
     // values of locals etc. are preserved.
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction calling FixContextAndResume oldNativeOffset: 0x%x, newNativeOffset: 0x%x," 
-        "oldFrameSize: 0x%x, newFrameSize: 0x%x\n", 
+    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction calling FixContextAndResume oldNativeOffset: 0x%x, newNativeOffset: 0x%x,"
+        "oldFrameSize: 0x%x, newFrameSize: 0x%x\n",
         oldCodeInfo.GetRelOffset(), newCodeInfo.GetRelOffset(), oldFrameSize, newFrameSize));
 
-    FixContextAndResume(pMD, 
+    FixContextAndResume(pMD,
                         oldDebuggerFuncHandle,
                         pOrigContext,
                         &oldCodeInfo,
@@ -681,7 +681,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     hr = E_FAIL;
 
     // If we fail for any reason we have already potentially trashed with new locals and we have also unwound any
-    // Win32 handlers on the stack so cannot ever return from this function. 
+    // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
 }
@@ -689,7 +689,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //---------------------------------------------------------------------------------------
 //
 // FixContextAndResume - Modify the thread context for EnC remap and resume execution
-// 
+//
 // Arguments:
 //    pMD      - MethodDesc for the method being remapped
 //    oldDebuggerFuncHandle - Debugger DJI to uniquely identify old function.
@@ -702,9 +702,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //
 // Notes:
 //   WARNING: This method cannot access any stack-data below its frame on the stack
-//   (i.e. anything allocated in a caller frame), so all stack-based arguments must 
-//   EXPLICITLY be copied by value and this method cannot be inlined.  We may need to expand 
-//   the stack frame to accomodate the new method, and so extra buffer space must have 
+//   (i.e. anything allocated in a caller frame), so all stack-based arguments must
+//   EXPLICITLY be copied by value and this method cannot be inlined.  We may need to expand
+//   the stack frame to accomodate the new method, and so extra buffer space must have
 //   been allocated on the stack.  Note that passing a struct by value (via C++) is not
 //   enough to ensure its data is really copied (on x64, large structs may internally be
 //   passed by reference).  Thus we explicitly make copies of structs passed in, at the
@@ -712,7 +712,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //
 
 NOINLINE void EditAndContinueModule::FixContextAndResume(
-        MethodDesc *pMD, 
+        MethodDesc *pMD,
         void *oldDebuggerFuncHandle,
         T_CONTEXT *pContext,
         EECodeInfo *pOldCodeInfo,
@@ -732,11 +732,11 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
     // on this copy to RtlRestoreContext, and this copy doesn't have the extra info
     // required by the XSAVE or other flags.
-    // 
+    //
     // FUTURE: No reason to ifdef this for amd64-only, except to make this late fix as
     // surgical as possible.  Would be nice to enable this on x86 early in the next cycle.
     pContext->ContextFlags &= CONTEXT_ALL;
-#endif // defined(_TARGET_AMD64_)        
+#endif // defined(_TARGET_AMD64_)
 
     EECodeInfo oldCodeInfo;
     memcpy(&oldCodeInfo, pOldCodeInfo, sizeof(EECodeInfo));
@@ -751,7 +751,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     SIZE_T oldVarInfoCount = 0;
     SIZE_T newVarInfoCount = 0;
 
-    // Get the var info which the codemanager will use for updating 
+    // Get the var info which the codemanager will use for updating
     // enregistered variables correctly, or variables whose lifetimes differ
     // at the update point
     g_pDebugInterface->GetVarInfo(pMD, oldDebuggerFuncHandle, &oldVarInfoCount, &pOldVarInfo);
@@ -760,7 +760,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #ifdef _TARGET_X86_
     // save the frame pointer as FixContextForEnC might step on it.
     LPVOID oldSP = dac_cast<PTR_VOID>(GetSP(pContext));
-    
+
     // need to pop the SEH records before write over the stack in FixContextForEnC
     PopSEHRecords(oldSP);
 #endif
@@ -798,11 +798,11 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // Notify the debugger that we're about to resume execution in the new version of the method
     HRESULT hrIgnore = g_pDebugInterface->RemapComplete(pMD, pNewCodeInfo->GetCodeAddress(), pNewCodeInfo->GetRelOffset());
 
-    // Now jump into the new version of the method. Note that we can't just setup the filter context 
+    // Now jump into the new version of the method. Note that we can't just setup the filter context
     // and return because we are potentially writing new vars onto the stack.
     pCurThread->SetFilterContext( NULL );
 
-#if defined(_TARGET_X86_)        
+#if defined(_TARGET_X86_)
     ResumeAtJit(pContext, oldSP);
 #else
     RtlRestoreContext(pContext, NULL);
@@ -827,20 +827,20 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 //                  return NULL when the storage is not yet available.
 //
 // Return Value:
-//      If storage doesn't yet exist for this field we return NULL, otherwise, we return a pointer 
-//      to the contents of the field on success.  
+//      If storage doesn't yet exist for this field we return NULL, otherwise, we return a pointer
+//      to the contents of the field on success.
 //---------------------------------------------------------------------------------------
-PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer, 
+PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer,
                                               EnCFieldDesc * pFD)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER; 
+        GC_NOTRIGGER;
         NOTHROW;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-        
+
 #ifdef _DEBUG
     if (g_BreakOnEnCResolveField == 1)
     {
@@ -857,7 +857,7 @@ PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer,
         {
             return NULL;
         }
-        
+
         _ASSERTE( pAddedStatic->m_pFieldDesc == pFD );
         return PTR_CBYTE(pAddedStatic->GetFieldData());
     }
@@ -872,24 +872,24 @@ PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer,
         return NULL;
     }
 
-    EnCSyncBlockInfo * pEnCInfo = NULL;    
+    EnCSyncBlockInfo * pEnCInfo = NULL;
 
     // Attempt to get the EnC information from the sync block
     pEnCInfo = pBlock->GetEnCInfo();
-    
-    if (!pEnCInfo) 
+
+    if (!pEnCInfo)
     {
         // No EnC info on this object yet, fail since we don't want to allocate it
         return NULL;
     }
 
     // Lookup the actual field value from the EnCSyncBlockInfo
-    return pEnCInfo->ResolveField(thisPointer, pFD);      
+    return pEnCInfo->ResolveField(thisPointer, pFD);
 } // EditAndContinueModule::ResolveField
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
-// ResolveOrAllocateField - get a pointer to the value of a field that was added by EnC, 
+// ResolveOrAllocateField - get a pointer to the value of a field that was added by EnC,
 // allocating storage for it if necessary
 //
 // Arguments:
@@ -897,19 +897,19 @@ PTR_CBYTE EditAndContinueModule::ResolveField(OBJECTREF      thisPointer,
 //                  For static fields this is unused and should be NULL.
 //   pFD          - FieldDesc describing the field we're interested in
 // Return Value:
-//      Returns a pointer to the contents of the field on success. This should only fail due 
+//      Returns a pointer to the contents of the field on success. This should only fail due
 //      to out-of-memory and will therefore throw an OOM exception.
 //---------------------------------------------------------------------------------------
-PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPointer, 
+PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPointer,
                                                         EnCFieldDesc * pFD)
 {
     CONTRACTL
     {
-        GC_TRIGGERS; 
+        GC_TRIGGERS;
         THROWS;
     }
     CONTRACTL_END;
-    
+
     // first try getting a pre-existing field
     PTR_CBYTE fieldAddr = ResolveField(thisPointer, pFD);
     if (fieldAddr != NULL)
@@ -931,17 +931,17 @@ PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPoint
 
     // Get the SyncBlock, creating it if necessary
     pBlock = thisPointer->GetSyncBlock();
-    
-    EnCSyncBlockInfo * pEnCInfo = NULL;    
+
+    EnCSyncBlockInfo * pEnCInfo = NULL;
 
     // Attempt to get the EnC information from the sync block
     pEnCInfo = pBlock->GetEnCInfo();
 
-    if (!pEnCInfo) 
+    if (!pEnCInfo)
     {
         // Attach new EnC field info to this object.
         pEnCInfo = new EnCSyncBlockInfo;
-        if (!pEnCInfo) 
+        if (!pEnCInfo)
         {
             COMPlusThrowOM();
         }
@@ -949,7 +949,7 @@ PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPoint
     }
 
     // Lookup the actual field value from the EnCSyncBlockInfo
-    return pEnCInfo->ResolveOrAllocateField(thisPointer, pFD);      
+    return pEnCInfo->ResolveOrAllocateField(thisPointer, pFD);
 } // EditAndContinueModule::ResolveOrAllocateField
 
 #endif // !DACCESS_COMPILE
@@ -957,16 +957,16 @@ PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPoint
 //-----------------------------------------------------------------------------
 // Get or optionally create an EnCEEClassData object for the specified
 // EEClass in this module.
-// 
+//
 // Arguments:
 //   pClass  - the EEClass of interest
 //   getOnly - if false (the default), we'll create a new entry of none exists yet
-//   
+//
 // Note: If called in a DAC build, GetOnly must be TRUE
 //
 PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, BOOL getOnly /*=FALSE*/ )
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1036,7 +1036,7 @@ void *EnCFieldDesc::GetAddress( void *o)
 
 #ifndef DACCESS_COMPILE
 
-// Do simple field initialization 
+// Do simple field initialization
 // We do this when the process is suspended for debugging (in a GC_NOTRIGGER).
 // Full initialization will be done in Fixup when the process is running.
 void EnCFieldDesc::Init(mdFieldDef token, BOOL fIsStatic)
@@ -1057,7 +1057,7 @@ void EnCFieldDesc::Init(mdFieldDef token, BOOL fIsStatic)
     m_bNeedsFixup = TRUE;
 
     // Initialize the bare minimum of FieldDesc necessary for now
-    if (fIsStatic) 
+    if (fIsStatic)
         FieldDesc::m_isStatic = TRUE;
 
     SetMemberDef(token);
@@ -1065,7 +1065,7 @@ void EnCFieldDesc::Init(mdFieldDef token, BOOL fIsStatic)
     SetEnCNew();
 }
 
-// Allocate a new EnCAddedField instance and hook it up to hold the value for an instance 
+// Allocate a new EnCAddedField instance and hook it up to hold the value for an instance
 // field which was added by EnC to the specified object.  This effectively adds a reference from
 // the object to the new field value so that the field's lifetime is managed properly.
 //
@@ -1075,7 +1075,7 @@ void EnCFieldDesc::Init(mdFieldDef token, BOOL fIsStatic)
 //
 EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1091,7 +1091,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
 
     AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
 
-    // We need to associate the contents of the new field with the object it is attached to 
+    // We need to associate the contents of the new field with the object it is attached to
     // in a way that mimics the lifetime behavior of a normal field reference.  Specifically,
     // when the object is collected, the field should also be collected (assuming there are no
     // other references), but references to the field shouldn't keep the object alive.
@@ -1100,10 +1100,10 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     // (the object getting a new field in this case), and a strong reference to a secondary object.
     // When the primary object is collected, the reference to the secondary object is released.
     // See the definition of code:HNDTYPE_DEPENDENT and code:Ref_ScanDependentHandles for more details.
-    //  
+    //
     // We create a helper object and store it as the secondary object in the dependant handle
     // so that its liveliness can be maintained along with the primary object.
-    // The helper then contains an object reference to the real field value that we are adding. 
+    // The helper then contains an object reference to the real field value that we are adding.
     // The reason for doing this is that we cannot hand out the handle address for
     // the OBJECTREF address so we need to hand out something else that is hooked up to the handle.
 
@@ -1118,23 +1118,23 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     // reference types, this is simply a normal object reference so we don't need to do anything
     // special here.
 
-    if (pFD->GetFieldType() != ELEMENT_TYPE_CLASS) 
+    if (pFD->GetFieldType() != ELEMENT_TYPE_CLASS)
     {
         // The field is a value type so we need to create storage on the heap to hold a boxed
-        // copy of the value and have the helper's objectref point there.  
+        // copy of the value and have the helper's objectref point there.
 
         OBJECTREF obj = NULL;
-        if (pFD->IsByValue()) 
+        if (pFD->IsByValue())
         {
-            // Create a boxed version of the value class. This allows the standard GC algorithm 
+            // Create a boxed version of the value class. This allows the standard GC algorithm
             // to take care of internal pointers into the value class.
             obj = AllocateObject(pFD->GetFieldTypeHandleThrowing().GetMethodTable());
-        } 
-        else 
+        }
+        else
         {
-            // In the case of primitive types, we use a reference to a 1-element array on the heap.  
-            // I'm not sure why we bother treating primitives specially, it seems like we should be able 
-            // to just box any value type including primitives.            
+            // In the case of primitive types, we use a reference to a 1-element array on the heap.
+            // I'm not sure why we bother treating primitives specially, it seems like we should be able
+            // to just box any value type including primitives.
             obj = AllocatePrimitiveArray(ELEMENT_TYPE_I1, GetSizeForCorElementType(pFD->GetFieldType()));
         }
         GCPROTECT_BEGIN (obj);
@@ -1162,10 +1162,10 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
 //     input:  pHelperFieldDesc - FieldDesc for the enc helper object
 //             pHelper          - EnC helper (points to list of added fields)
 //             pFD              - fieldDesc describing the field of interest
-// Return value: the address of the EnC added field            
+// Return value: the address of the EnC added field
 //---------------------------------------------------------------------------------------
-PTR_CBYTE EnCSyncBlockInfo::GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *        pHelperFieldDesc, 
-                                                               OBJECTREF          pHelper, 
+PTR_CBYTE EnCSyncBlockInfo::GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *        pHelperFieldDesc,
+                                                               OBJECTREF          pHelper,
                                                                EnCFieldDesc *     pFD)
 {
      WRAPPER_NO_CONTRACT;
@@ -1174,13 +1174,13 @@ PTR_CBYTE EnCSyncBlockInfo::GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *      
     _ASSERTE(pHelperFieldDesc != NULL);
     _ASSERTE(pHelper != NULL);
 
-    // Get the address of the reference inside the helper object which points to 
+    // Get the address of the reference inside the helper object which points to
     // the field contents
-    PTR_OBJECTREF pOR = dac_cast<PTR_OBJECTREF>(pHelperFieldDesc->GetAddress(pHelper->GetAddress())); 
+    PTR_OBJECTREF pOR = dac_cast<PTR_OBJECTREF>(pHelperFieldDesc->GetAddress(pHelper->GetAddress()));
     _ASSERTE(pOR != NULL);
 
     PTR_CBYTE retAddr = NULL;
-    
+
     // Compute the address to the actual field contents based on the field type
     // See the description above Allocate for details
     if (pFD->IsByValue())
@@ -1201,7 +1201,7 @@ PTR_CBYTE EnCSyncBlockInfo::GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *      
         retAddr = dac_cast<PTR_CBYTE>(primitiveArray->GetDirectPointerToNonObjectElements());
     }
 
-    LOG((LF_ENC, LL_INFO1000, "\tEnCSBI:RF address of %s type member is %p\n", 
+    LOG((LF_ENC, LL_INFO1000, "\tEnCSBI:RF address of %s type member is %p\n",
         (pFD->IsByValue() ? "ByValue" : pFD->GetFieldType() == ELEMENT_TYPE_CLASS ? "Class" : "Other"), retAddr));
 
     return retAddr;
@@ -1233,16 +1233,16 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
     LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
-    // arise here. 
+    // arise here.
     // Look for an entry for the requested field in our linked list
     pEntry = m_pList;
     while (pEntry && pEntry->m_pFieldDesc != pFD)
     {
         pEntry = pEntry->m_pNext;
     }
-        
+
     if (!pEntry)
-    {       
+    {
         // No existing entry - we have to return NULL
         return NULL;
     }
@@ -1259,7 +1259,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     FieldDesc *pHelperFieldDesc = NULL;
 
-    // We _HAVE_ to call GetExistingField b/c (a) we can't throw exceptions, and 
+    // We _HAVE_ to call GetExistingField b/c (a) we can't throw exceptions, and
     // (b) we _DON'T_ want to run class init code, either.
     pHelperFieldDesc = MscorlibBinder::GetExistingField(FIELD__ENC_HELPER__OBJECT_REFERENCE);
     if (pHelperFieldDesc == NULL)
@@ -1301,16 +1301,16 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
         return retAddr;
     }
 
-    // if the field doesn't yet have available storage, we'll have to allocate it. 
+    // if the field doesn't yet have available storage, we'll have to allocate it.
     PTR_EnCAddedField pEntry = NULL;
 
     LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
-    // arise here. 
+    // arise here.
     // Because we may have additions to the head of m_pList at any time, we have to keep searching this
-    // until we either find a match or succeed in allocating a new entry and adding it to the list 
-    do 
+    // until we either find a match or succeed in allocating a new entry and adding it to the list
+    do
     {
         // Look for an entry for the requested field in our linked list (maybe it was just added)
         pEntry = m_pList;
@@ -1318,25 +1318,25 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
         {
             pEntry = pEntry->m_pNext;
         }
-            
+
         if (pEntry)
-        {       
+        {
             // match found
             break;
         }
-            
+
         // Allocate an entry and tie it to the object instance
         pEntry = EnCAddedField::Allocate(thisPointer, pFD);
 
         // put at front of list so the list is in order of most recently added
         pEntry->m_pNext = m_pList;
-        if (FastInterlockCompareExchangePointer(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)  
+        if (FastInterlockCompareExchangePointer(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
             break;
 
         // There was a race and another thread modified the list here, so we need to try again
         // We should do this so rarely, and EnC perf is of relatively little
         // consequence, we should just be taking a lock here to simplify this code.
-        // @todo - We leak a GC handle here. Allocate() above alloced a GC handle in m_FieldData. 
+        // @todo - We leak a GC handle here. Allocate() above alloced a GC handle in m_FieldData.
         // There's no dtor for pEntry to free it.
         delete pEntry;
     } while (TRUE);
@@ -1344,7 +1344,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
     // we found a matching entry in the list of EnCAddedFields
     // Get the EnC helper object (see the detailed description in Allocate above)
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    OBJECTREF pHelper = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));           
+    OBJECTREF pHelper = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));
     _ASSERTE(pHelper != NULL);
 
     FieldDesc * pHelperField = NULL;
@@ -1372,7 +1372,7 @@ void EnCSyncBlockInfo::Cleanup()
     CONTRACTL_END;
     // Walk our linked list of all the fields that were added
     EnCAddedField *pEntry = m_pList;
-    while (pEntry) 
+    while (pEntry)
     {
         // Clean up the handle we created in EnCAddedField::Allocate
         DestroyDependentHandle(*(OBJECTHANDLE*)&pEntry->m_FieldData);
@@ -1390,7 +1390,7 @@ void EnCSyncBlockInfo::Cleanup()
 // Allocate space to hold the value for the new static field
 EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -1416,9 +1416,9 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
 
     // Create a static objectref to point to the field contents, except for primitives
     // which will use the memory available in-line at m_FieldData for storage.
-    // We use static object refs for static fields as these fields won't go away 
+    // We use static object refs for static fields as these fields won't go away
     // unless the module is unloaded, and they can easily be found by GC.
-    if (pFD->IsByValue()) 
+    if (pFD->IsByValue())
     {
         // create a boxed version of the value class.  This allows the standard GC
         // algorithm to take care of internal pointers in the value class.
@@ -1426,8 +1426,8 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
         *pOR = pDomain->AllocateStaticFieldObjRefPtrs(1);
         OBJECTREF obj = AllocateObject(pFD->GetFieldTypeHandleThrowing().GetMethodTable());
         SetObjectReference( *pOR, obj);
-    } 
-    else if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS) 
+    }
+    else if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS)
     {
         // references to reference-types are stored directly in the field data
         OBJECTREF **pOR = (OBJECTREF**)&pEntry->m_FieldData;
@@ -1443,22 +1443,22 @@ PTR_CBYTE EnCAddedStaticField::GetFieldData()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    if ( (m_pFieldDesc->IsByValue()) || (m_pFieldDesc->GetFieldType() == ELEMENT_TYPE_CLASS) ) 
+    if ( (m_pFieldDesc->IsByValue()) || (m_pFieldDesc->GetFieldType() == ELEMENT_TYPE_CLASS) )
     {
         // It's indirect via an ObjRef at m_FieldData. This is a TADDR, so we need to make a PTR_CBYTE from
         // the ObjRef
         return *(PTR_CBYTE *)&m_FieldData;
-    } 
-    else 
+    }
+    else
     {
         // An elementry type. It's stored directly in m_FieldData. In this case, we need to get the target
-        // address of the m_FieldData data member and marshal it via the DAC. 
+        // address of the m_FieldData data member and marshal it via the DAC.
         return dac_cast<PTR_CBYTE>(PTR_HOST_MEMBER_TADDR(EnCAddedStaticField, this, m_FieldData));
     }
 }
 
 // Gets a pointer to the field's contents (assuming this is a static field)
-// We'll return NULL if we don't yet have a pointer to the data. 
+// We'll return NULL if we don't yet have a pointer to the data.
 // Arguments: none
 // Return value: address of the static field data if available or NULL otherwise
 EnCAddedStaticField * EnCFieldDesc::GetStaticFieldData()
@@ -1466,21 +1466,21 @@ EnCAddedStaticField * EnCFieldDesc::GetStaticFieldData()
     CONTRACTL
     {
         GC_NOTRIGGER;
-        NOTHROW; 
+        NOTHROW;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     _ASSERTE(IsStatic());
-        
+
     return m_pStaticFieldData;
 }
 
 #ifndef DACCESS_COMPILE
 // Gets a pointer to the field's contents (assuming this is a static field)
 // Arguments: none
-// Return value: address of the field data. If  we don't yet have a pointer to the data, 
-// this will allocate space to store it. 
+// Return value: address of the field data. If  we don't yet have a pointer to the data,
+// this will allocate space to store it.
 // May throw OOM.
 EnCAddedStaticField * EnCFieldDesc::GetOrAllocateStaticFieldData()
 {
@@ -1498,7 +1498,7 @@ EnCAddedStaticField * EnCFieldDesc::GetOrAllocateStaticFieldData()
     {
         m_pStaticFieldData = EnCAddedStaticField::Allocate(this);
     }
-        
+
     return m_pStaticFieldData;
 }
 #endif // !DACCESS_COMPILE
@@ -1515,7 +1515,7 @@ void EnCEEClassData::AddField(EnCAddedFieldElement *pAddedField)
     {
         ++m_dwNumAddedStaticFields;
         pList = &m_pAddedStaticFields;
-    } 
+    }
     else
     {
         ++m_dwNumAddedInstanceFields;
@@ -1523,7 +1523,7 @@ void EnCEEClassData::AddField(EnCAddedFieldElement *pAddedField)
     }
 
     // If the list is empty, just add this field as the only entry
-    if (*pList == NULL) 
+    if (*pList == NULL)
     {
         *pList = pAddedField;
         return;
@@ -1534,7 +1534,7 @@ void EnCEEClassData::AddField(EnCAddedFieldElement *pAddedField)
     while (pCur->m_next != NULL)
     {
         pCur = pCur->m_next;
-    }        
+    }
     pCur->m_next = pAddedField;
 }
 
@@ -1584,7 +1584,7 @@ EditAndContinueModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
     DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
     DPTR(PTR_EnCEEClassData) classLast = classData + m_ClassList.Count();
-    
+
     while (classData.IsValid() && classData < classLast)
     {
         if ((*classData).IsValid())
@@ -1607,9 +1607,9 @@ EditAndContinueModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 //   iteratorType  - one of the ApproxFieldDescIterator::IteratorType values specifying which fields
 //                   are of interest.
 //   fixupEnC      - if true, then any partially-initialized EnC FieldDescs will be fixed up to be complete
-//                   initialized FieldDescs as they are returned by Next().  This may load types and do 
+//                   initialized FieldDescs as they are returned by Next().  This may load types and do
 //                   other things to trigger a GC.
-//                   
+//
 EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC) :
       m_nonEnCIter( pMT, iteratorType )
 {
@@ -1626,7 +1626,7 @@ EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int ite
 #ifndef DACCESS_COMPILE
     // can't fixup for EnC on the debugger thread
     _ASSERTE((g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || fixupEnC == FALSE);
-#endif    
+#endif
 
     m_pCurrListElem = NULL;
     m_encClassData = NULL;
@@ -1684,9 +1684,9 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     }
 
     // Either it's been fixed up so we can use it, or we're the Debugger RC thread, we can't fix it up,
-    // but it's ok since our logic will check & make sure we don't try and use it.  If haven't asked to 
+    // but it's ok since our logic will check & make sure we don't try and use it.  If haven't asked to
     // have the field fixed up, should never be trying to get at non-fixed up field in
-    // this list. Can't simply fixup the field always because loading triggers GC and many 
+    // this list. Can't simply fixup the field always because loading triggers GC and many
     // code paths can't tolerate that.
     _ASSERTE( !(pFD->NeedsFixup()) ||
               ( g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId() ) );
@@ -1718,7 +1718,7 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
     BOOL doStatic = ( GetIteratorType() & (int)ApproxFieldDescIterator::STATIC_FIELDS);
 
     int cNumAddedInst    =  doInst ? m_encClassData->GetAddedInstanceFields() : 0;
-    int cNumAddedStatics =  doStatic ? m_encClassData->GetAddedStaticFields() : 0; 
+    int cNumAddedStatics =  doStatic ? m_encClassData->GetAddedStaticFields() : 0;
 
     // If we haven't returned anything yet
     if ( m_encFieldsReturned == 0 )
@@ -1728,7 +1728,7 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
         // We're at the start of the instance list.
         if ( doInst )
         {
-            m_pCurrListElem = m_encClassData->m_pAddedInstanceFields;            
+            m_pCurrListElem = m_encClassData->m_pAddedInstanceFields;
         }
     }
 
@@ -1741,9 +1741,9 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
         // We're at the start of the statics list.
         if ( doStatic )
         {
-            m_pCurrListElem = m_encClassData->m_pAddedStaticFields; 
+            m_pCurrListElem = m_encClassData->m_pAddedStaticFields;
         }
-    }        
+    }
 
     // If we don't have any elements to return, then we're done
     if (m_pCurrListElem == NULL)

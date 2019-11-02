@@ -36,25 +36,25 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE DISCARDABLE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE DISCARDABLE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE DISCARDABLE
 BEGIN
     "\0"
 END
 
 #endif    // APSTUDIO_INVOKED
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_USAGE_TITLE         L"ILDASM command line syntax"
     IDS_USAGE_01            L"Usage: ildasm [options] <file_name> [options]\n\n"
@@ -69,7 +69,7 @@ BEGIN
     IDS_USAGE_07            L"  /BYTES              Show actual bytes (in hex) as instruction comments.\n"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_USAGE_08            L"  /RAWEH              Show exception handling clauses in raw form.\n"
     IDS_USAGE_09            L"  /TOKENS             Show metadata tokens of classes and members.\n"
@@ -96,7 +96,7 @@ BEGIN
     IDS_USAGE_23            L"  /ITEM=<class>[::<method>[(<sig>)]  Disassemble the specified item only\n\n"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_USAGE_24            L"  /STATS              Include statistics on the image.\n"
     IDS_USAGE_25            L"  /CLASSLIST          Include list of classes defined in the module.\n"
@@ -129,7 +129,7 @@ BEGIN
 #endif // !FEATURE_PAL
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_USAGE_40            L"  /ALL        Combination of /HEADER, /BYTES, /TOKENS\n\n"
     IDS_USAGE_41            L"\nOption key is '-' or '/', options are recognized by first 3 characters\n\n"
@@ -137,7 +137,7 @@ BEGIN
     IDS_USAGE_43            L"\n\nPress any key to close the console window..."
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_INITLDR           L"error : PELoader initialization failed"
     IDS_E_FILEOPEN          L"error : File '%s' not found or not a PE file"
@@ -156,7 +156,7 @@ BEGIN
     IDS_E_INVALIDRECORD     L"error : Invalid record (%08x)"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_UNEXPTYPE         L"error : unexpected token type, expected %02x, got %02x"
     IDS_E_AUTOCA            L"--- The following custom attribute is added automatically, do not uncomment -------"
@@ -176,7 +176,7 @@ BEGIN
     IDS_E_EATJSIZE          L"Error!  size of ExportAddressTableJumps %d not a multiple of reserved size %d"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_RESFLAGS          L"Error!  reserved flags need to be 0."
     IDS_E_MIHENTRY          L"Failed to get vtable method data."
@@ -196,7 +196,7 @@ BEGIN
     IDS_E_INSTRTYPE         L"ERROR: Unknown type 0x%X of instruction 0x%X"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_ARGINDEX          L"%-10s %d // ERROR: invalid arg index (>=%d)"
     IDS_E_LVINDEX           L"%-10s %d // ERROR: invalid local var index (>=%d)"
@@ -208,7 +208,7 @@ BEGIN
     IDS_E_NOMANIFEST        L"Module contains no Manifest data"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_MULTIPLEINPUT     L"MULTIPLE INPUT FILES SPECIFIED\n\n"
     IDS_E_INVALIDOPTION     L"INVALID COMMAND LINE OPTION: %s\n\n"

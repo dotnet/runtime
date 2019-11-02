@@ -14,27 +14,27 @@
 
 /*
   This is how this is typically used:
-  
+
   // Step #1 ... Get CLR hosting API:
   #include <mscoree.h>
   #include <metahost.h>
 
   ICLRMetaHost * pMetaHost;
   CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, &pMetaHost); // defined in mscoree.h
-  
+
   ICLRRuntimeInfo * pCLRRuntimeInfo;
   pMetaHost->GetRuntime(wszClrVersion, IID_ICLRRuntimeInfo, &pCLRRuntimeInfo);
-  
+
   // Step #2 ... use mscorpe APIs to create a file generator
   CreateICeeFileGen(...);       // Get a ICeeFileGen
-  
+
   CreateCeeFile(...);           // Get a HCEEFILE (called for every output file needed)
   SetOutputFileName(...);       // Set the name for the output file
   pEmit = IMetaDataEmit object; // Get a metadata emitter
   GetSectionBlock(...);, AddSectionReloc(...); ... // Get blocks, write non-metadata information, and add necessary relocation
   EmitMetaDataEx(pEmit);        // Write out the metadata
   GenerateCeeFile(...);         // Write out the file. Implicitly calls LinkCeeFile and FixupCeeFile
-  
+
   DestroyICeeFileGen(...);      // Release the ICeeFileGen object
 */
 
@@ -56,14 +56,14 @@ typedef HRESULT (__stdcall * PFN_CreateICeeFileGen)(ICeeFileGen ** ceeFileGen); 
 typedef HRESULT (__stdcall * PFN_DestroyICeeFileGen)(ICeeFileGen ** ceeFileGen); // call this to delete an ICeeFileGen
 
 #define ICEE_CREATE_FILE_PE32	       0x00000001  // Create a PE  (32-bit)
-#define ICEE_CREATE_FILE_PE64	       0x00000002  // Create a PE+ (64-bit) 
-#define ICEE_CREATE_FILE_CORMAIN_STUB  0x00000004  // add a mscoree!_Cor___Main call stub 
+#define ICEE_CREATE_FILE_PE64	       0x00000002  // Create a PE+ (64-bit)
+#define ICEE_CREATE_FILE_CORMAIN_STUB  0x00000004  // add a mscoree!_Cor___Main call stub
 #define ICEE_CREATE_FILE_STRIP_RELOCS  0x00000008  // strip the .reloc section
 #define ICEE_CREATE_FILE_EMIT_FIXUPS   0x00000010  // emit fixups for use by Vulcan
 
 #define ICEE_CREATE_MACHINE_MASK       0x0000FF00  // space for up to 256 machine targets (note: most users just do a bit check, not an equality compare after applying the mask)
 #define ICEE_CREATE_MACHINE_ILLEGAL    0x00000000  // An illegal machine name
-#define ICEE_CREATE_MACHINE_I386       0x00000100  // Create a IMAGE_FILE_MACHINE_I386 
+#define ICEE_CREATE_MACHINE_I386       0x00000100  // Create a IMAGE_FILE_MACHINE_I386
 #define ICEE_CREATE_MACHINE_IA64       0x00000200  // Create a IMAGE_FILE_MACHINE_IA64
 #define ICEE_CREATE_MACHINE_AMD64      0x00000400  // Create a IMAGE_FILE_MACHINE_AMD64
 #define ICEE_CREATE_MACHINE_ARM        0x00000800  // Create a IMAGE_FILE_MACHINE_ARMNT
@@ -84,7 +84,7 @@ class ICeeFileGen {
     virtual HRESULT EmitMetaData (HCEEFILE ceeFile, IMetaDataEmit *emitter, mdScope scope);
     virtual HRESULT EmitLibraryName (HCEEFILE ceeFile, IMetaDataEmit *emitter, mdScope scope);
     virtual HRESULT EmitMethod (); // <TODO>@FUTURE: remove</TODO>
-    virtual HRESULT GetMethodRVA (HCEEFILE ceeFile, ULONG codeOffset, ULONG *codeRVA); 
+    virtual HRESULT GetMethodRVA (HCEEFILE ceeFile, ULONG codeOffset, ULONG *codeRVA);
     virtual HRESULT EmitSignature (); // <TODO>@FUTURE: remove</TODO>
 
     virtual HRESULT EmitString (HCEEFILE ceeFile,_In_ LPWSTR strValue, ULONG *strRef);
@@ -153,7 +153,7 @@ class ICeeFileGen {
 
     // Write out the metadata in "emitter" to the metadata section in "ceeFile"
     // Use EmitMetaDataAt() for more control
-    virtual HRESULT EmitMetaDataEx (HCEEFILE ceeFile, IMetaDataEmit *emitter); 
+    virtual HRESULT EmitMetaDataEx (HCEEFILE ceeFile, IMetaDataEmit *emitter);
 
     virtual HRESULT EmitLibraryNameEx (HCEEFILE ceeFile, IMetaDataEmit *emitter);
     virtual HRESULT GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
@@ -169,22 +169,22 @@ class ICeeFileGen {
 
     virtual HRESULT ComputeSectionOffset(HCEESECTION section, _In_ char *ptr,
                                          unsigned *offset);
-    
+
     virtual HRESULT ComputeOffset(HCEEFILE file, _In_ char *ptr,
                                   HCEESECTION *pSection, unsigned *offset);
-    
-    virtual HRESULT GetCorHeader(HCEEFILE ceeFile, 
+
+    virtual HRESULT GetCorHeader(HCEEFILE ceeFile,
                                  IMAGE_COR20_HEADER **header);
-    
+
     // Layout the sections and assign their starting addresses
-    virtual HRESULT LinkCeeFile (HCEEFILE ceeFile);     
+    virtual HRESULT LinkCeeFile (HCEEFILE ceeFile);
 
     // Apply relocations to any pointer data. Also generate PE base relocs
     virtual HRESULT FixupCeeFile (HCEEFILE ceeFile);
 
     // Base RVA assinged to the section. To be called only after LinkCeeFile()
     virtual HRESULT GetSectionRVA (HCEESECTION section, ULONG *rva);
-    
+
     _Return_type_success_(return == S_OK)
     virtual HRESULT ComputeSectionPointer(HCEESECTION section, ULONG offset,
                                           _Out_ char **ptr);
@@ -200,8 +200,8 @@ class ICeeFileGen {
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
     // (should use GetSaveSize to insure that buffer is big enough
-    virtual HRESULT EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter, 
-                                    HCEESECTION section, DWORD offset, 
+    virtual HRESULT EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter,
+                                    HCEESECTION section, DWORD offset,
                                     BYTE* buffer, unsigned buffLen);
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);

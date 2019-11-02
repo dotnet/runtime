@@ -45,7 +45,7 @@ Note that instructions on building the crossrootfs location can be found at http
 Docker Images
 =============
 
-These instructions might fall stale often enough as we change our images as our requirements change. The table below is just a quick refernce view of the images we use in different build scenarios. The ones that we use for our our official builds can be found in [the platform matrix](../../eng/platform-matrix.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. 
+These instructions might fall stale often enough as we change our images as our requirements change. The table below is just a quick refernce view of the images we use in different build scenarios. The ones that we use for our our official builds can be found in [the platform matrix](../../eng/platform-matrix.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build.
 
 | OS                          | Target Arch     | Image location                                                                                       | crossrootfs location | Clang Version |
 | --------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
@@ -69,14 +69,14 @@ Toolchain Setup
 
 Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>.
 
-Install the following packages for the toolchain: 
+Install the following packages for the toolchain:
 
-- cmake 
+- cmake
 - llvm-3.9
 - clang-3.9
 - lldb-3.9
 - liblldb-3.9-dev
-- libunwind8 
+- libunwind8
 - libunwind8-dev
 - gettext
 - libicu-dev

@@ -39,27 +39,27 @@ namespace Windows {
 
             virtual HRESULT STDMETHODCALLTYPE Stop( void) = 0;
 
-            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_Interval( 
+            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_Interval(
                 /* [out][retval] */ __RPC__out ABI::Windows::Foundation::TimeSpan *value) = 0;
 
-            virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_Interval( 
+            virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_Interval(
                 /* [in] */ ABI::Windows::Foundation::TimeSpan value) = 0;
 
-            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_IsStarted( 
+            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_IsStarted(
                 /* [out][retval] */ __RPC__out boolean *value) = 0;
 
-            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_IsRepeating( 
+            virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_IsRepeating(
                 /* [out][retval] */ __RPC__out boolean *value) = 0;
 
-            virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_IsRepeating( 
+            virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_IsRepeating(
                 /* [in] */ boolean value) = 0;
 
 #if 0 // We don't use these functions
-            virtual HRESULT STDMETHODCALLTYPE add_Tick( 
+            virtual HRESULT STDMETHODCALLTYPE add_Tick(
                 /* [in] */ __RPC__in_opt __FITypedEventHandler_2_Windows__CSystem__CDispatcherQueueTimer_IInspectable *handler,
                 /* [out][retval] */ __RPC__out EventRegistrationToken *token) = 0;
-            
-            virtual HRESULT STDMETHODCALLTYPE remove_Tick( 
+
+            virtual HRESULT STDMETHODCALLTYPE remove_Tick(
                 /* [in] */ EventRegistrationToken token) = 0;
 #endif
         };
@@ -68,14 +68,14 @@ namespace Windows {
         IDispatcherQueue : public IInspectable
         {
         public:
-            virtual HRESULT STDMETHODCALLTYPE CreateTimer( 
+            virtual HRESULT STDMETHODCALLTYPE CreateTimer(
                 /* [out][retval] */ __RPC__deref_out_opt Windows::System::IDispatcherQueueTimer **result) = 0;
 
-            virtual HRESULT STDMETHODCALLTYPE TryEnqueue( 
+            virtual HRESULT STDMETHODCALLTYPE TryEnqueue(
                 /* [in] */ __RPC__in_opt Windows::System::IDispatcherQueueHandler *callback,
                 /* [out][retval] */ __RPC__out boolean *result) = 0;
 
-            virtual HRESULT STDMETHODCALLTYPE TryEnqueueWithPriority( 
+            virtual HRESULT STDMETHODCALLTYPE TryEnqueueWithPriority(
                 /* [in] */ Windows::System::DispatcherQueuePriority priority,
                 /* [in] */ __RPC__in_opt Windows::System::IDispatcherQueueHandler *callback,
                 /* [out][retval] */ __RPC__out boolean *result) = 0;
@@ -85,7 +85,7 @@ namespace Windows {
         IDispatcherQueueStatics : public IInspectable
         {
         public:
-            virtual HRESULT STDMETHODCALLTYPE GetForCurrentThread( 
+            virtual HRESULT STDMETHODCALLTYPE GetForCurrentThread(
                 /* [out][retval] */ __RPC__deref_out_opt Windows::System::IDispatcherQueue **result) = 0;
         };
 

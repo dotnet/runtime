@@ -23,7 +23,7 @@
 
 //
 // Default compilation mode is /fp:precise, which disables fp intrinsics. This causes us to pull in FP stuff (sin,cos,etc.) from
-// The CRT, and increases our download size by ~5k.  We don't need the extra precision this gets us, so let's switch to 
+// The CRT, and increases our download size by ~5k.  We don't need the extra precision this gets us, so let's switch to
 // the intrinsic versions.
 //
 #ifdef _MSC_VER
@@ -86,7 +86,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 
     //
     // If someone changed the thread count without telling us, update our records accordingly.
-    // 
+    //
     if (currentThreadCount != m_lastThreadCount)
         ForceChange(currentThreadCount, Initializing);
 
@@ -104,9 +104,9 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 
     //
     // We need to make sure we're collecting reasonably accurate data.  Since we're just counting the end
-    // of each work item, we are goinng to be missing some data about what really happened during the 
-    // sample interval.  The count produced by each thread includes an initial work item that may have 
-    // started well before the start of the interval, and each thread may have been running some new 
+    // of each work item, we are goinng to be missing some data about what really happened during the
+    // sample interval.  The count produced by each thread includes an initial work item that may have
+    // started well before the start of the interval, and each thread may have been running some new
     // work item for some time before the end of the interval, which did not yet get counted.  So
     // our count is going to be off by +/- threadCount workitems.
     //
@@ -119,7 +119,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
     // We cannot rely on the frequency-domain analysis we'll be doing later to filter out this error, because
     // of the way it accumulates over time.  If this sample is off by, say, 33% in the negative direction,
     // then the next one likely will be too.  The one after that will include the sum of the completions
-    // we missed in the previous samples, and so will be 33% positive.  So every three samples we'll have 
+    // we missed in the previous samples, and so will be 33% positive.  So every three samples we'll have
     // two "low" samples and one "high" sample.  This will appear as periodic variation right in the frequency
     // range we're targeting, which will not be filtered by the frequency-domain translation.
     //
@@ -163,9 +163,9 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 
     //
     // How many samples will we use?  It must be at least the three wave periods we're looking for, and it must also be a whole
-    // multiple of the primary wave's period; otherwise the frequency we're looking for will fall between two  frequency bands 
+    // multiple of the primary wave's period; otherwise the frequency we're looking for will fall between two  frequency bands
     // in the Fourier analysis, and we won't be able to measure it accurately.
-    // 
+    //
     int sampleCount = ((int)min(m_totalSamples-1, m_samplesToMeasure) / m_wavePeriod) * m_wavePeriod;
 
     if (sampleCount > m_wavePeriod)
@@ -263,7 +263,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
     // Now apply non-linear gain, such that values around zero are attenuated, while higher values
     // are enhanced.  This allows us to move quickly if we're far away from the target, but more slowly
     // if we're getting close, giving us rapid ramp-up without wild oscillations around the target.
-    // 
+    //
     double gain = m_maxChangePerSecond * sampleDuration;
     move = pow(fabs(move), m_gainExponent) * (move >= 0.0 ? 1 : -1) * gain;
     move = min(move, m_maxChangePerSample);
@@ -276,7 +276,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 
     //
     // Apply the move to our control setting
-    // 
+    //
     m_currentControlSetting += move;
 
     //
@@ -289,18 +289,18 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 
     //
     // Make sure our control setting is within the ThreadPool's limits
-    // 
+    //
     m_currentControlSetting = min(ThreadpoolMgr::MaxLimitTotalWorkerThreads-newThreadWaveMagnitude, m_currentControlSetting);
     m_currentControlSetting = max(ThreadpoolMgr::MinLimitTotalWorkerThreads, m_currentControlSetting);
 
     //
     // Calculate the new thread count (control setting + square wave)
-    // 
+    //
     int newThreadCount = (int)(m_currentControlSetting + newThreadWaveMagnitude * ((m_totalSamples / (m_wavePeriod/2)) % 2));
 
     //
     // Make sure the new thread count doesn't exceed the ThreadPool's limits
-    // 
+    //
     newThreadCount = min(ThreadpoolMgr::MaxLimitTotalWorkerThreads, newThreadCount);
     newThreadCount = max(ThreadpoolMgr::MinLimitTotalWorkerThreads, newThreadCount);
 
@@ -308,21 +308,21 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
     // Record these numbers for posterity
     //
     FireEtwThreadPoolWorkerThreadAdjustmentStats(
-        sampleDuration, 
-        throughput, 
-        threadWaveComponent.r, 
-        throughputWaveComponent.r, 
-        throughputErrorEstimate, 
+        sampleDuration,
+        throughput,
+        threadWaveComponent.r,
+        throughputWaveComponent.r,
+        throughputErrorEstimate,
         m_averageThroughputNoise,
         ratio.r,
         confidence,
-        m_currentControlSetting, 
-        (unsigned short)newThreadWaveMagnitude, 
+        m_currentControlSetting,
+        (unsigned short)newThreadWaveMagnitude,
         GetClrInstanceId());
 
     //
     // If all of this caused an actual change in thread count, log that as well.
-    // 
+    //
     if (newThreadCount != currentThreadCount)
         ChangeThreadCount(newThreadCount, transition);
 
@@ -337,7 +337,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
     if (ratio.r < 0.0 && newThreadCount == ThreadpoolMgr::MinLimitTotalWorkerThreads)
         *pNewSampleInterval = (int)(0.5 + m_currentSampleInterval * (10.0 * min(-ratio.r, 1.0)));
     else
-        *pNewSampleInterval = m_currentSampleInterval; 
+        *pNewSampleInterval = m_currentSampleInterval;
 
     return newThreadCount;
 
@@ -381,7 +381,7 @@ void HillClimbing::LogTransition(int threadCount, double throughput, HillClimbin
 
 #ifndef DACCESS_COMPILE
     int index = (HillClimbingLogFirstIndex + HillClimbingLogSize) % HillClimbingLogCapacity;
-    
+
     if (HillClimbingLogSize == HillClimbingLogCapacity)
     {
         HillClimbingLogFirstIndex = (HillClimbingLogFirstIndex + 1) % HillClimbingLogCapacity;
@@ -400,7 +400,7 @@ void HillClimbing::LogTransition(int threadCount, double throughput, HillClimbin
     HillClimbingLogSize++;
 
     FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
-        throughput, 
+        throughput,
         threadCount,
         transition,
         GetClrInstanceId());

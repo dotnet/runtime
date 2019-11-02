@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 Revision History:
 
- 
+
 *******************************************************************************/
 #include "stdafx.h"
 #include "clrhost.h"
@@ -75,8 +75,8 @@ Volatile<BOOL> g_fInitializedGlobalSystemInfo = FALSE;
 SYSTEM_INFO g_SystemInfo;
 
 // Configurable constants used across our spin locks
-SpinConstants g_SpinConstants = { 
-    50,        // dwInitialDuration 
+SpinConstants g_SpinConstants = {
+    50,        // dwInitialDuration
     40000,     // dwMaximumDuration - ideally (20000 * max(2, numProc)) ... updated in code:InitializeSpinConstants_NoHost
     3,         // dwBackoffFactor
     10,        // dwRepetitions
@@ -110,7 +110,7 @@ UTSemReadWrite::UTSemReadWrite()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
 #if defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)
     if (!g_fInitializedGlobalSystemInfo)
     {
@@ -120,7 +120,7 @@ UTSemReadWrite::UTSemReadWrite()
         g_fInitializedGlobalSystemInfo = TRUE;
     }
 #endif //SELF_NO_HOST && !CROSSGEN_COMPILE
-    
+
     m_dwFlag = 0;
     m_pReadWaiterSemaphore = NULL;
     m_pWriteWaiterEvent = NULL;
@@ -140,21 +140,21 @@ UTSemReadWrite::~UTSemReadWrite()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE_MSG((m_dwFlag == (ULONG)0), "Destroying a UTSemReadWrite while in use");
-    
+
     if (m_pReadWaiterSemaphore != NULL)
         delete m_pReadWaiterSemaphore;
-    
+
     if (m_pWriteWaiterEvent != NULL)
         delete m_pWriteWaiterEvent;
 }
 
 //=======================================================================================
-// 
+//
 // Initialize the lock (its semaphore and event)
-// 
-HRESULT 
+//
+HRESULT
 UTSemReadWrite::Init()
 {
     CONTRACTL
@@ -163,19 +163,19 @@ UTSemReadWrite::Init()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
-    
+
     _ASSERTE(m_pReadWaiterSemaphore == NULL);
     _ASSERTE(m_pWriteWaiterEvent == NULL);
-    
+
     EX_TRY
     {
         CONTRACT_VIOLATION(ThrowsViolation);
-        
+
         m_pReadWaiterSemaphore = new Semaphore();
         m_pReadWaiterSemaphore->Create(0, MAXLONG);
-        
+
         m_pWriteWaiterEvent = new Event();
         m_pWriteWaiterEvent->CreateAutoEvent(FALSE);
     }
@@ -185,7 +185,7 @@ UTSemReadWrite::Init()
     }
     EX_END_CATCH(SwallowAllExceptions)
     IfFailGo(hr);
-    
+
 ErrExit:
     return hr;
 } // UTSemReadWrite::Init
@@ -204,20 +204,20 @@ HRESULT UTSemReadWrite::LockRead()
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
-    
-    // Inform CLR that the debugger shouldn't suspend this thread while 
+
+    // Inform CLR that the debugger shouldn't suspend this thread while
     // holding this lock.
     IncCantStopCount();
-    
+
     // First do some spinning - copied from file:..\VM\crst.cpp#CrstBase::SpinEnter
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
         DWORD i = g_SpinConstants.dwInitialDuration;
-        
+
         do
         {
             DWORD dwFlag = m_dwFlag;
-            
+
             if (dwFlag < READERS_MASK)
             {   // There are just readers in the play, try to add one more
                 if (dwFlag == InterlockedCompareExchangeT (&m_dwFlag, dwFlag + READERS_INCR, dwFlag))
@@ -225,23 +225,23 @@ HRESULT UTSemReadWrite::LockRead()
                     goto ReadLockAcquired;
                 }
             }
-            
+
             if (g_SystemInfo.dwNumberOfProcessors <= 1)
             {   // We do not need to spin on a single processor
                 break;
             }
-            
+
             // Delay by approximately 2*i clock cycles (Pentium III).
             YieldProcessorNormalizedForPreSkylakeCount(i);
 
             // exponential backoff: wait a factor longer in the next iteration
             i *= g_SpinConstants.dwBackoffFactor;
         } while (i < g_SpinConstants.dwMaximumDuration);
-        
+
         __SwitchToThread(0, CALLER_LIMITS_SPINNING);
     }
     // Stop spinning
-    
+
     // Start waiting
     for (;;)
     {
@@ -271,12 +271,12 @@ HRESULT UTSemReadWrite::LockRead()
             }
         }
     }
-    
+
 ReadLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) != 0 && "reader count is zero after acquiring read lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == 0 && "writer count is nonzero after acquiring write lock");
     EE_LOCK_TAKEN(this);
-    
+
     return S_OK;
 } // UTSemReadWrite::LockRead
 
@@ -296,8 +296,8 @@ HRESULT UTSemReadWrite::LockWrite()
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
-    
-    // Inform CLR that the debugger shouldn't suspend this thread while 
+
+    // Inform CLR that the debugger shouldn't suspend this thread while
     // holding this lock.
     IncCantStopCount();
 
@@ -305,11 +305,11 @@ HRESULT UTSemReadWrite::LockWrite()
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
         DWORD i = g_SpinConstants.dwInitialDuration;
-        
+
         do
         {
             DWORD dwFlag = m_dwFlag;
-            
+
             if (dwFlag == 0)
             {   // No readers/writers in play, try to add a writer
                 if (dwFlag == InterlockedCompareExchangeT (&m_dwFlag, WRITERS_INCR, dwFlag))
@@ -317,23 +317,23 @@ HRESULT UTSemReadWrite::LockWrite()
                     goto WriteLockAcquired;
                 }
             }
-            
+
             if (g_SystemInfo.dwNumberOfProcessors <= 1)
             {   // We do not need to spin on a single processor
                 break;
             }
-            
+
             // Delay by approximately 2*i clock cycles (Pentium III).
             YieldProcessorNormalizedForPreSkylakeCount(i);
 
             // exponential backoff: wait a factor longer in the next iteration
             i *= g_SpinConstants.dwBackoffFactor;
         } while (i < g_SpinConstants.dwMaximumDuration);
-        
+
         __SwitchToThread(0, CALLER_LIMITS_SPINNING);
     }
     // Stop spinning
-    
+
     // Start waiting
     for (;;)
     {
@@ -365,7 +365,7 @@ WriteLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) == 0 && "reader count is nonzero after acquiring write lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == WRITERS_INCR && "writer count is not 1 after acquiring write lock");
     EE_LOCK_TAKEN(this);
-    
+
     return S_OK;
 } // UTSemReadWrite::LockWrite
 
@@ -384,7 +384,7 @@ void UTSemReadWrite::UnlockRead()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     ULONG dwFlag;
 
 
@@ -419,10 +419,10 @@ void UTSemReadWrite::UnlockRead()
 
             // one or more writers is waiting, do one of them next
             // (remove a reader (us), remove a write waiter, add a writer
-            if (dwFlag == 
+            if (dwFlag ==
                     InterlockedCompareExchangeT(
-                        &m_dwFlag, 
-                        dwFlag - READERS_INCR - WRITEWAITERS_INCR + WRITERS_INCR, 
+                        &m_dwFlag,
+                        dwFlag - READERS_INCR - WRITEWAITERS_INCR + WRITERS_INCR,
                         dwFlag))
             {
                 m_pWriteWaiterEvent->Set();
@@ -449,13 +449,13 @@ void UTSemReadWrite::UnlockWrite()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     ULONG dwFlag;
     ULONG count;
-    
+
     _ASSERTE ((m_dwFlag & READERS_MASK) == 0 && "reader count is nonzero before releasing write lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == WRITERS_INCR && "writer count is not 1 before releasing write lock");
-    
+
     for (;;)
     {
         dwFlag = m_dwFlag;
@@ -472,10 +472,10 @@ void UTSemReadWrite::UnlockWrite()
         {        // one or more readers are waiting, do them all next
             count = (dwFlag & READWAITERS_MASK) / READWAITERS_INCR;
             // remove a writer (us), remove all read waiters, turn them into readers
-            if (dwFlag == 
+            if (dwFlag ==
                     InterlockedCompareExchangeT(
-                        &m_dwFlag, 
-                        dwFlag - WRITERS_INCR - count * READWAITERS_INCR + count * READERS_INCR, 
+                        &m_dwFlag,
+                        dwFlag - WRITERS_INCR - count * READWAITERS_INCR + count * READERS_INCR,
                         dwFlag))
             {
                 m_pReadWaiterSemaphore->Release(count, NULL);
@@ -502,14 +502,14 @@ void UTSemReadWrite::UnlockWrite()
 #ifdef _DEBUG
 
 //=======================================================================================
-BOOL 
+BOOL
 UTSemReadWrite::Debug_IsLockedForRead()
 {
     return ((m_dwFlag & READERS_MASK) != 0);
 }
 
 //=======================================================================================
-BOOL 
+BOOL
 UTSemReadWrite::Debug_IsLockedForWrite()
 {
     return ((m_dwFlag & WRITERS_MASK) != 0);

@@ -168,7 +168,7 @@ namespace R2RDump
         /// Construct the EH info for a given runtime method by reading it from a given offset
         /// in the R2R PE executable. The offset is located by looking up the starting
         /// IP address of the runtime function in the READYTORUN_SECTION_EXCEPTION_INFO table.
-        /// The length of the 
+        /// The length of the
         /// </summary>
         /// <param name="reader">R2R PE image reader</param>
         /// <param name="ehInfoRva">RVA of the EH info</param>

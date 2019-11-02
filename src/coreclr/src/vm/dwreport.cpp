@@ -46,7 +46,7 @@ public:
     {
         hModule = AcquireLibraryHandleFnPtr(moduleName);
     }
-    
+
     ~SimpleModuleHolder()
     {
         if (RequiresFree && hModule)
@@ -54,7 +54,7 @@ public:
             CLRFreeLibrary(hModule);
         }
     }
-    
+
     operator HMODULE() { return hModule; }
 };
 
@@ -93,10 +93,10 @@ BOOL IsWatsonEnabled()
 // Returns
 //  None
 //
-// Note: In Windows 7, the OS will take over the job of error reporting, and so most 
-// of our watson code should not be used.  In such cases, we will however still need 
-// to provide some services to windows error reporting, such as computing bucket 
-// parameters for a managed unhandled exception.  
+// Note: In Windows 7, the OS will take over the job of error reporting, and so most
+// of our watson code should not be used.  In such cases, we will however still need
+// to provide some services to windows error reporting, such as computing bucket
+// parameters for a managed unhandled exception.
 //------------------------------------------------------------------------------
 BOOL RegisterOutOfProcessWatsonCallbacks()
 {
@@ -106,7 +106,7 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     WCHAR wszDACName[] = MAIN_DAC_MODULE_NAME_W W(".dll");
     WerModuleHolder hWerModule(WER_MODULE_NAME_W);
 
@@ -128,7 +128,7 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
     WerRegisterRuntimeExceptionModuleFnPtr pFnWerRegisterRuntimeExceptionModule;
 
     pFnWerRegisterRuntimeExceptionModule = (WerRegisterRuntimeExceptionModuleFnPtr)
-                                        GetProcAddress(hWerModule, "WerRegisterRuntimeExceptionModule"); 
+                                        GetProcAddress(hWerModule, "WerRegisterRuntimeExceptionModule");
 
     _ASSERTE(pFnWerRegisterRuntimeExceptionModule != NULL);
     if (pFnWerRegisterRuntimeExceptionModule == NULL)
@@ -151,16 +151,16 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
 
     }
     EX_CATCH_HRESULT(hr);
-    
+
     if (FAILED(hr))
     {
-        STRESS_LOG0(LF_STARTUP, 
-                    LL_ERROR, 
+        STRESS_LOG0(LF_STARTUP,
+                    LL_ERROR,
                     "WATSON support: failed to register DAC dll with WerRegisterRuntimeExceptionModule");
 
 #ifdef FEATURE_CORESYSTEM
-        // For CoreSys we *could* be running on a platform that doesn't have Watson proper 
-        // (the APIs might exist but they just fail).  
+        // For CoreSys we *could* be running on a platform that doesn't have Watson proper
+        // (the APIs might exist but they just fail).
         // WerRegisterRuntimeExceptionModule may return E_NOIMPL.
         return TRUE;
 #else // FEATURE_CORESYSTEM
@@ -169,8 +169,8 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
 #endif // FEATURE_CORESYSTEM
     }
 
-    STRESS_LOG0(LF_STARTUP, 
-                LL_INFO100, 
+    STRESS_LOG0(LF_STARTUP,
+                LL_INFO100,
                 "WATSON support: registered DAC dll with WerRegisterRuntimeExceptionModule");
     return TRUE;
 }
@@ -334,7 +334,7 @@ int DwGetAppDescription(                // Number of characters written.
         size = 0;
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
 
     return size;
 } // int DwGetAppDescription()
@@ -914,7 +914,7 @@ HRESULT GetBucketParametersForCurrentException(
 class WatsonThreadData {
  public:
 
-    WatsonThreadData(EXCEPTION_POINTERS *pExc, TypeOfReportedError t, Thread* pThr, DWORD dwID, FaultReportResult res) 
+    WatsonThreadData(EXCEPTION_POINTERS *pExc, TypeOfReportedError t, Thread* pThr, DWORD dwID, FaultReportResult res)
        : pExceptionInfo(pExc)
        , tore(t)
        , pThread(pThr)
@@ -922,7 +922,7 @@ class WatsonThreadData {
        , result(res)
     {
     }
-        
+
     EXCEPTION_POINTERS  *pExceptionInfo; // Information about the exception, NULL if the error is not caused by an exception
     TypeOfReportedError tore;            // Information about the fault
     Thread*             pThread;         // Thread object for faulting thread, could be NULL
@@ -965,10 +965,10 @@ DWORD WINAPI ResetWatsonBucketsCallbackForStackOverflow(LPVOID pParam)
 //------------------------------------------------------------------------------
 // Description
 //      This function is called by the Debugger thread in response to a favor
-//      posted to it by the faulting thread. The faulting thread uses the 
+//      posted to it by the faulting thread. The faulting thread uses the
 //      Debugger thread to reset Watson buckets in the case of stack overflows.
 //      Since the debugger thread doesn't have a managed Thread object,
-//      it cannot be directly used to call ResetWatsonBucketsFavorWorker. 
+//      it cannot be directly used to call ResetWatsonBucketsFavorWorker.
 //      Instead, this function spawns a worker thread and waits for it to complete.
 //
 // Parameters
@@ -1003,7 +1003,7 @@ void ResetWatsonBucketsFavorWorker(void * pParam)
 
 
 //----------------------------------------------------------------------------
-// CreateThread() callback to invoke native Watson or put up our fake Watson 
+// CreateThread() callback to invoke native Watson or put up our fake Watson
 // dialog depending on m_fDoReportFault value.
 //
 // The output is a FaultReport* value communicated by setting
@@ -1069,7 +1069,7 @@ VOID WINAPI DoFaultReportDoFavorCallback(LPVOID pFaultReportInfoAsVoid)
     // Since the debugger thread doesn't allow ordinary New's which our stuff
     // indirectly calls, it cannot be directly used to call DoFaultReport. Instead, this function
     // spawns a worker thread and waits for it to complete.
-    
+
     HANDLE hThread = NULL;
     DWORD dwThreadId;
 

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // EventRedirectionPipeline.h
-// 
+//
 
 //
 // defines native pipeline abstraction for debug-support
@@ -18,20 +18,20 @@
 struct RedirectionBlock;
 //-----------------------------------------------------------------------------
 // For debugging purposes, helper class to allow native debug events to get
-// redirected through StrikeRS debugger extension. Only 1 OS debugger can be 
+// redirected through StrikeRS debugger extension. Only 1 OS debugger can be
 // attached to a process. This allows a debugger (such as Windbg) to attach directly
-// to the Left-side (and thus be used to debug the left-side). ICorDebug then does a 
+// to the Left-side (and thus be used to debug the left-side). ICorDebug then does a
 // "virtual attach" through this pipeline.
 //
 // If this is a raw native attach, all calls go right through to the native pipeline.
 //-----------------------------------------------------------------------------
-class EventRedirectionPipeline : 
+class EventRedirectionPipeline :
     public INativeEventPipeline
 {
 public:
     EventRedirectionPipeline();
     ~EventRedirectionPipeline();
-    
+
     // Returns null if redirection is not enabled, else returns a new redirection pipeline.
 
     //
@@ -86,7 +86,7 @@ protected:
     // Following us support for event-redirection.
     //
 
-    
+
     // Rediretion block, or NULL if we're using the native pipeline.
     RedirectionBlock * m_pBlock;
 
@@ -97,15 +97,15 @@ protected:
     void CloseBlock();
 
     //
-    // Configuration information to launch the debugger. 
+    // Configuration information to launch the debugger.
     // These are retrieved via the standard Config helpers.
     //
-    
+
     // The debugger application to launch. eg:
     //    c:\debuggers_amd64\windbg.exe
     ConfigStringHolder m_DebuggerCmd;
 
-    // The common format string for the command line. 
+    // The common format string for the command line.
     // This will get the following printf args:
     //    int (%d or %x): this process's pid (the ICD Client)
     //    pointer (%p): the address of the control block (m_pBlock). The launched debugger will
@@ -116,7 +116,7 @@ protected:
     //   -c ".load C:\vbl\ClrDbg\ndp\clr\src\Tools\strikeRS\objc\amd64\strikeRS.dll; !watch %x %p" %s -p %d
     ConfigStringHolder m_CommonParams;
 
-    // Command parameters for create case. 
+    // Command parameters for create case.
     // Note that we must always physically call CreateProcess on the debuggee so that we get the proper out-parameters
     // from create-processs (eg, target's handle, startup info, etc). So we always attach the auxillary debugger
     // even in the create case. Use "-pr -pb" in Windbg to attach to a create-suspended process.
@@ -126,7 +126,7 @@ protected:
     // environment and is not tainted with settings that will break the extension dll.
     // -pr option will tell real Debugger to resume main thread. This goes with the CREATE_SUSPENDED flag we passed to CreateProcess.
     // -pb option is required when attaching to newly created suspended process. It tells the debugger
-    // to not create the break-in thread (which it can't do on a pre-initialized process). 
+    // to not create the break-in thread (which it can't do on a pre-initialized process).
     // eg:
     //  "-WX -pb -pr"
     ConfigStringHolder m_CreateParams;

@@ -11,7 +11,7 @@
 **
 **
 ** Purpose: Defines RCWRefCache class
-** This class maintains per-AppDomain cache that can be used 
+** This class maintains per-AppDomain cache that can be used
 ** by RCW to reference other CCWs
 ===========================================================*/
 
@@ -42,11 +42,11 @@ public :
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
-        }        
+        }
         CONTRACTL_END;
-        
+
         HRESULT hr;
-        
+
         // Go through the RCW cache and call the callback for all Jupiter objects
         RCWCache *pRCWCache = m_pAppDomain->GetRCWCacheNoCreate();
         if (pRCWCache != NULL)
@@ -94,8 +94,8 @@ private :
 
     CQuickArrayList<OBJECTHANDLE>   m_depHndList;               // Internal DependentHandle cache
                                                                 // non-NULL dependent handles followed by NULL slots
-    DWORD                           m_dwDepHndListFreeIndex;    // The starting index where m_depHndList has available slots                                 
-    DWORD                           m_dwShrinkHint;             // Keep track of how many times we use less than half handles    
+    DWORD                           m_dwDepHndListFreeIndex;    // The starting index where m_depHndList has available slots
+    DWORD                           m_dwShrinkHint;             // Keep track of how many times we use less than half handles
 };
 
 #endif // FEATURE_COMINTEROP

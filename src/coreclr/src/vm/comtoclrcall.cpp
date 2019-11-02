@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++== 
-// 
+// ==++==
+//
 
-// 
+//
 // ==--==
-// 
+//
 // File: COMtoCLRCall.cpp
 //
 
 //
 // COM to CLR call support.
-// 
+//
 
 
 #include "common.h"
@@ -63,7 +63,7 @@ void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
 static void SetupGenericStubs()
 {
     STANDARD_VM_CONTRACT;
-    
+
 #ifdef _TARGET_X86_
     if ( (g_pGenericComCallStubFields != NULL) && (g_pGenericComCallStub != NULL))
         return;
@@ -75,7 +75,7 @@ static void SetupGenericStubs()
     // in every VTable without refcounting, so we don't want them to change
     // underneath us).
 
-    // Allocate all three before setting - if an error occurs, we'll free the 
+    // Allocate all three before setting - if an error occurs, we'll free the
     //  memory via holder objects and throw.
     candidateCall = ComCall::CreateGenericComCallStub(FALSE/*notField*/);
     candidateFields = ComCall::CreateGenericComCallStub(TRUE/*Field*/);
@@ -89,7 +89,7 @@ static void SetupGenericStubs()
 }
 
 #ifdef PROFILING_SUPPORTED
-// The sole purpose of this helper is to transition into preemptive mode 
+// The sole purpose of this helper is to transition into preemptive mode
 // and then call the profiler transition callbacks.  We can't use the GCX_PREEMP
 // in a function with SEH (such as COMToCLRWorkerBody()).
 NOINLINE
@@ -126,7 +126,7 @@ extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
     STATIC_CONTRACT_GC_TRIGGERS;
 
     HRESULT hr = S_OK;
-    
+
     // Do not add a CONTRACT here.  We haven't set up SEH.  We rely
     // on HandleThreadAbort dealing with this situation properly.
 
@@ -172,7 +172,7 @@ extern "C" ARG_SLOT __fastcall COMToCLRDispatchHelper(
     Frame   *pCurFrame);
 
 
-inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread, 
+inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread,
                               UINT64* pRetValOut)
 {
     LIMITED_METHOD_CONTRACT;
@@ -185,7 +185,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     ARG_SLOT retVal = 0;
 
     // Managed code is generally "THROWS" and we have no exception handler here that the contract system can
-    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers 
+    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers
     // any possible throw points, including all calls within the stub to helpers.
     PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonILStubWillNotThrow);
 
@@ -225,12 +225,12 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     PCODE pStubEntryPoint = pCMD->GetILStub();
 
     INT_PTR dangerousThis;
-    *(OBJECTREF *)&dangerousThis = orThis;    
+    *(OBJECTREF *)&dangerousThis = orThis;
 
     DWORD dwStackSlots = pCMD->GetNumStackBytes() / STACK_ELEM_SIZE;
 
     // Managed code is generally "THROWS" and we have no exception handler here that the contract system can
-    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers 
+    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers
     // any possible throw points, including all calls within the stub to helpers.
     PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonILStubWillNotThrow);
 
@@ -251,7 +251,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
 
 #if defined(_MSC_VER) && !defined(_DEBUG)
 #pragma optimize("t", on)   // optimize for speed
-#endif 
+#endif
 
 OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
 {
@@ -274,7 +274,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
 
 // returns true on success, false otherwise
 NOINLINE // keep the EH tax out of our caller
-bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut, 
+bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut,
                                           OBJECTREF* pObjectOut, UINT64* pRetValOut)
 {
     CONTRACTL
@@ -294,7 +294,7 @@ bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD
 
     // We should not see a unsealed class here
     _ASSERTE(pMT->IsSealed());
-    
+
     // we know for sure that we are allocating a new object
 
     // @TODO: move this object allocation into the IL stub to avoid the try/catch and SO-intolerant region.
@@ -333,7 +333,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
     if (pRealMD->IsInterface())
     {
         // For transparent proxies, we need to call on the interface method desc if
-        // this method represents an interface method and not an IClassX method.           
+        // this method represents an interface method and not an IClassX method.
         *ppManagedTargetOut = pCMD->GetCallMethodDesc()->GetSingleCallableAddrOfCode();
     }
     else if (pWrap->IsAggregated() && pWrap->GetComCallWrapperTemplate()->GetClassType().IsExportedToWinRT())
@@ -374,7 +374,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
 }
 
 FORCEINLINE_NONDEBUG
-void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethodDesc * pCMD, 
+void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethodDesc * pCMD,
                           ComMethodFrame * pFrame, Thread * pThread, UINT64* pRetValOut)
 {
     CONTRACTL
@@ -397,7 +397,7 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
 
 NOINLINE
 void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap,
-                             MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags, 
+                             MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags,
                              UINT64 * pRetValOut)
 {
     CONTRACTL
@@ -471,11 +471,11 @@ void COMToCLRWorkerBody(
     ComCallMethodDesc* pCMD = pFrame->GetComCallMethodDesc();
     MethodDesc *pRealMD = pCMD->GetMethodDesc();
 
-#if defined(PROFILING_SUPPORTED) 
+#if defined(PROFILING_SUPPORTED)
     // @TODO: PERF: x86: we are making profiler callbacks in the StubLinker stub as well as here.
     // The checks for these callbacks add about 5% to the path length, so we should remove these
     // callbacks in the next SxS release because they are redundant.
-    // 
+    //
     // Notify the profiler of the call into the runtime.
     // 32-bit does this callback in the stubs before calling into COMToCLRWorker().
     BOOL fNotifyProfiler = CORProfilerTrackTransitions();
@@ -488,9 +488,9 @@ void COMToCLRWorkerBody(
     LOG((LF_STUBS, LL_INFO1000000, "Calling COMToCLRWorker %s::%s \n", pRealMD->m_pszDebugClassName, pRealMD->m_pszDebugMethodName));
 
     //
-    // In order to find the managed target code address and target object, we need to know 
-    // what scenario we're in.  We do this by switching on the flags of interest.  We include 
-    // the NeedsSecurityCheck flag in the calculation even though it's really orthogonal so 
+    // In order to find the managed target code address and target object, we need to know
+    // what scenario we're in.  We do this by switching on the flags of interest.  We include
+    // the NeedsSecurityCheck flag in the calculation even though it's really orthogonal so
     // that the faster case--where no security check is needed--can be matched immediately.
     //
     PCODE pManagedTarget;
@@ -500,7 +500,7 @@ void COMToCLRWorkerBody(
         enum_IsDelegateInvoke |
         enum_IsWinRTCtor |
         enum_IsVirtual |
-        enum_NativeR4Retval | 
+        enum_NativeR4Retval |
         enum_NativeR8Retval);
     DWORD maskedFlags = pCMD->GetFlags() & mask;
 
@@ -517,7 +517,7 @@ void COMToCLRWorkerBody(
         if (!COMToCLRGetObjectAndTarget_WinRTCtor(pThread, pRealMD, pCMD, &pManagedTarget, &pObject, pRetValOut))
             return;
         break;
-    default:                    
+    default:
         COMToCLRWorkerBody_Rare(pThread, pFrame, pWrap, pRealMD, pCMD, maskedFlags, pRetValOut);
         return;
     }
@@ -536,7 +536,7 @@ void COMToCLRWorkerBody(
 }
 
 //------------------------------------------------------------------
-// UINT64 __stdcall COMToCLRWorker(Thread *pThread, 
+// UINT64 __stdcall COMToCLRWorker(Thread *pThread,
 //                                  ComMethodFrame* pFrame)
 //------------------------------------------------------------------
 extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFrame)
@@ -566,10 +566,10 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 #if !defined(_TARGET_X86_)
     //
     // The following code is a transcription of the code that is generated by CreateGenericComCallStub.  The
-    // idea is that we needn't really do this work either in static assembly code nor in dynamically 
-    // generated code since the benefit/cost ratio is low.  There are some minor differences in the below 
+    // idea is that we needn't really do this work either in static assembly code nor in dynamically
+    // generated code since the benefit/cost ratio is low.  There are some minor differences in the below
     // code, compared to x86.  First, the reentrancy and loader lock checks are optionally compiled into the
-    // stub on x86, depending on whether or not the corresponding MDAs are active at stub-generation time.  
+    // stub on x86, depending on whether or not the corresponding MDAs are active at stub-generation time.
     // We must check each time at runtime here because we're using static code.
     //
     HRESULT hr = S_OK;
@@ -586,7 +586,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     }
 
     // Attempt to switch GC modes.  Note that this is performed manually just like in the x86 stub because
-    // we have additional checks for shutdown races, MDAs, and thread abort that are performed only when 
+    // we have additional checks for shutdown races, MDAs, and thread abort that are performed only when
     // g_TrapReturningThreads is set.
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads.LoadWithoutBarrier())
@@ -620,7 +620,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 #endif // !_TARGET_X86_
         {
             IUnknown **pip = (IUnknown **)pFrame->GetPointerToArguments();
-            IUnknown *pUnk = (IUnknown *)*pip; 
+            IUnknown *pUnk = (IUnknown *)*pip;
             _ASSERTE(pUnk != NULL);
 
             // Obtain the managed 'this' for the call
@@ -630,7 +630,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     }
 
 #ifndef _TARGET_X86_
-    // Note: the EH subsystem will handle reseting the frame chain and setting 
+    // Note: the EH subsystem will handle reseting the frame chain and setting
     // the correct GC mode on exception.
     pFrame->Pop(pThread);
     pThread->EnablePreemptiveGC();
@@ -683,7 +683,7 @@ ErrorExit:
 
 #if defined(_MSC_VER) && !defined(_DEBUG)
 #pragma optimize("", on)   // restore settings
-#endif 
+#endif
 
 
 static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
@@ -700,16 +700,16 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
     CONTRACTL_END;
 
     LOG((LF_STUBS, LL_INFO1000000, "FieldCallWorker enter\n"));
-    
+
     HRESULT hrRetVal = S_OK;
 
     IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
-    IUnknown* pUnk = (IUnknown *)*pip; 
+    IUnknown* pUnk = (IUnknown *)*pip;
     _ASSERTE(pUnk != NULL);
 
     ComCallWrapper* pWrap =  ComCallWrapper::GetWrapperFromIP(pUnk);
     _ASSERTE(pWrap != NULL);
-        
+
     GCX_ASSERT_COOP();
     OBJECTREF pThrowable = NULL;
     GCPROTECT_BEGIN(pThrowable);
@@ -778,16 +778,16 @@ static void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame)
         PRECONDITION(CheckPointer(pFrame));
     }
     CONTRACTL_END;
-    
+
     IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
-    IUnknown* pUnk = (IUnknown *)*pip; 
+    IUnknown* pUnk = (IUnknown *)*pip;
     _ASSERTE(pUnk != NULL);
 
     ComCallWrapper* pWrap =  ComCallWrapper::GetWrapperFromIP(pUnk);
     _ASSERTE(pWrap != NULL);
 
     ComCallMethodDesc *pCMD = pFrame->GetComCallMethodDesc();
-    _ASSERTE(pCMD->IsFieldCall());      
+    _ASSERTE(pCMD->IsFieldCall());
     _ASSERTE(pCMD->IsNativeHResultRetVal());
 
 #ifdef PROFILING_SUPPORTED
@@ -888,7 +888,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
 
     MetaSig msig(pStubMD);
     ArgIterator argit(&msig);
-    
+
     UINT dwArgStack = argit.SizeOfArgStack();
     if (!FitsInU2(dwArgStack))
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
@@ -965,7 +965,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     BYTE *pMethodDescMemory = ((BYTE*)this) + GetOffsetOfReturnThunk();
 
     //
-    // encodes a "ret nativeArgSize" to return and 
+    // encodes a "ret nativeArgSize" to return and
     // pop off the args off the stack
     //
     pMethodDescMemory[0] = 0xc2;
@@ -992,9 +992,9 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BO
         PRECONDITION(CheckPointer(pMD));
     }
     CONTRACTL_END;
-    
+
     m_flags = pMD->IsVirtual() ? enum_IsVirtual : 0;
-    
+
     m_pMD = pMD;
     m_pInterfaceMD = PTR_MethodDesc(pInterfaceMD);
     m_pILStub = NULL;
@@ -1077,13 +1077,13 @@ void ComCallMethodDesc::InitNativeInfo()
         PRECONDITION(!IsNativeInfoInitialized());
     }
     CONTRACT_END;
-    
+
     m_StackBytes = (UINT16)-1;
 
     EX_TRY
     {
 #ifdef _TARGET_X86_
-        // On x86, this method has to compute size of arguments because we need to know size of the native stack 
+        // On x86, this method has to compute size of arguments because we need to know size of the native stack
         // to be able to return back to unmanaged code
         UINT16 nativeArgSize;
 #endif
@@ -1100,7 +1100,7 @@ void ComCallMethodDesc::InitNativeInfo()
             if (g_pConfig->ShouldBreakOnComToClrNativeInfoInit(szDebugName))
                 CONSISTENCY_CHECK_MSGF(false, ("BreakOnComToClrNativeInfoInit: '%s' ", szDebugName));
 #endif // _DEBUG
-            
+
 #ifdef _TARGET_X86_
             MetaSig fsig(pFD);
             fsig.NextArg();
@@ -1111,7 +1111,7 @@ void ComCallMethodDesc::InitNativeInfo()
             ReadBestFitCustomAttribute(fsig.GetModule(), pFD->GetEnclosingMethodTable()->GetCl(), &BestFit, &ThrowOnUnmappableChar);
 
             MarshalInfo info(fsig.GetModule(), fsig.GetArgProps(), fsig.GetSigTypeContext(), pFD->GetMemberDef(), MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
-                             (CorNativeLinkType)0, (CorNativeLinkFlags)0, 
+                             (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                              FALSE, 0, fsig.NumFixedArgs(), BestFit, ThrowOnUnmappableChar, FALSE, TRUE, NULL, FALSE, FALSE
 #ifdef _DEBUG
                              , szDebugName, szDebugClassName, 0
@@ -1155,14 +1155,14 @@ void ComCallMethodDesc::InitNativeInfo()
             ULONG ulCodeRVA;
             DWORD dwImplFlags;
             IfFailThrow(pInternalImport->GetMethodImplProps(md, &ulCodeRVA, &dwImplFlags));
-            
+
             // Determine if we need to do HRESULT munging for this method.
             BOOL fPreserveSig = IsMiPreserveSig(dwImplFlags);
 
 #ifndef _TARGET_X86_
             if (!fPreserveSig)
             {
-                // PreserveSig=false methods always return HRESULTs. 
+                // PreserveSig=false methods always return HRESULTs.
                 m_flags |= enum_NativeHResultRetVal;
                 goto Done;
             }
@@ -1185,16 +1185,16 @@ void ComCallMethodDesc::InitNativeInfo()
             BOOL BestFit = TRUE;
             BOOL ThrowOnUnmappableChar = FALSE;
 
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes 
+            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
             // are not going to affect the marshaling behavior.
             if (!WinRTType)
             {
                 ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
             }
-         
+
             int numArgs = msig.NumFixedArgs();
 
-            // Collects ParamDef information in an indexed array where element 0 represents 
+            // Collects ParamDef information in an indexed array where element 0 represents
             // the return type.
             mdParamDef *params = (mdParamDef*)_alloca((numArgs+1) * sizeof(mdParamDef));
             CollateParamTokens(pInternalImport, md, numArgs, params);
@@ -1241,7 +1241,7 @@ void ComCallMethodDesc::InitNativeInfo()
                         nativeArgSize += info.GetHiddenLengthParamStackSize();
                     }
                 }
-                
+
                 ++iArg;
             }
 
@@ -1263,7 +1263,7 @@ void ComCallMethodDesc::InitNativeInfo()
             {
                 if (!fPreserveSig)
                 {
-                    // PreserveSig=false methods always return HRESULTs. 
+                    // PreserveSig=false methods always return HRESULTs.
                     m_flags |= enum_NativeHResultRetVal;
                 }
                 else
@@ -1292,7 +1292,7 @@ void ComCallMethodDesc::InitNativeInfo()
 #else
                 if (!fPreserveSig)
                 {
-                    // PreserveSig=false methods always return HRESULTs. 
+                    // PreserveSig=false methods always return HRESULTs.
                     m_flags |= enum_NativeHResultRetVal;
 
                     // count the output by-ref argument
@@ -1326,8 +1326,8 @@ void ComCallMethodDesc::InitNativeInfo()
                 {
                     CorElementType returnType = msig.GetReturnType();
                     if (returnType == ELEMENT_TYPE_I4 || returnType == ELEMENT_TYPE_U4)
-                    {        
-                        // If the method is PreserveSig=true and returns either an I4 or an U4, then we 
+                    {
+                        // If the method is PreserveSig=true and returns either an I4 or an U4, then we
                         // will assume the users wants to return an HRESULT in case of failure.
                         m_flags |= enum_NativeHResultRetVal;
                     }
@@ -1349,7 +1349,7 @@ void ComCallMethodDesc::InitNativeInfo()
 Done:
 
 #ifdef _TARGET_X86_
-        // The above algorithm to compute nativeArgSize is x86-specific. We will compute 
+        // The above algorithm to compute nativeArgSize is x86-specific. We will compute
         // the correct value later for other platforms.
         m_StackBytes = nativeArgSize;
 #endif
@@ -1360,7 +1360,7 @@ Done:
     {
     }
     EX_END_CATCH(RethrowTransientExceptions)
-    
+
     RETURN;
 }
 
@@ -1369,7 +1369,7 @@ SpinLock* ComCall::s_plock=NULL;
 //---------------------------------------------------------
 // One-time init
 //---------------------------------------------------------
-/*static*/ 
+/*static*/
 void ComCall::Init()
 {
     CONTRACTL
@@ -1438,7 +1438,7 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
         }
         else
         {
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes 
+            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
             // are not going to affect the marshaling behavior.
             ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
         }
@@ -1463,7 +1463,7 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
 //
 //  Throws in case of error.
 //---------------------------------------------------------
-/*static*/ 
+/*static*/
 Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
 {
     CONTRACT (Stub*)
@@ -1476,19 +1476,19 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
     CPUSTUBLINKER sl;
     CPUSTUBLINKER *psl = &sl;
 
-    // These new CodeLabels are allocated on a 
+    // These new CodeLabels are allocated on a
     //  "throwaway" heap.  Do not worry about
     //  deallocating them if one of the allocations
     //  ends up throwing an OOM exception.
-    
-    CodeLabel* rgRareLabels[] = { 
+
+    CodeLabel* rgRareLabels[] = {
                                   psl->NewCodeLabel(),
                                   psl->NewCodeLabel(),
                                   psl->NewCodeLabel()
                                 };
 
 
-    CodeLabel* rgRejoinLabels[] = { 
+    CodeLabel* rgRejoinLabels[] = {
                                     psl->NewCodeLabel(),
                                     psl->NewCodeLabel(),
                                     psl->NewCodeLabel()
@@ -1499,9 +1499,9 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
 
     // emit the initial prolog
     // NOTE: Don't profile field accesses yet.
-    psl->EmitComMethodStubProlog(ComMethodFrame::GetMethodFrameVPtr(), 
-                                 rgRareLabels, 
-                                 rgRejoinLabels, 
+    psl->EmitComMethodStubProlog(ComMethodFrame::GetMethodFrameVPtr(),
+                                 rgRareLabels,
+                                 rgRejoinLabels,
                                  !isFieldAccess);
 
     // ******* NOTE ********
@@ -1509,7 +1509,7 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
     // SO before getting into the target, we'll have a corrupted frame chain.  In EmitComMethodStubProlog
     // we probe-by-touch for 4 DWORDS to ensure that can set up the SEH handler before linking in
     // the frame.   So long as we don't use more than that here (currently 3 DWORDS - for the two args plus
-    // the return address, we are OK.  If we decrement ESP more than an additional DWORD here before 
+    // the return address, we are OK.  If we decrement ESP more than an additional DWORD here before
     // calling the target, we will need to probe farther.
 
     psl->X86EmitPushReg(kESI);      // push frame as an ARG
@@ -1533,13 +1533,13 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
 // This routines throws an exception rather than returning
 // NULL.
 //---------------------------------------------------------
-/*static*/ 
+/*static*/
 PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
 {
     CONTRACT (PCODE)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pCMD));        
+        PRECONDITION(CheckPointer(pCMD));
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
@@ -1634,12 +1634,12 @@ MethodDesc *ComCall::GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDes
         PRECONDITION(pClsMT->IsSealed());
     }
     CONTRACTL_END;
-    
+
     PCCOR_SIGNATURE pSig;
     DWORD cSig;
     pMD->GetSig(&pSig, &cSig);
     SigParser sig(pSig, cSig);
-    
+
     ULONG numArgs;
 
     IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
@@ -1685,9 +1685,9 @@ MethodDesc *ComCall::GetStaticForWinRTFactoryMethod(MethodTable *pClsMT, MethodD
     DWORD cSig;
     pMD->GetSig(&pSig, &cSig);
     SigParser sig(pSig, cSig);
-    
+
     IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
-    
+
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
 

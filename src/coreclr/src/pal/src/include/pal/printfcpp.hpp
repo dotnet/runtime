@@ -30,12 +30,12 @@ Abstract:
 typedef char16_t wchar_16; // __wchar_16_cpp (which is defined in palinternal.h) needs to be redefined to wchar_16.
 
 extern "C"
-{                               
-    int 
-    __cdecl 
+{
+    int
+    __cdecl
     PAL_vfprintf(
-        PAL_FILE *stream, 
-        const char *format, 
+        PAL_FILE *stream,
+        const char *format,
         va_list ap);
 
     int
@@ -43,26 +43,26 @@ extern "C"
     PAL_vfwprintf(
         PAL_FILE *stream,
         const wchar_16 *format,
-        va_list ap);  
-} 
+        va_list ap);
+}
 
 namespace CorUnix
 {
-    int 
+    int
     InternalVfprintf(
-        CPalThread *pthrCurrent, 
-        PAL_FILE *stream, 
-        const char *format, 
+        CPalThread *pthrCurrent,
+        PAL_FILE *stream,
+        const char *format,
         va_list ap);
-    	
+
 }
 #else // __cplusplus
 
-    int 
-    __cdecl 
+    int
+    __cdecl
     PAL_vfprintf(
-        PAL_FILE *stream, 
-        const char *format, 
+        PAL_FILE *stream,
+        const char *format,
         va_list ap);
 
     int
@@ -70,7 +70,7 @@ namespace CorUnix
     PAL_vfwprintf(
         PAL_FILE *stream,
         const wchar_16 *format,
-        va_list ap);     
+        va_list ap);
 
 #endif // __cplusplus
 

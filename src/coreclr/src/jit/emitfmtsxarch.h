@@ -72,9 +72,9 @@ enum    ID_OPS
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// enum insFormat   instruction            enum ID_OPS 
-//                  scheduling 
-//                  (unused)                         
+// enum insFormat   instruction            enum ID_OPS
+//                  scheduling
+//                  (unused)
 //////////////////////////////////////////////////////////////////////////////
 
 IF_DEF(NONE,        IS_NONE,                    NONE)     // no operands

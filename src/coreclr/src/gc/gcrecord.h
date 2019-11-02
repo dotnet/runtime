@@ -16,7 +16,7 @@ Module Name:
 //#define max_generation 2
 
 // We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
-// We assume that 2 bits are enough to represent the generation. 
+// We assume that 2 bits are enough to represent the generation.
 #define bits_generation 2
 #define generation_mask (~(~0u << bits_generation))
 //=======================note !!!===================================//
@@ -39,7 +39,7 @@ enum gc_condemn_reason_gen
 };
 
 // These are condemned reasons related to conditions we are in.
-// For example, we are in very high memory load which is a condition. 
+// For example, we are in very high memory load which is a condition.
 // Each condition takes up a single bit indicates TRUE or FALSE.
 // We can store 32 of these.
 enum gc_condemn_reason_condition
@@ -53,7 +53,7 @@ enum gc_condemn_reason_condition
     gen_eph_high_frag_p = 6,
     gen_max_high_frag_p = 7,
     gen_max_high_frag_e_p = 8,
-    gen_max_high_frag_m_p = 9, 
+    gen_max_high_frag_m_p = 9,
     gen_max_high_frag_vm_p = 10,
     gen_max_gen1 = 11,
     gen_before_oom = 12,
@@ -168,7 +168,7 @@ struct gc_generation_data
     size_t size_before; // including fragmentation.
     size_t free_list_space_before;
     size_t free_obj_space_before;
-    
+
     // data recorded at the end of a GC
     size_t size_after;  // including fragmentation.
     size_t free_list_space_after;
@@ -197,7 +197,7 @@ struct maxgen_size_increase
 // representation so if you change the enum's, make sure you
 // also add its string form.
 
-// Note that if we are doing a gen1 GC, we won't 
+// Note that if we are doing a gen1 GC, we won't
 // really expand the heap if we are reusing, but
 // we'll record the can_expand_into_p result here.
 enum gc_heap_expand_mechanism
@@ -207,12 +207,12 @@ enum gc_heap_expand_mechanism
     expand_new_seg_ep = 2, // new seg with ephemeral promotion
     expand_new_seg = 3,
     expand_no_memory = 4, // we can't get a new seg.
-    expand_next_full_gc = 5, 
+    expand_next_full_gc = 5,
     max_expand_mechanisms_count = 6
 };
 
 #ifdef DT_LOG
-static char* str_heap_expand_mechanisms[] = 
+static char* str_heap_expand_mechanisms[] =
 {
     "reused seg with normal fit",
     "reused seg with best fit",
@@ -231,9 +231,9 @@ enum gc_heap_compact_reason
     compact_loh_forced = 3,
     compact_last_gc = 4,
     compact_induced_compacting = 5,
-    compact_fragmented_gen0 = 6, 
-    compact_high_mem_load = 7, 
-    compact_high_mem_frag = 8, 
+    compact_fragmented_gen0 = 6,
+    compact_high_mem_load = 7,
+    compact_high_mem_frag = 8,
     compact_vhigh_mem_frag = 9,
     compact_no_gc_mode = 10,
     max_compact_reasons_count = 11
@@ -248,9 +248,9 @@ static BOOL gc_heap_compact_reason_mandatory_p[] =
     TRUE, //compact_loh_forced = 3,
     TRUE, //compact_last_gc = 4
     TRUE, //compact_induced_compacting = 5,
-    FALSE, //compact_fragmented_gen0 = 6, 
-    FALSE, //compact_high_mem_load = 7, 
-    TRUE, //compact_high_mem_frag = 8, 
+    FALSE, //compact_fragmented_gen0 = 6,
+    FALSE, //compact_high_mem_load = 7,
+    TRUE, //compact_high_mem_frag = 8,
     TRUE, //compact_vhigh_mem_frag = 9,
     TRUE //compact_no_gc_mode = 10
 };
@@ -267,7 +267,7 @@ static BOOL gc_expand_mechanism_mandatory_p[] =
 #endif //!DACCESS_COMPILE
 
 #ifdef DT_LOG
-static char* str_heap_compact_reasons[] = 
+static char* str_heap_compact_reasons[] =
 {
     "low on ephemeral space",
     "high fragmentation",
@@ -275,7 +275,7 @@ static char* str_heap_compact_reasons[] =
     "user specfied compact LOH",
     "last GC before OOM",
     "induced compacting GC",
-    "fragmented gen0 (ephemeral GC)", 
+    "fragmented gen0 (ephemeral GC)",
     "high memory load (ephemeral GC)",
     "high memory load and frag",
     "very high memory load and frag",
@@ -293,7 +293,7 @@ enum gc_mechanism_per_heap
 enum gc_mechanism_bit_per_heap
 {
     gc_mark_list_bit = 0,
-    gc_demotion_bit = 1, 
+    gc_demotion_bit = 1,
     max_gc_mechanism_bits_count = 2
 };
 
@@ -320,7 +320,7 @@ int index_of_highest_set_bit (size_t value);
 class gc_history_per_heap
 {
 public:
-    gc_generation_data gen_data[max_generation+2]; 
+    gc_generation_data gen_data[max_generation+2];
     maxgen_size_increase maxgen_size_info;
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
@@ -330,10 +330,10 @@ public:
     // why we chose to do the operation. For example:
     // if we did a heap expansion using best fit we'd have
     // 0x80000002 for the gc_heap_expand mechanism.
-    // Only one value is possible for each mechanism - meaning the 
+    // Only one value is possible for each mechanism - meaning the
     // values are all exclusive
     // TODO: for the config stuff I need to think more about how to represent this
-    // because we might want to know all reasons (at least all mandatory ones) for 
+    // because we might want to know all reasons (at least all mandatory ones) for
     // compact.
     // TODO: no need to the MSB for this
     uint32_t mechanisms[max_mechanism_per_heap];
@@ -341,7 +341,7 @@ public:
     // Each bit in this uint32_t represent if a mechanism was used or not.
     uint32_t machanism_bits;
 
-    uint32_t heap_index; 
+    uint32_t heap_index;
 
     size_t extra_gen0_committed;
 
@@ -361,7 +361,7 @@ public:
     {
         return (machanism_bits & (1 << mech_bit));
     }
-    
+
     void clear_mechanism(gc_mechanism_per_heap mechanism_per_heap)
     {
         uint32_t* mechanism = &mechanisms[mechanism_per_heap];
@@ -401,7 +401,7 @@ struct gc_history_global
 {
     // We may apply other factors after we calculated gen0 budget in
     // desired_new_allocation such as equalization or smoothing so
-    // record the final budget here. 
+    // record the final budget here.
     size_t final_youngest_desired;
     uint32_t num_heaps;
     int condemned_generation;

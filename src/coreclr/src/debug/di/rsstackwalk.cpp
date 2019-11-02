@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //
 // RsStackWalk.cpp
-// 
+//
 
 //
 // This file contains the implementation of the V3 managed stackwalking API.
-// 
+//
 // ======================================================================================
 
 #include "stdafx.h"
@@ -25,7 +25,7 @@
 CordbStackWalk::CordbStackWalk(CordbThread * pCordbThread)
   : CordbBase(pCordbThread->GetProcess(), 0, enumCordbStackWalk),
     m_pCordbThread(pCordbThread),
-    m_pSFIHandle(NULL),    
+    m_pSFIHandle(NULL),
     m_cachedSetContextFlag(SET_CONTEXT_FLAG_ACTIVE_FRAME),
     m_cachedHR(S_OK),
     m_fIsOneFrameAhead(false)
@@ -39,21 +39,21 @@ void CordbStackWalk::Init()
     m_lastSyncFlushCounter = pProcess->m_flushCounter;
 
     IDacDbiInterface * pDAC = pProcess->GetDAC();
-    pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken, 
-                          &m_context, 
+    pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
+                          &m_context,
                           &m_pSFIHandle);
 
     // see the function header of code:CordbStackWalk::CheckForLegacyHijackCase
     CheckForLegacyHijackCase();
 
-    // Add itself to the neuter list. 
+    // Add itself to the neuter list.
     m_pCordbThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
 }
 
 // ----------------------------------------------------------------------------
 // CordbStackWalk::CheckForLegacyHijackCase
 //
-// Description: 
+// Description:
 // @dbgtodo  legacy interop debugging - In the case of an unhandled hardware exception, the
 // thread will be hijacked to code:Debugger::GenericHijackFunc, which the stackwalker doesn't know how to
 // unwind. We can teach the stackwalker to recognize that hijack stub, but since it's going to be deprecated
@@ -82,8 +82,8 @@ void CordbStackWalk::CheckForLegacyHijackCase()
                 pUT->GetThreadContext(&m_context);
                 IDacDbiInterface * pDAC = GetProcess()->GetDAC();
                 pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
-                                                 m_pSFIHandle, 
-                                                 SET_CONTEXT_FLAG_ACTIVE_FRAME, 
+                                                 m_pSFIHandle,
+                                                 SET_CONTEXT_FLAG_ACTIVE_FRAME,
                                                  &m_context);
             }
         }
@@ -129,7 +129,7 @@ void CordbStackWalk::DeleteAll()
             if (!GetProcess()->m_exiting)
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
             {
-                // This Delete call shouldn't actually throw. Worst case, the DDImpl leaked memory. 
+                // This Delete call shouldn't actually throw. Worst case, the DDImpl leaked memory.
                 GetProcess()->GetDAC()->DeleteStackWalk(m_pSFIHandle);
             }
         }
@@ -219,8 +219,8 @@ void CordbStackWalk::RefreshIfNeeded()
         DeleteAll();
 
         // create a new stackwalk handle
-        pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken, 
-                                            &m_context, 
+        pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
+                                            &m_context,
                                             &m_pSFIHandle);
 
         // advance the stackwalker to where we originally were
@@ -236,7 +236,7 @@ void CordbStackWalk::RefreshIfNeeded()
 // Retrieves the CONTEXT of the current frame.
 //
 // Arguments:
-//    contextFlags   - context flags used to determine the required size for the buffer 
+//    contextFlags   - context flags used to determine the required size for the buffer
 //    contextBufSize - size of the CONTEXT buffer
 //    pContextSize   - out parameter; returns the size required for the CONTEXT buffer
 //    pbContextBuf   - the CONTEXT buffer
@@ -254,8 +254,8 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                                    BYTE      pbContextBuf[])
 {
     HRESULT hr = S_OK;
-    PUBLIC_REENTRANT_API_BEGIN(this)            
-    {        
+    PUBLIC_REENTRANT_API_BEGIN(this)
+    {
         RefreshIfNeeded();
 
         // set the required size for the CONTEXT buffer
@@ -271,7 +271,7 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
             {
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
-            
+
             DT_CONTEXT * pContext = reinterpret_cast<DT_CONTEXT *>(pbContextBuf);
 
             // Some helper functions that examine the context expect the flags to be initialized.
@@ -385,7 +385,7 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
 
     // Check the incoming CONTEXT using a temporary CONTEXT buffer before updating our real CONTEXT buffer.
     // The incoming CONTEXT is not required to have all the bits set in its CONTEXT flags, so only update
-    // the registers specified by the CONTEXT flags.  Note that CORDbgCopyThreadContext() honours the CONTEXT 
+    // the registers specified by the CONTEXT flags.  Note that CORDbgCopyThreadContext() honours the CONTEXT
     // flags on both the source and the destination CONTEXTs when it copies them.
     DT_CONTEXT tmpCtx = m_context;
     tmpCtx.ContextFlags |= pSrcContext->ContextFlags;
@@ -393,15 +393,15 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
     IfFailThrow(pDAC->CheckContext(m_pCordbThread->m_vmThreadToken, &tmpCtx));
-                       
+
     // At this point we have done all of our checks to verify that the incoming CONTEXT is sane, so we can
     // update our internal CONTEXT buffer.
     m_context = tmpCtx;
     m_cachedSetContextFlag = flag;
 
     pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
-                                     m_pSFIHandle,                                      
-                                     flag, 
+                                     m_pSFIHandle,
+                                     flag,
                                      &m_context);
 }
 
@@ -451,7 +451,7 @@ HRESULT CordbStackWalk::Next()
         RefreshIfNeeded();
         if (m_fIsOneFrameAhead)
         {
-            // We have already unwound to the next frame when we materialize the CordbNativeFrame 
+            // We have already unwound to the next frame when we materialize the CordbNativeFrame
             // for the current frame.  So we just need to clear the cache because we are already at
             // the next frame.
             if (m_pCachedFrame != NULL)
@@ -581,7 +581,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     pDAC = GetProcess()->GetDAC();
     ft = pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, &frameData);
 
-    if (ft == IDacDbiInterface::kInvalid) 
+    if (ft == IDacDbiInterface::kInvalid)
     {
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - invalid stackwalker (%p)", this);
         ThrowHR(E_FAIL);
@@ -621,11 +621,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
 #endif // DBG_TARGET_X86
 
-        // currentFuncData contains general information about the method.  
+        // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
         DebuggerIPCE_FuncData * pFuncData = &(frameData.v.funcData);
 
-        // currentJITFuncData contains information about the current jitted instance of the method 
+        // currentJITFuncData contains information about the current jitted instance of the method
         // on the stack.
         DebuggerIPCE_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
@@ -638,7 +638,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         CordbModule* pModule = pCurrentAppDomain->LookupOrCreateModule(pFuncData->vmDomainFile);
         PREFIX_ASSUME(pModule != NULL);
 
-        // Create or look up a CordbNativeCode.  There is one for each jitted instance of a method, 
+        // Create or look up a CordbNativeCode.  There is one for each jitted instance of a method,
         // and we may have multiple instances because of generics.
         CordbNativeCode * pNativeCode = pModule->LookupOrCreateNativeCode(pFuncData->funcMetadataToken,
                                                                           pJITFuncData->vmNativeCodeMethodDescToken,
@@ -681,12 +681,12 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         m_pCachedFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
 
         // @dbgtodo  dynamic language debugging
-        // If we are dealing with a dynamic method (e.g. an IL stub, a LCG method, etc.), 
-        // then we don't have the metadata or the debug info (sequence points, etc.).  
+        // If we are dealing with a dynamic method (e.g. an IL stub, a LCG method, etc.),
+        // then we don't have the metadata or the debug info (sequence points, etc.).
         // This means that we can't do anything meaningful with a CordbJITILFrame anyway,
         // so let's not create the CordbJITILFrame at all.  Note that methods created with
         // RefEmit are okay, i.e. they have metadata.
-        
+
         //     The check for IsNativeImpl() != CordbFunction::kNativeOnly catches an odd profiler
         // case. A profiler can rewrite assemblies at load time so that a P/invoke becomes a
         // regular managed method. mscordbi isn't yet designed to handle runtime metadata
@@ -706,20 +706,20 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // debugger will not provide IL for it. The debugger can't inspect within the profiler
         // modified method, but at least the error won't leak out to interfere with inspection
         // of the callstack as a whole.
-        if (!frameData.v.fNoMetadata && 
+        if (!frameData.v.fNoMetadata &&
             pNativeCode->GetFunction()->IsNativeImpl() != CordbFunction::kNativeOnly)
         {
             pNativeCode->LoadNativeInfo();
 
-            // By design, when a managed exception occurs we return the sequence point containing the faulting 
-            // instruction in the leaf frame. In the past we didn't always achieve this, 
-            // but we are being more deliberate about this behavior now. 
+            // By design, when a managed exception occurs we return the sequence point containing the faulting
+            // instruction in the leaf frame. In the past we didn't always achieve this,
+            // but we are being more deliberate about this behavior now.
 
             // If jsutAfterILThrow is true, it means nativeOffset points to the return address of IL_Throw
-            // (or another JIT exception helper) after an exception has been thrown. 
-            // In such cases we want to adjust nativeOffset, so it will point an actual exception callsite. 
-            // By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get 
-            // an address somewhere inside CALL instruction. 
+            // (or another JIT exception helper) after an exception has been thrown.
+            // In such cases we want to adjust nativeOffset, so it will point an actual exception callsite.
+            // By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+            // an address somewhere inside CALL instruction.
             // This ensures more consistent placement of exception line highlighting in Visual Studio
             DWORD nativeOffsetToMap = pJITFuncData->jsutAfterILThrow ?
                                (DWORD)pJITFuncData->nativeOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET :
@@ -731,7 +731,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
             // Find or create the IL Code, and the pJITILFrame.
             RSExtSmartPtr<CordbILCode> pCode;
-                
+
             // The code for populating CordbFunction ILCode looks really bizzare... it appears to only grab the
             // correct version of the IL if that is still the current EnC version yet it is populated deliberately
             // late bound at which point the latest version may be different. In fact even here the latest version
@@ -742,7 +742,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
             // We populate the code for ReJit eagerly to make sure we still have it if the profiler removes the
             // instrumentation later. Of course the only way it will still be accessible to our caller is if he
-            // saves a pointer to the ILCode. 
+            // saves a pointer to the ILCode.
             // I'm not sure if ignoring rejit for mini-dumps is the right call long term, but we aren't doing
             // anything special to collect the memory at dump time so we better be prepared to not fetch it here.
             // We'll attempt to treat it as not being instrumented, though I suspect the abstraction is leaky.
@@ -761,11 +761,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                     }
                 }
             }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY                                
+            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
 
 
 
-            RSInitHolder<CordbJITILFrame> pJITILFrame(new CordbJITILFrame(pNativeFrame, 
+            RSInitHolder<CordbJITILFrame> pJITILFrame(new CordbJITILFrame(pNativeFrame,
                                                                 pCode,
                                                                 uILOffset,
                                                                 mappingType,
@@ -776,13 +776,13 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
             // Initialize the frame.  This is a nop if the method is not a vararg method.
             hr = pJITILFrame->Init();
-            IfFailThrow(hr);            
-            
+            IfFailThrow(hr);
+
             pNativeFrame->m_JITILFrame.Assign(pJITILFrame);
             pJITILFrame.ClearAndMarkDontNeuter();
         }
 
-        STRESS_LOG3(LF_CORDB, LL_INFO1000, "CSW::GFW - managed stack frame (%p): CNF - 0x%p, CJILF - 0x%p", 
+        STRESS_LOG3(LF_CORDB, LL_INFO1000, "CSW::GFW - managed stack frame (%p): CNF - 0x%p, CJILF - 0x%p",
                     this, pNativeFrame, pNativeFrame->m_JITILFrame.GetValue());
     } // kManagedStackFrame
     else if (ft == IDacDbiInterface::kNativeRuntimeUnwindableStackFrame)
@@ -803,19 +803,19 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain = 
+        CordbAppDomain * pCurrentAppDomain =
             GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
-                                                                                      frameData.fp, 
+                                                                                      frameData.fp,
                                                                                       pCurrentAppDomain,
                                                                                       &(frameData.ctx));
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
         m_pCachedFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
 
-        STRESS_LOG2(LF_CORDB, LL_INFO1000, "CSW::GFW - runtime unwindable stack frame (%p): 0x%p", 
+        STRESS_LOG2(LF_CORDB, LL_INFO1000, "CSW::GFW - runtime unwindable stack frame (%p): 0x%p",
                     this, pRuntimeFrame);
     }
 

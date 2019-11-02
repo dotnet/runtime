@@ -14,12 +14,12 @@
 // Macro to generate PInvoke Stubs.
 // $__PInvokeStubFuncName : function which calls the actual stub obtained from VASigCookie
 // $__PInvokeGenStubFuncName : function which generates the IL stubs for PInvoke
-// 
+//
 // Params :-
 // $FuncPrefix : prefix of the function name for the stub
 //                     Eg. VarargPinvoke, GenericPInvokeCalli
 // $VASigCookieReg : register which contains the VASigCookie
-// $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs 
+// $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
 //                        So need not save FP Args registers for vararg Pinvoke
 .macro PINVOKE_STUB __PInvokeStubFuncName,__PInvokeGenStubFuncName,__PInvokeStubWorkerName,VASigCookieReg,HiddenArg,SaveFPArgs,ShiftLeftAndOrSecret=0
 
@@ -42,7 +42,7 @@
             orr             \HiddenArg, \HiddenArg, #1
         .endif
 
-        EPILOG_BRANCH_REG   x9 
+        EPILOG_BRANCH_REG   x9
 
 LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
@@ -50,22 +50,22 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
         NESTED_END \__PInvokeStubFuncName, _TEXT
 
-        
+
         NESTED_ENTRY \__PInvokeGenStubFuncName, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, \SaveFPArgs
 
         // x2 = Umanaged Target\MethodDesc
-        mov                 x2, \HiddenArg 
+        mov                 x2, \HiddenArg
 
         // x1 = VaSigCookie
         mov                 x1, \VASigCookieReg
 
         // x0 = pTransitionBlock
-        add                 x0, sp, #__PWTB_TransitionBlock      
+        add                 x0, sp, #__PWTB_TransitionBlock
 
         // save hidden arg
-        mov                 x19, \HiddenArg 
+        mov                 x19, \HiddenArg
 
         // save VASigCookieReg
         mov                 x20, \VASigCookieReg
@@ -82,18 +82,18 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         EPILOG_BRANCH       \__PInvokeStubFuncName
-     
+
         NESTED_END \__PInvokeGenStubFuncName, _TEXT
 .endm
 
 // ------------------------------------------------------------------
 // IN:
-// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                         before actual InlinedCallFrame data)
 //
 //
     NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
-    
+
         PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
         PROLOG_SAVE_REG    x19, 16           //the stack slot at sp+24 is empty for 16 byte alignment
 
@@ -103,14 +103,14 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         add     x19, x0, SIZEOF__GSCookie
 
         // x19 = pFrame
-        
+
         // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
         PREPARE_EXTERNAL_VAR _ZTV16InlinedCallFrame, x9
         add     x9, x9, 16
         str     x9, [x19]
 
         str     xzr, [x19, #InlinedCallFrame__m_Datum]
-    
+
         add     x9, sp, 32
         str     x9, [x19, #InlinedCallFrame__m_pCallSiteSP]
         str     lr, [x19, #InlinedCallFrame__m_pCallerReturnAddress]
@@ -140,7 +140,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
 // ------------------------------------------------------------------
 // IN:
-// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                         before actual InlinedCallFrame data)
 //
 //
@@ -151,7 +151,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
         // x0 = pFrame
         // x1 = pThread
-            
+
         // pThread->m_fPreemptiveGCDisabled = 1
         mov     x9, 1
         str     w9, [x1, #Thread_m_fPreemptiveGCDisabled]
@@ -166,7 +166,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         str     x9, [x1, #Thread_m_pFrame]
 
         ret
-            
+
 LOCAL_LABEL(RarePath):
         b       C_FUNC(JIT_PInvokeEndRarePath)
 
@@ -177,14 +177,14 @@ LOCAL_LABEL(RarePath):
 //
 // in:
 // x0 = VASigCookie*
-// x12 = MethodDesc *       
+// x12 = MethodDesc *
 //
 PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker, x0, x12, 0
 
 
 // ------------------------------------------------------------------
 // GenericPInvokeCalliHelper & GenericPInvokeCalliGenILStub
-// Helper for generic pinvoke calli instruction 
+// Helper for generic pinvoke calli instruction
 //
 // in:
 // x15 = VASigCookie*

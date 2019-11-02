@@ -161,7 +161,7 @@ public:
             else
             {
 #if HAVE_MACH_ABSOLUTE_TIME
-                // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the 
+                // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the
                 // timed wait and we need to handle spurious wakeups properly.
                 st = pthread_cond_timedwait_relative_np(&m_condition, &m_mutex, &endTime);
                 if ((st == 0) && !m_state)

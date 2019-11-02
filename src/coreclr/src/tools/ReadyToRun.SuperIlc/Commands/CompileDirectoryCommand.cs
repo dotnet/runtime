@@ -61,5 +61,5 @@ namespace ReadyToRun.SuperIlc
 
             return success ? 0 : 1;
         }
-    }    
+    }
 }

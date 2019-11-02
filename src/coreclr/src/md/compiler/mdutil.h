@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDUtil.h
-// 
+//
 
 //
 // Contains utility code for MD directory
@@ -33,8 +33,8 @@ class RegMeta;
 //*********************************************************************
 //
 // Structure to record the all loaded modules and helpers.
-// RegMeta instance is added to the global variable that is tracking 
-// the opened scoped. This happens in RegMeta's constructor. 
+// RegMeta instance is added to the global variable that is tracking
+// the opened scoped. This happens in RegMeta's constructor.
 // In RegMeta's destructor, the RegMeta pointer will be removed from
 // this list.
 //
@@ -42,26 +42,26 @@ class RegMeta;
 class UTSemReadWrite;
 #define LOADEDMODULES_HASH_SIZE 47
 
-class LOADEDMODULES : public CDynArray<RegMeta *> 
+class LOADEDMODULES : public CDynArray<RegMeta *>
 {
 private:
     static HRESULT InitializeStatics();
-    
+
     // Global per-process list of loaded modules
     static LOADEDMODULES * s_pLoadedModules;
-    
+
 public:
     static void DeleteStatics();
-    
+
     // Named for locking macros - see code:LOCKREAD
     static UTSemReadWrite * m_pSemReadWrite;
     static RegMeta *m_HashedModules[LOADEDMODULES_HASH_SIZE];
-    
+
     static ULONG HashFileName(LPCWSTR szName);
 
     static HRESULT AddModuleToLoadedList(RegMeta *pRegMeta);
     static BOOL RemoveModuleFromLoadedList(RegMeta *pRegMeta);  // true if found and removed.
-    
+
     static HRESULT FindCachedReadOnlyEntry(LPCWSTR szName, DWORD dwOpenFlags, RegMeta **ppMeta);
 
 #ifdef FEATURE_METADATA_IN_VM
@@ -79,6 +79,6 @@ public:
 #endif
 };  // class LOADEDMODULES
 
-#endif //FEATURE_METADATA_IN_VM 
+#endif //FEATURE_METADATA_IN_VM
 
 #endif // __MDUtil__h__

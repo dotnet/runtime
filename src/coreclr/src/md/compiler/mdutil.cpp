@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDUtil.cpp
-// 
+//
 
 //
 // contains utility code to MD directory. This is only used for the full version.
@@ -36,14 +36,14 @@ ULONG LOADEDMODULES::HashFileName(
 } // LOADEDMODULES::HashFileName
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Initialize the static instance and lock.
-// 
-HRESULT 
+//
+HRESULT
 LOADEDMODULES::InitializeStatics()
 {
     HRESULT hr = S_OK;
-    
+
     if (VolatileLoad(&s_pLoadedModules) == NULL)
     {
         // Initialize global read-write lock
@@ -51,21 +51,21 @@ LOADEDMODULES::InitializeStatics()
             NewHolder<UTSemReadWrite> pSemReadWrite = new (nothrow) UTSemReadWrite();
             IfNullGo(pSemReadWrite);
             IfFailGo(pSemReadWrite->Init());
-            
+
             if (InterlockedCompareExchangeT<UTSemReadWrite *>(&m_pSemReadWrite, pSemReadWrite, NULL) == NULL)
             {   // We won the initialization race
                 pSemReadWrite.SuppressRelease();
             }
         }
-        
+
         // Initialize the global instance
         {
             NewHolder<LOADEDMODULES> pLoadedModules = new (nothrow) LOADEDMODULES();
             IfNullGo(pLoadedModules);
-            
+
             {
                 LOCKWRITE();
-                
+
                 if (VolatileLoad(&s_pLoadedModules) == NULL)
                 {
                     VolatileStore(&s_pLoadedModules, pLoadedModules.Extract());
@@ -73,20 +73,20 @@ LOADEDMODULES::InitializeStatics()
             }
         }
     }
-    
+
 ErrExit:
     return hr;
 } // LOADEDMODULES::InitializeStatics
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Destroy the static instance and lock.
-// 
-void 
+//
+void
 LOADEDMODULES::DeleteStatics()
 {
     HRESULT hr = S_OK;
-    
+
     if (s_pLoadedModules != NULL)
     {
         delete s_pLoadedModules;
@@ -106,20 +106,20 @@ HRESULT LOADEDMODULES::AddModuleToLoadedList(RegMeta * pRegMeta)
 {
     HRESULT    hr = NOERROR;
     RegMeta ** ppRegMeta;
-    
+
     IfFailGo(InitializeStatics());
-    
+
     {
         LOCKWRITE();
-    
+
         ppRegMeta = s_pLoadedModules->Append();
         IfNullGo(ppRegMeta);
-    
+
         // The cache holds a copy of the pointer, but no ref-count.  There is no
         //  point to the ref-count, because it just changes comparisons against 0
         //  to comparisons against 1.
         *ppRegMeta = pRegMeta;
-    
+
         // If the module is read-only, hash it.
         if (pRegMeta->IsReadOnly())
         {
@@ -127,8 +127,8 @@ HRESULT LOADEDMODULES::AddModuleToLoadedList(RegMeta * pRegMeta)
             m_HashedModules[ixHash] = pRegMeta;
         }
     }
-    
-ErrExit:    
+
+ErrExit:
     return hr;
 } // LOADEDMODULES::AddModuleToLoadedList
 
@@ -140,17 +140,17 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
     BOOL  bRemoved = FALSE;     // Was this module removed from the cache?
     int   iFound = -1;          // Index at which it was found.
     ULONG cRef;                 // Ref count of the module.
-    
-    // Lock the cache for write, so that no other thread will find what this 
+
+    // Lock the cache for write, so that no other thread will find what this
     //  thread is about to delete, and so that no other thread will delete
     //  what this thread is about to try to find.
     HRESULT hr = S_OK;
-    
+
     IfFailGo(InitializeStatics());
-    
+
     {
         LOCKWRITE();
-    
+
         // Search for this module in list of loaded modules.
         int count = s_pLoadedModules->Count();
         for (int index = 0; index < count; index++)
@@ -161,7 +161,7 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
                 break;
             }
         }
-    
+
         // If the module is still in the cache, it hasn't been deleted yet.
         if (iFound >= 0)
         {
@@ -173,13 +173,13 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
             //  the lock.
 
             // OTOH, if the cRef is not zero, this thread can just return, because the
-            //  other thread will eventually take the ref count to zero, and will then 
-            //  come through here to clean up the module. And this thread must not 
+            //  other thread will eventually take the ref count to zero, and will then
+            //  come through here to clean up the module. And this thread must not
             //  delete the module out from under other threads.
 
             // It is possible that the cRef is zero, yet another thread has a pointer that
             //  it discovered before this thread took the lock.  (And that thread has
-            //  released the ref-counts.)  In such a case, this thread can still remove the 
+            //  released the ref-counts.)  In such a case, this thread can still remove the
             //  module from the cache, and tell the caller to delete it, because the
             //  other thread will wait on the lock, then discover that the module
             //  is not in the cache, and it won't try to delete the module.
@@ -207,7 +207,7 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
             }
         }
     }
-    
+
 ErrExit:
     return bRemoved;
 }  // LOADEDMODULES::RemoveModuleFromLoadedList
@@ -227,9 +227,9 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
     DWORD     dwLowFileTime;        // Low butes of this file's last write time
     HRESULT   hr;
     ULONG     ixHash = 0;
-    
+
     IfFailGo(InitializeStatics());
-    
+
     {
         LOCKREAD();
 
@@ -237,11 +237,11 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
 
         // Avoid confusion.
         *ppMeta = NULL;
-    
+
         bWillBeCopyMemory = IsOfCopyMemory(dwOpenFlags);
 
         // The cache is locked for read, so the list will not change.
-    
+
         // Figure out the size and timestamp of this file
         WIN32_FILE_ATTRIBUTE_DATA faData;
         if (!WszGetFileAttributesEx(szName, GetFileExInfoStandard, &faData))
@@ -273,13 +273,13 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
     #endif
                 {
                     ULONG cRefs;
-                
+
                     // Found it.  Add a reference, and return it.
                     *ppMeta = pRegMeta;
                     cRefs = pRegMeta->AddRef();
-                
+
                     LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope found cached RegMeta in hash: %#8x, crefs: %d\n", pRegMeta, cRefs));
-                
+
                     return S_OK;
                 }
             }
@@ -293,7 +293,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
 
             // If the module is read-only, and the CopyMemory bit matches, and the date
             // and size are the same....
-            if (pRegMeta->IsReadOnly() && 
+            if (pRegMeta->IsReadOnly() &&
                 pRegMeta->IsCopyMemory() == bWillBeCopyMemory &&
                 pRegMeta->GetLowFileTimeOfDBFile() == dwLowFileTime &&
                 pRegMeta->GetLowFileSizeOfDBFile() == dwLowFileSize)
@@ -316,7 +316,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
                     m_HashedModules[ixHash] = pRegMeta;
 
                     LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope found cached RegMeta by search: %#8x, crefs: %d\n", pRegMeta, cRefs));
-                
+
                     return S_OK;
                 }
             }
@@ -340,12 +340,12 @@ BOOL LOADEDMODULES::IsEntryInList(
     RegMeta * pRegMeta)
 {
     HRESULT hr = S_OK;
-    
+
     IfFailGo(InitializeStatics());
-    
+
     {
         LOCKREAD();
-    
+
         // Loop through each loaded modules
         int count = s_pLoadedModules->Count();
         for (int index = 0; index < count; index++)
@@ -363,7 +363,7 @@ ErrExit:
 
 #endif //_DEBUG
 
-#endif //FEATURE_METADATA_IN_VM 
+#endif //FEATURE_METADATA_IN_VM
 
 #ifdef FEATURE_METADATA_IN_VM
 
@@ -371,7 +371,7 @@ ErrExit:
 // Remove a RegMeta pointer from the loaded module list
 //*****************************************************************************
 // static
-HRESULT 
+HRESULT
 LOADEDMODULES::ResolveTypeRefWithLoadedModules(
     mdTypeRef          tkTypeRef,       // [IN] TypeRef to be resolved.
     RegMeta *          pTypeRefRegMeta, // [IN] Scope in which the TypeRef is defined.
@@ -385,38 +385,38 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
     CQuickArray<mdTypeRef> cqaNesters;
     CQuickArray<LPCUTF8>   cqaNesterNamespaces;
     CQuickArray<LPCUTF8>   cqaNesterNames;
-    
+
     IfFailGo(InitializeStatics());
-    
+
     {
         LOCKREAD();
-    
+
         // Get the Nesting hierarchy.
         IfFailGo(ImportHelper::GetNesterHierarchy(
-            pTypeRefScope, 
-            tkTypeRef, 
-            cqaNesters, 
-            cqaNesterNamespaces, 
+            pTypeRefScope,
+            tkTypeRef,
+            cqaNesters,
+            cqaNesterNamespaces,
             cqaNesterNames));
 
         int count = s_pLoadedModules->Count();
         for (int index = 0; index < count; index++)
         {
             pRegMeta = (*s_pLoadedModules)[index];
-        
+
             {
                 // Do not lock the TypeRef RegMeta (again), as it is already locked for read by the caller.
-                // The code:UTSemReadWrite will block ReadLock even for thread holding already the read lock if 
-                // some other thread is waiting for WriteLock on the same lock. That would cause dead-lock if we 
+                // The code:UTSemReadWrite will block ReadLock even for thread holding already the read lock if
+                // some other thread is waiting for WriteLock on the same lock. That would cause dead-lock if we
                 // try to lock for read again here.
                 CMDSemReadWrite cSemRegMeta((pRegMeta == pTypeRefRegMeta) ? NULL : pRegMeta->GetReaderWriterLock());
                 IfFailGo(cSemRegMeta.LockRead());
-            
+
                 hr = ImportHelper::FindNestedTypeDef(
-                    pRegMeta->GetMiniMd(), 
-                    cqaNesterNamespaces, 
-                    cqaNesterNames, 
-                    mdTokenNil, 
+                    pRegMeta->GetMiniMd(),
+                    cqaNesterNamespaces,
+                    cqaNesterNames,
+                    mdTokenNil,
                     ptd);
             }
             if (hr == CLDB_E_RECORD_NOTFOUND)
@@ -424,7 +424,7 @@ LOADEDMODULES::ResolveTypeRefWithLoadedModules(
                 continue;
             }
             IfFailGo(hr);
-        
+
             // Found a loaded module containing the TypeDef.
             IfFailGo(pRegMeta->QueryInterface(riid, (void **)ppIScope));
             break;
@@ -473,9 +473,9 @@ ULONG _GetSizeOfConstantBlob(
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
         ulSize = sizeof(LONG);
- 
+
         break;
-        
+
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
     case ELEMENT_TYPE_R8:

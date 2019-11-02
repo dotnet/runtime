@@ -14,7 +14,7 @@
 // in communicating between debugger and debugee
 //
 // SECTION_ALL_ACCESS is needed for the IPC block. Unfortunately, we DACL our events and
-// IPC block identically. Or this particular right does not need to bleed into here. 
+// IPC block identically. Or this particular right does not need to bleed into here.
 //
 #ifndef CLR_IPC_GENERIC_RIGHT
 #define CLR_IPC_GENERIC_RIGHT (GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | STANDARD_RIGHTS_ALL | SECTION_ALL_ACCESS)
@@ -24,13 +24,13 @@
 //*****************************************************************
 // static helper function
 //
-// helper to form ACL that contains AllowedACE of users of current 
+// helper to form ACL that contains AllowedACE of users of current
 // process and target process
 //
 // [IN] pid - target process id
 // [OUT] ppACL - ACL for the process
 //
-// Clean up - 
+// Clean up -
 // Caller remember to call FreeACL() on *ppACL
 //*****************************************************************
 HRESULT SecurityUtil::GetACLOfPid(DWORD pid, PACL *ppACL)
@@ -61,7 +61,7 @@ HRESULT SecurityUtil::GetACLOfPid(DWORD pid, PACL *ppACL)
     SidBuffer sidTargetProcess;
     SidBuffer sidTargetProcessAppContainer;
 
-    // Get sid for current process.            
+    // Get sid for current process.
     EX_TRY
     {
         sidCurrentProcess.InitFromProcess(GetCurrentProcessId()); // throw on error.
@@ -84,7 +84,7 @@ HRESULT SecurityUtil::GetACLOfPid(DWORD pid, PACL *ppACL)
     {
     }
     EX_END_CATCH(RethrowTerminalExceptions);
-    
+
     //FISHY: what is the scenario where only one of the above calls succeeds?
     if (cSid == 0)
     {
@@ -284,7 +284,7 @@ HRESULT SecurityUtil::Init()
 }
 
 // ***************************************************************************
-// Initialization functions which will call the normal Init and add a 
+// Initialization functions which will call the normal Init and add a
 // mandatory label entry to the sacl
 //
 // Expects hProcess to be a valid handle to the process which has the desired
@@ -304,12 +304,12 @@ HRESULT SecurityUtil::Init(HANDLE hProcess)
     {
         return hr;
     }
-    
+
     NewArrayHolder<BYTE> pLabel;
 
     hr = GetMandatoryLabelFromProcess(hProcess, &pLabel);
     if (FAILED(hr))
-    { 
+    {
         return hr;
     }
 
@@ -324,13 +324,13 @@ HRESULT SecurityUtil::Init(HANDLE hProcess)
 // ***************************************************************************
 // Given a process, this will put the mandatory label into a buffer and point
 // ppbLabel at the buffer.
-// 
+//
 // Caller must free ppbLabel via the array "delete []" operator
 // ***************************************************************************
 HRESULT SecurityUtil::GetMandatoryLabelFromProcess(HANDLE hProcess, LPBYTE * ppbLabel)
 {
     *ppbLabel = NULL;
-    
+
     DWORD dwSize = 0;
     HandleHolder hToken;
     DWORD err = 0;
@@ -344,7 +344,7 @@ HRESULT SecurityUtil::GetMandatoryLabelFromProcess(HANDLE hProcess, LPBYTE * ppb
     {
         err = GetLastError();
     }
-    
+
     // We need to make sure that GetTokenInformation failed in a predictable manner so we know that
     // dwSize has the correct buffer size in it.
     if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
@@ -396,8 +396,8 @@ DWORD * SecurityUtil::GetIntegrityLevelFromMandatorySID(PSID psidIntegrityLevelL
     return GetSidSubAuthority(psidIntegrityLevelLabel, (*GetSidSubAuthorityCount(psidIntegrityLevelLabel) - 1));
 }
 
-// Creates a mandatory label ace and sets it to be the entry in the 
-// security descriptor's sacl. This assumes there are no other entries 
+// Creates a mandatory label ace and sets it to be the entry in the
+// security descriptor's sacl. This assumes there are no other entries
 // in the sacl
 HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLevelLabel)
 {
@@ -418,7 +418,7 @@ HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLeve
     DWORD cbSacl = sizeof(ACL) + cbAceStart + cbSid;
 
     NewArrayHolder<BYTE> sacl = new (nothrow) BYTE[cbSacl];
-    
+
     m_pSacl = NULL;
 
     if (sacl == NULL)
@@ -435,7 +435,7 @@ HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLeve
     //  -      -
     //  |      |
     //  |      -       -
-    //  |              |       
+    //  |              |
     //  |              |       -
     //  |              -       |
     //  -                      -
@@ -449,7 +449,7 @@ HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLeve
     }
 
     if(!InitializeAcl(pSacl, cbSacl, ACL_REVISION))
-    { 
+    {
         return HRESULT_FROM_GetLastError();
     }
 
@@ -475,10 +475,10 @@ HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLeve
 //*****************************************************************
 // Return SECURITY_ATTRIBUTES that we form in the Init function
 //
-// No clean up is needed after calling this function. The destructor of the 
+// No clean up is needed after calling this function. The destructor of the
 // instance will do the right thing. Note that this is designed such that
 // we minimize memory allocation, ie the SECURITY_DESCRIPTOR and
-// SECURITY_ATTRIBUTES are embedded in the SecurityUtil instance. 
+// SECURITY_ATTRIBUTES are embedded in the SecurityUtil instance.
 //
 // Caller should not modify the returned SECURITY_ATTRIBUTES!!!
 //*****************************************************************

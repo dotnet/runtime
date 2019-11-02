@@ -59,8 +59,8 @@ library mscorsvc
     //*****************************************************************************
     // ICorSvcWorker contains methods for generating native images and enumerating
     // their dependencies.
-    //*****************************************************************************[  
-    
+    //*****************************************************************************[
+
     typedef enum
     {
         ScenarioDefault              = 0x00000000,  // No special scenario flags
@@ -70,7 +70,7 @@ library mscorsvc
         ScenarioTuningDataCollection = 0x00000010,  // Used to gather IBC data
         ScenarioLegacy               = 0x00000020,  // Follow hard dependencies only
 
-        ScenarioNgenLastRetry        = 0x00010000,  // Ngen failed last time and this a final retry 
+        ScenarioNgenLastRetry        = 0x00010000,  // Ngen failed last time and this a final retry
         ScenarioAutoNGen             = 0x00100000,  // This is an Auto NGen request
         ScenarioRepositoryOnly       = 0x00200000,  // Install from repository only, no real NGen
     } OptimizationScenario;
@@ -99,8 +99,8 @@ library mscorsvc
             );
 
         HRESULT OptimizeAssembly(
-            [in] BSTR pAssemblyName, 
-            [in] BSTR pApplicationName, 
+            [in] BSTR pAssemblyName,
+            [in] BSTR pApplicationName,
             [in] OptimizationScenario scenario,
             [in] SAFEARRAY(BSTR) loadAlwaysList,
             [in] SAFEARRAY(BSTR) loadSometimesList,
@@ -112,7 +112,7 @@ library mscorsvc
             [in] BSTR pAssemblyName,
             [in] BSTR pNativeImage
             );
-    
+
         HRESULT DisplayNativeImages(
             [in] BSTR pAssemblyName
             );
@@ -121,7 +121,7 @@ library mscorsvc
             [in] BSTR pApplicationName,
             [in] OptimizationScenario scenario,
             [out] ICorSvcDependencies **pCorSvcDependencies
-            ); 
+            );
 
         HRESULT Stop(
             );
@@ -136,13 +136,13 @@ library mscorsvc
     interface ICorSvcWorker2 : ICorSvcWorker {
         // Create a PDB for the NGEN image that was generated for pAssemblyName
         // when compiled with the given appbase and scenario.
-        HRESULT CreatePdb([in] BSTR pAssemblyName, 
+        HRESULT CreatePdb([in] BSTR pAssemblyName,
                           [in] BSTR pAppBaseOrConfig,
                           [in] OptimizationScenario scenario,
                           [in] BSTR pNativeImagePath,
                           [in] BSTR pPdbPath);
     };
-    
+
     [
         object,
         oleautomation,
@@ -153,7 +153,7 @@ library mscorsvc
         // Create a PDB for the NGEN image that was generated for pAssemblyName
         // when compiled with the given appbase and scenario. Optionally include
         // source lines information in the geneated PDB
-        HRESULT CreatePdb2([in] BSTR pAssemblyName, 
+        HRESULT CreatePdb2([in] BSTR pAssemblyName,
                            [in] BSTR pAppBaseOrConfig,
                            [in] OptimizationScenario scenario,
                            [in] BSTR pNativeImagePath,
@@ -166,7 +166,7 @@ library mscorsvc
     // ICorSvcSetPrivateAttributes sets private attributes that are used just for
     // the initial compilation
     //*****************************************************************************[
-    
+
     typedef enum
     {
         DbgTypePdb               = 0x00000001,  // Generate a pdb for the NGen image
@@ -214,7 +214,7 @@ library mscorsvc
     interface ICorSvcRepository : IUnknown
     {
        HRESULT SetRepository(
-           [in] BSTR pRepositoryDir, 
+           [in] BSTR pRepositoryDir,
            [in] RepositoryFlags repositoryFlags
            );
 
@@ -241,7 +241,7 @@ library mscorsvc
     //*****************************************************************************
     // ICorSvcLogger is used to log various messages to the service process
     //*****************************************************************************[
-    
+
     typedef enum CorSvcLogLevel
     {
         LogLevel_Error,
@@ -249,7 +249,7 @@ library mscorsvc
         LogLevel_Success,
         LogLevel_Info
     } CorSvcLogLevel;
-    
+
     [
         object,
         oleautomation,
@@ -284,12 +284,12 @@ library mscorsvc
             );
     }
 
-    
+
     //*****************************************************************************
     // ICorSvcBindToWorker is used to bind to a specific runtime version.
     //*****************************************************************************[
 
-    
+
     [
         object,
         oleautomation,
@@ -323,16 +323,16 @@ typedef enum
 
 // Haven't seen a better way of doing this. Everybody seems to be duplicating
 // into IDLs (for example wtypes.idl)
-typedef struct _COR_SERVICE_STATUS 
-{  
+typedef struct _COR_SERVICE_STATUS
+{
     WCHAR sServiceName[64];
-    DWORD dwServiceType;  
-    DWORD dwCurrentState;   
-    DWORD dwControlsAccepted;  
-    DWORD dwWin32ExitCode;  
-    DWORD dwServiceSpecificExitCode;  
-    DWORD dwCheckPoint;  
-    DWORD dwWaitHint;   
+    DWORD dwServiceType;
+    DWORD dwCurrentState;
+    DWORD dwControlsAccepted;
+    DWORD dwWin32ExitCode;
+    DWORD dwServiceSpecificExitCode;
+    DWORD dwCheckPoint;
+    DWORD dwWaitHint;
 } COR_SERVICE_STATUS, *LPCOR_SERVICE_STATUS;
 
 /* -------------------------------------------------------------------------- *
@@ -369,7 +369,7 @@ interface ICorSvc : IUnknown
       [in]  ControlServiceAction Action,
       [out] LPCOR_SERVICE_STATUS lpServiceStatus
       );
-            
+
    HRESULT RunService(
             [in] ServiceOptions options
       );
@@ -385,7 +385,7 @@ interface ICompileProgressNotification : IUnknown
     // Notify the installer that compilation has started, and give it an
     // estimation of how long it will take.
     HRESULT CompileStarted(
-       [in] DWORD cAssembliesToCompile, 
+       [in] DWORD cAssembliesToCompile,
        [in] DWORD cTimeEstimate
        );
 
@@ -396,12 +396,12 @@ interface ICompileProgressNotification : IUnknown
        [in] DWORD cAssembly,
        [in] BSTR pAssemblyName,
        [in] BOOL isStartNotification, // if TRUE: we're starting to compile, if FALSE, we finished
-       [in] HRESULT hrResult,       
+       [in] HRESULT hrResult,
        [in] BSTR errorExplanation,
        [in] DWORD cTimeRemainingEstimate
        );
 
-           
+
 }
 
 /*
@@ -417,7 +417,7 @@ interface ICompileProgressNotification2 : IUnknown
     // Notify the installer that compilation has started, and give it an
     // estimation of how long it will take.
     HRESULT CompileStarted(
-       [in] DWORD cAssembliesToCompile, 
+       [in] DWORD cAssembliesToCompile,
        [in] DWORD cTimeEstimate,
        [in] DWORD threadID
        );
@@ -429,13 +429,13 @@ interface ICompileProgressNotification2 : IUnknown
        [in] DWORD cAssembly,
        [in] BSTR pAssemblyName,
        [in] BOOL isStartNotification, // if TRUE: we're starting to compile, if FALSE, we finished
-       [in] HRESULT hrResult,       
+       [in] HRESULT hrResult,
        [in] BSTR errorExplanation,
        [in] DWORD cTimeRemainingEstimate,
        [in] DWORD threadID
        );
 
-           
+
 }
 
 typedef enum
@@ -450,7 +450,7 @@ typedef enum
     object,
     uuid(0523feee-eb0e-4857-b2aa-db787521d077),
     pointer_default(unique),
-] 
+]
 interface ICorSvcInstaller : IUnknown
 {
    HRESULT Install(
@@ -458,9 +458,9 @@ interface ICorSvcInstaller : IUnknown
       );
 
    HRESULT Uninstall(
-      [in] BSTR path 
+      [in] BSTR path
       );
-    
+
    HRESULT Optimize(
       [in] ICompileProgressNotification *pCompileProgressNotification,
       [in] OptimizeFlags optimizeFlags
@@ -468,7 +468,7 @@ interface ICorSvcInstaller : IUnknown
 
    HRESULT SetLogger(
       [in] ICorSvcLogger *pCorSvcLogger
-      );         
+      );
 }
 
 typedef enum
@@ -605,7 +605,7 @@ typedef enum
     pointer_default(unique),
 ]
 interface ICorSvcManager : IUnknown
-{    
+{
    // Schedule work only for selected priority level
    HRESULT ScheduleWorkForSinglePriorityLevel(
         [in]  PriorityLevel priorityLevel,
@@ -618,22 +618,22 @@ interface ICorSvcManager : IUnknown
       [in] DWORD dwWorkerPriorityClass,
       [in] ICompileProgressNotification *pCompileProgressNotification,
       [in] BSTR pInterruptEventName
-      ); 
-   
+      );
+
    // Notify the service of new work
-   HRESULT NotifyService(ServiceNotification notification); 
+   HRESULT NotifyService(ServiceNotification notification);
 
    HRESULT IsWorkAvailable  ([in] PriorityLevel priorityLevel,
-                             [out] BOOL*        pWorkAvailable);      
+                             [out] BOOL*        pWorkAvailable);
 
    HRESULT Update(
        [in] UpdateFlags updateFlags,
        [in] BSTR pInterruptEventName
-       );                                
+       );
 
    HRESULT SetSvcLogger(
       [in] ICorSvcLogger *pCorSvcLogger
-      );         
+      );
 }
 
 [

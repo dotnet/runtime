@@ -59,7 +59,7 @@ public:
     {
         IsNullEntry,            // Uninitialized HashedTypeEntry
         IsHashedTokenEntry,     // Entry is a token value in a R2R hashtable in from the R2R module
-        IsHashedClassEntry      // Entry is a EEClassHashEntry_t from the hashtable constructed at 
+        IsHashedClassEntry      // Entry is a EEClassHashEntry_t from the hashtable constructed at
                                 // module load time (or from the hashtable loaded from the native image)
     } EntryType;
 
@@ -112,7 +112,7 @@ public:
     const TokenTypeEntry& GetTokenBasedEntryValue() const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         _ASSERT(m_EntryType == EntryType::IsHashedTokenEntry);
         return m_TokenAndModulePair;
     }
@@ -300,12 +300,12 @@ public:
 };
 
 //-------------------------------------------------------------------------------------------
-// 
+//
 // Introducing AccessCheckContext so that we can defer caller resolution as much as possible.
 // Stack walk is expensive and we should avoid it if we can determine accessibility without
 // knowing the caller. For example, public transparent APIs without link demand should always
 // be accessible.
-// We will have two types of AccessCheckContext. 
+// We will have two types of AccessCheckContext.
 //   1. StaticAccessCheckContext is used by JIT and other places where the caller is statically known.
 //   2. RefSecContext is used by reflection and resolves the caller by performing a stack walk.
 //
@@ -381,7 +381,7 @@ public:
     enum AccessCheckType
     {
         // Used by statically compiled code.
-        // Desktop: Just do normal accessibility checks. No security demands. 
+        // Desktop: Just do normal accessibility checks. No security demands.
         // CoreCLR: Just do normal accessibility checks.
         kNormalAccessibilityChecks,
 
@@ -391,7 +391,7 @@ public:
         kMemberAccess,
 
         // Used by Reflection invocation and DynamicMethod with RestrictedSkipVisibility.
-        // Desktop: If normal accessiblity checks fail, return TRUE if a demand for RestrictedMemberAccess 
+        // Desktop: If normal accessiblity checks fail, return TRUE if a demand for RestrictedMemberAccess
         //          and grant set of the target assembly succeeds.
         // CoreCLR: If normal accessiblity checks fail, return TRUE if the callee is App transparent code (in a user assembly)
         kRestrictedMemberAccess,
@@ -429,17 +429,17 @@ public:
         BOOL                       throwIfTargetIsInaccessible);
 
     // Follow standard rules for doing accessability
-    BOOL DoNormalAccessibilityChecks() const 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        return m_accessCheckType == kNormalAccessibilityChecks; 
+    BOOL DoNormalAccessibilityChecks() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_accessCheckType == kNormalAccessibilityChecks;
     }
 
     // Do visibility checks including security demands for reflection access to members
-    BOOL DoReflectionAccessibilityChecks() const 
-    { 
-        WRAPPER_NO_CONTRACT; 
-        return !DoNormalAccessibilityChecks(); 
+    BOOL DoReflectionAccessibilityChecks() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return !DoNormalAccessibilityChecks();
     }
 
     BOOL Throws() const
@@ -466,14 +466,14 @@ private:
         AccessCheckType     accessCheckType,
         BOOL                throwIfTargetIsInaccessible,
         MethodTable *       pTargetMT,
-        MethodDesc *        pTargetMD, 
+        MethodDesc *        pTargetMD,
         FieldDesc *         pTargetFD);
 
     BOOL DemandMemberAccess(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const;
 
     void ThrowAccessException(
         AccessCheckContext* pContext,
-        MethodTable*        pFailureMT = NULL, 
+        MethodTable*        pFailureMT = NULL,
         Exception*          pInnerException = NULL) const;
 
     MethodTable *           m_pTargetMT;
@@ -481,7 +481,7 @@ private:
     FieldDesc *             m_pTargetField;
 
     AccessCheckType         m_accessCheckType;
-    // The context used to determine if access is allowed. It is the resolver that carries the compressed-stack used to do the Demand. 
+    // The context used to determine if access is allowed. It is the resolver that carries the compressed-stack used to do the Demand.
     // If this is NULL, the access is checked against the current call-stack.
     // This is non-NULL only for m_accessCheckType==kRestrictedMemberAccess
     DynamicResolver *       m_pAccessContext;
@@ -521,7 +521,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
 
 
 //---------------------------------------------------------------------------------------
-// 
+//
 class ClassLoader
 {
     friend class PendingTypeLoadEntry;
@@ -600,10 +600,10 @@ public:
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
     // For everything except paramaterized types and methods the choice is easy.
-    // 
+    //
     // If NGEN'ing we may choose to place the item into the current module (which is different from runtime behavior).
-    // 
-    // The rule for determining the loader module must ensure that a type or method never outlives its loader module 
+    //
+    // The rule for determining the loader module must ensure that a type or method never outlives its loader module
     // with respect to app-domain unloading
     static Module * ComputeLoaderModule(MethodTable * pMT,
                                        mdToken        token,        // the token of the method
@@ -619,13 +619,13 @@ private:
                                           Instantiation methodInst);      // the type arguments to the method (if any)
 
     BOOL FindClassModuleThrowing(
-        const NameHandle *    pName, 
-        TypeHandle *          pType, 
-        mdToken *             pmdClassToken, 
-        Module **             ppModule, 
-        mdToken *             pmdFoundExportedType, 
+        const NameHandle *    pName,
+        TypeHandle *          pType,
+        mdToken *             pmdClassToken,
+        Module **             ppModule,
+        mdToken *             pmdFoundExportedType,
         HashedTypeEntry *     pEntry,
-        Module *              pLookInThisModuleOnly, 
+        Module *              pLookInThisModuleOnly,
         Loader::LoadFlag      loadFlag);
 
     static PTR_Module ComputeLoaderModuleForCompilation(Module *pDefinitionModule,      // the module that declares the generic type or method
@@ -680,7 +680,7 @@ public:
     // with a HRESULT-returning NOTHROW function then it actually indicates that
     // an error-HRESULT will be returned.
     // The ThrowButNullV11McppWorkaround value means ThrowIfNotFound, except when the case
-    // of a Nil ResolutionScope for a value type (erroneously generated by Everett MCPP 
+    // of a Nil ResolutionScope for a value type (erroneously generated by Everett MCPP
     // compiler.)
     typedef enum { ThrowIfNotFound, ReturnNullIfNotFound, ThrowButNullV11McppWorkaround } NotFoundAction;
 
@@ -794,10 +794,10 @@ private:
                                        mdTypeDef classdef,
                                        AllocMemTracker *pamTracker);
 
-    VOID AddAvailableClassHaveLock(Module *          pModule, 
-                                   mdTypeDef         classdef, 
-                                   AllocMemTracker * pamTracker, 
-                                   LPCSTR            szWinRtNamespacePrefix, 
+    VOID AddAvailableClassHaveLock(Module *          pModule,
+                                   mdTypeDef         classdef,
+                                   AllocMemTracker * pamTracker,
+                                   LPCSTR            szWinRtNamespacePrefix,
                                    DWORD             cchWinRtNamespacePrefix);
 
     VOID AddExportedTypeDontHaveLock(Module *pManifestModule,
@@ -811,19 +811,19 @@ private:
 public:
 
     // For an generic type instance return the representative within the class of
-    // all type handles that share code.  For example, 
+    // all type handles that share code.  For example,
     //    <int> --> <int>,
     //    <object> --> <__Canon>,
     //    <string> --> <__Canon>,
     //    <List<string>> --> <__Canon>,
     //    <Struct<string>> --> <Struct<__Canon>>
     //
-    // If the code for the type handle is not shared then return 
+    // If the code for the type handle is not shared then return
     // the type handle itself.
     static TypeHandle CanonicalizeGenericArg(TypeHandle genericArg);
 
-    // Determine if the specified type representation induces a sharable 
-    // set of compatible instantiations when used as a type parameter to 
+    // Determine if the specified type representation induces a sharable
+    // set of compatible instantiations when used as a type parameter to
     // a generic type or method.
     //
     // For example, when sharing at reference types "object" and "Struct<object>"
@@ -879,8 +879,8 @@ public:
         AccessCheckContext*     pContext,
         MethodTable*            pTargetClass,
         Assembly*               pTargetAssembly,
-        DWORD                   dwMemberAttrs, 
-        MethodDesc*             pOptionalTargetMethod, 
+        DWORD                   dwMemberAttrs,
+        MethodDesc*             pOptionalTargetMethod,
         FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
@@ -904,7 +904,7 @@ private:
         MethodTable*            pTargetClass,
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
-        MethodDesc*             pOptionalTargetMethod, 
+        MethodDesc*             pOptionalTargetMethod,
         FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
@@ -952,8 +952,8 @@ private:
     static TypeHandle LookupInPreferredZapModule(TypeKey* pKey, BOOL fCheckUnderLock);
 #endif // FEATURE_PREJIT
 
-    // Lookup a handle in the appropriate table 
-    // (declaring module for TypeDef or loader-module for constructed types) 
+    // Lookup a handle in the appropriate table
+    // (declaring module for TypeDef or loader-module for constructed types)
     static TypeHandle LookupTypeHandleForTypeKey(TypeKey *pTypeKey);
     static TypeHandle LookupTypeHandleForTypeKeyInner(TypeKey *pTypeKey, BOOL fCheckUnderLock);
 
@@ -988,8 +988,8 @@ private:
 #ifndef DACCESS_COMPILE
     // Perform a single phase of class loading
     // If no type handle has yet been created, typeHnd is null.
-    static TypeHandle DoIncrementalLoad(TypeKey *pTypeKey, 
-                                        TypeHandle typeHnd, 
+    static TypeHandle DoIncrementalLoad(TypeKey *pTypeKey,
+                                        TypeHandle typeHnd,
                                         ClassLoadLevel workLevel);
 
     // Phase CLASS_LOAD_CREATE of class loading
@@ -1037,12 +1037,12 @@ private:
     // Used for initial loading of parent class and implemented interfaces
     // When tok represents an instantiated type return an *approximate* instantiated
     // type (where reference type arguments are replaced by Object)
-    static 
-    TypeHandle 
+    static
+    TypeHandle
     LoadApproxTypeThrowing(
-        Module *               pModule, 
-        mdToken                tok, 
-        SigPointer *           pSigInst, 
+        Module *               pModule,
+        mdToken                tok,
+        SigPointer *           pSigInst,
         const SigTypeContext * pClassTypeContext);
 
     // Returns the parent of a token. The token must be a typedef.
@@ -1050,12 +1050,12 @@ private:
     // only the canonical instantiation is loaded at this point.
     // This is to avoid cycles in the loader e.g. on class C : D<C> or class C<T> : D<C<T>>
     // We fix up the exact parent later in LoadInstantiatedInfo.
-    static 
-    MethodTable * 
+    static
+    MethodTable *
     LoadApproxParentThrowing(
-        Module *               pModule, 
-        mdToken                cl, 
-        SigPointer *           pParentInst, 
+        Module *               pModule,
+        mdToken                cl,
+        SigPointer *           pParentInst,
         const SigTypeContext * pClassTypeContext);
 
     // Locates the enclosing class of a token if any. The token must be a typedef.
@@ -1063,7 +1063,7 @@ private:
                                           Module *pModule,
                                           mdTypeDef cl,
                                           mdTypeDef *tdEnclosing);
-    
+
     // Insert the class in the classes hash table and if needed in the case insensitive one
     EEClassHashEntry_t *InsertValue(EEClassHashTable *pClassHash,
                                     EEClassHashTable *pClassCaseInsHash,

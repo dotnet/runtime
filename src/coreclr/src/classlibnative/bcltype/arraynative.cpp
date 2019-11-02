@@ -30,7 +30,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
     //can not use contract here because of SEH
     _ASSERTE(IsProtectedByGCFrame (arrayRef));
-    
+
     SIZE_T offset = ArrayBase::GetDataPtrOffset(pArrayMT);
     SIZE_T size = pArrayMT->GetComponentSize();
     SIZE_T cElements = (*arrayRef)->GetNumComponents();
@@ -147,7 +147,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
     CONTRACTL_END;
 
     // The next 50 lines are a little tricky.  Change them with great care.
-    // 
+    //
 
     // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
     // we do not need to call GetArrayElementTypeHandle().
@@ -182,7 +182,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
         else
             return AssignDontKnow;
     }
-    
+
     const CorElementType srcElType = srcTH.GetVerifierCorElementType();
     const CorElementType destElType = destTH.GetVerifierCorElementType();
     _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
@@ -199,19 +199,19 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
         else
             return AssignWrongType;
     }
-    
+
     // dest Object extends src
     if (srcTH.CanCastToCached(destTH) == TypeHandle::CanCast)
         return AssignWillWork;
-    
+
     // src Object extends dest
     if (destTH.CanCastToCached(srcTH) == TypeHandle::CanCast)
         return AssignMustCast;
-    
+
     // class X extends/implements src and implements dest.
     if (destTH.IsInterface() && srcElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
-    
+
     // class X implements src and extends/implements dest
     if (srcTH.IsInterface() && destElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
@@ -234,7 +234,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     CONTRACTL_END;
 
     // The next 50 lines are a little tricky.  Change them with great care.
-    // 
+    //
 
     // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
     // we do not need to call GetArrayElementTypeHandle().
@@ -247,13 +247,13 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     TypeHandle destTH = pDestMT->GetApproxArrayElementTypeHandle();
     if (srcTH == destTH) // This check kicks for different array kind or dimensions
         return AssignWillWork;
-    
+
     // Value class boxing
     if (srcTH.IsValueType() && !destTH.IsValueType())
     {
         if (srcTH.CanCastTo(destTH))
             return AssignBoxValueClassOrPrimitive;
-        else 
+        else
             return AssignWrongType;
     }
 
@@ -267,7 +267,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
         else
             return AssignWrongType;
     }
-    
+
     const CorElementType srcElType = srcTH.GetVerifierCorElementType();
     const CorElementType destElType = destTH.GetVerifierCorElementType();
     _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
@@ -283,19 +283,19 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
         else
             return AssignWrongType;
     }
-    
+
     // dest Object extends src
     if (srcTH.CanCastTo(destTH))
         return AssignWillWork;
-    
+
     // src Object extends dest
     if (destTH.CanCastTo(srcTH))
         return AssignMustCast;
-    
+
     // class X extends/implements src and implements dest.
     if (destTH.IsInterface() && srcElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
-    
+
     // class X implements src and extends/implements dest
     if (srcTH.IsInterface() && destElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
@@ -328,13 +328,13 @@ void ArrayNative::CastCheckEachElement(const BASEARRAYREF pSrcUnsafe, const unsi
         BASEARRAYREF pDest;
         BASEARRAYREF pSrc;
     } gc;
-    
+
     gc.obj = NULL;
     gc.pDest = pDestUnsafe;
     gc.pSrc = pSrcUnsafe;
 
     GCPROTECT_BEGIN(gc);
-    
+
     for(unsigned int i=srcIndex; i<srcIndex + len; ++i)
     {
         gc.obj = ObjectToOBJECTREF(*((Object**) gc.pSrc->GetDataPtr() + i));
@@ -381,7 +381,7 @@ void ArrayNative::BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
     // Get method table of type we're copying from - we need to allocate objects of that type.
     MethodTable * pSrcMT = srcTH.GetMethodTable();
     PREFIX_ASSUME(pSrcMT != NULL);
-    
+
     if (!pSrcMT->IsClassInited())
     {
         BASEARRAYREF pSrcTmp = pSrc;
@@ -404,7 +404,7 @@ void ArrayNative::BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
         BASEARRAYREF dest;
         OBJECTREF obj;
     }  gc;
-    
+
     gc.src = pSrc;
     gc.dest = pDest;
     gc.obj = NULL;
@@ -458,11 +458,11 @@ void ArrayNative::UnBoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BAS
     for(; length>0; length--, srcData += sizeof(OBJECTREF), data += destSize)
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**)srcData);
-        
+
         // Now that we have retrieved the element, we are no longer subject to race
         // conditions from another array mutator.
 
-        if (!pDestMT->UnBoxInto(data, obj)) 
+        if (!pDestMT->UnBoxInto(data, obj))
             goto fail;
     }
     return;
@@ -574,7 +574,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
                     default:
                         _ASSERTE(!"Array.Copy from I1 to another type hit unsupported widening conversion");
                 }
-                break;          
+                break;
 
 
             case ELEMENT_TYPE_U2:
@@ -660,7 +660,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
                         _ASSERTE(!"Array.Copy from I4 to another type hit unsupported widening conversion");
                 }
                 break;
-        
+
 
             case ELEMENT_TYPE_U4:
                 switch (destElType)
@@ -695,7 +695,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
                     *(double*) data = (double) *(INT64*)srcData;
                 }
                 break;
-            
+
 
             case ELEMENT_TYPE_U8:
                 if (destElType == ELEMENT_TYPE_R4)
@@ -705,7 +705,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
                     float f = (float) srcVal;
                     if (srcVal < 0)
                         f += 4294967296.0f * 4294967296.0f; // This is 2^64
-                        
+
                     *(float*) data = f;
                 }
                 else
@@ -716,7 +716,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
                     double d = (double) srcVal;
                     if (srcVal < 0)
                         d += 4294967296.0 * 4294967296.0;   // This is 2^64
-                        
+
                     *(double*) data = d;
                 }
                 break;
@@ -725,7 +725,7 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
             case ELEMENT_TYPE_R4:
                 *(double*) data = *(float*)srcData;
                 break;
-            
+
             default:
                 _ASSERTE(!"Fell through outer switch in PrimitiveWiden!  Unknown primitive type for source array!");
         }
@@ -800,7 +800,7 @@ void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex,
 FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable)
 {
     FCALL_CONTRACT;
-    
+
     struct _gc
     {
         BASEARRAYREF pSrc;
@@ -811,7 +811,7 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
     gc.pDst = (BASEARRAYREF)m_pDst;
 
     //
-    // creating a HelperMethodFrame is quite expensive, 
+    // creating a HelperMethodFrame is quite expensive,
     // so we want to delay this for the most common case which doesn't trigger a GC.
     // FCThrow is needed to throw an exception without a HelperMethodFrame
     //
@@ -846,13 +846,13 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
 
     if (m_iSrcIndex < srcLB || (m_iSrcIndex - srcLB < 0))
         FCThrowArgumentOutOfRangeVoid(W("sourceIndex"), W("ArgumentOutOfRange_ArrayLB"));
-        
+
     if (m_iDstIndex < destLB || (m_iDstIndex - destLB < 0))
         FCThrowArgumentOutOfRangeVoid(W("destinationIndex"), W("ArgumentOutOfRange_ArrayLB"));
 
     if ((DWORD)(m_iSrcIndex - srcLB + m_iLength) > srcLen)
         FCThrowArgumentVoid(W("sourceArray"), W("Arg_LongerThanSrcArray"));
-        
+
     if ((DWORD)(m_iDstIndex - destLB + m_iLength) > destLen)
         FCThrowArgumentVoid(W("destinationArray"), W("Arg_LongerThanDestArray"));
 
@@ -1142,7 +1142,7 @@ FCIMPLEND
 FCIMPL2(void, ArrayNative::SetValue, TypedByRef * target, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
-    
+
     OBJECTREF obj = ObjectToOBJECTREF(objUNSAFE);
 
     TypeHandle thTarget(target->type);

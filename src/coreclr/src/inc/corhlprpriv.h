@@ -226,7 +226,7 @@ public:
         iSize = cbTotal;
     }
 
-    
+
     // Convert UTF8 string to UNICODE string, optimized for speed
     HRESULT ConvertUtf8_UnicodeNoThrow(const char * utf8str)
     {
@@ -309,7 +309,7 @@ public:
     }
 
 #ifdef DACCESS_COMPILE
-    void 
+    void
     EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         // Assume that 'this' is enumerated, either explicitly
@@ -317,7 +317,7 @@ public:
         DacEnumMemoryRegion(dac_cast<TADDR>(pbBuff), iSize);
     }
 #endif // DACCESS_COMPILE
-    
+
     BYTE       *pbBuff;
     SIZE_T      iSize;              // number of bytes used
     SIZE_T      cbTotal;            // total bytes allocated in the buffer
@@ -385,68 +385,68 @@ template <class T> class CQuickArrayBase : public CQuickBytesBase
 {
 public:
     T* AllocThrows(SIZE_T iItems)
-    {   
+    {
         CheckOverflowThrows(iItems);
-        return (T*)CQuickBytesBase::AllocThrows(iItems * sizeof(T)); 
+        return (T*)CQuickBytesBase::AllocThrows(iItems * sizeof(T));
     }
 
     void ReSizeThrows(SIZE_T iItems)
-    { 
+    {
         CheckOverflowThrows(iItems);
         CQuickBytesBase::ReSizeThrows(iItems * sizeof(T));
     }
 
     T* AllocNoThrow(SIZE_T iItems)
-    { 
+    {
         if (!CheckOverflowNoThrow(iItems))
-        { 
+        {
             return NULL;
         }
-        return (T*)CQuickBytesBase::AllocNoThrow(iItems * sizeof(T)); 
+        return (T*)CQuickBytesBase::AllocNoThrow(iItems * sizeof(T));
     }
 
     HRESULT ReSizeNoThrow(SIZE_T iItems)
-    { 
+    {
         if (!CheckOverflowNoThrow(iItems))
         {
             return E_OUTOFMEMORY;
         }
-        return CQuickBytesBase::ReSizeNoThrow(iItems * sizeof(T)); 
+        return CQuickBytesBase::ReSizeNoThrow(iItems * sizeof(T));
     }
-    
-    void Shrink(SIZE_T iItems)    
-    { 
-        CQuickBytesBase::Shrink(iItems * sizeof(T)); 
+
+    void Shrink(SIZE_T iItems)
+    {
+        CQuickBytesBase::Shrink(iItems * sizeof(T));
     }
 
     T* Ptr()
-    { 
-        return (T*) CQuickBytesBase::Ptr(); 
+    {
+        return (T*) CQuickBytesBase::Ptr();
     }
 
     const T* Ptr() const
-    { 
-        return (T*) CQuickBytesBase::Ptr(); 
+    {
+        return (T*) CQuickBytesBase::Ptr();
     }
 
     SIZE_T Size() const
-    { 
-        return CQuickBytesBase::Size() / sizeof(T); 
+    {
+        return CQuickBytesBase::Size() / sizeof(T);
     }
 
     SIZE_T MaxSize() const
-    { 
-        return CQuickBytesBase::cbTotal / sizeof(T); 
+    {
+        return CQuickBytesBase::cbTotal / sizeof(T);
     }
 
     T& operator[] (SIZE_T ix)
-    { 
+    {
         _ASSERTE(ix < Size());
         return *(Ptr() + ix);
     }
 
     const T& operator[] (SIZE_T ix) const
-    { 
+    {
         _ASSERTE(ix < Size());
         return *(Ptr() + ix);
     }
@@ -521,14 +521,14 @@ public:
 
     // Can only access values that have been pushed.
     T& operator[] (SIZE_T ix)
-    { 
+    {
         _ASSERTE(ix < m_curSize);
         return CQuickArray<T>::operator[](ix);
     }
 
     // Can only access values that have been pushed.
     const T& operator[] (SIZE_T ix) const
-    { 
+    {
         _ASSERTE(ix < m_curSize);
         return CQuickArray<T>::operator[](ix);
     }
@@ -614,7 +614,7 @@ public:
 
     void Reset()
     {
-        if (buffer.Size()) 
+        if (buffer.Size())
         {
             memset(&buffer[0], 0, buffer.Size());
         }
@@ -648,13 +648,13 @@ HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
 
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Reads compressed integer from buffer pData, fills the result to *pnDataOut. Advances buffer pointer.
 // Doesn't read behind the end of the buffer (the end starts at pDataEnd).
-// 
-inline 
-__checkReturn 
-HRESULT 
+//
+inline
+__checkReturn
+HRESULT
 CorSigUncompressData_EndPtr(
     PCCOR_SIGNATURE & pData,        // [IN,OUT] Buffer
     PCCOR_SIGNATURE   pDataEnd,     // End of buffer
@@ -662,40 +662,40 @@ CorSigUncompressData_EndPtr(
 {
     _ASSERTE(pData <= pDataEnd);
     HRESULT hr = S_OK;
-    
+
     INT_PTR cbDataSize = pDataEnd - pData;
     if (cbDataSize > 4)
     {   // Compressed integer cannot be bigger than 4 bytes
         cbDataSize = 4;
     }
     DWORD dwDataSize = (DWORD)cbDataSize;
-    
+
     ULONG cbDataOutLength;
     IfFailRet(CorSigUncompressData(
-        pData, 
-        dwDataSize, 
-        pnDataOut, 
+        pData,
+        dwDataSize,
+        pnDataOut,
         &cbDataOutLength));
     pData += cbDataOutLength;
-    
+
     return hr;
 } // CorSigUncompressData_EndPtr
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Reads CorElementType (1 byte) from buffer pData, fills the result to *pTypeOut. Advances buffer pointer.
 // Doesn't read behind the end of the buffer (the end starts at pDataEnd).
-// 
-inline 
-__checkReturn 
-HRESULT 
+//
+inline
+__checkReturn
+HRESULT
 CorSigUncompressElementType_EndPtr(
     PCCOR_SIGNATURE & pData,    // [IN,OUT] Buffer
     PCCOR_SIGNATURE   pDataEnd, // End of buffer
     CorElementType *  pTypeOut) // [OUT] ELEMENT_TYPE_* value read from the buffer
 {
     _ASSERTE(pData <= pDataEnd);
-    // We don't expect pData > pDataEnd, but the runtime check doesn't cost much and it is more secure in 
+    // We don't expect pData > pDataEnd, but the runtime check doesn't cost much and it is more secure in
     // case caller has a bug
     if (pData >= pDataEnd)
     {   // No data
@@ -704,26 +704,26 @@ CorSigUncompressElementType_EndPtr(
     // Read 'type' as 1 byte
     *pTypeOut = (CorElementType)*pData;
     pData++;
-    
+
     return S_OK;
 } // CorSigUncompressElementType_EndPtr
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Reads pointer (4/8 bytes) from buffer pData, fills the result to *ppvPointerOut. Advances buffer pointer.
 // Doesn't read behind the end of the buffer (the end starts at pDataEnd).
-// 
-inline 
-__checkReturn 
-HRESULT 
+//
+inline
+__checkReturn
+HRESULT
 CorSigUncompressPointer_EndPtr(
     PCCOR_SIGNATURE & pData,            // [IN,OUT] Buffer
     PCCOR_SIGNATURE   pDataEnd,         // End of buffer
     void **           ppvPointerOut)    // [OUT] Pointer value read from the buffer
 {
     _ASSERTE(pData <= pDataEnd);
-    // We could just skip this check as pointers should be only in trusted (and therefore correct) 
-    // signatures and we check for that on the caller side, but it won't hurt to have this check and it will 
+    // We could just skip this check as pointers should be only in trusted (and therefore correct)
+    // signatures and we check for that on the caller side, but it won't hurt to have this check and it will
     // make it easier to catch invalid signatures in trusted code (e.g. IL stubs, NGEN images, etc.)
     if (pData + sizeof(void *) > pDataEnd)
     {   // Not enough data in the buffer
@@ -732,18 +732,18 @@ CorSigUncompressPointer_EndPtr(
     }
     *ppvPointerOut = *(void * UNALIGNED *)pData;
     pData += sizeof(void *);
-    
+
     return S_OK;
 } // CorSigUncompressPointer_EndPtr
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Reads compressed TypeDef/TypeRef/TypeSpec token, fills the result to *pnDataOut. Advances buffer pointer.
 // Doesn't read behind the end of the buffer (the end starts at pDataEnd).
-// 
-inline 
-__checkReturn 
-HRESULT 
+//
+inline
+__checkReturn
+HRESULT
 CorSigUncompressToken_EndPtr(
     PCCOR_SIGNATURE & pData,        // [IN,OUT] Buffer
     PCCOR_SIGNATURE   pDataEnd,     // End of buffer
@@ -751,22 +751,22 @@ CorSigUncompressToken_EndPtr(
 {
     _ASSERTE(pData <= pDataEnd);
     HRESULT hr = S_OK;
-    
+
     INT_PTR cbDataSize = pDataEnd - pData;
     if (cbDataSize > 4)
     {   // Compressed token cannot be bigger than 4 bytes
         cbDataSize = 4;
     }
     DWORD dwDataSize = (DWORD)cbDataSize;
-    
+
     ULONG cbTokenOutLength;
     IfFailRet(CorSigUncompressToken(
-        pData, 
-        dwDataSize, 
-        ptkTokenOut, 
+        pData,
+        dwDataSize,
+        ptkTokenOut,
         &cbTokenOutLength));
     pData += cbTokenOutLength;
-    
+
     return hr;
 } // CorSigUncompressToken_EndPtr
 

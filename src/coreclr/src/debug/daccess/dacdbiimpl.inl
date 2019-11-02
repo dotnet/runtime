@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // DacDbiImpl.inl
-// 
+//
 
 //
 // Inline functions for DacDbiImpl.h
@@ -21,23 +21,23 @@
 // Arguments:
 //    T - type of structure to read.
 //    pRemotePtr - remote pointer into target (dest).
-//    pLocalBuffer - local buffer to write (Src). 
+//    pLocalBuffer - local buffer to write (Src).
 //
 // Return Value:
 //    Throws on error.
 //
 // Notes:
-//    This just does a raw Byte copy into the Target, but does not do any Marshalling. 
-//    This fails if any part of the buffer can't be written. 
+//    This just does a raw Byte copy into the Target, but does not do any Marshalling.
+//    This fails if any part of the buffer can't be written.
 //
 //
 //---------------------------------------------------------------------------------------
 template<typename T>
 void DacDbiInterfaceImpl::SafeWriteStructOrThrow(CORDB_ADDRESS pRemotePtr, const T * pLocalBuffer)
 {
-    HRESULT hr = m_pMutableTarget->WriteVirtual(pRemotePtr, 
+    HRESULT hr = m_pMutableTarget->WriteVirtual(pRemotePtr,
         (BYTE *)(pLocalBuffer), sizeof(T));
-    
+
     if (FAILED(hr))
     {
         ThrowHR(hr);
@@ -53,8 +53,8 @@ void DacDbiInterfaceImpl::SafeWriteStructOrThrow(CORDB_ADDRESS pRemotePtr, const
 //    pLocalBuffer - local buffer to store the structure (dest)
 //
 // Notes:
-//    This just does a raw Byte copy into the Target, but does not do any Marshalling. 
-//    This fails if any part of the buffer can't be written. 
+//    This just does a raw Byte copy into the Target, but does not do any Marshalling.
+//    This fails if any part of the buffer can't be written.
 //
 
 template<typename T>
@@ -62,14 +62,14 @@ void DacDbiInterfaceImpl::SafeReadStructOrThrow(CORDB_ADDRESS pRemotePtr, T * pL
 {
     ULONG32 cbRead = 0;
 
-    HRESULT hr = m_pTarget->ReadVirtual(pRemotePtr, 
+    HRESULT hr = m_pTarget->ReadVirtual(pRemotePtr,
         reinterpret_cast<BYTE *>(pLocalBuffer), sizeof(T), &cbRead);
-    
+
     if (FAILED(hr))
     {
         ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
     }
-    
+
     if (cbRead != sizeof(T))
     {
         ThrowWin32(ERROR_PARTIAL_COPY);

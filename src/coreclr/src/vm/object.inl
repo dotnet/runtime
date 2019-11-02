@@ -155,9 +155,9 @@ FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
 #endif // DACCESS_COMPILE
 
 inline TypeHandle ArrayBase::GetTypeHandle() const
-{ 
-    WRAPPER_NO_CONTRACT; 
-    return GetTypeHandle(GetMethodTable()); 
+{
+    WRAPPER_NO_CONTRACT;
+    return GetTypeHandle(GetMethodTable());
 }
 
 inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
@@ -187,30 +187,30 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
     // for T[] is available and restored
 
     // == FailIfNotLoadedOrNotRestored
-    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetApproxArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);  
-    CONSISTENCY_CHECK(!arrayType.IsNull()); 
+    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetApproxArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);
+    CONSISTENCY_CHECK(!arrayType.IsNull());
     return(arrayType);
 }
 
         // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
-inline CorElementType ArrayBase::GetArrayElementType() const 
+inline CorElementType ArrayBase::GetArrayElementType() const
 {
     WRAPPER_NO_CONTRACT;
     return GetMethodTable()->GetArrayElementType();
 }
 
-inline unsigned ArrayBase::GetRank() const 
+inline unsigned ArrayBase::GetRank() const
 {
     WRAPPER_NO_CONTRACT;
     return GetMethodTable()->GetRank();
 }
 
 // Total element count for the array
-inline DWORD ArrayBase::GetNumComponents() const 
-{ 
+inline DWORD ArrayBase::GetNumComponents() const
+{
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    return m_NumComponents; 
+    return m_NumComponents;
 }
 
 #ifndef DACCESS_COMPILE
@@ -250,20 +250,20 @@ inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
     return pMT->GetBaseSize() - OBJHEADER_SIZE;
 }
 
-inline /* static */ unsigned ArrayBase::GetBoundsOffset(MethodTable* pMT) 
+inline /* static */ unsigned ArrayBase::GetBoundsOffset(MethodTable* pMT)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMT->IsArray());
-    if (!pMT->IsMultiDimArray()) 
+    if (!pMT->IsMultiDimArray())
         return OBJECT_SIZE /* offset(ArrayBase, m_NumComponents */;
     _ASSERTE(pMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY);
     return ARRAYBASE_SIZE;
 }
-inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT) 
+inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pMT->IsArray());
-    // There is no good offset for this for a SZARRAY.  
+    // There is no good offset for this for a SZARRAY.
     _ASSERTE(pMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY);
     // Lower bounds info is after total bounds info
     // and total bounds info has rank elements
@@ -274,7 +274,7 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
 
 // Get the element type for the array, this works whether the the element
 // type is stored in the array or not
-inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const 
+inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -299,7 +299,7 @@ __forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* par
 //===============================================================================
 // Returns true if this pMT is Nullable<T> for T == paramMT
 
-__forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable* paramMT) 
+__forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable* paramMT)
 {
     if (type.IsTypeDesc())
         return FALSE;
@@ -309,13 +309,13 @@ __forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable*
 }
 
 //===============================================================================
-// Returns true if this type is Nullable<T> for some T.  
+// Returns true if this type is Nullable<T> for some T.
 
-inline BOOL Nullable::IsNullableType(TypeHandle type) 
+inline BOOL Nullable::IsNullableType(TypeHandle type)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    
+
     if (type.IsTypeDesc())
         return FALSE;
 
@@ -337,7 +337,7 @@ inline TypeHandle Object::GetTypeHandle()
 
     if (m_pMethTab->IsArray())
         return (dac_cast<PTR_ArrayBase>(this))->GetTypeHandle();
-    else 
+    else
         return TypeHandle(m_pMethTab);
 }
 
@@ -356,7 +356,7 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
 
     if (pMT->IsArray())
         return ArrayBase::GetTypeHandle(pMT);
-    else 
+    else
         return TypeHandle(pMT);
 }
 

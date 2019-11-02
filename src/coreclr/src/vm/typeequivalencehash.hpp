@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 // Hash table associated with each module that records for all types defined in that module the mapping
 // between type name and token (or TypeHandle).
 //

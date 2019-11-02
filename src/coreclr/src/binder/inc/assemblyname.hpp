@@ -28,7 +28,7 @@ namespace BINDER_SPACE
             INCLUDE_DEFAULT                     = 0x00,
             INCLUDE_VERSION                     = 0x01,
             INCLUDE_ARCHITECTURE                = 0x02,
-            INCLUDE_RETARGETABLE                = 0x04, 
+            INCLUDE_RETARGETABLE                = 0x04,
             INCLUDE_CONTENT_TYPE                = 0x08,
             INCLUDE_PUBLIC_KEY_TOKEN            = 0x10,
             EXCLUDE_CULTURE                     = 0x20

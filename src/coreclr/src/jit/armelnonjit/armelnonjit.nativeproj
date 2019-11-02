@@ -4,8 +4,8 @@
   <!--
       PROTO JIT: The purpose of this module is to provide an isolated environment to develop
       the RyuJIT backend without interfering with the development of the frontend.  The
-      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so 
-      it can be still consumed by the RyuJIT frontend separately maintaining the code stability 
+      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so
+      it can be still consumed by the RyuJIT frontend separately maintaining the code stability
       of the PUCLR codegen.cpp logic.
 
       This module is meant to be used as a throwaway or fallback cross-JIT (x86 -> arm) that will just
@@ -13,7 +13,7 @@
   -->
 
   <!--
-      Note that we are defining TargetArch directly because of altjit is not a real fully functional cross 
+      Note that we are defining TargetArch directly because of altjit is not a real fully functional cross
       compiled binary. It is just a convenience workaround for JIT devs.
   -->
   <PropertyGroup>

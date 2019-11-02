@@ -30,20 +30,20 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 
 // The next two functions help retrieve data kept relative to FaultingExceptionFrame that is setup
 // for handling async exceptions (e.g. AV, NullRef, ThreadAbort, etc).
-// 
-// FEF (and related data) is available relative to R4 - the thing to be kept in mind is that the 
+//
+// FEF (and related data) is available relative to R4 - the thing to be kept in mind is that the
 // DispatcherContext->ContextRecord:
-// 
+//
 // 1) represents the caller context in the first pass.
 // 2) represents the current context in the second pass.
-// 
+//
 // Since R4 is a non-volatile register, this works for us since we setup the value of R4
 // in the redirection helpers (e.g. NakedThrowHelper or RedirectForThreadAbort) but do not
 // change it in their respective callee functions (e.g. NakedThrowHelper2 or RedirectForThreadAbort2)
 // that have the personality routines associated with them (which perform the collided unwind and also
 // invoke the two functions below).
-// 
-// Thus, when our personality routine gets called in either passes, DC->ContextRecord->R4 will 
+//
+// Thus, when our personality routine gets called in either passes, DC->ContextRecord->R4 will
 // have the same value.
 
 // Returns the pointer to the FEF
@@ -99,7 +99,7 @@ AdjustContextForVirtualStub(
         return FALSE;
     }
 
-    PCODE callsite = GetAdjustedCallAddress(GetLR(pContext)); 
+    PCODE callsite = GetAdjustedCallAddress(GetLR(pContext));
 
     // Lr must already have been saved before calling so it should not be necessary to restore Lr
     if (pExceptionRecord != NULL)

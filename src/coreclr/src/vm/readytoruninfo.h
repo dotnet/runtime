@@ -126,8 +126,8 @@ public:
         void ParseGenericMethodSignatureAndRid(uint *offset, RID *rid);
 
     public:
-        MethodIterator(ReadyToRunInfo * pInfo) : 
-            m_pInfo(pInfo), 
+        MethodIterator(ReadyToRunInfo * pInfo) :
+            m_pInfo(pInfo),
             m_methodDefIndex(-1),
             m_genericEnum(),
             m_genericParser(),

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 // File: mlinfo.h
-// 
+//
 
-// 
+//
 
 
 #include "stubgen.h"
@@ -76,8 +76,8 @@ struct CREATE_MARSHALER_CARRAY_OPERANDS
 struct OverrideProcArgs
 {
     class MarshalInfo*  m_pMarshalInfo;
-    
-    union 
+
+    union
     {
         MethodTable*        m_pMT;
 
@@ -129,7 +129,7 @@ typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
                                                       UINT*               pResID);
 
 //==========================================================================
-// This structure contains the native type information for a given 
+// This structure contains the native type information for a given
 // parameter.
 //==========================================================================
 struct NativeTypeParamInfo
@@ -141,7 +141,7 @@ struct NativeTypeParamInfo
     , m_CountParamIdx(0)
     , m_Multiplier(0)
     , m_Additive(1)
-    , m_strCMMarshalerTypeName(NULL) 
+    , m_strCMMarshalerTypeName(NULL)
     , m_cCMMarshalerTypeNameBytes(0)
     , m_strCMCookie(NULL)
     , m_cCMCookieStrBytes(0)
@@ -155,7 +155,7 @@ struct NativeTypeParamInfo
 #endif // FEATURE_COMINTEROP
     {
         LIMITED_METHOD_CONTRACT;
-    }   
+    }
 
     // The native type of the parameter.
     CorNativeType           m_NativeType;
@@ -215,7 +215,7 @@ public:
 
     // Destructor.
     ~EventArgsMarshalingInfo();
-    
+
     // EventArgsMarshalingInfo's are always allocated on the loader heap so we need to redefine
     // the new and delete operators to ensure this.
     void *operator new(size_t size, LoaderHeap *pHeap);
@@ -274,10 +274,10 @@ class UriMarshalingInfo
 public:
     // Constructor.
     UriMarshalingInfo();
-    
+
     // Destructor
     ~UriMarshalingInfo();
-    
+
     // UriMarshalingInfo's are always allocated on the loader heap so we need to redefine
     // the new and delete operators to ensure this.
     void *operator new(size_t size, LoaderHeap *pHeap);
@@ -297,9 +297,9 @@ public:
             THROWS;
             GC_TRIGGERS;    // For potential COOP->PREEMP->COOP switch
             MODE_ANY;
-            PRECONDITION(!GetAppDomain()->IsCompilationDomain()); 
+            PRECONDITION(!GetAppDomain()->IsCompilationDomain());
         }
-        CONTRACTL_END;   
+        CONTRACTL_END;
 
         if (m_pUriFactory.Load() == NULL)
         {
@@ -312,9 +312,9 @@ public:
             _ASSERTE_MSG(pUriFactory, "Got Null Uri factory!");
 
             if (InterlockedCompareExchangeT(&m_pUriFactory, (ABI::Windows::Foundation::IUriRuntimeClassFactory *) pUriFactory, NULL) == NULL)
-                pUriFactory.SuppressRelease();            
+                pUriFactory.SuppressRelease();
         }
-        
+
         return m_pUriFactory;
     }
 
@@ -389,7 +389,7 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
-    // This method returns the custom marshaling helper associated with the name cookie pair. If the 
+    // This method returns the custom marshaling helper associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
 
@@ -485,10 +485,10 @@ public:
 
     // These methods retrieve the information for different element types.
     HRESULT HandleArrayElemType(NativeTypeParamInfo *pParamInfo,
-                                TypeHandle elemTypeHnd, 
-                                int iRank, 
-                                BOOL fNoLowerBounds, 
-                                BOOL isParam, 
+                                TypeHandle elemTypeHnd,
+                                int iRank,
+                                BOOL fNoLowerBounds,
+                                BOOL isParam,
                                 Assembly *pAssembly,
                                 BOOL isArrayClass = FALSE);
 
@@ -496,7 +496,7 @@ public:
                             int argOffset, // the argument's index is m_paramidx + argOffset
                             UINT nativeStackOffset, // offset of the argument on the native stack
                             BOOL fMngToNative);
-    
+
     void GenerateReturnIL(NDirectStubLinker* psl,
                           int argOffset, // the argument's index is m_paramidx + argOffset
                           BOOL fMngToNative,
@@ -513,7 +513,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_args;
     }
-    
+
     void SetupArgumentSizes();
 
     UINT16 GetNativeArgSize()
@@ -533,7 +533,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ((m_BestFit == 0) ? 0 : 1);
     }
-    
+
     BYTE    GetThrowOnUnmappableChar()
     {
         LIMITED_METHOD_CONTRACT;
@@ -662,7 +662,7 @@ public:
     MethodDesc *GetMethodDesc()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pMD;    
+        return m_pMD;
     }
 
     UINT GetParamIndex()
@@ -671,7 +671,7 @@ public:
         return m_paramidx;
     }
 
-#ifdef FEATURE_COMINTEROP    
+#ifdef FEATURE_COMINTEROP
     BOOL IsWinRTScenario()
     {
         LIMITED_METHOD_CONTRACT;
@@ -698,7 +698,7 @@ private:
 
     static OVERRIDEPROC         GetArgumentOverrideProc(MarshalType mtype);
     static RETURNOVERRIDEPROC   GetReturnOverrideProc(MarshalType mtype);
-    
+
 #ifdef _DEBUG
     VOID DumpMarshalInfo(Module* pModule, SigPointer sig, const SigTypeContext *pTypeContext, mdToken token,
                          MarshalScenario ms, CorNativeLinkType nlType, CorNativeLinkFlags nlFlags);
@@ -710,7 +710,7 @@ private:
     BOOL            m_in;
     BOOL            m_out;
     MethodTable*    m_pMT;  // Used if this is a true value type
-    MethodDesc*     m_pMD;  // Save MethodDesc for later inspection so that we can pass SizeParamIndex by ref    
+    MethodDesc*     m_pMD;  // Save MethodDesc for later inspection so that we can pass SizeParamIndex by ref
     TypeHandle      m_hndArrayElemType;
     VARTYPE         m_arrayElementType;
     int             m_iArrayRank;
@@ -787,29 +787,29 @@ class ArrayMarshalInfo
 {
 public:
     ArrayMarshalInfo(ArrayMarshalInfoFlags flags)
-    : m_vtElement(VT_EMPTY) 
-    , m_errorResourceId(0) 
+    : m_vtElement(VT_EMPTY)
+    , m_errorResourceId(0)
     , m_flags(flags)
 #ifdef FEATURE_COMINTEROP
     , m_redirectedTypeIndex((WinMDAdapter::RedirectedTypeIndex)0)
     , m_cbElementSize(0)
 #endif // FEATURE_COMINTEROP
-    {   
+    {
         WRAPPER_NO_CONTRACT;
     }
 
     void InitForNativeArray(MarshalInfo::MarshalScenario ms, TypeHandle elemTypeHnd, CorNativeType elementNativeType, BOOL isAnsi);
     void InitForFixedArray(TypeHandle elemTypeHnd, CorNativeType elementNativeType, BOOL isAnsi);
 
-#ifdef FEATURE_COMINTEROP    
+#ifdef FEATURE_COMINTEROP
     void InitForSafeArray(MarshalInfo::MarshalScenario ms, TypeHandle elemTypeHnd, VARTYPE elementVT, BOOL isAnsi);
     void InitForHiddenLengthArray(TypeHandle elemTypeHnd);
 #endif // FEATURE_COMINTEROP
-    
+
     TypeHandle GetElementTypeHandle()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_thElement;    
+        return m_thElement;
     }
 
     BOOL IsPtr()
@@ -845,18 +845,18 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
         }
-        CONTRACTL_END;        
-        
+        CONTRACTL_END;
+
         return m_vtElement != VT_EMPTY;
     }
 
     BOOL IsSafeArraySubTypeExplicitlySpecified()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return IsAMISafeArraySubTypeExplicitlySpecified(m_flags);
     }
-    
+
     DWORD GetErrorResourceId()
     {
         CONTRACTL
@@ -866,8 +866,8 @@ public:
             MODE_ANY;
             PRECONDITION(!IsValid());
         }
-        CONTRACTL_END;        
-    
+        CONTRACTL_END;
+
         return m_errorResourceId;
     }
 
@@ -885,8 +885,8 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-protected:    
-    // Helper function that does the actual work to figure out the element type handle and var type.    
+protected:
+    // Helper function that does the actual work to figure out the element type handle and var type.
     void InitElementInfo(CorNativeType arrayNativeType, MarshalInfo::MarshalScenario ms, TypeHandle elemTypeHnd, CorNativeType elementNativeType, BOOL isAnsi);
 
     VARTYPE GetPointerSize()
@@ -907,7 +907,7 @@ protected:
     DWORD m_errorResourceId;
     ArrayMarshalInfoFlags m_flags;
 
-#ifdef FEATURE_COMINTEROP    
+#ifdef FEATURE_COMINTEROP
     WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
     SIZE_T m_cbElementSize;
 #endif // FEATURE_COMINTEROP

@@ -112,7 +112,7 @@ ARG_SLOT FPSpillToR4(void* pSpillSlot)
     return *(DWORD*)pSpillSlot;
 }
 
-inline    
+inline
 ARG_SLOT FPSpillToR8(void* pSpillSlot)
 {
     LIMITED_METHOD_CONTRACT;
@@ -287,7 +287,7 @@ struct EHContext {
 // Exception handling
 //**********************************************************************
 
-inline PCODE GetIP(const CONTEXT * context) 
+inline PCODE GetIP(const CONTEXT * context)
 {
     CONTRACTL
     {
@@ -302,7 +302,7 @@ inline PCODE GetIP(const CONTEXT * context)
     return PCODE(context->Rip);
 }
 
-inline void SetIP(CONTEXT* context, PCODE rip) 
+inline void SetIP(CONTEXT* context, PCODE rip)
 {
     CONTRACTL
     {
@@ -324,21 +324,21 @@ inline TADDR GetSP(const CONTEXT * context)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        
+
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
 
     return (TADDR)context->Rsp;
 }
-inline void SetSP(CONTEXT *context, TADDR rsp) 
+inline void SetSP(CONTEXT *context, TADDR rsp)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        
+
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
@@ -364,7 +364,7 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget);
 
 
 // Get Rel32 destination, emit jumpStub if necessary
-INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod, 
+INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
 
 // Get Rel32 destination, emit jumpStub if necessary into a preallocated location
@@ -419,7 +419,7 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct ComToManagedExRecord; // defined in cgencpu.cpp
 
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype) 
+inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -444,7 +444,7 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
     BYTE            m_padding[4];
     BYTE            m_movR10[2];    // MOV R10,
     LPVOID          m_uet;          //          pointer to start of this structure
-    BYTE            m_movRAX[2];    // MOV RAX, 
+    BYTE            m_movRAX[2];    // MOV RAX,
     DECLSPEC_ALIGN(8)
     const BYTE*     m_execstub;     //          pointer to destination code // ensure this is qword aligned
     BYTE            m_jmpRAX[3];    // JMP RAX
@@ -465,7 +465,7 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
         LIMITED_METHOD_CONTRACT;
 
         return offsetof(UMEntryThunkCode, m_movR10);
-    }    
+    }
 };
 #include <poppack.h>
 
@@ -506,7 +506,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
-// We call ClrFlushInstructionCache whenever we create or modify code in the heap. 
+// We call ClrFlushInstructionCache whenever we create or modify code in the heap.
 // Currently ClrFlushInstructionCache has no effect on AMD64
 //
 

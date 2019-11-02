@@ -7,4 +7,4 @@ TARGETTYPE=NOTARGET
 CLR_TARGETTYPE=DLL
 MSBuildProjectFile=protojit.nativeproj
 SOURCES=
-    
+

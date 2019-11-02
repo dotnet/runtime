@@ -23,7 +23,7 @@
 class ObjectList
 {
 public:
-	class Iterator 
+	class Iterator
     	{
 		friend class ObjectList;
 
@@ -31,10 +31,10 @@ public:
 		   ArrayList::Iterator _iter;
 
 		  public:
-			
-		PTR_VOID GetElement() 
+
+		PTR_VOID GetElement()
 		{
-			LIMITED_METHOD_CONTRACT; 
+			LIMITED_METHOD_CONTRACT;
 			PTR_VOID ptr = _iter.GetElement();
 			if (((DWORD)(size_t)(dac_cast<TADDR>(ptr)) & 0x1) == 0)
 			{
@@ -42,20 +42,20 @@ public:
 			}
 			else
 			{
-				return NULL;			
+				return NULL;
 			}
 		}
-			
-		DWORD GetIndex() 
+
+		DWORD GetIndex()
 		{
-			LIMITED_METHOD_CONTRACT; 
-			return _iter.GetIndex(); 
+			LIMITED_METHOD_CONTRACT;
+			return _iter.GetIndex();
 		}
 
 		BOOL Next()
 		{
-			LIMITED_METHOD_CONTRACT; 
-			return _iter.Next(); 
+			LIMITED_METHOD_CONTRACT;
+			return _iter.Next();
 		}
    	};
 

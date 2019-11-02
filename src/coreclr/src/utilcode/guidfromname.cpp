@@ -68,7 +68,7 @@ DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY
 RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A
 PARTICULAR PURPOSE.
- 
+
 */
 
 #include "stdafx.h"
@@ -119,7 +119,7 @@ inline USHORT HostToNetworkShort(USHORT hostshort)
 inline ULONG NetworkToHostLong(ULONG netlong)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     if (BigEndian())
         return netlong;
     else
@@ -134,7 +134,7 @@ inline ULONG NetworkToHostLong(ULONG netlong)
 inline USHORT NetworkToHostShort(USHORT netshort)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     if (BigEndian())
         return netshort;
     else
@@ -142,7 +142,7 @@ inline USHORT NetworkToHostShort(USHORT netshort)
 }
 
 //=============================================================================
-// GuidFromName(GUID * pGuidResult, REFGUID refGuidNsid, 
+// GuidFromName(GUID * pGuidResult, REFGUID refGuidNsid,
 //              const void * pvName, DWORD dwcbName);
 //=============================================================================
 
@@ -157,13 +157,13 @@ void GuidFromName
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    
+
     MD5         md5;            // Cryptographic hash class instance
     MD5HASHDATA md5HashData;    // 128-bit hash result
     GUID        guidNsid;       // context NameSpace GUID in network byte order
 
     GUID        guidTemp;
-    
+
     // put name space ID in network byte order so it hashes the same
     // no matter what endian machine we're on
     guidNsid = refGuidNsid;
@@ -197,7 +197,7 @@ void GuidFromName
         guidTemp.Data3 = NetworkToHostShort(guidTemp.Data3);
     }
 
-    // set version number 
+    // set version number
     guidTemp.Data3 &= 0x0FFF;   // clear version number nibble
     guidTemp.Data3 |= (3 << 12);// set version 3 = name-based
 
@@ -205,8 +205,8 @@ void GuidFromName
     guidTemp.Data4[0] &= 0x3F;  // clear variant bits
     guidTemp.Data4[0] |= 0x80;  // set variant = 100b
 
-    // If two GuidFromName calls were made from different threads with the same parameters, 
-    // we may get incorrect result even though the expected result is the same, because 
+    // If two GuidFromName calls were made from different threads with the same parameters,
+    // we may get incorrect result even though the expected result is the same, because
     // GuidFromName is operating on the same pGuidResult buffer.
     // Fix this problem by using a temp GUID buffer and then copy to the pGuidResult buffer.
     memcpy(pGuidResult, &guidTemp, sizeof(GUID));
@@ -216,7 +216,7 @@ void GuidFromName
 // This guid is used for calling GuidFromName function as COM+ runtime uniqualifier
 //
 // {69F9CBC9-DA05-11d1-9408-0000F8083460}
-static const GUID COMPLUS_RUNTIME_GUID = {0x69f9cbc9, 0xda05, 0x11d1, 
+static const GUID COMPLUS_RUNTIME_GUID = {0x69f9cbc9, 0xda05, 0x11d1,
         {0x94, 0x8, 0x0, 0x0, 0xf8, 0x8, 0x34, 0x60}};
 
 void CorGuidFromNameW
@@ -229,8 +229,8 @@ void CorGuidFromNameW
     WRAPPER_NO_CONTRACT;
 
     GuidFromName(
-        pGuidResult, 
-        COMPLUS_RUNTIME_GUID, 
-        wzName, 
+        pGuidResult,
+        COMPLUS_RUNTIME_GUID,
+        wzName,
         (DWORD)((cchName == (SIZE_T) -1 ? (wcslen(wzName)+1) : cchName) * sizeof(WCHAR)));
 }

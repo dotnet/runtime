@@ -68,8 +68,8 @@
 %token VOID_ BOOL_ CHAR_ UNSIGNED_ INT_ INT8_ INT16_ INT32_ INT64_ FLOAT_ FLOAT32_ FLOAT64_ BYTEARRAY_
 %token UINT_ UINT8_ UINT16_ UINT32_ UINT64_  FLAGS_ CALLCONV_ MDTOKEN_
 %token OBJECT_ STRING_ NULLREF_
-        /* misc keywords */ 
-%token DEFAULT_ CDECL_ VARARG_ STDCALL_ THISCALL_ FASTCALL_ CLASS_ 
+        /* misc keywords */
+%token DEFAULT_ CDECL_ VARARG_ STDCALL_ THISCALL_ FASTCALL_ CLASS_
 %token TYPEDREF_ UNMANAGED_ FINALLY_ HANDLER_ CATCH_ FILTER_ FAULT_
 %token EXTENDS_ IMPLEMENTS_ TO_ AT_ TLS_ TRUE_ FALSE_ _INTERFACEIMPL
 
@@ -89,21 +89,21 @@
 %token _IMPORT NOMANGLE_ LASTERR_ WINAPI_ AS_ BESTFIT_ ON_ OFF_ CHARMAPERROR_
 
         /* intruction tokens (actually instruction groupings) */
-%token <opcode> INSTR_NONE INSTR_VAR INSTR_I INSTR_I8 INSTR_R INSTR_BRTARGET INSTR_METHOD INSTR_FIELD 
-%token <opcode> INSTR_TYPE INSTR_STRING INSTR_SIG INSTR_TOK 
+%token <opcode> INSTR_NONE INSTR_VAR INSTR_I INSTR_I8 INSTR_R INSTR_BRTARGET INSTR_METHOD INSTR_FIELD
+%token <opcode> INSTR_TYPE INSTR_STRING INSTR_SIG INSTR_TOK
 %token <opcode> INSTR_SWITCH
 
         /* assember directives */
 %token _CLASS _NAMESPACE _METHOD _FIELD _DATA _THIS _BASE _NESTER
-%token _EMITBYTE _TRY _MAXSTACK _LOCALS _ENTRYPOINT _ZEROINIT  
-%token _EVENT _ADDON _REMOVEON _FIRE _OTHER 
-%token _PROPERTY _SET _GET DEFAULT_ 
+%token _EMITBYTE _TRY _MAXSTACK _LOCALS _ENTRYPOINT _ZEROINIT
+%token _EVENT _ADDON _REMOVEON _FIRE _OTHER
+%token _PROPERTY _SET _GET DEFAULT_
 %token _PERMISSION _PERMISSIONSET
 
                 /* security actions */
-%token REQUEST_ DEMAND_ ASSERT_ DENY_ PERMITONLY_ LINKCHECK_ INHERITCHECK_ 
+%token REQUEST_ DEMAND_ ASSERT_ DENY_ PERMITONLY_ LINKCHECK_ INHERITCHECK_
 %token REQMIN_ REQOPT_ REQREFUSE_ PREJITGRANT_ PREJITDENY_ NONCASDEMAND_
-%token NONCASLINKDEMAND_ NONCASINHERITANCE_ 
+%token NONCASLINKDEMAND_ NONCASINHERITANCE_
 
         /* extern debug info specifier (to be used by precompilers only) */
 %token _LINE P_LINE _LANGUAGE
@@ -115,8 +115,8 @@
 %token _SIZE _PACK
 %token _VTABLE _VTFIXUP FROMUNMANAGED_ CALLMOSTDERIVED_ _VTENTRY RETAINAPPDOMAIN_
         /* manifest */
-%token _FILE NOMETADATA_ _HASH _ASSEMBLY _PUBLICKEY _PUBLICKEYTOKEN ALGORITHM_ _VER _LOCALE EXTERN_ 
-%token _MRESOURCE 
+%token _FILE NOMETADATA_ _HASH _ASSEMBLY _PUBLICKEY _PUBLICKEYTOKEN ALGORITHM_ _VER _LOCALE EXTERN_
+%token _MRESOURCE
 %token _MODULE _EXPORT
 %token LEGACY_ LIBRARY_ X86_ AMD64_ ARM_ ARM64_
         /* field marshaling */
@@ -136,7 +136,7 @@
 %token _SUBSYSTEM _CORFLAGS ALIGNMENT_ _IMAGEBASE _STACKRESERVE
 
         /* syntactic sugar */
-%token _TYPEDEF _TEMPLATE _TYPELIST _MSCORLIB      
+%token _TYPEDEF _TEMPLATE _TYPELIST _MSCORLIB
 
         /* compilation control directives */
 %token P_DEFINE P_UNDEF P_IFDEF P_IFNDEF P_ELSE P_ENDIF P_INCLUDE
@@ -185,10 +185,10 @@
 %start decls
 
 /**************************************************************************/
-%%      
+%%
 
 decls                   : /* EMPTY */
-                        | decls decl                                            
+                        | decls decl
                         ;
 /* Module-level declarations */
 decl                    : classHead '{' classDecls '}'                          { PASM->EndClass(); }
@@ -210,7 +210,7 @@ decl                    : classHead '{' classDecls '}'                          
                         | moduleHead
                         | secDecl
                         | customAttrDecl
-                        | _SUBSYSTEM int32                                      { 
+                        | _SUBSYSTEM int32                                      {
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
@@ -221,10 +221,10 @@ decl                    : classHead '{' classDecls '}'                          
 #endif
                                                                                 }
                         | _CORFLAGS int32                                       { PASM->m_dwComImageFlags = $2; }
-                        | _FILE ALIGNMENT_ int32                                { PASM->m_dwFileAlignment = $3; 
+                        | _FILE ALIGNMENT_ int32                                { PASM->m_dwFileAlignment = $3;
                                                                                   if(($3 & ($3 - 1))||($3 < 0x200)||($3 > 0x10000))
                                                                                     PASM->report->error("Invalid file alignment, must be power of 2 from 0x200 to 0x10000\n");}
-                        | _IMAGEBASE int64                                      { PASM->m_stBaseAddress = (ULONGLONG)(*($2)); delete $2; 
+                        | _IMAGEBASE int64                                      { PASM->m_stBaseAddress = (ULONGLONG)(*($2)); delete $2;
                                                                                   if(PASM->m_stBaseAddress & 0xFFFF)
                                                                                     PASM->report->error("Invalid image base, must be 0x10000-aligned\n");}
                         | _STACKRESERVE int64                                   { PASM->m_stSizeOfStackReserve = (size_t)(*($2)); delete $2; }
@@ -234,23 +234,23 @@ decl                    : classHead '{' classDecls '}'                          
                         | _TYPELIST '{' classNameSeq '}'
                         | _MSCORLIB                                             { PASM->m_fIsMscorlib = TRUE; }
                         ;
-                        
+
 classNameSeq            : /* EMPTY */
                         | className classNameSeq
-                        ;                        
+                        ;
 
 compQstring             : QSTRING                                               { $$ = $1; }
                         | compQstring '+' QSTRING                               { $$ = $1; $$->append($3); delete $3; }
                         ;
 
 languageDecl            : _LANGUAGE SQSTRING                                    { LPCSTRToGuid($2,&(PASM->m_guidLang)); }
-                        | _LANGUAGE SQSTRING ',' SQSTRING                       { LPCSTRToGuid($2,&(PASM->m_guidLang)); 
+                        | _LANGUAGE SQSTRING ',' SQSTRING                       { LPCSTRToGuid($2,&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid($4,&(PASM->m_guidLangVendor));}
-                        | _LANGUAGE SQSTRING ',' SQSTRING ',' SQSTRING          { LPCSTRToGuid($2,&(PASM->m_guidLang)); 
+                        | _LANGUAGE SQSTRING ',' SQSTRING ',' SQSTRING          { LPCSTRToGuid($2,&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid($4,&(PASM->m_guidLangVendor));
                                                                                   LPCSTRToGuid($4,&(PASM->m_guidDoc));}
                         ;
-/*  Basic tokens  */                        
+/*  Basic tokens  */
 id                      : ID                                  { $$ = $1; }
                         | SQSTRING                            { $$ = $1; }
                         ;
@@ -272,25 +272,25 @@ float64                 : FLOAT64                             { $$ = $1; }
                         | FLOAT64_ '(' int64 ')'              { $$ = (double*) $3; }
                         ;
 
-/*  Aliasing of types, type specs, methods, fields and custom attributes */                        
+/*  Aliasing of types, type specs, methods, fields and custom attributes */
 typedefDecl             : _TYPEDEF type AS_ dottedName                          { PASM->AddTypeDef($2,$4); }
                         | _TYPEDEF className AS_ dottedName                     { PASM->AddTypeDef($2,$4); }
                         | _TYPEDEF memberRef AS_ dottedName                     { PASM->AddTypeDef($2,$4); }
                         | _TYPEDEF customDescr AS_ dottedName                   { $2->tkOwner = 0; PASM->AddTypeDef($2,$4); }
                         | _TYPEDEF customDescrWithOwner AS_ dottedName          { PASM->AddTypeDef($2,$4); }
                         ;
-                        
-/*  Compilation control directives are processed within yylex(), 
+
+/*  Compilation control directives are processed within yylex(),
     displayed here just for grammar completeness */
 compControl             : P_DEFINE dottedName                                   { DefineVar($2, NULL); }
                         | P_DEFINE dottedName compQstring                       { DefineVar($2, $3); }
                         | P_UNDEF dottedName                                    { UndefVar($2); }
                         | P_IFDEF dottedName                                    { SkipToken = !IsVarDefined($2);
                                                                                   IfEndif++;
-                                                                                }                        
+                                                                                }
                         | P_IFNDEF dottedName                                   { SkipToken = IsVarDefined($2);
                                                                                   IfEndif++;
-                                                                                } 
+                                                                                }
                         | P_ELSE                                                { if(IfEndif == 1) SkipToken = !SkipToken;}
                         | P_ENDIF                                               { if(IfEndif == 0)
                                                                                     PASM->report->error("Unmatched #endif\n");
@@ -298,8 +298,8 @@ compControl             : P_DEFINE dottedName                                   
                                                                                 }
                         | P_INCLUDE QSTRING                                     { _ASSERTE(!"yylex should have dealt with this"); }
                         | ';'                                                   { }
-                        ; 
-                                              
+                        ;
+
 /* Custom attribute declarations  */
 customDescr             : _CUSTOM customType                                    { $$ = new CustomDescr(PASM->m_tkCurrentCVOwner, $2, NULL); }
                         | _CUSTOM customType '=' compQstring                    { $$ = new CustomDescr(PASM->m_tkCurrentCVOwner, $2, $4); }
@@ -313,11 +313,11 @@ customDescrWithOwner    : _CUSTOM '(' ownerType ')' customType                  
                                                                                 { $$ = new CustomDescr($3, $5, $8); }
                         | customHeadWithOwner bytes ')'                         { $$ = new CustomDescr(PASM->m_tkCurrentCVOwner, $1, $2); }
                         ;
-                        
+
 customHead              : _CUSTOM customType '=' '('                            { $$ = $2; bParsingByteArray = TRUE; }
                         ;
 
-customHeadWithOwner     : _CUSTOM '(' ownerType ')' customType '=' '('        
+customHeadWithOwner     : _CUSTOM '(' ownerType ')' customType '=' '('
                                                                                 { PASM->m_pCustomDescrList = NULL;
                                                                                   PASM->m_tkCurrentCVOwner = $3;
                                                                                   $$ = $5; bParsingByteArray = TRUE; }
@@ -330,23 +330,23 @@ ownerType               : typeSpec                          { $$ = $1; }
                         | memberRef                         { $$ = $1; }
                         ;
 
-/*  Verbal description of custom attribute initialization blob  */                        
-customBlobDescr         : customBlobArgs customBlobNVPairs                      { $$ = $1; 
+/*  Verbal description of custom attribute initialization blob  */
+customBlobDescr         : customBlobArgs customBlobNVPairs                      { $$ = $1;
                                                                                   $$->appendInt16(nCustomBlobNVPairs);
                                                                                   $$->append($2);
                                                                                   nCustomBlobNVPairs = 0; }
                         ;
-                        
+
 customBlobArgs          : /* EMPTY */                                           { $$ = new BinStr(); $$->appendInt16(VAL16(0x0001)); }
                         | customBlobArgs serInit                                { $$ = $1;
                                                                                   $$->appendFrom($2, (*($2->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1); }
                         | customBlobArgs compControl                            { $$ = $1; }
                         ;
-                        
+
 customBlobNVPairs       : /* EMPTY */                                           { $$ = new BinStr(); }
                         | customBlobNVPairs fieldOrProp serializType dottedName '=' serInit
                                                                                 { $$ = $1; $$->appendInt8($2);
-                                                                                  $$->append($3); 
+                                                                                  $$->append($3);
                                                                                   AppendStringWithLength($$,$4);
                                                                                   $$->appendFrom($6, (*($6->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
                                                                                   nCustomBlobNVPairs++; }
@@ -357,30 +357,30 @@ fieldOrProp             : FIELD_                                                
                         | PROPERTY_                                             { $$ = SERIALIZATION_TYPE_PROPERTY; }
                         ;
 
-customAttrDecl          : customDescr                                           { if($1->tkOwner && !$1->tkInterfacePair) 
+customAttrDecl          : customDescr                                           { if($1->tkOwner && !$1->tkInterfacePair)
                                                                                     PASM->DefineCV($1);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH($1); }
                         | customDescrWithOwner                                  { PASM->DefineCV($1); }
                         | TYPEDEF_CA                                            { CustomDescr* pNew = new CustomDescr($1->m_pCA);
                                                                                   if(pNew->tkOwner == 0) pNew->tkOwner = PASM->m_tkCurrentCVOwner;
-                                                                                  if(pNew->tkOwner) 
+                                                                                  if(pNew->tkOwner)
                                                                                     PASM->DefineCV(pNew);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH(pNew); }
                         ;
-                        
+
 serializType            : simpleType                          { $$ = $1; }
                         | TYPE_                               { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE); }
                         | OBJECT_                             { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TAGGED_OBJECT); }
                         | ENUM_ CLASS_ SQSTRING               { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_ENUM);
-                                                                AppendStringWithLength($$,$3); } 
+                                                                AppendStringWithLength($$,$3); }
                         | ENUM_ className                     { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_ENUM);
-                                                                AppendStringWithLength($$,PASM->ReflectionNotation($2)); } 
-                        | serializType '[' ']'                { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); } 
+                                                                AppendStringWithLength($$,PASM->ReflectionNotation($2)); }
+                        | serializType '[' ']'                { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
                         ;
 
-                        
+
 /*  Module declaration */
 moduleHead              : _MODULE                                               { PASMM->SetModuleName(NULL); PASM->m_tkCurrentCVOwner=1; }
                         | _MODULE dottedName                                    { PASMM->SetModuleName($2); PASM->m_tkCurrentCVOwner=1; }
@@ -389,7 +389,7 @@ moduleHead              : _MODULE                                               
                                                                                   memcpy((char*)(pbs->getBuff(L)),$3,L);
                                                                                   PASM->EmitImport(pbs); delete pbs;}
                         ;
-                        
+
 /*  VTable Fixup table declaration  */
 vtfixupDecl             : _VTFIXUP '[' int32 ']' vtfixupAttr AT_ id             { /*PASM->SetDataSection(); PASM->EmitDataLabel($7);*/
                                                                                   PASM->m_VTFList.PUSH(new VTFEntry((USHORT)$3, (USHORT)$5, $7)); }
@@ -409,15 +409,15 @@ vtableDecl              : vtableHead bytes ')'   /* deprecated */               
 vtableHead              : _VTABLE '=' '('        /* deprecated */               { bParsingByteArray = TRUE; }
                         ;
 
-/*  Namespace and class declaration  */                         
+/*  Namespace and class declaration  */
 nameSpaceHead           : _NAMESPACE dottedName                                 { PASM->StartNameSpace($2); }
                         ;
 
 _class                  : _CLASS                                                { newclass = TRUE; }
                         ;
-                        
+
 classHeadBegin          : _class classAttr dottedName typarsClause              { if($4) FixupConstraints();
-                                                                                  PASM->StartClass($3, $2, $4); 
+                                                                                  PASM->StartClass($3, $2, $4);
                                                                                   TyParFixupList.RESET(false);
                                                                                   newclass = FALSE;
                                                                                 }
@@ -454,7 +454,7 @@ classAttr               : /* EMPTY */                       { $$ = (CorRegTypeAt
                         | classAttr FLAGS_ '(' int32 ')'    { $$ = (CorRegTypeAttr) ($4); }
                         ;
 
-extendsClause           : /* EMPTY */                                           
+extendsClause           : /* EMPTY */
                         | EXTENDS_ typeSpec                                 { PASM->m_crExtends = $2; }
                         ;
 
@@ -465,16 +465,16 @@ implClause              : /* EMPTY */
 classDecls              : /* EMPTY */
                         | classDecls classDecl
                         ;
-                        
+
 implList                : implList ',' typeSpec             { PASM->AddToImplList($3); }
                         | typeSpec                          { PASM->AddToImplList($1); }
                                         ;
 
-/* Generic type parameters declaration  */                         
+/* Generic type parameters declaration  */
 typeList                : /* EMPTY */                       { $$ = new BinStr(); }
                         | typeListNotEmpty                  { $$ = $1; }
                         ;
-                        
+
 typeListNotEmpty        : typeSpec                          { $$ = new BinStr(); $$->appendInt32($1); }
                         | typeListNotEmpty ',' typeSpec     { $$ = $1; $$->appendInt32($3); }
                         ;
@@ -489,9 +489,9 @@ typarAttrib             : '+'                               { $$ = gpCovariant; 
                         | VALUETYPE_                        { $$ = gpNotNullableValueTypeConstraint; }
                         | _CTOR                             { $$ = gpDefaultConstructorConstraint; }
                         ;
-                  
+
 typarAttribs            : /* EMPTY */                       { $$ = 0; }
-                        | typarAttrib typarAttribs          { $$ = $1 | $2; }                         
+                        | typarAttrib typarAttribs          { $$ = $1 | $2; }
                         ;
 
 typars                  : typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
@@ -504,15 +504,15 @@ typarsRest              : /* EMPTY */                       { $$ = NULL; }
 
 tyBound                 : '(' typeList ')'                  { $$ = $2; }
                         ;
-                        
+
 genArity                : /* EMPTY */                       { $$= 0; }
                         | genArityNotEmpty                  { $$ = $1; }
-                        ;                        
+                        ;
 
 genArityNotEmpty        : '<' '[' int32 ']' '>'             { $$ = $3; }
                         ;
 
-/*  Class body declarations  */                         
+/*  Class body declarations  */
 classDecl               : methodHead  methodDecls '}'       { if(PASM->m_pCurMethod->m_ulLines[1] ==0)
                                                               {  PASM->m_pCurMethod->m_ulLines[1] = PASM->m_ulCurLine;
                                                                  PASM->m_pCurMethod->m_ulColumns[1]=PASM->m_ulCurColumn;}
@@ -529,18 +529,18 @@ classDecl               : methodHead  methodDecls '}'       { if(PASM->m_pCurMet
                         | _PACK int32                           { PASM->m_pCurClass->m_ulPack = $2; }
                         | exportHead '{' exptypeDecls '}'       { PASMM->EndComType(); }
                         | _OVERRIDE typeSpec DCOLON methodName WITH_ callConv type typeSpec DCOLON methodName '(' sigArgs0 ')'
-                                                                { BinStr *sig1 = parser->MakeSig($6, $7, $12); 
-                                                                  BinStr *sig2 = new BinStr(); sig2->append(sig1); 
+                                                                { BinStr *sig1 = parser->MakeSig($6, $7, $12);
+                                                                  BinStr *sig2 = new BinStr(); sig2->append(sig1);
                                                                   PASM->AddMethodImpl($2,$4,sig1,$8,$10,sig2);
-                                                                  PASM->ResetArgNameList(); 
-                                                                } 
-                        | _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' WITH_ METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' 
+                                                                  PASM->ResetArgNameList();
+                                                                }
+                        | _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' WITH_ METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'
                                                                  { PASM->AddMethodImpl($5,$7,
                                                                       ($8==0 ? parser->MakeSig($3,$4,$10) :
                                                                       parser->MakeSig($3| IMAGE_CEE_CS_CALLCONV_GENERIC,$4,$10,$8)),
                                                                       $16,$18,
                                                                       ($19==0 ? parser->MakeSig($14,$15,$21) :
-                                                                      parser->MakeSig($14| IMAGE_CEE_CS_CALLCONV_GENERIC,$15,$21,$19))); 
+                                                                      parser->MakeSig($14| IMAGE_CEE_CS_CALLCONV_GENERIC,$15,$21,$19)));
                                                                    PASM->ResetArgNameList();
                                                                  }
                         | languageDecl
@@ -564,7 +564,7 @@ classDecl               : methodHead  methodDecls '}'       { if(PASM->m_pCurMet
                                                                       }
                         ;
 
-/*  Field declaration  */                        
+/*  Field declaration  */
 fieldDecl               : _FIELD repeatOpt fieldAttr type dottedName atOpt initOpt
                                                             { $4->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                               PASM->AddField($5, $4, $3, $6, $7, $2); }
@@ -579,17 +579,17 @@ fieldAttr               : /* EMPTY */                       { $$ = (CorFieldAttr
                         | fieldAttr RTSPECIALNAME_          { $$ = $1; } /*{ $$ = (CorFieldAttr) ($1 | fdRTSpecialName); }*/
                         | fieldAttr SPECIALNAME_            { $$ = (CorFieldAttr) ($1 | fdSpecialName); }
                                                 /* <STRIP>commented out because PInvoke for fields is not supported by EE
-                        | fieldAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'                   
-                                                            { $$ = (CorFieldAttr) ($1 | fdPinvokeImpl); 
+                        | fieldAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'
+                                                            { $$ = (CorFieldAttr) ($1 | fdPinvokeImpl);
                                                               PASM->SetPinvoke($4,0,$6,$7); }
-                        | fieldAttr PINVOKEIMPL_ '(' compQstring  pinvAttr ')'                      
-                                                            { $$ = (CorFieldAttr) ($1 | fdPinvokeImpl); 
+                        | fieldAttr PINVOKEIMPL_ '(' compQstring  pinvAttr ')'
+                                                            { $$ = (CorFieldAttr) ($1 | fdPinvokeImpl);
                                                               PASM->SetPinvoke($4,0,NULL,$5); }
-                        | fieldAttr PINVOKEIMPL_ '(' pinvAttr ')'                       
-                                                            { PASM->SetPinvoke(new BinStr(),0,NULL,$4); 
+                        | fieldAttr PINVOKEIMPL_ '(' pinvAttr ')'
+                                                            { PASM->SetPinvoke(new BinStr(),0,NULL,$4);
                                                               $$ = (CorFieldAttr) ($1 | fdPinvokeImpl); }
                                                 </STRIP>*/
-                        | fieldAttr MARSHAL_ '(' marshalBlob ')'                 
+                        | fieldAttr MARSHAL_ '(' marshalBlob ')'
                                                             { PASM->m_pMarshal = $4; }
                         | fieldAttr ASSEMBLY_               { $$ = (CorFieldAttr) (($1 & ~mdMemberAccessMask) | fdAssembly); }
                         | fieldAttr FAMANDASSEM_            { $$ = (CorFieldAttr) (($1 & ~mdMemberAccessMask) | fdFamANDAssem); }
@@ -600,7 +600,7 @@ fieldAttr               : /* EMPTY */                       { $$ = (CorFieldAttr
                         | fieldAttr FLAGS_ '(' int32 ')'    { $$ = (CorFieldAttr) ($4); }
                         ;
 
-atOpt                   : /* EMPTY */                       { $$ = 0; } 
+atOpt                   : /* EMPTY */                       { $$ = 0; }
                         | AT_ id                            { $$ = $2; }
                         ;
 
@@ -617,51 +617,51 @@ methodRef               : callConv type typeSpec DCOLON methodName tyArgs0 '(' s
                                                              { PASM->ResetArgNameList();
                                                                if ($6 == NULL)
                                                                {
-                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  $$ = PASM->MakeMemberRef($3, $5, parser->MakeSig($1|iCallConv, $2, $8));
                                                                }
                                                                else
                                                                {
                                                                  mdToken mr;
-                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
-                                                                 mr = PASM->MakeMemberRef($3, $5, 
+                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
+                                                                 mr = PASM->MakeMemberRef($3, $5,
                                                                    parser->MakeSig($1 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, $2, $8, corCountArgs($6)));
-                                                                 $$ = PASM->MakeMethodSpec(mr, 
+                                                                 $$ = PASM->MakeMethodSpec(mr,
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, $6));
                                                                }
                                                              }
                         | callConv type typeSpec DCOLON methodName genArityNotEmpty '(' sigArgs0 ')'
                                                              { PASM->ResetArgNameList();
-                                                               if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
-                                                               $$ = PASM->MakeMemberRef($3, $5, 
+                                                               if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
+                                                               $$ = PASM->MakeMemberRef($3, $5,
                                                                  parser->MakeSig($1 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, $2, $8, $6));
                                                              }
                         | callConv type methodName tyArgs0 '(' sigArgs0 ')'
                                                              { PASM->ResetArgNameList();
                                                                if ($4 == NULL)
                                                                {
-                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  $$ = PASM->MakeMemberRef(mdTokenNil, $3, parser->MakeSig($1|iCallConv, $2, $6));
                                                                }
                                                                else
                                                                {
                                                                  mdToken mr;
-                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  mr = PASM->MakeMemberRef(mdTokenNil, $3, parser->MakeSig($1 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, $2, $6, corCountArgs($4)));
-                                                                 $$ = PASM->MakeMethodSpec(mr, 
+                                                                 $$ = PASM->MakeMethodSpec(mr,
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, $4));
                                                                }
                                                              }
                         | callConv type methodName genArityNotEmpty '(' sigArgs0 ')'
                                                              { PASM->ResetArgNameList();
-                                                               if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                               if((iCallConv)&&(($1 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                $$ = PASM->MakeMemberRef(mdTokenNil, $3, parser->MakeSig($1 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, $2, $6, $4));
                                                              }
                         | mdtoken                            { $$ = $1; }
-                        | TYPEDEF_M                          { $$ = $1->m_tkTypeSpec; }                                                             
-                        | TYPEDEF_MR                         { $$ = $1->m_tkTypeSpec; }                                                             
+                        | TYPEDEF_M                          { $$ = $1->m_tkTypeSpec; }
+                        | TYPEDEF_MR                         { $$ = $1->m_tkTypeSpec; }
                         ;
-                        
+
 callConv                : INSTANCE_ callConv                  { $$ = ($2 | IMAGE_CEE_CS_CALLCONV_HASTHIS); }
                         | EXPLICIT_ callConv                  { $$ = ($2 | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS); }
                         | callKind                            { $$ = $1; }
@@ -680,28 +680,28 @@ callKind                : /* EMPTY */                         { $$ = IMAGE_CEE_C
 mdtoken                 : MDTOKEN_ '(' int32 ')'             { $$ = $3; }
                         ;
 
-memberRef               : methodSpec methodRef               { $$ = $2; 
+memberRef               : methodSpec methodRef               { $$ = $2;
                                                                PASM->delArgNameList(PASM->m_firstArgName);
                                                                PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                                PASM->SetMemberRefFixup($2,iOpcodeLen); }
                         | FIELD_ type typeSpec DCOLON dottedName
-                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
-                                                               $$ = PASM->MakeMemberRef($3, $5, $2); 
+                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
+                                                               $$ = PASM->MakeMemberRef($3, $5, $2);
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         | FIELD_ type dottedName
-                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
-                                                               $$ = PASM->MakeMemberRef(NULL, $3, $2); 
+                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
+                                                               $$ = PASM->MakeMemberRef(NULL, $3, $2);
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         | FIELD_ TYPEDEF_F                   { $$ = $2->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         | FIELD_ TYPEDEF_MR                  { $$ = $2->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
-                        | mdtoken                            { $$ = $1; 
+                        | mdtoken                            { $$ = $1;
                                                                PASM->SetMemberRefFixup($$,iOpcodeLen); }
                         ;
 
-/*  Event declaration  */                        
+/*  Event declaration  */
 eventHead               : _EVENT eventAttr typeSpec dottedName   { PASM->ResetEvent($4, $3, $2); }
                         | _EVENT eventAttr dottedName            { PASM->ResetEvent($3, mdTypeRefNil, $2); }
                         ;
@@ -726,9 +726,9 @@ eventDecl               : _ADDON methodRef                 { PASM->SetEventMetho
                         | compControl
                         ;
 
-/*  Property declaration  */                         
-propHead                : _PROPERTY propAttr callConv type dottedName '(' sigArgs0 ')' initOpt     
-                                                            { PASM->ResetProp($5, 
+/*  Property declaration  */
+propHead                : _PROPERTY propAttr callConv type dottedName '(' sigArgs0 ')' initOpt
+                                                            { PASM->ResetProp($5,
                                                               parser->MakeSig((IMAGE_CEE_CS_CALLCONV_PROPERTY |
                                                               ($3 & IMAGE_CEE_CS_CALLCONV_HASTHIS)),$4,$7), $2, $9);}
                         ;
@@ -753,12 +753,12 @@ propDecl                : _SET methodRef                    { PASM->SetPropMetho
                         ;
 
 /*  Method declaration  */
-methodHeadPart1         : _METHOD                           { PASM->ResetForNextMethod(); 
+methodHeadPart1         : _METHOD                           { PASM->ResetForNextMethod();
                                                               uMethodBeginLine = PASM->m_ulCurLine;
                                                               uMethodBeginColumn=PASM->m_ulCurColumn;
                                                             }
                         ;
-                        
+
 marshalClause           : /* EMPTY */                       { $$ = NULL; }
                         | MARSHAL_ '(' marshalBlob ')'       { $$ = $3; }
                         ;
@@ -767,7 +767,7 @@ marshalBlob             : nativeType                        { $$ = $1; }
                         | marshalBlobHead hexbytes '}'       { $$ = $2; }
                         ;
 
-marshalBlobHead         : '{'                                { bParsingByteArray = TRUE; } 
+marshalBlobHead         : '{'                                { bParsingByteArray = TRUE; }
                         ;
 
 methodHead              : methodHeadPart1 methAttr callConv paramAttr type marshalClause methodName typarsClause'(' sigArgs0 ')' implAttr '{'
@@ -780,9 +780,9 @@ methodHead              : methodHeadPart1 methAttr callConv paramAttr type marsh
                                                               }
                                                               PASM->StartMethod($7, sig, $2, $6, $4, $8);
                                                               TyParFixupList.RESET(false);
-                                                              PASM->SetImplAttr((USHORT)$12);  
+                                                              PASM->SetImplAttr((USHORT)$12);
                                                               PASM->m_pCurMethod->m_ulLines[0] = uMethodBeginLine;
-                                                              PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn; 
+                                                              PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn;
                                                             }
                         ;
 
@@ -806,14 +806,14 @@ methAttr                : /* EMPTY */                       { $$ = (CorMethodAtt
                         | methAttr UNMANAGEDEXP_            { $$ = (CorMethodAttr) ($1 | mdUnmanagedExport); }
                         | methAttr REQSECOBJ_               { $$ = (CorMethodAttr) ($1 | mdRequireSecObject); }
                         | methAttr FLAGS_ '(' int32 ')'     { $$ = (CorMethodAttr) ($4); }
-                        | methAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'                    
-                                                            { PASM->SetPinvoke($4,0,$6,$7); 
+                        | methAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'
+                                                            { PASM->SetPinvoke($4,0,$6,$7);
                                                               $$ = (CorMethodAttr) ($1 | mdPinvokeImpl); }
-                        | methAttr PINVOKEIMPL_ '(' compQstring  pinvAttr ')'                       
-                                                            { PASM->SetPinvoke($4,0,NULL,$5); 
+                        | methAttr PINVOKEIMPL_ '(' compQstring  pinvAttr ')'
+                                                            { PASM->SetPinvoke($4,0,NULL,$5);
                                                               $$ = (CorMethodAttr) ($1 | mdPinvokeImpl); }
-                        | methAttr PINVOKEIMPL_ '(' pinvAttr ')'                        
-                                                            { PASM->SetPinvoke(new BinStr(),0,NULL,$4); 
+                        | methAttr PINVOKEIMPL_ '(' pinvAttr ')'
+                                                            { PASM->SetPinvoke(new BinStr(),0,NULL,$4);
                                                               $$ = (CorMethodAttr) ($1 | mdPinvokeImpl); }
                         ;
 
@@ -844,9 +844,9 @@ paramAttr               : /* EMPTY */                       { $$ = 0; }
                         | paramAttr '[' IN_ ']'             { $$ = $1 | pdIn; }
                         | paramAttr '[' OUT_ ']'            { $$ = $1 | pdOut; }
                         | paramAttr '[' OPT_ ']'            { $$ = $1 | pdOptional; }
-                        | paramAttr '[' int32 ']'           { $$ = $3 + 1; } 
+                        | paramAttr '[' int32 ']'           { $$ = $3 + 1; }
                         ;
-        
+
 implAttr                : /* EMPTY */                       { $$ = (CorMethodImpl) (miIL | miManaged); }
                         | implAttr NATIVE_                  { $$ = (CorMethodImpl) (($1 & 0xFFF4) | miNative); }
                         | implAttr CIL_                     { $$ = (CorMethodImpl) (($1 & 0xFFF4) | miIL); }
@@ -865,7 +865,7 @@ implAttr                : /* EMPTY */                       { $$ = (CorMethodImp
                         | implAttr FLAGS_ '(' int32 ')'     { $$ = (CorMethodImpl) ($4); }
                         ;
 
-localsHead              : _LOCALS                           { PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL; 
+localsHead              : _LOCALS                           { PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL;
                                                             }
                         ;
 
@@ -876,10 +876,10 @@ methodDecls             : /* EMPTY */
 methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2); }
                         | sehBlock                          { delete PASM->m_SEHD; PASM->m_SEHD = PASM->m_SEHDstack.POP(); }
                         | _MAXSTACK int32                   { PASM->EmitMaxStack($2); }
-                        | localsHead '(' sigArgs0 ')'       { PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, $3)); 
+                        | localsHead '(' sigArgs0 ')'       { PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, $3));
                                                             }
-                        | localsHead INIT_ '(' sigArgs0 ')' { PASM->EmitZeroInit(); 
-                                                              PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, $4)); 
+                        | localsHead INIT_ '(' sigArgs0 ')' { PASM->EmitZeroInit();
+                                                              PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, $4));
                                                             }
                         | _ENTRYPOINT                       { PASM->EmitEntryPoint(); }
                         | _ZEROINIT                         { PASM->EmitZeroInit(); }
@@ -913,14 +913,14 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                             }
                         | _VTENTRY int32 ':' int32          { PASM->m_pCurMethod->m_wVTEntry = (WORD)$2;
                                                               PASM->m_pCurMethod->m_wVTSlot = (WORD)$4; }
-                        | _OVERRIDE typeSpec DCOLON methodName 
+                        | _OVERRIDE typeSpec DCOLON methodName
                                                             { PASM->AddMethodImpl($2,$4,NULL,NULL,NULL,NULL); }
 
                         | _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'
                                                             { PASM->AddMethodImpl($5,$7,
                                                               ($8==0 ? parser->MakeSig($3,$4,$10) :
                                                               parser->MakeSig($3| IMAGE_CEE_CS_CALLCONV_GENERIC,$4,$10,$8))
-                                                              ,NULL,NULL,NULL); 
+                                                              ,NULL,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             }
                         | scopeBlock
@@ -938,7 +938,7 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                         | _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec { PASM->m_pCurMethod->AddGenericParamConstraint($4, 0, $7); }
                         | _PARAM CONSTRAINT_ dottedName ',' typeSpec    { PASM->m_pCurMethod->AddGenericParamConstraint(0, $3, $5); }
 
-                        | _PARAM '[' int32 ']' initOpt                            
+                        | _PARAM '[' int32 ']' initOpt
                                                             { if( $3 ) {
                                                                 ARG_NAME_LIST* pAN=PASM->findArg(PASM->m_pCurMethod->m_firstArgName, $3 - 1);
                                                                 if(pAN)
@@ -965,7 +965,7 @@ scopeBlock              : scopeOpen methodDecls '}'         { PASM->m_pCurMethod
 scopeOpen               : '{'                               { PASM->m_pCurMethod->OpenScope(); }
                         ;
 
-/* Structured exception handling directives  */                          
+/* Structured exception handling directives  */
 sehBlock                : tryBlock sehClauses
                         ;
 
@@ -990,20 +990,20 @@ sehClause               : catchClause handlerBlock           { PASM->EmitTry(); 
                         | faultClause handlerBlock           { PASM->EmitTry(); }
                         ;
 
-                                                                                                                                
+
 filterClause            : filterHead scopeBlock              { PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-                        | filterHead id                      { PASM->SetFilterLabel($2); 
+                        | filterHead id                      { PASM->SetFilterLabel($2);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-                        | filterHead int32                   { PASM->m_SEHD->sehFilter = $2; 
+                        | filterHead int32                   { PASM->m_SEHD->sehFilter = $2;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
                         ;
 
 filterHead              : FILTER_                            { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FILTER;
-                                                               PASM->m_SEHD->sehFilter = PASM->m_CurPC; } 
+                                                               PASM->m_SEHD->sehFilter = PASM->m_CurPC; }
                         ;
 
 catchClause             : CATCH_ typeSpec                   {  PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_NONE;
-                                                               PASM->SetCatchClass($2); 
+                                                               PASM->SetCatchClass($2);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
                         ;
 
@@ -1015,7 +1015,7 @@ faultClause             : FAULT_                             { PASM->m_SEHD->seh
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
                         ;
 
-handlerBlock            : scopeBlock                         { PASM->m_SEHD->sehHandlerTo = PASM->m_CurPC; }                 
+handlerBlock            : scopeBlock                         { PASM->m_SEHD->sehHandlerTo = PASM->m_CurPC; }
                         | HANDLER_ id TO_ id                 { PASM->SetHandlerLabels($2, $4); }
                         | HANDLER_ int32 TO_ int32           { PASM->m_SEHD->sehHandler = $2;
                                                                PASM->m_SEHD->sehHandlerTo = $4; }
@@ -1026,7 +1026,7 @@ dataDecl                : ddHead ddBody
                         ;
 
 ddHead                  : _DATA tls id '='                   { PASM->EmitDataLabel($3); }
-                        | _DATA tls  
+                        | _DATA tls
                         ;
 
 tls                     : /* EMPTY */                        { PASM->SetDataSection(); }
@@ -1055,7 +1055,7 @@ ddItem                  : CHAR_ '*' '(' compQstring ')'      { PASM->EmitDataStr
                                                              { float f = (float) (*$3); float* p = new (nothrow) float[$5];
                                                                if(p != NULL) {
                                                                  for(int i=0; i < $5; i++) p[i] = f;
-                                                                 PASM->EmitData(p, sizeof(float)*$5); delete $3; delete [] p; 
+                                                                 PASM->EmitData(p, sizeof(float)*$5); delete $3; delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(float)*$5); }
                         | FLOAT64_ '(' float64 ')' ddItemCount
@@ -1107,44 +1107,44 @@ ddItem                  : CHAR_ '*' '(' compQstring ')'      { PASM->EmitDataStr
 fieldSerInit            : FLOAT32_ '(' float64 ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R4);
                                                                float f = (float)(*$3);
                                                                $$->appendInt32(*((__int32*)&f)); delete $3; }
-                        | FLOAT64_ '(' float64 ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8); 
+                        | FLOAT64_ '(' float64 ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8);
                                                                $$->appendInt64((__int64 *)$3); delete $3; }
-                        | FLOAT32_ '(' int32 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R4); 
+                        | FLOAT32_ '(' int32 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R4);
                                                                $$->appendInt32($3); }
-                        | FLOAT64_ '(' int64 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8); 
+                        | FLOAT64_ '(' int64 ')'             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_R8);
                                                                $$->appendInt64((__int64 *)$3); delete $3; }
-                        | INT64_ '(' int64 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I8); 
-                                                               $$->appendInt64((__int64 *)$3); delete $3; } 
-                        | INT32_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I4); 
+                        | INT64_ '(' int64 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | INT32_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I4);
                                                                $$->appendInt32($3); }
-                        | INT16_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I2); 
+                        | INT16_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I2);
                                                                $$->appendInt16($3); }
-                        | INT8_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I1); 
+                        | INT8_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I1);
                                                                $$->appendInt8($3); }
-                        | UNSIGNED_ INT64_ '(' int64 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8); 
-                                                               $$->appendInt64((__int64 *)$4); delete $4; } 
-                        | UNSIGNED_ INT32_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4); 
+                        | UNSIGNED_ INT64_ '(' int64 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8);
+                                                               $$->appendInt64((__int64 *)$4); delete $4; }
+                        | UNSIGNED_ INT32_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4);
                                                                $$->appendInt32($4); }
-                        | UNSIGNED_ INT16_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2); 
+                        | UNSIGNED_ INT16_ '(' int32 ')'     { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2);
                                                                $$->appendInt16($4); }
-                        | UNSIGNED_ INT8_ '(' int32 ')'      { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1); 
+                        | UNSIGNED_ INT8_ '(' int32 ')'      { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1);
                                                                $$->appendInt8($4); }
-                        | UINT64_ '(' int64 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8); 
-                                                               $$->appendInt64((__int64 *)$3); delete $3; } 
-                        | UINT32_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4); 
+                        | UINT64_ '(' int64 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8);
+                                                               $$->appendInt64((__int64 *)$3); delete $3; }
+                        | UINT32_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U4);
                                                                $$->appendInt32($3); }
-                        | UINT16_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2); 
+                        | UINT16_ '(' int32 ')'              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U2);
                                                                $$->appendInt16($3); }
-                        | UINT8_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1); 
+                        | UINT8_ '(' int32 ')'               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U1);
                                                                $$->appendInt8($3); }
-                        | CHAR_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CHAR); 
+                        | CHAR_ '(' int32 ')'                { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CHAR);
                                                                $$->appendInt16($3); }
-                        | BOOL_ '(' truefalse ')'            { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_BOOLEAN); 
+                        | BOOL_ '(' truefalse ')'            { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_BOOLEAN);
                                                                $$->appendInt8($3);}
                         | bytearrayhead bytes ')'            { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING);
                                                                $$->append($2); delete $2;}
                         ;
-                        
+
 bytearrayhead           : BYTEARRAY_ '('                     { bParsingByteArray = TRUE; }
                         ;
 
@@ -1159,21 +1159,21 @@ hexbytes                : HEXBYTE                            { __int8 i = (__int
 /*  Field/parameter initialization  */
 fieldInit               : fieldSerInit                       { $$ = $1; }
                         | compQstring                        { $$ = BinStrToUnicode($1,true); $$->insertInt8(ELEMENT_TYPE_STRING);}
-                        | NULLREF_                           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CLASS); 
+                        | NULLREF_                           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CLASS);
                                                                $$->appendInt32(0); }
-                        ;                        
+                        ;
 
 /*  Values for verbal form of CA blob description  */
 serInit                 : fieldSerInit                       { $$ = $1; }
                         | STRING_ '(' NULLREF_ ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING); $$->appendInt8(0xFF); }
-                        | STRING_ '(' SQSTRING ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING); 
+                        | STRING_ '(' SQSTRING ')'           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING);
                                                                AppendStringWithLength($$,$3); delete [] $3;}
-                        | TYPE_ '(' CLASS_ SQSTRING ')'      { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE); 
+                        | TYPE_ '(' CLASS_ SQSTRING ')'      { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength($$,$4); delete [] $4;}
-                        | TYPE_ '(' className ')'            { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE); 
+                        | TYPE_ '(' className ')'            { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength($$,PASM->ReflectionNotation($3));}
                         | TYPE_ '(' NULLREF_ ')'             { $$ = new BinStr(); $$->appendInt8(SERIALIZATION_TYPE_TYPE); $$->appendInt8(0xFF); }
-                        | OBJECT_ '(' serInit ')'            { $$ = $3; $$->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);} 
+                        | OBJECT_ '(' serInit ')'            { $$ = $3; $$->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);}
                         | FLOAT32_ '[' int32 ']' '(' f32seq ')'
                                                              { $$ = $6; $$->insertInt32($3);
                                                                $$->insertInt8(ELEMENT_TYPE_R4);
@@ -1256,64 +1256,64 @@ serInit                 : fieldSerInit                       { $$ = $1; }
 f32seq                  : /* EMPTY */                        { $$ = new BinStr(); }
                         | f32seq float64                     { $$ = $1;
                                                                float f = (float) (*$2); $$->appendInt32(*((__int32*)&f)); delete $2; }
-                        | f32seq int32                       { $$ = $1; 
+                        | f32seq int32                       { $$ = $1;
                                                                $$->appendInt32($2); }
                         ;
-                                                               
+
 f64seq                  : /* EMPTY */                        { $$ = new BinStr(); }
-                        | f64seq float64                     { $$ = $1; 
+                        | f64seq float64                     { $$ = $1;
                                                                $$->appendInt64((__int64 *)$2); delete $2; }
-                        | f64seq int64                       { $$ = $1; 
+                        | f64seq int64                       { $$ = $1;
                                                                $$->appendInt64((__int64 *)$2); delete $2; }
                         ;
-                        
+
 i64seq                  : /* EMPTY */                        { $$ = new BinStr(); }
-                        | i64seq int64                       { $$ = $1; 
+                        | i64seq int64                       { $$ = $1;
                                                                $$->appendInt64((__int64 *)$2); delete $2; }
                         ;
-                        
+
 i32seq                  : /* EMPTY */                        { $$ = new BinStr(); }
                         | i32seq int32                       { $$ = $1; $$->appendInt32($2);}
                         ;
-                        
+
 i16seq                  : /* EMPTY */                        { $$ = new BinStr(); }
                         | i16seq int32                       { $$ = $1; $$->appendInt16($2);}
                         ;
-                        
+
 i8seq                   : /* EMPTY */                        { $$ = new BinStr(); }
                         | i8seq int32                        { $$ = $1; $$->appendInt8($2); }
                         ;
-                        
+
 boolSeq                 : /* EMPTY */                        { $$ = new BinStr(); }
-                        | boolSeq truefalse                  { $$ = $1; 
+                        | boolSeq truefalse                  { $$ = $1;
                                                                $$->appendInt8($2);}
                         ;
-                        
+
 sqstringSeq             : /* EMPTY */                        { $$ = new BinStr(); }
                         | sqstringSeq NULLREF_               { $$ = $1; $$->appendInt8(0xFF); }
-                        | sqstringSeq SQSTRING               { $$ = $1; 
+                        | sqstringSeq SQSTRING               { $$ = $1;
                                                                AppendStringWithLength($$,$2); delete [] $2;}
                         ;
-                        
+
 classSeq                : /* EMPTY */                        { $$ = new BinStr(); }
                         | classSeq NULLREF_                  { $$ = $1; $$->appendInt8(0xFF); }
-                        | classSeq CLASS_ SQSTRING           { $$ = $1; 
+                        | classSeq CLASS_ SQSTRING           { $$ = $1;
                                                                AppendStringWithLength($$,$3); delete [] $3;}
-                        | classSeq className                 { $$ = $1; 
+                        | classSeq className                 { $$ = $1;
                                                                AppendStringWithLength($$,PASM->ReflectionNotation($2));}
                         ;
-                        
+
 objSeq                  : /* EMPTY */                        { $$ = new BinStr(); }
                         | objSeq serInit                     { $$ = $1; $$->append($2); delete $2; }
                         ;
 
 /*  IL instructions and associated definitions  */
 methodSpec              : METHOD_                            { parser->m_ANSFirst.PUSH(PASM->m_firstArgName);
-                                                               parser->m_ANSLast.PUSH(PASM->m_lastArgName);   
+                                                               parser->m_ANSLast.PUSH(PASM->m_lastArgName);
                                                                PASM->m_firstArgName = NULL;
                                                                PASM->m_lastArgName = NULL; }
                         ;
-                        
+
 instr_none              : INSTR_NONE                         { $$ = SetupInstr($1); }
                         ;
 
@@ -1332,10 +1332,10 @@ instr_r                 : INSTR_R                            { $$ = SetupInstr($
 instr_brtarget          : INSTR_BRTARGET                     { $$ = SetupInstr($1); }
                         ;
 
-instr_method            : INSTR_METHOD                       { $$ = SetupInstr($1); 
+instr_method            : INSTR_METHOD                       { $$ = SetupInstr($1);
                                                                if((!PASM->OnErrGo)&&
                                                                (($1 == CEE_NEWOBJ)||
-                                                                ($1 == CEE_CALLVIRT))) 
+                                                                ($1 == CEE_CALLVIRT)))
                                                                   iCallConv = IMAGE_CEE_CS_CALLCONV_HASTHIS;
                                                              }
                         ;
@@ -1371,11 +1371,11 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                         | instr_r int64                      { double f = (double) (*$2); PASM->EmitInstrR($1, &f); }
                         | instr_r_head bytes ')'             { unsigned L = $2->length();
                                                                FAIL_UNLESS(L >= sizeof(float), ("%d hexbytes, must be at least %d\n",
-                                                                           L,sizeof(float))); 
-                                                               if(L < sizeof(float)) {YYERROR; } 
+                                                                           L,sizeof(float)));
+                                                               if(L < sizeof(float)) {YYERROR; }
                                                                else {
                                                                    double f = (L >= sizeof(double)) ? *((double *)($2->ptr()))
-                                                                                    : (double)(*(float *)($2->ptr())); 
+                                                                                    : (double)(*(float *)($2->ptr()));
                                                                    PASM->EmitInstrR($1,&f); }
                                                                delete $2; }
                         | instr_brtarget int32               { PASM->EmitInstrBrOffset($1, $2); }
@@ -1388,7 +1388,7 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                                iCallConv = 0;
                                                              }
                         | instr_field type typeSpec DCOLON dottedName
-                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
+                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef($3, $5, $2);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen($1));
                                                                PASM->EmitInstrI($1,mr);
@@ -1396,7 +1396,7 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
                         | instr_field type dottedName
-                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
+                                                             { $2->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef(mdTokenNil, $3, $2);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen($1));
                                                                PASM->EmitInstrI($1,mr);
@@ -1421,7 +1421,7 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-                        | instr_type typeSpec                { PASM->EmitInstrI($1, $2); 
+                        | instr_type typeSpec                { PASM->EmitInstrI($1, $2);
                                                                PASM->m_tkCurrentCVOwner = $2;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
@@ -1430,8 +1430,8 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                              { PASM->EmitInstrStringLiteral($1, $4,FALSE); }
                         | instr_string bytearrayhead bytes ')'
                                                              { PASM->EmitInstrStringLiteral($1, $3,FALSE,TRUE); }
-                        | instr_sig callConv type '(' sigArgs0 ')'      
-                                                             { PASM->EmitInstrSig($1, parser->MakeSig($2, $3, $5)); 
+                        | instr_sig callConv type '(' sigArgs0 ')'
+                                                             { PASM->EmitInstrSig($1, parser->MakeSig($2, $3, $5));
                                                                PASM->ResetArgNameList();
                                                              }
                         | instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
@@ -1442,7 +1442,7 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                              }
                         | instr_switch '(' labels ')'        { PASM->EmitInstrSwitch($1, $3); }
                         ;
-                        
+
 labels                  : /* empty */                         { $$ = 0; }
                         | id ',' labels                       { $$ = new Labels($1, $3, TRUE); }
                         | int32 ',' labels                    { $$ = new Labels((char *)(UINT_PTR)$1, $3, FALSE); }
@@ -1486,18 +1486,18 @@ className               : '[' dottedName ']' slashedName      { $$ = PASM->Resol
                         | mdtoken                             { $$ = $1; }
                         | TYPEDEF_T                           { $$ = $1->m_tkTypeSpec; }
                         | _THIS                               { if(PASM->m_pCurClass != NULL) $$ = PASM->m_pCurClass->m_cl;
-                                                                else { $$ = 0; PASM->report->error(".this outside class scope\n"); } 
+                                                                else { $$ = 0; PASM->report->error(".this outside class scope\n"); }
                                                               }
                         | _BASE                               { if(PASM->m_pCurClass != NULL) {
                                                                   $$ = PASM->m_pCurClass->m_crExtends;
                                                                   if(RidFromToken($$) == 0)
                                                                     PASM->report->error(".base undefined\n");
-                                                                } else { $$ = 0; PASM->report->error(".base outside class scope\n"); } 
+                                                                } else { $$ = 0; PASM->report->error(".base outside class scope\n"); }
                                                               }
                         | _NESTER                             { if(PASM->m_pCurClass != NULL) {
                                                                   if(PASM->m_pCurClass->m_pEncloser != NULL) $$ = PASM->m_pCurClass->m_pEncloser->m_cl;
                                                                   else { $$ = 0; PASM->report->error(".nester undefined\n"); }
-                                                                } else { $$ = 0; PASM->report->error(".nester outside class scope\n"); } 
+                                                                } else { $$ = 0; PASM->report->error(".nester outside class scope\n"); }
                                                               }
                         ;
 
@@ -1511,14 +1511,14 @@ typeSpec                : className                           { $$ = $1;}
                         | type                                { $$ = PASM->ResolveTypeSpec($1); }
                         ;
 
-/*  Native types for marshaling signatures  */                         
-nativeType              : /* EMPTY */                         { $$ = new BinStr(); } 
+/*  Native types for marshaling signatures  */
+nativeType              : /* EMPTY */                         { $$ = new BinStr(); }
                         | CUSTOM_ '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'
                                                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
                                                                 corEmitInt($$,$3->length()); $$->append($3);
                                                                 corEmitInt($$,$5->length()); $$->append($5);
                                                                 corEmitInt($$,$7->length()); $$->append($7);
-                                                                corEmitInt($$,$9->length()); $$->append($9); 
+                                                                corEmitInt($$,$9->length()); $$->append($9);
                                                                 PASM->report->warn("Deprecated 4-string form of custom marshaler, first two strings ignored\n");}
                         | CUSTOM_ '(' compQstring ',' compQstring ')'
                                                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
@@ -1531,12 +1531,12 @@ nativeType              : /* EMPTY */                         { $$ = new BinStr(
                         | FIXED_ ARRAY_ '[' int32 ']' nativeType
                                                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_FIXEDARRAY);
                                                                 corEmitInt($$,$4); $$->append($6); }
-                        | VARIANT_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_VARIANT); 
+                        | VARIANT_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_VARIANT);
                                                                 PASM->report->warn("Deprecated native type 'variant'\n"); }
                         | CURRENCY_                           { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_CURRENCY); }
-                        | SYSCHAR_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SYSCHAR); 
+                        | SYSCHAR_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SYSCHAR);
                                                                 PASM->report->warn("Deprecated native type 'syschar'\n"); }
-                        | VOID_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_VOID); 
+                        | VOID_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_VOID);
                                                                 PASM->report->warn("Deprecated native type 'void'\n"); }
                         | BOOL_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_BOOLEAN); }
                         | INT8_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_I1); }
@@ -1554,51 +1554,51 @@ nativeType              : /* EMPTY */                         { $$ = new BinStr(
                         | UINT16_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_U2); }
                         | UINT32_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_U4); }
                         | UINT64_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_U8); }
-                        | nativeType '*'                      { $$ = $1; $$->insertInt8(NATIVE_TYPE_PTR); 
+                        | nativeType '*'                      { $$ = $1; $$->insertInt8(NATIVE_TYPE_PTR);
                                                                 PASM->report->warn("Deprecated native type '*'\n"); }
                         | nativeType '[' ']'                  { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX);
                                                                 $$->insertInt8(NATIVE_TYPE_ARRAY); }
-                        | nativeType '[' int32 ']'            { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX); 
+                        | nativeType '[' int32 ']'            { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX);
                                                                 $$->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt($$,0);
-                                                                corEmitInt($$,$3); 
+                                                                corEmitInt($$,$3);
                                                                 corEmitInt($$,0); }
-                        | nativeType '[' int32 '+' int32 ']'  { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX); 
+                        | nativeType '[' int32 '+' int32 ']'  { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX);
                                                                 $$->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt($$,$5);
                                                                 corEmitInt($$,$3);
                                                                 corEmitInt($$,ntaSizeParamIndexSpecified); }
-                        | nativeType '[' '+' int32 ']'        { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX); 
+                        | nativeType '[' '+' int32 ']'        { $$ = $1; if($$->length()==0) $$->appendInt8(NATIVE_TYPE_MAX);
                                                                 $$->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt($$,$4); }
-                        | DECIMAL_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_DECIMAL); 
+                        | DECIMAL_                            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_DECIMAL);
                                                                 PASM->report->warn("Deprecated native type 'decimal'\n"); }
-                        | DATE_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_DATE); 
+                        | DATE_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_DATE);
                                                                 PASM->report->warn("Deprecated native type 'date'\n"); }
                         | BSTR_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_BSTR); }
                         | LPSTR_                              { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_LPSTR); }
                         | LPWSTR_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_LPWSTR); }
                         | LPTSTR_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_LPTSTR); }
-                        | OBJECTREF_                          { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_OBJECTREF); 
+                        | OBJECTREF_                          { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_OBJECTREF);
                                                                 PASM->report->warn("Deprecated native type 'objectref'\n"); }
                         | IUNKNOWN_  iidParamIndex            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_IUNKNOWN);
                                                                 if($2 != -1) corEmitInt($$,$2); }
-                        | IDISPATCH_ iidParamIndex            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_IDISPATCH); 
+                        | IDISPATCH_ iidParamIndex            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_IDISPATCH);
                                                                 if($2 != -1) corEmitInt($$,$2); }
                         | STRUCT_                             { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_STRUCT); }
                         | INTERFACE_ iidParamIndex            { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_INTF);
                                                                 if($2 != -1) corEmitInt($$,$2); }
-                        | SAFEARRAY_ variantType              { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SAFEARRAY); 
-                                                                corEmitInt($$,$2); 
+                        | SAFEARRAY_ variantType              { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SAFEARRAY);
+                                                                corEmitInt($$,$2);
                                                                 corEmitInt($$,0);}
-                        | SAFEARRAY_ variantType ',' compQstring { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SAFEARRAY); 
-                                                                corEmitInt($$,$2); 
+                        | SAFEARRAY_ variantType ',' compQstring { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_SAFEARRAY);
+                                                                corEmitInt($$,$2);
                                                                 corEmitInt($$,$4->length()); $$->append($4); }
-                                                                
+
                         | INT_                                { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_INT); }
                         | UNSIGNED_ INT_                      { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_UINT); }
                         | UINT_                               { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_UINT); }
-                        | NESTED_ STRUCT_                     { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_NESTEDSTRUCT); 
+                        | NESTED_ STRUCT_                     { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_NESTEDSTRUCT);
                                                                 PASM->report->warn("Deprecated native type 'nested struct'\n"); }
                         | BYVALSTR_                           { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_BYVALSTR); }
                         | ANSI_ BSTR_                         { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_ANSIBSTR); }
@@ -1609,10 +1609,10 @@ nativeType              : /* EMPTY */                         { $$ = new BinStr(
                         | LPSTRUCT_                           { $$ = new BinStr(); $$->appendInt8(NATIVE_TYPE_LPSTRUCT); }
                         | TYPEDEF_TS                          { $$ = new BinStr(); $$->append($1->m_pbsTypeSpec); }
                         ;
-                        
+
 iidParamIndex           : /* EMPTY */                         { $$ = -1; }
                         | '(' IIDPARAM_ '=' int32 ')'         { $$ = $4; }
-                        ;                        
+                        ;
 
 variantType             : /* EMPTY */                         { $$ = VT_EMPTY; }
                         | NULL_                               { $$ = VT_NULL; }
@@ -1665,18 +1665,18 @@ variantType             : /* EMPTY */                         { $$ = VT_EMPTY; }
                         | CLSID_                              { $$ = VT_CLSID; }
                         ;
 
-/*  Managed types for signatures  */                        
+/*  Managed types for signatures  */
 type                    : CLASS_ className                    { if($2 == PASM->m_tkSysString)
                                                                 {     $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING); }
                                                                 else if($2 == PASM->m_tkSysObject)
                                                                 {     $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_OBJECT); }
-                                                                else  
-                                                                 $$ = parser->MakeTypeClass(ELEMENT_TYPE_CLASS, $2); } 
-                        | OBJECT_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_OBJECT); } 
-                        | VALUE_ CLASS_ className             { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $3); } 
-                        | VALUETYPE_ className                { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $2); } 
-                        | type '[' ']'                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); } 
-                        | type '[' bounds1 ']'                { $$ = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, $1, $3); } 
+                                                                else
+                                                                 $$ = parser->MakeTypeClass(ELEMENT_TYPE_CLASS, $2); }
+                        | OBJECT_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_OBJECT); }
+                        | VALUE_ CLASS_ className             { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $3); }
+                        | VALUETYPE_ className                { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $2); }
+                        | type '[' ']'                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
+                        | type '[' bounds1 ']'                { $$ = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, $1, $3); }
                         | type '&'                            { $$ = $1; $$->insertInt8(ELEMENT_TYPE_BYREF); }
                         | type '*'                            { $$ = $1; $$->insertInt8(ELEMENT_TYPE_PTR); }
                         | type PINNED_                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_PINNED); }
@@ -1684,30 +1684,30 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                 $$->append($1); }
                         | type MODOPT_ '(' typeSpec ')'       { $$ = parser->MakeTypeClass(ELEMENT_TYPE_CMOD_OPT, $4);
                                                                 $$->append($1); }
-                        | methodSpec callConv type '*' '(' sigArgs0 ')'  
+                        | methodSpec callConv type '*' '(' sigArgs0 ')'
                                                               { $$ = parser->MakeSig($2, $3, $6);
-                                                                $$->insertInt8(ELEMENT_TYPE_FNPTR); 
+                                                                $$->insertInt8(ELEMENT_TYPE_FNPTR);
                                                                 PASM->delArgNameList(PASM->m_firstArgName);
                                                                 PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                 PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                               }
                         | type '<' tyArgs1 '>'                { if($3 == NULL) $$ = $1;
                                                                 else {
-                                                                  $$ = new BinStr(); 
-                                                                  $$->appendInt8(ELEMENT_TYPE_GENERICINST); 
+                                                                  $$ = new BinStr();
+                                                                  $$->appendInt8(ELEMENT_TYPE_GENERICINST);
                                                                   $$->append($1);
                                                                   corEmitInt($$, corCountArgs($3));
                                                                   $$->append($3); delete $1; delete $3; }}
                         | '!' '!' int32                       { //if(PASM->m_pCurMethod)  {
                                                                 //  if(($3 < 0)||((DWORD)$3 >= PASM->m_pCurMethod->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid method type parameter '%d'\n",$3);
-                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt($$, $3); 
+                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt($$, $3);
                                                                 //} else PASM->report->error("Method type parameter '%d' outside method scope\n",$3);
                                                               }
                         | '!' int32                           { //if(PASM->m_pCurClass)  {
                                                                 //  if(($2 < 0)||((DWORD)$2 >= PASM->m_pCurClass->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid type parameter '%d'\n",$2);
-                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_VAR); corEmitInt($$, $2); 
+                                                                  $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_VAR); corEmitInt($$, $2);
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
                                                               }
                         | '!' '!' dottedName                  { int eltype = ELEMENT_TYPE_MVAR;
@@ -1723,7 +1723,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                 }
                                                                 if(n == -1) { PASM->report->error("Invalid method type parameter '%s'\n",$3);
                                                                 n = 0x1FFFFFFF; }
-                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n); 
+                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
                                                               }
                         | '!' dottedName                      { int eltype = ELEMENT_TYPE_VAR;
                                                                 int n=-1;
@@ -1738,7 +1738,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                 }
                                                                 if(n == -1) { PASM->report->error("Invalid type parameter '%s'\n",$2);
                                                                 n = 0x1FFFFFFF; }
-                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n); 
+                                                                $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
                                                               }
                         | TYPEDREF_                           { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_TYPEDBYREF); }
                         | VOID_                               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_VOID); }
@@ -1748,9 +1748,9 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                         | simpleType                          { $$ = $1; }
                         | ELIPSIS type                        { $$ = $2; $$->insertInt8(ELEMENT_TYPE_SENTINEL); }
                         ;
-                        
+
 simpleType              : CHAR_                               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CHAR); }
-                        | STRING_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING); } 
+                        | STRING_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_STRING); }
                         | BOOL_                               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_BOOLEAN); }
                         | INT8_                               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I1); }
                         | INT16_                              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_I2); }
@@ -1768,21 +1768,21 @@ simpleType              : CHAR_                               { $$ = new BinStr(
                         | UINT64_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U8); }
                         | TYPEDEF_TS                          { $$ = new BinStr(); $$->append($1->m_pbsTypeSpec); }
                         ;
-                        
+
 bounds1                 : bound                               { $$ = $1; }
                         | bounds1 ',' bound                   { $$ = $1; $1->append($3); delete $3; }
                         ;
 
 bound                   : /* EMPTY */                         { $$ = new BinStr(); $$->appendInt32(0x7FFFFFFF); $$->appendInt32(0x7FFFFFFF);  }
                         | ELIPSIS                             { $$ = new BinStr(); $$->appendInt32(0x7FFFFFFF); $$->appendInt32(0x7FFFFFFF);  }
-                        | int32                               { $$ = new BinStr(); $$->appendInt32(0); $$->appendInt32($1); } 
+                        | int32                               { $$ = new BinStr(); $$->appendInt32(0); $$->appendInt32($1); }
                         | int32 ELIPSIS int32                 { FAIL_UNLESS($1 <= $3, ("lower bound %d must be <= upper bound %d\n", $1, $3));
-                                                                if ($1 > $3) { YYERROR; };        
-                                                                $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32($3-$1+1); }   
-                        | int32 ELIPSIS                       { $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32(0x7FFFFFFF); } 
+                                                                if ($1 > $3) { YYERROR; };
+                                                                $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32($3-$1+1); }
+                        | int32 ELIPSIS                       { $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32(0x7FFFFFFF); }
                         ;
 
-/*  Security declarations  */                        
+/*  Security declarations  */
 secDecl                 : _PERMISSION secAction typeSpec '(' nameValPairs ')'
                                                               { PASM->AddPermissionDecl($2, $3, $5); }
                         | _PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
@@ -1799,22 +1799,22 @@ secDecl                 : _PERMISSION secAction typeSpec '(' nameValPairs ')'
                                                                 PASM->AddPermissionSetDecl($2,ret);
                                                                 nSecAttrBlobs = 0; }
                         ;
-                        
+
 secAttrSetBlob          : /* EMPTY */                         { $$ = new BinStr(); nSecAttrBlobs = 0;}
                         | secAttrBlob                         { $$ = $1; nSecAttrBlobs = 1; }
                         | secAttrBlob ',' secAttrSetBlob      { $$ = $1; $$->append($3); nSecAttrBlobs++; }
                         ;
-                        
+
 secAttrBlob             : typeSpec '=' '{' customBlobNVPairs '}'
-                                                              { $$ = PASM->EncodeSecAttr(PASM->ReflectionNotation($1),$4,nCustomBlobNVPairs); 
-                                                                nCustomBlobNVPairs = 0; }                                               
-                        | CLASS_ SQSTRING '=' '{' customBlobNVPairs '}'
-                                                              { $$ = PASM->EncodeSecAttr($2,$5,nCustomBlobNVPairs); 
+                                                              { $$ = PASM->EncodeSecAttr(PASM->ReflectionNotation($1),$4,nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; }
-                        ;                                               
+                        | CLASS_ SQSTRING '=' '{' customBlobNVPairs '}'
+                                                              { $$ = PASM->EncodeSecAttr($2,$5,nCustomBlobNVPairs);
+                                                                nCustomBlobNVPairs = 0; }
+                        ;
 
 psetHead                : _PERMISSIONSET secAction '=' '('    { $$ = $2; bParsingByteArray = TRUE; }
-                        | _PERMISSIONSET secAction BYTEARRAY_ '(' 
+                        | _PERMISSIONSET secAction BYTEARRAY_ '('
                                                               { $$ = $2; bParsingByteArray = TRUE; }
                         ;
 
@@ -1885,49 +1885,49 @@ secAction               : REQUEST_                            { $$ = dclRequest;
                         | NONCASINHERITANCE_                  { $$ = dclNonCasInheritance; }
                         ;
 
-/*  External source declarations  */                        
+/*  External source declarations  */
 esHead                  : _LINE                               { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = FALSE; }
                         | P_LINE                              { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = TRUE; }
                         ;
-                        
+
 extSourceSpec           : esHead int32 SQSTRING               { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName($3);}
                         | esHead int32                        { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1); }
-                        | esHead int32 ':' int32 SQSTRING     { PENV->nExtLine = PENV->nExtLineEnd = $2; 
+                        | esHead int32 ':' int32 SQSTRING     { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol=$4; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName($5);}
-                        | esHead int32 ':' int32              { PENV->nExtLine = PENV->nExtLineEnd = $2; 
+                        | esHead int32 ':' int32              { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol=$4; PENV->nExtColEnd = static_cast<unsigned>(-1);}
-                        | esHead int32 ':' int32 ',' int32 SQSTRING     
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = $2; 
+                        | esHead int32 ':' int32 ',' int32 SQSTRING
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol=$4; PENV->nExtColEnd = $6;
                                                                 PASM->SetSourceFileName($7);}
-                        | esHead int32 ':' int32 ',' int32     
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = $2; 
+                        | esHead int32 ':' int32 ',' int32
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = $2;
                                                                 PENV->nExtCol=$4; PENV->nExtColEnd = $6; }
-                        | esHead int32 ',' int32 ':' int32 SQSTRING     
-                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4; 
+                        | esHead int32 ',' int32 ':' int32 SQSTRING
+                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4;
                                                                 PENV->nExtCol=$6; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName($7);}
-                        | esHead int32 ',' int32 ':' int32     
-                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4; 
+                        | esHead int32 ',' int32 ':' int32
+                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4;
                                                                 PENV->nExtCol=$6; PENV->nExtColEnd = static_cast<unsigned>(-1); }
-                        | esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING     
-                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4; 
+                        | esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
+                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4;
                                                                 PENV->nExtCol=$6; PENV->nExtColEnd = $8;
                                                                 PASM->SetSourceFileName($9);}
-                        | esHead int32 ',' int32 ':' int32 ',' int32     
-                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4; 
+                        | esHead int32 ',' int32 ':' int32 ',' int32
+                                                              { PENV->nExtLine = $2; PENV->nExtLineEnd = $4;
                                                                 PENV->nExtCol=$6; PENV->nExtColEnd = $8; }
                         | esHead int32 QSTRING                { PENV->nExtLine = PENV->nExtLineEnd = $2 - 1;
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName($3);}
                         ;
 
-/*  Manifest declarations  */                         
-fileDecl                : _FILE fileAttr dottedName fileEntry hashHead bytes ')' fileEntry      
+/*  Manifest declarations  */
+fileDecl                : _FILE fileAttr dottedName fileEntry hashHead bytes ')' fileEntry
                                                               { PASMM->AddFile($3, $2|$4|$8, $6); }
                         | _FILE fileAttr dottedName fileEntry { PASMM->AddFile($3, $2|$4, NULL); }
                         ;
@@ -1966,13 +1966,13 @@ assemblyDecl            : _HASH ALGORITHM_ int32              { PASMM->SetAssemb
                         | secDecl
                         | asmOrRefDecl
                         ;
-                        
+
 intOrWildcard           : int32                               { $$ = $1; }
                         | '*'                                 { $$ = 0xFFFF; }
-                        ;                        
+                        ;
 
 asmOrRefDecl            : publicKeyHead bytes ')'             { PASMM->SetAssemblyPublicKey($2); }
-                        | _VER intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard      
+                        | _VER intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
                                                               { PASMM->SetAssemblyVer((USHORT)$2, (USHORT)$4, (USHORT)$6, (USHORT)$8); }
                         | _LOCALE compQstring                 { $2->appendInt8(0); PASMM->SetAssemblyLocale($2,TRUE); }
                         | localeHead bytes ')'                { PASMM->SetAssemblyLocale($2,FALSE); }
@@ -1989,9 +1989,9 @@ publicKeyTokenHead      : _PUBLICKEYTOKEN '=' '('             { bParsingByteArra
 localeHead              : _LOCALE '=' '('                     { bParsingByteArray = TRUE; }
                         ;
 
-assemblyRefHead         : _ASSEMBLY EXTERN_ asmAttr dottedName     
+assemblyRefHead         : _ASSEMBLY EXTERN_ asmAttr dottedName
                                                               { PASMM->StartAssembly($4, NULL, $3, TRUE); }
-                        | _ASSEMBLY EXTERN_ asmAttr dottedName AS_ dottedName   
+                        | _ASSEMBLY EXTERN_ asmAttr dottedName AS_ dottedName
                                                               { PASMM->StartAssembly($4, $6, $3, TRUE); }
                         ;
 
@@ -2005,7 +2005,7 @@ assemblyRefDecl         : hashHead bytes ')'                  { PASMM->SetAssemb
                         | AUTO_                               { PASMM->SetAssemblyAutodetect(); }
                         ;
 
-exptypeHead             : _CLASS EXTERN_ exptAttr dottedName  { PASMM->StartComType($4, $3);} 
+exptypeHead             : _CLASS EXTERN_ exptAttr dottedName  { PASMM->StartComType($4, $3);}
                         ;
 
 exportHead              : _EXPORT exptAttr dottedName   /* deprecated */      { PASMM->StartComType($3, $2); }

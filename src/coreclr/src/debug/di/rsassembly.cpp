@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RsAssembly.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -82,11 +82,11 @@ void CordbAssembly::Neuter()
 #ifdef _DEBUG
 //---------------------------------------------------------------------------------------
 // Callback helper for code:CordbAssembly::DbgAssertAssemblyDeleted
-// 
+//
 // Arguments
 //    vmDomainAssembly - domain file in the enumeration
 //    pUserData - pointer to the CordbAssembly that we just got an exit event for.
-//    
+//
 
 // static
 void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData)
@@ -95,10 +95,10 @@ void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDoma
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
     VMPTR_DomainAssembly vmAssemblyDeleted = pThis->m_vmDomainAssembly;
-    
-    CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmDomainAssembly), 
-        ("An Assembly Unload event was sent, but the assembly still shows up in the enumeration.\n vmAssemblyDeleted=%p\n", 
-        VmPtrToCookie(vmAssemblyDeleted)));        
+
+    CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmDomainAssembly),
+        ("An Assembly Unload event was sent, but the assembly still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
+        VmPtrToCookie(vmAssemblyDeleted)));
 }
 
 //---------------------------------------------------------------------------------------
@@ -106,8 +106,8 @@ void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDoma
 //
 // Notes:
 //   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   This is a debug only method. It's conceptually similar to 
-//   code:CordbProcess::DbgAssertAppDomainDeleted. 
+//   This is a debug only method. It's conceptually similar to
+//   code:CordbProcess::DbgAssertAppDomainDeleted.
 //
 void CordbAssembly::DbgAssertAssemblyDeleted()
 {
@@ -131,7 +131,7 @@ HRESULT CordbAssembly::GetProcess(ICorDebugProcess **ppProcess)
 }
 
 //
-// Returns the AppDomain that this assembly belongs to. 
+// Returns the AppDomain that this assembly belongs to.
 //
 // Arguments:
 //    ppAppDomain - a non-NULL pointer to store the AppDomain in.
@@ -175,23 +175,23 @@ HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum **ppModules)
 
         RSInitHolder<CordbEnumFilter> pModEnum(
             new CordbEnumFilter(GetProcess(), GetProcess()->GetContinueNeuterList()));
-        
+
         RSInitHolder<CordbHashTableEnum> pEnum;
-        
+
         CordbHashTableEnum::BuildOrThrow(
-            this, 
+            this,
             NULL,  // ownership
             &m_pAppDomain->m_modules,
             IID_ICorDebugModuleEnum,
             pEnum.GetAddr());
-        
+
         // this will build up an auxillary list. Don't need pEnum after this.
         hr = pModEnum->Init(pEnum, this);
-        IfFailThrow(hr);    
+        IfFailThrow(hr);
 
         pModEnum.TransferOwnershipExternal(ppModules);
-       
-    } 
+
+    }
     PUBLIC_API_END(hr);
 
     return hr;
@@ -243,16 +243,16 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName,
     HRESULT hr = S_OK;
     EX_TRY
     {
-        // Lazily initialize our cache of the assembly filename.  
+        // Lazily initialize our cache of the assembly filename.
         // Note that if this fails, we'll try again next time this is called.
-        // This can be convenient for transient errors and debugging purposes, but could cause a 
+        // This can be convenient for transient errors and debugging purposes, but could cause a
         // performance problem if failure was common (it should not be).
         if (!m_strAssemblyFileName.IsSet())
         {
-            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws 
+            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
             BOOL fNonEmpty = pDac->GetAssemblyPath(m_vmAssembly, &m_strAssemblyFileName); // throws
             _ASSERTE(m_strAssemblyFileName.IsSet());
-                   
+
 
             if (!fNonEmpty)
             {
@@ -276,7 +276,7 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName,
         // Copy it out to our caller
     }
     EX_CATCH_HRESULT(hr);
-    if (FAILED(hr)) 
+    if (FAILED(hr))
     {
         return hr;
     }
@@ -289,11 +289,11 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(pbFullyTrusted, BOOL*);
-    
+
     if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
-    // Check for cached result 
+    // Check for cached result
     if( m_foptIsFullTrust.HasValue() )
     {
         *pbFullyTrusted = m_foptIsFullTrust.GetValue();
@@ -308,13 +308,13 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
         IDacDbiInterface * pDac = pProcess->GetDAC();
 
         BOOL fIsFullTrust = pDac->IsAssemblyFullyTrusted(m_vmDomainAssembly);
-        
+
         // Once the trust level of an assembly is known, it cannot change.
         m_foptIsFullTrust = fIsFullTrust;
 
-        *pbFullyTrusted = fIsFullTrust;    
+        *pbFullyTrusted = fIsFullTrust;
     }
     EX_CATCH_HRESULT(hr);
-    return hr;        
+    return hr;
 }
 

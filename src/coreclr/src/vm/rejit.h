@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // ===========================================================================
 // File: REJIT.H
 //
 
-// 
+//
 // REJIT.H defines the class and structures used to store info about rejitted
 // methods.  See comment at top of rejit.cpp for more information on how
 // rejit works.
-// 
+//
 // ===========================================================================
 #ifndef _REJIT_H_
 #define _REJIT_H_
@@ -31,7 +31,7 @@ class ClrDataAccess;
 // The CLR's implementation of ICorProfilerFunctionControl, which is passed
 // to the profiler.  The profiler calls methods on this to specify the IL and
 // codegen flags for a given rejit request.
-// 
+//
 class ProfilerFunctionControl : public ICorProfilerFunctionControl
 {
 public:
@@ -95,7 +95,7 @@ private:
 // The big honcho.  One of these per AppDomain, plus one for the
 // SharedDomain.  Contains the hash table of ReJitInfo structures to manage
 // every rejit and revert request for its owning domain.
-// 
+//
 class ReJitManager
 {
     friend class ClrDataAccess;
@@ -126,7 +126,7 @@ public:
         ModuleID                rgModuleIDs[],
         mdMethodDef             rgMethodDefs[],
         COR_PRF_REJIT_FLAGS   flags);
-    
+
     static HRESULT RequestRevert(
         ULONG       cFunctions,
         ModuleID    rgModuleIDs[],
@@ -191,7 +191,7 @@ private:
         MethodDesc         *pInlinee,
         BOOL                fIsRevert,
         COR_PRF_REJIT_FLAGS flags);
-    
+
     static HRESULT UpdateJitInlinerActiveILVersions(
         SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
         MethodDesc         *pInlinee,

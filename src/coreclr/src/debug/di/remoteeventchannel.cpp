@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RemoteEventChannel.cpp
-// 
+//
 
 //
 // Implements the old-style event channel between two remote processes.
@@ -22,7 +22,7 @@ class RemoteEventChannel : public IEventChannel
 {
 public:
     RemoteEventChannel(DebuggerIPCControlBlock * pDCBBuffer,
-                       DbgTransportTarget *      pProxy, 
+                       DbgTransportTarget *      pProxy,
                        DbgTransportSession *     pTransport);
 
     virtual ~RemoteEventChannel() {}
@@ -68,11 +68,11 @@ public:
 
 
 
-    // Save an IPC event from the LS.  
+    // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
     virtual HRESULT SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide);
 
-    // Get a saved IPC event from the LS.  
+    // Get a saved IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
     virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent);
 
@@ -81,14 +81,14 @@ private:
     DbgTransportTarget *      m_pProxy;         // connection to the debugger proxy
     DbgTransportSession *     m_pTransport;     // connection to the debuggee process
 
-    // The next two fields are used for storing an IPC event from the native pipeline 
+    // The next two fields are used for storing an IPC event from the native pipeline
     // for the IPC event channel.
     BYTE m_rgbLeftSideEventBuffer[CorDBIPC_BUFFER_SIZE];
     BOOL m_fLeftSideEventAvailable;
 };
 
 // Allocate and return an old-style event channel object for this target platform.
-HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB, 
+HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
                                        ICorDebugMutableDataTarget * pMutableDataTarget,
                                        const ProcessDescriptor * pProcessDescriptor,
                                        MachineInfo machineInfo,
@@ -139,7 +139,7 @@ Label_Exit:
     {
         if (pEventChannel != NULL)
         {
-            // The IEventChannel has ownership of the proxy and the transport, 
+            // The IEventChannel has ownership of the proxy and the transport,
             // so we don't need to clean them up here.
             delete pEventChannel;
         }
@@ -169,7 +169,7 @@ Label_Exit:
 //
 
 RemoteEventChannel::RemoteEventChannel(DebuggerIPCControlBlock * pDCBBuffer,
-                                       DbgTransportTarget *      pProxy, 
+                                       DbgTransportTarget *      pProxy,
                                        DbgTransportSession *     pTransport)
 {
     m_pDCBBuffer = pDCBBuffer;
@@ -196,7 +196,7 @@ void RemoteEventChannel::Detach()
 }
 
 // Delete the event channel and clean up all the resources it owns.  This function can only be called once.
-// 
+//
 // virtual
 void RemoteEventChannel::Delete()
 {
@@ -216,7 +216,7 @@ void RemoteEventChannel::Delete()
 
 // Update a single field with a value stored in the RS copy of the DCB.
 //
-// virtual 
+// virtual
 HRESULT RemoteEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
 {
     _ASSERTE(m_pDCBBuffer != NULL);
@@ -227,7 +227,7 @@ HRESULT RemoteEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T si
 
 // Update the entire RS copy of the debugger control block by reading the LS copy.
 //
-// virtual 
+// virtual
 HRESULT RemoteEventChannel::UpdateRightSideDCB()
 {
     _ASSERTE(m_pDCBBuffer != NULL);
@@ -238,7 +238,7 @@ HRESULT RemoteEventChannel::UpdateRightSideDCB()
 
 // Get the pointer to the RS DCB.
 //
-// virtual 
+// virtual
 DebuggerIPCControlBlock * RemoteEventChannel::GetDCB()
 {
     return m_pDCBBuffer;
@@ -246,7 +246,7 @@ DebuggerIPCControlBlock * RemoteEventChannel::GetDCB()
 
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
 //
-// virtual 
+// virtual
 BOOL RemoteEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
 {
     // There are three cases to consider when sending an event over the transport:
@@ -255,18 +255,18 @@ BOOL RemoteEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
     //      - the LS can just send the event and continue
     //
     // 2) synchronous, but no reply
-    //      - This is different than Windows.  We don't wait for an acknowledgement.  
-    //        Needless to say this is a semantical difference, but none of our code actually expects 
+    //      - This is different than Windows.  We don't wait for an acknowledgement.
+    //        Needless to say this is a semantical difference, but none of our code actually expects
     //        this type of IPC events to be synchronized.
     //
-    // 3) synchronous, reply required: 
+    // 3) synchronous, reply required:
     //      - This is the only case we need to wait for an acknowledgement in the Mac debugging case.
     return (!pEvent->asyncSend && pEvent->replyRequired);
 }
 
 // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
 //
-// virtual 
+// virtual
 HANDLE RemoteEventChannel::GetRightSideEventAckHandle()
 {
     // Delegate to the transport which does the real work.
@@ -275,7 +275,7 @@ HANDLE RemoteEventChannel::GetRightSideEventAckHandle()
 
 // Clean up the state if the wait for an acknowledgement is unsuccessful.
 //
-// virtual 
+// virtual
 void RemoteEventChannel::ClearEventForLeftSide()
 {
     // This is a nop for Mac debugging because we don't use RSEA/RSER.
@@ -284,7 +284,7 @@ void RemoteEventChannel::ClearEventForLeftSide()
 
 // Send an IPC event to the LS.
 //
-// virtual 
+// virtual
 HRESULT RemoteEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize)
 {
     _ASSERTE(eventSize <= CorDBIPC_BUFFER_SIZE);
@@ -295,7 +295,7 @@ HRESULT RemoteEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_
 
 // Get the reply from the LS for a previously sent IPC event.
 //
-// virtual 
+// virtual
 HRESULT RemoteEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize)
 {
     // Delegate to the transport.
@@ -303,7 +303,7 @@ HRESULT RemoteEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent,
     return S_OK;
 }
 
-// Save an IPC event from the LS.  
+// Save an IPC event from the LS.
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
@@ -322,7 +322,7 @@ HRESULT RemoteEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromL
     }
 }
 
-// Get a saved IPC event from the LS.  
+// Get a saved IPC event from the LS.
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual

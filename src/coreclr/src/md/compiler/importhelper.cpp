@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ImportHelper.cpp
-// 
+//
 
 //
 // contains utility code to MD directory
@@ -52,7 +52,7 @@ HRESULT ImportHelper::FindMethodSpecByMethodAndInstantiation(
             continue;
 
         IfFailRet(pMiniMd->GetMethodSpecRecord(i, &pRecord));
-        
+
         tkMethodTmp = pMiniMd->getMethodOfMethodSpec(pRecord);
         if ((tkMethodTmp != tkMethod))
             continue;
@@ -101,13 +101,13 @@ HRESULT ImportHelper::FindGenericParamConstraintByOwnerAndConstraint(
             continue;
 
         IfFailRet(pMiniMd->GetGenericParamConstraintRecord(i, &pRecord));
-        
+
         tkOwnerTmp = pMiniMd->getOwnerOfGenericParamConstraint(pRecord);
         tkConstraintTmp = pMiniMd->getConstraintOfGenericParamConstraint(pRecord);
 
         if ((tkOwnerTmp != tkOwner) || (tkConstraintTmp != tkConstraint))
             continue;
-        
+
         //  Matching record found.
         *pGenericParamConstraint = TokenFromRid(i, mdtGenericParamConstraint);
         return S_OK;
@@ -147,7 +147,7 @@ HRESULT ImportHelper::FindGenericParamByOwner(
             continue;
 
         IfFailRet(pMiniMd->GetGenericParamRecord(i, &pRecord));
-        
+
         tkOwnerTmp = pMiniMd->getOwnerOfGenericParam(pRecord);
         if ( tkOwnerTmp != tkOwner)
             continue;
@@ -221,7 +221,7 @@ HRESULT ImportHelper::FindMethod(
         IfFailGo(CLDB_E_RECORD_NOTFOUND);
     }
     _ASSERTE(rtn == CMiniMdRW::NoTable);
-    
+
     *pmb = mdMethodDefNil;
 
     // get the range of method rids given a typedef
@@ -246,10 +246,10 @@ HRESULT ImportHelper::FindMethod(
                 if (cbSig && pSig)
                 {
                     IfFailGo(pMiniMd->getSignatureOfMethod(pMethod, &pSigTmp, &cbSigTmp));
-                    
+
                     // If the caller did not provide a custom compare routine
                     // then we use memcmp to match the signatures
-                    // 
+                    //
                     if (pSignatureCompare == NULL)
                     {
                         if (cbSigTmp != cbSig || memcmp(pSig, pSigTmp, cbSig))
@@ -258,7 +258,7 @@ HRESULT ImportHelper::FindMethod(
                     else
                     {
                         // Call the custom compare routine
-                        // 
+                        //
                         if (!pSignatureCompare(pSigTmp, cbSigTmp, pSig, cbSig, pCompareContext))
                             continue;
                     }
@@ -316,7 +316,7 @@ HRESULT ImportHelper::FindField(
         IfFailGo(CLDB_E_RECORD_NOTFOUND);
     }
     _ASSERTE(rtn == CMiniMdRW::NoTable);
-    
+
     *pfd = mdFieldDefNil;
 
     // get the range of method rids given a typedef
@@ -335,7 +335,7 @@ HRESULT ImportHelper::FindField(
             // Get the field and its name.
             IfFailGo(pMiniMd->GetFieldRecord(fieldRID, &pField));
             IfFailGo(pMiniMd->getNameOfField(pField, &szNameUtf8Tmp));
-            
+
             // If name matches what was requested...
             if ( strcmp(szNameUtf8Tmp, szName) == 0 )
             {
@@ -376,13 +376,13 @@ HRESULT ImportHelper::FindMember(
     mdToken *       ptk)        // [OUT] Put the token here.
 {
     HRESULT  hr;
-    
+
     if (cbSig == 0)
     {
         Debug_ReportError("Invalid signature size 0.");
         return CLDB_E_INDEX_NOTFOUND;
     }
-    
+
     // determine if it is ref to MethodDef or FieldDef
     if ((pSig[0] & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
     {
@@ -392,10 +392,10 @@ HRESULT ImportHelper::FindMember(
     {
         hr = FindField(pMiniMd, td, szName, pSig, cbSig, ptk);
     }
-    
+
     if (hr == CLDB_E_RECORD_NOTFOUND)
         *ptk = mdTokenNil;
-    
+
     return hr;
 } // ImportHelper::FindMember
 
@@ -421,17 +421,17 @@ HRESULT ImportHelper::FindMemberRef(
     mdToken        tkParentTmp;     // the parent token
     HRESULT        hr = NOERROR;
     CMiniMdRW::HashSearchResult rtn;
-    
+
     if ((szName == NULL) || (pmr == NULL))
     {
         IfFailGo(CLDB_E_RECORD_NOTFOUND);
     }
-    
+
     if (fCreateHash == CreateHash)
     {   // Caller asked for creating hash to optimize for multiple calls
         IfFailGo(pMiniMd->CreateMemberRefHash());
     }
-    
+
     *pmr = TokenFromRid(rid, mdtMemberRef); // to know what to ignore
     rtn = pMiniMd->FindMemberRefFromHash(tkParent, szName, pbSig, cbSig, pmr);
     if (rtn == CMiniMdRW::Found)
@@ -539,7 +539,7 @@ HRESULT ImportHelper::FindStandAloneSig(
 //*******************************************************************************
 // Find duplicate TypeSpec
 //*******************************************************************************
-HRESULT 
+HRESULT
 ImportHelper::FindTypeSpec(
     CMiniMdRW *           pMiniMd,      // [IN] the minimd to lookup
     const COR_SIGNATURE * pbSig,        // [IN] Signature.
@@ -551,7 +551,7 @@ ImportHelper::FindTypeSpec(
     TypeSpecRec * pRec;
     const COR_SIGNATURE * pbSigTmp; // Signature.
     ULONG                 cbSigTmp; // Size of signature.
-    
+
     // cbSig can be 0
     _ASSERTE(pTypeSpec != NULL);
     *pTypeSpec = mdSignatureNil;
@@ -597,7 +597,7 @@ HRESULT ImportHelper::FindMethodImpl(
     _ASSERTE(TypeFromToken(tkBody) == mdtMemberRef || TypeFromToken(tkBody) == mdtMethodDef);
     _ASSERTE(TypeFromToken(tkDecl) == mdtMemberRef || TypeFromToken(tkDecl) == mdtMethodDef);
     _ASSERTE(!IsNilToken(tkClass) && !IsNilToken(tkBody) && !IsNilToken(tkDecl));
-    
+
     if (pRid)
         *pRid = 0;
 
@@ -656,7 +656,7 @@ HRESULT ImportHelper::FindCustomAttributeCtorByName(
 
         IfFailRet(pMiniMd->getNameOfAssemblyRef(pRec, &szTmp));
         if (!strcmp(szTmp, szAssemblyName) &&
-            (SUCCEEDED(FindTypeRefByName(pMiniMd, TokenFromRid(i, mdtAssemblyRef), szNamespace, szName, &tkCAType, rid))) && 
+            (SUCCEEDED(FindTypeRefByName(pMiniMd, TokenFromRid(i, mdtAssemblyRef), szNamespace, szName, &tkCAType, rid))) &&
             (SUCCEEDED(FindMemberRef(pMiniMd, tkCAType, COR_CTOR_METHOD_NAME, NULL, 0 ,ptk))))
         {
             return S_OK;
@@ -737,7 +737,7 @@ HRESULT ImportHelper::FindTypeRefByName(
             }
         }
         hr = CLDB_E_RECORD_NOTFOUND;
-    } 
+    }
     else
     {
         cTypeRefRecs = pMiniMd->getCountTypeRefs();
@@ -826,7 +826,7 @@ HRESULT ImportHelper::FindModuleRef(
 //*******************************************************************************
 // Find the TypeDef given the type and namespace name
 //*******************************************************************************
-HRESULT 
+HRESULT
 ImportHelper::FindTypeDefByName(
     CMiniMdRW * pMiniMd,            // [IN] the minimd to lookup
     LPCUTF8     szTypeDefNamespace, // [IN] Full qualified TypeRef name.
@@ -841,26 +841,26 @@ ImportHelper::FindTypeDefByName(
     LPCUTF8      szNamespace;
     DWORD        dwFlags;
     HRESULT      hr = S_OK;
-    
+
     _ASSERTE((szTypeDefName != NULL) &&  (ptkTypeDef != NULL));
-    _ASSERTE((TypeFromToken(tkEnclosingClass) == mdtTypeDef) || 
-             (TypeFromToken(tkEnclosingClass) == mdtTypeRef) || 
-             (tkEnclosingClass == TokenFromRid(1, mdtModule)) || 
+    _ASSERTE((TypeFromToken(tkEnclosingClass) == mdtTypeDef) ||
+             (TypeFromToken(tkEnclosingClass) == mdtTypeRef) ||
+             (tkEnclosingClass == TokenFromRid(1, mdtModule)) ||
              IsNilToken(tkEnclosingClass));
-    
+
     *ptkTypeDef = mdTypeDefNil;
-    
+
     cTypeDefRecs = pMiniMd->getCountTypeDefs();
-    
+
     // Treat no namespace as empty string.
     if (szTypeDefNamespace == NULL)
         szTypeDefNamespace = "";
-    
+
     if (tkEnclosingClass == TokenFromRid(1, mdtModule))
     {   // Module scope is the same as no scope (used in .winmd files as TypeRef scope for self-references)
         tkEnclosingClass = mdTokenNil;
     }
-    
+
     // Get TypeDef of the tkEnclosingClass passed in
     if (TypeFromToken(tkEnclosingClass) == mdtTypeRef)
     {
@@ -869,12 +869,12 @@ ImportHelper::FindTypeDefByName(
         mdToken      tkResolutionScope;
         LPCUTF8      szTypeRefName;
         LPCUTF8      szTypeRefNamespace;
-        
+
         IfFailRet(pMiniMd->GetTypeRefRecord(RidFromToken(tkEnclosingClass), &pTypeRefRec));
         tkResolutionScope = pMiniMd->getResolutionScopeOfTypeRef(pTypeRefRec);
         IfFailRet(pMiniMd->getNameOfTypeRef(pTypeRefRec, &szTypeRefName));
         IfFailRet(pMiniMd->getNamespaceOfTypeRef(pTypeRefRec, &szTypeRefNamespace));
-        
+
         if (tkEnclosingClass == tkResolutionScope && !strcmp(szTypeDefName, szTypeRefName) &&
             ((szTypeDefNamespace == nullptr && szTypeRefNamespace == nullptr) ||
             (szTypeDefNamespace != nullptr && szTypeRefNamespace != nullptr && !strcmp(szTypeDefNamespace, szTypeRefNamespace))))
@@ -889,28 +889,28 @@ ImportHelper::FindTypeDefByName(
             //
             return CLDB_E_FILE_CORRUPT;
         }
-        
+
         // Update tkEnclosingClass to TypeDef
         IfFailRet(FindTypeDefByName(
-                    pMiniMd, 
-                    szTypeRefNamespace, 
-                    szTypeRefName, 
-                    (TypeFromToken(tkResolutionScope) == mdtTypeRef) ? tkResolutionScope : mdTokenNil, 
+                    pMiniMd,
+                    szTypeRefNamespace,
+                    szTypeRefName,
+                    (TypeFromToken(tkResolutionScope) == mdtTypeRef) ? tkResolutionScope : mdTokenNil,
                     &tkEnclosingClass));
         _ASSERTE(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
     }
-    
+
     // Search for the TypeDef
     for (ULONG i = 1; i <= cTypeDefRecs; i++)
     {
         // For the call from Validator ignore the rid passed in.
         if (i == ridIgnore)
             continue;
-        
+
         IfFailRet(pMiniMd->GetTypeDefRecord(i, &pTypeDefRec));
-        
+
         dwFlags = pMiniMd->getFlagsOfTypeDef(pTypeDefRec);
-        
+
         if (!IsTdNested(dwFlags) && !IsNilToken(tkEnclosingClass))
         {
             // If the class is not Nested and EnclosingClass passed in is not nil
@@ -924,11 +924,11 @@ ImportHelper::FindTypeDefByName(
         else if (!IsNilToken(tkEnclosingClass))
         {
             _ASSERTE(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
-            
+
             RID              iNestedClassRec;
             NestedClassRec * pNestedClassRec;
             mdTypeDef        tkEnclosingClassTmp;
-            
+
             IfFailRet(pMiniMd->FindNestedClassHelper(TokenFromRid(i, mdtTypeDef), &iNestedClassRec));
             if (InvalidRid(iNestedClassRec))
                 continue;
@@ -937,7 +937,7 @@ ImportHelper::FindTypeDefByName(
             if (tkEnclosingClass != tkEnclosingClassTmp)
                 continue;
         }
-        
+
         IfFailRet(pMiniMd->getNameOfTypeDef(pTypeDefRec, &szName));
         if (strcmp(szTypeDefName, szName) == 0)
         {
@@ -1175,9 +1175,9 @@ HRESULT ImportHelper::FindCustomAttributeByToken(
     if ( pMiniMd->IsSorted(TBL_CustomAttribute) )
     {
         IfFailRet(pMiniMd->FindCustomAttributeFor(
-            RidFromToken(tkParent), 
-            TypeFromToken(tkParent), 
-            tkType, 
+            RidFromToken(tkParent),
+            TypeFromToken(tkParent),
+            tkType,
             (RID *)pcv));
         if (InvalidRid(*pcv))
         {
@@ -1365,7 +1365,7 @@ HRESULT ImportHelper::FindAssemblyRef(
 
         LPCUTF8 szAssemblyRefName;
         IfFailRet(pMiniMd->getNameOfAssemblyRef(pRec, &szAssemblyRefName));
-        if (SString::_stricmp(szAssemblyRefName, "mscorlib") && 
+        if (SString::_stricmp(szAssemblyRefName, "mscorlib") &&
             SString::_stricmp(szAssemblyRefName, "microsoft.visualc"))
         {
             if (pRec->GetBuildNumber() != usBuildNumber)
@@ -1602,7 +1602,7 @@ HRESULT ImportHelper::FindManifestResource(
 //****************************************************************************
 // Convert tokens contained in an element type
 //****************************************************************************
-HRESULT 
+HRESULT
 ImportHelper::MergeUpdateTokenInFieldSig(
     CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
     CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
@@ -1882,10 +1882,10 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                     ULONG           cbTypeSpecEmit;
 
                     IfFailGo(pCommonImport->CommonGetTypeSpecProps(
-                        tkRidFrom, 
-                        &pvTypeSpecSig, 
+                        tkRidFrom,
+                        &pvTypeSpecSig,
                         &cbTypeSpecSig));
-                    
+
                                         // Translate the typespec signature before look up
                     IfFailGo(MergeUpdateTokenInFieldSig(
                         pMiniMdAssemEmit,           // The assembly emit scope.
@@ -1912,7 +1912,7 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                         TypeSpecRec     *pRecEmit;
 
                         IfFailGo(pMiniMdEmit->AddTypeSpecRecord(&pRecEmit, (RID *)&tkRidTo));
-                        
+
                         IfFailGo(pMiniMdEmit->PutBlob(
                             TBL_TypeSpec,
                             TypeSpecRec::COL_Signature,
@@ -1975,9 +1975,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
         default:
             _ASSERTE(cbSrcTotal == cbDestTotal);
 
-            if ((ulElementType >= ELEMENT_TYPE_MAX) || 
-                (ulElementType == ELEMENT_TYPE_PTR) || 
-                (ulElementType == ELEMENT_TYPE_BYREF) || 
+            if ((ulElementType >= ELEMENT_TYPE_MAX) ||
+                (ulElementType == ELEMENT_TYPE_PTR) ||
+                (ulElementType == ELEMENT_TYPE_BYREF) ||
                 (ulElementType == ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED))
             {
                 IfFailGo(META_E_BAD_SIGNATURE);
@@ -2207,12 +2207,12 @@ HRESULT ImportHelper::GetTDNesterHierarchy(
         // Get the name and namespace for the TypeDef.
         IfFailGo(pCommon->CommonGetTypeDefProps(
             tdNester,
-            &szNamespace, 
-            &szName, 
+            &szNamespace,
+            &szName,
             &dwFlags,
             NULL,
             NULL));
-        
+
         // Update the dynamic arrays.
         ulNesters++;
 
@@ -2268,7 +2268,7 @@ HRESULT ImportHelper::GetTRNesterHierarchy(
             &szNamespace,
             &szName,
             &tkResolutionScope));
-        
+
         // Update the dynamic arrays.
         ulNesters++;
 
@@ -2358,10 +2358,10 @@ HRESULT ImportHelper::CreateNesterHierarchy(
                                             pRecEmit, szName));
             IfFailGo(pMiniMdEmit->PutToken(TBL_TypeRef,
                         TypeRefRec::COL_ResolutionScope, pRecEmit, trNester));
-            
+
             trNester = TokenFromRid(iRecord, mdtTypeRef);
             IfFailGo(pMiniMdEmit->UpdateENCLog(trNester));
-            
+
             // Hash the name.
             IfFailGo(pMiniMdEmit->AddNamedItemToHash(TBL_TypeRef, trNester, szName, 0));
         }
@@ -2460,7 +2460,7 @@ ErrExit:
 // Given the TypeDef and the corresponding assembly and module import scopes,
 // create a corresponding TypeRef in the given emit scope.
 //****************************************************************************
-HRESULT 
+HRESULT
 ImportHelper::ImportTypeDef(
     CMiniMdRW *        pMiniMdAssemEmit,    // [IN] Assembly emit scope.
     CMiniMdRW *        pMiniMdEmit,         // [IN] Module emit scope.
@@ -2501,7 +2501,7 @@ ImportHelper::ImportTypeDef(
     }
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(0, &MvidEmit));
 
-    if (pCommonAssemImport == NULL && strcmp(szModuleImport, COM_RUNTIME_LIBRARY) == 0) 
+    if (pCommonAssemImport == NULL && strcmp(szModuleImport, COM_RUNTIME_LIBRARY) == 0)
     {
         const BYTE      *pBlob;                 // Blob with dispid.
         ULONG           cbBlob;                 // Length of blob.
@@ -2551,7 +2551,7 @@ ImportHelper::ImportTypeDef(
     else if (MvidAssemImport == MvidAssemEmit && MvidImport != MvidEmit)
     {
         // The TypeDef is in the same Assembly but a different module.
-        
+
         // Create a ModuleRef corresponding to the import scope.
         IfFailGo(CreateModuleRefFromScope(pMiniMdEmit, pCommonImport, &tkOuterRes));
     }
@@ -2646,11 +2646,11 @@ HRESULT ImportHelper::ImportTypeRef(
     if (pMiniMdAssemEmit != NULL)
     {
         IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdAssemEmit)->CommonGetScopeProps(
-            0, 
+            0,
             &MvidAssemEmit));
     }
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(
-        &szScopeNameEmit, 
+        &szScopeNameEmit,
         &MvidEmit));
 
     // Get the outermost resolution scope for the TypeRef being imported.
@@ -2660,11 +2660,11 @@ HRESULT ImportHelper::ImportTypeRef(
                                 cqaNesterNamespaces,
                                 cqaNesterNames));
     IfFailGo(pCommonImport->CommonGetTypeRefProps(
-        cqaNesters[cqaNesters.Size() - 1], 
-        0, 
-        0, 
+        cqaNesters[cqaNesters.Size() - 1],
+        0,
+        0,
         &tkOuterImportRes));
-    
+
     // Compute the ResolutionScope for the imported type.
     if (MvidAssemImport == MvidAssemEmit && MvidImport == MvidEmit)
     {
@@ -2683,7 +2683,7 @@ HRESULT ImportHelper::ImportTypeRef(
         {
             // TypeRef resolved to the import module in which its defined.
 
-            // 
+            //
             if (pMiniMdAssemEmit == NULL && pCommonAssemImport == NULL)
             {
                 tkOuterEmitRes = TokenFromRid(1, mdtModule);
@@ -2756,9 +2756,9 @@ HRESULT ImportHelper::ImportTypeRef(
             if (SUCCEEDED(hr))
             {
                 IfFailGo(pCommonAssemImport->CommonGetExportedTypeProps(
-                    tkExportedType, 
-                    NULL, 
-                    NULL, 
+                    tkExportedType,
+                    NULL,
+                    NULL,
                     &tkImplementation));
                 if (TypeFromToken(tkImplementation) == mdtFile)
                 {
@@ -2804,7 +2804,7 @@ HRESULT ImportHelper::ImportTypeRef(
         // tkOuterImportRes to an AssemblyRef.
         if (TypeFromToken(tkOuterImportRes) == mdtAssemblyRef)
         {
-            // If there is an emit assembly, see if the import assembly ref points to 
+            // If there is an emit assembly, see if the import assembly ref points to
             //  it.  If there is no emit assembly, the import assembly, by definition,
             //  does not point to this one.
             if (pMiniMdAssemEmit == NULL  || !pMiniMdAssemEmit->getCountAssemblys())
@@ -3070,9 +3070,9 @@ HRESULT ImportHelper::CreateModuleRefFromExportedType(  // S_OK or error.
     // since the caller should call this function only on ExportedTypes that resolve
     // to the same Assembly.
     IfFailGo(static_cast<IMetaModelCommon*>(pAssemEmit)->CommonGetExportedTypeProps(
-        tkExportedType, 
-        NULL, 
-        NULL, 
+        tkExportedType,
+        NULL,
+        NULL,
         &tkFile));
     _ASSERTE(TypeFromToken(tkFile) == mdtFile);
 
@@ -3082,7 +3082,7 @@ HRESULT ImportHelper::CreateModuleRefFromExportedType(  // S_OK or error.
 
     // Get the name of the emit scope.
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(
-        &szScope, 
+        &szScope,
         0));
 
     // If the file corresponds to the emit scope, return S_FALSE;
@@ -3146,12 +3146,12 @@ HRESULT ImportHelper::CreateAssemblyRefFromAssemblyRef(
 
     // Get import AssemblyRef props.
     IfFailGo(pCommonImport->CommonGetAssemblyRefProps(
-        tkAssemRef, 
-        &usMajorVersion, &usMinorVersion, &usBuildNumber, &usRevisionNumber, 
-        &dwFlags, &pbPublicKeyOrToken, &cbPublicKeyOrToken, 
-        &szName, &szLocale, 
+        tkAssemRef,
+        &usMajorVersion, &usMinorVersion, &usBuildNumber, &usRevisionNumber,
+        &dwFlags, &pbPublicKeyOrToken, &cbPublicKeyOrToken,
+        &szName, &szLocale,
         &pbHashValue, &cbHashValue));
-    
+
     // Create the AssemblyRef in both the Assembly and Module emit scopes.
     rMiniMdRW[0] = pMiniMdAssemEmit;
     rMiniMdRW[1] = pMiniMdModuleEmit;
@@ -3209,7 +3209,7 @@ ErrExit:
 // Set the output parameter to the AssemblyRef token emitted in the module emit
 // scope.
 //******************************************************************************
-HRESULT 
+HRESULT
 ImportHelper::CreateAssemblyRefFromAssembly(
     CMiniMdRW *        pMiniMdAssemEmit,    // [IN] Emit assembly scope.
     CMiniMdRW *        pMiniMdModuleEmit,   // [IN] Emit module scope.
@@ -3245,10 +3245,10 @@ ImportHelper::CreateAssemblyRefFromAssembly(
 
     // Get the Assembly props.
     IfFailGo(pCommonAssemImport->CommonGetAssemblyProps(
-        &usMajorVersion, &usMinorVersion, &usBuildNumber, &usRevisionNumber, 
+        &usMajorVersion, &usMinorVersion, &usBuildNumber, &usRevisionNumber,
         &dwFlags, &pbPublicKey, &cbPublicKey,
         &szName, &szLocale));
-    
+
     // Compress the public key into a token.
     if ((pbPublicKey != NULL) && (cbPublicKey != 0))
     {
@@ -3331,7 +3331,7 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT     hr;
-    
+
     USHORT      usMajorVersion1;
     USHORT      usMinorVersion1;
     USHORT      usBuildNumber1;
@@ -3341,7 +3341,7 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
     LPCUTF8     szName1;
     LPCUTF8     szLocale1;
     DWORD       dwFlags1;
-    
+
     USHORT      usMajorVersion2;
     USHORT      usMinorVersion2;
     USHORT      usBuildNumber2;
@@ -3356,17 +3356,17 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
 
     // Get the AssemblyRef props.
     IfFailRet(pCommonAssem1->CommonGetAssemblyRefProps(
-        tkAssemRef, 
-        &usMajorVersion1, &usMinorVersion1, &usBuildNumber1, &usRevisionNumber1, 
-        &dwFlags1, &pbPublicKeyOrToken1, &cbPublicKeyOrToken1, 
-        &szName1, &szLocale1, 
+        tkAssemRef,
+        &usMajorVersion1, &usMinorVersion1, &usBuildNumber1, &usRevisionNumber1,
+        &dwFlags1, &pbPublicKeyOrToken1, &cbPublicKeyOrToken1,
+        &szName1, &szLocale1,
         NULL, NULL));
     // Get the Assembly props.
     IfFailRet(pCommonAssem2->CommonGetAssemblyProps(
-        &usMajorVersion2, &usMinorVersion2, &usBuildNumber2, &usRevisionNumber2, 
+        &usMajorVersion2, &usMinorVersion2, &usBuildNumber2, &usRevisionNumber2,
         0, &pbPublicKey2, &cbPublicKey2,
         &szName2, &szLocale2));
-    
+
     // Compare.
     if (usMajorVersion1 != usMajorVersion2 ||
         usMinorVersion1 != usMinorVersion2 ||

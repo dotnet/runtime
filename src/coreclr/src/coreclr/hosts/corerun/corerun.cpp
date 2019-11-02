@@ -33,7 +33,7 @@ static const wchar_t *coreCLRDll = W("CoreCLR.dll");
 static const wchar_t *coreCLRInstallDirectory = W("%windir%\\system32\\");
 
 // Encapsulates the environment that CoreCLR will run in, including the TPALIST
-class HostEnvironment 
+class HostEnvironment
 {
     // The path to this module
     PathString m_hostPath;
@@ -90,7 +90,7 @@ public:
     // The path to the directory that CoreCLR is in
     PathString m_coreCLRDirectoryPath;
 
-    HostEnvironment(Logger *logger) 
+    HostEnvironment(Logger *logger)
         : m_log(logger), m_CLRRuntimeHost(nullptr) {
 
             // Discover the path to this exe's module. All other files are expected to be in the same directory.
@@ -175,7 +175,7 @@ public:
     void RemoveExtensionAndNi(_In_z_ wchar_t* fileName)
     {
         // Remove extension, if it exists
-        wchar_t* extension = wcsrchr(fileName, W('.')); 
+        wchar_t* extension = wcsrchr(fileName, W('.'));
         if (extension != NULL)
         {
             extension[0] = W('\0');
@@ -300,7 +300,7 @@ public:
 
             *m_log << W("Finding GetCLRRuntimeHost(...)") << Logger::endl;
 
-            FnGetCLRRuntimeHost pfnGetCLRRuntimeHost = 
+            FnGetCLRRuntimeHost pfnGetCLRRuntimeHost =
                 (FnGetCLRRuntimeHost)::GetProcAddress(m_coreCLRModule, "GetCLRRuntimeHost");
 
             if (!pfnGetCLRRuntimeHost) {
@@ -328,12 +328,12 @@ public:
 // two environment variables are respected right now: serverGcVar, controlling
 // Server GC, and concurrentGcVar, controlling Concurrent GC.
 STARTUP_FLAGS CreateStartupFlags() {
-    auto initialFlags = 
+    auto initialFlags =
         static_cast<STARTUP_FLAGS>(
-            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN | 
+            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
             STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
             STARTUP_FLAGS::STARTUP_CONCURRENT_GC);
-        
+
     // server GC is off by default, concurrent GC is on by default.
     auto checkVariable = [&](STARTUP_FLAGS flag, const wchar_t *var) {
         wchar_t result[25];
@@ -349,10 +349,10 @@ STARTUP_FLAGS CreateStartupFlags() {
             }
         }
     };
-    
+
     checkVariable(STARTUP_FLAGS::STARTUP_SERVER_GC, serverGcVar);
     checkVariable(STARTUP_FLAGS::STARTUP_CONCURRENT_GC, concurrentGcVar);
-        
+
     return initialFlags;
 }
 
@@ -490,9 +490,9 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     StackSString appNiPath;
     StackSString managedAssemblyFullName;
     StackSString appLocalWinmetadata;
-    
+
     wchar_t* filePart = NULL;
-    
+
     COUNT_T size = MAX_LONGPATH;
     wchar_t* appPathPtr = appPath.OpenUnicodeBuffer(size - 1);
     DWORD length = WszGetFullPathName(exeName, size, appPathPtr, &filePart);
@@ -507,7 +507,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         log << W("Failed to get full path: ") << exeName << Logger::endl;
         log << W("Error code: ") << GetLastError() << Logger::endl;
         return false;
-    } 
+    }
 
     managedAssemblyFullName.Set(appPathPtr);
 
@@ -515,10 +515,10 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     appPath.CloseBuffer(DWORD(filePart - appPathPtr));
 
     log << W("Loading: ") << managedAssemblyFullName.GetUnicode() << Logger::endl;
-   
+
     appLocalWinmetadata.Set(appPath);
     appLocalWinmetadata.Append(W("\\WinMetadata"));
-   
+
     DWORD dwAttrib = WszGetFileAttributes(appLocalWinmetadata);
     bool appLocalWinMDexists = dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 
@@ -560,8 +560,8 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     }
 
     HRESULT hr;
-    
-    
+
+
     STARTUP_FLAGS flags = CreateStartupFlags();
     log << W("Setting ICLRRuntimeHost4 startup flags") << Logger::endl;
     log << W("Server GC enabled: ") << HAS_FLAG(flags, STARTUP_FLAGS::STARTUP_SERVER_GC) << Logger::endl;
@@ -614,14 +614,14 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke
     //
-    const wchar_t *property_keys[] = { 
+    const wchar_t *property_keys[] = {
         W("TRUSTED_PLATFORM_ASSEMBLIES"),
         W("APP_PATHS"),
         W("APP_NI_PATHS"),
         W("NATIVE_DLL_SEARCH_DIRECTORIES"),
         W("APP_LOCAL_WINMETADATA")
     };
-    const wchar_t *property_values[] = { 
+    const wchar_t *property_values[] = {
         // TRUSTED_PLATFORM_ASSEMBLIES
         tpaList,
         // APP_PATHS
@@ -633,7 +633,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         // APP_LOCAL_WINMETADATA
         appLocalWinmetadata
     };
-     
+
     log << W("Creating an AppDomain") << Logger::endl;
     for (int idx = 0; idx < sizeof(property_keys) / sizeof(wchar_t*); idx++)
     {
@@ -711,7 +711,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     log << W("Unloading the AppDomain") << Logger::endl;
 
     hr = host->UnloadAppDomain2(
-        domainId, 
+        domainId,
         true,
         (int *)&exitCode);                          // Wait until done
 

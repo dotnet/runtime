@@ -5,9 +5,9 @@
 // FILE: profiler.cpp
 //
 
-// 
+//
 
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -35,7 +35,7 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
         UINT64  d[8];
     };
     FunctionID  functionId;
-    void       *probeSp;    // stack pointer of managed function 
+    void       *probeSp;    // stack pointer of managed function
     void       *profiledSp; // location of arguments on stack
     LPVOID      hiddenArg;
     UINT32      flags;
@@ -66,7 +66,7 @@ UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void *handle)
 /*
  * ProfileSetFunctionIDInPlatformSpecificHandle
  *
- * This routine takes the platformSpecificHandle and functionID, and assign 
+ * This routine takes the platformSpecificHandle and functionID, and assign
  * functionID to functionID field of platformSpecificHandle.
  *
  * Parameters:
@@ -83,7 +83,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void * pPlatformSpecificHandle
     _ASSERTE(functionID != NULL);
 
     PROFILE_PLATFORM_SPECIFIC_DATA * pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA *>(pPlatformSpecificHandle);
-    pData->functionId = functionID;   
+    pData->functionId = functionID;
 }
 
 /*
@@ -148,7 +148,7 @@ Stack for the above call will look as follows (stack growing downwards):
         _ASSERTE(pData->profiledSp == (void*)(ctx.Sp - 4*4));
     }
 #endif // _DEBUG
-    
+
     // Get the hidden arg if there is one
     MethodDesc * pMD = FunctionIdToMethodDesc(pData->functionId);
 
@@ -247,7 +247,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         return ((BYTE *)&pData->d) + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     }
 
-    // Argument lives in one or more general registers (and possibly overflows onto the stack). 
+    // Argument lives in one or more general registers (and possibly overflows onto the stack).
     return (LPBYTE)pData->profiledSp + (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
 }
 

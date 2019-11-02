@@ -4,19 +4,19 @@
 // ThreadStatics.h
 //
 
-// 
-// 
-// Classes can contain instance fields and statics fields. In addition to regular statics, .NET offers 
+//
+//
+// Classes can contain instance fields and statics fields. In addition to regular statics, .NET offers
 // several types of special statics. In IL, thread static fields are marked with the ThreadStaticAttribute,
 // distinguishing them from regular statics and other types of special statics. A thread static field is
 // not shared between threads. Each executing thread has a separate instance of the field, and independently
-// sets and gets values for that field. 
+// sets and gets values for that field.
 //
 // This implementation of thread statics closely parallels the implementation for regular statics. Regular
 // statics use the DomainLocalModule structure to allocate space for statics.
 //
 
-// 
+//
 
 #ifndef __threadstatics_h__
 #define __threadstatics_h__
@@ -39,7 +39,7 @@ typedef DPTR(struct ThreadLocalModule) PTR_ThreadLocalModule;
 struct ThreadLocalModule
 {
     friend class ClrDataAccess;
-    friend class CheckAsmOffsets; 
+    friend class CheckAsmOffsets;
     friend struct ThreadLocalBlock;
 
     // After these macros complete, they may have returned an interior pointer into a gc object. This pointer will have been cast to a byte pointer
@@ -102,7 +102,7 @@ struct ThreadLocalModule
         OBJECTHANDLE    m_pGCStatics;
 #ifdef FEATURE_64BIT_ALIGNMENT
         // Padding to make m_pDataBlob aligned at MAX_PRIMITIVE_FIELD_SIZE.
-        // code:MethodTableBuilder::PlaceThreadStaticFields assumes that the start of the data blob is aligned 
+        // code:MethodTableBuilder::PlaceThreadStaticFields assumes that the start of the data blob is aligned
         SIZE_T          m_padding;
 #endif
         BYTE            m_pDataBlob[0];
@@ -145,7 +145,7 @@ struct ThreadLocalModule
     typedef DPTR(DynamicClassInfo) PTR_DynamicClassInfo;
 
     // Note the difference between:
-    // 
+    //
     //  GetPrecomputedNonGCStaticsBasePointer() and
     //  GetPrecomputedStaticsClassData()
     //
@@ -282,7 +282,7 @@ struct ThreadLocalModule
         {
             return NULL;
         }
-        
+
         DynamicClassInfo* pClassInfo = GetDynamicClassInfo(n);
         if (!pClassInfo->m_pDynamicEntry)
         {
@@ -306,7 +306,7 @@ struct ThreadLocalModule
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-        
+
         if (n >= m_aDynamicEntries)
         {
             return NULL;
@@ -356,7 +356,7 @@ struct ThreadLocalModule
         WRAPPER_NO_CONTRACT;
         return (GetClassFlags(pMT, iClassIndex) & ClassInitFlags::INITIALIZED_FLAG) != 0;
     }
-   
+
     inline BOOL IsClassAllocated(MethodTable* pMT, DWORD iClassIndex = (DWORD)-1)
     {
         WRAPPER_NO_CONTRACT;
@@ -378,24 +378,24 @@ struct ThreadLocalModule
             MODE_ANY;
         }
         CONTRACTL_END;
-    
+
         _ASSERTE(!IsClassInitialized(pMT));
         _ASSERTE(!IsClassInitError(pMT));
-        
+
         SetClassFlags(pMT, ClassInitFlags::INITIALIZED_FLAG);
     }
 
     void SetClassAllocated(MethodTable* pMT)
     {
         WRAPPER_NO_CONTRACT;
-    
+
         SetClassFlags(pMT, ClassInitFlags::ALLOCATECLASS_FLAG);
     }
 
     void SetClassInitError(MethodTable* pMT)
     {
         WRAPPER_NO_CONTRACT;
-    
+
         SetClassFlags(pMT, ClassInitFlags::ERROR_FLAG);
     }
 
@@ -418,13 +418,13 @@ struct ThreadLocalModule
         LIMITED_METHOD_CONTRACT;
         return offsetof(ThreadLocalModule, m_pDataBlob);
     }
-    
+
 private:
-    
+
     void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
 
     DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
-    
+
 
     PTR_DynamicClassInfo     m_pDynamicClassTable;   // used for generics and reflection.emit in memory
     SIZE_T                   m_aDynamicEntries;      // number of entries in dynamic table
@@ -475,13 +475,13 @@ public:
         {
             // Ensure that the class has been allocated
             EnsureClassAllocated(pMT);
-            
+
             // Check if the class has been marked as inited in the DomainLocalModule,
             // if not we must call CheckRunClassInitThrowing()
             if (!pMT->IsClassInited())
                 pMT->CheckRunClassInitThrowing();
-            
-            // We cannot mark the class as inited in the TLM until it has been marked 
+
+            // We cannot mark the class as inited in the TLM until it has been marked
             // as inited in the DLM. MethodTable::CheckRunClassInitThrowing() can return
             // before the class constructor has finished running (because of recursion),
             // so we actually need to check if the class has been marked as inited in the
@@ -537,7 +537,7 @@ class ThreadStatics
     {
         // Get the current thread
         Thread * pThread = GetThread();
-    
+
         return &pThread->m_ThreadLocalBlock;
     }
 

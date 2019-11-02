@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // ******************************************************************************
-// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should 
+// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfo.h
 // ******************************************************************************
@@ -65,7 +65,7 @@ inline BOOL GCInfoEncodesRevPInvokeFrame(UINT32 version=GCINFO_VERSION)
 // 1) The current GCINFO_VERSION for JITted and Ngened images
 // 2) A function of the Ready - to - run major version stored in READYTORUN_HEADER
 //   for ready - to - run images.ReadyToRunJitManager::JitTokenToGCInfoVersion()
-//   provides the GcInfo version for any Method. 
+//   provides the GcInfo version for any Method.
 //-----------------------------------------------------------------------------
 
 struct GCInfoToken
@@ -73,11 +73,11 @@ struct GCInfoToken
     PTR_VOID Info;
     UINT32 Version;
 
-    BOOL IsReturnKindAvailable() 
+    BOOL IsReturnKindAvailable()
     {
         return GCInfoEncodesReturnKind(Version);
     }
-    BOOL IsReversePInvokeFrameAvailable() 
+    BOOL IsReversePInvokeFrameAvailable()
     {
         return GCInfoEncodesRevPInvokeFrame(Version);
     }

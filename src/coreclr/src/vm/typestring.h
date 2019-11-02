@@ -46,23 +46,23 @@ public:
     static void QCALLTYPE _AddArray(TypeNameBuilder * pTnb, DWORD dwRank);
     static void QCALLTYPE _AddAssemblySpec(TypeNameBuilder * pTnb, LPCWSTR wszAssemblySpec);
     static void QCALLTYPE _ToString(TypeNameBuilder * pTnb, QCall::StringHandleOnStack retString);
-    static void QCALLTYPE _Clear(TypeNameBuilder * pTnb);    
+    static void QCALLTYPE _Clear(TypeNameBuilder * pTnb);
 
 private:
     friend class TypeString;
     friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
-    friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*, 
+    friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*,
         ICLRPrivBinder * pPrivHostBinder,
         BOOL, OBJECTREF *);
-    HRESULT OpenGenericArguments(); 
-    HRESULT CloseGenericArguments(); 
-    HRESULT OpenGenericArgument(); 
+    HRESULT OpenGenericArguments();
+    HRESULT CloseGenericArguments();
+    HRESULT OpenGenericArgument();
     HRESULT CloseGenericArgument();
-    HRESULT AddName(LPCWSTR szName); 
+    HRESULT AddName(LPCWSTR szName);
     HRESULT AddName(LPCWSTR szName, LPCWSTR szNamespace);
-    HRESULT AddPointer(); 
-    HRESULT AddByRef(); 
-    HRESULT AddSzArray(); 
+    HRESULT AddPointer();
+    HRESULT AddByRef();
+    HRESULT AddSzArray();
     HRESULT AddArray(DWORD rank);
     HRESULT AddAssemblySpec(LPCWSTR szAssemblySpec);
     HRESULT ToString(BSTR* pszStringRepresentation);
@@ -72,38 +72,38 @@ private:
     class Stack
     {
     public:
-        Stack() : m_depth(0) { LIMITED_METHOD_CONTRACT; } 
-        
-    public:  
+        Stack() : m_depth(0) { LIMITED_METHOD_CONTRACT; }
+
+    public:
         COUNT_T Push(COUNT_T element) { WRAPPER_NO_CONTRACT; *m_stack.Append() = element; m_depth++; return Tos(); }
-        COUNT_T Pop() 
-        { 
+        COUNT_T Pop()
+        {
             CONTRACTL
             {
                 THROWS;
                 GC_NOTRIGGER;
                 MODE_ANY;
-                PRECONDITION(GetDepth() > 0); 
+                PRECONDITION(GetDepth() > 0);
             }
             CONTRACTL_END;
 
-            COUNT_T tos = Tos(); 
-            m_stack.Delete(m_stack.End() - 1); 
-            m_depth--; 
-            return tos; 
+            COUNT_T tos = Tos();
+            m_stack.Delete(m_stack.End() - 1);
+            m_depth--;
+            return tos;
         }
         COUNT_T Tos() { WRAPPER_NO_CONTRACT; return m_stack.End()[-1]; }
         void Clear() { WRAPPER_NO_CONTRACT; while(GetDepth()) Pop(); }
         COUNT_T GetDepth() { WRAPPER_NO_CONTRACT; return m_depth; }
-        
+
     private:
         INT32 m_depth;
-        InlineSArray<COUNT_T, 16> m_stack;    
+        InlineSArray<COUNT_T, 16> m_stack;
     };
-        
+
 
 public:
-    typedef enum 
+    typedef enum
     {
         ParseStateSTART         = 0x0001,
         ParseStateNAME          = 0x0004,
@@ -112,7 +112,7 @@ public:
         ParseStateBYREF         = 0x0020,
         ParseStateASSEMSPEC     = 0x0080,
         ParseStateERROR         = 0x0100,
-    } 
+    }
     ParseState;
 
 public:
@@ -136,7 +136,7 @@ private:
 private:
     ParseState m_parseState;
     SString* m_pStr;
-    InlineSString<256> m_str;       
+    InlineSString<256> m_str;
     DWORD m_instNesting;
     BOOL m_bFirstInstArg;
     BOOL m_bNestedName;
@@ -153,14 +153,14 @@ private:
 class TypeString
 {
     // -----------------------------------------------------------------------
-    // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING 
+    // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     // -----------------------------------------------------------------------
     // Do no change the formatting of these strings as they are used by
     // serialization, and it would break serialization backwards-compatibility.
-    
+
 public:
 
-  typedef enum 
+  typedef enum
   {
       FormatBasic         = 0x00000000, // Not a bitmask, simply the tersest flag settings possible
       FormatNamespace     = 0x00000001, // Include namespace and/or enclosing class names in type names
@@ -177,9 +177,9 @@ public:
   }
   FormatFlags;
 
-public:   
+public:
     // Append the name of the type td to the string
-    // The following flags in the FormatFlags argument are significant: FormatNamespace 
+    // The following flags in the FormatFlags argument are significant: FormatNamespace
     static void AppendTypeDef(SString& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
 
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
@@ -211,7 +211,7 @@ public:
     // These versions are NOTHROWS. They are meant for diagnostic purposes only
     // as they may leave "s" in a bad state if there are any problems/exceptions.
     static void AppendMethodDebug(SString& s, MethodDesc *pMD);
-    static void AppendTypeDebug(SString& s, TypeHandle t);  
+    static void AppendTypeDebug(SString& s, TypeHandle t);
     static void AppendTypeKeyDebug(SString& s, TypeKey* pTypeKey);
 #endif
 

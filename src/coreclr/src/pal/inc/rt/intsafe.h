@@ -367,7 +367,7 @@ UIntToULong(
     OUT ULONG* pulResult)
 {
     *pulResult = (ULONG)uOperand;
-    
+
     return S_OK;
 }
 
@@ -485,7 +485,7 @@ ULongToUInt(
     OUT UINT* puResult)
 {
     *puResult = (UINT)ulOperand;
-    
+
     return S_OK;
 }
 
@@ -606,13 +606,13 @@ ULongLongToULong(
 {
     HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
     *pulResult = ULONG_ERROR;
-    
+
     if (ullOperand <= _UI32_MAX)
     {
         *pulResult = (ULONG)ullOperand;
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -660,13 +660,13 @@ ULongLongToUInt(
 {
     HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
     *puResult = UINT_ERROR;
-    
+
     if (ullOperand <= UINT_MAX)
     {
         *puResult = (UINT)ullOperand;
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1053,7 +1053,7 @@ UShortAdd(
         *pusResult = (usAugend + usAddend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1080,7 +1080,7 @@ UIntAdd(
         *puResult = (uAugend + uAddend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1107,7 +1107,7 @@ ULongAdd(
         *pulResult = (ulAugend + ulAddend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1156,7 +1156,7 @@ SizeTAdd(
         *pResult = (Augend + Addend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1183,7 +1183,7 @@ ULongLongAdd(
         *pullResult = (ullAugend + ullAddend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1205,7 +1205,7 @@ UShortSub(
         *pusResult = (usMinuend - usSubtrahend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1233,7 +1233,7 @@ UIntSub(
         *puResult = (uMinuend - uSubtrahend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1260,7 +1260,7 @@ ULongSub(
         *pulResult = (ulMinuend - ulSubtrahend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1310,7 +1310,7 @@ SizeTSub(
         *pResult = (Minuend - Subtrahend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1337,7 +1337,7 @@ ULongLongSub(
         *pullResult = (ullMinuend - ullSubtrahend);
         hr = S_OK;
     }
-    
+
     return hr;
 }
 
@@ -1352,7 +1352,7 @@ UShortMult(
     OUT USHORT* pusResult)
 {
     ULONG ulResult = ((ULONG)usMultiplicand) * (ULONG)usMultiplier;
-    
+
     return ULongToUShort(ulResult, pusResult);
 }
 
@@ -1387,7 +1387,7 @@ ULongMult(
     OUT ULONG* pulResult)
 {
     ULONGLONG ull64Result = UInt32x32To64(ulMultiplicand, ulMultiplier);
-    
+
     return ULongLongToULong(ull64Result, pulResult);
 }
 

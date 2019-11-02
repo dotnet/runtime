@@ -26,23 +26,23 @@ struct NativeVarLocation
     bool contextReg;
 };
 
-ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc, 
+ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
                          PT_CONTEXT                      pCtx,
                          ULONG                           numLocs,
                          NativeVarLocation*              locs);
 
-SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc, 
+SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
                            PT_CONTEXT                      pCtx);
-                        
-bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc, 
+
+bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
                         PT_CONTEXT                      pCtx,
-                        SIZE_T                      *   pVal1, 
+                        SIZE_T                      *   pVal1,
                         SIZE_T                      *   pVal2
                         BIT64_ARG(SIZE_T                cbSize));
-                        
-bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc, 
+
+bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
                         PT_CONTEXT                      pCtx,
-                        SIZE_T                          val1, 
+                        SIZE_T                          val1,
                         SIZE_T                          val2
-                        BIT64_ARG(SIZE_T                cbSize));                        
+                        BIT64_ARG(SIZE_T                cbSize));
 #endif // #ifndef _NATIVE_VAR_ACCESSORS_H_

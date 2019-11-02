@@ -87,9 +87,9 @@ public:
 
     bool HasComponentSize()
     {
-        // Note that we can't just check m_componentSize != 0 here. The VM 
-        // may still construct a method table that does not have a component 
-        // size, according to this method, but still has a number in the low 
+        // Note that we can't just check m_componentSize != 0 here. The VM
+        // may still construct a method table that does not have a component
+        // size, according to this method, but still has a number in the low
         // 16 bits of the method table flags parameter.
         //
         // The solution here is to do what the VM does and check the
@@ -130,7 +130,7 @@ class Object
 
 public:
     ObjHeader * GetHeader()
-    { 
+    {
         return ((ObjHeader *)this) - 1;
     }
 

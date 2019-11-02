@@ -45,7 +45,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD);
    in suspended state in order to resume it. */
 CONST BYTE WAKEUPCODE=0x2A;
 
-// #define USE_GLOBAL_LOCK_FOR_SUSPENSION // Uncomment this define to use the global suspension lock. 
+// #define USE_GLOBAL_LOCK_FOR_SUSPENSION // Uncomment this define to use the global suspension lock.
 /* The global suspension lock can be used in place of each thread having its own
 suspension mutex or spinlock. The downside is that it restricts us to only
 performing one suspension or resumption in the PAL at a time. */
@@ -96,7 +96,7 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
 
     BYTE resume_code = 0;
     ssize_t read_ret;
-    
+
     // Block until ResumeThread writes something to the pipe
     while ((read_ret = read(pipe_descs[0], &resume_code, sizeof(resume_code))) != sizeof(resume_code))
     {
@@ -162,7 +162,7 @@ ResumeThread(
     }
     else
     {
-        _ASSERT_MSG(dwSuspendCount != static_cast<DWORD>(-1), "InternalResumeThread returned success but dwSuspendCount did not change.\n");   
+        _ASSERT_MSG(dwSuspendCount != static_cast<DWORD>(-1), "InternalResumeThread returned success but dwSuspendCount did not change.\n");
     }
 
     LOGEXIT("ResumeThread returns DWORD %u\n", dwSuspendCount);
@@ -174,7 +174,7 @@ ResumeThread(
 Function:
   InternalResumeThread
 
-InternalResumeThread converts the handle of the target thread to a 
+InternalResumeThread converts the handle of the target thread to a
 CPalThread, and passes both the resumer and target thread references
 to InternalResumeThreadFromData. A reference to the suspend count from
 the resumption attempt is passed back to the caller of this function.
@@ -221,11 +221,11 @@ Function:
 InternalResumeThreadFromData resumes the target thread. First, the suspension
 mutexes of the threads are acquired. Next, there's a check to ensure that the
 target thread was actually suspended. Finally, the resume attempt is made
-and the suspension mutexes are released. The suspend count of the 
+and the suspension mutexes are released. The suspend count of the
 target thread is passed back to the caller of this function.
 
 Note that ReleaseSuspensionLock(s) is called before hitting ASSERTs in error
-paths. Currently, this seems unnecessary since asserting within 
+paths. Currently, this seems unnecessary since asserting within
 InternalResumeThreadFromData will not cause cleanup to occur. However,
 this may change since it would be preferable to perform cleanup. Thus, calls
 to release suspension locks remain in the error paths.
@@ -251,8 +251,8 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     // Acquire suspension mutex
     AcquireSuspensionLocks(pthrResumer, pthrTarget);
 
-    // Check target thread's state to ensure it hasn't died. 
-    // Setting a thread's state to TS_DONE is protected by the 
+    // Check target thread's state to ensure it hasn't died.
+    // Setting a thread's state to TS_DONE is protected by the
     // target's suspension mutex.
     if (pthrTarget->synchronizationInfo.GetThreadState() == TS_DONE)
     {
@@ -275,7 +275,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     // If there is a blocking pipe on this thread, resume it by writing the wake up code to that pipe.
     if (-1 != pthrTarget->suspensionInfo.GetBlockingPipe())
     {
-        // If write() is interrupted by a signal before writing data, 
+        // If write() is interrupted by a signal before writing data,
         // it returns -1 and sets errno to EINTR. In this case, we
         // attempt the write() again.
         writeAgain:
@@ -284,7 +284,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
         // The size of WAKEUPCODE is 1 byte. If write returns 0, we'll treat it as an error.
         if (sizeof(WAKEUPCODE) != nWrittenBytes)
         {
-            // If we are here during process creation, this is most likely caused by the target 
+            // If we are here during process creation, this is most likely caused by the target
             // process dying before reaching this point and thus breaking the pipe.
             if (nWrittenBytes == -1 && EPIPE == errno)
             {
@@ -310,7 +310,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
 
         // Reset blocking pipe to -1 since we're done using it.
         pthrTarget->suspensionInfo.SetBlockingPipe(-1);
-        
+
         ReleaseSuspensionLocks(pthrResumer, pthrTarget);
         goto InternalResumeThreadFromDataExit;
     }
@@ -335,14 +335,14 @@ Function:
   TryAcquireSuspensionLock
 
 TryAcquireSuspensionLock is a utility function that tries to acquire a thread's
-suspension mutex or spinlock. If it succeeds, the function returns TRUE. 
+suspension mutex or spinlock. If it succeeds, the function returns TRUE.
 Otherwise, it returns FALSE. This function is used in AcquireSuspensionLocks.
 Note that the global lock cannot be acquired in this function since it makes
 no sense to do so. A thread holding the global lock is the only thread that
 can perform suspend or resume operations so it doesn't need to acquire
 a second lock.
 --*/
-BOOL 
+BOOL
 CThreadSuspensionInfo::TryAcquireSuspensionLock(
     CPalThread* pthrTarget
     )
@@ -367,12 +367,12 @@ CThreadSuspensionInfo::TryAcquireSuspensionLock(
 Function:
   AcquireSuspensionLock
 
-AcquireSuspensionLock acquires a thread's suspension mutex or spinlock. 
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, it will acquire the global lock. 
+AcquireSuspensionLock acquires a thread's suspension mutex or spinlock.
+If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, it will acquire the global lock.
 A thread in this function blocks until it acquires
 its lock, unlike in TryAcquireSuspensionLock.
 --*/
-void 
+void
 CThreadSuspensionInfo::AcquireSuspensionLock(
     CPalThread* pthrCurrent
     )
@@ -403,10 +403,10 @@ Function:
   ReleaseSuspensionLock
 
 ReleaseSuspensionLock is a function that releases a thread's suspension mutex
-or spinlock. If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, 
+or spinlock. If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined,
 it will release the global lock.
 --*/
-void 
+void
 CThreadSuspensionInfo::ReleaseSuspensionLock(
     CPalThread* pthrCurrent
     )
@@ -417,17 +417,17 @@ CThreadSuspensionInfo::ReleaseSuspensionLock(
 }
 #else // USE_GLOBAL_LOCK_FOR_SUSPENSION
 {
-    #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 
+    #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
     {
         SPINLOCKRelease(&pthrCurrent->suspensionInfo.m_nSpinlock);
     }
-    #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 
+    #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
     {
         INDEBUG(int iPthreadError = )
         pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
         _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_unlock returned %d\n", iPthreadError);
     }
-    #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 
+    #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
 }
 #endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
@@ -437,18 +437,18 @@ Function:
   AcquireSuspensionLocks
 
 AcquireSuspensionLocks is used to acquire the suspension locks
-of a suspender (or resumer) and target thread. The thread will 
+of a suspender (or resumer) and target thread. The thread will
 perform a blocking call to acquire its own suspension lock
-and will then try to acquire the target thread's lock without blocking. 
-If it fails to acquire the target's lock, it releases its own lock 
-and the thread will try to acquire both locks again. The key 
+and will then try to acquire the target thread's lock without blocking.
+If it fails to acquire the target's lock, it releases its own lock
+and the thread will try to acquire both locks again. The key
 is that both locks must be acquired together.
 
 Originally, only blocking calls were used to acquire the suspender
 and the target lock. However, this was problematic since a thread
 could acquire its own lock and then block on acquiring the target
 lock. In the meantime, the target could have already acquired its
-own lock and be attempting to suspend the suspender thread. This 
+own lock and be attempting to suspend the suspender thread. This
 clearly causes deadlock. A second approach used locking hierarchies,
 where locks were acquired use thread id ordering. This was better but
 suffered from the scenario where thread A acquires thread B's
@@ -457,13 +457,13 @@ suspension mutex and its own. Thus, thread A is suspended while
 holding thread B's mutex. This is problematic if thread C now wants
 to suspend thread B. The issue here is that a thread can be
 suspended while holding someone else's mutex but not holding its own.
-In the end, the correct approach is to always acquire your suspension 
-mutex first. This prevents you from being suspended while holding the 
-target's mutex. Then, attempt to acquire the target's mutex. If the mutex 
-cannot be acquired, release your own and try again. This all or nothing 
+In the end, the correct approach is to always acquire your suspension
+mutex first. This prevents you from being suspended while holding the
+target's mutex. Then, attempt to acquire the target's mutex. If the mutex
+cannot be acquired, release your own and try again. This all or nothing
 approach is the safest and avoids nasty race conditions.
 
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, the calling thread 
+If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, the calling thread
 will acquire the global lock when possible.
 --*/
 VOID
@@ -484,36 +484,36 @@ CThreadSuspensionInfo::AcquireSuspensionLocks(
         if (!TryAcquireSuspensionLock(pthrTarget))
         {
             // pthread_mutex_trylock returned EBUSY so release the first lock and try again.
-            ReleaseSuspensionLock(pthrSuspender);           
+            ReleaseSuspensionLock(pthrSuspender);
             fReacquire = TRUE;
             sched_yield();
         }
     } while (fReacquire);
 #endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 
-    // Whenever the native implementation for the wait subsystem's thread 
-    // blocking requires a lock as protection (as pthread conditions do with 
-    // the associated mutex), we need to grab that lock to prevent the target 
+    // Whenever the native implementation for the wait subsystem's thread
+    // blocking requires a lock as protection (as pthread conditions do with
+    // the associated mutex), we need to grab that lock to prevent the target
     // thread from being suspended while holding the lock.
-    // Failing to do so can lead to a multiple threads deadlocking such as the 
+    // Failing to do so can lead to a multiple threads deadlocking such as the
     // one described in VSW 363793.
-    // In general, in similar scenarios, we need to grab the protecting lock 
-    // every time suspension safety/unsafety is unbalanced on the two sides 
-    // using the same condition (or any other native blocking support which 
-    // needs an associated native lock), i.e. when either the signaling 
-    // thread(s) is(are) signaling from an unsafe area and the waiting 
+    // In general, in similar scenarios, we need to grab the protecting lock
+    // every time suspension safety/unsafety is unbalanced on the two sides
+    // using the same condition (or any other native blocking support which
+    // needs an associated native lock), i.e. when either the signaling
+    // thread(s) is(are) signaling from an unsafe area and the waiting
     // thread(s) is(are) waiting from a safe one, or vice versa (the scenario
-    // described in VSW 363793 is a good example of the first type of 
+    // described in VSW 363793 is a good example of the first type of
     // unbalanced suspension safety/unsafety).
-    // Instead, whenever signaling and waiting sides are both marked safe or 
-    // unsafe, the deadlock cannot take place since either the suspending 
-    // thread will suspend them anyway (regardless of the native lock), or it 
+    // Instead, whenever signaling and waiting sides are both marked safe or
+    // unsafe, the deadlock cannot take place since either the suspending
+    // thread will suspend them anyway (regardless of the native lock), or it
     // won't suspend any of them, since they are both marked unsafe.
-    // Such a balanced scenario applies, for instance, to critical sections 
+    // Such a balanced scenario applies, for instance, to critical sections
     // where depending on whether the target CS is internal or not, both the
-    // signaling and the waiting side will access the mutex/condition from 
+    // signaling and the waiting side will access the mutex/condition from
     // respectively an unsafe or safe region.
-    
+
     pthrTarget->AcquireNativeWaitLock();
 }
 
@@ -533,7 +533,7 @@ CThreadSuspensionInfo::ReleaseSuspensionLocks(
     CPalThread *pthrTarget
     )
 {
-    // See comment in AcquireSuspensionLocks    
+    // See comment in AcquireSuspensionLocks
     pthrTarget->ReleaseNativeWaitLock();
 
 #ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
@@ -605,7 +605,7 @@ Function:
   WaitOnSuspendSemaphore
 
 WaitOnSuspendSemaphore is a utility function for a thread
-to wait on its POSIX or SysV suspension semaphore. 
+to wait on its POSIX or SysV suspension semaphore.
 --*/
 void
 CThreadSuspensionInfo::WaitOnSuspendSemaphore()
@@ -792,9 +792,9 @@ CThreadSuspensionInfo::InitializeSuspensionLock()
 Function:
   InitializePreCreate
 
-InitializePreCreate initializes the semaphores and signal masks used 
-for thread suspension. At the end, it sets the calling thread's 
-signal mask to the default signal mask. 
+InitializePreCreate initializes the semaphores and signal masks used
+for thread suspension. At the end, it sets the calling thread's
+signal mask to the default signal mask.
 --*/
 PAL_ERROR
 CThreadSuspensionInfo::InitializePreCreate()
@@ -812,7 +812,7 @@ CThreadSuspensionInfo::InitializePreCreate()
 #endif  // SEM_INIT_MODIFIES_ERRNO
 
     // initialize suspension semaphore
-    iError = sem_init(&m_semSusp, 0, 0);  
+    iError = sem_init(&m_semSusp, 0, 0);
 
 #if SEM_INIT_MODIFIES_ERRNO
     if (iError == 0)
@@ -861,7 +861,7 @@ CThreadSuspensionInfo::InitializePreCreate()
         ASSERT("semget for suspension sem id returned -1 and set errno to %d (%s)\n", errno, strerror(errno));
         goto InitializePreCreateExit;
     }
-    
+
     m_nSemrespid = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
     if (m_nSemrespid == -1)
     {
@@ -890,7 +890,7 @@ CThreadSuspensionInfo::InitializePreCreate()
         ASSERT("semctl for resumption sem id returned -1 and set errno to %d (%s)\n", errno, strerror(errno));
         goto InitializePreCreateExit;
     }
-    
+
     // initialize suspend semaphore
     m_sbSemwait.sem_num = 0;
     m_sbSemwait.sem_op = -1;
@@ -899,7 +899,7 @@ CThreadSuspensionInfo::InitializePreCreate()
     // initialize resume semaphore
     m_sbSempost.sem_num = 0;
     m_sbSempost.sem_op = 1;
-    m_sbSempost.sem_flg = 0;    
+    m_sbSempost.sem_flg = 0;
 #elif USE_PTHREAD_CONDVARS
     iError = pthread_cond_init(&m_condSusp, NULL);
     if (iError != 0)
@@ -934,7 +934,7 @@ CThreadSuspensionInfo::InitializePreCreate()
 
     // Initialization was successful.
     palError = NO_ERROR;
-    
+
 InitializePreCreateExit:
 
     if (NO_ERROR == palError && 0 != iError)
@@ -1006,11 +1006,11 @@ CThreadSuspensionInfo::~CThreadSuspensionInfo()
 /*++
 Function:
   DestroySemaphoreIds
-  
+
 DestroySemaphoreIds is called from the CThreadSuspensionInfo destructor and
 from PROCCleanupThreadSemIds. If a thread exits before shutdown or is suspended
-during shutdown, its destructor will be invoked and the semaphore ids destroyed. 
-In assert or exceptions situations that are suspension unsafe, 
+during shutdown, its destructor will be invoked and the semaphore ids destroyed.
+In assert or exceptions situations that are suspension unsafe,
 PROCCleanupThreadSemIds is called, which uses DestroySemaphoreIds.
 --*/
 void

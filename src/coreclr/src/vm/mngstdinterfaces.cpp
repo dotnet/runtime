@@ -96,12 +96,12 @@ MngStdInterfaceMap::MngStdInterfaceMap()
 //
 
 void MngStdItfBase::InitHelper(
-                    LPCUTF8 strMngItfTypeName, 
-                    LPCUTF8 strUComItfTypeName, 
-                    LPCUTF8 strCMTypeName, 
-                    LPCUTF8 strCookie, 
-                    LPCUTF8 strManagedViewName, 
-                    TypeHandle *pMngItfType, 
+                    LPCUTF8 strMngItfTypeName,
+                    LPCUTF8 strUComItfTypeName,
+                    LPCUTF8 strCMTypeName,
+                    LPCUTF8 strCookie,
+                    LPCUTF8 strManagedViewName,
+                    TypeHandle *pMngItfType,
                     TypeHandle *pUComItfType,
                     TypeHandle *pCustomMarshalerType,
                     TypeHandle *pManagedViewType,
@@ -132,9 +132,9 @@ void MngStdItfBase::InitHelper(
     // Retrieve the custom marshaler type handle.
     SString sstrCMTypeName(SString::Utf8, strCMTypeName);
     *pCustomMarshalerType = TypeName::GetTypeFromAsmQualifiedName(sstrCMTypeName.GetUnicode());
-    
+
     // Run the <clinit> for the marshaller.
-    pCustomMarshalerType->GetMethodTable()->EnsureInstanceActive();    
+    pCustomMarshalerType->GetMethodTable()->EnsureInstanceActive();
     pCustomMarshalerType->GetMethodTable()->CheckRunClassInitThrowing();
 
     // Load the managed view.
@@ -154,7 +154,7 @@ void MngStdItfBase::InitHelper(
     GCPROTECT_BEGIN(strObj);
     {
         MethodDescCallSite getInstance(pGetInstanceMD, (OBJECTREF*)&strObj);
-        
+
         // Prepare the arguments that will be passed to GetInstance.
         ARG_SLOT GetInstanceArgs[] = {
             ObjToArgSlot(strObj)
@@ -211,7 +211,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
         _ASSERTE(Lr.Obj != NULL);
 
         MethodTable *pTargetMT = Lr.Obj->GetMethodTable();
-        
+
         {
             // The target isn't a TP so it better be a COM object.
             _ASSERTE(Lr.Obj->GetMethodTable()->IsComObjectType());
@@ -219,11 +219,11 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
             {
                 RCWHolder pRCW(GetThread());
                 RCWPROTECT_BEGIN(pRCW, Lr.Obj);
-                
+
                 // Get the IUnknown on the current thread.
                 pUnk = pRCW->GetIUnknown();
                 _ASSERTE(pUnk);
-        
+
                 RCW_VTABLEPTR(pRCW);
 
                 // Check to see if the component implements the interface natively.
@@ -239,7 +239,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
 
                     // The component implements the interface natively so we need to dispatch to it directly.
                     Result = UComItf.Call_RetObjPtr(pArgs);
-                    if (UComItf.GetMetaSig()->IsObjectRefReturnType()) 
+                    if (UComItf.GetMetaSig()->IsObjectRefReturnType())
                     {
                         Lr.Result = ObjectToOBJECTREF(Result);
                         RetValIsProtected = TRUE;
@@ -386,7 +386,7 @@ FCIMPL1(Object*, StdMngIEnumerator::get_Current, Object* refThisUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL1(void, StdMngIEnumerator::Reset, Object* refThisUNSAFE) 
+FCIMPL1(void, StdMngIEnumerator::Reset, Object* refThisUNSAFE)
 {
     CONTRACTL
     {
@@ -544,7 +544,7 @@ FCIMPL6(Object*, StdMngIReflect::GetMethod, Object* refThisUNSAFE, Object* refNa
             /* 1 */ ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE)),
             /* 2 */ enumBindingAttr,
             /* 3 */ ObjToArgSlot(ObjectToOBJECTREF(refBinderUNSAFE)),
-            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTypesArrayUNSAFE)), 
+            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTypesArrayUNSAFE)),
             /* 5 */ ObjToArgSlot(ObjectToOBJECTREF(refModifiersArrayUNSAFE))
         };
 
@@ -562,7 +562,7 @@ FCIMPL6(Object*, StdMngIReflect::GetMethod, Object* refThisUNSAFE, Object* refNa
     FC_GC_POLL_AND_RETURN_OBJREF(retVal);
 }
 FCIMPLEND
-    
+
 FCIMPL3(Object*, StdMngIReflect::GetMethod_2,   Object* refThisUNSAFE, Object* refNameUNSAFE, INT32 enumBindingAttr)
 {
     CONTRACTL
@@ -697,8 +697,8 @@ FCIMPL7(Object*, StdMngIReflect::GetProperty,   Object* refThisUNSAFE, Object* r
             /* 1 */ ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE)),
             /* 2 */ enumBindingAttr,
             /* 3 */ ObjToArgSlot(ObjectToOBJECTREF(refBinderUNSAFE)),
-            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTypeUNSAFE)), 
-            /* 5 */ ObjToArgSlot(ObjectToOBJECTREF(refTypesArrayUNSAFE)), 
+            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTypeUNSAFE)),
+            /* 5 */ ObjToArgSlot(ObjectToOBJECTREF(refTypesArrayUNSAFE)),
             /* 6 */ ObjToArgSlot(ObjectToOBJECTREF(refModifiersArrayUNSAFE))
         };
 
@@ -851,10 +851,10 @@ FCIMPL9(Object*, StdMngIReflect::InvokeMember,  Object* refThisUNSAFE, Object* r
             /* 1 */ ObjToArgSlot(ObjectToOBJECTREF(refNameUNSAFE)),
             /* 2 */ enumBindingAttr,
             /* 3 */ ObjToArgSlot(ObjectToOBJECTREF(refBinderUNSAFE)),
-            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTargetUNSAFE)), 
-            /* 5 */ ObjToArgSlot(ObjectToOBJECTREF(refArgsArrayUNSAFE)), 
-            /* 6 */ ObjToArgSlot(ObjectToOBJECTREF(refModifiersArrayUNSAFE)), 
-            /* 7 */ ObjToArgSlot(ObjectToOBJECTREF(refCultureUNSAFE)), 
+            /* 4 */ ObjToArgSlot(ObjectToOBJECTREF(refTargetUNSAFE)),
+            /* 5 */ ObjToArgSlot(ObjectToOBJECTREF(refArgsArrayUNSAFE)),
+            /* 6 */ ObjToArgSlot(ObjectToOBJECTREF(refModifiersArrayUNSAFE)),
+            /* 7 */ ObjToArgSlot(ObjectToOBJECTREF(refCultureUNSAFE)),
             /* 8 */ ObjToArgSlot(ObjectToOBJECTREF(refNamedParamsArrayUNSAFE))
         };
 
@@ -919,7 +919,7 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
     OBJECTREF *porefThis = (OBJECTREF *)&args[0];
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-    
+
     GCPROTECT_ARRAY_BEGIN(args[0], 1);
 
     // There are three ways to handle calls via IEnumerable::GetEnumerator on an RCW:
@@ -931,7 +931,7 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
     {
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pSB);
-        
+
         if (pRCW->SupportsIInspectable())
         {
             //
@@ -952,14 +952,14 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
                     //
                     MethodDescCallSite callSite(pGetEnumeratorMethod, porefThis);
 
-                    retVal = callSite.Call_RetOBJECTREF(args);                    
+                    retVal = callSite.Call_RetOBJECTREF(args);
                 }
                 else
                 {
                     //
                     // IBindableIterable
                     //
-                    MethodDescCallSite callSite(MscorlibBinder::GetMethod(METHOD__BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB));                    
+                    MethodDescCallSite callSite(MscorlibBinder::GetMethod(METHOD__BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB));
                     retVal = callSite.Call_RetOBJECTREF(args);
                 }
             }

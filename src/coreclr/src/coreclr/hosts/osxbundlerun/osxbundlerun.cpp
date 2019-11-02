@@ -11,7 +11,7 @@
 //   /Contents/ManagedBundle/       Your managed assemblies, including yourAppName.exe
 //
 // Of course you can also include whatever else you might need in the app package
-// 
+//
 // Symlinking the CoreClrBundle is handy for dev/debug builds. eg:
 //
 //   Contents> ln -s ~/dotnet/runtime/ CoreClrBundle

@@ -21,7 +21,7 @@ struct user_vfpregs_struct
 } __attribute__((__packed__));
 #endif
 
-class ThreadInfo 
+class ThreadInfo
 {
 private:
     pid_t m_tid;                                // thread id

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: HotHeapWriter.h
-// 
+//
 
-// 
+//
 // Class code:HeapIndex represents type of MetaData heap (#String, #GUID, #Blob, or #US).
-// 
+//
 // ======================================================================================
 
 #pragma once
@@ -16,9 +16,9 @@ namespace MetaData
 {
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // This class represents type of MetaData heap (#String, #GUID, #Blob, or #US).
-// 
+//
 class HeapIndex
 {
 private:
@@ -26,12 +26,12 @@ private:
 public:
     enum
     {
-        StringHeapIndex     = 0, 
-        GuidHeapIndex       = 1, 
-        BlobHeapIndex       = 2, 
-        UserStringHeapIndex = 3, 
-        
-        CountHeapIndex, 
+        StringHeapIndex     = 0,
+        GuidHeapIndex       = 1,
+        BlobHeapIndex       = 2,
+        UserStringHeapIndex = 3,
+
+        CountHeapIndex,
         InvalidHeapIndex
     };
     HeapIndex()
@@ -62,7 +62,7 @@ public:
     }
     UINT32 Get() const
         { return m_Index; }
-    
+
 };  // class HeapIndex
 
 };  // namespace MetaData

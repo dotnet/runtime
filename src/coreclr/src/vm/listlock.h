@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ListLock.h
-// 
+//
 
-// 
+//
 // ===========================================================================
 // This file decribes the list lock and deadlock aware list lock.
 // ===========================================================================
@@ -33,7 +33,7 @@ class ListLockEntryBase
     typedef ListLockEntryBase<ELEMENT> Entry_t;
     typedef ListLockBase<ELEMENT> List_t;
     typedef typename List_t::LockHolder ListLockHolder;
-    
+
 
 public:
 #ifdef _DEBUG
@@ -224,12 +224,12 @@ public:
     {
     public:
 
-        LockHolder() 
+        LockHolder()
           : LockHolderBase(NULL, FALSE)
         {
         }
 
-        LockHolder(Entry_t *value, BOOL take = TRUE) 
+        LockHolder(Entry_t *value, BOOL take = TRUE)
           : LockHolderBase(value, take)
         {
         }
@@ -314,7 +314,7 @@ class ListLockBase
     {
         CANNOT_HAVE_CONTRACT; // See below
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-#if 0 // The cleanup logic contract will cause any forbid GC state from the Crst to 
+#if 0 // The cleanup logic contract will cause any forbid GC state from the Crst to
       // get deleted.  This causes asserts from Leave.  We probably should make the contract
       // implementation tolerant of this pattern, or else ensure that the state the contract
       // modifies is not used by any other code.
@@ -349,7 +349,7 @@ class ListLockBase
             PRECONDITION(CheckPointer(this));
 #ifdef DEBUGGING_SUPPORTED
             PRECONDITION(m_Crst.OwnedByCurrentThread() ||
-                CORDebuggerAttached() 
+                CORDebuggerAttached()
                 // This condition should be true, but it is awkward to assert it because adding dbginterface.h creates lots of cycles in the includes
                 // It didn't seem valuable enough to refactor out a wrapper just to preserve it
                 /* && g_pDebugInterface->IsStopped() */);
@@ -372,7 +372,7 @@ class ListLockBase
     }
 
     // Must own the lock before calling this!
-    Entry_t* Pop(BOOL unloading = FALSE) 
+    Entry_t* Pop(BOOL unloading = FALSE)
     {
         LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
@@ -387,7 +387,7 @@ class ListLockBase
     }
 
     // Must own the lock before calling this!
-    Entry_t* Peek() 
+    Entry_t* Peek()
     {
 		LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_Crst.OwnedByCurrentThread());

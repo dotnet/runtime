@@ -15,8 +15,8 @@ class Logger {
     bool m_formatHRESULT;
 
 public:
-    Logger() : 
-        m_isEnabled(true), 
+    Logger() :
+        m_isEnabled(true),
         m_prefixRequired(true),
         m_formatHRESULT(false) { }
 
@@ -28,7 +28,7 @@ public:
     // Disables output from the logger
     void Disable();
 
-  
+
     Logger& operator<< (bool val);
     Logger& operator<< (short val);
     Logger& operator<< (unsigned short val);

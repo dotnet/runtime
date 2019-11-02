@@ -475,7 +475,7 @@ extern int g_IGCTrimCommit;
 extern BOOL g_fEnableETW;
 
 // Returns a BOOL to indicate if the runtime is active or not
-BOOL IsRuntimeActive(); 
+BOOL IsRuntimeActive();
 
 //
 // Global state variable indicating if the EE is in its init phase.
@@ -626,7 +626,7 @@ inline bool CORDebuggerAttached()
 #else // DEBUGGING_SUPPORTED
 
 #define CORDisableJITOptimizations(dwDebuggerBits) FALSE
-         
+
 #endif// DEBUGGING_SUPPORTED
 
 #endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
@@ -758,8 +758,8 @@ inline BOOL NingenEnabled()
 #endif
 }
 
-// Passed to JitManager APIs to determine whether to avoid calling into the host. 
-// The profiling API stackwalking uses this to ensure to avoid re-entering the host 
+// Passed to JitManager APIs to determine whether to avoid calling into the host.
+// The profiling API stackwalking uses this to ensure to avoid re-entering the host
 // (particularly SQL) from a hijacked thread.
 enum HostCallPreference
 {

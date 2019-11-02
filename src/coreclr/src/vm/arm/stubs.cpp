@@ -67,7 +67,7 @@ EXTERN_C void JIT_PatchedWriteBarrierLast();
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
-// InstructionFormat for conditional jump. 
+// InstructionFormat for conditional jump.
 //-----------------------------------------------------------------------
 class ThumbCondJump : public InstructionFormat
 {
@@ -82,7 +82,7 @@ class ThumbCondJump : public InstructionFormat
             LIMITED_METHOD_CONTRACT
 
             _ASSERTE(refsize == InstructionFormat::k16);
-                
+
             return 2;
         }
 
@@ -94,7 +94,7 @@ class ThumbCondJump : public InstructionFormat
 
             return 4;
         }
-        
+
         //CB{N}Z Rn, <Label>
         //Encoding 1|0|1|1|op|0|i|1|imm5|Rn
         //op = Bit3(variation)
@@ -106,7 +106,7 @@ class ThumbCondJump : public InstructionFormat
             _ASSERTE(refsize == InstructionFormat::k16);
 
             if(fixedUpReference <0 || fixedUpReference > 126)
-                COMPlusThrow(kNotSupportedException); 
+                COMPlusThrow(kNotSupportedException);
 
             _ASSERTE((fixedUpReference & 0x1) == 0);
 
@@ -145,7 +145,7 @@ class ThumbNearJump : public InstructionFormat
 
             _ASSERTE(cond <15);
 
-            //offsets must be in multiples of 2 
+            //offsets must be in multiples of 2
             _ASSERTE((fixedUpReference & 0x1) == 0);
 
             if(cond == 0xe) //Always execute
@@ -166,8 +166,8 @@ class ThumbNearJump : public InstructionFormat
 
                     //Emit T4 encoding of B<c> <label> instruction
                     int s = (fixedUpReference & 0x1000000) >> 24;
-                    int i1 = (fixedUpReference & 0x800000) >> 23; 
-                    int i2 = (fixedUpReference & 0x400000) >> 22; 
+                    int i1 = (fixedUpReference & 0x800000) >> 23;
+                    int i2 = (fixedUpReference & 0x400000) >> 22;
                     pOutBuffer[0] = static_cast<BYTE>((fixedUpReference & 0xff000) >> 12);
                     pOutBuffer[1] = static_cast<BYTE>(0xf0 | (s << 2) |( (fixedUpReference & 0x300000) >>20));
                     pOutBuffer[2] = static_cast<BYTE>((fixedUpReference & 0x1fe) >> 1);
@@ -175,10 +175,10 @@ class ThumbNearJump : public InstructionFormat
                 }
                 else
                 {
-                    COMPlusThrow(kNotSupportedException); 
+                    COMPlusThrow(kNotSupportedException);
                 }
             }
-            else // conditional branch based on flags 
+            else // conditional branch based on flags
             {
                 if(fixedUpReference >= -256 && fixedUpReference <= 254)
                 {
@@ -202,7 +202,7 @@ class ThumbNearJump : public InstructionFormat
                 }
                 else
                 {
-                    COMPlusThrow(kNotSupportedException); 
+                    COMPlusThrow(kNotSupportedException);
                 }
             }
         }
@@ -248,10 +248,10 @@ class ThumbNearJump : public InstructionFormat
 };
 
 
-//static conditional jump instruction format object 
+//static conditional jump instruction format object
 static BYTE gThumbCondJump[sizeof(ThumbCondJump)];
 
-//static near jump instruction format object 
+//static near jump instruction format object
 static BYTE gThumbNearJump[sizeof(ThumbNearJump)];
 
 void StubLinkerCPU::Init(void)
@@ -303,7 +303,7 @@ const int CheckedWriteBarrierIndex  = 1;
 const int ByRefWriteBarrierIndex    = 2;
 const int MaxWriteBarrierIndex      = 3;
 
-WriteBarrierMapping wbMapping[MaxWriteBarrierIndex] = 
+WriteBarrierMapping wbMapping[MaxWriteBarrierIndex] =
                                     {
                                         {(PBYTE)JIT_WriteBarrier, NULL},
                                         {(PBYTE)JIT_CheckedWriteBarrier, NULL},
@@ -422,7 +422,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     if (pDesc->m_dw_##_global##_offset != 0xffff)                       \
         PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset - 1), (UINT32)(dac_cast<TADDR>(_global)));
 
-    // Iterate through the write barrier patch table created in the .clrwb section 
+    // Iterate through the write barrier patch table created in the .clrwb section
     // (see write barrier asm code)
     WriteBarrierDescriptor * pDesc = &g_rgWriteBarrierDescriptors;
     while (pDesc->m_pFuncStart)
@@ -430,7 +430,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
         // If the write barrier is being currently used (as in copied over to the patchable site)
         // then read the patch location from the table and use the offset to patch the target asm code
         PBYTE to = FindWBMapping(pDesc->m_pFuncStart);
-        if(to) 
+        if(to)
         {
             GWB_PATCH_OFFSET(g_lowest_address);
             GWB_PATCH_OFFSET(g_highest_address);
@@ -525,7 +525,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolRegPtrs.R10 = &unwoundstate->captureR4_R11[6];
     nonVolRegPtrs.R11 = &unwoundstate->captureR4_R11[7];
 #endif // DACCESS_COMPILE
-    
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p)\n", baseState->captureIp, baseState->captureSp));
 
     PCODE pvControlPc;
@@ -559,7 +559,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
         else
         {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
             BOOL fFailedReaderLock = FALSE;
             BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
@@ -584,7 +584,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     //
     // Update unwoundState so that HelperMethodFrameRestoreState knows which
-    // registers have been potentially modified.  
+    // registers have been potentially modified.
     //
 
     unwoundstate->_pc = ctx.Pc;
@@ -625,16 +625,16 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-    
+
     //
     // Copy the saved state from the frame to the current context.
     //
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState._pc, m_MachState._sp));
-    
+
  #if defined(DACCESS_COMPILE)
     // For DAC, we may get here when the HMF is still uninitialized.
     // So we may need to unwind here.
@@ -665,10 +665,10 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pContext = NULL;
     pRD->ControlPC = GetReturnAddress();
     pRD->SP = (DWORD)(size_t)m_MachState._sp;
-    
+
     pRD->pCurrentContext->Pc = pRD->ControlPC;
     pRD->pCurrentContext->Sp = pRD->SP;
-    
+
     pRD->pCurrentContext->R4 = *m_MachState._R4_R11[0];
     pRD->pCurrentContext->R5 = *m_MachState._R4_R11[1];
     pRD->pCurrentContext->R6 = *m_MachState._R4_R11[2];
@@ -677,7 +677,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->R9 = *m_MachState._R4_R11[5];
     pRD->pCurrentContext->R10 = *m_MachState._R4_R11[6];
     pRD->pCurrentContext->R11 = *m_MachState._R4_R11[7];
-    
+
     pRD->pCurrentContextPointers->R4 = m_MachState._R4_R11[0];
     pRD->pCurrentContextPointers->R5 = m_MachState._R4_R11[1];
     pRD->pCurrentContextPointers->R6 = m_MachState._R4_R11[2];
@@ -836,7 +836,7 @@ void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
-    // Note that GetMethodDesc() does not return the correct value because of 
+    // Note that GetMethodDesc() does not return the correct value because of
     // regrouping of MethodDescs into hot and cold blocks. That's why the caller
     // has to supply the actual MethodDesc
 
@@ -992,7 +992,7 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
 
     // nop - insert padding
     _stub._entryPoint[n++] = 0xbf00;
-    
+
     _ASSERTE(n == DispatchStub::entryPointLen);
 
     // Make sure that the data members below are aligned
@@ -1716,7 +1716,7 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
     MetaSig sDstSig(pMD->GetSignature(),
                     pMD->GetModule(),
                     &sTypeContext,
-                    MetaSig::sigMember);      
+                    MetaSig::sigMember);
 
     sDstSig.SetHasParamTypeArg();
 
@@ -1835,7 +1835,7 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         {
             idxLastRegDesc--;
         }
-        
+
         if (idxLastRegDesc < 0)
         {
             // No register is used to pass any of the parameters. No need to reverse the order of the descriptors
@@ -1844,7 +1844,7 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         else
         {
             _ASSERTE(idxLastRegDesc >= 0 && ((DWORD)idxLastRegDesc) < cArgDescriptors);
-            
+
             // First move to stack location happens after the last move to register location
             idxFirstMoveToStack = idxLastRegDesc+1;
 
@@ -2017,7 +2017,7 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         {
             _ASSERTE(idxFirstMoveToStack < cArgDescriptors);
             idxCurrentLoopBegin = idxFirstMoveToStack;
-        
+
             for (idxCurrentDesc = idxCurrentLoopBegin; idxCurrentDesc < idxCurrentLoopEnd; idxCurrentDesc++)
             {
                 ArgDesc *pArgDesc = &rgArgDescs[idxCurrentDesc];
@@ -2238,8 +2238,8 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 }
 
 #ifndef CROSSGEN_COMPILE
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -2252,40 +2252,40 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     // Next, copy all the callee saved registers
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
-    
+
     // Set ControlPC to be the same as the saved "return address"
     // value, which is actually a ControlPC in the frameless method (e.g.
     // faulting address incase of AV or TAE).
     pRD->pCurrentContext->Pc = GetReturnAddress();
-    
+
     // Set the caller SP
     pRD->pCurrentContext->Sp = this->GetSP();
-    
+
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
-    
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // Next, copy all the callee saved registers
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &m_calleeSavedRegisters);
-    
+
     // Set ControlPC to be the same as the saved "return address"
     // value, which is actually a ControlPC in the frameless method (e.g.
     // faulting address incase of AV or TAE).
     pRD->pCurrentContext->Pc = m_ReturnAddress;
-    
+
     // Set the caller SP
     pRD->pCurrentContext->Sp = dac_cast<TADDR>(this) + sizeof(*this);
-    
+
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
-    
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
@@ -2308,8 +2308,8 @@ void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 
 #endif // !DACCESS_COMPILE
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     LIMITED_METHOD_DAC_CONTRACT;
 
     // Copy the context to regdisplay
@@ -2343,7 +2343,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // We should skip over InlinedCallFrame if it is not active.
         // It will be part of a JITed method's frame, and the stack-walker
         // can handle such a case.
-#ifdef PROFILING_SUPPORTED        
+#ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
         HOST_NOCALLS;
@@ -2376,7 +2376,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->R11 = m_pCalleeSavedFP;
     pRD->pCurrentContextPointers->R11 = &m_pCalleeSavedFP;
 
-    // This is necessary to unwind methods with alloca. This needs to stay 
+    // This is necessary to unwind methods with alloca. This needs to stay
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.
     pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pSPAfterProlog);
     pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pSPAfterProlog;
@@ -2385,14 +2385,14 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr(void) 
-{ 
+TADDR ResumableFrame::GetReturnAddressPtr(void)
+{
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     CONTRACT_VOID
     {
         NOTHROW;
@@ -2435,13 +2435,13 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
          SUPPORTS_DAC;
      }
      CONTRACTL_END;
- 
+
      pRD->IsCallerContextValid = FALSE;
      pRD->IsCallerSPValid      = FALSE;
- 
+
      pRD->pCurrentContext->Pc = m_ReturnAddress;
      pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
- 
+
      pRD->pCurrentContext->R0 = m_Args->R0;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
@@ -2562,7 +2562,7 @@ void InitJITHelpers1()
 //      -- MulticastFrame start
 //              -4      gs cookie
 //              -...    floating point argument registers
-void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash) 
+void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 {
     //Decode Multicast Delegate hash
     unsigned int numStackBytes = hash >> 8;
@@ -2618,7 +2618,7 @@ void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     //r7 as counter. Initialize it to 0.
     // mov r7, 0
     ThumbEmitMovConstant(ThumbReg(7), 0);
-    
+
     //initialize r9 to _invocationCount
     ThumbEmitLoadRegIndirect(ThumbReg(9), ThumbReg(0), DelegateObject::GetOffsetOfInvocationCount());
 
@@ -2664,10 +2664,10 @@ void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     if(numFPRegs)
     {
         ThumbEmitAdd(ThumbReg(0), thumbRegSp, offsetOfFPRegs);
-        //vldm{IA}.32 R0, s0-s(numFPRegs-1) 
+        //vldm{IA}.32 R0, s0-s(numFPRegs-1)
         Emit16(0xec90);
         Emit16(0x0a00 | (WORD)numFPRegs);
-    }    
+    }
 
     //ldr r0, [r4+0x30] // get the first argument
     ThumbEmitLoadRegIndirect(ThumbReg(0),ThumbReg(4), MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters());
@@ -2684,7 +2684,7 @@ void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 
     // ldr r0, [r8+0x04] //_target from the delegate
     ThumbEmitLoadRegIndirect(ThumbReg(0), ThumbReg(8), DelegateObject::GetOffsetOfTarget());
-    
+
     // ldr r8, [r8+0xC] // methodPtr from the delegate
     ThumbEmitLoadRegIndirect(ThumbReg(8), ThumbReg(8), DelegateObject::GetOffsetOfMethodPtr());
 
@@ -2703,11 +2703,11 @@ void StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     //endloop:
     EmitLabel(pEndLoopLabel);
 
-  
+
     //At this point of the stub:
     //r4 must point to Frame
     //and r5 must be current Thread*
-    
+
     EmitStubUnlinkFrame();
 
     // Epilog
@@ -2809,7 +2809,7 @@ void StubLinkerCPU::EmitSecureDelegateInvoke(UINT_PTR hash)
     ThumbEmitEpilog();
 }
 
-//The function expects r4 to point to frame 
+//The function expects r4 to point to frame
 //and r5 must be current Thread*
 void StubLinkerCPU::EmitStubUnlinkFrame()
 {
@@ -2818,24 +2818,24 @@ void StubLinkerCPU::EmitStubUnlinkFrame()
     // Thus, at this point, all other callee-saved registers
     // could be used since we are anyways going to restore them
     // via epilog execution.
-    
+
     // Ensure that GSCookie is valid
     //
     // ldr r6, [r4-4]; Load the value of GSCookie
     ThumbEmitSub(ThumbReg(6), ThumbReg(4), 4);
     ThumbEmitLoadRegIndirect(ThumbReg(6), ThumbReg(6), 0);
-    
+
     // mov r7, s_gsCookie
     ThumbEmitMovConstant(ThumbReg(7), GetProcessGSCookie());
-    
+
     // cmp r6, r7 ; Are the GSCookie values in sync?
     ThumbEmitCmpReg(ThumbReg(6), ThumbReg(7));
-    
+
     CodeLabel *pAllDoneLabel = NewCodeLabel();
 
     // beq AllDone; yes, GSCookie is good.
     ThumbEmitCondFlagJump(pAllDoneLabel, 0);
-    
+
     // If we are here, then GSCookie was bad.
     // Call into DoJITFailFast.
     //
@@ -2846,7 +2846,7 @@ void StubLinkerCPU::EmitStubUnlinkFrame()
     // Emit a breakpoint - we are not expected to come here at all
     // if we performed a FailFast.
     ThumbEmitBreakpoint();
-    
+
     //AllDone:
     EmitLabel(pAllDoneLabel);
 #endif // _DEBUG
@@ -2890,7 +2890,7 @@ void StubLinkerCPU::EmitStubLinkFrame(TADDR pFrameVptr, int offsetOfFrame, int o
 #ifdef FEATURE_PAL
     // reload argument registers that could have been corrupted by the call
     for (int reg = 0; reg < 4; reg++)
-        ThumbEmitLoadRegIndirect(ThumbReg(reg), ThumbReg(4), 
+        ThumbEmitLoadRegIndirect(ThumbReg(reg), ThumbReg(4),
             offsetOfTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, r[reg]));
 #endif
 
@@ -2926,7 +2926,7 @@ void StubLinkerCPU::ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbR
 UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig *pSig)
 {
     // Generate a hash key as follows:
-    // Bit0-2   : num of general purpose registers used 
+    // Bit0-2   : num of general purpose registers used
     // Bit3-7   : num of FP regs used (counting in terms of s0,s1...)
     // Bit8-22 : num of stack bytes used
 
@@ -2934,7 +2934,7 @@ UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig *pSig)
 
     UINT numStackBytes = delegateCallConv.SizeOfArgStack();
 
-    if (numStackBytes > 0x7FFF) 
+    if (numStackBytes > 0x7FFF)
         COMPlusThrow(kNotSupportedException, W("NotSupported_TooManyArgs"));
 
     int cGenReg = 1; // r0 is always used for this pointer

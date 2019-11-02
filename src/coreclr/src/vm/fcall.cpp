@@ -19,7 +19,7 @@
 NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, LPCWSTR arg1, LPCWSTR arg2, LPCWSTR arg3)
 {
     STATIC_CONTRACT_THROWS;
-    // This isn't strictly true... But the guarentee that we make here is 
+    // This isn't strictly true... But the guarentee that we make here is
     // that we won't trigger without having setup a frame.
     // STATIC_CONTRACT_TRIGGER
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -38,10 +38,10 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     // In V1, throwing an ExecutionEngineException actually never really threw anything... its was the same as a
     // fatal error in the runtime, and we will most probably would have ripped the process down. Starting in
     // Whidbey, this behavior has changed a lot. Its not really legal to try to throw an
-    // ExecutionEngineExcpetion with this function. 
+    // ExecutionEngineExcpetion with this function.
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"Don't throw kExecutionEngineException from here. Go to EEPolicy directly, or throw something better.");
-    
+
     if (resID == 0)
     {
         // If we have an string to add use NonLocalized otherwise just throw the exception.
@@ -50,7 +50,7 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
         else
             COMPlusThrow(reKind);
     }
-    else 
+    else
         COMPlusThrow(reKind, resID, arg1, arg2, arg3);
 
     HELPER_METHOD_FRAME_END();
@@ -62,7 +62,7 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
 NOINLINE LPVOID __FCThrowArgument(LPVOID __me, RuntimeExceptionKind reKind, LPCWSTR argName, LPCWSTR resourceName)
 {
     STATIC_CONTRACT_THROWS;
-    // This isn't strictly true... But the guarentee that we make here is 
+    // This isn't strictly true... But the guarentee that we make here is
     // that we won't trigger without having setup a frame.
     // STATIC_CONTRACT_TRIGGER
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -110,11 +110,11 @@ NOINLINE LPVOID __FCThrowArgument(LPVOID __me, RuntimeExceptionKind reKind, LPCW
 /* erect a frame in the FCALL and then poll the GC, objToProtect will be protected
    during the poll and the updated object returned.  */
 
-NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect) 
+NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
 {
     CONTRACTL {
         THROWS;
-        // This isn't strictly true... But the guarentee that we make here is 
+        // This isn't strictly true... But the guarentee that we make here is
         // that we won't trigger without having setup a frame.
         UNCHECKED(GC_NOTRIGGER);
     } CONTRACTL_END;
@@ -133,7 +133,7 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
             GCOnTransition = GC_ON_TRANSITIONS (FALSE);
         }
 #endif
-        CommonTripThread();					
+        CommonTripThread();
 #ifdef _DEBUG
         if (g_pConfig->FastGCStressLevel()) {
             GC_ON_TRANSITIONS (GCOnTransition);
@@ -163,7 +163,7 @@ static __int64 getCycleCount() {
     LIMITED_METHOD_CONTRACT;
     return GET_CYCLE_COUNT();
 }
-#else 
+#else
 static __int64 getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
 #endif
 
@@ -171,38 +171,38 @@ static __int64 getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
 // No contract here: The contract destructor restores the thread contract state to what it was
 // soon after constructing the contract. This would have the effect of reverting the contract
 // state change made by the call to BeginForbidGC.
-DEBUG_NOINLINE ForbidGC::ForbidGC(const char *szFile, int lineNum) 
-{ 
+DEBUG_NOINLINE ForbidGC::ForbidGC(const char *szFile, int lineNum)
+{
     SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     m_pThread = GetThread();
-    m_pThread->BeginForbidGC(szFile, lineNum); 
+    m_pThread->BeginForbidGC(szFile, lineNum);
 }
 
 /**************************************************************************************/
 // No contract here: The contract destructor restores the thread contract state to what it was
 // soon after constructing the contract. This would have the effect of reverting the contract
 // state change made by the call to BeginForbidGC.
-DEBUG_NOINLINE ForbidGC::~ForbidGC() 
-{ 
+DEBUG_NOINLINE ForbidGC::~ForbidGC()
+{
     SCAN_SCOPE_END;
 
     // IF EH happens, this is still called, in which case
-    // we should not bother 
-    
+    // we should not bother
+
     if (m_pThread->RawGCNoTrigger())
-        m_pThread->EndNoTriggerGC(); 
+        m_pThread->EndNoTriggerGC();
 }
 
 /**************************************************************************************/
-DEBUG_NOINLINE FCallCheck::FCallCheck(const char *szFile, int lineNum) : ForbidGC(szFile, lineNum) 
+DEBUG_NOINLINE FCallCheck::FCallCheck(const char *szFile, int lineNum) : ForbidGC(szFile, lineNum)
 {
     SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    
+
 #ifdef _DEBUG
     unbreakableLockCount = m_pThread->GetUnbreakableLockCount();
 #endif
@@ -212,7 +212,7 @@ DEBUG_NOINLINE FCallCheck::FCallCheck(const char *szFile, int lineNum) : ForbidG
 }
 
 /**************************************************************************************/
-DEBUG_NOINLINE FCallCheck::~FCallCheck() 
+DEBUG_NOINLINE FCallCheck::~FCallCheck()
 {
     SCAN_SCOPE_END;
 
@@ -229,15 +229,15 @@ DEBUG_NOINLINE FCallCheck::~FCallCheck()
     //
     //      FC_GC_POLL_AND_RETURN_OBJREF        or
     //      FC_GC_POLL                          or
-    //      FC_GC_POLL_RET              
+    //      FC_GC_POLL_RET
     //
     // Note that these must be at GC safe points.  In particular
-    // all object references that are NOT protected will be trashed. 
+    // all object references that are NOT protected will be trashed.
 
 
     // There is a special poll called FC_GC_POLL_NOT_NEEDED
     // which says the code path is short enough that a GC poll is not need
-    // you should not use this in most cases.  
+    // you should not use this in most cases.
 
     _ASSERTE(unbreakableLockCount == m_pThread->GetUnbreakableLockCount() ||
              (!m_pThread->HasUnbreakableLock() && !m_pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock)));
@@ -262,7 +262,7 @@ DEBUG_NOINLINE FCallCheck::~FCallCheck()
 FCallTransitionState::FCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     m_pThread = GetThread();
     _ASSERTE(m_pThread);
 
@@ -275,7 +275,7 @@ FCallTransitionState::FCallTransitionState ()
 FCallTransitionState::~FCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     m_pThread->m_pHelperMethodFrameCallerList = m_pPreviousHelperMethodFrameCallerList;
 }
 
@@ -283,7 +283,7 @@ FCallTransitionState::~FCallTransitionState ()
 PermitHelperMethodFrameState::PermitHelperMethodFrameState ()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     m_pThread = GetThread();
     _ASSERTE(m_pThread);
 
@@ -308,7 +308,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        DEBUG_ONLY;    
+        DEBUG_ONLY;
     } CONTRACTL_END;
 
     //
@@ -337,7 +337,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
     {
         CurrentSP = GetSP(&ctx);
         CurrentIP = GetIP(&ctx);
-        
+
         Thread::VirtualUnwindCallFrame(&ctx);
 
         TADDR CallerSP = GetSP(&ctx);
@@ -383,7 +383,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
 CompletedFCallTransitionState::CompletedFCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 
@@ -396,7 +396,7 @@ CompletedFCallTransitionState::CompletedFCallTransitionState ()
 CompletedFCallTransitionState::~CompletedFCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 

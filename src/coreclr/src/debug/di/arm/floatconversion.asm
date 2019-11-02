@@ -15,7 +15,7 @@
 
     LEAF_ENTRY FPFillR8
         vldr  D0, [R0]
-        bx   lr  
+        bx   lr
     LEAF_END
 
 

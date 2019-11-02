@@ -22,7 +22,7 @@ Abstract:
 
 #include "pal/corunix.hpp"
 #include "pal/handlemgr.hpp"
-#include "pal/list.h"    
+#include "pal/list.h"
 #include "shmobject.hpp"
 
 namespace CorUnix
@@ -35,7 +35,7 @@ namespace CorUnix
         bool m_fListLockInitialized;
         LIST_ENTRY m_leNamedObjects;
         LIST_ENTRY m_leAnonymousObjects;
-        
+
         CSimpleHandleManager m_HandleManager;
 
         PAL_ERROR
@@ -48,7 +48,7 @@ namespace CorUnix
             bool fAddRefSharedData,
             CSharedMemoryObject **ppshmobj
             );
-        
+
     public:
 
         CSharedMemoryObjectManager()
@@ -74,7 +74,7 @@ namespace CorUnix
         //
         // IPalObjectManager routines
         //
-        
+
         virtual
         PAL_ERROR
         AllocateObject(
@@ -94,7 +94,7 @@ namespace CorUnix
             IPalObject **ppobjRegistered
             );
 
-        virtual            
+        virtual
         PAL_ERROR
         LocateObject(
             CPalThread *pthr,
@@ -104,7 +104,7 @@ namespace CorUnix
             );
 
         virtual
-        PAL_ERROR   
+        PAL_ERROR
         ObtainHandleForObject(
             CPalThread *pthr,
             IPalObject *pobj,

@@ -7,7 +7,7 @@
 
 //
 // Simple struct to record the data necessary to interpret ELEMENT_TYPE_VAR
-// and ELEMENT_TYPE_MVAR within pieces of metadata, in particular within 
+// and ELEMENT_TYPE_MVAR within pieces of metadata, in particular within
 // signatures parsed by MetaSig and SigPointer.
 //
 
@@ -43,10 +43,10 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, SigTypeContext *pRes)
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
- 
+
         PRECONDITION(CheckPointer(md));
     } CONTRACTL_END;
- 
+
     MethodTable *pMT = md->GetMethodTable();
     if (pMT->IsArray())
     {
@@ -58,7 +58,7 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, SigTypeContext *pRes)
     }
     pRes->m_methodInst = md->GetMethodInstantiation();
 }
- 
+
 void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, SigTypeContext *pRes)
 {
     CONTRACTL {
@@ -66,29 +66,29 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
- 
+
         PRECONDITION(CheckPointer(md));
     } CONTRACTL_END;
- 
+
     if (declaringType.IsNull())
     {
         SigTypeContext::InitTypeContext(md, pRes);
     }
-    else 
+    else
     {
         MethodTable *pMDMT = md->GetMethodTable();
         if (pMDMT->IsArray())
         {
             pRes->m_classInst = declaringType.GetClassOrArrayInstantiation();
         }
-        else 
+        else
         {
             pRes->m_classInst = declaringType.GetInstantiationOfParentClass(pMDMT);
         }
         pRes->m_methodInst = md->GetMethodInstantiation();
     }
 }
- 
+
 #ifndef DACCESS_COMPILE
 TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
 {
@@ -134,15 +134,15 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, I
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
- 
+
         PRECONDITION(CheckPointer(md));
     } CONTRACTL_END;
- 
+
     if (declaringType.IsNull())
     {
         SigTypeContext::InitTypeContext(md, pRes);
     }
-    else 
+    else
     {
         // <TODO> factor this with the work above </TODO>
         if (declaringType.IsGenericVariable())
@@ -161,7 +161,7 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, I
             {
                 pRes->m_classInst = declaringType.GetClassOrArrayInstantiation();
             }
-            else 
+            else
             {
                 pRes->m_classInst = declaringType.GetInstantiationOfParentClass(pMDMT);
             }
@@ -177,7 +177,7 @@ void SigTypeContext::InitTypeContext(FieldDesc *pFD, TypeHandle declaringType, S
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
- 
+
         PRECONDITION(CheckPointer(declaringType, NULL_OK));
         PRECONDITION(CheckPointer(pFD));
     } CONTRACTL_END;
@@ -185,7 +185,7 @@ void SigTypeContext::InitTypeContext(FieldDesc *pFD, TypeHandle declaringType, S
     InitTypeContext(pFD->GetExactClassInstantiation(declaringType),Instantiation(), pRes);
 }
 
- 
+
 void SigTypeContext::InitTypeContext(TypeHandle th, SigTypeContext *pRes)
 {
     CONTRACTL {
@@ -210,7 +210,7 @@ void SigTypeContext::InitTypeContext(TypeHandle th, SigTypeContext *pRes)
 
 
 const SigTypeContext * SigTypeContext::GetOptionalTypeContext(MethodDesc *md, TypeHandle declaringType, SigTypeContext *pRes)
-{ 
+{
     CONTRACTL
     {
         NOTHROW;
@@ -218,7 +218,7 @@ const SigTypeContext * SigTypeContext::GetOptionalTypeContext(MethodDesc *md, Ty
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(md);
     if (md->HasClassOrMethodInstantiation()  || md->GetMethodTable()->IsArray())
     {
@@ -234,7 +234,7 @@ const SigTypeContext * SigTypeContext::GetOptionalTypeContext(MethodDesc *md, Ty
 }
 
 const SigTypeContext * SigTypeContext::GetOptionalTypeContext(TypeHandle th, SigTypeContext *pRes)
-{ 
+{
     CONTRACTL
     {
         NOTHROW;
@@ -242,10 +242,10 @@ const SigTypeContext * SigTypeContext::GetOptionalTypeContext(TypeHandle th, Sig
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE (!th.IsNull());
     if (th.HasInstantiation() || th.GetMethodTable()->IsArray())
-    { 
+    {
         SigTypeContext::InitTypeContext(th,pRes);
         return pRes;
     }

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.h
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -46,7 +46,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 #define CORDbgGetInstructionEx(_buffer, _requestedAddr, _patchAddr, _dummy1, _dummy2)                          \
     CORDbgGetInstruction((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))));
-                    
+
 #define CORDbgSetInstructionEx(_buffer, _requestedAddr, _patchAddr, _opcode, _dummy2)                          \
     CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))), (_opcode));
 
@@ -79,7 +79,7 @@ SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
 // numbers. Note: this must match the order in corinfo.h.
 //
 inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum reg)
-{ 
+{
     _ASSERTE(reg >= 0);
     _ASSERTE(static_cast<size_t>(reg) < _countof(g_JITToCorDbgReg));
     return g_JITToCorDbgReg[reg];
@@ -89,7 +89,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT* context) 
+inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
 {
     CONTRACTL
     {
@@ -103,7 +103,7 @@ inline LPVOID CORDbgGetIP(DT_CONTEXT* context)
     return (LPVOID) context->Rip;
 }
 
-inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip) 
+inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
 {
     CONTRACTL
     {
@@ -130,7 +130,7 @@ inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
 
     return (LPVOID)context->Rsp;
 }
-inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp) 
+inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 {
     CONTRACTL
     {
@@ -198,8 +198,8 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
 {
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
-    
-    *((unsigned char*)address) = 
+
+    *((unsigned char*)address) =
         (unsigned char) instruction;    // setting one byte is important
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 
@@ -213,7 +213,7 @@ inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
     pContext->Rip -= 1;
 }
 
-inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address) 
+inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -224,13 +224,13 @@ inline BOOL IsRunningOnWin95() {
     return false;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext) 
+inline void SetSSFlag(DT_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags |= 0x100;
 }
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext) 
+inline void UnsetSSFlag(DT_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);
     pContext->EFlags &= ~0x100;

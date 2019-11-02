@@ -56,7 +56,7 @@ INT W32toUnixAccessControl( IN DWORD flProtect )
     case PAGE_NOACCESS :
         MemAccessControl = PROT_NONE;
         break;
-    
+
     default:
         MemAccessControl = 0;
         ERROR( "Incorrect or no protection flags specified.\n" );

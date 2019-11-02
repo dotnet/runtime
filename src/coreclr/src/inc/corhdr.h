@@ -5,14 +5,14 @@
 /*****************************************************************************
  **                                                                         **
  ** CorHdr.h - contains definitions for the Runtime structures,             **
-** 
+**
 
  **            needed to work with metadata.                                **
  **                                                                         **
  *****************************************************************************/
 //
-// The top most managed code structure in a EXE or DLL is the IMAGE_COR20_HEADER 
-// see code:#ManagedHeader for more 
+// The top most managed code structure in a EXE or DLL is the IMAGE_COR20_HEADER
+// see code:#ManagedHeader for more
 
 #ifndef __CORHDR_H__
 #define __CORHDR_H__
@@ -21,7 +21,7 @@
 #define FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
 
 // keys for HKCU
-#ifdef BIT64    
+#ifdef BIT64
 #define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework64"
 #define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework64")
 #else
@@ -145,7 +145,7 @@ typedef enum ReplacesCorHdrNumericDefines
     COMIMAGE_FLAGS_NATIVE_ENTRYPOINT    =0x00000010,
     COMIMAGE_FLAGS_TRACKDEBUGDATA       =0x00010000,
     COMIMAGE_FLAGS_32BITPREFERRED       =0x00020000,    // *** Do not manipulate this bit directly (see notes above)
-    
+
 
 // Version flags for image.
     COR_VERSION_MAJOR_V2                =2,
@@ -155,12 +155,12 @@ typedef enum ReplacesCorHdrNumericDefines
     COR_VTABLEGAP_NAME_LENGTH           =8,
 
 // Maximum size of a NativeType descriptor.
-    NATIVE_TYPE_MAX_CB                  =1,   
+    NATIVE_TYPE_MAX_CB                  =1,
     COR_ILMETHOD_SECT_SMALL_MAX_DATASIZE=0xFF,
 
 // V-table constants
-    COR_VTABLE_32BIT                    =0x01,          // V-table slots are 32-bits in size.   
-    COR_VTABLE_64BIT                    =0x02,          // V-table slots are 64-bits in size.   
+    COR_VTABLE_32BIT                    =0x01,          // V-table slots are 32-bits in size.
+    COR_VTABLE_64BIT                    =0x02,          // V-table slots are 64-bits in size.
     COR_VTABLE_FROM_UNMANAGED           =0x04,          // If set, transition from unmanaged.
     COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN=0x08,    // NEW
     COR_VTABLE_CALL_MOST_DERIVED        =0x10,          // Call most derived method described by
@@ -168,73 +168,73 @@ typedef enum ReplacesCorHdrNumericDefines
 // EATJ constants
     IMAGE_COR_EATJ_THUNK_SIZE           = 32,           // Size of a jump thunk reserved range.
 
-// Max name lengths    
+// Max name lengths
     //@todo: Change to unlimited name lengths.
     MAX_CLASS_NAME                      =1024,
     MAX_PACKAGE_NAME                    =1024,
 } ReplacesCorHdrNumericDefines;
 
 // #ManagedHeader
-// 
+//
 // A managed code EXE or DLL uses the same basic format that unmanaged executables use call the Portable
 // Executable (PE) format. See http://en.wikipedia.org/wiki/Portable_Executable or
 // http://msdn.microsoft.com/msdnmag/issues/02/02/PE/default.aspx for more on this format and RVAs.
-// 
+//
 // PE files define fixed table of well known entry pointers call Directory entries. Each entry holds the
 // relative virtual address (RVA) and length of a blob of data within the PE file. You can see these using
 // the command
-// 
+//
 // link /dump /headers <EXENAME>
-//  
-//  
+//
+//
 // Managed code has defined one of these entries (the 14th see code:IMAGE_DIRECTORY_ENTRY_COMHEADER) and the RVA points
 // that the IMAGE_COR20_HEADER.  This header shows up in the previous dump as the following line
-// 
+//
 // // Managed code is identified by is following line
-// 
+//
 //             2008 [      48] RVA [size] of COM Descriptor Directory
 //
-// The IMAGE_COR20_HEADER is mostly just RVA:Length pairs (pointers) to other interesting data structures. 
+// The IMAGE_COR20_HEADER is mostly just RVA:Length pairs (pointers) to other interesting data structures.
 // The most important of these is the MetaData tables.   The easiest way of looking at meta-data is using
-// the IlDasm.exe tool.   
-// 
+// the IlDasm.exe tool.
+//
 // MetaData holds most of the information in the IL image.  The exceptions are resource blobs and the IL
 // instructions streams for individual methods.  Instead the Meta-data for a method holds an RVA to a
-// code:IMAGE_COR_ILMETHOD which holds all the IL stream (and exception handling information).  
-// 
+// code:IMAGE_COR_ILMETHOD which holds all the IL stream (and exception handling information).
+//
 // Precompiled (NGEN) images use the same IMAGE_COR20_HEADER but also use the ManagedNativeHeader field to
-// point at structures that only exist in precompiled images. 
-//  
+// point at structures that only exist in precompiled images.
+//
 typedef struct IMAGE_COR20_HEADER
 {
     // Header versioning
-    DWORD                   cb;              
+    DWORD                   cb;
     WORD                    MajorRuntimeVersion;
     WORD                    MinorRuntimeVersion;
-    
+
     // Symbol table and startup information
-    IMAGE_DATA_DIRECTORY    MetaData;        
-    DWORD                   Flags;           
-  
+    IMAGE_DATA_DIRECTORY    MetaData;
+    DWORD                   Flags;
+
 	// The main program if it is an EXE (not used if a DLL?)
     // If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is not set, EntryPointToken represents a managed entrypoint.
 	// If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is set, EntryPointRVA represents an RVA to a native entrypoint
-	// (depricated for DLLs, use modules constructors intead). 
+	// (depricated for DLLs, use modules constructors intead).
     union {
         DWORD               EntryPointToken;
         DWORD               EntryPointRVA;
     };
-    
+
     // This is the blob of managed resources. Fetched using code:AssemblyNative.GetResource and
     // code:PEFile.GetResource and accessible from managed code from
 	// System.Assembly.GetManifestResourceStream.  The meta data has a table that maps names to offsets into
-	// this blob, so logically the blob is a set of resources. 
+	// this blob, so logically the blob is a set of resources.
     IMAGE_DATA_DIRECTORY    Resources;
 	// IL assemblies can be signed with a public-private key to validate who created it.  The signature goes
-	// here if this feature is used. 
+	// here if this feature is used.
     IMAGE_DATA_DIRECTORY    StrongNameSignature;
 
-    IMAGE_DATA_DIRECTORY    CodeManagerTable;			// Depricated, not used 
+    IMAGE_DATA_DIRECTORY    CodeManagerTable;			// Depricated, not used
 	// Used for manged codee that has unmaanaged code inside it (or exports methods as unmanaged entry points)
     IMAGE_DATA_DIRECTORY    VTableFixups;
     IMAGE_DATA_DIRECTORY    ExportAddressTableJumps;
@@ -242,14 +242,14 @@ typedef struct IMAGE_COR20_HEADER
 	// null for ordinary IL images. In NGEN images it points at a code:CORCOMPILE_HEADER structure.
 	// In Ready2Run images it points to a READYTORUN_HEADER.
     IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
-    
+
 } IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
 
 #else // !__IMAGE_COR20_HEADER_DEFINED__
 
 // <TODO>@TODO: This is required because we pull in the COM+ 2.0 PE header
 // definition from WinNT.h, and these constants have not yet propogated to there.</TODO>
-// 
+//
 #define COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN 0x08
 #define COMIMAGE_FLAGS_32BITPREFERRED              0x00020000
 
@@ -742,7 +742,7 @@ typedef enum  CorPinvokeMap
 typedef enum CorAssemblyFlags
 {
     afPublicKey             =   0x0001,     // The assembly ref holds the full (unhashed) public key.
-    
+
     afPA_None               =   0x0000,     // Processor Architecture unspecified
     afPA_MSIL               =   0x0010,     // Processor Architecture: neutral (PE32)
     afPA_x86                =   0x0020,     // Processor Architecture: x86 (PE32)
@@ -763,8 +763,8 @@ typedef enum CorAssemblyFlags
     afRetargetable          =   0x0100,     // The assembly can be retargeted (at runtime) to an
                                             //  assembly from a different publisher.
 
-    afContentType_Default         = 0x0000, 
-    afContentType_WindowsRuntime  = 0x0200, 
+    afContentType_Default         = 0x0000,
+    afContentType_WindowsRuntime  = 0x0200,
     afContentType_Mask            = 0x0E00, // Bits describing ContentType
 } CorAssemblyFlags;
 
@@ -833,16 +833,16 @@ typedef enum CorPEKind
 // GenericParam bits, used by DefineGenericParam.
 typedef enum CorGenericParamAttr
 {
-    // Variance of type parameters, only applicable to generic parameters 
+    // Variance of type parameters, only applicable to generic parameters
     // for generic interfaces and delegates
     gpVarianceMask          =   0x0003,
-    gpNonVariant            =   0x0000, 
+    gpNonVariant            =   0x0000,
     gpCovariant             =   0x0001,
     gpContravariant         =   0x0002,
 
     // Special constraints, applicable to any type parameters
     gpSpecialConstraintMask =  0x001C,
-    gpNoSpecialConstraint   =   0x0000,      
+    gpNoSpecialConstraint   =   0x0000,
     gpReferenceTypeConstraint = 0x0004,      // type argument must be a reference type
     gpNotNullableValueTypeConstraint   =   0x0008,      // type argument must be a value type but not Nullable
     gpDefaultConstructorConstraint = 0x0010, // type argument must have a public default constructor
@@ -1209,17 +1209,17 @@ typedef union IMAGE_COR_ILMETHOD_SECT_EH
 
 
 /***********************************************************************************/
-// Legal values for 
-// * code:IMAGE_COR_ILMETHOD_FAT::Flags or 
-// * code:IMAGE_COR_ILMETHOD_TINY::Flags_CodeSize fields. 
-// 
+// Legal values for
+// * code:IMAGE_COR_ILMETHOD_FAT::Flags or
+// * code:IMAGE_COR_ILMETHOD_TINY::Flags_CodeSize fields.
+//
 // The only semantic flag at present is CorILMethod_InitLocals
 typedef enum CorILMethodFlags
 {
     CorILMethod_InitLocals      = 0x0010,           // call default constructor on all local vars
     CorILMethod_MoreSects       = 0x0008,           // there is another attribute after this one
 
-    CorILMethod_CompressedIL    = 0x0040,           // Not used.  
+    CorILMethod_CompressedIL    = 0x0040,           // Not used.
 
         // Indicates the format for the COR_ILMETHOD header
     CorILMethod_FormatShift     = 3,
@@ -1253,7 +1253,7 @@ typedef struct IMAGE_COR_ILMETHOD_FAT
 // an IMAGE_COR_ILMETHOD holds the IL instructions for a individual method.  To save space they come in two
 // flavors Fat and Tiny.  Conceptually Tiny is just a compressed version of Fat, so code:IMAGE_COR_ILMETHOD_FAT
 // is the logical structure for all headers.  Conceptually this blob holds the IL, the Exception Handling
-// Tables, the local variable information and some flags.  
+// Tables, the local variable information and some flags.
 typedef union IMAGE_COR_ILMETHOD
 {
     IMAGE_COR_ILMETHOD_TINY       Tiny;
@@ -1444,7 +1444,7 @@ typedef enum CorLinkerOptions
 typedef enum MergeFlags
 {
     MergeFlagsNone      =   0,
-    MergeManifest       =   0x00000001,     
+    MergeManifest       =   0x00000001,
     DropMemberRefCAs    =   0x00000002,
     NoDupCheck          =   0x00000004,
     MergeExportedTypes  =   0x00000008
@@ -1563,7 +1563,7 @@ typedef enum CorOpenFlags
 
     ofReadOnly          =   0x00000010,     // Open scope for read. Will be unable to QI for a IMetadataEmit* interface
     ofTakeOwnership     =   0x00000020,     // The memory was allocated with CoTaskMemAlloc and will be freed by the metadata
-	
+
     // These are obsolete and are ignored.
     // ofCacheImage     =   0x00000004,     // EE maps but does not do relocations or verify image
     // ofManifestMetadata = 0x00000008,     // Open scope on ngen image, return the manifest metadata instead of the IL metadata
@@ -1588,14 +1588,14 @@ typedef enum CorOpenFlags
 
 #define IsOfReserved(x)                     (((x) & ofReserved) != 0)
 
-// 
+//
 // Type of file mapping returned by code:IMetaDataInfo::GetFileMapping.
-// 
+//
 typedef enum CorFileMapping
 {
-    fmFlat            = 0,  // Flat file mapping - file is mapped as data file (code:SEC_IMAGE flag was not 
+    fmFlat            = 0,  // Flat file mapping - file is mapped as data file (code:SEC_IMAGE flag was not
                             // passed to code:CreateFileMapping).
-    fmExecutableImage = 1,  // Executable image file mapping - file is mapped for execution 
+    fmExecutableImage = 1,  // Executable image file mapping - file is mapped for execution
                             // (either via code:LoadLibrary or code:CreateFileMapping with code:SEC_IMAGE flag).
 } CorFileMapping;
 
@@ -1827,7 +1827,7 @@ typedef enum CorAttributeTargets
 typedef enum CompilationRelaxationsEnum
 {
     CompilationRelaxations_NoStringInterning       = 0x0008,
-        
+
 } CompilationRelaxationEnum;
 
 #define COMPILATIONRELAXATIONS_TYPE_W           W("System.Runtime.CompilerServices.CompilationRelaxationsAttribute")
@@ -1842,12 +1842,12 @@ typedef enum CompilationRelaxationsEnum
 // Keep in sync with AssemblySettingAttributes.cs
 
 typedef enum NGenHintEnum
-{    
+{
     NGenDefault             = 0x0000, // No preference specified
 
     NGenEager               = 0x0001, // NGen at install time
     NGenLazy                = 0x0002, // NGen after install time
-    NGenNever               = 0x0003  // Assembly should not be ngened      
+    NGenNever               = 0x0003  // Assembly should not be ngened
 } NGenHintEnum;
 
 typedef enum LoadHintEnum

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.cpp
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -28,7 +28,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
         CopyContextChunk(&(pDst->Ebp), &(pSrc->Ebp), pDst->ExtendedRegisters,
                          DT_CONTEXT_CONTROL);
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
         CopyContextChunk(&(pDst->Edi), &(pSrc->Edi), &(pDst->Ebp),
                          DT_CONTEXT_INTEGER);
@@ -36,17 +36,17 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     if ((dstFlags & srcFlags & DT_CONTEXT_SEGMENTS) == DT_CONTEXT_SEGMENTS)
         CopyContextChunk(&(pDst->SegGs), &(pSrc->SegGs), &(pDst->Edi),
                          DT_CONTEXT_SEGMENTS);
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
         CopyContextChunk(&(pDst->FloatSave), &(pSrc->FloatSave),
                          (&pDst->FloatSave)+1,
                          DT_CONTEXT_FLOATING_POINT);
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_DEBUG_REGISTERS) ==
         DT_CONTEXT_DEBUG_REGISTERS)
         CopyContextChunk(&(pDst->Dr0), &(pSrc->Dr0), &(pDst->FloatSave),
                          DT_CONTEXT_DEBUG_REGISTERS);
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_EXTENDED_REGISTERS) ==
         DT_CONTEXT_EXTENDED_REGISTERS)
         CopyContextChunk(pDst->ExtendedRegisters,
@@ -56,15 +56,15 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
 }
 
 
-// Update the regdisplay from a given context. 
-void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD, 
+// Update the regdisplay from a given context.
+void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
                                             DT_CONTEXT* pContext)
 {
     // We must pay attention to the context flags so that we only use valid portions
     // of the context.
     DWORD flags = pContext->ContextFlags;
     if ((flags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {    
+    {
         pDRD->PC = (SIZE_T)CORDbgGetIP(pContext);
         pDRD->SP = (SIZE_T)CORDbgGetSP(pContext);
         pDRD->FP = (SIZE_T)CORDbgGetFP(pContext);
@@ -85,7 +85,7 @@ void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
 void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD)
 {
     SUPPORTS_DAC_HOST_ONLY;
-    // Frame pointer        
+    // Frame pointer
     LPVOID FPAddress = GetRegdisplayFPAddress(pRD);
     pDRD->FP  = (FPAddress == NULL ? 0 : *((SIZE_T *)FPAddress));
     pDRD->Edi = (pRD->GetEdiLocation() == NULL ? 0 : *pRD->GetEdiLocation());

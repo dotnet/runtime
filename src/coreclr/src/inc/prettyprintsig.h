@@ -78,10 +78,10 @@ struct IMDInternalImport;
 //      of this string.
 //
 HRESULT PrettyPrintSigInternalLegacy(   // S_OK or error.
-    PCCOR_SIGNATURE sigPtr,             // sig to convert,     
+    PCCOR_SIGNATURE sigPtr,             // sig to convert,
     unsigned    sigLen,                 // length of sig
     LPCSTR  name,                       // can be "", the name of the method for this sig
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI);          // Import api to use.
 
 //

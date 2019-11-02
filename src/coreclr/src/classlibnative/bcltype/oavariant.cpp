@@ -100,7 +100,7 @@ VARENUM COMOAVariant::CVtoVT(const CVTypes cv)
         PRECONDITION(cv >= 0 && cv < CV_LAST);
     }
     CONTRACTL_END;
-    
+
     if (CVtoVTTable[cv] == INVALID_MAPPING)
         COMPlusThrow(kNotSupportedException, W("NotSupported_ChangeType"));
 
@@ -122,7 +122,7 @@ CVTypes COMOAVariant::VTtoCV(const VARENUM vt)
 
     if (vt <0 || vt > VT_VOID || VTtoCVTable[vt]==INVALID_MAPPING)
         COMPlusThrow(kNotSupportedException, W("NotSupported_ChangeType"));
-    
+
     return (CVTypes) VTtoCVTable[vt];
 }
 
@@ -164,7 +164,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
                 // OA perf feature: VarClear calls SysFreeString(null), which access violates.
                 return false;
             }
-            
+
             ((STRINGREF) (var->GetObjRef()))->RefInterpretGetStringValuesDangerousForGC(&chars, &strLen);
             V_BSTR(oa) = SysAllocStringLen(chars, strLen);
             if (V_BSTR(oa) == NULL)
@@ -174,7 +174,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
 
             return true;
 
-        case CV_CHAR:          
+        case CV_CHAR:
             chars = (WCHAR*) var->GetData();
             V_BSTR(oa) = SysAllocStringLen(chars, 1);
             if (V_BSTR(oa) == NULL)
@@ -194,7 +194,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
             V_BOOL(oa) = (var->GetDataAsInt64()==0 ? VARIANT_FALSE : VARIANT_TRUE);
             V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
             return false;
-            
+
         case CV_DECIMAL:
         {
             OBJECTREF obj = var->GetObjRef();
@@ -207,7 +207,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
             V_VT(oa) = VT_DECIMAL;
             return false;
         }
-        
+
         case CV_OBJECT:
         {
             OBJECTREF obj = var->GetObjRef();
@@ -224,7 +224,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
             GCPROTECT_END();
             return true;
         }
-        
+
         default:
             *dest = var->GetDataAsInt64();
             V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
@@ -287,7 +287,7 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
 
 
         // All types less than 4 bytes need an explicit cast from their original
-        // type to be sign extended to 8 bytes.  This makes Variant's ToInt32 
+        // type to be sign extended to 8 bytes.  This makes Variant's ToInt32
         // function simpler for these types.
         case CV_I1:
             var->SetDataAsInt64(V_I1(oa));
@@ -348,7 +348,7 @@ void COMOAVariant::OAFailed(const HRESULT hr)
 
         case DISP_E_BADVARTYPE:
             COMPlusThrow(kNotSupportedException, W("NotSupported_OleAutBadVarType"));
-            
+
         case DISP_E_DIVBYZERO:
             COMPlusThrow(kDivideByZeroException);
 
@@ -369,7 +369,7 @@ void COMOAVariant::OAFailed(const HRESULT hr)
 }
 
 FCIMPL6(void, COMOAVariant::ChangeTypeEx, VariantData *result, VariantData *op, LCID lcid, void *targetType, int cvType, INT16 flags)
-{   
+{
     CONTRACTL
     {
         FCALL_CHECK;
@@ -421,7 +421,7 @@ FCIMPL6(void, COMOAVariant::ChangeTypeEx, VariantData *result, VariantData *op, 
             FromOAVariant(&ret, result);
         }
     }
-    
+
     GCPROTECT_END ();
     HELPER_METHOD_FRAME_END();
 }

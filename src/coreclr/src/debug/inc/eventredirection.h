@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // NativePipeline.h
 //
 // define control block for redirecting events.
@@ -15,7 +15,7 @@
 //---------------------------------------------------------------------------------------
 // Control block for redirecting events.
 // Motivation here is that only 1 process can be the real OS debugger. So if we want a windbg
-// attached to an ICorDebug debuggee, then that windbg is the real debugger and it forwards events 
+// attached to an ICorDebug debuggee, then that windbg is the real debugger and it forwards events
 // to the mdbg process.
 //
 // Terminology:
@@ -24,18 +24,18 @@
 //   Client: ICorDebug, which gets events via shimmed call to WaitForDebugEvent, etc.
 //
 // Control block lives in Client's process space. All handles are valid in client.
-// Sever does Read/WriteProcessMemory 
+// Sever does Read/WriteProcessMemory
 struct RedirectionBlock
 {
     // Version of the control block. Initialized by client, verified by server.
     // Latest value is EVENT_REDIRECTION_CURRENT_VERSION
     DWORD m_versionCookie;
 
-    // 
+    //
     // Counters. After each WFDE/CDE pair, these counters should be in sync.
     //
 
-    // increment after WFDE 
+    // increment after WFDE
     DWORD m_counterAvailable;
     DWORD m_counterConsumed;
 
@@ -61,7 +61,7 @@ struct RedirectionBlock
     // Coordination events. These are handles in client space; server duplicates out.
     //
 
-    // Server signals when WFDE Data is ready. 
+    // Server signals when WFDE Data is ready.
     HANDLE m_hEventAvailable;
 
     // Server signals when CDE data is ready.

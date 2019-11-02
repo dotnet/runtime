@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.inl
-// 
+//
 
 // --------------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 
     return m_sModuleFileNameHintUsedByDac;
 }
-#endif 
+#endif
 
 
 
@@ -97,7 +97,7 @@ inline PTR_PEImageLayout PEImage::GetLoadedLayout()
 // Does not take any locks or call AddRef.
 //
 // Arguments:
-//    imageLayoutMask - bits from PEImageLayout specifying which layouts the caller would be 
+//    imageLayoutMask - bits from PEImageLayout specifying which layouts the caller would be
 //                      interested in getting
 //
 // Return value:
@@ -137,7 +137,7 @@ inline BOOL PEImage::IsOpened()
 
 
 #ifdef FEATURE_PREJIT
-inline CHECK PEImage::CheckNativeFormat() 
+inline CHECK PEImage::CheckNativeFormat()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -345,7 +345,7 @@ inline BOOL PEImage::IsDll()
 
 inline BOOL PEImage::IsIbcOptimized()
 {
-#ifdef FEATURE_PREJIT 
+#ifdef FEATURE_PREJIT
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
         return GetLoadedLayout()->GetNativeILIsIbcOptimized();
@@ -359,7 +359,7 @@ inline BOOL PEImage::IsIbcOptimized()
 #endif
 }
 
-inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize) 
+inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -371,7 +371,7 @@ inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
     }
 }
 
-inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize) 
+inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -395,7 +395,7 @@ inline BOOL PEImage::HasNativeHeader()
     }
 }
 
-inline BOOL PEImage::HasContents() 
+inline BOOL PEImage::HasContents()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -459,7 +459,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
    return (PEImage *) s_Images->LookupValue(dwHash, &locator);
-    
+
 }
 
 /* static */
@@ -475,7 +475,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     }
 
     CrstHolder holder(&s_hashLock);
-    
+
     PEImage* found = FindByPath(pPath);
 
 
@@ -488,18 +488,18 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         }
 
         PEImageHolder pImage(new PEImage);
-#ifdef FEATURE_PREJIT        
+#ifdef FEATURE_PREJIT
         if (flags &  MDInternalImport_TrustedNativeImage)
             pImage->SetIsTrustedNativeImage();
-#endif        
+#endif
         pImage->Init(pPath);
 
         pImage->AddToHashMap();
         return dac_cast<PTR_PEImage>(pImage.Extract());
     }
-    
+
     found->AddRef();
-    
+
     return dac_cast<PTR_PEImage>(found);
 }
 #endif
@@ -593,7 +593,7 @@ inline void PEImage::CachePEKindAndMachine()
     }
     else
     {
-        pLayout.Assign(GetLayout(PEImageLayout::LAYOUT_MAPPED|PEImageLayout::LAYOUT_FLAT, 
+        pLayout.Assign(GetLayout(PEImageLayout::LAYOUT_MAPPED|PEImageLayout::LAYOUT_FLAT,
                                  PEImage::LAYOUT_CREATEIFNEEDED));
     }
 

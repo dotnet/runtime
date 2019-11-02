@@ -84,7 +84,7 @@ StackingAllocator::~StackingAllocator()
     CONTRACTL_END;
 
     Clear(&m_InitialBlock.m_initialBlockHeader);
- 
+
     if (m_DeferredFreeBlock)
     {
         delete [] (char*)m_DeferredFreeBlock;
@@ -174,12 +174,12 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
     CONTRACT_END;
 
     // already aligned and in the hard case
-    
+
     _ASSERTE(n % 8 == 0);
     _ASSERTE(n > m_BytesLeft);
 
     StackBlock* b = NULL;
-    
+
     // we need a block, but before we allocate a new block
     // we're going to check to see if there is block that we saved
     // rather than return to the OS, if there is such a block
@@ -187,7 +187,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
     // OS again -- this helps us if we happen to be checkpointing
     // across a block seam very often as in VSWhidbey #100462
 
-    if (m_DeferredFreeBlock != NULL && m_DeferredFreeBlock->m_Length >= n) 
+    if (m_DeferredFreeBlock != NULL && m_DeferredFreeBlock->m_Length >= n)
     {
         b =  m_DeferredFreeBlock;
         m_DeferredFreeBlock = NULL;
@@ -228,7 +228,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
      m_BytesLeft = static_cast<unsigned>(b->m_Length);
 
      INDEBUG(b->m_Sentinal = 0);
-     
+
      RETURN true;
 }
 
@@ -298,7 +298,7 @@ void StackingAllocator::Collapse(void *CheckpointMarker)
 
         // confirm no buffer overruns
         INDEBUG(Validate(m_FirstBlock, m_FirstFree));
-        
+
         return;
     }
 
@@ -326,7 +326,7 @@ void StackingAllocator::Validate(StackBlock *block, void* spot)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!block) 
+    if (!block)
         return;
     _ASSERTE(m_InitialBlock.m_initialBlockHeader.m_Length == sizeof(m_InitialBlock.m_dataSpace));
     Sentinal* ptr = block->m_Sentinal;
@@ -360,7 +360,7 @@ void StackingAllocator::Clear(StackBlock *ToBlock)
     while (p != ToBlock)
     {
         PREFAST_ASSUME(p != NULL);
-        
+
         q = p;
         p = p->m_Next;
 
@@ -403,7 +403,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
 #else
-    if(n == (size_t)-1) ThrowOutOfMemory();    // overflow occurred 
+    if(n == (size_t)-1) ThrowOutOfMemory();    // overflow occurred
 #endif
 
     void *retval = alloc->UnsafeAllocNoThrow((unsigned)n);
@@ -435,7 +435,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;
 #else
-    if(n == (size_t)-1) return NULL;    // overflow occurred 
+    if(n == (size_t)-1) return NULL;    // overflow occurred
 #endif
 
     return alloc->UnsafeAllocNoThrow((unsigned)n);

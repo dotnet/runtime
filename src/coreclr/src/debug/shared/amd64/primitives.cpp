@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.cpp
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -42,7 +42,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&(pDst->Rip), &(pSrc->Rip), &(pDst->Xmm0),
                          CONTEXT_CONTROL);
     }
-    
+
     if ((dstFlags & srcFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
     {
         // Rax, Rcx, Rdx, Rbx
@@ -59,7 +59,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&(pDst->SegDs), &(pSrc->SegDs), &(pDst->SegSs),
                      CONTEXT_SEGMENTS);
     }
-    
+
     if ((dstFlags & srcFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
         // Xmm0-Xmm15
@@ -70,25 +70,25 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&(pDst->MxCsr), &(pSrc->MxCsr), &(pDst->SegCs),
             CONTEXT_FLOATING_POINT);
     }
-    
+
     if ((dstFlags & srcFlags & CONTEXT_DEBUG_REGISTERS) == CONTEXT_DEBUG_REGISTERS)
     {
         // Dr0-Dr3, Dr6-Dr7
         CopyContextChunk(&(pDst->Dr0), &(pSrc->Dr0), &(pDst->Rax),
                          CONTEXT_DEBUG_REGISTERS);
-    }    
+    }
 }
 
-void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY* pDRD, 
+void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY* pDRD,
                                             DT_CONTEXT* pContext)
 {
     DWORD flags = pContext->ContextFlags;
     if ((flags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {   
+    {
         pDRD->PC = (SIZE_T)CORDbgGetIP(pContext);
         pDRD->SP = (SIZE_T)CORDbgGetSP(pContext);
     }
-    
+
     if ((flags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
     {
         pDRD->Rax = pContext->Rax;
@@ -115,8 +115,8 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     SUPPORTS_DAC_HOST_ONLY;
     // CORDbgSetDebuggerREGDISPLAYFromContext() checks the context flags.  In cases where we don't have a filter
     // context from the thread, we initialize a CONTEXT on the stack and use that to do our stack walking.  We never
-    // initialize the context flags in such cases.  Since this function is called from the stackwalker, we can 
-    // guarantee that the integer, control, and floating point sections are valid.  So we set the flags here and 
+    // initialize the context flags in such cases.  Since this function is called from the stackwalker, we can
+    // guarantee that the integer, control, and floating point sections are valid.  So we set the flags here and
     // restore them afterwards.
     DWORD contextFlags = pRD->pCurrentContext->ContextFlags;
     pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
@@ -158,7 +158,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     pDRD->pR14  = NULL;
     pDRD->pR15  = NULL;
 #endif // USE_REMOTE_REGISTER_ADDRESS
-    
+
     pDRD->PC    = pRD->ControlPC;
     pDRD->SP    = pRD->SP;
 

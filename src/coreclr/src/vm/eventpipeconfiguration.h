@@ -54,7 +54,7 @@ public:
 
     // Delete deferred providers.
     void DeleteDeferredProviders();
-    
+
     // Compute the enabled bit mask, the ith bit is 1 iff an event with the given (provider, keywords, eventLevel) is enabled for the ith session.
     INT64 ComputeEventEnabledMask(const EventPipeProvider& provider, INT64 keywords, EventPipeEventLevel eventLevel) const;
 private:

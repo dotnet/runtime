@@ -531,7 +531,7 @@ HRESULT ProfilerMetadataEmitValidator::DefineField(
     return m_pInner->DefineField(td, szName, dwFieldFlags, pvSigBlob, cbSigBlob, dwCPlusTypeFlag, pValue, cchValue, pmd);
 }
 
-HRESULT ProfilerMetadataEmitValidator::DefineProperty( 
+HRESULT ProfilerMetadataEmitValidator::DefineProperty(
         mdTypeDef   td,
         LPCWSTR     szProperty,
         DWORD       dwPropFlags,
@@ -772,7 +772,7 @@ HRESULT ProfilerMetadataEmitValidator::SetGenericParamProps(
     }
     return m_pInner->SetGenericParamProps(gp, dwParamFlags, szName, reserved, rtkConstraints);
 }
-    
+
 HRESULT ProfilerMetadataEmitValidator::ResetENCLog()
 {
     LIMITED_METHOD_CONTRACT;
@@ -898,19 +898,19 @@ HRESULT ProfilerMetadataEmitValidator::SetManifestResourceProps(
 }
 
 //IMetaDataImport
-void ProfilerMetadataEmitValidator::CloseEnum(HCORENUM hEnum) 
+void ProfilerMetadataEmitValidator::CloseEnum(HCORENUM hEnum)
 {
     LIMITED_METHOD_CONTRACT;
     m_pInnerImport->CloseEnum(hEnum);
 }
 
-HRESULT ProfilerMetadataEmitValidator::CountEnum(HCORENUM hEnum, ULONG *pulCount) 
+HRESULT ProfilerMetadataEmitValidator::CountEnum(HCORENUM hEnum, ULONG *pulCount)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->CountEnum(hEnum, pulCount);
 }
 
-HRESULT ProfilerMetadataEmitValidator::ResetEnum(HCORENUM hEnum, ULONG ulPos) 
+HRESULT ProfilerMetadataEmitValidator::ResetEnum(HCORENUM hEnum, ULONG ulPos)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->ResetEnum(hEnum, ulPos);
@@ -925,7 +925,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumTypeDefs(HCORENUM *phEnum, mdTypeDef 
 
 HRESULT ProfilerMetadataEmitValidator::EnumInterfaceImpls(HCORENUM *phEnum, mdTypeDef td,
     mdInterfaceImpl rImpls[], ULONG cMax,
-    ULONG* pcImpls) 
+    ULONG* pcImpls)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumInterfaceImpls(phEnum, td, rImpls, cMax, pcImpls);
@@ -945,7 +945,7 @@ HRESULT ProfilerMetadataEmitValidator::FindTypeDefByName(
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindTypeDefByName(szTypeDef, tkEnclosingClass, ptd);
-}             
+}
 
 HRESULT ProfilerMetadataEmitValidator::GetScopeProps(
     LPWSTR      szName,
@@ -958,8 +958,8 @@ HRESULT ProfilerMetadataEmitValidator::GetScopeProps(
 }
 
 HRESULT ProfilerMetadataEmitValidator::GetModuleFromScope(
-    mdModule    *pmd) 
-{ 
+    mdModule    *pmd)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetModuleFromScope(pmd);
 }
@@ -970,7 +970,7 @@ HRESULT ProfilerMetadataEmitValidator::GetTypeDefProps(
     ULONG       cchTypeDef,
     ULONG       *pchTypeDef,
     DWORD       *pdwTypeDefFlags,
-    mdToken     *ptkExtends) 
+    mdToken     *ptkExtends)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetTypeDefProps(td, szTypeDef, cchTypeDef, pchTypeDef, pdwTypeDefFlags, ptkExtends);
@@ -980,7 +980,7 @@ HRESULT ProfilerMetadataEmitValidator::GetInterfaceImplProps(
     mdInterfaceImpl iiImpl,
     mdTypeDef   *pClass,
     mdToken     *ptkIface)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetInterfaceImplProps(iiImpl, pClass, ptkIface);
 }
@@ -990,13 +990,13 @@ HRESULT ProfilerMetadataEmitValidator::GetTypeRefProps(
     mdToken     *ptkResolutionScope,
     LPWSTR      szName,
     ULONG       cchName,
-    ULONG       *pchName) 
+    ULONG       *pchName)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetTypeRefProps(tr, ptkResolutionScope, szName, cchName, pchName);
 }
 
-HRESULT ProfilerMetadataEmitValidator::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd) 
+HRESULT ProfilerMetadataEmitValidator::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->ResolveTypeRef(tr, riid, ppIScope, ptd);
@@ -1007,7 +1007,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMembers(
     mdTypeDef   cl,
     mdToken     rMembers[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMembers(phEnum, cl, rMembers, cMax, pcTokens);
@@ -1019,7 +1019,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMembersWithName(
     LPCWSTR     szName,
     mdToken     rMembers[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens);
@@ -1042,8 +1042,8 @@ HRESULT ProfilerMetadataEmitValidator::EnumMethodsWithName(
     LPCWSTR     szName,
     mdMethodDef rMethods[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
-{ 
+    ULONG       *pcTokens)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens);
 }
@@ -1053,11 +1053,11 @@ HRESULT ProfilerMetadataEmitValidator::EnumFields(
     mdTypeDef   cl,
     mdFieldDef  rFields[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumFields(phEnum, cl, rFields, cMax, pcTokens);
-} 
+}
 
 HRESULT ProfilerMetadataEmitValidator::EnumFieldsWithName(
     HCORENUM    *phEnum,
@@ -1077,7 +1077,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumParams(
     mdMethodDef mb,
     mdParamDef  rParams[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumParams(phEnum, mb, rParams, cMax, pcTokens);
@@ -1088,7 +1088,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMemberRefs(
     mdToken     tkParent,
     mdMemberRef rMemberRefs[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens);
@@ -1100,7 +1100,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMethodImpls(
     mdToken     rMethodBody[],
     mdToken     rMethodDecl[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens);
@@ -1112,7 +1112,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumPermissionSets(
     DWORD       dwActions,
     mdPermission rPermission[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens);
@@ -1123,7 +1123,7 @@ HRESULT ProfilerMetadataEmitValidator::FindMember(
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
     ULONG       cbSigBlob,
-    mdToken     *pmb) 
+    mdToken     *pmb)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindMember(td, szName, pvSigBlob, cbSigBlob, pmb);
@@ -1134,7 +1134,7 @@ HRESULT ProfilerMetadataEmitValidator::FindMethod(
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
     ULONG       cbSigBlob,
-    mdMethodDef *pmb) 
+    mdMethodDef *pmb)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindMethod(td, szName, pvSigBlob, cbSigBlob, pmb);
@@ -1145,7 +1145,7 @@ HRESULT ProfilerMetadataEmitValidator::FindField(
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
     ULONG       cbSigBlob,
-    mdFieldDef  *pmb) 
+    mdFieldDef  *pmb)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindField(td, szName, pvSigBlob, cbSigBlob, pmb);
@@ -1156,7 +1156,7 @@ HRESULT ProfilerMetadataEmitValidator::FindMemberRef(
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
     ULONG       cbSigBlob,
-    mdMemberRef *pmr) 
+    mdMemberRef *pmr)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr);
@@ -1172,7 +1172,7 @@ HRESULT ProfilerMetadataEmitValidator::GetMethodProps(
     PCCOR_SIGNATURE *ppvSigBlob,
     ULONG       *pcbSigBlob,
     ULONG       *pulCodeRVA,
-    DWORD       *pdwImplFlags) 
+    DWORD       *pdwImplFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags);
@@ -1185,7 +1185,7 @@ HRESULT ProfilerMetadataEmitValidator::GetMemberRefProps(
     ULONG       cchMember,
     ULONG       *pchMember,
     PCCOR_SIGNATURE *ppvSigBlob,
-    ULONG       *pbSig) 
+    ULONG       *pbSig)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig);
@@ -1196,7 +1196,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumProperties(
     mdTypeDef   td,
     mdProperty  rProperties[],
     ULONG       cMax,
-    ULONG       *pcProperties) 
+    ULONG       *pcProperties)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumProperties(phEnum, td, rProperties, cMax, pcProperties);
@@ -1207,7 +1207,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumEvents(
     mdTypeDef   td,
     mdEvent     rEvents[],
     ULONG       cMax,
-    ULONG       *pcEvents) 
+    ULONG       *pcEvents)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumEvents(phEnum, td, rEvents, cMax, pcEvents);
@@ -1216,7 +1216,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumEvents(
 HRESULT ProfilerMetadataEmitValidator::GetEventProps(
     mdEvent     ev,
     mdTypeDef   *pClass,
-    LPCWSTR     szEvent, 
+    LPCWSTR     szEvent,
     ULONG       cchEvent,
     ULONG       *pchEvent,
     DWORD       *pdwEventFlags,
@@ -1226,7 +1226,7 @@ HRESULT ProfilerMetadataEmitValidator::GetEventProps(
     mdMethodDef *pmdFire,
     mdMethodDef rmdOtherMethod[],
     ULONG       cMax,
-    ULONG       *pcOtherMethod) 
+    ULONG       *pcOtherMethod)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod);
@@ -1237,7 +1237,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMethodSemantics(
     mdMethodDef mb,
     mdToken     rEventProp[],
     ULONG       cMax,
-    ULONG       *pcEventProp) 
+    ULONG       *pcEventProp)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp);
@@ -1246,7 +1246,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumMethodSemantics(
 HRESULT ProfilerMetadataEmitValidator::GetMethodSemantics(
     mdMethodDef mb,
     mdToken     tkEventProp,
-    DWORD       *pdwSemanticsFlags) 
+    DWORD       *pdwSemanticsFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags);
@@ -1255,11 +1255,11 @@ HRESULT ProfilerMetadataEmitValidator::GetMethodSemantics(
 HRESULT ProfilerMetadataEmitValidator::GetClassLayout(
     mdTypeDef   td,
     DWORD       *pdwPackSize,
-    COR_FIELD_OFFSET rFieldOffset[], 
+    COR_FIELD_OFFSET rFieldOffset[],
     ULONG       cMax,
     ULONG       *pcFieldOffset,
-    ULONG       *pulClassSize) 
-{ 
+    ULONG       *pulClassSize)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetClassLayout(td, pdwPackSize, rFieldOffset, cMax, pcFieldOffset, pulClassSize);
 }
@@ -1267,7 +1267,7 @@ HRESULT ProfilerMetadataEmitValidator::GetClassLayout(
 HRESULT ProfilerMetadataEmitValidator::GetFieldMarshal(
     mdToken     tk,
     PCCOR_SIGNATURE *ppvNativeType,
-    ULONG       *pcbNativeType) 
+    ULONG       *pcbNativeType)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetFieldMarshal(tk, ppvNativeType, pcbNativeType);
@@ -1286,7 +1286,7 @@ HRESULT ProfilerMetadataEmitValidator::GetPermissionSetProps(
     mdPermission pm,
     DWORD       *pdwAction,
     void const  **ppvPermission,
-    ULONG       *pcbPermission) 
+    ULONG       *pcbPermission)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetPermissionSetProps(pm, pdwAction, ppvPermission, pcbPermission);
@@ -1295,7 +1295,7 @@ HRESULT ProfilerMetadataEmitValidator::GetPermissionSetProps(
 HRESULT ProfilerMetadataEmitValidator::GetSigFromToken(
     mdSignature mdSig,
     PCCOR_SIGNATURE *ppvSig,
-    ULONG       *pcbSig) 
+    ULONG       *pcbSig)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetSigFromToken(mdSig, ppvSig, pcbSig);
@@ -1305,7 +1305,7 @@ HRESULT ProfilerMetadataEmitValidator::GetModuleRefProps(
     mdModuleRef mur,
     LPWSTR      szName,
     ULONG       cchName,
-    ULONG       *pchName) 
+    ULONG       *pchName)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetModuleRefProps(mur, szName, cchName, pchName);
@@ -1315,7 +1315,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumModuleRefs(
     HCORENUM    *phEnum,
     mdModuleRef rModuleRefs[],
     ULONG       cmax,
-    ULONG       *pcModuleRefs) 
+    ULONG       *pcModuleRefs)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs);
@@ -1324,7 +1324,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumModuleRefs(
 HRESULT ProfilerMetadataEmitValidator::GetTypeSpecFromToken(
     mdTypeSpec typespec,
     PCCOR_SIGNATURE *ppvSig,
-    ULONG       *pcbSig) 
+    ULONG       *pcbSig)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetTypeSpecFromToken(typespec, ppvSig, pcbSig);
@@ -1342,7 +1342,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumUnresolvedMethods(
     HCORENUM    *phEnum,
     mdToken     rMethods[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens);
@@ -1352,7 +1352,7 @@ HRESULT ProfilerMetadataEmitValidator::GetUserString(
     mdString    stk,
     LPWSTR      szString,
     ULONG       cchString,
-    ULONG       *pchString) 
+    ULONG       *pchString)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetUserString(stk, szString, cchString, pchString);
@@ -1364,7 +1364,7 @@ HRESULT ProfilerMetadataEmitValidator::GetPinvokeMap(
     LPWSTR      szImportName,
     ULONG       cchImportName,
     ULONG       *pchImportName,
-    mdModuleRef *pmrImportDLL) 
+    mdModuleRef *pmrImportDLL)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL);
@@ -1374,7 +1374,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumSignatures(
     HCORENUM    *phEnum,
     mdSignature rSignatures[],
     ULONG       cmax,
-    ULONG       *pcSignatures) 
+    ULONG       *pcSignatures)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumSignatures(phEnum, rSignatures, cmax, pcSignatures);
@@ -1384,7 +1384,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumTypeSpecs(
     HCORENUM    *phEnum,
     mdTypeSpec  rTypeSpecs[],
     ULONG       cmax,
-    ULONG       *pcTypeSpecs) 
+    ULONG       *pcTypeSpecs)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs);
@@ -1394,7 +1394,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumUserStrings(
     HCORENUM    *phEnum,
     mdString    rStrings[],
     ULONG       cmax,
-    ULONG       *pcStrings) 
+    ULONG       *pcStrings)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumUserStrings(phEnum, rStrings, cmax, pcStrings);
@@ -1403,7 +1403,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumUserStrings(
 HRESULT ProfilerMetadataEmitValidator::GetParamForMethodIndex(
     mdMethodDef md,
     ULONG       ulParamSeq,
-    mdParamDef  *ppd) 
+    mdParamDef  *ppd)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetParamForMethodIndex(md, ulParamSeq, ppd);
@@ -1415,7 +1415,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumCustomAttributes(
     mdToken     tkType,
     mdCustomAttribute rCustomAttributes[],
     ULONG       cMax,
-    ULONG       *pcCustomAttributes) 
+    ULONG       *pcCustomAttributes)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes);
@@ -1426,8 +1426,8 @@ HRESULT ProfilerMetadataEmitValidator::GetCustomAttributeProps(
     mdToken     *ptkObj,
     mdToken     *ptkType,
     void const  **ppBlob,
-    ULONG       *pcbSize) 
-{ 
+    ULONG       *pcbSize)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetCustomAttributeProps(cv, ptkObj, ptkType, ppBlob, pcbSize);
 }
@@ -1435,7 +1435,7 @@ HRESULT ProfilerMetadataEmitValidator::GetCustomAttributeProps(
 HRESULT ProfilerMetadataEmitValidator::FindTypeRef(
     mdToken     tkResolutionScope,
     LPCWSTR     szName,
-    mdTypeRef   *ptr) 
+    mdTypeRef   *ptr)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->FindTypeRef(tkResolutionScope, szName, ptr);
@@ -1454,8 +1454,8 @@ HRESULT ProfilerMetadataEmitValidator::GetMemberProps(
     DWORD       *pdwImplFlags,
     DWORD       *pdwCPlusTypeFlag,
     UVCP_CONSTANT *ppValue,
-    ULONG       *pcchValue) 
-{ 
+    ULONG       *pcchValue)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue);
 }
@@ -1471,7 +1471,7 @@ HRESULT ProfilerMetadataEmitValidator::GetFieldProps(
     ULONG       *pcbSigBlob,
     DWORD       *pdwCPlusTypeFlag,
     UVCP_CONSTANT *ppValue,
-    ULONG       *pcchValue) 
+    ULONG       *pcchValue)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag, ppValue, pcchValue);
@@ -1493,7 +1493,7 @@ HRESULT ProfilerMetadataEmitValidator::GetPropertyProps(
     mdMethodDef *pmdGetter,
     mdMethodDef rmdOtherMethod[],
     ULONG       cMax,
-    ULONG       *pcOtherMethod) 
+    ULONG       *pcOtherMethod)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter,
@@ -1510,7 +1510,7 @@ HRESULT ProfilerMetadataEmitValidator::GetParamProps(
     DWORD       *pdwAttr,
     DWORD       *pdwCPlusTypeFlag,
     UVCP_CONSTANT *ppValue,
-    ULONG       *pcchValue) 
+    ULONG       *pcchValue)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetParamProps(tk, pmd, pulSequence, szName, cchName, pchName, pdwAttr, pdwCPlusTypeFlag, ppValue, pcchValue);
@@ -1520,14 +1520,14 @@ HRESULT ProfilerMetadataEmitValidator::GetCustomAttributeByName(
     mdToken     tkObj,
     LPCWSTR     szName,
     const void  **ppData,
-    ULONG       *pcbData) 
+    ULONG       *pcbData)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetCustomAttributeByName(tkObj, szName, ppData, pcbData);
 }
 
 BOOL ProfilerMetadataEmitValidator::IsValidToken(
-    mdToken     tk) 
+    mdToken     tk)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->IsValidToken(tk);
@@ -1535,7 +1535,7 @@ BOOL ProfilerMetadataEmitValidator::IsValidToken(
 
 HRESULT ProfilerMetadataEmitValidator::GetNestedClassProps(
     mdTypeDef   tdNestedClass,
-    mdTypeDef   *ptdEnclosingClass) 
+    mdTypeDef   *ptdEnclosingClass)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetNestedClassProps(tdNestedClass, ptdEnclosingClass);
@@ -1544,7 +1544,7 @@ HRESULT ProfilerMetadataEmitValidator::GetNestedClassProps(
 HRESULT ProfilerMetadataEmitValidator::GetNativeCallConvFromSig(
     void const  *pvSig,
     ULONG       cbSig,
-    ULONG       *pCallConv) 
+    ULONG       *pCallConv)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetNativeCallConvFromSig(pvSig, cbSig, pCallConv);
@@ -1564,8 +1564,8 @@ HRESULT ProfilerMetadataEmitValidator::EnumGenericParams(
     mdToken      tk,
     mdGenericParam rGenericParams[],
     ULONG       cMax,
-    ULONG       *pcGenericParams) 
-{ 
+    ULONG       *pcGenericParams)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumGenericParams(phEnum, tk, rGenericParams, cMax, pcGenericParams);
 }
@@ -1579,8 +1579,8 @@ HRESULT ProfilerMetadataEmitValidator::GetGenericParamProps(
     DWORD       *reserved,
     LPWSTR       wzname,
     ULONG        cchName,
-    ULONG        *pchName) 
-{ 
+    ULONG        *pchName)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetGenericParamProps(gp, pulParamSeq, pdwParamFlags, ptOwner, reserved, wzname, cchName, pchName);
 }
@@ -1589,7 +1589,7 @@ HRESULT ProfilerMetadataEmitValidator::GetMethodSpecProps(
     mdMethodSpec mi,
     mdToken *tkParent,
     PCCOR_SIGNATURE *ppvSigBlob,
-    ULONG       *pcbSigBlob) 
+    ULONG       *pcbSigBlob)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob);
@@ -1600,7 +1600,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumGenericParamConstraints(
     mdGenericParam tk,
     mdGenericParamConstraint rGenericParamConstraints[],
     ULONG       cMax,
-    ULONG       *pcGenericParamConstraints) 
+    ULONG       *pcGenericParamConstraints)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints);
@@ -1609,7 +1609,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumGenericParamConstraints(
 HRESULT ProfilerMetadataEmitValidator::GetGenericParamConstraintProps(
     mdGenericParamConstraint gpc,
     mdGenericParam *ptGenericParam,
-    mdToken      *ptkConstraintType) 
+    mdToken      *ptkConstraintType)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType);
@@ -1617,7 +1617,7 @@ HRESULT ProfilerMetadataEmitValidator::GetGenericParamConstraintProps(
 
 HRESULT ProfilerMetadataEmitValidator::GetPEKind(
     DWORD* pdwPEKind,
-    DWORD* pdwMachine) 
+    DWORD* pdwMachine)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetPEKind(pdwPEKind, pdwMachine);
@@ -1626,7 +1626,7 @@ HRESULT ProfilerMetadataEmitValidator::GetPEKind(
 HRESULT ProfilerMetadataEmitValidator::GetVersionString(
     LPWSTR      pwzBuf,
     DWORD       ccBufSize,
-    DWORD       *pccBufSize) 
+    DWORD       *pccBufSize)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->GetVersionString(pwzBuf, ccBufSize, pccBufSize);
@@ -1637,8 +1637,8 @@ HRESULT ProfilerMetadataEmitValidator::EnumMethodSpecs(
     mdToken      tk,
     mdMethodSpec rMethodSpecs[],
     ULONG       cMax,
-    ULONG       *pcMethodSpecs) 
-{ 
+    ULONG       *pcMethodSpecs)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerImport->EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs);
 }
@@ -1654,7 +1654,7 @@ HRESULT ProfilerMetadataEmitValidator::GetAssemblyProps(
     ULONG       cchName,
     ULONG       *pchName,
     ASSEMBLYMETADATA *pMetaData,
-    DWORD       *pdwAssemblyFlags) 
+    DWORD       *pdwAssemblyFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetAssemblyProps(mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, szName, cchName, pchName, pMetaData, pdwAssemblyFlags);
@@ -1670,7 +1670,7 @@ HRESULT ProfilerMetadataEmitValidator::GetAssemblyRefProps(
     ASSEMBLYMETADATA *pMetaData,
     const void  **ppbHashValue,
     ULONG       *pcbHashValue,
-    DWORD       *pdwAssemblyRefFlags) 
+    DWORD       *pdwAssemblyRefFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetAssemblyRefProps(mdar, ppbPublicKeyOrToken, pcbPublicKeyOrToken, szName, cchName, pchName, pMetaData, ppbHashValue, pcbHashValue, pdwAssemblyRefFlags);
@@ -1683,7 +1683,7 @@ HRESULT ProfilerMetadataEmitValidator::GetFileProps(
     ULONG       *pchName,
     const void  **ppbHashValue,
     ULONG       *pcbHashValue,
-    DWORD       *pdwFileFlags) 
+    DWORD       *pdwFileFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetFileProps(mdf, szName, cchName, pchName, ppbHashValue, pcbHashValue, pdwFileFlags);
@@ -1696,7 +1696,7 @@ HRESULT ProfilerMetadataEmitValidator::GetExportedTypeProps(
     ULONG       *pchName,
     mdToken     *ptkImplementation,
     mdTypeDef   *ptkTypeDef,
-    DWORD       *pdwExportedTypeFlags) 
+    DWORD       *pdwExportedTypeFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetExportedTypeProps(mdct, szName, cchName, pchName, ptkImplementation, ptkTypeDef, pdwExportedTypeFlags);
@@ -1709,7 +1709,7 @@ HRESULT ProfilerMetadataEmitValidator::GetManifestResourceProps(
     ULONG       *pchName,
     mdToken     *ptkImplementation,
     DWORD       *pdwOffset,
-    DWORD       *pdwResourceFlags) 
+    DWORD       *pdwResourceFlags)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetManifestResourceProps(mdmr, szName, cchName, pchName, ptkImplementation, pdwOffset, pdwResourceFlags);
@@ -1719,8 +1719,8 @@ HRESULT ProfilerMetadataEmitValidator::EnumAssemblyRefs(
     HCORENUM    *phEnum,
     mdAssemblyRef rAssemblyRefs[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
-{ 
+    ULONG       *pcTokens)
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->EnumAssemblyRefs(phEnum, rAssemblyRefs, cMax, pcTokens);
 }
@@ -1729,7 +1729,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumFiles(
     HCORENUM    *phEnum,
     mdFile      rFiles[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->EnumFiles(phEnum, rFiles, cMax, pcTokens);
@@ -1739,7 +1739,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumExportedTypes(
     HCORENUM    *phEnum,
     mdExportedType   rExportedTypes[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->EnumExportedTypes(phEnum, rExportedTypes, cMax, pcTokens);
@@ -1749,7 +1749,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumManifestResources(
     HCORENUM    *phEnum,
     mdManifestResource  rManifestResources[],
     ULONG       cMax,
-    ULONG       *pcTokens) 
+    ULONG       *pcTokens)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->EnumManifestResources(phEnum, rManifestResources, cMax, pcTokens);
@@ -1757,7 +1757,7 @@ HRESULT ProfilerMetadataEmitValidator::EnumManifestResources(
 
 HRESULT ProfilerMetadataEmitValidator::GetAssemblyFromScope(
     mdAssembly  *ptkAssembly)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->GetAssemblyFromScope(ptkAssembly);
 }
@@ -1765,7 +1765,7 @@ HRESULT ProfilerMetadataEmitValidator::GetAssemblyFromScope(
 HRESULT ProfilerMetadataEmitValidator::FindExportedTypeByName(
     LPCWSTR     szName,
     mdToken     mdtExportedType,
-    mdExportedType   *ptkExportedType) 
+    mdExportedType   *ptkExportedType)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->FindExportedTypeByName(szName, mdtExportedType, ptkExportedType);
@@ -1773,7 +1773,7 @@ HRESULT ProfilerMetadataEmitValidator::FindExportedTypeByName(
 
 HRESULT ProfilerMetadataEmitValidator::FindManifestResourceByName(
     LPCWSTR     szName,
-    mdManifestResource *ptkManifestResource) 
+    mdManifestResource *ptkManifestResource)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->FindManifestResourceByName(szName, ptkManifestResource);
@@ -1785,7 +1785,7 @@ HRESULT ProfilerMetadataEmitValidator::FindAssembliesByName(
     LPCWSTR  szAssemblyName,
     IUnknown *ppIUnk[],
     ULONG    cMax,
-    ULONG    *pcAssemblies) 
+    ULONG    *pcAssemblies)
 {
     LIMITED_METHOD_CONTRACT;
     return m_pInnerAssemblyImport->FindAssembliesByName(szAppBase, szPrivateBin, szAssemblyName, ppIUnk, cMax, pcAssemblies);

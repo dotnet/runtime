@@ -7,11 +7,11 @@
 
 //
 // Defines the core VM data structures and methods for support EditAndContinue
-// 
+//
 // ======================================================================================
 
 
-#ifndef EnC_H 
+#ifndef EnC_H
 #define EnC_H
 
 #include "ceeload.h"
@@ -35,33 +35,33 @@ typedef DPTR(EnCEEClassData) PTR_EnCEEClassData;
 //
 // EnCFieldDesc - A field descriptor for fields added by EnC
 //
-// Notes: We need to track some additional data for added fields, since they can't 
+// Notes: We need to track some additional data for added fields, since they can't
 // simply be glued onto existing object instances like any other field.
 //
 // For each field added, there is a single instance of this object tied to the type where
-// the field was added.  
+// the field was added.
 //
-class EnCFieldDesc : public FieldDesc 
+class EnCFieldDesc : public FieldDesc
 {
 public:
-    // Initialize just the bare minimum necessary now.  
+    // Initialize just the bare minimum necessary now.
     // We'll do a proper FieldDesc initialization later when Fixup is called.
     void Init( mdFieldDef token, BOOL fIsStatic);
 
     // Compute the address of this field for a specific object
     void *GetAddress( void *o);
-    
+
     // Returns true if Fixup still needs to be called
-    BOOL NeedsFixup() 
+    BOOL NeedsFixup()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_bNeedsFixup;
     }
 
     // Used to properly configure the FieldDesc after it has been added
-    // This may do things like load classes (which can trigger a GC), and so can only be 
+    // This may do things like load classes (which can trigger a GC), and so can only be
     // done after the process has resumed execution.
-    VOID Fixup(mdFieldDef token) 
+    VOID Fixup(mdFieldDef token)
     {
         WRAPPER_NO_CONTRACT;
         EEClass::FixupFieldDescForEnC(GetEnclosingMethodTable(), this, token);
@@ -83,24 +83,24 @@ private:
     BOOL m_bNeedsFixup;
 
     // For static fields, pointer to where the field value is held
-    PTR_EnCAddedStaticField m_pStaticFieldData;  
+    PTR_EnCAddedStaticField m_pStaticFieldData;
 };
 
-// EnCAddedFieldElement 
+// EnCAddedFieldElement
 // A node in the linked list representing fields added to a class with EnC
 typedef DPTR(struct EnCAddedFieldElement) PTR_EnCAddedFieldElement;
-struct EnCAddedFieldElement 
+struct EnCAddedFieldElement
 {
     // Pointer to the next element in the list
     PTR_EnCAddedFieldElement m_next;
 
-    // Details about this field 
+    // Details about this field
     EnCFieldDesc m_fieldDesc;
 
-    // Initialize this entry.  
+    // Initialize this entry.
     // Basically just sets a couple fields to default values.
     // We'll have to go back later and call Fixup on the fieldDesc.
-    void Init(mdFieldDef token, BOOL fIsStatic) 
+    void Init(mdFieldDef token, BOOL fIsStatic)
     {
         WRAPPER_NO_CONTRACT;
         m_next = NULL;
@@ -118,7 +118,7 @@ public:
 #ifndef DACCESS_COMPILE
     // Initialize all the members
     //  pClass - the EEClass we're tracking EnC data for
-    void Init(MethodTable * pMT) 
+    void Init(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
         m_pMT = pMT;
@@ -128,27 +128,27 @@ public:
         m_pAddedStaticFields = NULL;
     }
 #endif
-    
+
     // Adds the provided new field to the appropriate linked list and updates the appropriate count
     void AddField(EnCAddedFieldElement *pAddedField);
 
-    // Get the number of instance fields that have been added to this class. 
+    // Get the number of instance fields that have been added to this class.
     // Since we can only add private fields, these fields can't be seen from any other class but this one.
     int GetAddedInstanceFields()
     {
         SUPPORTS_DAC;
         return m_dwNumAddedInstanceFields;
     }
-    
+
     // Get the number of static fields that have been added to this class.
     int GetAddedStaticFields()
     {
         SUPPORTS_DAC;
         return m_dwNumAddedStaticFields;
-    }        
-    
+    }
+
     // Get the methodtable that this EnC data refers to
-    MethodTable * GetMethodTable() 
+    MethodTable * GetMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pMT;
@@ -171,10 +171,10 @@ private:
     // The number of static fields that have been added to this class
     int                   m_dwNumAddedStaticFields;
 
-    // Linked list of EnCFieldDescs for all the added instance fields 
+    // Linked list of EnCFieldDescs for all the added instance fields
     PTR_EnCAddedFieldElement m_pAddedInstanceFields;
 
-    // Linked list of EnCFieldDescs for all the added static fields 
+    // Linked list of EnCFieldDescs for all the added static fields
     PTR_EnCAddedFieldElement m_pAddedStaticFields;
 };
 
@@ -186,10 +186,10 @@ private:
 //
 // Notes:
 //
-class EditAndContinueModule : public Module 
+class EditAndContinueModule : public Module
 {
     VPTR_VTABLE_CLASS(EditAndContinueModule, Module)
-    
+
     // keep track of the number of changes - this is used to apply a version number
     // to an updated function. The version number for a function is the overall edit count,
     // ie the number of times ApplyChanges has been called, not the number of times that
@@ -222,9 +222,9 @@ public:
     // Destruct the module when it's finished being unloaded
     // Note that due to the loader's allocation mechanism, C++ consturctors and destructors
     // wouldn't be called.
-    virtual void Destruct(); 
+    virtual void Destruct();
 #endif
-    
+
     // Apply an EnC edit
     HRESULT ApplyEditAndContinue(DWORD cbMetadata,
                             BYTE *pMetadata,
@@ -242,7 +242,7 @@ public:
 
     // JIT the new version of a function for EnC
     PCODE JitUpdatedFunction(MethodDesc *pMD, T_CONTEXT *pContext);
-    
+
     // Remap execution to the latest version of an edited method
     HRESULT ResumeInUpdatedFunction(MethodDesc *pMD,
                                     void *oldDebuggerFuncHandle,
@@ -250,19 +250,19 @@ public:
                                     T_CONTEXT *pContext);
 
     // Modify the thread context for EnC remap and resume execution
-    void FixContextAndResume(MethodDesc *pMD, 
+    void FixContextAndResume(MethodDesc *pMD,
                              void *oldDebuggerFuncHandle,
                              T_CONTEXT *pContext,
                              EECodeInfo *pOldCodeInfo,
                              EECodeInfo *pNewCodeInfo);
-    
+
     // Get a pointer to the value of a field added by EnC or return NULL if it doesn't exist
-    PTR_CBYTE ResolveField(OBJECTREF thisPointer, 
+    PTR_CBYTE ResolveField(OBJECTREF thisPointer,
                            EnCFieldDesc *pFD);
 
     // Get a pointer to the value of a field added by EnC. Allocates if it doesn't exist, so we'll
     // return a valid address or throw OOM
-    PTR_CBYTE ResolveOrAllocateField(OBJECTREF      thisPointer, 
+    PTR_CBYTE ResolveOrAllocateField(OBJECTREF      thisPointer,
                                      EnCFieldDesc * pFD);
 
 
@@ -291,9 +291,9 @@ public:
 // to a growable array of these in the EnCSyncBlockInfo, instead of using a linked list, and
 // have the EnCFieldDesc specify a field index number.
 //
-struct EnCAddedField 
+struct EnCAddedField
 {
-    // This field data hangs off the SyncBlock in a linked list.  
+    // This field data hangs off the SyncBlock in a linked list.
     // This is the pointer to the next field in the list.
     PTR_EnCAddedField m_pNext;
 
@@ -311,7 +311,7 @@ struct EnCAddedField
 // Information about a static field value added by EnC
 // We can't change the MethodTable, so these are hung off the FieldDesc
 // Note that the actual size of this type is variable.
-struct EnCAddedStaticField 
+struct EnCAddedStaticField
 {
     // Pointer back to the fieldDesc describing which field this refers to
     // This isn't strictly necessary since our callers always know it, but the overhead
@@ -335,25 +335,25 @@ struct EnCAddedStaticField
     static EnCAddedStaticField *Allocate(EnCFieldDesc *pFD);
 };
 
-// EnCSyncBlockInfo lives off an object's SyncBlock and contains a lazily-created linked 
+// EnCSyncBlockInfo lives off an object's SyncBlock and contains a lazily-created linked
 // list of the values of all the fields added to the object by EnC
 //
-// Note that much of the logic here would probably belong better in EnCAddedField since it is 
+// Note that much of the logic here would probably belong better in EnCAddedField since it is
 // specific to the implementation there.  Perhaps this should ideally just be a container
 // that holds a bunch of EnCAddedFields and can iterate over them and map from EnCFieldDesc
-// to them.  
-class EnCSyncBlockInfo 
+// to them.
+class EnCSyncBlockInfo
 {
 public:
     // Initialize the list
-    EnCSyncBlockInfo() : 
-        m_pList(PTR_NULL) 
+    EnCSyncBlockInfo() :
+        m_pList(PTR_NULL)
     {
     }
-    
+
     // Get a pointer to the data in a specific field on this object or return NULL if it
     // doesn't exist
-    PTR_CBYTE ResolveField(OBJECTREF      thisPointer, 
+    PTR_CBYTE ResolveField(OBJECTREF      thisPointer,
                            EnCFieldDesc * pFieldDesc);
 
     // Get a pointer to the data in a specific field on this object. We'll allocate if it doesn't already
@@ -361,21 +361,21 @@ public:
     PTR_CBYTE ResolveOrAllocateField(OBJECTREF thisPointer, EnCFieldDesc *pFD);
 
 
-    // Free the data used by this field value.  Called after the object instance the 
+    // Free the data used by this field value.  Called after the object instance the
     // fields belong to is collected.
     void Cleanup();
 
 private:
     // Gets the address of an EnC field accounting for its type: valuetype, class or primitive
-    PTR_CBYTE GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *    pHelperFieldDesc, 
-                                                 OBJECTREF      pHelper, 
+    PTR_CBYTE GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *    pHelperFieldDesc,
+                                                 OBJECTREF      pHelper,
                                                  EnCFieldDesc * pFD);
 
     // Pointer to the head of the list
     PTR_EnCAddedField m_pList;
 };
 
-// The DPTR is actually defined in syncblk.h to make it visible to SyncBlock 
+// The DPTR is actually defined in syncblk.h to make it visible to SyncBlock
 // typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 #endif // !EnC_SUPPORTED
@@ -401,7 +401,7 @@ class EncApproxFieldDescIterator
 public:
 #ifdef EnC_SUPPORTED
     // Create and initialize the iterator
-    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC); 
+    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC);
 
     // Get the next fieldDesc (either EnC or non-EnC)
     PTR_FieldDesc Next();
@@ -414,7 +414,7 @@ public:
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
 #endif // EnC_SUPPORTED
 
-    int GetIteratorType() 
+    int GetIteratorType()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -438,11 +438,11 @@ private:
 
     // The current pointer into one of the EnC field lists when enumerating EnC fields
     PTR_EnCAddedFieldElement m_pCurrListElem;
-    
-    // EnC specific data for the class of interest.  
+
+    // EnC specific data for the class of interest.
     // NULL if EnC is disabled or this class doesn't have any EnC data
     PTR_EnCEEClassData m_encClassData;
 #endif
 };
 
-#endif // #ifndef EnC_H 
+#endif // #ifndef EnC_H

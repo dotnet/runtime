@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // ProfilingHelper.inl
-// 
+//
 
 //
 // Inlined implementation of some helper class methods used for
@@ -31,7 +31,7 @@ FORCEINLINE SetCallbackStateFlagsHolder::SetCallbackStateFlagsHolder(DWORD dwFla
     }
     END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
 }
-    
+
 FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
 {
     CONTRACTL
@@ -61,19 +61,19 @@ FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
 // Arguments:
 //      * fTriggers - If nonzero, this function asserts the contract says GC_TRIGGERS,
 //          else this function asserts the contract says GC_NOTRIGGER
-//      
+//
 inline void AssertTriggersContract(BOOL fTriggers)
 {
     // NOTE: This function cannot have contract, as this function needs to inspect the
     // contract of the calling function
 
-    ClrDebugState * pClrDbgState = GetClrDebugState(FALSE);                          
+    ClrDebugState * pClrDbgState = GetClrDebugState(FALSE);
     if ((pClrDbgState == NULL) || (pClrDbgState->GetContractStackTrace() == NULL))
     {
         return;
     }
 
-    UINT testMask = pClrDbgState->GetContractStackTrace()->m_testmask;         
+    UINT testMask = pClrDbgState->GetContractStackTrace()->m_testmask;
 
     if (fTriggers)
     {
@@ -88,7 +88,7 @@ inline void AssertTriggersContract(BOOL fTriggers)
         // trigger
         _ASSERTE(((testMask & Contract::GC_Mask) == Contract::GC_NoTrigger) ||
             ((testMask & Contract::GC_Disabled) != 0));
-            
+
     }
 }
 #endif //ENABLE_CONTRACTS
@@ -96,7 +96,7 @@ inline void AssertTriggersContract(BOOL fTriggers)
 // ----------------------------------------------------------------------------
 // ProfilingAPIUtility::LogNoInterfaceError
 //
-// Description: 
+// Description:
 //    Simple helper to log an IDS_E_PROF_NO_CALLBACK_IFACE event
 //
 // Arguments:
@@ -131,7 +131,7 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWST
 // ----------------------------------------------------------------------------
 // ProfilingAPIUtility::ShouldInjectProfAPIFault
 //
-// Description: 
+// Description:
 //    Determines whether COMPlus_ProfAPIFault is set to a bitmask value
 //    with the specified flag set
 //
@@ -151,7 +151,7 @@ inline BOOL ProfilingAPIUtility::ShouldInjectProfAPIFault(ProfAPIFaultFlags faul
 // ----------------------------------------------------------------------------
 // ProfilingAPIUtility::LoadProfilerForAttach
 //
-// Description: 
+// Description:
 //    Simple, public wrapper around code:ProfilingAPIUtility::LoadProfiler to load a
 //    profiler in response to an Attach request.
 //
@@ -183,7 +183,7 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
         CAN_TAKE_LOCK;
 
         MODE_PREEMPTIVE;
-    } 
+    }
     CONTRACTL_END;
 
     // Need string version of CLSID for event log messages

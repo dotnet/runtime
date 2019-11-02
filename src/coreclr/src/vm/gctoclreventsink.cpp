@@ -183,7 +183,7 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
 
     Object* obj = (Object*)object;
 
-    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
+    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
 
     EX_TRY
     {
@@ -227,7 +227,7 @@ void GCToCLREventSink::FireGCPerHeapHistory_V3(void *freeListAllocated,
                                                uint32_t count,
                                                uint32_t valuesLen,
                                                void *values)
-{    
+{
     FireEtwGCPerHeapHistory_V3(GetClrInstanceId(),
                                freeListAllocated,
                                freeListRejected,
@@ -265,7 +265,7 @@ void GCToCLREventSink::FireBGC1stConEnd()
 }
 
 void GCToCLREventSink::FireBGC1stSweepEnd(uint32_t genNumber)
-{    
+{
     FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId());
 }
 

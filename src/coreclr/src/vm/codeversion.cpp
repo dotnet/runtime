@@ -20,7 +20,7 @@
 #ifndef FEATURE_CODE_VERSIONING
 
 //
-// When not using code versioning we've got a minimal implementation of 
+// When not using code versioning we've got a minimal implementation of
 // NativeCodeVersion that simply wraps a MethodDesc* with no additional
 // versioning information
 //
@@ -208,7 +208,7 @@ NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs) :
 {
     if(m_storageKind == StorageKind::Explicit)
     {
-        m_pVersionNode = rhs.m_pVersionNode; 
+        m_pVersionNode = rhs.m_pVersionNode;
     }
     else if(m_storageKind == StorageKind::Synthetic)
     {
@@ -293,7 +293,7 @@ ILCodeVersion NativeCodeVersion::GetILCodeVersion() const
     }
 }
 
-NativeCodeVersionId NativeCodeVersion::GetVersionId() const 
+NativeCodeVersionId NativeCodeVersion::GetVersionId() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
@@ -697,7 +697,7 @@ void ILCodeVersionNode::SetRejitState(ILCodeVersion::RejitFlags newState)
     // We're doing a non thread safe modification to m_rejitState
     _ASSERTE(LockOwnedByCurrentThread());
 
-    ILCodeVersion::RejitFlags oldNonMaskFlags = 
+    ILCodeVersion::RejitFlags oldNonMaskFlags =
         static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ~ILCodeVersion::kStateMask);
     m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(newState | oldNonMaskFlags));
 }
@@ -916,14 +916,14 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         pIL = AsNode()->GetIL();
     }
-    
+
     // For the default code version we always fetch the globally stored default IL for a method
     //
     // In the non-default code version we assume NULL is the equivalent of explicitly requesting to
     // re-use the default IL. Ideally there would be no reason to create a new version that re-uses
-    // the default IL (just use the default code version for that) but we do it here for compat. We've 
+    // the default IL (just use the default code version for that) but we do it here for compat. We've
     // got some profilers that use ReJIT to create a new code version and then instead of calling
-    // ICorProfilerFunctionControl::SetILFunctionBody they call ICorProfilerInfo::SetILFunctionBody. 
+    // ICorProfilerFunctionControl::SetILFunctionBody they call ICorProfilerInfo::SetILFunctionBody.
     // This mutates the default IL so that it is now correct for their new code version. Of course this
     // also overwrote the previous default IL so now the default code version GetIL() is out of sync
     // with the jitted code. In the majority of cases we never re-read the IL after the initial
@@ -2149,7 +2149,7 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
             }
             continue;
         }
-        
+
 #ifdef _DEBUG
         if (!pDomainContainingGenericDefinition->IsSharedDomain())
         {
@@ -2213,7 +2213,7 @@ bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
 // Return Value:
 //      S_OK iff pMD is safe to rejit
 //      CORPROF_E_FUNCTION_IS_COLLECTIBLE - function can't be rejitted because it is collectible
-//      
+//
 
 // static
 #ifndef DACCESS_COMPILE

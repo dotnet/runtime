@@ -8,7 +8,7 @@
 // and various helper types.
 //
 
-// 
+//
 
 //
 // ============================================================================
@@ -31,7 +31,7 @@ struct WerEventTypeTraits
     const LPCWSTR EventName;
     const DWORD CountParams;
     INDEBUG(const WatsonBucketType BucketType);
-    
+
     WerEventTypeTraits(LPCWSTR name, DWORD params DEBUG_ARG(WatsonBucketType type))
         : EventName(name), CountParams(params) DEBUG_ARG(BucketType(type))
     {
@@ -60,7 +60,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
         _ASSERTE(!"missing event name when retrieving bucket params count");
         return 10;
     }
-    
+
     DWORD countParams = kInvalidParamsCount;
     for (int index = 0; index < EndOfWerBucketTypes; ++index)
     {
@@ -77,7 +77,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
         _ASSERTE(!"unknown event name when retrieving bucket params count");
         countParams = 10;
     }
-    
+
     return countParams;
 }
 
@@ -302,7 +302,7 @@ private:
     INDEBUG(size_t m_countParamsLogged);
     MethodDesc* m_pFaultingMD;
     PCODE m_faultingPc;
-    
+
     // misc helper functions
     DWORD GetILOffset();
     bool GetFileVersionInfoForModule(Module* pModule, USHORT& major, USHORT& minor, USHORT& build, USHORT& revision);
@@ -310,7 +310,7 @@ private:
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
     void LogParam(__in_z LPCWSTR paramValue, BucketParameterIndex paramIndex);
-    
+
 protected:
     ~BaseBucketParamsManager();
 
@@ -352,7 +352,7 @@ BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeB
 
     _ASSERTE(m_pGmb);
     INDEBUG(m_countParamsLogged = 0);
-    
+
     ZeroMemory(pGenericModeBlock, sizeof(GenericModeBlock));
 
     EECodeInfo codeInfo(initialFaultingPc);
@@ -365,7 +365,7 @@ BaseBucketParamsManager::BaseBucketParamsManager(GenericModeBlock* pGenericModeB
 BaseBucketParamsManager::~BaseBucketParamsManager()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     _ASSERTE(m_countParamsLogged == GetCountBucketParamsForEvent(m_pGmb->wzEventTypeName));
 }
 
@@ -458,7 +458,7 @@ void BaseBucketParamsManager::GetAppName(__out_ecount(maxLength) WCHAR* targetPa
 
     HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-    
+
 
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
@@ -482,7 +482,7 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
 
     HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-    
+
 
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
@@ -676,7 +676,7 @@ void BaseBucketParamsManager::GetModuleVersion(__out_ecount(maxLength) WCHAR* ta
                        major, minor, build, revision);
         }
     }
-    
+
     if (!pModule || failed)
     {
         wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
@@ -704,7 +704,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
     {
         EX_TRY
         {
-            // We only store the IL timestamp in the native image for the 
+            // We only store the IL timestamp in the native image for the
             // manifest module.  We should consider fixing this for Orcas.
             PTR_PEFile pFile = pModule->GetAssembly()->GetManifestModule()->GetFile();
 
@@ -729,7 +729,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
         }
         EX_END_CATCH(SwallowAllExceptions)
     }
-    
+
     if (!pModule || failed)
     {
         wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
@@ -1170,7 +1170,7 @@ void BaseBucketParamsManager::LogParam(__in_z LPCWSTR paramValue, BucketParamete
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(paramIndex < InvalidBucketParamIndex);
-    // the BucketParameterIndex enum starts at 0 however we refer to Watson 
+    // the BucketParameterIndex enum starts at 0 however we refer to Watson
     // bucket params with 1-based indices so we add one to paramIndex.
     LOG((LF_EH, LL_INFO10, "       p %d: %S\n", paramIndex + 1, paramValue));
     ++m_countParamsLogged;
@@ -1186,7 +1186,7 @@ void BaseBucketParamsManager::LogParam(__in_z LPCWSTR paramValue, BucketParamete
 
 class CLR20r3BucketParamsManager : public BaseBucketParamsManager
 {
-public:   
+public:
     CLR20r3BucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE faultingPC, Thread* pFaultingThread, OBJECTREF* pThrownException);
     ~CLR20r3BucketParamsManager();
 

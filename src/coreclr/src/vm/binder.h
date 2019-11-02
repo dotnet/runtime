@@ -31,11 +31,11 @@ struct HardCodedMetaSig
 #include "metasig.h"
 
 //
-// Use the Binder objects to avoid doing unnecessary name lookup 
-// (esp. in the prejit case) 
+// Use the Binder objects to avoid doing unnecessary name lookup
+// (esp. in the prejit case)
 //
 // E.g. MscorlibBinder::GetClass(CLASS__APP_DOMAIN);
-// 
+//
 
 // BinderClassIDs are of the form CLASS__XXX
 
@@ -73,7 +73,7 @@ enum BinderClassID
 };
 
 
-// BinderMethodIDs are of the form METHOD__XXX__YYY, 
+// BinderMethodIDs are of the form METHOD__XXX__YYY,
 // where X is the class and Y is the method
 
 enum BinderMethodID : int
@@ -86,7 +86,7 @@ enum BinderMethodID : int
     METHOD__MSCORLIB_COUNT,
 };
 
-// BinderFieldIDs are of the form FIELD__XXX__YYY, 
+// BinderFieldIDs are of the form FIELD__XXX__YYY,
 // where X is the class and Y is the field
 
 enum BinderFieldID
@@ -134,7 +134,7 @@ class MscorlibBinder
 
     //
     // Retrieve structures from ID.
-    // 
+    //
     // Note that none of the MscorlibBinder methods trigger static
     // constructors. The JITed code takes care of triggering them.
     //
@@ -166,7 +166,7 @@ class MscorlibBinder
 
     //
     // Utilities for methods
-    // 
+    //
     static LPCUTF8 GetMethodName(BinderMethodID id);
     static LPHARDCODEDMETASIG GetMethodSig(BinderMethodID id);
 
@@ -178,7 +178,7 @@ class MscorlibBinder
 
     //
     // Utilities for fields
-    // 
+    //
     static LPCUTF8 GetFieldName(BinderFieldID id);
 
     static DWORD GetFieldOffset(BinderFieldID id);
@@ -281,7 +281,7 @@ private:
     void BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder);
     const BYTE* ConvertSignature(LPHARDCODEDMETASIG pHardcodedSig, const BYTE* pSig);
 
-    void SetDescriptions(Module * pModule, 
+    void SetDescriptions(Module * pModule,
         const MscorlibClassDescription * pClassDescriptions, USHORT nClasses,
         const MscorlibMethodDescription * pMethodDescriptions, USHORT nMethods,
         const MscorlibFieldDescription * pFieldDescriptions, USHORT nFields);
@@ -310,7 +310,7 @@ private:
     static CrstStatic s_SigConvertCrst;
 
 #ifdef _DEBUG
-  
+
     struct OffsetAndSizeCheck
     {
         PTR_CSTR classNameSpace;
@@ -329,7 +329,7 @@ private:
 
 //
 // Global bound modules:
-// 
+//
 
 GVAL_DECL(MscorlibBinder, g_Mscorlib);
 
@@ -351,7 +351,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetClass(BinderClassID id)
     INDEBUG(TriggerGCUnderStress());
 
     PTR_MethodTable pMT = VolatileLoad(&((&g_Mscorlib)->m_pClasses[id]));
-    if (pMT == NULL) 
+    if (pMT == NULL)
         return LookupClass(id);
     return pMT;
 }
@@ -373,7 +373,7 @@ FORCEINLINE MethodDesc * MscorlibBinder::GetMethod(BinderMethodID id)
     INDEBUG(TriggerGCUnderStress());
 
     MethodDesc * pMD = VolatileLoad(&((&g_Mscorlib)->m_pMethods[id]));
-    if (pMD == NULL) 
+    if (pMD == NULL)
         return LookupMethod(id);
     return pMD;
 }
@@ -395,7 +395,7 @@ FORCEINLINE FieldDesc * MscorlibBinder::GetField(BinderFieldID id)
     INDEBUG(TriggerGCUnderStress());
 
     FieldDesc * pFD = VolatileLoad(&((&g_Mscorlib)->m_pFields[id]));
-    if (pFD == NULL) 
+    if (pFD == NULL)
         return LookupField(id);
     return pFD;
 }
@@ -428,7 +428,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetClassIfExist(BinderClassID id)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER; 
+        GC_NOTRIGGER;
         NOTHROW;
         FORBID_FAULT;
         MODE_ANY;
@@ -439,7 +439,7 @@ FORCEINLINE PTR_MethodTable MscorlibBinder::GetClassIfExist(BinderClassID id)
     CONTRACTL_END;
 
     PTR_MethodTable pMT = VolatileLoad(&((&g_Mscorlib)->m_pClasses[id]));
-    if (pMT == NULL) 
+    if (pMT == NULL)
         return LookupClassIfExist(id);
     return pMT;
 }
@@ -454,7 +454,7 @@ FORCEINLINE PTR_Module MscorlibBinder::GetModule()
 }
 
 FORCEINLINE LPCUTF8 MscorlibBinder::GetClassNameSpace(BinderClassID id)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != CLASS__NIL);
@@ -463,7 +463,7 @@ FORCEINLINE LPCUTF8 MscorlibBinder::GetClassNameSpace(BinderClassID id)
 }
 
 FORCEINLINE LPCUTF8 MscorlibBinder::GetClassName(BinderClassID id)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != CLASS__NIL);
@@ -472,7 +472,7 @@ FORCEINLINE LPCUTF8 MscorlibBinder::GetClassName(BinderClassID id)
 }
 
 FORCEINLINE LPCUTF8 MscorlibBinder::GetMethodName(BinderMethodID id)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != METHOD__NIL);
@@ -490,7 +490,7 @@ FORCEINLINE LPHARDCODEDMETASIG MscorlibBinder::GetMethodSig(BinderMethodID id)
 }
 
 FORCEINLINE LPCUTF8 MscorlibBinder::GetFieldName(BinderFieldID id)
-{ 
+{
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(id != FIELD__NIL);

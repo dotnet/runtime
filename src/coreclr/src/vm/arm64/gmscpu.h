@@ -5,8 +5,8 @@
 /**************************************************************/
 /*                       gmscpu.h                             */
 /**************************************************************/
-/* HelperFrame is defines 'GET_STATE(machState)' macro, which 
-   figures out what the state of the machine will be when the 
+/* HelperFrame is defines 'GET_STATE(machState)' macro, which
+   figures out what the state of the machine will be when the
    current method returns.  It then stores the state in the
    JIT_machState structure.  */
 
@@ -24,9 +24,9 @@ struct MachState {
     ULONG64        captureX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
     PTR_ULONG64    ptrX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // pointers to preserved registers
     TADDR          _pc; // program counter after the function returns
-    TADDR          _sp; // stack pointer after the function returns       
+    TADDR          _sp; // stack pointer after the function returns
     BOOL           _isValid;
-    
+
     BOOL   isValid()    { LIMITED_METHOD_DAC_CONTRACT; return _isValid; }
     TADDR  GetRetAddr() { LIMITED_METHOD_DAC_CONTRACT; return _pc; }
 };
@@ -50,7 +50,7 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     // This function cannot be called in DAC because DAC cannot update target memory.
     DacError(E_FAIL);
     return;
-    
+
 #else  // !DACCESS_COMPILE
 
     _sp = copy->_sp;
@@ -84,15 +84,15 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     }
 
 
-    // this has to be last because we depend on write ordering to 
+    // this has to be last because we depend on write ordering to
     // synchronize the race implicit in updating this struct
     VolatileStore(&_isValid, TRUE);
 #endif // DACCESS_COMPILE
 }
 
-// Do the initial capture of the machine state.  This is meant to be 
-// as light weight as possible, as we may never need the state that 
-// we capture.  
+// Do the initial capture of the machine state.  This is meant to be
+// as light weight as possible, as we may never need the state that
+// we capture.
 EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
 
 #define CAPTURE_STATE(machState, ret)                       \

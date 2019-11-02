@@ -42,7 +42,7 @@
 
 //
 //       Field name    , Allowed node enum(s)
-//                                  
+//
 // The "SPECIAL" variants indicate that some or all of the allowed opers exist elsewhere. This is
 // used in the DEBUGGABLE_GENTREE implementation when determining which vtable pointer to use for
 // a given oper. For example, IntConCommon (for the GenTreeIntConCommon type) allows opers
@@ -61,18 +61,18 @@ GTSTRUCT_1(IntCon      , GT_CNS_INT)
 GTSTRUCT_1(LngCon      , GT_CNS_LNG)
 GTSTRUCT_1(DblCon      , GT_CNS_DBL)
 GTSTRUCT_1(StrCon      , GT_CNS_STR)
-GTSTRUCT_N(LclVarCommon, GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR) 
-GTSTRUCT_3(LclVar      , GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR) 
+GTSTRUCT_N(LclVarCommon, GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR)
+GTSTRUCT_3(LclVar      , GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR)
 GTSTRUCT_3(LclFld      , GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_FLD_ADDR)
 GTSTRUCT_1(Cast        , GT_CAST)
 GTSTRUCT_1(Box         , GT_BOX)
-GTSTRUCT_1(Field       , GT_FIELD) 
-GTSTRUCT_1(Call        , GT_CALL) 
+GTSTRUCT_1(Field       , GT_FIELD)
+GTSTRUCT_1(Call        , GT_CALL)
 GTSTRUCT_1(ArgList     , GT_LIST)
 GTSTRUCT_1(FieldList   , GT_FIELD_LIST)
 GTSTRUCT_1(Colon       , GT_COLON)
 GTSTRUCT_1(FptrVal     , GT_FTN_ADDR)
-GTSTRUCT_1(Intrinsic   , GT_INTRINSIC) 
+GTSTRUCT_1(Intrinsic   , GT_INTRINSIC)
 GTSTRUCT_1(Index       , GT_INDEX)
 GTSTRUCT_1(IndexAddr   , GT_INDEX_ADDR)
 #if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_SIMD)
@@ -85,14 +85,14 @@ GTSTRUCT_2(BoundsChk   , GT_ARR_BOUNDS_CHECK, GT_HW_INTRINSIC_CHK)
 GTSTRUCT_1(BoundsChk   , GT_ARR_BOUNDS_CHECK)
 #endif  // !FEATURE_SIMD && !FEATURE_HW_INTRINSICS
 GTSTRUCT_1(ArrLen      , GT_ARR_LENGTH)
-GTSTRUCT_1(ArrElem     , GT_ARR_ELEM) 
+GTSTRUCT_1(ArrElem     , GT_ARR_ELEM)
 GTSTRUCT_1(ArrOffs     , GT_ARR_OFFSET)
-GTSTRUCT_1(ArrIndex    , GT_ARR_INDEX) 
-GTSTRUCT_1(RetExpr     , GT_RET_EXPR) 
+GTSTRUCT_1(ArrIndex    , GT_ARR_INDEX)
+GTSTRUCT_1(RetExpr     , GT_RET_EXPR)
 GTSTRUCT_1(ILOffset    , GT_IL_OFFSET)
 GTSTRUCT_2(CopyOrReload, GT_COPY, GT_RELOAD)
-GTSTRUCT_2(ClsVar      , GT_CLS_VAR, GT_CLS_VAR_ADDR) 
-GTSTRUCT_1(ArgPlace    , GT_ARGPLACE) 
+GTSTRUCT_2(ClsVar      , GT_CLS_VAR, GT_CLS_VAR_ADDR)
+GTSTRUCT_1(ArgPlace    , GT_ARGPLACE)
 GTSTRUCT_1(CmpXchg     , GT_CMPXCHG)
 GTSTRUCT_1(AddrMode    , GT_LEA)
 GTSTRUCT_N(Blk         , GT_BLK, GT_STORE_BLK, GT_OBJ, GT_STORE_OBJ, GT_DYN_BLK, GT_STORE_DYN_BLK)
@@ -111,10 +111,10 @@ GTSTRUCT_1(PutArgStk   , GT_PUTARG_STK)
 #endif // !FEATURE_ARG_SPLIT
 GTSTRUCT_1(PhysReg     , GT_PHYSREG)
 #ifdef FEATURE_SIMD
-GTSTRUCT_1(SIMD        , GT_SIMD) 
+GTSTRUCT_1(SIMD        , GT_SIMD)
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-GTSTRUCT_1(HWIntrinsic , GT_HWINTRINSIC) 
+GTSTRUCT_1(HWIntrinsic , GT_HWINTRINSIC)
 #endif // FEATURE_HW_INTRINSICS
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
 GTSTRUCT_1(RuntimeLookup, GT_RUNTIMELOOKUP)

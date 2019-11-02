@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDFileFormat.h
-// 
+//
 
 //
 // This file contains a set of helpers to verify and read the file format.
@@ -34,7 +34,7 @@
 #define FILE_VER_MAJOR  1
 #define FILE_VER_MINOR  1
 
-// These are the last legitimate 0.x version macros.  The file format has 
+// These are the last legitimate 0.x version macros.  The file format has
 // sinced move up to 1.x (see macros above).  After COM+ 1.0/NT 5 RTM's, these
 // macros should no longer be required or ever seen.
 #define FILE_VER_MAJOR_v0   0
@@ -66,7 +66,7 @@ METADATA_FIELDS_PROTECTION:
     ULONG       lSignature;             // "Magic" signature.
     USHORT      iMajorVer;              // Major file version.
     USHORT      iMinorVer;              // Minor file version.
-    ULONG       iExtraData;             // Offset to next structure of information 
+    ULONG       iExtraData;             // Offset to next structure of information
     ULONG       iVersionString;         // Length of version string
 public:
     BYTE        pVersion[0];            // Version string
@@ -75,7 +75,7 @@ public:
         return VAL32(lSignature);
     }
     void SetSignature(ULONG Signature)
-    { 
+    {
         lSignature = VAL32(Signature);
     }
 
@@ -89,25 +89,25 @@ public:
     }
 
     USHORT GetMinorVer()
-    { 
+    {
         return VAL16(iMinorVer);
     }
     void SetMinorVer(USHORT MinorVer)
-    { 
+    {
         iMinorVer = VAL16(MinorVer);
     }
 
     ULONG GetExtraDataOffset()
-    { 
+    {
         return VAL32(iExtraData);
     }
     void SetExtraDataOffset(ULONG ExtraDataOffset)
-    { 
+    {
         iExtraData = VAL32(ExtraDataOffset);
     }
 
     ULONG GetVersionStringLength()
-    { 
+    {
         return VAL32(iVersionString);
     }
     void SetVersionStringLength(ULONG VersionStringLength)
@@ -246,17 +246,17 @@ public:
 
 //*****************************************************************************
 // Skip over the header and find the actual stream data.
-// It doesn't perform any checks for buffer overflow - use GetFirstStream_Verify 
+// It doesn't perform any checks for buffer overflow - use GetFirstStream_Verify
 // instead.
 //*****************************************************************************
     static PSTORAGESTREAM GetFirstStream(// Return pointer to the first stream.
         PSTORAGEHEADER pHeader,             // Return copy of header struct.
         const void *pvMd);                  // Pointer to the full file.
 //*****************************************************************************
-// Skip over the header and find the actual stream data.  Secure version of 
+// Skip over the header and find the actual stream data.  Secure version of
 // GetFirstStream method.
 // The header is supposed to be verified by VerifySignature.
-// 
+//
 // Caller has to check available buffer size before using the first stream.
 //*****************************************************************************
     static PSTORAGESTREAM GetFirstStream_Verify(// Return pointer to the first stream.

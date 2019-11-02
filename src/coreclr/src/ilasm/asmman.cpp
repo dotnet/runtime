@@ -219,7 +219,7 @@ void    AsmMan::EmitFiles()
                 }
             }
         }
-        else 
+        else
         {
             pHash = tmp->pHash->ptr();
             cbHash = tmp->pHash->length();
@@ -283,7 +283,7 @@ void    AsmMan::StartAssembly(__in __nullterminated char* szName, __in_opt __nul
 
 }
 // copied from asmparse.y
-static void corEmitInt(BinStr* buff, unsigned data) 
+static void corEmitInt(BinStr* buff, unsigned data)
 {
     unsigned cnt = CorSigCompressData(data, buff->getBuff(5));
     buff->remove(5 - cnt);
@@ -311,7 +311,7 @@ void AsmMan::EmitDebuggableAttribute(mdToken tkOwner)
         if(pAssembly != NULL)
         {
             fOldStyle = (pAssembly->usVerMajor == 1);
-        }   
+        }
     }
 
     bsBytes->appendInt8(1);
@@ -336,7 +336,7 @@ void AsmMan::EmitDebuggableAttribute(mdToken tkOwner)
     {
         BinStr  bsSigArg;
         char buffer[80];
-        sprintf_s(buffer,80, 
+        sprintf_s(buffer,80,
                 "%s%c%s",
                 "System.Diagnostics.DebuggableAttribute",
                 NESTING_SEP,
@@ -473,7 +473,7 @@ void    AsmMan::EndAssembly()
                     }
                 }
             }
-            else 
+            else
             {
                 if (m_pAssembly->pPublicKey)
                 {
@@ -530,7 +530,7 @@ void    AsmMan::EmitAssemblyRefs()
     HRESULT                 hr = S_OK;
     ASSEMBLYMETADATA md;
     mdToken tk;
-    
+
     for(i=0; (m_pCurAsmRef=m_AsmRefLst.PEEK(i)) != NULL; i++)
     {
         if(!m_pCurAsmRef->m_fNew) continue;
@@ -547,7 +547,7 @@ void    AsmMan::EmitAssemblyRefs()
         {
             pbPublicKeyOrToken = m_pCurAsmRef->pPublicKeyToken->ptr();
             cbPublicKeyOrToken = m_pCurAsmRef->pPublicKeyToken->length();
-            
+
         }
         else if (m_pCurAsmRef->pPublicKey)
         {
@@ -582,7 +582,7 @@ void    AsmMan::EmitAssembly()
 {
     HRESULT                 hr = S_OK;
     ASSEMBLYMETADATA md;
-            
+
     wzUniBuf[0] = 0;
     if(m_pAssembly == NULL) return;
     if(!m_pAssembly->m_fNew) return;
@@ -697,7 +697,7 @@ void    AsmMan::EndComType()
     if(m_pCurComType)
     {
         if(m_pAssembler)
-        { 
+        {
             Class* pClass =((Assembler*)m_pAssembler)->m_pCurClass;
             if(pClass)
             {
@@ -843,8 +843,8 @@ HRESULT AsmMan::EmitManifest()
     {
         EmitFiles();
         EmitAssembly();
-        
-        if((((Assembler*)m_pAssembler)->m_dwIncludeDebugInfo != 0) && (m_pAssembly == NULL) 
+
+        if((((Assembler*)m_pAssembler)->m_dwIncludeDebugInfo != 0) && (m_pAssembly == NULL)
            && !(((Assembler*)m_pAssembler)->m_fENCMode))
         {
             mdToken tkOwner, tkMscorlib;
@@ -906,7 +906,7 @@ HRESULT AsmMan::EmitManifest()
                     if(!((Assembler*)m_pAssembler)->OnErrGo) continue;
                 }
             }
-            else 
+            else
             {
                 report->warn("Undefined implementation in ExportedType '%s' -- ExportType not emitted\n",pComType->szName);
                 if(!((Assembler*)m_pAssembler)->OnErrGo) continue;
@@ -993,7 +993,7 @@ HRESULT AsmMan::EmitManifest()
                             report->error("Failed to get size of managed resource file '%s'\n",pManRes->szAlias);
                             fOK = FALSE;
                         }
-                        else 
+                        else
                         {
                             m_dwMResSizeTotal += m_dwMResSize[m_dwMResNum]+sizeof(DWORD);
                             m_wzMResName[m_dwMResNum] = new WCHAR[wcslen(wzFileName)+1];
@@ -1023,7 +1023,7 @@ HRESULT AsmMan::EmitManifest()
         m_pAsmEmitter->Release();
         m_pAsmEmitter = NULL;
     }
-    else 
+    else
         report->error("Failed to obtain IMetaDataAssemblyEmit interface: 0x%08X\n",hr);
     return hr;
 }

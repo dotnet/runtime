@@ -57,7 +57,7 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardBundleTable
         shr     rdi, 0x0A
         cmp     byte ptr [rdi + rax], 0xFF
 
-        .byte 0x75, 0x02 
+        .byte 0x75, 0x02
         // jne     UpdateCardBundle_PreGrow64
         REPRET
 
@@ -142,7 +142,7 @@ PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardBundleTable
         shr     rdi, 0x0A
         cmp     byte ptr [rdi + rax], 0xFF
 
-        .byte 0x75, 0x02 
+        .byte 0x75, 0x02
         // jne     UpdateCardBundle_PostGrow64
         REPRET
 
@@ -163,9 +163,9 @@ LEAF_END_MARKED JIT_WriteBarrier_PostGrow64, _TEXT
         .balign 8
 LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
         //
-        // SVR GC has multiple heaps, so it cannot provide one single 
+        // SVR GC has multiple heaps, so it cannot provide one single
         // ephemeral region to bounds check against, so we just skip the
-        // bounds checking all together and do our card table update 
+        // bounds checking all together and do our card table update
         // unconditionally.
         //
 
@@ -200,7 +200,7 @@ PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardBundleTable
         shr     rdi, 0x0A
         cmp     byte ptr [rdi + rax], 0xFF
 
-        .byte 0x75, 0x02 
+        .byte 0x75, 0x02
         // jne     UpdateCardBundle_SVR64
         REPRET
 
@@ -401,9 +401,9 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
         //   non-volatile calling convention, this should be changed to use just one register.
 
         //
-        // SVR GC has multiple heaps, so it cannot provide one single 
+        // SVR GC has multiple heaps, so it cannot provide one single
         // ephemeral region to bounds check against, so we just skip the
-        // bounds checking altogether and do our card table update 
+        // bounds checking altogether and do our card table update
         // unconditionally.
         //
 

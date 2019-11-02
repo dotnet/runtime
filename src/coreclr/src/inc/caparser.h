@@ -135,7 +135,7 @@ public:
         *pVal = GetI1();
         return S_OK;
     }
-    
+
     HRESULT GetTag(CorSerializationType *pVal)
     {
         WRAPPER_NO_CONTRACT;
@@ -257,7 +257,7 @@ public:
         HRESULT hr;
         unsigned __int16 val;
         IfFailRet(GetProlog(&val));
-        
+
         if (val != 0x0001)
             return META_E_CA_INVALID_BLOB;
 
@@ -364,7 +364,7 @@ public:
 
     int BytesLeft()
     {
-        LIMITED_METHOD_CONTRACT; 
+        LIMITED_METHOD_CONTRACT;
         return (int)(m_cbBlob - (m_pbCur - m_pbBlob));
     }
 

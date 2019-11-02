@@ -119,20 +119,20 @@ unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
     //
     // First print out all the basic information
     //
-    
+
     gcPrintf("    method      size   = %04X\n", *methodSize);
     gcPrintf("    prolog      size   = %2u \n", header->prologSize);
     gcPrintf("    epilog      size   = %2u \n", header->epilogSize);
     gcPrintf("    epilog     count   = %2u \n", header->epilogCount);
     gcPrintf("    epilog      end    = %s  \n", header->epilogAtEnd   ? "yes" : "no");
-    
+
     gcPrintf("    callee-saved regs  = ");
     if (header->ediSaved) gcPrintf("EDI ");
     if (header->esiSaved) gcPrintf("ESI ");
     if (header->ebxSaved) gcPrintf("EBX ");
     if (header->ebpSaved) gcPrintf("EBP ");
     gcPrintf("\n");
-        
+
     gcPrintf("    ebp frame          = %s  \n", header->ebpFrame      ? "yes" : "no");
     gcPrintf("    fully interruptible= %s  \n", header->interruptible ? "yes" : "no");
     gcPrintf("    double align       = %s  \n", header->doubleAlign   ? "yes" : "no");
@@ -144,17 +144,17 @@ unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
     //
     // Now display optional information
     //
-    
+
     if (header->security)       gcPrintf("    security check obj = yes\n");
     if (header->handlers)       gcPrintf("    exception handlers = yes\n");
     if (header->localloc)       gcPrintf("    localloc           = yes\n");
     if (header->editNcontinue)  gcPrintf("    edit & continue    = yes\n");
     if (header->profCallbacks)  gcPrintf("    profiler callbacks = yes\n");
     if (header->varargs)        gcPrintf("    varargs            = yes\n");
-    if (header->gsCookieOffset != INVALID_GS_COOKIE_OFFSET) 
+    if (header->gsCookieOffset != INVALID_GS_COOKIE_OFFSET)
                                 gcPrintf("    GuardStack cookie  = [%s%u]\n",
                                           header->ebpFrame ? "EBP-" : "ESP+", header->gsCookieOffset);
-    if (header->syncStartOffset != INVALID_SYNC_OFFSET) 
+    if (header->syncStartOffset != INVALID_SYNC_OFFSET)
                                 gcPrintf("    Sync region = [%u,%u]\n",
                                           header->syncStartOffset, header->syncEndOffset);
 
@@ -976,13 +976,13 @@ void                GCDump::DumpPtrsInFrame(PTR_CBYTE   gcInfoBlock,
     methodSize = methodSizeTemp;
 
     //
-    // New style InfoBlk Header 
+    // New style InfoBlk Header
     //
     // Typically only uses one-byte to store everything.
     //
     InfoHdr header;
     table = decodeHeader(table, gcInfoVersion, &header);
-    
+
     if (header.untrackedCnt == HAS_UNTRACKED)
     {
         unsigned count;

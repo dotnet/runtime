@@ -26,9 +26,9 @@ C_FUNC(PAL_DispatchExceptionReturnOffset):
 // to be referenced from a stack frame on the faulting thread.  Its
 // unwinding behavior is equivalent to any standard function having
 // an ebp frame. It is analogous to the following source file.
-// 
+//
 // extern "C" void PAL_DispatchException(CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord, MachExceptionInfo *pMachExceptionInfo);
-// 
+//
 // extern "C" void PAL_DispatchExceptionWrapper()
 // {
 //     CONTEXT Context;

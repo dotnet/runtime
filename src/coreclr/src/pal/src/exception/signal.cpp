@@ -207,10 +207,10 @@ Parameters :
     None
 
     (no return value)
-    
+
 note :
-reason for this function is that during PAL_Terminate, we reach a point where 
-SEH isn't possible anymore (handle manager is off, etc). Past that point, 
+reason for this function is that during PAL_Terminate, we reach a point where
+SEH isn't possible anymore (handle manager is off, etc). Past that point,
 we can't avoid crashing on a signal.
 --*/
 void SEHCleanupSignals()
@@ -356,7 +356,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured. 
+    Handles signal on the original stack where the signal occured.
     Invoked via setcontext.
 
 Parameters :
@@ -449,8 +449,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         size_t sp = (size_t)GetNativeContextSP((native_context_t *)context);
         size_t failureAddress = (size_t)siginfo->si_addr;
 
-        // If the failure address is at most one page above or below the stack pointer, 
-        // we have a stack overflow. 
+        // If the failure address is at most one page above or below the stack pointer,
+        // we have a stack overflow.
         if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
             (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
@@ -641,8 +641,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         CONTEXT winContext;
         CONTEXTFromNativeContext(
-            ucontext, 
-            &winContext, 
+            ucontext,
+            &winContext,
             CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
@@ -684,7 +684,7 @@ Function :
 
 Parameters :
     pThread            - target PAL thread
-    activationFunction - function to call 
+    activationFunction - function to call
 
 (no return value)
 --*/
@@ -695,7 +695,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second, 
+        // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.
         PROCAbort();
     }
@@ -837,8 +837,8 @@ Parameters :
     previousAction : previous sigaction struct
 
     (no return value)
-    
-note : if sigfunc is NULL, the default signal handler is restored    
+
+note : if sigfunc is NULL, the default signal handler is restored
 --*/
 void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags, bool skipIgnored)
 {

@@ -32,7 +32,7 @@ private:
     static DWORD __stdcall SamplingThreadProc(void* arg);
 
     static StackWalkAction StackWalkCallback(CrawlFrame* pCf, VOID* data);
-    
+
     StackWalkAction CrawlFrameVisitor(CrawlFrame* pCf, Thread* pMdThread);
 
     void ThreadProc();

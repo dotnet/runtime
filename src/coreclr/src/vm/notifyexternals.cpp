@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: notifyexternals.cpp
-// 
+//
 
 // ===========================================================================
 
@@ -27,7 +27,7 @@ BOOL ShouldCheckLoaderLock()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
 #ifdef FEATURE_CORESYSTEM
     // CoreSystem does not support this.
     return FALSE;

@@ -49,7 +49,7 @@ namespace CorUnix
         LONG lReleaseCount,
         LPLONG lpPreviousCount
         );
-        
+
 }
 
 #endif //_PAL_SEMAPHORE_H_

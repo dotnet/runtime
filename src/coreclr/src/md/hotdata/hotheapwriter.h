@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: HotHeapWriter.h
-// 
+//
 
-// 
+//
 // Class code:HotHeapWriter represents a writer of hot heap into MetaData hot stream (collected by IBC).
-// 
+//
 // ======================================================================================
 
 #pragma once
@@ -28,9 +28,9 @@ class BlobHeapRW;
 class GuidHeapRW;
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // This class represents a writer of hot heap into MetaData hot stream (collected by IBC).
-// 
+//
 class HotHeapWriter
 {
 private:
@@ -43,42 +43,42 @@ private:
         const BlobHeapRW   *m_pBlobHeap;
         const GuidHeapRW   *m_pGuidHeap;
     };
-    
+
 public:
     // Creates writer for #String heap.
     HotHeapWriter(const StringHeapRW *pStringHeap);
     // Creates writer for #Blob or #US heap (if fUserStringHeap is TRUE).
     HotHeapWriter(
-        const BlobHeapRW *pBlobHeap, 
+        const BlobHeapRW *pBlobHeap,
         BOOL              fUserStringHeap);
     // Creates writer for #GUID heap.
     HotHeapWriter(const GuidHeapRW *pGuidHeap);
-    
+
     // Destroys the writer of hot heap.
     void Delete();
-    
+
     // Stores hot data reported by IBC in profile data (code:CorProfileData) to a stream.
     // Aligns output stream to 4-bytes.
-    __checkReturn 
+    __checkReturn
     HRESULT SaveToStream(
-        IStream        *pStream, 
-        CorProfileData *pProfileData, 
+        IStream        *pStream,
+        CorProfileData *pProfileData,
         UINT32         *pnSavedSize) const;
-    
+
     // Returns index of the heap as table index used by IBC (code:CorProfileData).
     UINT32 GetTableIndex() const;
-    
+
 private:
-    // 
+    //
     // Helpers
-    // 
-    
+    //
+
     // Returns heap data at index (nIndex).
-    __checkReturn 
+    __checkReturn
     HRESULT GetData(
-        UINT32    nIndex, 
+        UINT32    nIndex,
         DataBlob *pData) const;
-    
+
 };  // class HotHeapWriter
 
 };  // namespace MetaData

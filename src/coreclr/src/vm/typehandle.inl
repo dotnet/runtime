@@ -11,11 +11,11 @@
 #include "typehandle.h"
 
 inline mdTypeDef TypeHandle::GetCl() const
-{ 
+{
     LIMITED_METHOD_DAC_CONTRACT;
 
     PREFIX_ASSUME(GetMethodTable() != NULL);
-    return GetMethodTable()->GetCl(); 
+    return GetMethodTable()->GetCl();
 }
 
 inline PTR_MethodTable TypeHandle::GetMethodTable() const
@@ -114,7 +114,7 @@ inline PTR_MethodTable TypeHandle::AsMethodTable() const
     return PTR_MethodTable(m_asTAddr);
 }
 
-inline PTR_TypeDesc TypeHandle::AsTypeDesc() const 
+inline PTR_TypeDesc TypeHandle::AsTypeDesc() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -137,7 +137,7 @@ inline FnPtrTypeDesc* TypeHandle::AsFnPtrType() const
 }
 
 inline TypeVarTypeDesc* TypeHandle::AsGenericVariable() const
-{ 
+{
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(IsGenericVariable());
@@ -178,7 +178,7 @@ inline BOOL TypeHandle::HasTypeEquivalence() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsTypeDesc()) 
+    if (IsTypeDesc())
         return AsTypeDesc()->HasTypeEquivalence();
     else
         return AsMethodTable()->HasTypeEquivalence();

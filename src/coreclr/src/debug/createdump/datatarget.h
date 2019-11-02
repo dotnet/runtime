@@ -27,23 +27,23 @@ public:
     //
     // ICLRDataTarget
     //
-    virtual HRESULT STDMETHODCALLTYPE GetMachineType( 
+    virtual HRESULT STDMETHODCALLTYPE GetMachineType(
         /* [out] */ ULONG32 *machine);
 
-    virtual HRESULT STDMETHODCALLTYPE GetPointerSize( 
+    virtual HRESULT STDMETHODCALLTYPE GetPointerSize(
         /* [out] */ ULONG32 *size);
 
-    virtual HRESULT STDMETHODCALLTYPE GetImageBase( 
+    virtual HRESULT STDMETHODCALLTYPE GetImageBase(
         /* [string][in] */ LPCWSTR moduleName,
         /* [out] */ CLRDATA_ADDRESS *baseAddress);
 
-    virtual HRESULT STDMETHODCALLTYPE ReadVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE ReadVirtual(
         /* [in] */ CLRDATA_ADDRESS address,
         /* [length_is][size_is][out] */ PBYTE buffer,
         /* [in] */ ULONG32 size,
         /* [optional][out] */ ULONG32 *done);
 
-    virtual HRESULT STDMETHODCALLTYPE WriteVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE WriteVirtual(
         /* [in] */ CLRDATA_ADDRESS address,
         /* [size_is][in] */ PBYTE buffer,
         /* [in] */ ULONG32 size,
@@ -73,7 +73,7 @@ public:
         /* [in] */ ULONG32 contextSize,
         /* [in, size_is(contextSize)] */ PBYTE context);
 
-    virtual HRESULT STDMETHODCALLTYPE Request( 
+    virtual HRESULT STDMETHODCALLTYPE Request(
         /* [in] */ ULONG32 reqCode,
         /* [in] */ ULONG32 inBufferSize,
         /* [size_is][in] */ BYTE *inBuffer,

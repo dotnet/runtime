@@ -30,7 +30,7 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator()  
+LoaderAllocator::LoaderAllocator()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -47,11 +47,11 @@ LoaderAllocator::LoaderAllocator()
     m_pFuncPtrStubs = NULL;
     m_hLoaderAllocatorObjectHandle = NULL;
     m_pStringLiteralMap = NULL;
-    
+
     m_cReferences = (UINT32)-1;
-    
+
     m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
-    
+
 #ifdef FAT_DISPATCH_TOKENS
     // DispatchTokenFat pointer table for token overflow scenarios. Lazily allocated.
     m_pFatTokenSetLock = NULL;
@@ -106,7 +106,7 @@ LoaderAllocator::~LoaderAllocator()
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
-// 
+//
 void LoaderAllocator::AddReference()
 {
     CONTRACTL
@@ -116,17 +116,17 @@ void LoaderAllocator::AddReference()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
     FastInterlockIncrement((LONG *)&m_cReferences);
 }
 #endif //!DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Adds reference if the native object is alive  - code:LoaderAllocator#AssemblyPhases.
 // Returns TRUE if the reference was added.
-// 
+//
 BOOL LoaderAllocator::AddReferenceIfAlive()
 {
     CONTRACTL
@@ -136,24 +136,24 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
 #ifndef DACCESS_COMPILE
     for (;;)
     {
         // Local snaphost of ref-count
         UINT32 cReferencesLocalSnapshot = m_cReferences;
         _ASSERTE(cReferencesLocalSnapshot != (UINT32)-1);
-        
+
         if (cReferencesLocalSnapshot == 0)
         {   // Ref-count was 0, do not AddRef
             return FALSE;
         }
-        
+
         UINT32 cOriginalReferences = FastInterlockCompareExchange(
-            (LONG *)&m_cReferences, 
-            cReferencesLocalSnapshot + 1, 
+            (LONG *)&m_cReferences,
+            cReferencesLocalSnapshot + 1,
             cReferencesLocalSnapshot);
-        
+
         if (cOriginalReferences == cReferencesLocalSnapshot)
         {   // The exchange happened
             return TRUE;
@@ -167,7 +167,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
 } // LoaderAllocator::AddReferenceIfAlive
 
 //---------------------------------------------------------------------------------------
-// 
+//
 BOOL LoaderAllocator::Release()
 {
     CONTRACTL
@@ -177,17 +177,17 @@ BOOL LoaderAllocator::Release()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     // Only actually destroy the domain assembly when all references to it are gone.
     // This should preserve behavior in the debugger such that an UnloadModule event
     // will occur before the underlying data structure cease functioning.
 #ifndef DACCESS_COMPILE
-    
+
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
     LONG cNewReferences = FastInterlockDecrement((LONG *)&m_cReferences);
     return (cNewReferences == 0);
 #else //DACCESS_COMPILE
-    
+
     return (m_cReferences == (UINT32)0);
 #endif //DACCESS_COMPILE
 } // LoaderAllocator::Release
@@ -195,7 +195,7 @@ BOOL LoaderAllocator::Release()
 #ifndef DACCESS_COMPILE
 #ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
-// 
+//
 BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
 {
     CONTRACTL
@@ -207,10 +207,10 @@ BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
 
     // This must be checked before calling this function
     _ASSERTE(pOtherLA != this);
-    
+
     // This function requires the that loader allocator lock have been taken.
     _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
-    
+
     if (m_LoaderAllocatorReferences.Lookup(pOtherLA) == NULL)
     {
         GCX_COOP();
@@ -229,7 +229,7 @@ BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
 {
     CONTRACTL
@@ -241,7 +241,7 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
 
     // Check if this lock can be taken in all places that the function is called
     _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
-    
+
     if (!IsCollectible())
         return FALSE;
 
@@ -322,17 +322,17 @@ bool LoaderAllocator::Marked()
     return m_fMarked;
 }
 
-void LoaderAllocator::ClearMark() 
+void LoaderAllocator::ClearMark()
 {
-    LIMITED_METHOD_CONTRACT; 
+    LIMITED_METHOD_CONTRACT;
     m_fMarked = false;
 }
 
-void LoaderAllocator::Mark() 
+void LoaderAllocator::Mark()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!m_fMarked) 
+    if (!m_fMarked)
     {
         m_fMarked = true;
 
@@ -347,10 +347,10 @@ void LoaderAllocator::Mark()
 }
 
 //---------------------------------------------------------------------------------------
-// 
-// Collect unreferenced assemblies, remove them from the assembly list and return their loader allocator 
+//
+// Collect unreferenced assemblies, remove them from the assembly list and return their loader allocator
 // list.
-// 
+//
 //static
 LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain)
 {
@@ -363,7 +363,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     CONTRACTL_END;
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
-    
+
 #if 0
     // Debug logic for debugging the loader allocator gc.
     {
@@ -372,7 +372,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         iData = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
+
         while (iData.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
@@ -396,7 +396,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         }
     }
 #endif //0
-    
+
     AppDomain::AssemblyIterator i;
     // Iterate through every loader allocator, marking as we go
     {
@@ -405,12 +405,12 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
+
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
             Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
-            
+
             if (pAssembly != NULL)
             {
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
@@ -422,9 +422,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
             }
         }
     }
-    
+
     // Iterate through every loader allocator, unmarking marked loaderallocators, and
-    // build a free list of unmarked ones 
+    // build a free list of unmarked ones
     {
         CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
@@ -437,7 +437,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
             Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
-            
+
             if (pAssembly != NULL)
             {
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
@@ -477,8 +477,8 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
             }
         }
     }
-    
-    // Iterate through free list, removing from Assembly list 
+
+    // Iterate through free list, removing from Assembly list
     LoaderAllocator * pDomainLoaderAllocatorDestroyIterator = pFirstDestroyedLoaderAllocator;
 
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
@@ -509,14 +509,14 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
     }
-    
+
     return pFirstDestroyedLoaderAllocator;
 } // LoaderAllocator::GCLoaderAllocators_RemoveAssemblies
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Collect unreferenced assemblies, delete all their remaining resources.
-// 
+//
 //static
 void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocator)
 {
@@ -527,16 +527,16 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-    
+
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
-    
+
     AppDomain* pAppDomain = (AppDomain*)pOriginalLoaderAllocator->GetDomain();
 
     // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
-    // Note: that it may not collect our pOriginalLoaderAllocator in case this 
+    // Note: that it may not collect our pOriginalLoaderAllocator in case this
     // LoaderAllocator hasn't loaded any DomainAssembly. We handle this case in the next loop.
-    // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we 
+    // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we
     // removed them from the assembly list
     pFirstDestroyedLoaderAllocator = GCLoaderAllocators_RemoveAssemblies(pAppDomain);
 
@@ -575,7 +575,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pOriginalLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
         pFirstDestroyedLoaderAllocator = pOriginalLoaderAllocator;
     }
-    
+
     // Iterate through free list, deleting DomainAssemblies
     pDomainLoaderAllocatorDestroyIterator = pFirstDestroyedLoaderAllocator;
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
@@ -641,14 +641,14 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // Go to next
         pDomainLoaderAllocatorDestroyIterator = pLoaderAllocatorDestroyNext;
     }
-    
+
     // Deleting the DomainAssemblies will have created a list of LoaderAllocator's on the AppDomain
     // Call this shutdown function to clean those up.
     pAppDomain->ShutdownFreeLoaderAllocators();
 } // LoaderAllocator::GCLoaderAllocators
-        
+
 //---------------------------------------------------------------------------------------
-// 
+//
 //static
 BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
 {
@@ -707,7 +707,7 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         // Release this loader allocator
         BOOL fIsLastReferenceReleased = pLoaderAllocator->Release();
 
-        // If the reference count on this assembly got to 0, then a LoaderAllocator may 
+        // If the reference count on this assembly got to 0, then a LoaderAllocator may
         // be able to be collected, thus, perform a garbage collection.
         // The reference count is setup such that in the case of non-trivial graphs, the reference count
         // may hit zero early.
@@ -838,8 +838,8 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
                 // Loop in the unlikely case that another thread has beaten us on the handle array enlarging, but
                 // all the slots were used up before the current thread was scheduled.
-            } 
-            while (true); 
+            }
+            while (true);
         }
     }
     else
@@ -1445,12 +1445,12 @@ SIZE_T LoaderAllocator::EstimateSize()
 {
     WRAPPER_NO_CONTRACT;
     SIZE_T retval=0;
-    if(m_pHighFrequencyHeap) 
+    if(m_pHighFrequencyHeap)
         retval+=m_pHighFrequencyHeap->GetSize();
-    if(m_pLowFrequencyHeap) 
-        retval+=m_pLowFrequencyHeap->GetSize();  
-    if(m_pStubHeap) 
-        retval+=m_pStubHeap->GetSize();   
+    if(m_pLowFrequencyHeap)
+        retval+=m_pLowFrequencyHeap->GetSize();
+    if(m_pStubHeap)
+        retval+=m_pStubHeap->GetSize();
     if(m_pStringLiteralMap)
         retval+=m_pStringLiteralMap->GetSize();
 #ifndef CROSSGEN_COMPILE
@@ -1458,7 +1458,7 @@ SIZE_T LoaderAllocator::EstimateSize()
         retval+=m_pVirtualCallStubManager->GetSize();
 #endif
 
-    return retval;    
+    return retval;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1556,7 +1556,7 @@ void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
 }
 
 void LoaderAllocator::UninitVirtualCallStubManager()
-{    
+{
     WRAPPER_NO_CONTRACT;
 
     if (m_pVirtualCallStubManager != NULL)
@@ -1818,7 +1818,7 @@ void AssemblyLoaderAllocator::CleanupHandles()
 }
 
 void LoaderAllocator::RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockEntry)
-{    
+{
     CONTRACTL
     {
         GC_TRIGGERS;

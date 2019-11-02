@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: HotMetaData.cpp
-// 
+//
 
-// 
+//
 // Class code:MetaData::HotMetaData represents a reader of hot data in MetaData hot stream.
-// 
+//
 // ======================================================================================
 
 #include "external.h"
@@ -20,25 +20,25 @@ namespace MetaData
 {
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Class code:MetaData::HotMetaData represents a reader of hot data in MetaData hot stream.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 HotMetaData::Initialize(
     DataBuffer data)
 {
     m_Data = data;
-    
+
     return S_OK;
 } // HotMetaData::Initialize
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Returns iterator of stored hot heaps (code:HotHeap).
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 HotMetaData::GetHeapsDirectoryIterator(
     HotHeapsDirectoryIterator *pHeapsDirectoryIterator)
 {
@@ -47,10 +47,10 @@ HotMetaData::GetHeapsDirectoryIterator(
         Debug_ReportError("Invalid hot MetaData format - header doesn't fit into the hot data.");
         return METADATA_E_INVALID_FORMAT;
     }
-    
+
     struct HotMetaDataHeader *pHeader;
     if (!m_Data.PeekDataAt<struct HotMetaDataHeader>(
-        m_Data.GetSize() - sizeof(struct HotMetaDataHeader), 
+        m_Data.GetSize() - sizeof(struct HotMetaDataHeader),
         &pHeader))
     {
         Debug_ReportInternalError("There's a bug, because previous size check succeeded.");
@@ -74,11 +74,11 @@ HotMetaData::GetHeapsDirectoryIterator(
         Debug_ReportInternalError("There's a bug, because previous call to SkipToExactSize succeeded.");
         return METADATA_E_INVALID_FORMAT;
     }
-    
+
     pHeapsDirectoryIterator->Initialize(
-        heapsDirectoryData, 
+        heapsDirectoryData,
         heapsData);
-    
+
     return S_OK;
 } // HotMetaData::GetHeapsDirectoryIterator
 

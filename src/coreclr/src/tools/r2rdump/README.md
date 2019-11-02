@@ -9,7 +9,7 @@ dotnet R2RDump.dll --in &lt;path to ReadyToRun image&gt;
 * -o, --out &lt;arg&gt;
 	- Output file path. Dumps everything to the specified file except help message and error messages
 * -x, --xml
-	- Output in XML format	
+	- Output in XML format
 * --raw
 	- Dump the raw bytes of each section or runtime function
 * --header
@@ -49,7 +49,7 @@ dotnet R2RDump.dll --in &lt;path to ReadyToRun image&gt;
 | ----------- | --- | --- | --------- | ----- |
 | **Windows** | yes | yes | no disasm | yes   |
 | **Linux**   | yes | yes | no disasm |       |
-| **OSX**     | yes | -   | -         | -     |    
+| **OSX**     | yes | -   | -         | -     |
 
 ## ReadyToRun Format
 
@@ -61,7 +61,7 @@ Used for getting method and type signatures from tokens (see: http://jilc.source
 
 ### READYTORUN_SECTION_COMPILER_IDENTIFIER
 
-A string describing the compiler. 
+A string describing the compiler.
 
 Eg. "CoreCLR 4.5.30319.0 __BUILDMACHINE__"
 
@@ -83,7 +83,7 @@ A [NativeHashtable](NativeHashtable.cs) mapping type hashcodes of types defined 
 
 ### READYTORUN_SECTION_ATTRIBUTEPRESENCE
 
-A [NativeCuckooFilter](NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter. 
+A [NativeCuckooFilter](NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter.
 
 ### READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 

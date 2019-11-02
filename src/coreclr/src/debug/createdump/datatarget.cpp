@@ -62,7 +62,7 @@ DumpDataTarget::QueryInterface(
 STDMETHODIMP_(ULONG)
 DumpDataTarget::AddRef()
 {
-    LONG ref = InterlockedIncrement(&m_ref);    
+    LONG ref = InterlockedIncrement(&m_ref);
     return ref;
 }
 
@@ -121,7 +121,7 @@ DumpDataTarget::GetImageBase(
     int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
     if (length > 0)
     {
-        for (const MemoryRegion& image : m_crashInfo->ModuleMappings()) 
+        for (const MemoryRegion& image : m_crashInfo->ModuleMappings())
         {
             const char *name = strrchr(image.FileName(), '/');
             if (name != nullptr)
@@ -207,7 +207,7 @@ DumpDataTarget::GetThreadContext(
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
     assert(m_crashInfo != nullptr);
-    if (contextSize < sizeof(CONTEXT)) 
+    if (contextSize < sizeof(CONTEXT))
     {
         assert(false);
         return E_INVALIDARG;

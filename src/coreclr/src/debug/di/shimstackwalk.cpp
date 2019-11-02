@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information.
 //
 // ShimStackWalk.cpp
-// 
+//
 
 //
 // This file contains the implementation of the Arrowhead stackwalking shim.  This shim builds on top of
-// the public Arrowhead ICD stackwalking API, and it is intended to be backward-compatible with the existing 
+// the public Arrowhead ICD stackwalking API, and it is intended to be backward-compatible with the existing
 // debuggers using the V2.0 ICD API.
-// 
+//
 // ======================================================================================
 
 #include "stdafx.h"
@@ -42,7 +42,7 @@ ShimStackWalk::~ShimStackWalk()
 // ----------------------------------------------------------------------------
 // ShimStackWalk::Clear
 //
-// Description: 
+// Description:
 //    Clear all the memory used by this ShimStackWalk, including the array of frames, the array of chains,
 //    the linked list of ShimChainEnums, and the linked list of ShimFrameEnums.
 //
@@ -93,7 +93,7 @@ void ShimStackWalk::Clear()
 // during the stackwalk for eventual transmission to the debugger. This function is the
 // V4 equivalent of Whidbey's code:ShouldSendUMLeafChain (which ran on the LS, from
 // Debug\EE\frameinfo.cpp).
-// 
+//
 // Note that code:ShouldSendUMLeafChain still exists today (to facilitate some in-process
 // debugging stackwalks that are still necessary). So consult the comments in
 // code:ShouldSendUMLeafChain for a more thorough discussion of why we do the checks we
@@ -109,7 +109,7 @@ void ShimStackWalk::Clear()
 BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
 {
     _ASSERTE (pswInfo != NULL);
-    
+
     // Always track chains for non-leaf UM frames
     if (!pswInfo->IsLeafFrame())
         return TRUE;
@@ -128,18 +128,18 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     // This check is the same as Thread::IsUnstarted() from ShouldSendUMLeafChain
     if ((threadUserState & USER_UNSTARTED) != 0)
         return FALSE;
-    
+
     // This check is the same as Thread::IsDead() from ShouldSendUMLeafChain
     if ((threadUserState & USER_STOPPED) != 0)
         return FALSE;
 
     // #DacShimSwWorkAround
-    // 
+    //
     // This part cannot be determined using DBI alone. We must call through to the DAC
     // because we have no other way to get at TS_Hijacked & TS_SyncSuspended.  When the
     // rearchitecture is complete, this DAC call should be able to go away, and we
     // should be able to use DBI for all the info we need.
-    // 
+    //
     // One might think one could avoid the DAC for TS_SyncSuspended by just checking
     // USER_SUSPENDED, but that won't work. Although USER_SUSPENDED will be returned some
     // of the time when TS_SyncSuspended is set, that will not be the case when the
@@ -157,7 +157,7 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
 // ----------------------------------------------------------------------------
 // ShimStackWalk::Populate
 //
-// Description: 
+// Description:
 //    Walk the entire stack and populate the arrays of stack frames and stack chains.
 //
 
@@ -191,8 +191,8 @@ void ShimStackWalk::Populate()
 
         // create a temporary buffer of raw ICDInternalFrame2 to pass to the ICD API
         NewArrayHolder<ICorDebugInternalFrame2 *> pTmpArray(new ICorDebugInternalFrame2* [swInfo.m_cInternalFrames]);
-        hr = pThread3->GetActiveInternalFrames(swInfo.m_cInternalFrames, 
-                                               &(swInfo.m_cInternalFrames), 
+        hr = pThread3->GetActiveInternalFrames(swInfo.m_cInternalFrames,
+                                               &(swInfo.m_cInternalFrames),
                                                pTmpArray);
         IfFailThrow(hr);
 
@@ -216,7 +216,7 @@ void ShimStackWalk::Populate()
     //     5)  Handle other types of chains.
     //     6)  Advance to the next frame.
     //     7)  Check if we should exit the loop.
-    // 
+    //
     while (true)
     {
         // reset variables used in the loop
@@ -293,7 +293,7 @@ void ShimStackWalk::Populate()
             }
             else
             {
-                // Don't add any frame just yet.  We need to deal with any unmanaged chain 
+                // Don't add any frame just yet.  We need to deal with any unmanaged chain
                 // we are tracking first.
 
                 // track the current enter-unmanaged chain and/or enter-managed chain
@@ -301,9 +301,9 @@ void ShimStackWalk::Populate()
 
                 if (swInfo.m_fProcessingInternalFrame)
                 {
-                    // Check if this is a leaf internal frame.  If so, check its frame type.  
-                    // In V2, code:DebuggerWalkStackProc doesn't expose chains derived from leaf internal 
-                    // frames of type TYPE_INTERNAL.  However, V2 still exposes leaf M2U and U2M internal 
+                    // Check if this is a leaf internal frame.  If so, check its frame type.
+                    // In V2, code:DebuggerWalkStackProc doesn't expose chains derived from leaf internal
+                    // frames of type TYPE_INTERNAL.  However, V2 still exposes leaf M2U and U2M internal
                     // frames.
                     if (swInfo.IsLeafFrame())
                     {
@@ -319,8 +319,8 @@ void ShimStackWalk::Populate()
                     _ASSERTE(!swInfo.IsSkippingFrame());
                     if (ConvertInternalFrameToDynamicMethod(&swInfo))
                     {
-                        // We have just converted a STUBFRAME_JIT_COMPILATION to a 
-                        // STUBFRAME_LIGHTWEIGHT_FUNCTION (or to NULL).  Since the latter frame type doesn't 
+                        // We have just converted a STUBFRAME_JIT_COMPILATION to a
+                        // STUBFRAME_LIGHTWEIGHT_FUNCTION (or to NULL).  Since the latter frame type doesn't
                         // map to any  chain in V2, let's skip the chain handling.
                         swInfo.m_fSkipChain = true;
 
@@ -345,8 +345,8 @@ void ShimStackWalk::Populate()
                 {
                     if (!chainInfo.m_fNeedEnterManagedChain)
                     {
-                        // If we have hit any managed stack frame, then we may need to send 
-                        // an enter-managed chain later.  Save the CONTEXT now. 
+                        // If we have hit any managed stack frame, then we may need to send
+                        // an enter-managed chain later.  Save the CONTEXT now.
                         SaveChainContext(pSW, &chainInfo, &(chainInfo.m_leafManagedContext));
                         chainInfo.m_fNeedEnterManagedChain = true;
                     }
@@ -356,9 +356,9 @@ void ShimStackWalk::Populate()
                     _ASSERTE(!swInfo.IsSkippingFrame());
                     if (ConvertStackFrameToDynamicMethod(pFrame, &swInfo))
                     {
-                        // We have converted a ICDNativeFrame for an IL method without metadata to an 
+                        // We have converted a ICDNativeFrame for an IL method without metadata to an
                         // ICDInternalFrame of type STUBFRAME_LIGHTWEIGHT_FUNCTION (or to NULL).
-                        // Fortunately, we don't have to update any state here 
+                        // Fortunately, we don't have to update any state here
                         // (e.g. m_fProcessingInternalFrame) because the rest of the loop doesn't care.
                         if (swInfo.GetCurrentInternalFrame() != NULL)
                         {
@@ -391,13 +391,13 @@ void ShimStackWalk::Populate()
             }
         }  // process the current frame (managed stack frame or internal frame)
 
-        // We can take care of other types of chains here, but only do so if we are not currently skipping 
+        // We can take care of other types of chains here, but only do so if we are not currently skipping
         // child frames.
         if (!swInfo.IsSkippingFrame())
         {
-            if ((pFrame == NULL) && 
+            if ((pFrame == NULL) &&
                 !swInfo.ExhaustedAllStackFrames())
-            { 
+            {
                 // We are here because we are processing a native marker stack frame, not because
                 // we have exhausted all the stack frames.
 
@@ -406,7 +406,7 @@ void ShimStackWalk::Populate()
                 chainInfo.m_fLeafNativeContextIsValid = true;
 
                 // begin tracking UM chain if we're supposed to
-                if (ShouldTrackUMChain(&swInfo)) 
+                if (ShouldTrackUMChain(&swInfo))
                 {
                     chainInfo.m_reason = CHAIN_ENTER_UNMANAGED;
                 }
@@ -566,7 +566,7 @@ RSLock * ShimStackWalk::GetShimLock()
 // ----------------------------------------------------------------------------
 // ShimStackWalk::AddChainEnum
 //
-// Description: 
+// Description:
 //    Add the specified ShimChainEnum to the head of the linked list of ShimChainEnums on the ShimStackWalk.
 //
 // Arguments:
@@ -591,7 +591,7 @@ void ShimStackWalk::AddChainEnum(ShimChainEnum * pChainEnum)
 // ----------------------------------------------------------------------------
 // ShimStackWalk::AddFrameEnum
 //
-// Description: 
+// Description:
 //    Add the specified ShimFrameEnum to the head of the linked list of ShimFrameEnums on the ShimStackWalk.
 //
 // Arguments:
@@ -620,7 +620,7 @@ ICorDebugThread * ShimStackWalk::GetKey()
 }
 
 // Hash a given ICDThread, which is used as the key for ShimStackWalkHashTableTraits.
-//static 
+//static
 UINT32 ShimStackWalk::Hash(ICorDebugThread * pThread)
 {
     // just return the pointer value
@@ -630,7 +630,7 @@ UINT32 ShimStackWalk::Hash(ICorDebugThread * pThread)
 // ----------------------------------------------------------------------------
 // ShimStackWalk::IsLeafFrame
 //
-// Description: 
+// Description:
 //    Check whether the specified frame is the leaf frame.
 //
 // Arguments:
@@ -661,9 +661,9 @@ BOOL ShimStackWalk::IsLeafFrame(ICorDebugFrame * pFrame)
 // ----------------------------------------------------------------------------
 // ShimStackWalk::IsSameFrame
 //
-// Description: 
-//    Given two ICDFrames, check if they refer to the same frame.  
-//    This is much more than a pointer comparison.  This function actually checks the frame address, 
+// Description:
+//    Given two ICDFrames, check if they refer to the same frame.
+//    This is much more than a pointer comparison.  This function actually checks the frame address,
 //    the stack pointer, etc. to make sure if the frames are the same.
 //
 // Arguments:
@@ -733,14 +733,14 @@ BOOL ShimStackWalk::IsSameFrame(ICorDebugFrame * pLeft, ICorDebugFrame * pRight)
     else
     {
         RSExtSmartPtr<ICorDebugInternalFrame2> pLeftInternalFrame2;
-        hr = pLeft->QueryInterface(IID_ICorDebugInternalFrame2, 
+        hr = pLeft->QueryInterface(IID_ICorDebugInternalFrame2,
                                    reinterpret_cast<void **>(&pLeftInternalFrame2));
 
         if (SUCCEEDED(hr))
         {
             // The left frame is an internal frame.
             RSExtSmartPtr<ICorDebugInternalFrame2> pRightInternalFrame2;
-            hr = pRight->QueryInterface(IID_ICorDebugInternalFrame2,  
+            hr = pRight->QueryInterface(IID_ICorDebugInternalFrame2,
                                         reinterpret_cast<void **>(&pRightInternalFrame2));
 
             if (FAILED(hr))
@@ -802,7 +802,7 @@ void ShimStackWalk::GetActiveFrame(ICorDebugFrame ** ppFrame)
     // Make sure two things:
     //     1)  We have at least one frame.
     //     2)  The leaf frame is in the leaf chain, i.e. the leaf chain is not empty.
-    //     
+    //
     if ((GetFrameCount() == 0) ||
         (GetChain(0)->GetLastFrameIndex() == 0))
     {
@@ -979,7 +979,7 @@ CorDebugInternalFrameType ShimStackWalk::GetInternalFrameType(ICorDebugInternalF
 // ----------------------------------------------------------------------------
 // ShimStackWalk::AppendFrame
 //
-// Description: 
+// Description:
 //    Append the specified frame to the array and increment the counter.
 //
 // Arguments:
@@ -989,10 +989,10 @@ CorDebugInternalFrameType ShimStackWalk::GetInternalFrameType(ICorDebugInternalF
 
 void ShimStackWalk::AppendFrame(ICorDebugFrame * pFrame, StackWalkInfo * pStackWalkInfo)
 {
-    // grow the 
+    // grow the
     ICorDebugFrame ** ppFrame = m_stackFrames.AppendThrowing();
 
-    // Be careful of the AddRef() below.  Once we do the addref, we need to save the pointer and 
+    // Be careful of the AddRef() below.  Once we do the addref, we need to save the pointer and
     // explicitly release it.
     *ppFrame = pFrame;
     (*ppFrame)->AddRef();
@@ -1016,7 +1016,7 @@ void ShimStackWalk::AppendFrame(ICorDebugInternalFrame2 * pInternalFrame2, Stack
 // ----------------------------------------------------------------------------
 // ShimStackWalk::AppendChainWorker
 //
-// Description: 
+// Description:
 //    Append the specified chain to the array.
 //
 // Arguments:
@@ -1034,12 +1034,12 @@ void ShimStackWalk::AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
                                       BOOL                fIsManagedChain)
 {
     // first, create the chain
-    NewHolder<ShimChain> pChain(new ShimChain(this, 
+    NewHolder<ShimChain> pChain(new ShimChain(this,
                                               pLeafContext,
                                               fpRoot,
                                               pStackWalkInfo->m_cChain,
-                                              pStackWalkInfo->m_firstFrameInChain, 
-                                              pStackWalkInfo->m_cFrame, 
+                                              pStackWalkInfo->m_firstFrameInChain,
+                                              pStackWalkInfo->m_cFrame,
                                               chainReason,
                                               fIsManagedChain,
                                               GetShimLock()));
@@ -1061,14 +1061,14 @@ void ShimStackWalk::AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
 // ----------------------------------------------------------------------------
 // ShimStackWalk::AppendChain
 //
-// Description: 
+// Description:
 //    Append the chain to the array.  This function is also smart enough to send an enter-managed chain
 //    if necessary.  In other words, this function may append two chains at the same time.
 //
 // Arguments:
 //    * pChainInfo     - information on the chain to be added
 //    * pStackWalkInfo - information regarding the current stackwalk
-//    
+//
 
 void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWalkInfo)
 {
@@ -1105,12 +1105,12 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 #endif
             FramePointer fp = FramePointer::MakeFramePointer(sp);
 
-            AppendChainWorker(pStackWalkInfo, 
-                              &(pChainInfo->m_leafManagedContext), 
-                              fp, 
-                              CHAIN_ENTER_MANAGED, 
+            AppendChainWorker(pStackWalkInfo,
+                              &(pChainInfo->m_leafManagedContext),
+                              fp,
+                              CHAIN_ENTER_MANAGED,
                               TRUE);
-            
+
             pChainInfo->m_fNeedEnterManagedChain = false;
         }
         _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
@@ -1118,17 +1118,17 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
     }
 
     // Add the actual chain.
-    AppendChainWorker(pStackWalkInfo, 
+    AppendChainWorker(pStackWalkInfo,
                       pChainContext,
-                      pChainInfo->m_rootFP, 
-                      pChainInfo->m_reason, 
+                      pChainInfo->m_rootFP,
+                      pChainInfo->m_reason,
                       fManagedChain);
 }
 
 // ----------------------------------------------------------------------------
 // ShimStackWalk::SaveChainContext
 //
-// Description: 
+// Description:
 //    Save the current CONTEXT on the ICDStackWalk into the specified CONTEXT.  Also update the root end
 //    of the chain on the ChainInfo.
 //
@@ -1140,9 +1140,9 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 
 void ShimStackWalk::SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, DT_CONTEXT * pContext)
 {
-    HRESULT hr = pSW->GetContext(CONTEXT_FULL, 
+    HRESULT hr = pSW->GetContext(CONTEXT_FULL,
                                  sizeof(*pContext),
-                                 NULL, 
+                                 NULL,
                                  reinterpret_cast<BYTE *>(pContext));
     IfFailThrow(hr);
 
@@ -1152,7 +1152,7 @@ void ShimStackWalk::SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChai
 // ----------------------------------------------------------------------------
 // ShimStackWalk::CheckInternalFrame
 //
-// Description: 
+// Description:
 //    Check whether the next frame to be processed should be the next internal frame or the next stack frame.
 //
 // Arguments:
@@ -1177,12 +1177,12 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
     BOOL fIsInternalFrameFirst = FALSE;
 
     // Special handling for the case where a managed method contains a M2U internal frame.
-    // Normally only IL stubs contain M2U internal frames, but we may have inlined pinvoke calls in 
+    // Normally only IL stubs contain M2U internal frames, but we may have inlined pinvoke calls in
     // optimized code.  In that case, we would have an InlinedCallFrame in a normal managed method on x86.
     // On WIN64, we would have a normal NDirectMethodFrame* in a normal managed method.
     if (pStackWalkInfo->m_internalFrameType == STUBFRAME_M2U)
     {
-        // create a temporary ICDStackWalk 
+        // create a temporary ICDStackWalk
         RSExtSmartPtr<ICorDebugStackWalk> pTmpSW;
         hr = pThread3->CreateStackWalk(&pTmpSW);
         IfFailThrow(hr);
@@ -1229,17 +1229,17 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
 // ----------------------------------------------------------------------------
 // ShimStackWalk::ConvertInternalFrameToDynamicMethod
 //
-// Description: 
-//    In V2, PrestubMethodFrames (PMFs) are exposed as one of two things: a chain of type 
+// Description:
+//    In V2, PrestubMethodFrames (PMFs) are exposed as one of two things: a chain of type
 //    CHAIN_CLASS_INIT in most cases, or an internal frame of type STUBFRAME_LIGHTWEIGHT_FUNCTION if
 //    the method being jitted is a dynamic method.  On the other hand, in Arrowhead, we consistently expose
 //    PMFs as STUBFRAME_JIT_COMPILATION.  This function determines if a STUBFRAME_JIT_COMPILATION should
 //    be exposed, and, if so, how to expose it.  In the case where conversion is necessary, this function
 //    also updates the stackwalk information with the converted frame.
-//    
+//
 //    Here are the rules for conversion:
 //    1)  If the method being jitted is an IL stub, we set the converted frame to NULL, and we return TRUE.
-//    2)  If the method being jitted is an LCG method, we set the converted frame to a 
+//    2)  If the method being jitted is an LCG method, we set the converted frame to a
 //        STUBFRAME_LIGHTWEIGHT_FUNCTION, and we return NULL.
 //    3)  Otherwise, we return FALSE.
 //
@@ -1247,7 +1247,7 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
 //    * pStackWalkInfo - information about the current stackwalk
 //
 // Return Value:
-//    Return TRUE if a conversion has taken place.  
+//    Return TRUE if a conversion has taken place.
 //
 
 BOOL ShimStackWalk::ConvertInternalFrameToDynamicMethod(StackWalkInfo * pStackWalkInfo)
@@ -1257,14 +1257,14 @@ BOOL ShimStackWalk::ConvertInternalFrameToDynamicMethod(StackWalkInfo * pStackWa
     // QI for ICDFrame
     RSExtSmartPtr<ICorDebugFrame> pOriginalFrame;
     hr = pStackWalkInfo->GetCurrentInternalFrame()->QueryInterface(
-        IID_ICorDebugFrame, 
+        IID_ICorDebugFrame,
         reinterpret_cast<void **>(&pOriginalFrame));
     IfFailThrow(hr);
 
     // Ask the RS to do the real work.
     CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
     pStackWalkInfo->m_fHasConvertedFrame = (TRUE == pThread->ConvertFrameForILMethodWithoutMetadata(
-        pOriginalFrame, 
+        pOriginalFrame,
         &(pStackWalkInfo->m_pConvertedInternalFrame2)));
 
     if (pStackWalkInfo->HasConvertedFrame())
@@ -1275,7 +1275,7 @@ BOOL ShimStackWalk::ConvertInternalFrameToDynamicMethod(StackWalkInfo * pStackWa
             // We have a converted internal frame, so let's update the internal frame type.
             RSExtSmartPtr<ICorDebugInternalFrame> pInternalFrame;
             hr = pStackWalkInfo->GetCurrentInternalFrame()->QueryInterface(
-                IID_ICorDebugInternalFrame, 
+                IID_ICorDebugInternalFrame,
                 reinterpret_cast<void **>(&pInternalFrame));
             IfFailThrow(hr);
 
@@ -1295,16 +1295,16 @@ BOOL ShimStackWalk::ConvertInternalFrameToDynamicMethod(StackWalkInfo * pStackWa
 // ----------------------------------------------------------------------------
 // ShimStackWalk::ConvertInternalFrameToDynamicMethod
 //
-// Description: 
+// Description:
 //    In V2, LCG methods are exposed as internal frames of type STUBFRAME_LIGHTWEIGHT_FUNCTION.  However,
-//    in Arrowhead, LCG methods are exposed as first-class stack frames, not internal frames.  Thus, 
-//    the shim needs to convert an ICDNativeFrame for a dynamic method in Arrowhead to an 
+//    in Arrowhead, LCG methods are exposed as first-class stack frames, not internal frames.  Thus,
+//    the shim needs to convert an ICDNativeFrame for a dynamic method in Arrowhead to an
 //    ICDInternalFrame of type STUBFRAME_LIGHTWEIGHT_FUNCTION in V2.  Furthermore, IL stubs are not exposed
 //    in V2 at all.
-//    
+//
 //    Here are the rules for conversion:
 //    1)  If the stack frame is for an IL stub, we set the converted frame to NULL, and we return TRUE.
-//    2)  If the stack frame is for an LCG method, we set the converted frame to a 
+//    2)  If the stack frame is for an LCG method, we set the converted frame to a
 //        STUBFRAME_LIGHTWEIGHT_FUNCTION, and we return NULL.
 //    3)  Otherwise, we return FALSE.
 //
@@ -1313,7 +1313,7 @@ BOOL ShimStackWalk::ConvertInternalFrameToDynamicMethod(StackWalkInfo * pStackWa
 //    * pStackWalkInfo - information about the current stackwalk
 //
 // Return Value:
-//    Return TRUE if a conversion has taken place.  
+//    Return TRUE if a conversion has taken place.
 //
 
 BOOL ShimStackWalk::ConvertStackFrameToDynamicMethod(ICorDebugFrame * pFrame, StackWalkInfo * pStackWalkInfo)
@@ -1327,7 +1327,7 @@ BOOL ShimStackWalk::ConvertStackFrameToDynamicMethod(ICorDebugFrame * pFrame, St
     // Ask the RS to do the real work.
     CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
     pStackWalkInfo->m_fHasConvertedFrame = (TRUE == pThread->ConvertFrameForILMethodWithoutMetadata(
-        pFrame, 
+        pFrame,
         &(pStackWalkInfo->m_pConvertedInternalFrame2)));
 
     return pStackWalkInfo->HasConvertedFrame();
@@ -1336,13 +1336,13 @@ BOOL ShimStackWalk::ConvertStackFrameToDynamicMethod(ICorDebugFrame * pFrame, St
 // ----------------------------------------------------------------------------
 // ShimStackWalk::TrackUMChain
 //
-// Description: 
+// Description:
 //    Keep track of enter-unmanaged chains.  Extend or cancel the chain as necesasry.
 //
 // Arguments:
 //    * pChainInfo     - information on the current chain we are tracking
 //    * pStackWalkInfo - information regarding the current stackwalk
-//    
+//
 // Notes:
 //    * This logic is based on code:TrackUMChain on the LS.
 //
@@ -1376,7 +1376,7 @@ void ShimStackWalk::TrackUMChain(ChainInfo * pChainInfo, StackWalkInfo * pStackW
             // Sometimes we may not want to show an UM chain b/c we know it's just
             // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
             // These are perfectly valid UM chains and we could give them if we wanted to.
-            if ((pStackWalkInfo->m_internalFrameType == STUBFRAME_APPDOMAIN_TRANSITION) || 
+            if ((pStackWalkInfo->m_internalFrameType == STUBFRAME_APPDOMAIN_TRANSITION) ||
                 (pStackWalkInfo->m_internalFrameType == STUBFRAME_FUNC_EVAL))
             {
                 pChainInfo->CancelUMChain();
@@ -1435,7 +1435,7 @@ BOOL ShimStackWalk::IsV3FrameType(CorDebugInternalFrameType type)
     }
 }
 
-// Check whether a stack frame is for a dynamic method.  The way to tell is if the stack frame has 
+// Check whether a stack frame is for a dynamic method.  The way to tell is if the stack frame has
 // an ICDNativeFrame but no ICDILFrame.
 BOOL ShimStackWalk::IsILFrameWithoutMetadata(ICorDebugFrame * pFrame)
 {
@@ -1482,7 +1482,7 @@ ShimStackWalk::StackWalkInfo::~StackWalkInfo()
     {
         m_pChildFrame.Clear();
     }
-    
+
     if (m_pConvertedInternalFrame2 != NULL)
     {
         m_pConvertedInternalFrame2.Clear();
@@ -1504,19 +1504,19 @@ void ShimStackWalk::StackWalkInfo::ResetForNextFrame()
 }
 
 // Check whether we have exhausted both internal frames and stack frames.
-bool ShimStackWalk::StackWalkInfo::ExhaustedAllFrames() 
-{ 
+bool ShimStackWalk::StackWalkInfo::ExhaustedAllFrames()
+{
     return (ExhaustedAllStackFrames() && ExhaustedAllInternalFrames());
 }
 
-bool ShimStackWalk::StackWalkInfo::ExhaustedAllStackFrames() 
-{ 
+bool ShimStackWalk::StackWalkInfo::ExhaustedAllStackFrames()
+{
     return m_fExhaustedAllStackFrames;
 }
 
-bool ShimStackWalk::StackWalkInfo::ExhaustedAllInternalFrames() 
-{ 
-    return (m_curInternalFrame == m_cInternalFrames); 
+bool ShimStackWalk::StackWalkInfo::ExhaustedAllInternalFrames()
+{
+    return (m_curInternalFrame == m_cInternalFrames);
 }
 
 ICorDebugInternalFrame2 * ShimStackWalk::StackWalkInfo::GetCurrentInternalFrame()
@@ -1808,8 +1808,8 @@ HRESULT ShimChain::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
 
         // This is a private hook for calling back into the RS.  Alternatively, we could have created a
         // ShimRegisterSet, but that's too much work for now.
-        pThread->CreateCordbRegisterSet(&m_context, 
-                                        (m_chainIndex == 0), 
+        pThread->CreateCordbRegisterSet(&m_context,
+                                        (m_chainIndex == 0),
                                         m_chainReason,
                                         ppRegisters);
     }
@@ -2049,9 +2049,9 @@ void ShimChainEnum::SetNext(ShimChainEnum * pNext)
 }
 
 
-ShimFrameEnum::ShimFrameEnum(ShimStackWalk * pSW, 
-                             ShimChain *     pChain, 
-                             UINT32          frameStartIndex, 
+ShimFrameEnum::ShimFrameEnum(ShimStackWalk * pSW,
+                             ShimChain *     pChain,
+                             UINT32          frameStartIndex,
                              UINT32          frameEndIndex,
                              RSLock *        pShimLock)
   : m_pStackWalk(pSW),
@@ -2157,9 +2157,9 @@ HRESULT ShimFrameEnum::Clone(ICorDebugEnum ** ppEnum)
     HRESULT hr = S_OK;
     EX_TRY
     {
-        NewHolder<ShimFrameEnum> pFrameEnum(new ShimFrameEnum(m_pStackWalk, 
-                                                              m_pChain, 
-                                                              m_currentFrameIndex, 
+        NewHolder<ShimFrameEnum> pFrameEnum(new ShimFrameEnum(m_pStackWalk,
+                                                              m_pChain,
+                                                              m_currentFrameIndex,
                                                               m_endFrameIndex,
                                                               m_pShimLock));
 

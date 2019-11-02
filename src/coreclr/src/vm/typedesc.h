@@ -22,24 +22,24 @@ class TypeHandleList;
 /* TypeDesc is a discriminated union of all types that can not be directly
    represented by a simple MethodTable*.   The discrimintor of the union at the present
    time is the CorElementType numeration.  The subclass of TypeDesc are
-   the possible variants of the union.  
+   the possible variants of the union.
 
 
    ParamTypeDescs only include byref, array and pointer types.  They do NOT
    include instantaitions of generic types, which are represented by MethodTables.
-*/ 
+*/
 
 
 typedef DPTR(class TypeDesc) PTR_TypeDesc;
 
-class TypeDesc 
+class TypeDesc
 {
 public:
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
 #ifndef DACCESS_COMPILE
-    TypeDesc(CorElementType type) { 
+    TypeDesc(CorElementType type) {
         LIMITED_METHOD_CONTRACT;
 
         m_typeAndFlags = type;
@@ -48,17 +48,17 @@ public:
 
     // This is the ELEMENT_TYPE* that would be used in the type sig for this type
     // For enums this is the uderlying type
-    inline CorElementType GetInternalCorElementType() { 
+    inline CorElementType GetInternalCorElementType() {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return (CorElementType) (m_typeAndFlags & 0xff);
     }
 
-    // Get the exact parent (superclass) of this type  
+    // Get the exact parent (superclass) of this type
     TypeHandle GetParent();
 
     // Returns the name of the array.  Note that it returns
-    // the length of the returned string 
+    // the length of the returned string
     static void ConstructName(CorElementType kind,
                               TypeHandle param,
                               int rank,
@@ -68,7 +68,7 @@ public:
 
     //-------------------------------------------------------------------
     // CASTING
-    // 
+    //
     // There are two variants of the "CanCastTo" method:
     //
     // CanCastTo
@@ -82,19 +82,19 @@ public:
     // MaybeCast indicates an inconclusive result
     // - the test result could not be obtained from a cache
     //   so the caller should now call CanCastTo if it cares
-    // 
+    //
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited);
     TypeHandle::CastResult CanCastToCached(TypeHandle type);
 
     static BOOL CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandlePairList *pVisited);
-       
+
 #ifndef DACCESS_COMPILE
     BOOL IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *pVisited));
 #endif
 
     // BYREF
-    BOOL IsByRef() {              // BYREFS are often treated specially 
+    BOOL IsByRef() {              // BYREFS are often treated specially
         WRAPPER_NO_CONTRACT;
 
         return(GetInternalCorElementType() == ELEMENT_TYPE_BYREF);
@@ -146,20 +146,20 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey) != 0;       
+        return (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey) != 0;
     }
 
     BOOL HasTypeEquivalence() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_typeAndFlags & TypeDesc::enum_flag_HasTypeEquivalence) != 0;       
+        return (m_typeAndFlags & TypeDesc::enum_flag_HasTypeEquivalence) != 0;
     }
 
     BOOL IsFullyLoaded() const
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;       
+        return (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     VOID SetIsFullyLoaded()
@@ -182,7 +182,7 @@ public:
     // The module where this type lives for the purposes of loading and prejitting
     // See ComputeLoaderModule for more information
     PTR_Module GetLoaderModule();
-    
+
     // The assembly that defined this type (== GetModule()->GetAssembly())
     Assembly* GetAssembly();
 
@@ -195,8 +195,8 @@ public:
     // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
     // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.
     // It returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral), 
-    // and returns an AppDomain if any of the parts are from an AppDomain, 
+    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
+    // and returns an AppDomain if any of the parts are from an AppDomain,
     // i.e. are domain-bound.  If any of the parts are domain-bound
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
@@ -214,7 +214,7 @@ public:
     {
         enum_flag_NeedsRestore           = 0x00000100, // Only used during ngen
         enum_flag_PreRestored            = 0x00000200, // Only used during ngen
-        enum_flag_Unrestored             = 0x00000400, 
+        enum_flag_Unrestored             = 0x00000400,
         enum_flag_UnrestoredTypeKey      = 0x00000800,
         enum_flag_IsNotFullyLoaded       = 0x00001000,
         enum_flag_DependenciesLoaded     = 0x00002000,
@@ -232,7 +232,7 @@ public:
 
 /*************************************************************************/
 // This variant is used for parameterized types that have exactly one argument
-// type.  This includes arrays, byrefs, pointers.  
+// type.  This includes arrays, byrefs, pointers.
 
 typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
 
@@ -247,7 +247,7 @@ class ParamTypeDesc : public TypeDesc {
 
 public:
 #ifndef DACCESS_COMPILE
-    ParamTypeDesc(CorElementType type, MethodTable* pMT, TypeHandle arg) 
+    ParamTypeDesc(CorElementType type, MethodTable* pMT, TypeHandle arg)
         : TypeDesc(type), m_Arg(arg), m_hExposedClassObject(0) {
 
         LIMITED_METHOD_CONTRACT;
@@ -265,7 +265,7 @@ public:
 
         INDEBUGIMPL(Verify());
     }
-#endif 
+#endif
 
     INDEBUGIMPL(BOOL Verify();)
 
@@ -314,7 +314,7 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    
+
     friend class StubLinkerCPU;
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
@@ -441,7 +441,7 @@ public:
 // The type variables are tied back to the class or method that *defines* them.
 // This is done through typedef or methoddef tokens.
 
-class TypeVarTypeDesc : public TypeDesc 
+class TypeVarTypeDesc : public TypeDesc
 {
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
@@ -485,25 +485,25 @@ public:
         return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
     }
 
-    unsigned int GetIndex() 
-    { 
+    unsigned int GetIndex()
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_index; 
+        return m_index;
     }
 
-    mdGenericParam GetToken() 
-    { 
+    mdGenericParam GetToken()
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_token; 
+        return m_token;
     }
 
-    mdToken GetTypeOrMethodDef() 
-    { 
+    mdToken GetTypeOrMethodDef()
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_typeOrMethodDef; 
+        return m_typeOrMethodDef;
     }
 
     OBJECTREF GetManagedClassObject();
@@ -533,10 +533,10 @@ public:
     // Load the owning type. Note that the result is not guaranteed to be full loaded
     MethodDesc * LoadOwnerMethod();
     TypeHandle LoadOwnerType();
-    
+
     BOOL ConstraintsLoaded() { LIMITED_METHOD_CONTRACT; return m_numConstraints != (DWORD)-1; }
 
-    // Return NULL if no constraints are specified 
+    // Return NULL if no constraints are specified
     // Return an array of type handles if constraints are specified,
     // with the number of constraints returned in pNumConstraints
     TypeHandle* GetCachedConstraints(DWORD *pNumConstraints);
@@ -561,11 +561,11 @@ public:
     void Save(DataImage *image);
     void Fixup(DataImage *image);
 #endif // FEATURE_PREJIT
-    
+
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    
+
 protected:
     BOOL ConstrainedAsObjRefHelper();
 
@@ -580,10 +580,10 @@ protected:
     PTR_TypeHandle m_constraints;
 
     // slot index back to the internal reflection Type object
-    LOADERHANDLE m_hExposedClassObject;    
+    LOADERHANDLE m_hExposedClassObject;
 
     // token for GenericParam entry
-    mdGenericParam    m_token; 
+    mdGenericParam    m_token;
 
     // index within declaring type or method, numbered from zero
     unsigned int m_index;
@@ -602,7 +602,7 @@ class FnPtrTypeDesc : public TypeDesc
 
 public:
 #ifndef DACCESS_COMPILE
-    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes) 
+    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes)
         : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv)
     {
         LIMITED_METHOD_CONTRACT;
@@ -613,15 +613,15 @@ public:
     }
 #endif //!DACCESS_COMPILE
 
-    DWORD GetNumArgs() 
-    { 
+    DWORD GetNumArgs()
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         return m_NumArgs;
     }
 
-    BYTE GetCallConv() 
-    { 
+    BYTE GetCallConv()
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(FitsIn<BYTE>(m_CallConv));
@@ -667,7 +667,7 @@ public:
 
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
-    
+
 protected:
     // Number of arguments
     DWORD m_NumArgs;

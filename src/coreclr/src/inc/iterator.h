@@ -33,12 +33,12 @@
 //      3. Indexer (STL random access)  - skip around arbitrarily
 //          Indexers have all the functionality of scanners, plus:
 //              operator[] : access the element at index from iterator as ref
-//              operator+= : advance iterator by index 
+//              operator+= : advance iterator by index
 //              operator+ : return new iterator at index from iterator
-//              operator-= : rewind iterator by index 
+//              operator-= : rewind iterator by index
 //              operator- : return new iterator at index back from iterator
 //              operator <, operator <=, operator >, operator>= :
-//                  range comparison on two indexers    
+//                  range comparison on two indexers
 //
 // The object being iterated should define the following methods:
 //      Begin()             return an iterator starting at the first element
@@ -55,7 +55,7 @@
 #include "contract.h"
 
 namespace HIDDEN {
-// These prototypes are not for direct use - they are only here to illustrate the 
+// These prototypes are not for direct use - they are only here to illustrate the
 // iterator pattern
 
 template <typename CONTAINER, typename ELEMENT>
@@ -81,7 +81,7 @@ template <typename CONTAINER, typename ELEMENT>
 class EnumeratorPrototype
 {
   public:
-    
+
     typedef EnumeratorPrototype<CONTAINER, ELEMENT> Iterator;
 
     ELEMENT &operator*();
@@ -155,18 +155,18 @@ class IndexablePrototype
 };
 
 // --------------------------------------------------------------------------------
-// EnumeratorBase, ScannerBase, and IndexerBase are abstract classes 
+// EnumeratorBase, ScannerBase, and IndexerBase are abstract classes
 // describing basic operations for iterator functionality at the different levels.
-// 
+//
 // You
-// 1. Use the classes as a pattern (don't derive from them), and plug in your own 
+// 1. Use the classes as a pattern (don't derive from them), and plug in your own
 //      class into the Enumerator/Scanner/Indexer templates below.
 // 2. Subclass the AbstractEnumerator/AbstractScanner/AbstractIndexer classes
 // --------------------------------------------------------------------------------
 
 namespace HIDDEN
 {
-// These prototypes are not for direct use - they are only here to illustrate the 
+// These prototypes are not for direct use - they are only here to illustrate the
 // pattern of the BASE class for the Iterator templates
 
 template <typename ELEMENT, typename CONTAINER>
@@ -222,7 +222,7 @@ class CheckedIteratorBase
 #if defined(_DEBUG) && (defined(_MSC_VER) || defined(__llvm__))
         __if_exists(CONTAINER::m_revision)
         {
-            CHECK_MSG(m_revision == m_container->m_revision, 
+            CHECK_MSG(m_revision == m_container->m_revision,
                       "Use of Iterator after container has been modified");
         }
 #endif
@@ -293,13 +293,13 @@ class CheckedIteratorBase
 
 
 // --------------------------------------------------------------------------------
-// Enumerator, Scanner, and Indexer provide a template to produce an iterator 
+// Enumerator, Scanner, and Indexer provide a template to produce an iterator
 // on an existing class with a single iteration variable.
 //
 // The template takes 3 type parameters:
-// CONTAINER - type of object being interated on 
+// CONTAINER - type of object being interated on
 // ELEMENT - type of iteration
-// BASE - base type of the iteration.  This type must follow the pattern described 
+// BASE - base type of the iteration.  This type must follow the pattern described
 //      by the above Prototypes
 // --------------------------------------------------------------------------------
 
@@ -377,7 +377,7 @@ class Enumerator
 };
 
 template <typename ELEMENT, typename SUBTYPE>
-class Scanner 
+class Scanner
 {
  private:
     const SUBTYPE *This() const
@@ -484,7 +484,7 @@ class Indexer
     {
         LIMITED_METHOD_DAC_CONTRACT;
     }
-    
+
     CHECK CheckIndex() const
     {
 #if defined(_DEBUG)
@@ -589,7 +589,7 @@ class Indexer
         WRAPPER_NO_CONTRACT;
         PRECONDITION(CheckPointer(This()));
         PRECONDITION(i.Check());
-        
+
         return This()->Subtract(i);
     }
     bool operator==(const SUBTYPE &i) const

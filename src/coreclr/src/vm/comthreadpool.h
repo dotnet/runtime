@@ -49,7 +49,7 @@ public:
 
     static BOOL QCALLTYPE RequestWorkerThread();
 
-    static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);    
+    static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
     static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);
     static FCDECL1(void, CorWaitHandleCleanupNative, LPVOID WaitHandle);
     static FCDECL1(FC_BOOL_RET, CorBindIoCompletionCallback, HANDLE fileHandle);
@@ -69,7 +69,7 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
                                          LPOVERLAPPED lpOverlapped);
 void SetAsyncResultProperties(
     OVERLAPPEDDATAREF overlapped,
-    DWORD dwErrorCode, 
+    DWORD dwErrorCode,
     DWORD dwNumBytes);
 
 #endif

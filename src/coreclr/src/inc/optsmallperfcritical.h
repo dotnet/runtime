@@ -18,4 +18,4 @@
  #if !defined(_AMD64_)   // 'y' isn't an option on amd64
   #pragma optimize("y", on)   // omit frame pointer
  #endif // !defined(_TARGET_AMD64_)
-#endif 
+#endif

@@ -26,9 +26,9 @@ HRESULT SigParser::SkipExactlyOne()
 
     CorElementType typ;
     HRESULT hr = GetElemType(&typ);
-    
+
     IfFailRet(hr);
-        
+
     if (!CorIsPrimitiveType(typ))
     {
         switch ((DWORD)typ)
@@ -123,10 +123,10 @@ HRESULT SigParser::SkipExactlyOne()
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Skip only a method header signature - not the sigs of the args to the method.
-// 
-HRESULT 
+//
+HRESULT
 SigParser::SkipMethodHeaderSignature(
     ULONG * pcArgs)
 {
@@ -146,7 +146,7 @@ SigParser::SkipMethodHeaderSignature(
     ULONG uCallConv;
     IfFailRet(GetCallingConvInfo(&uCallConv));
 
-    if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) || 
+    if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) ||
         (uCallConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
     {
         return META_E_BAD_SIGNATURE;
@@ -166,7 +166,7 @@ SigParser::SkipMethodHeaderSignature(
 } // SigParser::SkipMethodHeaderSignature
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Skip a sub signature (as immediately follows an ELEMENT_TYPE_FNPTR).
 HRESULT SigParser::SkipSignature()
 {
@@ -183,7 +183,7 @@ HRESULT SigParser::SkipSignature()
     HRESULT hr = S_OK;
 
     ULONG cArgs;
-    
+
     IfFailRet(SkipMethodHeaderSignature(&cArgs));
 
     // Skip args.

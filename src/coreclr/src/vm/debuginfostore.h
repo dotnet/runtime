@@ -23,26 +23,26 @@ public:
 #ifdef _DEBUG
     // Must initialize via an Init*() function, not just a ctor.
     // In debug, ctor sets fields to values that will cause asserts if not initialized.
-    DebugInfoRequest() 
-    { 
+    DebugInfoRequest()
+    {
         SUPPORTS_DAC;
-        m_pMD = NULL; 
-        m_addrStart = NULL; 
+        m_pMD = NULL;
+        m_addrStart = NULL;
     }
 #endif
     // Eventually we may have many ways to initialize a request.
-    
+
     // Init given a method desc and starting address for a native code blob.
     void InitFromStartingAddr(MethodDesc * pDesc, PCODE addrCode);
-    
+
 
     MethodDesc * GetMD() const { LIMITED_METHOD_DAC_CONTRACT; return m_pMD; }
     PCODE GetStartAddress() const { LIMITED_METHOD_DAC_CONTRACT; return m_addrStart; }
 
-protected:    
+protected:
     MethodDesc * m_pMD;
     PCODE        m_addrStart;
-    
+
 };
 
 //-----------------------------------------------------------------------------
@@ -51,9 +51,9 @@ protected:
 
 
 // We pass the IDS an allocator which it uses to hand the data back.
-// pData is data the allocator may use for 'new'. 
+// pData is data the allocator may use for 'new'.
 // Eg, perhaps we have multiple heaps (eg, loader-heaps per appdomain).
-typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);   
+typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);
 
 
 //-----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
         OUT ICorDebugInfo::NativeVarInfo    **ppVars
-    ); 
+    );
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);
@@ -114,9 +114,9 @@ public:
     static BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew, IN void * pNewData,
-        OUT ULONG32 * pcMap, 
+        OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
-        OUT ULONG32 * pcVars, 
+        OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo ** ppVars);
 
 #ifdef DACCESS_COMPILE

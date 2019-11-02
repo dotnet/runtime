@@ -114,7 +114,7 @@ namespace System.Threading
                     currentCounts = oldCounts;
                 }
 
-                // It's possible that we decided we had thread requests just before a request came in, 
+                // It's possible that we decided we had thread requests just before a request came in,
                 // but reduced the worker count *after* the request came in.  In this case, we might
                 // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
                 // if there is work to do.
@@ -133,7 +133,7 @@ namespace System.Threading
                     newCounts = counts;
                     newCounts.numProcessingWork = Math.Max(counts.numProcessingWork, Math.Min((short)(counts.numProcessingWork + 1), counts.numThreadsGoal));
                     newCounts.numExistingThreads = Math.Max(counts.numExistingThreads, newCounts.numProcessingWork);
-                    
+
                     if (newCounts == counts)
                     {
                         return;

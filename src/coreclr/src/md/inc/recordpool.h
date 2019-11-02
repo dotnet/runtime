@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RecordPool.h -- header file for record heaps.
-// 
+//
 
 //
 //*****************************************************************************
@@ -36,17 +36,17 @@ public:
 //*****************************************************************************
 // Init the pool for use.  This is called for the create empty case.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew(
         UINT32 cbRec,                    // Record size.
         UINT32 cRecsInit);                // Initial guess of count of record.
-    
+
 //*****************************************************************************
 // Load a Record heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new Records.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(
         ULONG cbRec,            // Record size.
         void *pData,            // Predefined data.
@@ -66,9 +66,9 @@ public:
 // index will be to the existing copy of the Record.
 //*****************************************************************************
     HRESULT AddRecord(
-        BYTE  **ppRecord, 
+        BYTE  **ppRecord,
         UINT32 *pnIndex);       // Return 1-based index of Record here.
-    
+
 //*****************************************************************************
 // Insert a Record into the pool.  The index of the Record before which to
 // insert is specified.  Shifts all records down.  Return a pointer to the
@@ -77,16 +77,16 @@ public:
     HRESULT InsertRecord(
         UINT32 nIndex,          // [IN] Insert record before this.
         BYTE **ppRecord);
-    
+
 //*****************************************************************************
 // Return a pointer to a Record given an index previously handed out by
 // AddRecord or FindRecord.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT GetRecord(
         UINT32 nIndex,            // 1-based index of Record in pool.
         BYTE **ppRecord);
-    
+
 //*****************************************************************************
 // Given a pointer to a record, determine the index corresponding to the
 // record.
@@ -131,7 +131,7 @@ public:
 // Replace the contents of this pool with those from another pool.  The other
 //    pool loses ownership of the memory.
 //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT ReplaceContents(
         RecordPool *pOther);                // The other record pool.
 
@@ -152,10 +152,10 @@ public:
     void *GetNextRecord(                    // Pointer to Record in pool.
         void        *pRecord,                // Current record.
         void        **pContext);            // Stored context here.
-    
+
 private:
     UINT32 m_cbRec;                // How large is each record?
-    
+
 };  // class RecordPool
 
 #endif // _RECORDPOOL_H_

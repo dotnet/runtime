@@ -41,7 +41,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
         m_pAssemblyName = temp;
     }
 
-    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) && 
+    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) &&
         m_pbPublicKeyOrToken && m_cbPublicKeyOrToken > 0) {
         BYTE *temp = (BYTE *)alloc->Alloc(S_UINT32(m_cbPublicKeyOrToken)) ;
         memcpy(temp, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
@@ -102,10 +102,10 @@ BOOL BaseAssemblySpec::IsMscorlib()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    if (m_pAssemblyName == NULL) 
+    if (m_pAssemblyName == NULL)
     {
         LPCWSTR file = GetCodeBase();
-        if (file) 
+        if (file)
         {
             StackSString path(file);
             PEAssembly::UrlToPath(path);
@@ -135,9 +135,9 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
         PRECONDITION(strlen(g_psBaseLibraryName) == CoreLibNameLen);
     }
     CONTRACTL_END;
-    
+
     BOOL fIsAssemblySpecForMscorlib = FALSE;
-    
+
     if (m_pAssemblyName)
     {
         size_t iNameLen = strlen(m_pAssemblyName);
@@ -146,16 +146,16 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
                  ( (!_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
                    ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
     }
-    
+
     return fIsAssemblySpecForMscorlib;
 }
 
 #define MSCORLIB_PUBLICKEY g_rbTheSilverlightPlatformKey
 
 
-// A satellite assembly for mscorlib is named "mscorlib.resources" or 
+// A satellite assembly for mscorlib is named "mscorlib.resources" or
 // mscorlib.debug.resources.dll and uses the same public key as mscorlib.
-// It does not necessarily have the same version, and the Culture will 
+// It does not necessarily have the same version, and the Culture will
 // always be set to something like "jp-JP".
 BOOL BaseAssemblySpec::IsMscorlibSatellite() const
 {
@@ -169,10 +169,10 @@ BOOL BaseAssemblySpec::IsMscorlibSatellite() const
     }
     CONTRACTL_END;
 
-    if (m_pAssemblyName == NULL) 
+    if (m_pAssemblyName == NULL)
     {
         LPCWSTR file = GetCodeBase();
-        if (file) 
+        if (file)
         {
             StackSString path(file);
             PEAssembly::UrlToPath(path);
@@ -182,12 +182,12 @@ BOOL BaseAssemblySpec::IsMscorlibSatellite() const
     }
 
     _ASSERTE(strlen(g_psBaseLibrarySatelliteAssemblyName) == CoreLibSatelliteNameLen);
- 
+
     // <TODO>More of bug 213471</TODO>
     size_t iNameLen = strlen(m_pAssemblyName);
 
-    // we allow name to be of the form mscorlib.resources.dll only 
-    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(MSCORLIB_PUBLICKEY)) && 
+    // we allow name to be of the form mscorlib.resources.dll only
+    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(MSCORLIB_PUBLICKEY)) &&
              (iNameLen >= CoreLibSatelliteNameLen) &&
              (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
              ( (iNameLen == CoreLibSatelliteNameLen) || (m_pAssemblyName[CoreLibSatelliteNameLen] == ',') ) );
@@ -295,12 +295,12 @@ BOOL BaseAssemblySpec::CompareRefToDef(const BaseAssemblySpec *pRef, const BaseA
             if (pRef->m_context.usMinorVersion != pDef->m_context.usMinorVersion)
                 return FALSE;
 
-            if (pRef->m_context.usBuildNumber != (USHORT) -1) 
+            if (pRef->m_context.usBuildNumber != (USHORT) -1)
             {
                 if (pRef->m_context.usBuildNumber != pDef->m_context.usBuildNumber)
                     return FALSE;
 
-                if (pRef->m_context.usRevisionNumber != (USHORT) -1) 
+                if (pRef->m_context.usRevisionNumber != (USHORT) -1)
                 {
                     if (pRef->m_context.usRevisionNumber != pDef->m_context.usRevisionNumber)
                         return FALSE;
@@ -330,7 +330,7 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(pRef->GetName()!=NULL && pDef->GetName()!=NULL);    
+        PRECONDITION(pRef->GetName()!=NULL && pDef->GetName()!=NULL);
     }
     CONTRACTL_END;
 
@@ -341,7 +341,7 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
 
         if(pRef->HasPublicKey())
         {
-            // cannot use pRef->CompareEx(pDef) here because it does a full comparison 
+            // cannot use pRef->CompareEx(pDef) here because it does a full comparison
             // and the ref may be partial.
             return CompareRefToDef(pRef, pDef);
         }
@@ -413,7 +413,7 @@ VOID BaseAssemblySpec::SetName(SString const & ssName)
     m_pAssemblyName = NULL;
 
     IfFailThrow(FString::ConvertUnicode_Utf8(ssName.GetUnicode(), & ((LPSTR &) m_pAssemblyName)));
-    
+
     m_ownedFlags |= NAME_OWNED;
 }
 
@@ -430,7 +430,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
     _ASSERTE(pName);
 
     HRESULT hr;
-   
+
     // Fill out info from name, if we have it.
 
     DWORD cbSize = 0;
@@ -447,12 +447,12 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
         m_pAssemblyName = NULL;
 
         hr = FString::ConvertUnicode_Utf8(pwName, & ((LPSTR &) m_pAssemblyName));
-        
+
         if (FAILED(hr))
         {
             return hr;
         }
-        
+
         m_ownedFlags |= NAME_OWNED;
     }
     IfFailRet(hr);
@@ -492,7 +492,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
 
     cbSize = 0;
     hr = pName->GetProperty(ASM_NAME_CULTURE, NULL, &cbSize);
-    
+
     if (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) {
         LPWSTR pwName = (LPWSTR) alloca(cbSize);
         IfFailRet(pName->GetProperty(ASM_NAME_CULTURE, pwName, &cbSize));
@@ -513,7 +513,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
         if (m_pbPublicKeyOrToken == NULL)
             return E_OUTOFMEMORY;
         m_cbPublicKeyOrToken = cbSize;
-        m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;           
+        m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
         IfFailRet(pName->GetProperty(ASM_NAME_PUBLIC_KEY_TOKEN, m_pbPublicKeyOrToken, &cbSize));
     }
     else {
@@ -529,7 +529,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
                 return E_OUTOFMEMORY;
             m_cbPublicKeyOrToken = cbSize;
             m_dwFlags |= afPublicKey;
-            m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;           
+            m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
             IfFailRet(pName->GetProperty(ASM_NAME_PUBLIC_KEY, m_pbPublicKeyOrToken, &cbSize));
         }
         else {
@@ -542,12 +542,12 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
                 if (m_pbPublicKeyOrToken == NULL)
                     return E_OUTOFMEMORY;
                 m_cbPublicKeyOrToken = 0;
-                m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;           
+                m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
             }
             if (hr==E_INVALIDARG)
                 hr=S_FALSE;
             IfFailRet(hr);
-            
+
         }
     }
 
@@ -572,7 +572,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
         if (m_wszCodeBase == NULL)
             return E_OUTOFMEMORY;
         m_ownedFlags |= CODE_BASE_OWNED;
-        IfFailRet(pName->GetProperty(ASM_NAME_CODEBASE_URL, 
+        IfFailRet(pName->GetProperty(ASM_NAME_CODEBASE_URL,
                                     (void*)m_wszCodeBase, &cbSize));
     }
     else
@@ -590,7 +590,7 @@ HRESULT BaseAssemblySpec::Init(IAssemblyName *pName)
             m_dwFlags |= afContentType_WindowsRuntime;
         }
     }
-    
+
     return S_OK;
 }
 
@@ -625,28 +625,28 @@ HRESULT BaseAssemblySpec::CreateFusionName(
         holder = pFusionAssemblyName;
 
         if (m_context.usMajorVersion != (USHORT) -1) {
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MAJOR_VERSION, 
-                                                      &m_context.usMajorVersion, 
+            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MAJOR_VERSION,
+                                                      &m_context.usMajorVersion,
                                                       sizeof(USHORT)));
-            
+
             if (m_context.usMinorVersion != (USHORT) -1) {
-                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MINOR_VERSION, 
-                                                          &m_context.usMinorVersion, 
+                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_MINOR_VERSION,
+                                                          &m_context.usMinorVersion,
                                                           sizeof(USHORT)));
-                
+
                 if (m_context.usBuildNumber != (USHORT) -1) {
-                    IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_BUILD_NUMBER, 
-                                                              &m_context.usBuildNumber, 
+                    IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_BUILD_NUMBER,
+                                                              &m_context.usBuildNumber,
                                                               sizeof(USHORT)));
-                    
+
                     if (m_context.usRevisionNumber != (USHORT) -1)
-                        IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_REVISION_NUMBER, 
-                                                                  &m_context.usRevisionNumber, 
+                        IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_REVISION_NUMBER,
+                                                                  &m_context.usRevisionNumber,
                                                                   sizeof(USHORT)));
                 }
             }
         }
-        
+
         if (m_context.szLocale) {
             int pwLocaleLen = WszMultiByteToWideChar(CP_UTF8, 0, m_context.szLocale, -1, 0, 0);
             if(pwLocaleLen == 0) {
@@ -662,11 +662,11 @@ HRESULT BaseAssemblySpec::CreateFusionName(
                 IfFailGo(HRESULT_FROM_GetLastError());
             pwLocale[pwLocaleLen] = 0;
 
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_CULTURE, 
-                                                      pwLocale, 
+            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_CULTURE,
+                                                      pwLocale,
                                                       (DWORD)(wcslen(pwLocale) + 1) * sizeof (WCHAR)));
         }
-        
+
         if (m_pbPublicKeyOrToken) {
             if (m_cbPublicKeyOrToken) {
                 if(m_dwFlags & afPublicKey) {
@@ -690,7 +690,7 @@ HRESULT BaseAssemblySpec::CreateFusionName(
             if ((dwPEkind >= peMSIL) && (dwPEkind <= peARM))
             {
                 PEKIND peKind = (PEKIND)dwPEkind;
-                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_ARCHITECTURE, 
+                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_ARCHITECTURE,
                                                           &peKind, sizeof(peKind)));
             }
         }
@@ -701,8 +701,8 @@ HRESULT BaseAssemblySpec::CreateFusionName(
             {
                 DWORD dwContentType = AssemblyContentType_WindowsRuntime;
                 IfFailGo(pFusionAssemblyName->SetProperty(
-                        ASM_NAME_CONTENT_TYPE, 
-                        &dwContentType, 
+                        ASM_NAME_CONTENT_TYPE,
+                        &dwContentType,
                         sizeof(dwContentType)));
             }
         }

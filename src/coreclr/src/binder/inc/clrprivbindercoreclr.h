@@ -21,13 +21,13 @@ public:
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
-    STDMETHOD(BindAssemblyByName)( 
+    STDMETHOD(BindAssemblyByName)(
             /* [in] */ IAssemblyName *pIAssemblyName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-        
-    STDMETHOD(GetBinderID)( 
+
+    STDMETHOD(GetBinderID)(
             /* [retval][out] */ UINT_PTR *pBinderId);
-         
+
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
 
@@ -51,8 +51,8 @@ public:
                  ICLRPrivAssembly **ppAssembly);
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
-                              /* in */ BOOL fIsNativeImage, 
+    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
+                              /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
@@ -70,7 +70,7 @@ public:
     {
         m_ptrManagedAssemblyLoadContext = ptrManagedTPABinderInstance;
     }
-    
+
     //=========================================================================
     // Internal implementation details
     //-------------------------------------------------------------------------

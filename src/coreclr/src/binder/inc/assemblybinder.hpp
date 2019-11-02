@@ -70,17 +70,17 @@ namespace BINDER_SPACE
                                                       /* in */ IAssemblyName      *pIAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly);
-                                                      
+
         static HRESULT BindUsingPEImage(/* in */  ApplicationContext *pApplicationContext,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
                                         /* in */  PEKIND              peKind,
-                                        /* in */  IMDInternalImport  *pIMetaDataAssemblyImport, 
-                                        /* [retval] [out] */  Assembly **ppAssembly);          
+                                        /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
+                                        /* [retval] [out] */  Assembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-                                 
+
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
-        
+
     private:
         static HRESULT BindByName(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,
@@ -113,7 +113,7 @@ namespace BINDER_SPACE
                                      /* in */  AssemblyName        *pRequestedAssemblyName,
                                      /* in */  bool                 excludeAppPaths,
                                      /* out */ BindResult          *pBindResult);
-        
+
         static HRESULT Register(/* in */  ApplicationContext *pApplicationContext,
                                 /* in */  BindResult         *pBindResult);
         static HRESULT RegisterAndGetHostChosen(/* in */  ApplicationContext *pApplicationContext,

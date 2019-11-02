@@ -11,7 +11,7 @@
 
 
 #ifdef _DEBUG
-// For debug builds only. 
+// For debug builds only.
 static bool Dbg_ShouldUseCookies()
 {
     SUPPORTS_DAC;
@@ -29,10 +29,10 @@ static bool Dbg_ShouldUseCookies()
 // logic and just swap out Transfer objects.
 //
 // It's not ideal that we have a lot of redundancy maintaining both Transfer
-// objects, but at least the compiler can enforce that the Reader & Writer are 
+// objects, but at least the compiler can enforce that the Reader & Writer are
 // in sync. It can't enforce that a 2 separate routines for Compression &
 // restoration are in sync.
-// 
+//
 // We could have the TransferReader + Writer be polymorphic off a base class,
 // but the virtual function calls will be extra overhead. May as well use
 // templates and let the compiler resolve it all statically at compile time.
@@ -53,8 +53,8 @@ public:
     void DoEncodedU32(DWORD dw) { m_w.WriteEncodedU32(dw); }
 
     // Use to encode a monotonically increasing delta.
-    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast) 
-    { 
+    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast)
+    {
         CONTRACTL
         {
             THROWS;
@@ -64,17 +64,17 @@ public:
         CONTRACTL_END;
         _ASSERTE(dw >= dwLast);
         DWORD dwDelta = dw - dwLast;
-        m_w.WriteEncodedU32(dwDelta);         
+        m_w.WriteEncodedU32(dwDelta);
     }
 
 
-    // Some U32 may have a few sentinal negative values . 
+    // Some U32 may have a few sentinal negative values .
     // We adjust it to be a real U32 and then encode that.
     // dwAdjust should be the lower bound on the enum.
-    void DoEncodedAdjustedU32(DWORD dw, DWORD dwAdjust) 
-    { 
+    void DoEncodedAdjustedU32(DWORD dw, DWORD dwAdjust)
+    {
         //_ASSERTE(dwAdjust < 0); // some negative lower bound.
-        m_w.WriteEncodedU32(dw - dwAdjust); 
+        m_w.WriteEncodedU32(dw - dwAdjust);
     }
 
     // Typesafe versions of EncodeU32.
@@ -84,7 +84,7 @@ public:
 
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
-    {        
+    {
         CONTRACTL
         {
             THROWS;
@@ -92,7 +92,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-#ifdef _TARGET_X86_    
+#ifdef _TARGET_X86_
         _ASSERTE(dwOffset % sizeof(DWORD) == 0); // should be dword aligned. That'll save us 2 bits.
         m_w.WriteEncodedI32(dwOffset / sizeof(DWORD));
 #else
@@ -104,15 +104,15 @@ public:
     void DoEncodedRegIdx(ICorDebugInfo::RegNum & reg) { m_w.WriteEncodedU32(reg); }
 
     // For debugging purposes, inject cookies into the Compression.
-    void DoCookie(BYTE b) { 
+    void DoCookie(BYTE b) {
 #ifdef _DEBUG
-        if (Dbg_ShouldUseCookies()) 
+        if (Dbg_ShouldUseCookies())
         {
-            m_w.WriteNibble(b); 
+            m_w.WriteNibble(b);
         }
-#endif    
+#endif
     }
-    
+
 protected:
     NibbleWriter & m_w;
 
@@ -130,7 +130,7 @@ public:
         SUPPORTS_DAC;
     }
 
-    void DoEncodedU32(DWORD & dw) 
+    void DoEncodedU32(DWORD & dw)
     {
         SUPPORTS_DAC;
         dw = m_r.ReadEncodedU32();
@@ -138,69 +138,69 @@ public:
 
     // Use to decode a monotonically increasing delta.
     // dwLast was the last value; we update it to the current value on output.
-    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast) 
-    {         
+    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast)
+    {
         SUPPORTS_DAC;
         DWORD dwDelta = m_r.ReadEncodedU32();
         dw = dwLast + dwDelta;
     }
-    
-    void DoEncodedAdjustedU32(DWORD & dw, DWORD dwAdjust) 
-    { 
+
+    void DoEncodedAdjustedU32(DWORD & dw, DWORD dwAdjust)
+    {
         SUPPORTS_DAC;
         //_ASSERTE(dwAdjust < 0);
-        dw = m_r.ReadEncodedU32() + dwAdjust; 
+        dw = m_r.ReadEncodedU32() + dwAdjust;
     }
-    
-    void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw) 
-    { 
+
+    void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw)
+    {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32(); 
+        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32();
     }
-    
-    void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw) 
-    { 
+
+    void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw)
+    {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32(); 
+        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32();
     }
-    
-    void DoEncodedUnsigned(unsigned & dw) 
-    { 
+
+    void DoEncodedUnsigned(unsigned & dw)
+    {
         SUPPORTS_DAC;
-        dw = (unsigned) m_r.ReadEncodedU32(); 
+        dw = (unsigned) m_r.ReadEncodedU32();
     }
 
 
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
-    {    
+    {
         SUPPORTS_DAC;
-#ifdef _TARGET_X86_    
-        dwOffset = m_r.ReadEncodedI32() * sizeof(DWORD);        
+#ifdef _TARGET_X86_
+        dwOffset = m_r.ReadEncodedI32() * sizeof(DWORD);
 #else
         // Non x86 platforms don't need it to be dword aligned.
         dwOffset = m_r.ReadEncodedI32();
-#endif        
+#endif
     }
 
-    void DoEncodedRegIdx(ICorDebugInfo::RegNum & reg) 
-    { 
+    void DoEncodedRegIdx(ICorDebugInfo::RegNum & reg)
+    {
         SUPPORTS_DAC;
-        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32(); 
+        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32();
     }
 
     // For debugging purposes, inject cookies into the Compression.
-    void DoCookie(BYTE b) 
+    void DoCookie(BYTE b)
     {
         SUPPORTS_DAC;
 
-#ifdef _DEBUG    
+#ifdef _DEBUG
         if (Dbg_ShouldUseCookies())
         {
-            BYTE b2 = m_r.ReadNibble(); 
-            _ASSERTE(b == b2); 
+            BYTE b2 = m_r.ReadNibble();
+            _ASSERTE(b == b2);
         }
-#endif        
+#endif
     }
 
 
@@ -210,7 +210,7 @@ protected:
 
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-// Perf tracking 
+// Perf tracking
 static int g_CDI_TotalMethods           = 0;
 static int g_CDI_bMethodTotalUncompress = 0;
 static int g_CDI_bMethodTotalCompress   = 0;
@@ -220,7 +220,7 @@ static int g_CDI_bVarsTotalCompress     = 0;
 #endif
 
 //-----------------------------------------------------------------------------
-// Serialize Bounds info. 
+// Serialize Bounds info.
 //-----------------------------------------------------------------------------
 template <class T>
 void DoBounds(
@@ -237,7 +237,7 @@ void DoBounds(
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
 
     // Bounds info contains (Native Offset, IL Offset, flags)
     // - Sorted by native offset (so use a delta encoding for that).
@@ -246,7 +246,7 @@ void DoBounds(
     // - flags is 3 indepedent bits.
 
     // Loop through and transfer each Entry in the Mapping.
-    DWORD dwLastNativeOffset = 0;        
+    DWORD dwLastNativeOffset = 0;
     for(DWORD i = 0; i < cMap; i++)
     {
         ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
@@ -268,7 +268,7 @@ void DoBounds(
 // Helper to write a compressed Native Var Info
 template<class T>
 void DoNativeVarInfo(
-    T trans, 
+    T trans,
     ICorDebugInfo::NativeVarInfo * pVar
 )
 {
@@ -280,12 +280,12 @@ void DoNativeVarInfo(
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
 
     // Each Varinfo has a:
-    // - native start +End offset. We can use a delta for the end offset. 
+    // - native start +End offset. We can use a delta for the end offset.
     // - Il variable number. These are usually small.
-    // - VarLoc information. This is a tagged variant. 
+    // - VarLoc information. This is a tagged variant.
     // The entries aren't sorted in any particular order.
     trans.DoCookie(0xB);
     trans.DoEncodedU32(pVar->startOffset);
@@ -293,11 +293,11 @@ void DoNativeVarInfo(
 
     trans.DoEncodedDeltaU32(pVar->endOffset, pVar->startOffset);
 
-    // record var number.   
+    // record var number.
     trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
 
 
-    // Now write the VarLoc... This is a variant like structure and so we'll get different 
+    // Now write the VarLoc... This is a variant like structure and so we'll get different
     // compressioned depending on what we've got.
     trans.DoEncodedVarLocType(pVar->loc.vlType);
 
@@ -328,14 +328,14 @@ void DoNativeVarInfo(
 
     case ICorDebugInfo::VLT_STK_REG:
         trans.DoEncodedStackOffset(pVar->loc.vlStkReg.vlsrStk.vlsrsOffset);
-        trans.DoEncodedRegIdx(pVar->loc.vlStkReg.vlsrStk.vlsrsBaseReg);            
+        trans.DoEncodedRegIdx(pVar->loc.vlStkReg.vlsrStk.vlsrsBaseReg);
         trans.DoEncodedRegIdx(pVar->loc.vlStkReg.vlsrReg);
         break;
 
     case ICorDebugInfo::VLT_STK2:
         trans.DoEncodedRegIdx(pVar->loc.vlStk2.vls2BaseReg);
-        trans.DoEncodedStackOffset(pVar->loc.vlStk2.vls2Offset);        
-        break; 
+        trans.DoEncodedStackOffset(pVar->loc.vlStk2.vls2Offset);
+        break;
 
     case ICorDebugInfo::VLT_FPSTK:
         trans.DoEncodedUnsigned(pVar->loc.vlFPstk.vlfReg);
@@ -357,7 +357,7 @@ void DoNativeVarInfo(
 
 #ifndef DACCESS_COMPILE
 
-void CompressDebugInfo::CompressBoundaries(    
+void CompressDebugInfo::CompressBoundaries(
     IN ULONG32                       cMap,
     IN ICorDebugInfo::OffsetMapping *pMap,
     IN OUT NibbleWriter             *pWriter
@@ -517,7 +517,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     }
 }
 
-#endif // DACCESS_COMPILE   
+#endif // DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------
 // Compression routines
@@ -563,7 +563,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if ((pcMap != NULL || ppMap != NULL) && (cbBounds != 0))
     {
         NibbleReader r(addrBounds, cbBounds);
-        TransferReader t(r);            
+        TransferReader t(r);
 
         UINT32 cNumEntries = r.ReadEncodedU32();
         _ASSERTE(cNumEntries > 0);
@@ -573,14 +573,14 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
         if (ppMap != NULL)
         {
-            ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *> 
+            ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
                 (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
             if (pMap == NULL)
             {
                 ThrowOutOfMemory();
             }
             *ppMap = pMap;
-            
+
             // Main decompression routine.
             DoBounds(t, cNumEntries, pMap);
         }
@@ -589,7 +589,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if ((pcVars != NULL || ppVars != NULL) && (cbVars != 0))
     {
         NibbleReader r(addrVars, cbVars);
-        TransferReader t(r);            
+        TransferReader t(r);
 
         UINT32 cNumEntries = r.ReadEncodedU32();
         _ASSERTE(cNumEntries > 0);
@@ -599,14 +599,14 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
         if (ppVars != NULL)
         {
-            ICorDebugInfo::NativeVarInfo * pVars = reinterpret_cast<ICorDebugInfo::NativeVarInfo *> 
+            ICorDebugInfo::NativeVarInfo * pVars = reinterpret_cast<ICorDebugInfo::NativeVarInfo *>
                 (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::NativeVarInfo)));
             if (pVars == NULL)
             {
                 ThrowOutOfMemory();
             }
             *ppVars = pVars;
-            
+
             for(UINT32 i = 0; i < cNumEntries; i++)
             {
                 DoNativeVarInfo(t, &pVars[i]);
@@ -646,14 +646,14 @@ void DebugInfoRequest::InitFromStartingAddr(MethodDesc * pMD, PCODE addrCode)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     _ASSERTE(pMD != NULL);
     _ASSERTE(addrCode != NULL);
-    
+
     this->m_pMD       = pMD;
     this->m_addrStart = addrCode;
 }
-    
+
 
 //-----------------------------------------------------------------------------
 // Impl for DebugInfoManager's IDebugInfoStore
@@ -661,9 +661,9 @@ void DebugInfoRequest::InitFromStartingAddr(MethodDesc * pMD, PCODE addrCode)
 BOOL DebugInfoManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
     IN FP_IDS_NEW fpNew, IN void * pNewData,
-    OUT ULONG32 * pcMap, 
+    OUT ULONG32 * pcMap,
     OUT ICorDebugInfo::OffsetMapping ** ppMap,
-    OUT ULONG32 * pcVars, 
+    OUT ULONG32 * pcVars,
     OUT ICorDebugInfo::NativeVarInfo ** ppVars)
 {
     CONTRACTL
@@ -693,7 +693,7 @@ void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlag
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     PCODE addrCode = pMD->GetNativeCode();
     if (addrCode == NULL)
     {

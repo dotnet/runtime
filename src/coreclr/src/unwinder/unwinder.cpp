@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #include "stdafx.h"
 #include "unwinder.h"
@@ -13,7 +13,7 @@ EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 
 //---------------------------------------------------------------------------------------
 //
-// Given a control PC, return the base of the module it is in.  For jitted managed code, this is the 
+// Given a control PC, return the base of the module it is in.  For jitted managed code, this is the
 // start of the code heap.
 //
 // Arguments:

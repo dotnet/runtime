@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: Arm64walker.cpp
-// 
+//
 
 //
 // ARM64 instruction decoding/stepping logic
@@ -32,7 +32,7 @@ PCODE Expand19bitoffset(PCODE opcode)
 
 void NativeWalker::Decode()
 {
-    
+
     PT_CONTEXT context = NULL;
     int RegNum = -1;
     PCODE offset = MAX_INSTRUCTION_LENGTH;
@@ -45,8 +45,8 @@ void NativeWalker::Decode()
     if (m_registers == NULL)
     {
        //walker does not use WALK_NEXT
-       //Without registers decoding will work only for handful of instructions 
-       return; 
+       //Without registers decoding will work only for handful of instructions
+       return;
     }
 
     m_skipIP = m_ip + MAX_INSTRUCTION_LENGTH;
@@ -62,9 +62,9 @@ void NativeWalker::Decode()
     }
 
     LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decode instruction at %p, opcode: %x\n", m_ip,opcode));
-    
-    
-    
+
+
+
     if (NativeWalker::DecodeCallInst(opcode, RegNum, m_type)) //Unconditional Branch (register) instructions
     {
         if (m_type == WALK_RETURN)
@@ -74,8 +74,8 @@ void NativeWalker::Decode()
         m_nextIP = (BYTE*)GetReg(context, RegNum);
         return;
      }
-        
-   
+
+
     if (NativeWalker::DecodePCRelativeBranchInst(context, opcode, offset, m_type))
     {
         if (m_type == WALK_BRANCH)
@@ -83,9 +83,9 @@ void NativeWalker::Decode()
             m_skipIP = NULL;
         }
     }
-  
+
     m_nextIP = m_ip + offset;
- 
+
 
     return;
 }
@@ -94,13 +94,13 @@ void NativeWalker::Decode()
 //When control reaches here m_pSharedPatchBypassBuffer has the original instructions in m_pSharedPatchBypassBuffer->PatchBypass
 BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context, SharedPatchBypassBuffer* m_pSharedPatchBypassBuffer,  const BYTE *address, PRD_TYPE opcode)
 {
-    
+
     BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
     PCODE offset = 0;
     PCODE ip = 0;
     WALK_TYPE walk = WALK_UNKNOWN;
     int RegNum =-1;
-    
+
 
     /*
     Modify the patchBypass if the opcode is IP-relative, otherwise return it
@@ -116,10 +116,10 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
     if ((opcode & 0x1F000000) == 0x10000000)  //ADR & ADRP
     {
-        
+
         TADDR immhigh = ((opcode >> 5) & 0x007FFFF) << 2;
         TADDR immlow  = (opcode & 0x60000000) >> 29;
-        offset = immhigh | immlow; //ADR 
+        offset = immhigh | immlow; //ADR
         RegNum = (opcode & 0x1F);
 
         //Sign Extension
@@ -130,7 +130,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
         if ((opcode & 0x80000000) != 0) //ADRP
         {
-            offset = offset << 12; 
+            offset = offset << 12;
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADRP X%d %p\n", opcode, RegNum, offset));
         }
         else
@@ -138,28 +138,28 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p\n", opcode, RegNum, offset));
         }
 
-       
+
     }
-    
+
     else if ((opcode & 0x3B000000) == 0x18000000) //LDR Literal (General or SIMD)
      {
-        
+
         offset = Expand19bitoffset(opcode);
         RegNum = (opcode & 0x1F);
         LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDR[SW] | PRFM X%d %p\n", opcode, RegNum, offset));
     }
-    else if (NativeWalker::DecodePCRelativeBranchInst(context,opcode, offset, walk)) 
+    else if (NativeWalker::DecodePCRelativeBranchInst(context,opcode, offset, walk))
     {
         _ASSERTE(RegNum == -1);
     }
-    else if (NativeWalker::DecodeCallInst(opcode, RegNum, walk)) 
+    else if (NativeWalker::DecodeCallInst(opcode, RegNum, walk))
     {
         _ASSERTE(offset == 0);
     }
     //else  Just execute the opcodes as is
     //{
     //}
-    
+
     if (offset != 0) // calculate the next ip from current ip
     {
         ip = (PCODE)address + offset;
@@ -174,7 +174,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
     if (walk == WALK_BRANCH || walk == WALK_CALL || walk == WALK_RETURN)
     {
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypass, 0xd503201f); //Add Nop in buffer
-        
+
         m_pSharedPatchBypassBuffer->RipTargetFixup = ip; //Control Flow simulation alone is done DebuggerPatchSkip::TriggerExceptionHook
         LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  is a Control Flow instr \n", opcode));
 
@@ -219,7 +219,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
 
                 }
             }
-            else 
+            else
             {
                 short opc = (opcode >> 30);
                 switch (opc)
@@ -235,10 +235,10 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                     SetReg(context, RegNum, RegContents);
                     break;
 
-                case 2: //LDRSW 
+                case 2: //LDRSW
                     LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to LDRSW X%d %p\n", opcode, RegNum, offset));
                     RegContents = 0xFFFFFFFF & RegContents;
-                    
+
                     if (RegContents & 0x80000000) //Sign extend the Word
                     {
                         RegContents = 0xFFFFFFFF00000000 | RegContents;
@@ -247,7 +247,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
                     break;
                 case 3:
                     LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  as PRFM ,but do nothing \n", opcode));
-                   
+
                     break;
                 default:
                     LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate Unknown opcode: %x [LDR(literal)]  \n", opcode));
@@ -261,7 +261,7 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
             RegContents = ip;
             SetReg(context, RegNum, RegContents);
         }
-        
+
         LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  to update Reg X[V]%d, as %p \n", opcode, RegNum, GetReg(context, RegNum)));
     }
     //else  Just execute the opcodes as IS
@@ -316,7 +316,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
 
     //Conditional Branches
     _ASSERTE(context != NULL);
-   
+
 
     if ((opcode & 0xFF000010) == 0x54000000) // B.cond
     {
@@ -347,21 +347,21 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         if (result)
         {
             walk = WALK_BRANCH;
-            offset = Expand19bitoffset(opcode); 
+            offset = Expand19bitoffset(opcode);
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B.cond %p \n", opcode, offset));
         }
         else // NOP
         {
             walk = WALK_UNKNOWN;
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B.cond but evaluated as NOP \n", opcode));
-            offset = MAX_INSTRUCTION_LENGTH; 
+            offset = MAX_INSTRUCTION_LENGTH;
         }
-        
+
         return TRUE;
 
     }
 
-    
+
     int RegNum       = opcode & 0x1F;
     PCODE RegContent = GetReg(context, RegNum);
 
@@ -384,7 +384,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
             result = RegContent == 0;
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to CBZ X%d \n", opcode, RegNum));
         }
-        
+
         if (result)
         {
             walk = WALK_BRANCH;
@@ -398,7 +398,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
             offset = MAX_INSTRUCTION_LENGTH;
         }
 
-        
+
         return TRUE;
     }
     if ((opcode & 0x7E000000) == 0x36000000)    // TBNZ || TBZ
@@ -438,10 +438,10 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
             LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Decoded opcode: %x to B.cond but evaluated as NOP \n", opcode));
             offset = MAX_INSTRUCTION_LENGTH;
         }
-       
+
         return TRUE;
     }
-   
+
     _ASSERTE(offset == incomingoffset);
     _ASSERTE(walk == incomingwalk);
     return FALSE;

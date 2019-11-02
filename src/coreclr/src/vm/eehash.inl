@@ -61,7 +61,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Destroy()
 
 		m_pVolatileBucketTable = NULL;
     }
-	
+
 }
 
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
@@ -76,13 +76,13 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
     CONTRACTL_END
 
     //_ASSERTE (OwnLock());
-    
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read 
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy 
-    // of table. You can only get rid of it once nobody is using it. That's a problem because 
+
+    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
+    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
+    // of table. You can only get rid of it once nobody is using it. That's a problem because
     // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of 
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC, 
+    // The solution to this problem is to access the table in cooperative mode, and to get rid of
+    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
     // we know that nobody is using the old copy of the table anymore.
     // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
     GCX_COOP_NO_THREAD_BROKEN();
@@ -105,7 +105,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
         delete[] (m_pVolatileBucketTable->m_pBuckets-1);
         m_pVolatileBucketTable->m_pBuckets = NULL;
     }
-   
+
     m_pVolatileBucketTable->m_dwNumBuckets = 0;
     m_dwNumEntries = 0;
 }
@@ -122,17 +122,17 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::EmptyHashTable()
     CONTRACTL_END
 
     _ASSERTE (OwnLock());
-    
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read 
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy 
-    // of table. You can only get rid of it once nobody is using it. That's a problem because 
+
+    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
+    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
+    // of table. You can only get rid of it once nobody is using it. That's a problem because
     // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of 
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC, 
+    // The solution to this problem is to access the table in cooperative mode, and to get rid of
+    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
     // we know that nobody is using the old copy of the table anymore.
     // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
     GCX_COOP_NO_THREAD_BROKEN();
-    
+
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
         DWORD i;
@@ -164,7 +164,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
         WRAPPER(GC_NOTRIGGER);
         INJECT_FAULT(return FALSE;);
 
-#ifndef DACCESS_COMPILE  
+#ifndef DACCESS_COMPILE
         PRECONDITION(m_pVolatileBucketTable.Load() == NULL && "EEHashTable::Init() called twice.");
 #endif
 
@@ -189,7 +189,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
 
     if (m_pVolatileBucketTable->m_pBuckets == NULL)
         return FALSE;
-    
+
     memset(m_pVolatileBucketTable->m_pBuckets, 0, cbAlloc);
 
     // The first slot links to the next list.
@@ -214,7 +214,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
     }
     m_CheckThreadSafety = CheckThreadSafety;
 #endif
-    
+
     return TRUE;
 }
 
@@ -233,13 +233,13 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertValue(KeyType p
     CONTRACTL_END
 
     _ASSERTE (OwnLock());
-    
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read 
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy 
-    // of table. You can only get rid of it once nobody is using it. That's a problem because 
+
+    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
+    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
+    // of table. You can only get rid of it once nobody is using it. That's a problem because
     // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of 
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC, 
+    // The solution to this problem is to access the table in cooperative mode, and to get rid of
+    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
     // we know that nobody is using the old copy of the table anymore.
     // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
     GCX_COOP_NO_THREAD_BROKEN();
@@ -287,13 +287,13 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
     CONTRACTL_END
 
     _ASSERTE (OwnLock());
-    
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read 
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy 
-    // of table. You can only get rid of it once nobody is using it. That's a problem because 
+
+    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
+    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
+    // of table. You can only get rid of it once nobody is using it. That's a problem because
     // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of 
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC, 
+    // The solution to this problem is to access the table in cooperative mode, and to get rid of
+    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
     // we know that nobody is using the old copy of the table anymore.
     // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
     GCX_COOP_NO_THREAD_BROKEN();
@@ -311,7 +311,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
 
     pNewEntry = Helper::AllocateEntry(pKey, bDeepCopyKey, m_Heap);
     if (!pNewEntry)
-    {         
+    {
         COMPlusThrowOM();
     }
 
@@ -383,7 +383,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ReplaceValue(KeyType 
     CONTRACTL_END
 
     _ASSERTE (OwnLock());
-    
+
     EEHashEntry_t *pItem = FindItem(pKey);
 
     if (pItem != NULL)
@@ -411,7 +411,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ReplaceKey(KeyType pO
     CONTRACTL_END
 
     _ASSERTE (OwnLock());
-    
+
     EEHashEntry_t *pItem = FindItem(pOldKey);
 
     if (pItem != NULL)
@@ -562,15 +562,15 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     }
     CONTRACTL_END
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read 
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy 
-    // of table. You can only get rid of it once nobody is using it. That's a problem because 
+    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
+    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
+    // of table. You can only get rid of it once nobody is using it. That's a problem because
     // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of 
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC, 
+    // The solution to this problem is to access the table in cooperative mode, and to get rid of
+    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
     // we know that nobody is using the old copy of the table anymore.
-    // 
-#ifndef DACCESS_COMPILE    
+    //
+#ifndef DACCESS_COMPILE
    GCX_COOP_NO_THREAD_BROKEN();
 #endif
 
@@ -578,16 +578,16 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
     DWORD dwOldNumBuckets;
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     DWORD nTry = 0;
     DWORD dwSwitchCount = 0;
 #endif
 
-    do 
-    {       
+    do
+    {
         BucketTable* pBucketTable=(BucketTable*)(PTR_BucketTable)m_pVolatileBucketTable.Load();
         dwOldNumBuckets = pBucketTable->m_dwNumBuckets;
-       
+
         _ASSERTE(pBucketTable->m_dwNumBuckets != 0);
 
         DWORD           dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
@@ -599,9 +599,9 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
                 return pSearch;
         }
 
-        // There is a race in EEHash Table: when we grow the hash table, we will nuke out 
-        // the old bucket table. Readers might be looking up in the old table, they can 
-        // fail to find an existing entry. The workaround is to retry the search process 
+        // There is a race in EEHash Table: when we grow the hash table, we will nuke out
+        // the old bucket table. Readers might be looking up in the old table, they can
+        // fail to find an existing entry. The workaround is to retry the search process
         // if we are called grow table during the search process.
 #ifndef DACCESS_COMPILE
         nTry ++;
@@ -612,7 +612,7 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
 #endif // #ifndef DACCESS_COMPILE
     }
     while ( m_bGrowing || dwOldNumBuckets != m_pVolatileBucketTable->m_dwNumBuckets);
-    
+
     return NULL;
 }
 
@@ -635,7 +635,7 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
 
     BucketTable* pBucketTable=m_pVolatileBucketTable;
     dwOldNumBuckets = pBucketTable->m_dwNumBuckets;
-    
+
     _ASSERTE(pBucketTable->m_dwNumBuckets != 0);
 
     DWORD           dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
@@ -646,7 +646,7 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
         if (pSearch->dwHashValue == dwHash && Helper::CompareKeys(pSearch, pKey))
             return pSearch;
     }
-    
+
     return NULL;
 }
 
@@ -778,7 +778,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     pNewBucketTable->m_pBuckets = pNewBuckets;
     pNewBucketTable->m_dwNumBuckets = dwNewNumBuckets;
 
-    // Add old table to the to free list. Note that the SyncClean thing will only 
+    // Add old table to the to free list. Note that the SyncClean thing will only
     // delete the buckets at a safe point
     //
     SyncClean::AddEEHashTable (m_pVolatileBucketTable->m_pBuckets);
@@ -789,7 +789,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     //
     m_pVolatileBucketTable = pNewBucketTable;
 
-    FastInterlockExchange( (LONG *) &m_bGrowing, 0);                                                                                                        
+    FastInterlockExchange( (LONG *) &m_bGrowing, 0);
 
     return TRUE;
 }
@@ -840,7 +840,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
 
     Thread *pThread = GetThreadNULLOk();
     GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread ? !(pThread->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) : FALSE);
-    
+
     _ASSERTE(pIter->m_pTable == (void *) this);
 
     // If we haven't started iterating yet, or if we are at the end of a particular

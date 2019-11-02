@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgIO.h
-// 
+//
 
 //
 // This module handles disk/memory i/o for a generic set of storage solutions,
@@ -117,7 +117,7 @@ StgIO::~StgIO()
         FreeMemory(m_rgBuff);
         m_rgBuff = 0;
     }
-    
+
     Close();
 }
 
@@ -137,7 +137,7 @@ HRESULT StgIO::Open(                    // Return code.
     LPSECURITY_ATTRIBUTES pAttributes)  // Security token.
 {
     HRESULT hr;
-    
+
     // If we were given the storage memory to begin with, then use it.
     if (pbBuff && cbBuff)
     {
@@ -200,8 +200,8 @@ HRESULT StgIO::Open(                    // Return code.
         // but would be much slower.</REVISIT_TODO>
 
         // Create the new file, overwriting only if caller allows it.
-        if ((m_hFile = WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0, 
-                (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? CREATE_NEW : CREATE_ALWAYS, 
+        if ((m_hFile = WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0,
+                (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? CREATE_NEW : CREATE_ALWAYS,
                 0, 0)) == INVALID_HANDLE_VALUE)
         {
             return (MapFileError(GetLastError()));
@@ -224,13 +224,13 @@ HRESULT StgIO::Open(                    // Return code.
         if (!(fFlags & DBPROP_TMODEF_EXCLUSIVE))
         {
             dwFileSharingFlags |= FILE_SHARE_READ;
-            
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL) 
+
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
             // PEDecoder is not defined in DAC
-            
-            // We prefer to use LoadLibrary if we can because it will share already loaded images (used for execution) 
-            // which saves virtual memory. We only do this if our caller has indicated that this PE file is trusted 
-            // and thus it is OK to do LoadLibrary (note that we still only load it as a resource, which mitigates 
+
+            // We prefer to use LoadLibrary if we can because it will share already loaded images (used for execution)
+            // which saves virtual memory. We only do this if our caller has indicated that this PE file is trusted
+            // and thus it is OK to do LoadLibrary (note that we still only load it as a resource, which mitigates
             // most of the security risk anyway).
             if ((fFlags & DBPROP_TMODEF_TRYLOADLIBRARY) != 0)
             {
@@ -238,15 +238,15 @@ HRESULT StgIO::Open(                    // Return code.
                 if (m_hModule != NULL)
                 {
                     m_iType = STGIO_HMODULE;
-                    
+
                     m_mtMappedType = MTYPE_IMAGE;
-                    
+
                     // LoadLibraryEx returns 2 lowest bits indicating how the module was loaded
                     m_pBaseData = m_pData = (void *)(((INT_PTR)m_hModule) & ~(INT_PTR)0x3);
-                    
+
                     PEDecoder peDecoder;
                     if (SUCCEEDED(peDecoder.Init(
-                                m_pBaseData, 
+                                m_pBaseData,
                                 false)) &&  // relocated
                         peDecoder.CheckNTHeaders())
                     {
@@ -254,12 +254,12 @@ HRESULT StgIO::Open(                    // Return code.
                     }
                     else
                     {
-                        // PEDecoder failed on loaded library, let's backout all our changes to this object 
+                        // PEDecoder failed on loaded library, let's backout all our changes to this object
                         // and fall back to file mapping
                         m_iType = STGIO_NODATA;
                         m_mtMappedType = MTYPE_NOMAPPING;
                         m_pBaseData = m_pData = NULL;
-                        
+
                         FreeLibrary(m_hModule);
                         m_hModule = NULL;
                     }
@@ -270,12 +270,12 @@ HRESULT StgIO::Open(                    // Return code.
 
         if (m_hModule == NULL)
         {   // We didn't get the loaded module (we either didn't want to or it failed)
-            HandleHolder hFile(WszCreateFile(szName, 
-                                             GENERIC_READ, 
+            HandleHolder hFile(WszCreateFile(szName,
+                                             GENERIC_READ,
                                              dwFileSharingFlags,
-                                             0, 
-                                             OPEN_EXISTING, 
-                                             0, 
+                                             0,
+                                             OPEN_EXISTING,
+                                             0,
                                              0));
 
             if (hFile == INVALID_HANDLE_VALUE)
@@ -290,7 +290,7 @@ HRESULT StgIO::Open(                    // Return code.
 
             // Data will come from the file.
             m_hFile = hFile.Extract();
-            
+
             m_iType = STGIO_HFILE;
         }
     }
@@ -308,7 +308,7 @@ ErrExit:
         }
         m_cbBuff = 0;
     }
-    
+
     // Save flags for later.
     m_fFlags = fFlags;
     if ((szName != NULL) && (*szName != 0))
@@ -326,13 +326,13 @@ ErrExit:
     }
 
     // For auto map case, map the view of the file as part of open.
-    if (m_bAutoMap && 
+    if (m_bAutoMap &&
         (m_iType == STGIO_HFILE || m_iType == STGIO_STREAM) &&
         !(fFlags & DBPROP_TMODEF_CREATE))
     {
         void * ptr;
         ULONG  cb;
-        
+
         if (FAILED(hr = MapFileToMem(ptr, &cb, pAttributes)))
         {
             Close();
@@ -412,23 +412,23 @@ void StgIO::Close()
 // Called to read the data into allocated memory and release the backing store.
 //  Only available on read-only data.
 //*****************************************************************************
-HRESULT 
+HRESULT
 StgIO::LoadFileToMemory()
 {
     HRESULT hr;
     void   *pData;          // Allocated buffer for file.
     ULONG   cbData;         // Size of the data.
     ULONG   cbRead = 0;     // Data actually read.
-    
+
     // Make sure it is a read-only file.
     if (m_fFlags & DBPROP_TMODEF_WRITE)
         return E_INVALIDARG;
-    
+
     // Try to allocate the buffer.
     cbData = m_cbData;
     pData = AllocateMemory(cbData);
     IfNullGo(pData);
-    
+
     // Try to read the file into the buffer.
     IfFailGo(Read(pData, cbData, &cbRead));
     if (cbData != cbRead)
@@ -436,22 +436,22 @@ StgIO::LoadFileToMemory()
         _ASSERTE_MSG(FALSE, "Read didn't succeed.");
         IfFailGo(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // Done with the old data.
     Close();
-    
+
     // Open with new data.
     hr = Open(NULL /* szName */, STGIO_READ, pData, cbData, NULL /* IStream* */, NULL /* lpSecurityAttributes */);
     _ASSERTE(SUCCEEDED(hr)); // should not be a failure code path with open on buffer.
-    
+
     // Mark the new memory so that it will be freed later.
     m_pBaseData = m_pData;
     m_bFreeMem = true;
-    
+
 ErrExit:
     if (FAILED(hr) && pData)
        FreeMemory(pData);
-    
+
     return hr;
 } // StgIO::LoadFileToMemory
 
@@ -495,14 +495,14 @@ HRESULT StgIO::Read(                    // Return code.
                 // Copy it back for the user and save the size.
                 memcpy(pbBuff, pbData, cbBuff);
                 if (pcbRead)
-                    *pcbRead = cbBuff;              
+                    *pcbRead = cbBuff;
             }
             // If there is no backing store, this is just a read operation.
             else
             {
                 _ASSERTE((m_iType == STGIO_HFILE) && (m_hFile != INVALID_HANDLE_VALUE));
                 _ASSERTE(m_hModule == NULL);
-                
+
                 ULONG   cbTemp = 0;
                 if (!pcbRead)
                     pcbRead = &cbTemp;
@@ -537,17 +537,17 @@ HRESULT StgIO::Read(                    // Return code.
                 cbCopy = m_cbData - GetCurrentOffset();
             else
                 cbCopy = cbBuff;
-                            
+
             // Copy the data into the callers buffer.
             memcpy(pbBuff, (void *) ((DWORD_PTR)m_pData + GetCurrentOffset()), cbCopy);
             if (pcbRead)
                 *pcbRead = cbCopy;
-            
+
             // Save a logical offset.
             m_cbOffset += cbCopy;
         }
         break;
-         
+
         case STGIO_NODATA:
         default:
         _ASSERTE(0);
@@ -592,7 +592,7 @@ HRESULT StgIO::Write(                   // true/false.
             // Determine how much data goes into the cache buffer.
             cbCopy = m_iPageSize - m_cbBuff;
             cbCopy = min(cbCopy, cbWrite);
-            
+
             // Copy the data into the cache and adjust counts.
             memcpy(&m_rgBuff[m_cbBuff], pbBuff, cbCopy);
             pbBuff = (void *) ((DWORD_PTR)pbBuff + cbCopy);
@@ -637,7 +637,7 @@ HRESULT StgIO::Seek(                    // New offset.
             // Use the file system's move.
             _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
             cbRtn = ::SetFilePointer(m_hFile, lVal, 0, fMoveType);
-            
+
             // Save the location redundantly.
             if (cbRtn != 0xffffffff)
             {
@@ -691,7 +691,7 @@ HRESULT StgIO::Seek(                    // New offset.
                 break;
 
                 case FILE_CURRENT:
-                
+
                 // make sure that m_cbOffset will stay within range
                 if (m_cbOffset + lVal > m_cbData)
                 {
@@ -738,7 +738,7 @@ ULONG StgIO::GetCurrentOffset()         // Current offset.
 
 
 //*****************************************************************************
-// Map the file contents to a memory mapped file and return a pointer to the 
+// Map the file contents to a memory mapped file and return a pointer to the
 // data.  For read/write with a backing store, map the file using an internal
 // paging system.
 //*****************************************************************************
@@ -752,9 +752,9 @@ HRESULT StgIO::MapFileToMem(            // Return code.
 
     // Don't penalize for multiple calls.  Also, allow calls for mem type so
     // callers don't need to do so much checking.
-    if (IsBackingStore() || 
-        IsMemoryMapped() || 
-        (m_iType == STGIO_MEM) || 
+    if (IsBackingStore() ||
+        IsMemoryMapped() ||
+        (m_iType == STGIO_MEM) ||
         (m_iType == STGIO_SHAREDMEM) ||
         (m_iType == STGIO_HFILEMEM))
     {
@@ -837,7 +837,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             _ASSERTE(m_hMapping == 0);
 
             DWORD dwProtectionFlags = PAGE_READONLY;
-            
+
             if ((m_hMapping = WszCreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
                 0, 0, nullptr)) == 0)
             {
@@ -865,7 +865,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
                     _ASSERTE_MSG(FALSE, "Error code doesn't indicate error.");
                     hr = PostError(CLDB_E_FILE_CORRUPT);
                 }
-                
+
                 // In case we got back a bogus pointer.
                 m_pBaseData = m_pData = NULL;
                 goto ErrExit;
@@ -887,7 +887,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             {
                 IfFailGo(PostError(COR_E_OVERFLOW));
             }
-            
+
             // Allocate a bit vector to track loaded pages.
             if ((m_rgPageMap = new (nothrow) BYTE[iMaxSize / m_iPageSize]) == 0)
                 return (PostError(OutOfMemory()));
@@ -975,7 +975,7 @@ HRESULT StgIO::SetBaseRange(            // Return code.
         _ASSERTE(((LONG_PTR) pbStart >= (LONG_PTR) m_pBaseData));
         _ASSERTE(((LONG_PTR) pbStart + cbSize <= (LONG_PTR) m_pBaseData + m_cbData));
     }
-    
+
     // Save the base range per user request.
     m_pData = pbStart;
     m_cbData = cbSize;
@@ -1057,7 +1057,7 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             }
 
             // First commit the memory for this part of the file.
-            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset), 
+            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, MEM_COMMIT, PAGE_READWRITE) == 0)
                 return (PostError(OutOfMemory()));
 
@@ -1071,9 +1071,9 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
-            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset), 
+            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, MEM_COMMIT, PAGE_READONLY) != 0);
-        
+
             // Record each new loaded page.
             for (;  j<i;  j++)
                 SetBit(m_rgPageMap, j, true);
@@ -1083,11 +1083,11 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
         ptr = (void *) ((DWORD_PTR) m_pData + cbStart);
     }
     // Memory version or memory mapped file work the same way.
-    else if (IsMemoryMapped() || 
-             (m_iType == STGIO_MEM) || 
-             (m_iType == STGIO_SHAREDMEM) || 
+    else if (IsMemoryMapped() ||
+             (m_iType == STGIO_MEM) ||
+             (m_iType == STGIO_SHAREDMEM) ||
              (m_iType == STGIO_HFILEMEM))
-    {   
+    {
         if (!(cbStart <= m_cbData))
             return (PostError(E_INVALIDARG));
 
@@ -1274,9 +1274,9 @@ HRESULT StgIO::CopyFileInternal(        // Return code.
     HRESULT     hr = S_OK;
 
     // Create target file.
-    if ((hFile = ::WszCreateFile(szTo, GENERIC_WRITE, 0, 0, 
-            (bFailIfThere) ? CREATE_NEW : CREATE_ALWAYS, 
-            (bWriteThrough) ? FILE_FLAG_WRITE_THROUGH : 0, 
+    if ((hFile = ::WszCreateFile(szTo, GENERIC_WRITE, 0, 0,
+            (bFailIfThere) ? CREATE_NEW : CREATE_ALWAYS,
+            (bWriteThrough) ? FILE_FLAG_WRITE_THROUGH : 0,
             0)) == INVALID_HANDLE_VALUE)
     {
         return (MapFileError(GetLastError()));
@@ -1347,8 +1347,8 @@ int StgIO::IsAlignedPtr(ULONG_PTR Value, int iAlignment)
     HRESULT     hr;
     void        *ptrStart = NULL;
 
-    if ((m_iType == STGIO_STREAM) || 
-        (m_iType == STGIO_SHAREDMEM) || 
+    if ((m_iType == STGIO_STREAM) ||
+        (m_iType == STGIO_SHAREDMEM) ||
         (m_iType == STGIO_MEM))
     {
         return ((Value - (ULONG_PTR) m_pData) % iAlignment == 0);
@@ -1358,7 +1358,7 @@ int StgIO::IsAlignedPtr(ULONG_PTR Value, int iAlignment)
         hr = GetPtrForMem(0, 1, ptrStart);
         _ASSERTE(hr == S_OK && "GetPtrForMem failed");
         _ASSERTE(Value > (ULONG_PTR) ptrStart);
-        return (((Value - (ULONG_PTR) ptrStart) % iAlignment) == 0);    
+        return (((Value - (ULONG_PTR) ptrStart) % iAlignment) == 0);
     }
 } // int StgIO::IsAlignedPtr()
 

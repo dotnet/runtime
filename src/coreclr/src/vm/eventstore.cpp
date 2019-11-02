@@ -12,7 +12,7 @@
 const int EventStoreLength = 8;
 class EventStore
 {
-public: 
+public:
     // Note: No constructors/destructors - global instance
 
     void Init()
@@ -26,7 +26,7 @@ public:
     void Destroy()
     {
         WRAPPER_NO_CONTRACT;
-        
+
         _ASSERTE (g_fEEShutDown);
 
         m_EventStoreCrst.Destroy();
@@ -58,7 +58,7 @@ public:
 #ifdef _DEBUG
         // See if we have some leakage.
         LONG count = 0;
-        walk = m_Store; 
+        walk = m_Store;
         while (walk) {
             count += walk->AvailableEventCount();
             walk = walk->next;
@@ -66,7 +66,7 @@ public:
         // The number of events stored in the pool should be small.
         _ASSERTE (count <= ThreadStore::s_pThreadStore->ThreadCountInEE() * 2 + 10);
 #endif
-        walk = m_Store;        
+        walk = m_Store;
         while (walk) {
             if (walk->StoreHandleForEvent (handle) )
                 return;
@@ -110,7 +110,7 @@ private:
     {
         CLREvent *hArray[EventStoreLength];
         EventStoreElem *next;
-        
+
         EventStoreElem ()
         {
             LIMITED_METHOD_CONTRACT;
@@ -183,13 +183,13 @@ private:
     };
 
     EventStoreElem  *m_Store;
-    
+
     // Critical section for adding and removing event used for Object::Wait
     CrstStatic      m_EventStoreCrst;
 };
 
 static EventStore s_EventStore;
- 
+
 CLREvent* GetEventFromEventStore()
 {
     WRAPPER_NO_CONTRACT;

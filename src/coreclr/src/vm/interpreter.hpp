@@ -15,7 +15,7 @@
 #endif // INTERP_ILCYCLE_PROFILE
 
 #if INTERP_TRACING
-// static 
+// static
 FILE* Interpreter::GetLogFile()
 {
     if (s_InterpreterLogFile == NULL)
@@ -146,7 +146,7 @@ void Interpreter::StLoc(int locNum)
         COMPlusThrow(kVerificationException);
     }
 
-    // Don't decrement "m_curStackHt" early -- if we do, then we'll have a potential GC hole, if 
+    // Don't decrement "m_curStackHt" early -- if we do, then we'll have a potential GC hole, if
     // the top-of-stack value is a GC ref.
     unsigned ind = m_curStackHt - 1;
     InterpreterType tp = m_methInfo->m_localDescs[locNum].m_typeStackNormal;
@@ -154,7 +154,7 @@ void Interpreter::StLoc(int locNum)
 #ifdef _DEBUG
     if (!tp.Matches(OpStackTypeGet(ind), &m_interpCeeInfo))
     {
-        if (!s_InterpreterLooseRules || 
+        if (!s_InterpreterLooseRules ||
             // We copy a 64 bit value, otherwise some of the below conditions should end up as casts.
             !((tp.ToCorInfoTypeShifted() == CORINFO_TYPE_SHIFTED_NATIVEINT && OpStackTypeGet(ind).ToCorInfoTypeShifted() == CORINFO_TYPE_SHIFTED_INT) ||
             (tp.ToCorInfoTypeShifted() == CORINFO_TYPE_SHIFTED_INT && OpStackTypeGet(ind).ToCorInfoTypeShifted() == CORINFO_TYPE_SHIFTED_NATIVEINT) ||
@@ -294,7 +294,7 @@ void Interpreter::BinaryArithOpWork(T val1, T val2)
         {
             res = val1 / val2;
         }
-        else 
+        else
         {
             res = RemFunc(val1, val2);
         }
@@ -351,7 +351,7 @@ size_t CorInfoTypeSize(CorInfoType cit)
     return res;
 }
 
-void Interpreter::StaticFldAddr(CORINFO_ACCESS_FLAGS accessFlgs, 
+void Interpreter::StaticFldAddr(CORINFO_ACCESS_FLAGS accessFlgs,
                                 /*out (byref)*/void** pStaticFieldAddr,
                                 /*out*/InterpreterType* pit, /*out*/UINT* pFldSize, /*out*/bool* pManagedMem)
 {
@@ -417,7 +417,7 @@ void Interpreter::ResolveToken(CORINFO_RESOLVED_TOKEN* resTok, mdToken token, Co
                         FALSE,           // forceBoxedEntryPoint
                         pMD->GetMethodInstantiation(),  // methodInst
                         FALSE,           // allowInstParam
-                        TRUE);           // forceRemotableMethod (to get maximally specific).          
+                        TRUE);           // forceRemotableMethod (to get maximally specific).
             resTok->hMethod = reinterpret_cast<CORINFO_METHOD_HANDLE>(pMD);
         }
     }

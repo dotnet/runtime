@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: MarshalNative.h
 //
 
@@ -53,7 +53,7 @@ public:
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
     static FCDECL0(int, GetLastWin32Error);
     static FCDECL1(void, SetLastWin32Error, int error);
-    
+
     static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);
     static FCDECL2(VOID, DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE);
@@ -72,7 +72,7 @@ public:
 #ifdef FEATURE_COMINTEROP
     //====================================================================
     // map GUID to Type
-    //====================================================================	
+    //====================================================================
     static FCDECL1(Object*, GetLoadedTypeForGUID, GUID* pGuid);
 
     //====================================================================
@@ -86,7 +86,7 @@ public:
     static FCDECL2(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);
 
     //====================================================================
-    // return the raw IUnknown* for a COM Object not related to current 
+    // return the raw IUnknown* for a COM Object not related to current
     // context
     // Does not AddRef the returned pointer
     //====================================================================
@@ -119,8 +119,8 @@ public:
     static FCDECL1(Object*, GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk);
 
     //====================================================================
-    // return an Object for IUnknown, using the Type T, 
-    //	NOTE: 
+    // return an Object for IUnknown, using the Type T,
+    //	NOTE:
     //	Type T should be either a COM imported Type or a sub-type of COM imported Type
     //====================================================================
     static FCDECL2(Object*, GetTypedObjectForIUnknown, IUnknown* pUnk, ReflectClassBaseObject* refClassUNSAFE);
@@ -147,7 +147,7 @@ public:
 
     //====================================================================
     // free the COM component and zombie this object
-    // further usage of this Object might throw an exception, 
+    // further usage of this Object might throw an exception,
     //====================================================================
     static FCDECL1(INT32, ReleaseComObject, Object* objUNSAFE);
     static FCDECL1(void, FinalReleaseComObject, Object* objUNSAFE);

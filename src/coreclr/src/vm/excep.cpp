@@ -296,7 +296,7 @@ IRestrictedErrorInfo* GetRestrictedErrorInfoFromErrorObject(OBJECTREF throwable)
     MethodDescCallSite getRestrictedLanguageErrorObject(METHOD__EXCEPTION__TRY_GET_RESTRICTED_LANGUAGE_ERROR_OBJECT, &gc.Throwable);
 
     // Make the call.
-    ARG_SLOT Args[] = 
+    ARG_SLOT Args[] =
     {
         ObjToArgSlot(gc.Throwable),
         PtrToArgSlot(&gc.RestrictedErrorInfoObjRef)
@@ -306,7 +306,7 @@ IRestrictedErrorInfo* GetRestrictedErrorInfoFromErrorObject(OBJECTREF throwable)
 
     if(bHasLanguageRestrictedErrorObject)
     {
-        // The __RestrictedErrorObject represents IRestrictedErrorInfo RCW of a non-CLR platform. Lets get the corresponding IRestrictedErrorInfo for it.   
+        // The __RestrictedErrorObject represents IRestrictedErrorInfo RCW of a non-CLR platform. Lets get the corresponding IRestrictedErrorInfo for it.
         pRestrictedErrorInfo = (IRestrictedErrorInfo *)GetComIPFromObjectRef(&gc.RestrictedErrorInfoObjRef, IID_IRestrictedErrorInfo);
     }
 
@@ -735,7 +735,7 @@ DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM,
     for (unsigned j=0; j<EHCount; j++)
     {
         EE_ILEXCEPTION_CLAUSE EHClause;
-    
+
         pIJM->GetNextEHClause(&pEnumState,&EHClause);
         _ASSERTE(EHClause.HandlerEndPC != (DWORD) -1);  // <TODO> remove, only protects against a deprecated convention</TODO>
 
@@ -2304,7 +2304,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 _gc gc;
                 GCPROTECT_BEGIN(gc);
 
-                // If the flag indicating foreign exception raise has been setup, then check 
+                // If the flag indicating foreign exception raise has been setup, then check
                 // if the exception object has stacktrace or not. If we have an async non-preallocated
                 // exception after setting this flag but before we throw, then the new
                 // exception will not have any stack trace set and thus, we should behave as if
@@ -2359,7 +2359,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     if (fRaisingForeignException)
                     {
                         // Just before we append to the stack trace, mark the last recorded frame to be from
-                        // the foreign thread so that we can insert an annotation indicating so when building 
+                        // the foreign thread so that we can insert an annotation indicating so when building
                         // the stack trace string.
                         size_t numCurrentFrames = gc.stackTrace.Size();
                         if (numCurrentFrames > 0)
@@ -2393,7 +2393,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     )
                     {
                         // Since we have just restored the dynamic method array as well,
-                        // calculate the dynamic array index which would be the total 
+                        // calculate the dynamic array index which would be the total
                         // number of dynamic methods present in the stack trace.
                         //
                         // In addition to the ForeignException scenario, we need to reset these
@@ -2543,7 +2543,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 }
 
                 ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
-                
+
                 // Update _stackTraceString field.
                 ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
                 fSuccess = true;
@@ -3124,8 +3124,8 @@ void FreeExceptionData(ExceptionData *pedata)
 {
     CONTRACTL
     {
-        NOTHROW; 
-        GC_TRIGGERS; 
+        NOTHROW;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -3154,9 +3154,9 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->pRestrictedErrorInfo)
     {
         ULONG cbRef = SafeRelease(pedata->pRestrictedErrorInfo);
-        LogInteropRelease(pedata->pRestrictedErrorInfo, cbRef, "IRestrictedErrorInfo");    
+        LogInteropRelease(pedata->pRestrictedErrorInfo, cbRef, "IRestrictedErrorInfo");
     }
-#endif // FEATURE_COMINTEROP    
+#endif // FEATURE_COMINTEROP
 }
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, OBJECTREF* pProtectedThrowable, IRestrictedErrorInfo *pResErrorInfo, BOOL bHasLangRestrictedErrInfo)
@@ -3569,7 +3569,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         bRetVal = TRUE;
     }
 
-#ifndef FEATURE_PAL // Watson is supported on Windows only   
+#ifndef FEATURE_PAL // Watson is supported on Windows only
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 
@@ -4031,7 +4031,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 GCX_PREEMP();
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
-                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord, 
+                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
                                         pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
                                         0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
@@ -4485,7 +4485,7 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_FORBID_FAULT;
 
-#ifndef FEATURE_PAL   
+#ifndef FEATURE_PAL
     // We will be here only for CoreCLR on WLC since we dont
     // register UEF for SL.
     if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
@@ -4822,7 +4822,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // do this before notifying appdomains of the UE so if an AD attempts to
             // retrieve the bucket params in the UE event handler it gets the correct data.
             SetupWatsonBucketsForUEF(useLastThrownObject);
-#endif // !FEATURE_PAL 
+#endif // !FEATURE_PAL
 
             // Send notifications to the AppDomains.
             NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
@@ -6086,7 +6086,7 @@ static STRINGREF MissingMemberException_FormatSignature_Internal(I1ARRAYREF* ppP
     GCX_PREEMP();
 
     StubLinker sl;
-    psl = &sl; 
+    psl = &sl;
     pstub = NULL;
 
     ValidateSigBytes(sizeof(UINT32));
@@ -6162,7 +6162,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
         goto exit;
     }
 
-    // Reverse COM interop IL stubs map all exceptions to HRESULTs and must not propagate Thread.Abort 
+    // Reverse COM interop IL stubs map all exceptions to HRESULTs and must not propagate Thread.Abort
     // to their unmanaged callers.
     if (uTryCatchResumeAddress != NULL)
     {
@@ -6334,7 +6334,7 @@ void AdjustContextForThreadStop(Thread* pThread,
     PCODE controlPC = GetIP(pContext);
     _ASSERTE(controlPC & THUMB_CODE);
 #endif // _TARGET_ARM_
-#endif // !FEATURE_EH_FUNCLETS                                                    
+#endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
 
@@ -6486,7 +6486,7 @@ bool IsInterceptableException(Thread *pThread)
             );
 }
 
-// Determines whether we hit an DO_A_GC_HERE marker in JITted code, and returns the 
+// Determines whether we hit an DO_A_GC_HERE marker in JITted code, and returns the
 // appropriate exception code, or zero if the code is not a GC marker.
 DWORD GetGcMarkerExceptionCode(LPVOID ip)
 {
@@ -6740,8 +6740,8 @@ AdjustContextForWriteBarrier(
 
     // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
     // This is called only when a data breakpoint is hitm which could be inside a JIT write barrier helper and required
-    // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we 
-    // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true 
+    // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we
+    // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true
     // for the usual AV case where the registers are not saved yet.
 
     if (pExceptionRecord == nullptr)
@@ -6820,7 +6820,7 @@ AdjustContextForWriteBarrier(
         // ManagedFunc -> Native_WriteBarrierInVM -> AV
         //
         // We just performed an unwind from the write-barrier
-        // and now have the context in ManagedFunc. Since 
+        // and now have the context in ManagedFunc. Since
         // ManagedFunc called into the write-barrier, the return
         // address in the unwound context corresponds to the
         // instruction where the call will return.
@@ -6832,7 +6832,7 @@ AdjustContextForWriteBarrier(
         // happened "before" the call to the writebarrier and not at
         // the instruction at which the control will return.
        PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-       
+
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
@@ -7475,7 +7475,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 // On 64-bit, some additional work is required..
 #ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
-#endif // defined(FEATURE_EH_FUNCLETS) 
+#endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
@@ -7484,7 +7484,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 #endif
             }
 
-            // Remember the EIP for stress debugging purposes. 
+            // Remember the EIP for stress debugging purposes.
             g_LastAccessViolationEIP = (void*) ::GetIP(pContext);
 
             // Note: we have a holder, called AVInRuntimeImplOkayHolder, that tells us that its okay to have an
@@ -7495,7 +7495,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             Thread *pThread = GetThread();
 
             bool fAVisOk =
-                (IsDbgHelperSpecialThread() || IsETWRundownSpecialThread() || 
+                (IsDbgHelperSpecialThread() || IsETWRundownSpecialThread() ||
                     ((pThread != NULL) && (pThread->AVInRuntimeImplOkay())) );
 
 
@@ -7519,7 +7519,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
                     // You can also use Windbg's .cxr command to set the context to pContext.
                     //
-#if defined(_DEBUG) 
+#if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
                     StackScratchBuffer buffer;
                     SString sStack;
@@ -7676,7 +7676,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     // We are not inside the prolog. We could either be in the middle of the method body or
     // inside the epilog. While unwindInfo contains the prolog length, it does not contain the
     // epilog length.
-    // 
+    //
     // Thus, to determine if we are inside the epilog, we use a property of RtlVirtualUnwind.
     // When invoked for an IP, it will return a NULL for personality routine in only two scenarios:
     //
@@ -7720,7 +7720,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
     if (personalityRoutine == NULL)
     {
-        // We are in epilog. 
+        // We are in epilog.
         fIsInEpilog = true;
 
 #ifdef _TARGET_AMD64_
@@ -7943,8 +7943,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
             return EXCEPTION_CONTINUE_SEARCH;
         }
     }
-    
-    
+
+
     // Also check if the exception was in the EE or not
     BOOL fExceptionInEE = FALSE;
     if (!pThread)
@@ -8888,7 +8888,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     // By default, assume we didnt get the buckets
     BOOL fSetupWatsonBuckets = FALSE;
     PTR_EHWatsonBucketTracker pUEWatsonBucketTracker;
-    
+
     Thread * pThread = GetThread();
 
     // If the exception going unhandled is preallocated, then capture the Watson buckets in the UE Watson
@@ -12460,7 +12460,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32(HRESULT hr)
     // Force to ApplicationException for compatibility with previous versions.  We would
     //  prefer a "Win32Exception" here.
     EX_THROW(EEMessageException, (kApplicationException, hr, 0 /* resid*/,
-                                 NULL /* szArg1 */, NULL /* szArg2 */, NULL /* szArg3 */, NULL /* szArg4 */, 
+                                 NULL /* szArg1 */, NULL /* szArg2 */, NULL /* szArg3 */, NULL /* szArg4 */,
                                  NULL /* szArg5 */, NULL /* szArg6 */));
 } // VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32()
 
@@ -12863,8 +12863,8 @@ VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCUTF8 pszNameSpace,
 //==========================================================================
 // Throw a decorated runtime exception.
 //==========================================================================
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID, 
-                                        LPCWSTR wszArg1, LPCWSTR wszArg2, LPCWSTR wszArg3, 
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID,
+                                        LPCWSTR wszArg1, LPCWSTR wszArg2, LPCWSTR wszArg3,
                                         LPCWSTR wszArg4, LPCWSTR wszArg5, LPCWSTR wszArg6)
 {
     CONTRACTL
@@ -13060,7 +13060,7 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
     if (thCastFrom.GetMethodTable()->IsComObjectType())
     {
         // Special case casting RCWs so we can give better error information when the
-        // cast fails. 
+        // cast fails.
         ComObject::ThrowInvalidCastException(pObj, thCastTo.GetMethodTable());
     }
 #endif
@@ -13076,7 +13076,7 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
 #endif // FEATURE_COMINTEROP
 
 // Reverse COM interop IL stubs need to catch all exceptions and translate them into HRESULTs.
-// But we allow for CSEs to be rethrown.  Our corrupting state policy gets applied to the 
+// But we allow for CSEs to be rethrown.  Our corrupting state policy gets applied to the
 // original user-visible method that triggered the IL stub to be generated.  So we must be able
 // to map back from a given IL stub to the user-visible method.  Here, we do that only when we
 // see a 'matching' ComMethodFrame further up the stack.
@@ -13098,7 +13098,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
     {
         // There are some differences across architectures for "which" SP is passed in.
         // On ARM, the SP is the SP on entry to the IL stub, on the other arches, it's
-        // a post-prolog SP.  But this doesn't matter here because the COM->CLR path 
+        // a post-prolog SP.  But this doesn't matter here because the COM->CLR path
         // always pushes the Frame in a caller's stack frame.
 
         Frame * pCurFrame = pThread->GetFrame();
@@ -13124,7 +13124,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 
         ComCallMethodDesc * pCMD = pComFrame->GetComCallMethodDesc();
 
-        CONSISTENCY_CHECK_MSG(pILStubMD == ExecutionManager::GetCodeMethodDesc(pCMD->GetILStub()), 
+        CONSISTENCY_CHECK_MSG(pILStubMD == ExecutionManager::GetCodeMethodDesc(pCMD->GetILStub()),
                               "The ComMethodFrame that we found doesn't match the IL stub passed in.");
 
         pUserMD = pCMD->GetMethodDesc();

@@ -20,8 +20,8 @@ include_directories(BEFORE ${VM_DIR})
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 
-set(CREATEDUMP_SOURCES 
-    createdump.cpp 
+set(CREATEDUMP_SOURCES
+    createdump.cpp
     crashinfo.cpp
     threadinfo.cpp
     datatarget.cpp

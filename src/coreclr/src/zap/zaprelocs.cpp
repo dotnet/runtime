@@ -7,7 +7,7 @@
 
 //
 // Zapping of relocations
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -237,7 +237,7 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
 
         ZapReloc *pReloc = m_pRelocs;
 
-        // we need to check only for more than one reloc entry 
+        // we need to check only for more than one reloc entry
         if (pReloc->m_type != IMAGE_REL_INVALID && pReloc[1].m_type != IMAGE_REL_INVALID)
         {
             bool isSorted = true;
@@ -351,7 +351,7 @@ COUNT_T ZapBlobWithRelocs::GetCountOfStraddlerRelocations(DWORD dwPos)
         if (pReloc->m_type == IMAGE_REL_BASED_PTR)
         {
             if (AlignmentTrim(dwPos + pReloc->m_offset, RELOCATION_PAGE_SIZE) > RELOCATION_PAGE_SIZE - TARGET_POINTER_SIZE)
-                nStraddlers++;          
+                nStraddlers++;
         }
     }
 
@@ -363,11 +363,11 @@ ZapBlobWithRelocs * ZapBlobWithRelocs::NewBlob(ZapWriter * pWriter, PVOID pData,
     S_SIZE_T cbAllocSize = S_SIZE_T(sizeof(ZapBlobWithRelocs)) + S_SIZE_T(cbSize);
     if(cbAllocSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
-    
+
     void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
     ZapBlobWithRelocs * pZapBlobWithRelocs = new (pMemory) ZapBlobWithRelocs(cbSize);
-    
+
     if (pData != NULL)
         memcpy((void*)(pZapBlobWithRelocs + 1), pData, cbSize);
 
@@ -394,7 +394,7 @@ public:
         S_SIZE_T cbAllocSize = S_SIZE_T(sizeof(ZapAlignedBlobWithRelocsConst<alignment>)) + S_SIZE_T(cbSize);
         if(cbAllocSize.IsOverflow())
             ThrowHR(COR_E_OVERFLOW);
-        
+
         void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
         ZapAlignedBlobWithRelocsConst<alignment> * pZapBlob = new (pMemory) ZapAlignedBlobWithRelocsConst<alignment>(cbSize);

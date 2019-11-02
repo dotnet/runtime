@@ -52,7 +52,7 @@ void JitHost::freeStringConfigValue(const WCHAR* value)
 }
 
 //
-// Pool memory blocks for JIT to avoid frequent commit/decommit. The frequent commit/decommit has been 
+// Pool memory blocks for JIT to avoid frequent commit/decommit. The frequent commit/decommit has been
 // shown to slow down the JIT significantly (10% or more). The memory blocks used by the JIT tend to be too big
 // to be covered by pooling done by the default malloc.
 //

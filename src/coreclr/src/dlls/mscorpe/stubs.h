@@ -25,7 +25,7 @@
 //    jump _CorExeMain();
 //
 // The code jumps to the imported function _CorExeMain using the iat.
-// The address in the template is address of the iat entry which is 
+// The address in the template is address of the iat entry which is
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
@@ -41,20 +41,20 @@ SELECTANY const BYTE ExeMainX86Template[] =
 #define CorExeMainX86IATOffset		2
 
 //*****************************************************************************
-// This stub is designed for a x86 Windows application.  It will call the 
+// This stub is designed for a x86 Windows application.  It will call the
 // _CorDllMain function in mscoree.dll with with the base entry point for
 // the loaded DLL.  This entry point will in turn load and run the IL program.
 //
 //    jump _CorDllMain
 //
 // The code jumps to the imported function _CorExeMain using the iat.
-// The address in the template is address of the iat entry which is 
+// The address in the template is address of the iat entry which is
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainX86Template[] = 
+SELECTANY const BYTE DllMainX86Template[] =
 {
-	// Jump through IAT to CorDllMain 
+	// Jump through IAT to CorDllMain
 	0xFF, 0x25,				// jmp [iat:_CorDllMain entry]
 		0x00, 0x00, 0x00, 0x00,		//   address to replace
 };
@@ -71,7 +71,7 @@ SELECTANY const BYTE DllMainX86Template[] =
 //    jmp [rax]
 //
 // The code jumps to the imported function _CorExeMain using the iat.
-// The address in the template is address of the iat entry which is 
+// The address in the template is address of the iat entry which is
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
@@ -87,7 +87,7 @@ SELECTANY const BYTE ExeMainAMD64Template[] =
 #define CorExeMainAMD64IATOffset		2
 
 //*****************************************************************************
-// This stub is designed for a AMD64 Windows application.  It will call the 
+// This stub is designed for a AMD64 Windows application.  It will call the
 // _CorDllMain function in mscoree.dll with with the base entry point for
 // the loaded DLL.  This entry point will in turn load and run the IL program.
 //
@@ -95,13 +95,13 @@ SELECTANY const BYTE ExeMainAMD64Template[] =
 //    jmp [rax]
 //
 // The code jumps to the imported function _CorDllMain using the iat.
-// The address in the template is address of the iat entry which is 
+// The address in the template is address of the iat entry which is
 // fixed up by the loader when the image is paged in.
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainAMD64Template[] = 
+SELECTANY const BYTE DllMainAMD64Template[] =
 {
-	// Jump through IAT to CorDllMain 
+	// Jump through IAT to CorDllMain
 	0x48, 0xA1,				// rex.w rex.b mov rax,[following address]
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//address of iat:_CorDllMain entry
     0xFF, 0xE0              // jmp [rax]
@@ -130,16 +130,16 @@ SELECTANY const BYTE ExeMainIA64Template[] =
     // mov    b6  = r10
     // br.cond.sptk.few  b6
     //
-    0x0B, 0x48, 0x00, 0x02, 0x18, 0x10, 0xA0, 0x40, 
-    0x24, 0x30, 0x28, 0x00, 0x00, 0x00, 0x04, 0x00, 
-    0x10, 0x08, 0x00, 0x12, 0x18, 0x10, 0x60, 0x50, 
+    0x0B, 0x48, 0x00, 0x02, 0x18, 0x10, 0xA0, 0x40,
+    0x24, 0x30, 0x28, 0x00, 0x00, 0x00, 0x04, 0x00,
+    0x10, 0x08, 0x00, 0x12, 0x18, 0x10, 0x60, 0x50,
     0x04, 0x80, 0x03, 0x00, 0x60, 0x00, 0x80, 0x00
 };
 
 #define ExeMainIA64TemplateSize		sizeof(ExeMainIA64Template)
 
 //*****************************************************************************
-// This stub is designed for an ia64 Windows application.  It will call the 
+// This stub is designed for an ia64 Windows application.  It will call the
 // _CorDllMain function in mscoree.dll with with the base entry point for
 // the loaded DLL.  This entry point will in turn load and run the IL program.
 //
@@ -149,7 +149,7 @@ SELECTANY const BYTE ExeMainIA64Template[] =
 // We set the value of gp to point at the iat table entry for _CorExeMain
 //*****************************************************************************
 
-SELECTANY const BYTE DllMainIA64Template[] = 
+SELECTANY const BYTE DllMainIA64Template[] =
 {
     // ld8    r9  = [gp]    ;;
     // ld8    r10 = [r9],8
@@ -158,9 +158,9 @@ SELECTANY const BYTE DllMainIA64Template[] =
     // mov    b6  = r10
     // br.cond.sptk.few  b6
     //
-    0x0B, 0x48, 0x00, 0x02, 0x18, 0x10, 0xA0, 0x40, 
-    0x24, 0x30, 0x28, 0x00, 0x00, 0x00, 0x04, 0x00, 
-    0x10, 0x08, 0x00, 0x12, 0x18, 0x10, 0x60, 0x50, 
+    0x0B, 0x48, 0x00, 0x02, 0x18, 0x10, 0xA0, 0x40,
+    0x24, 0x30, 0x28, 0x00, 0x00, 0x00, 0x04, 0x00,
+    0x10, 0x08, 0x00, 0x12, 0x18, 0x10, 0x60, 0x50,
     0x04, 0x80, 0x03, 0x00, 0x60, 0x00, 0x80, 0x00
 };
 

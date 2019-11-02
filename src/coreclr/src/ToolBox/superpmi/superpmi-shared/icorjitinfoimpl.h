@@ -132,8 +132,8 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemTy
 
 // Given resolved token that corresponds to an intrinsic classified as
 // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
-// with the token. If this is not possible at compile-time (because the current method's 
-// code is shared and the token contains generic parameters) then indicate 
+// with the token. If this is not possible at compile-time (because the current method's
+// code is shared and the token contains generic parameters) then indicate
 // how the handle should be looked up at runtime.
 void expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,

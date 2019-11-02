@@ -16,7 +16,7 @@
 #define __BINDER__BIND_RESULT_HPP__
 
 #include "bindertypes.hpp"
- 
+
 namespace BINDER_SPACE
 {
     class BindResult

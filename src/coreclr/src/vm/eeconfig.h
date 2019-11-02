@@ -45,13 +45,13 @@ typedef struct _ConfigStringKeyValuePair
 {
     WCHAR * key;
     WCHAR * value;
-    
+
     _ConfigStringKeyValuePair()
     {
         key = NULL;
         value = NULL;
     }
-    
+
     WCHAR * GetKey()
     {
         return key;
@@ -119,7 +119,7 @@ public:
                 // MODE_ANY;
                 FORBID_FAULT;
             } CONTRACTL_END;
-            
+
             pEnd = &(pList->m_pElement);
             pCurrent = pEnd;
         }
@@ -138,7 +138,7 @@ public:
                 FORBID_FAULT;
                 POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             } CONTRACT_END;
-        
+
             pCurrent = pCurrent->Next();;
             if(pCurrent == pEnd)
                 RETURN NULL;
@@ -152,7 +152,7 @@ public:
                 NOTHROW;
                 GC_NOTRIGGER;
                 FORBID_FAULT;
-                // MODE_ANY; 
+                // MODE_ANY;
                 POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             } CONTRACT_END;
 
@@ -181,7 +181,7 @@ public:
 
         if (pEntry == NULL)
             RETURN NULL;
-        
+
         pEntry->Add(&m_pElement);
         RETURN pEntry->Table();
     }
@@ -194,11 +194,11 @@ public:
             // MODE_ANY;
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         } CONTRACT_END;
-        
+
         ConfigSource* pEntry = new (nothrow) ConfigSource();
         if (pEntry == NULL)
             RETURN NULL;
-        
+
         pEntry->Add(m_pElement.Previous());
         RETURN pEntry->Table();
     }
@@ -272,12 +272,12 @@ public:
     // Jit-config
 
     DWORD         JitHostMaxSlabCache(void)                 const {LIMITED_METHOD_CONTRACT;  return dwJitHostMaxSlabCache; }
-    bool          GetTrackDynamicMethodDebugInfo(void)      const {LIMITED_METHOD_CONTRACT;  return fTrackDynamicMethodDebugInfo; }    
+    bool          GetTrackDynamicMethodDebugInfo(void)      const {LIMITED_METHOD_CONTRACT;  return fTrackDynamicMethodDebugInfo; }
     unsigned int  GenOptimizeType(void)                     const {LIMITED_METHOD_CONTRACT;  return iJitOptimizeType; }
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitAlignLoops(void)                       const {LIMITED_METHOD_CONTRACT;  return fJitAlignLoops; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
-    
+
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
     bool          TieredCompilation(void)           const { LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
@@ -310,7 +310,7 @@ public:
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         switch (fPInvokeRestoreEsp)
         {
             case (unsigned)-1: return fDefault;
@@ -354,12 +354,12 @@ public:
 
 
     inline bool ShouldPrestubGC(MethodDesc* pMethodInfo) const
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return IsInMethList(pPrestubGC, pMethodInfo);
     }
     inline bool ShouldBreakOnClassLoad(LPCUTF8 className) const
-    { 
+    {
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
@@ -369,7 +369,7 @@ public:
         return RegexOrExactMatch(pszBreakOnClassLoad, className);
     }
     inline bool ShouldBreakOnClassBuild(LPCUTF8 className) const
-    { 
+    {
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
@@ -379,12 +379,12 @@ public:
         return RegexOrExactMatch(pszBreakOnClassBuild, className);
     }
     inline bool BreakOnInstantiationEnabled() const
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
         return pszBreakOnInstantiation != NULL;
     }
     inline bool ShouldBreakOnInstantiation(LPCUTF8 className) const
-    { 
+    {
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
@@ -434,7 +434,7 @@ public:
         return RegexOrExactMatch(pszBreakOnComToClrNativeInfoInit, methodName);
     }
     inline bool ShouldBreakOnStructMarshalSetup(LPCUTF8 className) const
-    { 
+    {
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
@@ -447,7 +447,7 @@ public:
     static void DestroyTypeList(TypeNamesList* list);
 
     inline bool ShouldGcCoverageOnMethod(LPCUTF8 methodName) const
-    { 
+    {
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
@@ -516,7 +516,7 @@ public:
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
-    // held locks in DAC builds. This is determined by an environment variable. 
+    // held locks in DAC builds. This is determined by an environment variable.
     inline bool TestDataConsistency() const { LIMITED_METHOD_DAC_CONTRACT; return fTestDataConsistency; }
 #endif
 
@@ -524,7 +524,7 @@ public:
 
     unsigned SuspendThreadDeadlockTimeoutMs() const
     {LIMITED_METHOD_CONTRACT; return m_SuspendThreadDeadlockTimeoutMs; }
-    
+
     unsigned SuspendDeadlockTimeout() const
     {LIMITED_METHOD_CONTRACT; return m_SuspendDeadlockTimeout; }
 
@@ -566,7 +566,7 @@ public:
         HEAPVERIFY_POST_GC_ONLY     = 0x40,   // Performs heap verification post-GCs only (instead of before and after each GC)
         HEAPVERIFY_DEEP_ON_COMPACT  = 0x80    // Performs deep object verfication only on compacting GCs.
     };
-    
+
     int     GetHeapVerifyLevel()                  {LIMITED_METHOD_CONTRACT;  return iGCHeapVerify;  }
 
     bool    IsHeapVerifyEnabled()           const {LIMITED_METHOD_CONTRACT;  return iGCHeapVerify != 0; }
@@ -628,7 +628,7 @@ public:
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
 #ifdef _DEBUG
-    bool    SkipGCCoverage(LPCUTF8 assemblyName) const {WRAPPER_NO_CONTRACT; return (pSkipGCCoverageList != NULL 
+    bool    SkipGCCoverage(LPCUTF8 assemblyName) const {WRAPPER_NO_CONTRACT; return (pSkipGCCoverageList != NULL
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
 
@@ -667,7 +667,7 @@ public:
         REQUIRE_ZAPS_NONE,      // Dont care if native image is used or not
         REQUIRE_ZAPS_ALL,       // All assemblies must have native images
         REQUIRE_ZAPS_ALL_JIT_OK,// All assemblies must have native images, but its OK if the JIT-compiler also gets used (if some function was not ngenned)
-        
+
         REQUIRE_ZAPS_COUNT
     };
     RequireZapsType RequireZaps()           const {LIMITED_METHOD_CONTRACT;  return iRequireZaps; }
@@ -676,7 +676,7 @@ public:
     bool    ForbidZap(LPCUTF8 assemblyName) const;
 #endif
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-    
+
     LPCWSTR ZapSet()                        const { LIMITED_METHOD_CONTRACT; return pZapSet; }
 
     bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
@@ -693,48 +693,48 @@ public:
     HRESULT sync();    // check the registry again and update local state
 
     // Helpers to read configuration
-    
+
     // This function exposes the config file data to CLRConfig. A pointer to this function is passed into CLRConfig on EEConfig::init.
     // We are using BOOLs instead of ConfigSearch for direction since CLRConfig isn't always linked to EEConfig.
     static HRESULT GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LPCWSTR* value, BOOL systemOnly, BOOL applicationFirst);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE,
                                   ConfigSearch direction = CONFIG_SYSTEM); // Note that you own the returned string!
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static DWORD GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue,
                                 DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
                                 BOOL fPrependCOMPLUS = TRUE,
                                 ConfigSearch direction = CONFIG_SYSTEM);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static ULONGLONG GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue,
                                              DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
                                              BOOL fPrependCOMPLUS = TRUE,
                                              ConfigSearch direction = CONFIG_SYSTEM);
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static DWORD GetConfigDWORDFavoringConfigFile_DontUse_(__in_z LPCWSTR name, DWORD defValue,
                                                   DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
                                                   BOOL fPrependCOMPLUS = TRUE,
                                                   ConfigSearch direction = CONFIG_SYSTEM);
 
     //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead. 
+    // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    // 
+    //
     static DWORD GetConfigFlag_DontUse_(__in_z LPCWSTR name, DWORD bitToSet, bool defValue = FALSE);
 
 #ifdef _DEBUG
@@ -773,7 +773,7 @@ public:
 #define INJECTFAULT_JITHEAP         0x40
 
     DWORD ShouldInjectFault(DWORD faultType) const {LIMITED_METHOD_CONTRACT; return fShouldInjectFault & faultType;}
-    
+
 #endif
 
 private: //----------------------------------------------------------------
@@ -789,7 +789,7 @@ private: //----------------------------------------------------------------
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
-    
+
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
 
     bool fLegacyNullReferenceExceptionPolicy; // Old AV's as NullRef behavior
@@ -844,13 +844,13 @@ private: //----------------------------------------------------------------
     DWORD  iExposeExceptionsInCOM;      // Should we exposed exceptions that will be transformed into HRs?
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
-    unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime. 
+    unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime.
 
     bool fEnableFullDebug;
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
-    bool bLogCCWRefCountChange;           // Is CCW logging on 
+    bool bLogCCWRefCountChange;           // Is CCW logging on
     LPCUTF8 pszLogCCWRefCountChange;      // OutputDebugString when AddRef/Release is called on a CCW
                                           // for the specified type(s)
     bool fEnableRCWCleanupOnSTAShutdown;  // Register our IInitializeSpy even in classic processes
@@ -943,12 +943,12 @@ private: //----------------------------------------------------------------
 
     BOOL fSaveThreadInfo;
     DWORD dwSaveThreadInfoMask;
-    
+
     AssemblyNamesList *pSkipGCCoverageList;
 #endif
 
     RequireZapsType iRequireZaps;
-    // Assemblies which need to have native images. 
+    // Assemblies which need to have native images.
     // This is only used if iRequireZaps!=REQUIRE_ZAPS_NONE
     // This can be used to enforce that ngen images are used only selectively for some assemblies
     AssemblyNamesList * pRequireZapsList;
@@ -974,10 +974,10 @@ private: //----------------------------------------------------------------
     bool fStressLog;
     bool fForceEnc;
     bool fProbeForStackOverflow;
-    
+
     // Stackwalk optimization flag
     DWORD dwDisableStackwalkCache;
-    
+
     LPUTF8 szZapBBInstr;
     LPWSTR szZapBBInstrDir;
 

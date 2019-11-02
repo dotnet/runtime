@@ -10,7 +10,7 @@
 ** Purpose: Native methods on System.Runtime.InteropServices.ExtensibleClassFactory
 **
 
-** 
+**
 ===========================================================*/
 
 #include "common.h"
@@ -36,7 +36,7 @@ static StackWalkAction FrameCallback(CrawlFrame *pCF, void *pData)
         PRECONDITION(pMD->GetMethodTable() != NULL);
     }
     CONTRACTL_END;
-    
+
 
     // We use the pData context argument to track the class as we move down the
     // stack and to return the class whose initializer is being called. If
@@ -51,10 +51,10 @@ static StackWalkAction FrameCallback(CrawlFrame *pCF, void *pData)
 
     if (*ppMT == (MethodTable *)-1)
         *ppMT = NULL;
-    
+
     else if (*ppMT == NULL)
         *ppMT = pMD->GetMethodTable();
-    
+
     else if (pMD->GetMethodTable() != *ppMT)
     {
         *ppMT = NULL;
@@ -100,19 +100,19 @@ FCIMPL1(void, RegisterObjectCreationCallback, Object* pDelegateUNSAFE)
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR);
     }
-    
+
     // The object type must derive at some stage from a COM imported object.
     // Also we must fail the call if some parent class has already registered a
     // callback.
     MethodTable *pParent = pMT;
-    do 
+    do
     {
         pParent = pParent->GetParentMethodTable();
         if (pParent && !pParent->IsComImport() && (pParent->GetObjCreateDelegate() != NULL))
         {
             COMPlusThrow(kInvalidOperationException, IDS_EE_CALLBACK_ALREADY_REGISTERED);
         }
-    } 
+    }
     while (pParent && !pParent->IsComImport());
 
     // If the class does not have a COM imported base class then fail the call.

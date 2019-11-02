@@ -7,7 +7,7 @@
 
 //
 // ZapNode that points into middle of other ZapNode
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -20,18 +20,18 @@ ZapNode * ZapInnerPtrTable::Get(ZapNode * pBase, SSIZE_T offset)
     if (offset == 0)
         return pBase;
 
-    // Flatten the hiearchy of inner ptrs. Inner ptrs pointing to other inner ptrs 
+    // Flatten the hiearchy of inner ptrs. Inner ptrs pointing to other inner ptrs
     // would not work well during the Resolve phase
     while (pBase->GetType() == ZapNodeType_InnerPtr)
     {
         ZapInnerPtr * pWrapper = (ZapInnerPtr *)pBase;
-        
+
         offset += pWrapper->GetOffset();
         pBase = pWrapper->GetBase();
     }
 
     ZapInnerPtr * pInnerPtr = m_entries.Lookup(InnerPtrKey(pBase, offset));
-    
+
     if (pInnerPtr != NULL)
         return pInnerPtr;
 

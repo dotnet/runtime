@@ -61,4 +61,4 @@ VOID EETlsSetValue(DWORD slot, LPVOID pData);
 
 
 #endif
-    
+

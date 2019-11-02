@@ -19,7 +19,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
-    
+
 #ifdef _DEBUG
     // MSCORLIB should be bound using BindToSystem
     _ASSERTE(!pAssemblyName->IsMscorlib());
@@ -50,13 +50,13 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
     VALIDATE_ARG_RET(pIAssemblyName != nullptr && ppAssembly != nullptr);
 
     _ASSERTE(m_pTPABinder != NULL);
-        
+
     ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
     ReleaseHolder<AssemblyName> pAssemblyName;
 
     SAFE_NEW(pAssemblyName, AssemblyName);
     IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
-        
+
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //
     // 1) Lookup the assembly within the LoadContext itself. If assembly is found, use it.
@@ -68,7 +68,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
     //
     // This approach enables a LoadContext to override assemblies that have been loaded in TPA context by loading
     // a different (or even the same!) version.
-        
+
     {
         // Step 1 - Try to find the assembly within the LoadContext.
         hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
@@ -98,22 +98,22 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
             }
         }
     }
-        
+
     IF_FAIL_GO(hr);
-        
-    // Extract the assembly reference. 
+
+    // Extract the assembly reference.
     //
     // For TPA assemblies that were bound, TPABinder
     // would have already set the binder reference for the assembly, so we just need to
     // extract the reference now.
     *ppAssembly = pCoreCLRFoundAssembly.Extract();
-Exit:;        
+Exit:;
 
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pPEImage, 
-                                                            /* in */ BOOL fIsNativeImage, 
+HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pPEImage,
+                                                            /* in */ BOOL fIsNativeImage,
                                                             /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -121,28 +121,28 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
-        ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;        
+        ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
         ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-        
+
         PEKIND PeKind = peNone;
-        
+
         // Get the Metadata interface
         DWORD dwPAFlags[2];
         IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
         IF_FAIL_GO(AssemblyBinder::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-        
+
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
-        
+
         // Using the information we just got, initialize the assemblyname
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
-        
+
         // Validate architecture
         if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
-        
+
         // Disallow attempt to bind to the core library. Aside from that,
         // the LoadContext can load any assembly (even if it was in a different LoadContext like TPA).
         if (pAssemblyName->IsMscorlib())
@@ -157,20 +157,20 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
             pCoreCLRFoundAssembly->SetBinder(this);
             *ppAssembly = pCoreCLRFoundAssembly.Extract();
         }
-Exit:;        
+Exit:;
     }
     EX_CATCH_HRESULT(hr);
 
     return hr;
 }
-                              
-HRESULT CLRPrivBinderAssemblyLoadContext::GetBinderID( 
+
+HRESULT CLRPrivBinderAssemblyLoadContext::GetBinderID(
         UINT_PTR *pBinderId)
 {
-    *pBinderId = reinterpret_cast<UINT_PTR>(this); 
+    *pBinderId = reinterpret_cast<UINT_PTR>(this);
     return S_OK;
 }
-         
+
 HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllocator)
 {
     _ASSERTE(pLoaderAllocator != NULL);
@@ -203,7 +203,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
         if(ppBindContext != NULL)
         {
             ReleaseHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
-            
+
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
             hr = pBinder->m_appContext.Init();
             if(SUCCEEDED(hr))
@@ -214,7 +214,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
                 // Save reference to the TPABinder that is required to be present.
                 _ASSERTE(pTPABinder != NULL);
                 pBinder->m_pTPABinder = pTPABinder;
-                
+
                 // Save the reference to the IntPtr for GCHandle for the managed
                 // AssemblyLoadContext instance
                 pBinder->m_ptrManagedAssemblyLoadContext = ptrAssemblyLoadContext;

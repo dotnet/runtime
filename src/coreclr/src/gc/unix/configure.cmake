@@ -10,7 +10,7 @@ check_cxx_source_compiles("
     #include <pthread.h>
     #include <stdint.h>
 
-    int main() 
+    int main()
     {
         uint64_t tid;
         pthread_threadid_np(pthread_self(), &tid);

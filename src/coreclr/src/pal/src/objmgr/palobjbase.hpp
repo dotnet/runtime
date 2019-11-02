@@ -25,7 +25,7 @@ Abstract:
 #include "pal/thread.hpp"
 
 namespace CorUnix
-{   
+{
     class CSimpleDataLock : IDataLock
     {
     private:
@@ -81,13 +81,13 @@ namespace CorUnix
         {
             InternalLeaveCriticalSection(pthr, &m_cs);
         };
-        
+
     };
-    
+
     class CPalObjectBase : public IPalObject
-    { 
+    {
         template <class T> friend void InternalDelete(T *p);
-        
+
     protected:
 
         LONG m_lRefCount;
@@ -145,7 +145,7 @@ namespace CorUnix
         //
         // IPalObject routines
         //
-        
+
         virtual
         CObjectType *
         GetObjectType(

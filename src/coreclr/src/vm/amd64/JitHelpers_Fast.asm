@@ -10,8 +10,8 @@
 ; ***********************************************************************
 ; File: JitHelpers_Fast.asm, see jithelp.asm for history
 ;
-; Notes: routinues which we believe to be on the hot path for managed 
-;        code in most scenarios. 
+; Notes: routinues which we believe to be on the hot path for managed
+;        code in most scenarios.
 ; ***********************************************************************
 
 
@@ -74,11 +74,11 @@ LEAF_ENTRY JIT_IsInstanceOfClass, _TEXT
         REPRET
 LEAF_END JIT_IsInstanceOfClass, _TEXT
 
-LEAF_ENTRY JIT_IsInstanceOfClass2, _TEXT        
+LEAF_ENTRY JIT_IsInstanceOfClass2, _TEXT
         ; check if the parent class matches.
         ; start by putting the MethodTable for the instance in rdx
         mov     rdx, qword ptr [rdx]
-        
+
     align 16
     CheckParent:
         ; NULL parent MethodTable* indicates that we're at the top of the hierarchy
@@ -120,7 +120,7 @@ if METHODTABLE_EQUIVALENCE_FLAGS gt 0
         test    dword ptr [rdx + OFFSETOF__MethodTable__m_dwFlags], METHODTABLE_EQUIVALENCE_FLAGS
         jne     SlowPath
 endif ; METHODTABLE_EQUIVALENCE_FLAGS gt 0
-        
+
         ; we didn't find a match in the ParentMethodTable hierarchy
         ; and it isn't a proxy and doesn't have type equivalence, return NULL
         xor     eax, eax
@@ -243,7 +243,7 @@ LEAF_ENTRY JIT_IsInstanceOfInterface, _TEXT
 
         test    r11w, r11w
         jz      DoBizarre
-        
+
         ; fetch interface map ptr
         mov     rax, [rax + OFFSETOF__MethodTable__m_pInterfaceMap]
 
@@ -261,7 +261,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -274,7 +274,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -287,7 +287,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -300,7 +300,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -347,7 +347,7 @@ LEAF_ENTRY JIT_ChkCastInterface, _TEXT
 
         test    r11w, r11w
         jz      DoBizarre
-      
+
         ; r11 holds number of interfaces
         ; rax is pointer to beginning of interface map list
     align 16
@@ -362,7 +362,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -375,7 +375,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -388,7 +388,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -401,7 +401,7 @@ ifdef FEATURE_PREJIT
         mov     r10, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
         FIX_INDIRECTION r10
         cmp     rcx, r10
-else     
+else
         cmp     rcx, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
 endif
         je      Found
@@ -447,7 +447,7 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         jb      NotInHeap
         cmp     rcx, [g_highest_address]
         jnb     NotInHeap
-        
+
         jmp     JIT_WriteBarrier
 
     NotInHeap:
@@ -462,9 +462,9 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
 
-; This is used by the mechanism to hold either the JIT_WriteBarrier_PreGrow 
+; This is used by the mechanism to hold either the JIT_WriteBarrier_PreGrow
 ; or JIT_WriteBarrier_PostGrow code (depending on the state of the GC). It _WILL_
-; change at runtime as the GC changes. Initially it should simply be a copy of the 
+; change at runtime as the GC changes. Initially it should simply be a copy of the
 ; larger of the two functions (JIT_WriteBarrier_PostGrow) to ensure we have created
 ; enough space to copy that code in.
 LEAF_ENTRY JIT_WriteBarrier, _TEXT
@@ -808,20 +808,20 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
         ; write barrier is not needed for assignment of NULL references
         mov     [rcx + 8*rdx + OFFSETOF__PtrArray__m_Array], r8
         ret
-            
+
     NotExactMatch:
         cmp     r9, [g_pObjectClass]
         je      DoWrite
 
         jmp     JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper
-                                
+
     ThrowNullReferenceException:
         mov     rcx, CORINFO_NullReferenceException_ASM
         jmp     JIT_InternalThrow
-        
+
     ThrowIndexOutOfRangeException:
         mov     rcx, CORINFO_IndexOutOfRangeException_ASM
-        jmp     JIT_InternalThrow        
+        jmp     JIT_InternalThrow
 LEAF_END JIT_Stelem_Ref, _TEXT
 
 NESTED_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper, _TEXT
@@ -892,14 +892,14 @@ OFFSETOF_GSCOOKIE                   equ 0h
 OFFSETOF_FRAME                      equ OFFSETOF_GSCOOKIE + \
                                         8h
 
-; 
+;
 ; incoming:
 ;
 ;       rsp ->  return address
 ;                 :
 ;
 ; Stack Layout:
-; 
+;
 ; rsp-> callee scratch
 ; + 8h  callee scratch
 ; +10h  callee scratch
@@ -925,7 +925,7 @@ OFFSETOF_FRAME                      equ OFFSETOF_GSCOOKIE + \
 ;
 ; r14 = GetThread();
 ; r15 = GetThread()->GetFrame(); // For restoring/popping the frame
-; 
+;
 NESTED_ENTRY TailCallHelperStub, _TEXT
         PUSH_CALLEE_SAVED_REGISTERS
 
@@ -956,7 +956,7 @@ if 0 ne 0
         ; link the TailCallFrame
         ;
         INLINE_GETTHREAD r14
-        mov     r15, [r14 + OFFSETOF__Thread__m_pFrame]        
+        mov     r15, [r14 + OFFSETOF__Thread__m_pFrame]
         mov     [r13 + OFFSETOF_FRAME + OFFSETOF__Frame__m_Next], r15
         lea     r10, [r13 + OFFSETOF_FRAME]
         mov     [r14 + OFFSETOF__Thread__m_pFrame], r10
@@ -982,7 +982,7 @@ endif ; _DEBUG
         ;
         mov     [r14 + OFFSETOF__Thread__m_pFrame], r15
 
-        ; 
+        ;
         ; epilog
         ;
 

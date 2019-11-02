@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ValueHome.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -39,11 +39,11 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // This will update a register in a given context, and in the regdisplay of a given frame.
 // Arguments:
 //     input:  pContext - context from which the register comes
-//             regnum   - enumeration constant indicating which register is to be updated   
+//             regnum   - enumeration constant indicating which register is to be updated
 //             newVal   - the new value for the register contents
 //     output: no out parameters, but the new value will be written to the context and the frame
 // Notes:  We don't take a data target here because we are directly writing process memory and passing
-//         in a context, which has the location to update. 
+//         in a context, which has the location to update.
 //         Throws
 void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
                                       CorDebugRegister regNum,
@@ -198,14 +198,14 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
         // Casting
         switch(newValue.Size())
         {
-            case 1:  _ASSERTE(sizeof( BYTE) == 1); 
+            case 1:  _ASSERTE(sizeof( BYTE) == 1);
                      extendedVal = (SSIZE_T) *(char*)newValue.StartAddress();           break;
-            case 2:  _ASSERTE(sizeof( WORD) == 2); 
+            case 2:  _ASSERTE(sizeof( WORD) == 2);
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
-            case 4:  _ASSERTE(sizeof(DWORD) == 4); 
+            case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
 #if defined(DBG_TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8); 
+            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
                      extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
 #endif // DBG_TARGET_64BIT
             default: _ASSERTE(!"bad size");
@@ -216,14 +216,14 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
         // Zero extend.
         switch(newValue.Size())
         {
-            case 1:  _ASSERTE(sizeof( BYTE) == 1); 
+            case 1:  _ASSERTE(sizeof( BYTE) == 1);
                      extendedVal = *( BYTE*)newValue.StartAddress();     break;
             case 2:  _ASSERTE(sizeof( WORD) == 2);
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
 #if defined(DBG_TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8); 
+            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
                      extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
 #endif // DBG_TARGET_64BIT
             default: _ASSERTE(!"bad size");
@@ -260,7 +260,7 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
     pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->u.reg2 = m_reg2Info.m_kRegNumber;
-    pRegAddr->u.reg2Addr = CORDB_ADDRESS_TO_PTR(m_reg2Info.m_regAddr); 
+    pRegAddr->u.reg2Addr = CORDB_ADDRESS_TO_PTR(m_reg2Info.m_regAddr);
     pRegAddr->u.reg2Value = m_reg2Info.m_regValue;
 } // RegRegValueHome::CopyToIPCEType
 
@@ -344,7 +344,7 @@ void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
     _ASSERTE(REG_SIZE == sizeof(lowPart));
     HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowPart);
     IfFailThrow(hr);
-    
+
 } // RegMemValueHome::SetEnregisteredValue
 
 // RegMemValueHome::GetEnregisteredValue
@@ -358,7 +358,7 @@ void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 
     // ... and the low bits from the remote process
     DWORD lowBits;
-    HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowBits); 
+    HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowBits);
     IfFailThrow(hr);
 
     _ASSERTE(sizeof(lowBits)+sizeof(*highBitsAddr) == valueOutBuffer.Size());
@@ -448,8 +448,8 @@ void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // FloatValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue, 
-                                             DT_CONTEXT * pContext, 
+void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
+                                             DT_CONTEXT * pContext,
                                              bool        fIsSigned)
 {
     // TODO: : implement CordbValue::SetEnregisteredValue for RAK_FLOAT
@@ -470,8 +470,8 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
     // Win/X86 debugging a Mac/X86 platform.
 
     #if !defined(_TARGET_X86_)
-    #error Unsupported target platform            
-    #endif // !_TARGET_X86_           
+    #error Unsupported target platform
+    #endif // !_TARGET_X86_
 
     // What a pain, on X86 take the floating
     // point state in the context and make it our current FP
@@ -590,11 +590,11 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
     //     input: pProcess    - the process to which the value belongs
     //            remoteValue - a buffer with the target address of the value and its size
     // Note: It's possible a particular instance of CordbGenericValue may have neither a remote address nor a
-    // register address--FuncEval makes empty GenericValues for literals but for those, we will make a 
+    // register address--FuncEval makes empty GenericValues for literals but for those, we will make a
     // RegisterValueHome,so we can assert that we have a non-null remote address here
     RemoteValueHome::RemoteValueHome(CordbProcess * pProcess, TargetBuffer remoteValue):
       ValueHome(pProcess),
-      m_remoteValue(remoteValue) 
+      m_remoteValue(remoteValue)
     {
         _ASSERTE(remoteValue.pAddress != NULL);
     } // RemoteValueHome::RemoteValueHome
@@ -609,13 +609,13 @@ void RemoteValueHome::GetValue(MemoryRange dest)
 } // RemoteValueHome::GetValue
 
 // Sets a location to the value provided in src
-// virtual 
+// virtual
 void RemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     _ASSERTE(!m_remoteValue.IsEmpty());
     _ASSERTE(src.Size() == m_remoteValue.cbSize);
     _ASSERTE(src.StartAddress() != NULL);
-    m_pProcess->SafeWriteBuffer(m_remoteValue, (BYTE *)src.StartAddress()); 
+    m_pProcess->SafeWriteBuffer(m_remoteValue, (BYTE *)src.StartAddress());
 } // RemoteValueHome::SetValue
 
 // creates an ICDValue for a field or array element or for the value type of a boxed object
@@ -630,11 +630,11 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
     // will not be included with the local cached copy of the ICDObjectValue to which the field belongs.
     // This means we need to compute the size for the type of the field, and then determine whether this
     // should also be the size for the localValue we pass to CreateValueByType. The only way we can tell if this
-    // is an EnC added field is if the local address is NULL. 
+    // is an EnC added field is if the local address is NULL.
     ULONG32 localSize = localAddress != NULL ? size : 0;
 
     CordbAppDomain * pAppdomain = pType->GetAppDomain();
-   
+
     CordbValue::CreateValueByType(pAppdomain,
                                   pType,
                                   kUnboxed,
@@ -649,11 +649,11 @@ void RemoteValueHome::GetInternalValue(MemoryRange dest, SIZE_T offset)
 {
     _ASSERTE((!m_remoteValue.IsEmpty()) && (dest.StartAddress() != NULL));
 
-    m_pProcess->SafeReadBuffer(TargetBuffer(m_remoteValue.pAddress + offset, (ULONG)dest.Size()), 
+    m_pProcess->SafeReadBuffer(TargetBuffer(m_remoteValue.pAddress + offset, (ULONG)dest.Size()),
                                (BYTE *)dest.StartAddress());
 } // RemoteValueHome::GetInternalValue
 
-// copies the register information from this to a RemoteAddress instance 
+// copies the register information from this to a RemoteAddress instance
 // virtual
 void RemoteValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
@@ -669,8 +669,8 @@ void RemoteValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // Arguments:
 //     input:  pProcess        - process for this value
 //             ppRemoteRegAddr - enregistered value information
-//         
-RegisterValueHome::RegisterValueHome(CordbProcess *                pProcess, 
+//
+RegisterValueHome::RegisterValueHome(CordbProcess *                pProcess,
                                      EnregisteredValueHomeHolder * ppRemoteRegAddr):
     ValueHome(pProcess)
 {
@@ -684,9 +684,9 @@ RegisterValueHome::RegisterValueHome(CordbProcess *                pProcess,
         // be sure not to delete the remote register information on exit
         ppRemoteRegAddr->SuppressRelease();
     }
-    else 
+    else
     {
-        m_pRemoteRegAddr = NULL; 
+        m_pRemoteRegAddr = NULL;
     }
  } // RegisterValueHome::RegisterValueHome
 
@@ -697,7 +697,7 @@ void RegisterValueHome::Clear()
     {
         delete m_pRemoteRegAddr;
         m_pRemoteRegAddr = NULL;
-    }    
+    }
 } // RegisterValueHome::Clear
 
 // Gets a value and returns it in dest
@@ -769,15 +769,15 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
 // virtual
 void RegisterValueHome::GetInternalValue(MemoryRange dest, SIZE_T offset)
 {
-    // currently, we can't have an enregistered value that has more than one field or element, so 
-    // there's nothing to do here but ASSERT. If the JIT changes what can be enregistered, we'll have 
+    // currently, we can't have an enregistered value that has more than one field or element, so
+    // there's nothing to do here but ASSERT. If the JIT changes what can be enregistered, we'll have
     // work to do here
     _ASSERTE(!"Compound types are not enregistered--we shouldn't be here");
     ThrowHR(E_INVALIDARG);
 } // RegisterValueHome::GetInternalValue
 
 
-// copies the register information from this to a RemoteAddress instance 
+// copies the register information from this to a RemoteAddress instance
 // virtual
 void RegisterValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
@@ -785,17 +785,17 @@ void RegisterValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
     {
         m_pRemoteRegAddr->CopyToIPCEType(pRegAddr);
     }
-    else 
+    else
     {
         pRegAddr->kind = RAK_NONE;
     }
 } // RegisterValueHome::CopyToIPCEType
 
 // sets a remote enregistered location to a new value
-// Arguments: 
+// Arguments:
 //     input: src -       contains the new value
 //            fIsSigned - indicates whether the new value is signed (needed for proper extension
-// Return value: S_OK on success or CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME, CORDBG_E_CONTEXT_UNVAILABLE, 
+// Return value: S_OK on success or CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME, CORDBG_E_CONTEXT_UNVAILABLE,
 // or HRESULT values from writing process memory
 void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 {
@@ -876,11 +876,11 @@ bool RegisterValueHome::IsSigned(CorElementType elementType)
 // HandleValueHome implementation
 // ============================================================================
 
-// 
+//
 CORDB_ADDRESS HandleValueHome::GetAddress()
-{ 
+{
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
-    CORDB_ADDRESS handle = PTR_TO_CORDB_ADDRESS((void *)NULL); 
+    CORDB_ADDRESS handle = PTR_TO_CORDB_ADDRESS((void *)NULL);
     EX_TRY
     {
         handle = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
@@ -897,15 +897,15 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
 void HandleValueHome::GetValue(MemoryRange dest)
 {
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
-    CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL); 
+    CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL);
     objPtr = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
-    
+
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
     _ASSERTE(objPtr != NULL);
     m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
-    
+
 // Sets a location to the value provided in src
 // virtual
 void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
@@ -949,7 +949,7 @@ void HandleValueHome::GetInternalValue(MemoryRange dest, SIZE_T offset)
     ThrowHR(E_INVALIDARG);
 } // HandleValueHome::GetInternalValue
 
-// copies the register information from this to a RemoteAddress instance 
+// copies the register information from this to a RemoteAddress instance
 // virtual
 void HandleValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
@@ -960,12 +960,12 @@ void HandleValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // VCRemoteValueHome implementation
 // ============================================================================
 
-// Sets a location to the value provided in src 
+// Sets a location to the value provided in src
 // Arguments:
 //     input: src   - buffer containing the new value to be set--memory for this buffer is owned by the caller
 //            pType - type information for the value
 //     output: none, but sets the value on success
-// Note: Throws CORDBG_E_CLASS_NOT_LOADED or errors from WriteProcessMemory or 
+// Note: Throws CORDBG_E_CLASS_NOT_LOADED or errors from WriteProcessMemory or
 //       GetRemoteBuffer on failure
 void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
@@ -979,9 +979,9 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
     // memory on the Left Side for this, then write the new data across. The Set Value Class message will
     // free the buffer when its done.
     void *buffer = NULL;
-    IfFailThrow(m_pProcess->GetAndWriteRemoteBuffer(NULL, 
-                                                    m_remoteValue.cbSize, 
-                                                    CORDB_ADDRESS_TO_PTR(src.StartAddress()), 
+    IfFailThrow(m_pProcess->GetAndWriteRemoteBuffer(NULL,
+                                                    m_remoteValue.cbSize,
+                                                    CORDB_ADDRESS_TO_PTR(src.StartAddress()),
                                                     &buffer));
 
     // Finally, send over the Set Value Class message.
@@ -1008,21 +1008,21 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 //     input:  pProcess        - process for this value
 //             remoteValue     - remote location information
 //             vmObjHandle     - object handle
-RefRemoteValueHome ::RefRemoteValueHome (CordbProcess *                 pProcess, 
+RefRemoteValueHome ::RefRemoteValueHome (CordbProcess *                 pProcess,
                                          TargetBuffer                   remoteValue):
    RemoteValueHome(pProcess, remoteValue)
 {
     // caller supplies remoteValue, to work w/ Func-eval.
-    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == sizeof (void *))); 
+    _ASSERTE((!remoteValue.IsEmpty()) && (remoteValue.cbSize == sizeof (void *)));
 
 } // RefRemoteValueHome::RefRemoteValueHome
 
-// Sets a location to the value provided in src 
+// Sets a location to the value provided in src
 // Arguments:
 //     input: src   - buffer containing the new value to be set--memory for this buffer is owned by the caller
 //            pType - type information for the value
 //     output: none, but sets the value on success
-//     Return Value: S_OK on success or CORDBG_E_CLASS_NOT_LOADED or errors from WriteProcessMemory or 
+//     Return Value: S_OK on success or CORDBG_E_CLASS_NOT_LOADED or errors from WriteProcessMemory or
 //                   GetRemoteBuffer on failure
 void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
@@ -1070,7 +1070,7 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 //             remoteValue     - a target location holding the object reference
 //             ppRemoteRegAddr - information about the register that holds the object ref
 //             vmObjHandle     - an object handle that holds the object ref
-RefValueHome::RefValueHome(CordbProcess *                pProcess, 
+RefValueHome::RefValueHome(CordbProcess *                pProcess,
                            TargetBuffer                  remoteValue,
                            EnregisteredValueHomeHolder * ppRemoteRegAddr,
                            VMPTR_OBJECTHANDLE            vmObjHandle)

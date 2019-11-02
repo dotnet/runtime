@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: CLRVarArgs.cpp
 //
 
@@ -16,8 +16,8 @@ DWORD VARARGS::CalcVaListSize(VARARGS *data)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Calculate how much space we need for the marshaled stack. 
-    // This assumes that the vararg managed and unmanaged calling conventions are similar-enough, 
+    // Calculate how much space we need for the marshaled stack.
+    // This assumes that the vararg managed and unmanaged calling conventions are similar-enough,
     // so we can simply use the size stored in the VASigCookie. This actually overestimates
     // the value since it counts the fixed args as well as the varargs. But that's harmless.
 
@@ -45,7 +45,7 @@ void VARARGS::MarshalToManagedVaList(va_list va, VARARGS *dataout)
 ////////////////////////////////////////////////////////////////////////////////
 // Marshal a ArgIterator to a pre-allocated va_list
 ////////////////////////////////////////////////////////////////////////////////
-void 
+void
 VARARGS::MarshalToUnmanagedVaList(
     va_list va, DWORD cbVaListSize, const VARARGS * data)
 {
@@ -55,12 +55,12 @@ VARARGS::MarshalToUnmanagedVaList(
     int    remainingArgs = data->RemainingArgs;
     BYTE * psrc = (BYTE *)(data->ArgPtr);
     BYTE * pdst = pdstbuffer;
-    
+
     SigPointer sp = data->SigPtr;
     SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-    while (remainingArgs--) 
+    while (remainingArgs--)
     {
-        CorElementType elemType = sp.PeekElemTypeClosed(data->ArgCookie->pModule, &typeContext); 
+        CorElementType elemType = sp.PeekElemTypeClosed(data->ArgCookie->pModule, &typeContext);
         switch (elemType)
         {
             case ELEMENT_TYPE_I1:
@@ -83,7 +83,7 @@ VARARGS::MarshalToUnmanagedVaList(
                     if (cbSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
                         cbSize = sizeof(void*);
                     #endif
-                    
+
 #ifdef _TARGET_ARM_
                     if (cbSize == 8)
                     {
@@ -99,7 +99,7 @@ VARARGS::MarshalToUnmanagedVaList(
 
                     if (pdst + cbSize > pdstbuffer + cbVaListSize)
                         COMPlusThrow(kArgumentException);
-                    
+
                     CopyMemory(pdst, psrc, cbSize);
 
                     #ifdef STACK_GROWS_UP_ON_ARGS_WALK

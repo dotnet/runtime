@@ -23,7 +23,7 @@ typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, Module *pReferencedM
 enum {
     // return value when EncodeModule fails
     ENCODE_MODULE_FAILED         = 0xffffffff,
-    // no module index override is needed 
+    // no module index override is needed
     MODULE_INDEX_NONE            = 0xfffffffe
 };
 
@@ -39,16 +39,16 @@ public:
         NormalTokens,
         IbcTokens
     };
-    
+
     struct Context
     {
-        Module *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule         
+        Module *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule
         void *          pModuleContext;           // This is a code:Module* when we are resolving Ngen fixups or doing an Ibc Profiling run
-                                                  // and is a code:ZapImportTable* when we are running ngen      
+                                                  // and is a code:ZapImportTable* when we are running ngen
         ExternalTokens  externalTokens;           // When we see a ELEMENT_TYPE_MODULE_ZAPSIG this tells us what type of token follows.
 
         Module * GetZapSigModule() const        { return (Module*) pModuleContext; }
-        
+
         Context(
                 Module* _pInfoModule,
                 void* _pModuleContext, ExternalTokens _externalTokens)
@@ -69,7 +69,7 @@ public:
 public:
 
     ZapSig(
-           Module *                _pInfoModule, 
+           Module *                _pInfoModule,
            void *                  _pModuleContext,
            ExternalTokens          _externalTokens,
            EncodeModuleCallback    _pfnEncodeModule,
@@ -91,12 +91,12 @@ public:
 
     // Instance methods
 
-    // Create a signature for a typeHandle 
+    // Create a signature for a typeHandle
     // It can be decoded using MetaSig::GetTypeHandleThrowing
     // The tokens are espressed relative to this->pInfoModule
     // When (handle.GetModule() != this->pInfoModule), we escape
     // the signature with ELEMENT_TYPE_MODULE_ZAPSIG <id-num>
-    // followed by a <token> to encode a temporary change of module 
+    // followed by a <token> to encode a temporary change of module
     // For Ibc Signatures the <token> is one of the ibc defined tokens
     // For Ngen Fixup signatures the <token> is for the external module
     //
@@ -124,7 +124,7 @@ private:
     BOOL GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder);
 
     // Returns element type when the typeHandle can be encoded using
-    // using a single CorElementType value 
+    // using a single CorElementType value
     // This includes using ELEMENT_TYPE_CANON_ZAPSIG for the System.__Canon type
     //
     static CorElementType TryEncodeUsingShortcut(/* in  */ MethodTable * pMT);
@@ -137,8 +137,8 @@ private:
 
 private:
 
-    ZapSig::Context           context;  
-  
+    ZapSig::Context           context;
+
     EncodeModuleCallback      pfnEncodeModule;    // Function Pointer to the EncodeModuleHelper
     TokenDefinitionCallback   pfnTokenDefinition; // Function Pointer to the DefineTokenHelper
 

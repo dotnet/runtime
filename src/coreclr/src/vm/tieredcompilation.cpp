@@ -22,7 +22,7 @@
 //
 // # Important entrypoints in this code:
 //
-// 
+//
 // a) .ctor and Init(...) -  called once during AppDomain initialization
 // b) OnMethodCalled(...) -  called when a method is being invoked. When a method
 //                           has been called enough times this is currently the only
@@ -48,7 +48,7 @@
 // appdomain, and then begins calling OptimizeMethod on each method in the
 // queue. For each method we jit it, then update the precode so that future
 // entrypoint callers will run the new code.
-// 
+//
 // # Error handling
 //
 // The overall principle is don't swallow terminal failures that may have corrupted the
@@ -231,7 +231,7 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
 
     NativeCodeVersion t1NativeCodeVersion;
 
-    // Add an inactive native code entry in the versioning table to track the tier1 
+    // Add an inactive native code entry in the versioning table to track the tier1
     // compilation we are going to create. This entry binds the compilation to a
     // particular version of the IL code regardless of any changes that may
     // occur between now and when jitting completes. If the IL does change in that
@@ -271,8 +271,8 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
     //
     // Note an error here could affect concurrent threads running this
     // code. Those threads will observe m_countOptimizationThreadsRunning > 0 and return,
-    // then QueueUserWorkItem fails on this thread lowering the count and leaves them 
-    // unserviced. Synchronous retries appear unlikely to offer any material improvement 
+    // then QueueUserWorkItem fails on this thread lowering the count and leaves them
+    // unserviced. Synchronous retries appear unlikely to offer any material improvement
     // and complicating the code to narrow an already rare error case isn't desirable.
     {
         SListElem<NativeCodeVersion>* pMethodListItem = new (nothrow) SListElem<NativeCodeVersion>(t1NativeCodeVersion);
@@ -730,7 +730,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
     EX_CATCH
     {
         // Failing to jit should be rare but acceptable. We will leave whatever code already exists in place.
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::CompileCodeVersion: Method %pM failed to jit, hr=0x%x\n", 
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::CompileCodeVersion: Method %pM failed to jit, hr=0x%x\n",
             pMethod, GET_EXCEPTION()->GetHR());
     }
     EX_END_CATCH(RethrowTerminalExceptions)
@@ -846,7 +846,7 @@ void TieredCompilationManager::DecrementWorkerThreadCount()
     STANDARD_VM_CONTRACT;
     // m_lock should be held
     _ASSERTE(m_countOptimizationThreadsRunning != 0);
-    
+
     m_countOptimizationThreadsRunning--;
 }
 

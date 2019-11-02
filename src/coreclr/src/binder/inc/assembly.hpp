@@ -39,7 +39,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
 
 STDAPI BinderHasNativeHeader(PEImage *pPEImage,
                              BOOL    *result);
- 
+
 STDAPI BinderReleasePEImage(PEImage *pPEImage);
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage);
@@ -47,11 +47,11 @@ STDAPI BinderAddRefPEImage(PEImage *pPEImage);
 namespace BINDER_SPACE
 {
 
-    // An assembly represents a particular set of bits.  However we extend this to 
+    // An assembly represents a particular set of bits.  However we extend this to
     // also include whether those bits have precompiled information (NGEN).   Thus
-    // and assembly knows whether it has an NGEN image or not. 
+    // and assembly knows whether it has an NGEN image or not.
     //
-    // This allows us to preferentially use the NGEN image if it is available. 
+    // This allows us to preferentially use the NGEN image if it is available.
     class Assembly
         : public ICLRPrivAssembly
     {
@@ -107,7 +107,7 @@ namespace BINDER_SPACE
         inline PEImage *GetNativeOrILPEImage(BOOL fAddRef = FALSE);
 
         HRESULT GetMVID(GUID *pMVID);
-        
+
         static PEKIND GetSystemArchitecture();
         static BOOL IsValidArchitecture(PEKIND kArchitecture);
 
@@ -148,7 +148,7 @@ namespace BINDER_SPACE
         ICLRPrivBinder          *m_pBinder;
 
         // Nested class used to implement ICLRPriv binder related interfaces
-        class CLRPrivResourceAssembly : 
+        class CLRPrivResourceAssembly :
             public ICLRPrivResource, public ICLRPrivResourceAssembly
         {
 public:
@@ -158,13 +158,13 @@ public:
             STDMETHOD(GetResourceType)(IID *pIID);
             STDMETHOD(GetAssembly)(LPVOID *ppAssembly);
          } m_clrPrivRes;
-    
+
         inline void SetBinder(ICLRPrivBinder *pBinder)
         {
             _ASSERTE(m_pBinder == NULL || m_pBinder == pBinder);
             m_pBinder = pBinder;
         }
-        
+
         friend class ::CLRPrivBinderCoreCLR;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

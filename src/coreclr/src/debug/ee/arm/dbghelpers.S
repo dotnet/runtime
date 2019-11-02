@@ -22,7 +22,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
 
     CHECK_STACK_ALIGNMENT
 
-    // FuncEvalHijackWorker returns the address we should jump to. 
+    // FuncEvalHijackWorker returns the address we should jump to.
     bl      C_FUNC(FuncEvalHijackWorker)
 
     // effective NOP to terminate unwind
@@ -57,4 +57,4 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
     // *** should never get here ***
     EMIT_BREAKPOINT
 
-NESTED_END ExceptionHijackEnd, _TEXT    
+NESTED_END ExceptionHijackEnd, _TEXT

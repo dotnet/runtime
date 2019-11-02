@@ -52,7 +52,7 @@ namespace CorUnix
         LPCSTR lpName,
         HANDLE *phMutex
         );
-        
+
 }
 
 #define SYNCSPINLOCK_F_ASYMMETRIC  1

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: stubhelpers.h
-// 
+//
 
-// 
+//
 
 
 #ifndef __STUBHELPERS_h__
@@ -54,7 +54,7 @@ public:
 
     static FCDECL2(FC_BOOL_RET,     ShouldCallWinRTInterface,           Object* pSrcUNSAFE, MethodDesc* pMD);
     static FCDECL3(DelegateObject*, GetTargetForAmbiguousVariantCall,   Object* pSrcUNSAFE, MethodTable* pMT, CLR_BOOL *pfUseString);
-    
+
     static FCDECL2(void,            ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest);
     static FCDECL1(Object*,         ObjectMarshaler__ConvertToManaged, VARIANT* pSrc);
     static FCDECL1(void,            ObjectMarshaler__ClearNative,      VARIANT* pSrc);
@@ -105,7 +105,7 @@ public:
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
 
 #ifdef FEATURE_COMINTEROP
-    static FCDECL1(Object*,         GetWinRTFactoryObject,  MethodDesc *pCMD);    
+    static FCDECL1(Object*,         GetWinRTFactoryObject,  MethodDesc *pCMD);
 #endif // FEATURE_COMINTEROP
 
 #ifdef PROFILING_SUPPORTED

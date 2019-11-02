@@ -6,7 +6,7 @@
 // EEContract.cpp
 //
 
-// ! I am the owner for issues in the contract *infrastructure*, not for every 
+// ! I am the owner for issues in the contract *infrastructure*, not for every
 // ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
 // ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.
     SCAN_IGNORE_TRIGGER;
     SCAN_IGNORE_LOCK;
-    
+
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily
     // allow such calls.
@@ -57,16 +57,16 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
                 // stoppped.  If both of these things are true, then we do not care
                 // whether we are in COOP mode or not.
                 //
-                if ((g_pDebugInterface != NULL) && 
+                if ((g_pDebugInterface != NULL) &&
                     g_pDebugInterface->ThisIsHelperThread() &&
                     g_pDebugInterface->IsStopped())
                 {
                     break;
                 }
 
-                // Pretend that the threads doing GC are in cooperative mode so that code with 
-                // MODE_COOPERATIVE contract works fine on them. 
-                if (IsGCThread()) 
+                // Pretend that the threads doing GC are in cooperative mode so that code with
+                // MODE_COOPERATIVE contract works fine on them.
+                if (IsGCThread())
                 {
                     break;
                 }
@@ -127,7 +127,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     {
         case GC_Triggers:
             // We don't want to do a full TRIGGERSGC here as this could corrupt
-            // OBJECTREF-typed arguments to the function. 
+            // OBJECTREF-typed arguments to the function.
             {
                 if (m_pClrDebugState->GetGCNoTriggerCount())
                 {
@@ -178,7 +178,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
                         // violations so that we don't get contract asserts in anything
                         // called downstream of CONTRACT_ASSERT. If we unwind out of
                         // here, our dtor will reset our state to what it was on entry.
-                        CONTRACT_VIOLATION(HostViolation);    
+                        CONTRACT_VIOLATION(HostViolation);
                         CONTRACT_ASSERT("HOST_CALLS  encountered in a HOST_NOCALLS scope",
                                         Contract::HOST_NoCalls,
                                         Contract::HOST_Mask,
@@ -206,7 +206,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
 
     // EE Thread-required check
-    // NOTE: The following must NOT be inside BEGIN/END_GETTHREAD_ALLOWED, 
+    // NOTE: The following must NOT be inside BEGIN/END_GETTHREAD_ALLOWED,
     // as the change to m_pClrDebugState->m_allowGetThread below would be
     // overwritten by END_GETTHREAD_ALLOWED.
     switch (testmask & EE_THREAD_Mask)

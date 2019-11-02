@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // spinlock.cpp
 //
 
-// 
+//
 
 
 #include "common.h"
@@ -121,14 +121,14 @@ DEBUG_NOINLINE void SpinLock::AcquireLock(SpinLock *s)
     SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    s->GetLock(); 
+    s->GetLock();
 }
 
 DEBUG_NOINLINE void SpinLock::ReleaseLock(SpinLock *s)
 {
     SCAN_SCOPE_END;
 
-    s->FreeLock(); 
+    s->FreeLock();
 }
 
 
@@ -152,7 +152,7 @@ void SpinLock::GetLock()
         // Not CLR Sync hosted, so we use interlocked operations on
         // m_lock to acquire the lock.  This will automatically cause
         // us to call EE_LOCK_TAKEN(this);
-        if (!GetLockNoWait()) 
+        if (!GetLockNoWait())
         {
             SpinToAcquire();
         }
@@ -165,7 +165,7 @@ void SpinLock::GetLock()
 }
 
 //----------------------------------------------------------------------------
-// SpinLock::GetLockNoWait   
+// SpinLock::GetLockNoWait
 // used interlocked exchange and fast lock acquire
 
 BOOL SpinLock::GetLockNoWait()
@@ -189,7 +189,7 @@ BOOL SpinLock::GetLockNoWait()
 }
 
 //----------------------------------------------------------------------------
-// SpinLock::FreeLock   
+// SpinLock::FreeLock
 //  Release the spinlock
 //
 void SpinLock::FreeLock()
@@ -220,10 +220,10 @@ void SpinLock::FreeLock()
 
 //----------------------------------------------------------------------------
 // SpinLock::SpinToAcquire   , non-inline function, called from inline Acquire
-//  
+//
 //  Spin waiting for a spinlock to become free.
 //
-//  
+//
 void
 SpinLock::SpinToAcquire()
 {
@@ -245,7 +245,7 @@ SpinLock::SpinToAcquire()
              ulSpins < i;
              ulSpins++)
         {
-            YieldProcessorNormalized(normalizationInfo); // indicate to the processor that we are spinning 
+            YieldProcessorNormalized(normalizationInfo); // indicate to the processor that we are spinning
 
             // Note: Must use Volatile to ensure the lock is
             // refetched from memory.

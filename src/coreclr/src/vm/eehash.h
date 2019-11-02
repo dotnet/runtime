@@ -84,7 +84,7 @@ public:
     BOOL            Init(DWORD dwNumBuckets, LockOwner *pLock, AllocationHeap pHeap = 0,BOOL CheckThreadSafety = TRUE);
 
     void            InsertValue(KeyType pKey, HashDatum Data, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
-    void            InsertKeyAsValue(KeyType pKey, BOOL bDeepCopyKey = bDefaultCopyIsDeep); 
+    void            InsertKeyAsValue(KeyType pKey, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     BOOL            DeleteValue(KeyType pKey);
     BOOL            ReplaceValue(KeyType pKey, HashDatum Data);
     BOOL            ReplaceKey(KeyType pOldKey, KeyType pNewKey);
@@ -93,12 +93,12 @@ public:
     BOOL            IsEmpty();
     void            Destroy();
 
-    // Reader functions. Please place any functions that can be called from the 
+    // Reader functions. Please place any functions that can be called from the
     // reader threads here.
     BOOL            GetValue(KeyType pKey, HashDatum *pData);
     BOOL            GetValue(KeyType pKey, HashDatum *pData, DWORD hashValue);
 
-    
+
     // A fast inlinable flavor of GetValue that can return false instead of the actual item
     // if there is race with updating of the hashtable. Callers of GetValueSpeculative
     // should fall back to the slow GetValue if GetValueSpeculative returns false.
@@ -108,7 +108,7 @@ public:
 
     DWORD           GetHash(KeyType Key);
     DWORD           GetCount();
-    
+
     // Walk through all the entries in the hash table, in meaningless order, without any
     // synchronization.
     //
@@ -155,28 +155,28 @@ protected:
     // of m_pBuckets and m_dwNumBuckets has to be atomic, so we double buffer
     // the structure and access it through a pointer, which can be updated
     // atomically. The union is in order to not change the SOS macros.
-    
+
     struct BucketTable
     {
-        DPTR(PTR_EEHashEntry_t) m_pBuckets;    // Pointer to first entry for each bucket  
+        DPTR(PTR_EEHashEntry_t) m_pBuckets;    // Pointer to first entry for each bucket
         DWORD            m_dwNumBuckets;
     } m_BucketTable[2];
     typedef DPTR(BucketTable) PTR_BucketTable;
 
     // In a function we MUST only read this value ONCE, as the writer thread can change
-    // the value asynchronously. We make this member volatile the compiler won't do copy propagation 
-    // optimizations that can make this read happen more than once. Note that we  only need 
+    // the value asynchronously. We make this member volatile the compiler won't do copy propagation
+    // optimizations that can make this read happen more than once. Note that we  only need
     // this property for the readers. As they are the ones that can have
     // this variable changed (note also that if the variable was enregistered we wouldn't
     // have any problem)
-    // BE VERY CAREFUL WITH WHAT YOU DO WITH THIS VARIABLE AS USING IT BADLY CAN CAUSE 
+    // BE VERY CAREFUL WITH WHAT YOU DO WITH THIS VARIABLE AS USING IT BADLY CAN CAUSE
     // RACING CONDITIONS
     VolatilePtr<BucketTable, PTR_BucketTable> m_pVolatileBucketTable;
 
-    
+
     DWORD                   m_dwNumEntries;
     AllocationHeap          m_Heap;
-    Volatile<LONG>          m_bGrowing;     
+    Volatile<LONG>          m_bGrowing;
 #ifdef _DEBUG
     LPVOID          m_lockData;
     FnLockOwner     m_pfnLockOwner;
@@ -203,11 +203,11 @@ public:
         this->m_BucketTable[0].m_dwNumBuckets = 0;
         this->m_BucketTable[1].m_pBuckets     = NULL;
         this->m_BucketTable[1].m_dwNumBuckets = 0;
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
         this->m_pVolatileBucketTable = NULL;
 #endif
         this->m_dwNumEntries = 0;
-        this->m_bGrowing = 0;    
+        this->m_bGrowing = 0;
 #ifdef _DEBUG
         this->m_lockData = NULL;
         this->m_pfnLockOwner = NULL;
@@ -221,7 +221,7 @@ public:
     }
 };
 
-/* to be used as static variable - no constructor/destructor, assumes zero 
+/* to be used as static variable - no constructor/destructor, assumes zero
    initialized memory */
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
 class EEHashTableStatic : public EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>
@@ -240,7 +240,7 @@ public:
             INJECT_FAULT(return NULL;);
         }
         CONTRACTL_END
-    
+
         _ASSERTE(!bDeepCopy && "Deep copy is not supported by the EEPtrHashTableHelper");
 
         EEHashEntry_t *pEntry = (EEHashEntry_t *) new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(int)];
@@ -300,7 +300,7 @@ public:
             INJECT_FAULT(return NULL;);
         }
         CONTRACTL_END
-    
+
         _ASSERTE(!bDeepCopy && "Deep copy is not supported by the EEPtrPlusIntHashTableHelper");
 
         EEHashEntry_t *pEntry = (EEHashEntry_t *) new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(PtrPlusInt)];
@@ -331,7 +331,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-		return (DWORD)ppiKey.iValue ^ 
+		return (DWORD)ppiKey.iValue ^
 #ifdef _TARGET_X86_
         	(DWORD)(size_t) ppiKey.pValue;
 #else
@@ -392,7 +392,7 @@ public:
         SetIsOnlyLowChars(FALSE);
     };
     EEStringData(DWORD cchString, LPCWSTR str) : cch(0)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
 
         SetStringBuffer(str);
@@ -400,7 +400,7 @@ public:
         SetIsOnlyLowChars(FALSE);
     };
     EEStringData(DWORD cchString, LPCWSTR str, BOOL onlyLow) : cch(0)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
 
         SetStringBuffer(str);
@@ -408,11 +408,11 @@ public:
         SetIsOnlyLowChars(onlyLow);
     };
     inline ULONG GetCharCount() const
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE ((cch & ~ONLY_LOW_CHARS_MASK) == dwDebugCch);
-        return (cch & ~ONLY_LOW_CHARS_MASK); 
+        return (cch & ~ONLY_LOW_CHARS_MASK);
     }
     inline void SetCharCount(ULONG _cch)
     {
@@ -424,10 +424,10 @@ public:
         cch = ((DWORD)_cch) | (cch & ONLY_LOW_CHARS_MASK);
     }
     inline LPCWSTR GetStringBuffer() const
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
 
-        return (szString); 
+        return (szString);
     }
     inline void SetStringBuffer(LPCWSTR _szString)
     {
@@ -435,12 +435,12 @@ public:
 
         szString = _szString;
     }
-    inline BOOL GetIsOnlyLowChars() const 
-    { 
+    inline BOOL GetIsOnlyLowChars() const
+    {
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(bDebugOnlyLowChars == ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE));
-        return ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE); 
+        return ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE);
     }
     inline void SetIsOnlyLowChars(BOOL bIsOnlyLowChars)
     {
@@ -449,7 +449,7 @@ public:
 #ifdef _DEBUG
         bDebugOnlyLowChars = bIsOnlyLowChars;
 #endif // _DEBUG
-        bIsOnlyLowChars ? (cch |= ONLY_LOW_CHARS_MASK) : (cch &= ~ONLY_LOW_CHARS_MASK);        
+        bIsOnlyLowChars ? (cch |= ONLY_LOW_CHARS_MASK) : (cch &= ~ONLY_LOW_CHARS_MASK);
     }
 };
 
@@ -495,7 +495,7 @@ public:
             INJECT_FAULT(return FALSE;);
         }
         CONTRACTL_END
-    
+
         _ASSERTE(!bDeepCopy && "Deep copy is not supported by the EEPtrHashTableHelper");
         _ASSERTE(sizeof(KeyPointerType) == sizeof(void *) && "KeyPointerType must be a pointer type");
 

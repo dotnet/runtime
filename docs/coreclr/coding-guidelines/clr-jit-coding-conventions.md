@@ -147,7 +147,7 @@ In Visual Studio, go to "Tools | Options ... | Text Editor | All Languages | Tab
 A source code line should be limited to a reasonable length, so it fits in a reasonably-sized editor window without scrolling or wrapping. Consider 120 characters the baseline of reasonable, adjusted for per-site judgment.
 
 > Rationale: Modern widescreen monitors can easily display source files much wider than 120 characters, however we don't encourage (or allow) that for a number of reasons:
-> 
+>
 > 1. Very long lines tend to make the code more difficult to read
 > 2. If the need for long lines is because there is a lot of scope-based indentation, that is an indication that refactoring is necessary to reduce the number of nested scopes.
 > 3. Many people place other windows side-by-side with source code (such as additional source code windows, or Visual Studio tool windows like the Code Definition Window), or use side-by-side "diff" programs. Thus, making (most) code visible when viewed side-by-side, without scrolling, is advantageous.
@@ -185,7 +185,7 @@ One thing that would be useful is for a particular case in code to be associated
 
 ### <a name="7.1.4"/>7.1.4 Email names
 
-Email names or full names should not be used in the source code as people move on to other projects, leave the company, leave another company when working on the JIT in the open source world, or simply stop working on the JIT for some reason. For example, a comment that states, "Talk to JohnDoe to understand this code" isn't helpful after JohnDoe has left the company or is otherwise not available. 
+Email names or full names should not be used in the source code as people move on to other projects, leave the company, leave another company when working on the JIT in the open source world, or simply stop working on the JIT for some reason. For example, a comment that states, "Talk to JohnDoe to understand this code" isn't helpful after JohnDoe has left the company or is otherwise not available.
 
 ### <a name="7.1.5"/>7.1.5 TODO
 
@@ -234,7 +234,7 @@ C and C++ source files (header files and implementation files) must include a fi
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 // <summary of the purpose of the file, description of the component, overview of the architecture and API, etc.>
-// 
+//
 ```
 
 Major components usually occupy their own file. The top of the file is a good place to document the design of that component, including any information that would be helpful to a new reader of the code. A reference can be made to an actual design and implementation document (specification), but that document must be co-located with the source code, and not on some server that is unlikely to remain active for as long as the source will live.
@@ -507,7 +507,7 @@ bool        g_isVerifierEnabled; // Is the verifier enabled?
 
 ## <a name="8.6"/>8.6 Function parameters
 
-Function parameters follow the same rules as local variables 
+Function parameters follow the same rules as local variables
 
 ```c++
 int Point(int x, int y) : m_x(x), m_y(y) {}
@@ -523,7 +523,7 @@ class MetaSig
     // The module containing the metadata of the signature blob
     Module*      m_Module;
 
-    // The size of the signature blob in bytes. This is kSizeNotSpecified if 
+    // The size of the signature blob in bytes. This is kSizeNotSpecified if
     // the size is not specified.
     UINT32       m_SigSize;
 
@@ -626,7 +626,7 @@ It is acceptable to put very small inline member function implementations direct
 
 ## <a name="9.1"/>9.1 In a header file
 
-This is the format for the declaration of a function in a header file. 
+This is the format for the declaration of a function in a header file.
 
 For argument lists that fit within the max line length:
 
@@ -688,7 +688,7 @@ public:
             BinderMethodID methodId);
 
     // Returns type of current argument, then advances the
-    // argument index. 
+    // argument index.
     CorElementType NextArg();
 
     // Returns type of current argument. Primitive valuetypes
@@ -698,13 +698,13 @@ public:
     // Checks if the calling convention of pSig is varargs.
     static
     bool IsVarArg(Module*         pModule,
-                  PCCOR_SIGNATURE pSig); 
+                  PCCOR_SIGNATURE pSig);
 };
 ```
 
 ## <a name="9.2"/>9.2 In an implementation file
 
-Typically for each header file in the project there will be an implementation file that contains the function implementations and it is named using the .cpp suffix. 
+Typically for each header file in the project there will be an implementation file that contains the function implementations and it is named using the .cpp suffix.
 
 The signature of a function definition in the implementation file should use the same format used in the header file.
 
@@ -798,7 +798,7 @@ The following is a sample of a completed function definition:
 //    false – The method is not varargs, or there was some error.
 //
 // Assumptions:
-//    The caller must have ensured that the format of "pSig" is 
+//    The caller must have ensured that the format of "pSig" is
 //    consistent, and that the size of the signature does not extend
 //    past the end of the metadata blob.
 //
@@ -841,7 +841,7 @@ Generally, variables should be declared at or close to the location of their fir
 
 Each variable should be declared on a separate line.
 
-It is preferable to provide an initialization of a variable when it is declared. 
+It is preferable to provide an initialization of a variable when it is declared.
 
 Variable names should be unique within a function. This is to make it easier to do a simple textual search for the declaration and all the uses of a name in a function, without worrying about scoping.
 
@@ -974,7 +974,7 @@ if ( (condition1) ||
      ( (condition2A) &&
        (condition2B) ) )
 
-if ( ((condition1A) || (condition1B)) && 
+if ( ((condition1A) || (condition1B)) &&
      ((condition2A) || (condition2B))    )
 ```
 
@@ -1003,11 +1003,11 @@ There is no space between the open parenthesis and the first argument.
 
 There is no space between the last argument and the closing parenthesis.
 
-There is a space between every comma and the next argument. 
+There is a space between every comma and the next argument.
 
 There is no space between an argument and the comma following it.
 
-If all the arguments won't fit in the maximum line-width or you wish to add per-argument comments, enter each argument on its own line. A line must either contain all the arguments, or exactly one argument. All arguments should be aligned. It is preferred that the alignment is with the first argument that comes immediately after the opening parenthesis of the function call. If that makes the call too wide for the screen, the first argument can start on the next line, indented one tab stop. This avoids potential line-length conflicts, avoids having to realign all the arguments each time the method-call expression changes, and allows per-argument comments. 
+If all the arguments won't fit in the maximum line-width or you wish to add per-argument comments, enter each argument on its own line. A line must either contain all the arguments, or exactly one argument. All arguments should be aligned. It is preferred that the alignment is with the first argument that comes immediately after the opening parenthesis of the function call. If that makes the call too wide for the screen, the first argument can start on the next line, indented one tab stop. This avoids potential line-length conflicts, avoids having to realign all the arguments each time the method-call expression changes, and allows per-argument comments.
 
 Right:
 ```c++
@@ -1123,7 +1123,7 @@ if (x != 5)
 }
 
 if (x == 5)
-    return; 
+    return;
 
 if (x == 5)
     continue;
@@ -1144,7 +1144,7 @@ else
     printf("Might be 6\n");
 }
 
-if (x != 5) 
+if (x != 5)
     if (x !=6)
         printf("Neither 5 or 6\n");
 
@@ -1163,14 +1163,14 @@ Similar spacing should be used for `for`, `while` and `do-while` statements. The
 for (int i = 0; i < 100; i++)
 {
     printf("i=%d\n", i);
-} 
+}
 
 for (int i = SomeVeryLongFunctionName(); // Each part of the "for" is aligned
-     SomeVeryComplexExpression(); 
+     SomeVeryComplexExpression();
      i++)
 {
     printf("i=%d\n", i);
-} 
+}
 
 while (i < 100)
 {
@@ -1274,7 +1274,7 @@ int MyClass::FooBar(int    iArgumentOne /* = 0 */,
         ThenBlock ();
     }
 
-    // Simple "if" statements with assignments or function calls 
+    // Simple "if" statements with assignments or function calls
     // in the "then" block may skip braces.
     if (counter == 0)
         ThenCode();
@@ -1305,7 +1305,7 @@ This is the format to use:
 
 ```c++
 //--------------------------------------------
-// 
+//
 // <Class name>: <Description of the class>
 //
 // Assumptions:
@@ -1346,7 +1346,7 @@ Example:
 // the arguments.
 //
 // Assumptions:
-//    The caller must have ensured that the format of the signature is 
+//    The caller must have ensured that the format of the signature is
 //    consistent, and that the size of the signature does not extend
 //    past the end of the metadata blob.
 //
@@ -1355,9 +1355,9 @@ Example:
 //    valuetype can be accessed either in their raw form
 //    (e.g., System.Int32) or in their normalized form (e.g., int32).
 //    Note that parsing of generic signatures requires the caller to
-//    provide the SigTypeContext to use to interpret the 
+//    provide the SigTypeContext to use to interpret the
 //    type arguments.
-//    Also look at SigPointer if you need to parse a single 
+//    Also look at SigPointer if you need to parse a single
 //    element of a signature.
 //
 class MetaSig
@@ -1367,7 +1367,7 @@ public:
     //
     // Constructors
     //
-    MetaSig(PCCOR_SIGNATURE szMetaSig, 
+    MetaSig(PCCOR_SIGNATURE szMetaSig,
             DWORD           cbMetaSig,
             Module*         pModule);
 
@@ -1380,7 +1380,7 @@ public:
     //
 
     // Returns type of current argument, then advances the
-    // argument index. 
+    // argument index.
     CorElementType NextArg();
 
     // Returns type of current argument. Primitive valuetypes like
@@ -1395,14 +1395,14 @@ public:
     // two given strings.
     static
     BOOL IsVarArg(Module*         module,
-                  PCCOR_SIGNATURE sig); 
+                  PCCOR_SIGNATURE sig);
 
 private:
 
     // The module containing the metadata of the signature blob.
     Module*      m_module;
 
-    // The size of the signature blob. This is SizeNotSpecified if 
+    // The size of the signature blob. This is SizeNotSpecified if
     // the size is not specified.
     UINT32       m_sigSizeBytes;
 
@@ -1451,7 +1451,7 @@ If a new or existing feature is being added or modified then use a `#define FEAT
 void                Compiler::optValnumCSEinit()
 ```
 
-Note that periodically we do need to go through and remove FEATURE_* defines that are always enabled, and will never be disabled. 
+Note that periodically we do need to go through and remove FEATURE_* defines that are always enabled, and will never be disabled.
 
 ### <a name="14.1.2"/>14.1.2 Disabling code
 
@@ -1703,7 +1703,7 @@ if (x > 5)
 
 Wrong:
 ```c++
-if ((x = strlen(szMethodName)) > 5) 
+if ((x = strlen(szMethodName)) > 5)
 ```
 
 ### <a name="15.1.7"/>15.1.7 `if` conditions
@@ -1805,7 +1805,7 @@ Avoid default arguments values unless the argument has very little semantic impa
 
 Never overload functions on a primitive type (e.g. `Foo(int i)` and `Foo(long l)`).
 
-Avoid operator overloading unless the overload matches the "natural" semantics of the operator when applied to integral types. 
+Avoid operator overloading unless the overload matches the "natural" semantics of the operator when applied to integral types.
 
 ### <a name="15.3.3"/>15.3.3 Enums versus primitive parameter types
 
@@ -1824,7 +1824,7 @@ Good:
 enum DuplicateSpecification
 {
     DS_ALLOW_DUPS,
-    DS_UNIQUE_ONLY 
+    DS_UNIQUE_ONLY
 };
 void Foo(DuplicateSpecification useDups);
 Foo(DS_ALLOW_DUPS);
@@ -1888,11 +1888,11 @@ The JIT uses a specialized memory allocator that does not release memory until c
 
 ### <a name="15.5.5"/>15.5.5 Operator overloading
 
-Define operators such as `=`, `==`, and `!=` only if you really want and use this capability, and can make them super-efficient. 
+Define operators such as `=`, `==`, and `!=` only if you really want and use this capability, and can make them super-efficient.
 
-Never define an operator to do anything other than the standard semantics for built-in types. 
+Never define an operator to do anything other than the standard semantics for built-in types.
 
-Never hide expensive work behind an operator. If it's not super efficient then make it an explicit method call. 
+Never hide expensive work behind an operator. If it's not super efficient then make it an explicit method call.
 
 ### <a name="15.5.6"/>15.5.6 Copy constructor and assignment operator
 
@@ -1919,7 +1919,7 @@ Don't use inheritance just because it will work. Use it sparingly and judiciousl
 
 Be careful with inheritance vs. containment. When in doubt, use containment.
 
-Don't use multiple implementation inheritance. 
+Don't use multiple implementation inheritance.
 
 ### <a name="15.5.9"/>15.5.9 Global class objects
 
@@ -2026,7 +2026,7 @@ Code that legitimately still needs to use deprecated functionality (or is being 
 ```c++
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable:4996) // Suppress warning on call to 
+#pragma warning(disable:4996) // Suppress warning on call to
                               // deprecated method
 #endif
 

@@ -12,8 +12,8 @@
 //
 //  Notes:
 //      The CacheLineAllocator maintains a pool of free CacheLines
-//      
-//      The CacheLine Allocator provides static member functions 
+//
+//      The CacheLine Allocator provides static member functions
 //      GetCacheLine and FreeCacheLine,
 //---------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ CCacheLineAllocator::~CCacheLineAllocator()
 // static void *CCacheLineAllocator::VAlloc(ULONG cbSize)
 //
 //////////////////////////////////////////////////////
- 
+
 
 void *CCacheLineAllocator::VAlloc(ULONG cbSize)
 {
@@ -140,7 +140,7 @@ LNew:
 //   void CCacheLineAllocator::VFree(void* pv)
 //
 //////////////////////////////////////////////////////
- 
+
 
 void CCacheLineAllocator::VFree(void* pv)
 {
@@ -167,8 +167,8 @@ void CCacheLineAllocator::VFree(void* pv)
 //           void *CCacheLineAllocator::GetCacheLine()
 //
 //////////////////////////////////////////////////////
- 
-//WARNING: must have a lock when calling this function 
+
+//WARNING: must have a lock when calling this function
 void *CCacheLineAllocator::GetCacheLine64()
 {
     CONTRACT(void*)
@@ -188,20 +188,20 @@ void *CCacheLineAllocator::GetCacheLine64()
         tempPtr->Init64();
         RETURN tempPtr;
     }
-    
+
 #define AllocSize (4096*16)
 
     ////////////////////////////////'
     /// Virtual Allocation for some more cache lines
 
     BYTE* ptr = (BYTE*)VAlloc(AllocSize);
-    
+
     if(!ptr)
         RETURN NULL;
 
-    
+
     tempPtr = (LPCacheLine)ptr;
-    // Link all the buckets 
+    // Link all the buckets
     tempPtr = tempPtr+1;
     LPCacheLine maxPtr = (LPCacheLine)(ptr + AllocSize);
 
@@ -222,8 +222,8 @@ void *CCacheLineAllocator::GetCacheLine64()
 //   void *CCacheLineAllocator::GetCacheLine32()
 //
 //////////////////////////////////////////////////////
- 
-//WARNING: must have a lock when calling this function 
+
+//WARNING: must have a lock when calling this function
 void *CCacheLineAllocator::GetCacheLine32()
 {
     CONTRACT(void*)
@@ -255,7 +255,7 @@ void *CCacheLineAllocator::GetCacheLine32()
 //    void CCacheLineAllocator::FreeCacheLine64(void * tempPtr)
 //
 //////////////////////////////////////////////////////
-//WARNING: must have a lock when calling this function 
+//WARNING: must have a lock when calling this function
 void CCacheLineAllocator::FreeCacheLine64(void * tempPtr)
 {
     CONTRACTL
@@ -277,7 +277,7 @@ void CCacheLineAllocator::FreeCacheLine64(void * tempPtr)
 //    void CCacheLineAllocator::FreeCacheLine32(void * tempPtr)
 //
 //////////////////////////////////////////////////////
-//WARNING: must have a lock when calling this function 
+//WARNING: must have a lock when calling this function
 void CCacheLineAllocator::FreeCacheLine32(void * tempPtr)
 {
     CONTRACTL

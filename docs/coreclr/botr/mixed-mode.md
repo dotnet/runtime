@@ -11,12 +11,12 @@ MethodName: delete (060000EE)
 Flags     : [Assem] [Static] [ReuseSlot] [PinvokeImpl] [HasSecurity]  (00006013)
 RVA       : 0x0001332a
 Pinvoke Map Data:
-Entry point:  
+Entry point:
 ```
 Calling these P/Invokes works the same as those that use named entry points with the exception of manually computing an address based on the module address and RVA instead of looking for an export.
 
 ## Calling Managed Code
-While native->native calls and managed->native calls can be based on the address of native functions, native->managed calls cannot since the managed code is non-executable IL. To solve that, the compiler generates a lookup table that appears in the CIL metadata header as the ```.vtfixup``` table. ```Vtfixups``` in the library on disk map from an RVA to a managed method token. When the assembly is loaded, the CLR generates a native-callable marshaling stub for each method in the ```.vtfixup``` table that calls the corresponding managed method. It then replaces the tokens with the addresses of the stub methods. When native code goes to call a managed method, it calls indirectly via the new address in the ```.vtfixup``` table. 
+While native->native calls and managed->native calls can be based on the address of native functions, native->managed calls cannot since the managed code is non-executable IL. To solve that, the compiler generates a lookup table that appears in the CIL metadata header as the ```.vtfixup``` table. ```Vtfixups``` in the library on disk map from an RVA to a managed method token. When the assembly is loaded, the CLR generates a native-callable marshaling stub for each method in the ```.vtfixup``` table that calls the corresponding managed method. It then replaces the tokens with the addresses of the stub methods. When native code goes to call a managed method, it calls indirectly via the new address in the ```.vtfixup``` table.
 
 For example, if a native method in IjwLib.dll wants to call the managed Bar method with token 06000002, it emits:
 ```

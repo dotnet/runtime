@@ -91,7 +91,7 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo);
 #else
 inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 {
-    LIMITED_METHOD_CONTRACT;    
+    LIMITED_METHOD_CONTRACT;
     cpuInfo->dwCPUType = 0;
     cpuInfo->dwFeatures = 0;
     cpuInfo->dwExtendedFeatures = 0;

@@ -9,7 +9,7 @@ To build the tests simply navigate to the tests directory above the repo and run
 
 ## Cleaning Tests
 
-**Note:** Cleaning should be done before all tests to be sure that the test assets are initialized correctly. To do a clean build of the tests, in a clean command prompt, issue the following command: 
+**Note:** Cleaning should be done before all tests to be sure that the test assets are initialized correctly. To do a clean build of the tests, in a clean command prompt, issue the following command:
 
     C:\git\coreclr>build-test.cmd -rebuild
 
@@ -38,7 +38,7 @@ To run a clean, priority 1, crossgen test pass:
 Note: build-test.cmd or build.cmd skipnative needs to be run at least once
 
 * Native Test: Build the generated Visual Studio solution or make file corresponding to Test cmake file.
-  
+
 * Managed Test: You can invoke msbuild on the project directly from Visual Studio Command Prompt.
 
 ### Running Tests
@@ -57,7 +57,7 @@ Upon completing a test run, you may find one or more tests have failed.
 
 The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.
 
-There are 2 files of interest: 
+There are 2 files of interest:
 
 - `Finalizer.output.txt` - Contains all the information logged by the test.
 - `Finalizer.error.txt`  - Contains the information reported by CoreRun.exe (which executed the test) when the test process crashes.

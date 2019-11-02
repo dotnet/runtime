@@ -40,7 +40,7 @@ extern int _DbgBreakCount;
 #define PRE_ASSERTE         /* if you need to change modes before doing asserts override */
 #define POST_ASSERTE        /* put it back */
 
-#if !defined(_ASSERTE_MSG)                                              
+#if !defined(_ASSERTE_MSG)
   #define _ASSERTE_MSG(expr, msg)                                           \
         do {                                                                \
              if (!(expr)) {                                                 \
@@ -100,13 +100,13 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
         return FALSE;               \
     }                               \
 }
-    
-    
+
+
 #ifdef _DEBUG_IMPL
 
 // A macro to execute a statement only in _DEBUG_IMPL.
 #define DEBUG_IMPL_STMT(stmt) stmt
-    
+
 #define _ASSERTE_IMPL(expr) _ASSERTE((expr))
 
 #if     defined(_M_IX86)
@@ -227,4 +227,4 @@ unsigned DbgGetEXETimeStamp();
 
 #endif // _DEBUG && !FEATUREPAL
 
-#endif 
+#endif

@@ -44,7 +44,7 @@ public:
             GcSlotFlags Flags,
             GcSlotState NewState,
             PVOID pvData);
-    
+
     // Returns TRUE to stop decoding.
     typedef BOOL StackSlotStateChangeProc (
             UINT32 CodeOffset,

@@ -20,7 +20,7 @@
 #include "dataimage.h"
 #endif
 
-// DICTIONARIES 
+// DICTIONARIES
 //
 // A dictionary is a cache of handles associated with particular
 // instantiations of generic classes and generic methods, containing
@@ -39,9 +39,9 @@
 //   a dispatch stub address (for entries associated with an StubAddrAnnotation annotated token)
 //
 // DICTIONARY LAYOUTS
-// 
+//
 // A dictionary layout describes the layout of all dictionaries that can be
-// accessed from the same shared code. For example, Hashtable<string,int> and 
+// accessed from the same shared code. For example, Hashtable<string,int> and
 // Hashtable<object,int> share one layout, and Hashtable<int,string> and Hashtable<int,object>
 // share another layout. For generic types, the dictionary layout is stored in the EEClass
 // that is shared across compatible instantiations. For generic methods, the layout
@@ -54,14 +54,14 @@ class BaseDomain;
 class SigTypeContext;
 class SigBuilder;
 
-enum DictionaryEntryKind 
-{ 
+enum DictionaryEntryKind
+{
     EmptySlot = 0,
     TypeHandleSlot = 1,
     MethodDescSlot = 2,
     MethodEntrySlot = 3,
     ConstrainedMethodEntrySlot = 4,
-    DispatchStubAddrSlot = 5, 
+    DispatchStubAddrSlot = 5,
     FieldDescSlot = 6,
     DeclaringTypeHandleSlot = 7,
 };
@@ -103,9 +103,9 @@ class DictionaryLayout
 private:
     // Next bucket of slots (only used to track entries that won't fit in the dictionary)
     DictionaryLayout* m_pNext;
-    
+
     // Number of non-type-argument slots in this bucket
-    WORD m_numSlots;          
+    WORD m_numSlots;
 
     // m_numSlots of these
     DictionaryEntryLayout m_slots[1];
@@ -121,7 +121,7 @@ private:
                                 DictionaryEntrySignatureSource signatureSource,
                                 WORD * pSlotOut);
 
-     
+
 public:
     // Create an initial dictionary layout with a single bucket containing numSlots slots
     static DictionaryLayout* Allocate(WORD numSlots, LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
@@ -165,22 +165,22 @@ public:
 
     // Trim the canonical dictionary layout to include only those used slots actually used.
     // WARNING!!!
-    // You should only call this if 
+    // You should only call this if
     //    (a) you're actually saving this shared instantiation into it's PreferredZapModule,
     //        i.e. you must be both saving the shared instantiation and the module
     //        you're ngen'ing MUST be that the PreferredZapModule.
     //    (b) you're sure you've compiled all the shared code for this type
     //        within the context of this NGEN session.
     // This is currently the same as saying we can hardbind to the EEClass - if it's in another
-    // module then we will have already trimmed the layout, and if it's being saved into the 
+    // module then we will have already trimmed the layout, and if it's being saved into the
     // current module then we can only hardbind to it if the current module is the PreferredZapModule.
     //
-    // Note after calling this both GetObjectSize for this layout and the 
+    // Note after calling this both GetObjectSize for this layout and the
     // computed dictionary size for all dictionaries based on this layout may
     // be reduced.  This may in turn affect the size of all non-canonical
-    // method tables, potentially trimming some dictionary words off the end 
+    // method tables, potentially trimming some dictionary words off the end
     // of the method table.
-    void Trim(); 
+    void Trim();
     void Save(DataImage *image);
     void Fixup(DataImage *image, BOOL fMethod);
 #endif // FEATURE_PREJIT
@@ -190,12 +190,12 @@ public:
 
 // The type of dictionaries. This is just an abstraction around an open-ended array
 class Dictionary
-{  
+{
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
   private:
-    // First N entries are generic instantiations arguments. They are stored as FixupPointers 
+    // First N entries are generic instantiations arguments. They are stored as FixupPointers
     // in NGen images. It means that the lowest bit is used to mark optional indirection (see code:FixupPointer).
     // The rest of the open array are normal pointers (no optional indirection).
     DictionaryEntry m_pEntries[1];
@@ -207,9 +207,9 @@ class Dictionary
         return PTR_HOST_MEMBER_TADDR(Dictionary, this, m_pEntries) +
             idx * sizeof(m_pEntries[0]);
     }
-    
+
   public:
-    inline DPTR(FixupPointer<TypeHandle>) GetInstantiation() 
+    inline DPTR(FixupPointer<TypeHandle>) GetInstantiation()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -228,49 +228,49 @@ class Dictionary
 
 #ifndef DACCESS_COMPILE
 
-    inline TypeHandle GetTypeHandleSlot(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline TypeHandle GetTypeHandleSlot(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return *GetTypeHandleSlotAddr(numGenericArgs, i);
     }
-    inline MethodDesc *GetMethodDescSlot(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline MethodDesc *GetMethodDescSlot(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return *GetMethodDescSlotAddr(numGenericArgs,i);
     }
-    inline FieldDesc *GetFieldDescSlot(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline FieldDesc *GetFieldDescSlot(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return *GetFieldDescSlotAddr(numGenericArgs,i);
     }
-    inline TypeHandle *GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline TypeHandle *GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return ((TypeHandle *) &m_pEntries[numGenericArgs + i]);
     }
-    inline MethodDesc **GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline MethodDesc **GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return ((MethodDesc **) &m_pEntries[numGenericArgs + i]);
     }
-    inline FieldDesc **GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline FieldDesc **GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return ((FieldDesc **) &m_pEntries[numGenericArgs + i]);
     }
-    inline DictionaryEntry *GetSlotAddr(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline DictionaryEntry *GetSlotAddr(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return ((void **) &m_pEntries[numGenericArgs + i]);
     }
-    inline DictionaryEntry GetSlot(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline DictionaryEntry GetSlot(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return *GetSlotAddr(numGenericArgs,i);
     }
-    inline BOOL IsSlotEmpty(DWORD numGenericArgs, DWORD i) 
-    { 
-        LIMITED_METHOD_CONTRACT; 
+    inline BOOL IsSlotEmpty(DWORD numGenericArgs, DWORD i)
+    {
+        LIMITED_METHOD_CONTRACT;
         return GetSlot(numGenericArgs,i) == NULL;
     }
 
@@ -315,7 +315,7 @@ class Dictionary
                Module *pModule, // module of the generic code
                DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
 
-    BOOL IsWriteable(DataImage *image, 
+    BOOL IsWriteable(DataImage *image,
                BOOL canSaveSlots,
                DWORD numGenericArgs,            // Must be non-zero
                Module *pModule, // module of the generic code

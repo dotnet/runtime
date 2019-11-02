@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: ILStubCache.cpp
-// 
+//
 
-// 
+//
 
 
 #include "common.h"
@@ -52,7 +52,7 @@ void ILStubCache::Init(LoaderHeap* pHeap)
 
 void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
                                       AllocMemTracker* pamTracker,
-                                      Module* pSigModule, 
+                                      Module* pSigModule,
                                       PCCOR_SIGNATURE pSig, DWORD cbSig,
                                       SigTypeContext *pTypeContext,
                                       PCCOR_SIGNATURE* ppNewSig, DWORD* pcbNewSig)
@@ -82,7 +82,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
 }
 
 // static
-MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllocator, MethodTable* pMT, DWORD dwStubFlags, 
+MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllocator, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
                                              ILStubLinker* pStubLinker)
 {
@@ -97,13 +97,13 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     MethodDesc *pStubMD = ILStubCache::CreateNewMethodDesc(pAllocator->GetHighFrequencyHeap(),
                                                            pMT,
-                                                           dwStubFlags, 
+                                                           dwStubFlags,
                                                            pSigModule,
                                                            pSig, cbSig,
                                                            pTypeContext,
                                                            &amTracker);
 
-    amTracker.SuppressRelease(); 
+    amTracker.SuppressRelease();
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -138,7 +138,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 }
 
 // static
-MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags, 
+MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
                                              AllocMemTracker* pamTracker)
 {
@@ -328,7 +328,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 }
 
 //
-// This will get or create a MethodTable in the Module/AppDomain on which 
+// This will get or create a MethodTable in the Module/AppDomain on which
 // we can place a new IL stub MethodDesc.
 //
 MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
@@ -369,7 +369,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
             VolatileStore<MethodTable*>(&m_pStubMT, pNewMT);
         }
     }
-    
+
     RETURN m_pStubMT;
 }
 
@@ -377,45 +377,45 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
 
 //
 // NGEN'ed IL stubs
-// 
-//    - We will never NGEN a CALLI pinvoke or vararg pinvoke 
 //
-//    - We will always place the IL stub MethodDesc on the same MethodTable that the 
+//    - We will never NGEN a CALLI pinvoke or vararg pinvoke
+//
+//    - We will always place the IL stub MethodDesc on the same MethodTable that the
 //      PInvoke or COM Interop call declaration lives on.
 //
-//    - We will not pre-populate our runtime ILStubCache with compile-time 
+//    - We will not pre-populate our runtime ILStubCache with compile-time
 //      information (i.e. NGENed stubs are only reachable from the same NGEN image.)
 //
 // JIT'ed IL stubs
 //
 //    - The ILStubCache is per-BaseDomain
 //
-//    - Each BaseDomain's ILStubCache will lazily create a "minimal MethodTable" to 
+//    - Each BaseDomain's ILStubCache will lazily create a "minimal MethodTable" to
 //      serve as the home for IL stub MethodDescs
 //
-//    - The created MethodTables will use the Module belonging to one of the 
+//    - The created MethodTables will use the Module belonging to one of the
 //      following, based on what type of interop stub we need to create first.
-// 
-//        - If that stub is for a static-sig-based pinvoke, we will use the 
+//
+//        - If that stub is for a static-sig-based pinvoke, we will use the
 //          Module belonging to that pinvoke's MethodDesc.
 //
-//        - If that stub is for a CALLI or vararg pinvoke, we will use the 
+//        - If that stub is for a CALLI or vararg pinvoke, we will use the
 //          Module belonging to the VASigCookie that the caller supplied to us.
 //
-// It's important to point out that the Module we latch onto here has no knowledge 
-// of the MethodTable that we've just "added" to it.  There only exists a "back 
-// pointer" to the Module from the MethodTable itself.  So we're really only using 
-// that module to answer the question of what BaseDomain the MethodTable lives in.  
-// So as long as the BaseDomain for that module is the same as the BaseDomain the 
-// ILStubCache lives in, I think we have a fairly consistent story here.  
-// 
-// We're relying on the fact that a VASigCookie may only mention types within the 
-// corresponding module used to qualify the signature and the fact that interop 
-// stubs may only reference mscorlib code or code related to a type mentioned in 
-// the signature.  Both of these are true unless the sig is allowed to contain 
-// ELEMENT_TYPE_INTERNAL, which may refer to any type.  
-// 
-// We can only access E_T_INTERNAL through LCG, which does not permit referring 
+// It's important to point out that the Module we latch onto here has no knowledge
+// of the MethodTable that we've just "added" to it.  There only exists a "back
+// pointer" to the Module from the MethodTable itself.  So we're really only using
+// that module to answer the question of what BaseDomain the MethodTable lives in.
+// So as long as the BaseDomain for that module is the same as the BaseDomain the
+// ILStubCache lives in, I think we have a fairly consistent story here.
+//
+// We're relying on the fact that a VASigCookie may only mention types within the
+// corresponding module used to qualify the signature and the fact that interop
+// stubs may only reference mscorlib code or code related to a type mentioned in
+// the signature.  Both of these are true unless the sig is allowed to contain
+// ELEMENT_TYPE_INTERNAL, which may refer to any type.
+//
+// We can only access E_T_INTERNAL through LCG, which does not permit referring
 // to types in other BaseDomains.
 //
 //
@@ -446,7 +446,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
     MethodDesc*     pMD         = NULL;
     bool bFireETWCacheHitEvent = true;
-    
+
 #ifndef DACCESS_COMPILE
     ILStubHashBlob* pBlob       = NULL;
 
@@ -456,7 +456,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     if (SF_IsSharedStub(dwStubFlags))
     {
         CrstHolder ch(&m_crst);
-        
+
         // Try to find the stub
         ILCHASHENTRY*   phe         = NULL;
 
@@ -519,7 +519,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
                     _ASSERTE(pParams->m_cbSizeOfBlob == cbSizeOfBlob);
                     memcpy(pBlob, pParams, cbSizeOfBlob);
-                
+
                     INDEBUG(pszResult   = "[missed cache]");
                     bFireETWCacheHitEvent = false;
                 }
@@ -540,7 +540,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         }
     }
 
-    
+
     if (!pMD)
     {
         // Couldn't grow hash table due to lack of memory.
@@ -831,7 +831,7 @@ static DWORD Hash(MethodDesc *pMD)
 }
 
 MethodDesc *StubMethodHashTable::FindMethodDesc(MethodDesc *pMD)
-{ 
+{
     CONTRACTL
     {
         NOTHROW;
@@ -872,7 +872,7 @@ void StubMethodHashTable::InsertMethodDesc(MethodDesc *pMD, MethodDesc *pStubMD)
         PRECONDITION(CheckPointer(pStubMD));
     }
     CONTRACTL_END
- 
+
     StubMethodHashEntry_t *pNewEntry = (StubMethodHashEntry_t *)BaseAllocateEntry(NULL);
     pNewEntry->SetMethodAndStub(pMD, pStubMD);
 

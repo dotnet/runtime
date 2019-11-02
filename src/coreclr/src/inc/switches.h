@@ -15,7 +15,7 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety. 
+// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
 #define TEST_DATA_CONSISTENCY
 
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
@@ -91,9 +91,9 @@
 #endif // defined(FEATURE_ENABLE_GCPOLL) && defined(_TARGET_X86_)
 
 #if !defined(FEATURE_PAL)
-// PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call 
-//   SuspendThread.  This API is dangerous on non-Windows platforms, as it can lead to 
-//   deadlocks, due to low level OS resources that the PAL is not aware of, or due to 
+// PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call
+//   SuspendThread.  This API is dangerous on non-Windows platforms, as it can lead to
+//   deadlocks, due to low level OS resources that the PAL is not aware of, or due to
 //   the fact that PAL-unaware code in the process may hold onto some OS resources.
 #define PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
 #endif // !FEATURE_PAL
@@ -156,7 +156,7 @@
 #endif
 
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
-// are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE 
+// are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
 #define FEATURE_CONSERVATIVE_GC 1
@@ -172,8 +172,8 @@
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
-// Prefer double alignment for structs and arrays with doubles. Put arrays of doubles more agressively 
-// into large object heap for performance because large object heap is 8 byte aligned 
+// Prefer double alignment for structs and arrays with doubles. Put arrays of doubles more agressively
+// into large object heap for performance because large object heap is 8 byte aligned
 #if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(BIT64)
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif

@@ -127,7 +127,7 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     pMD->m_pszDebugMethodName = pTemplateMD->m_pszDebugMethodName;
     //<NICE> more info here</NICE>
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
@@ -380,7 +380,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 // 4 seems like a good number
                 pDL = DictionaryLayout::Allocate(4, pAllocator, &amt);
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
@@ -398,7 +398,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         }
 
         BOOL forComInterop = FALSE;
-#ifdef FEATURE_COMINTEROP        
+#ifdef FEATURE_COMINTEROP
         if (pExactMT->IsProjectedFromWinRT())
         {
             forComInterop = (pExactMT->IsInterface() || (pExactMT->IsDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
@@ -449,7 +449,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             // for all other reference instantiations so we can't not load it. The Canon type is
             // not visible to users so it can't be abused.
 
-            BOOL fExempt = 
+            BOOL fExempt =
                 TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
                 TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
 
@@ -474,7 +474,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 // No one else got there first, our MethodDesc wins.
                 amt.SuppressRelease();
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 SString name(SString::Utf8);
                 TypeString::AppendMethodDebug(name, pNewMD);
                 StackScratchBuffer buff;
@@ -514,7 +514,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 pNewMD = pOldMD;
             // CrstHolder goes out of scope here
         }
-        
+
     }
 
     RETURN pNewMD;
@@ -725,7 +725,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 // for the Delegate.CreateDelegate logic.
 //
 // allowCreate may be set to FALSE to enforce that the method searched
-// should already be in existence - thus preventing creation and GCs during 
+// should already be in existence - thus preventing creation and GCs during
 // inappropriate times.
 
 #ifdef _PREFAST_
@@ -820,7 +820,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pMDescInCanonMT = pExactMT->GetCanonicalMethodTable()->GetParallelMethodDesc(pDefMD);
 
-        if (!allowCreate && (!pMDescInCanonMT->IsRestored() || 
+        if (!allowCreate && (!pMDescInCanonMT->IsRestored() ||
                               !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded()))
 
         {
@@ -838,7 +838,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     if (    methodInst.IsEmpty()
         && (allowInstParam || !pMDescInCanonMT->RequiresInstArg())
         && (forceBoxedEntryPoint == pMDescInCanonMT->IsUnboxingStub())
-        && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() 
+        && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface()
                 || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations()) )
     {
         RETURN(pMDescInCanonMT);
@@ -1234,7 +1234,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     MethodDesc *pMethod,
     TypeHandle instType,
     Instantiation methodInst)
-{    
+{
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;    // Because allowCreate is TRUE
@@ -1243,7 +1243,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     CONTRACTL_END;
 
     MethodDesc *pInstMD = pMethod;
-    
+
     // no stubs for TypeDesc
     if (instType.IsTypeDesc())
         return pInstMD;
@@ -1266,23 +1266,23 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,
             pMT,
-            pMethod->IsUnboxingStub(), 
+            pMethod->IsUnboxingStub(),
             methodInst,
             FALSE,      /* no allowInstParam */
             TRUE   /* force remotable method (i.e. inst wrappers for non-generic methods on generic interfaces) */);
     }
-    else if ( !pMethod->HasMethodInstantiation() && 
-              ( instType.IsValueType() || 
-                ( instType.HasInstantiation() && 
-                  !instType.IsGenericTypeDefinition() && 
+    else if ( !pMethod->HasMethodInstantiation() &&
+              ( instType.IsValueType() ||
+                ( instType.HasInstantiation() &&
+                  !instType.IsGenericTypeDefinition() &&
                   ( instType.IsInterface() || pMethod->IsStatic() ) ) ) )
     {
-        // 
+        //
         // Called at MethodInfos cache creation
         //   the method is either a normal method or a generic method definition
         // Also called at MethodBase.GetMethodBaseFromHandle
         //   the method is either a normal method, a generic method definition, or an instantiated generic method
-        // Needs an instantiating stub if 
+        // Needs an instantiating stub if
         // - non generic static method on a generic class
         // - non generic instance method on a struct
         // - non generic method on a generic interface
@@ -1313,7 +1313,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 //
 // NOTE: If allowCreate is FALSE, typically you must also set ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()
 // allowCreate may be set to FALSE to enforce that the method searched
-// should already be in existence - thus preventing creation and GCs during 
+// should already be in existence - thus preventing creation and GCs during
 // inappropriate times.
 //
 MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate /* = TRUE */)
@@ -1370,14 +1370,14 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
         dwAllocSize = 0;
         if (!ClrSafeInt<DWORD>::multiply(sizeof(TypeHandle), nGenericMethodArgs, dwAllocSize))
             ThrowHR(COR_E_OVERFLOW);
-        
+
         genericMethodArgs = reinterpret_cast<TypeHandle*>(qbGenericMethodArgs.AllocThrows(dwAllocSize));
 
         for (DWORD i =0; i < nGenericMethodArgs; i++)
             genericMethodArgs[i] = TypeHandle(g_pCanonMethodTableClass);
     }
 
-    RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, 
+    RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         pMT,
                                                         FALSE, /* don't get unboxing entry point */
                                                         Instantiation(genericMethodArgs, nGenericMethodArgs),
@@ -1611,7 +1611,7 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
 }
 
 
-#ifdef FEATURE_PREJIT 
+#ifdef FEATURE_PREJIT
 
 void MethodDesc::PrepopulateDictionary(DataImage * image, BOOL nonExpansive)
 {
@@ -1627,7 +1627,7 @@ void MethodDesc::PrepopulateDictionary(DataImage * image, BOOL nonExpansive)
 
 #endif // FEATURE_PREJIT
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNotSatisfied/* = FALSE*/)
 {
@@ -1672,15 +1672,15 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
             {
                 SString sParentName;
                 TypeString::AppendType(sParentName, thParent);
-    
+
                 SString sMethodName(SString::Utf8, GetName());
-    
+
                 SString sActualParamName;
                 TypeString::AppendType(sActualParamName, methodInst[i]);
-    
+
                 SString sFormalParamName;
                 TypeString::AppendType(sFormalParamName, typicalInst[i]);
-               
+
                 COMPlusThrow(kVerificationException,
                              IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
                              sParentName.GetUnicode(),
@@ -1688,8 +1688,8 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
                              sActualParamName.GetUnicode(),
                              sFormalParamName.GetUnicode()
                             );
-      
-                
+
+
             }
             return FALSE;
         }

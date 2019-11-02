@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // LiteWeightStgdb.cpp
 //
 // This contains definition of class CLiteWeightStgDB. This is light weight
@@ -40,7 +40,7 @@ int _IsNTPEImage(                       // true if file is NT PE image.
     LONG        lfanew=0;               // Offset in DOS header to NT header.
     ULONG       lSignature=0;           // For NT header signature.
     HRESULT     hr;
-    
+
     // Read DOS header to find the NT header offset.
     if (FAILED(hr = pStgIO->Seek(60, FILE_BEGIN)) ||
         FAILED(hr = pStgIO->Read(&lfanew, sizeof(LONG), 0)))
@@ -67,12 +67,12 @@ BOOL _GetFileTypeForPathExt(StgIO * pStgIO, FILETYPE * piType)
 {
     // Avoid confusion.
     *piType = pStgIO->GetFileType();
-    
+
     // All file types except .obj have a signature built in.  You should
     // not get to this code for those file types unless that file is corrupt,
     // or someone has changed a format without updating this code.
     _ASSERTE((*piType == FILETYPE_UNKNOWN) || (*piType == FILETYPE_NTOBJ) || (*piType == FILETYPE_TLB));
-    
+
     // If we found a type, then you're ok.
     return (*piType != FILETYPE_UNKNOWN);
 }
@@ -81,7 +81,7 @@ HRESULT _GetFileTypeForPath(StgIO *pStgIO, FILETYPE *piType)
 {
     ULONG       lSignature=0;
     HRESULT     hr;
-    
+
     // Assume native file.
     *piType = FILETYPE_CLB;
 
@@ -122,7 +122,7 @@ CLiteWeightStgdbRW::~CLiteWeightStgdbRW()
     {
         delete m_pStreamList;
     }
-    
+
     if (m_wszFileName != NULL)
     {
         delete [] m_wszFileName;
@@ -132,7 +132,7 @@ CLiteWeightStgdbRW::~CLiteWeightStgdbRW()
 //*****************************************************************************
 // Open an in-memory metadata section for read
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::InitOnMem(
     ULONG       cbData,                 // count of bytes in pData
     LPCVOID     pData,                  // points to meta data section in memory
@@ -147,9 +147,9 @@ HRESULT CLiteWeightStgdbRW::InitOnMem(
     // Open the storage based on the pbData and cbData
     IfFailGo( pStgIO->Open(
         NULL,   // filename
-        STGIO_READ, 
-        pData, 
-        cbData, 
+        STGIO_READ,
+        pData,
+        cbData,
         NULL,   // IStream*
         NULL)   // LPSecurityAttributes
          );
@@ -174,8 +174,8 @@ ErrExit:
 // Given an StgIO, opens compressed streams and do proper initialization.
 // This is a helper for other Init functions.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CLiteWeightStgdbRW::InitFileForRead(
     StgIO * pStgIO,     // For file i/o.
     int     bReadOnly)  // If read-only open.
@@ -184,30 +184,30 @@ CLiteWeightStgdbRW::InitFileForRead(
     void          * pvData;
     ULONG           cbData;
     HRESULT         hr = NOERROR;
-    
+
     // Allocate a new storage object which has IStorage on it.
     pStorage = new (nothrow) TiggerStorage();
     IfNullGo(pStorage);
-    
+
     // Init the storage object on the backing storage.
     OptionValue ov;
     IfFailGo(m_MiniMd.GetOption(&ov));
     IfFailGo(pStorage->Init(pStgIO, ov.m_RuntimeVersion));
-    
+
     // Save pointers to header structure for version string.
     _ASSERTE((m_pvMd == NULL) && (m_cbMd == 0));
     IfFailGo(pStorage->GetHeaderPointer(&m_pvMd, &m_cbMd));
-    
+
     // Check to see if this is a minimal metadata
     if (SUCCEEDED(pStorage->OpenStream(MINIMAL_MD_STREAM, &cbData, &pvData)))
     {
         m_MiniMd.m_fMinimalDelta = TRUE;
     }
-    
+
     // Load the string pool.
     if (SUCCEEDED(hr = pStorage->OpenStream(STRING_POOL_STREAM, &cbData, &pvData)))
     {
-        // String pool has to end with a null-terminator, therefore we don't have to check string pool 
+        // String pool has to end with a null-terminator, therefore we don't have to check string pool
         // content on access.
         // Shrink size of the pool to the last null-terminator found.
         while (cbData != 0)
@@ -230,7 +230,7 @@ CLiteWeightStgdbRW::InitFileForRead(
         }
         IfFailGo(m_MiniMd.InitPoolOnMem(MDPoolStrings, NULL, 0, bReadOnly));
     }
-    
+
     // Load the user string blob pool.
     if (SUCCEEDED(hr = pStorage->OpenStream(US_BLOB_POOL_STREAM, &cbData, &pvData)))
     {
@@ -244,7 +244,7 @@ CLiteWeightStgdbRW::InitFileForRead(
         }
         IfFailGo(m_MiniMd.InitPoolOnMem(MDPoolUSBlobs, NULL, 0, bReadOnly));
     }
-    
+
     // Load the guid pool.
     if (SUCCEEDED(hr = pStorage->OpenStream(GUID_POOL_STREAM, &cbData, &pvData)))
     {
@@ -258,7 +258,7 @@ CLiteWeightStgdbRW::InitFileForRead(
         }
         IfFailGo(m_MiniMd.InitPoolOnMem(MDPoolGuids, NULL, 0, bReadOnly));
     }
-    
+
     // Load the blob pool.
     if (SUCCEEDED(hr = pStorage->OpenStream(BLOB_POOL_STREAM, &cbData, &pvData)))
     {
@@ -272,7 +272,7 @@ CLiteWeightStgdbRW::InitFileForRead(
         }
         IfFailGo(m_MiniMd.InitPoolOnMem(MDPoolBlobs, NULL, 0, bReadOnly));
     }
-    
+
     // Open the metadata.
     hr = pStorage->OpenStream(COMPRESSED_MODEL_STREAM, &cbData, &pvData);
     if (hr == STG_E_FILENOTFOUND)
@@ -281,7 +281,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     }
     IfFailGo(m_MiniMd.InitOnMem(pvData, cbData, bReadOnly));
     IfFailGo(m_MiniMd.PostInit(0));
-    
+
 ErrExit:
     if (pStorage != NULL)
     {
@@ -293,7 +293,7 @@ ErrExit:
 //*****************************************************************************
 // Open a metadata section for read
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::OpenForRead(
     LPCWSTR     szDatabase,             // Name of database.
     void        *pbData,                // Data to open on top of, 0 default.
@@ -320,13 +320,13 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     // Make sure we have a path to work with.
     if (!szDatabase)
         szDatabase = pNoFile;
-    
+
     // Sanity check the name lentgh.
     if (!IsValidFileNameLength(szDatabase))
     {
         IfFailGo(E_INVALIDARG);
     }
-    
+
     // If we have storage to work with, init it and get type.
     if (*szDatabase || pbData)
     {
@@ -347,10 +347,10 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
 #endif
 
         // Open the storage so we can read the signature if there is already data.
-        IfFailGo( pStgIO->Open(szDatabase, 
-                               dmOpenFlags, 
-                               pbData, 
-                               cbData, 
+        IfFailGo( pStgIO->Open(szDatabase,
+                               dmOpenFlags,
+                               pbData,
+                               cbData,
                                0, // IStream*
                                NULL) );
 
@@ -368,7 +368,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         // Try the native .clb file.
         IfFailGo( InitFileForRead(pStgIO, IsOfRead(dwFlags)) );
     }
-    // PE/COFF executable/object format.  This requires us to find the .clb 
+    // PE/COFF executable/object format.  This requires us to find the .clb
     // inside the binary before doing the Init.
     else if (m_eFileType == FILETYPE_NTPE || m_eFileType == FILETYPE_NTOBJ)
     {
@@ -387,10 +387,10 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         {
             m_pImage = ptr;
             m_dwImageSize = cbSize;
-            hr = FindImageMetaData(ptr, 
-                                   cbSize, 
-                                   pStgIO->GetMemoryMappedType() == MTYPE_IMAGE, 
-                                   &ptr, 
+            hr = FindImageMetaData(ptr,
+                                   cbSize,
+                                   pStgIO->GetMemoryMappedType() == MTYPE_IMAGE,
+                                   &ptr,
                                    &cbSize);
         }
         else
@@ -403,7 +403,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         {
             if (hr == E_OUTOFMEMORY)
                 IfFailGo(E_OUTOFMEMORY);
-        
+
             // No clb in the PE, assume it is a type library.
             m_eFileType = FILETYPE_TLB;
 
@@ -458,7 +458,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         m_dwDatabaseLFS = faData.nFileSizeLow;
         m_dwDatabaseLFT = faData.ftLastWriteTime.dwLowDateTime;
     }
-    
+
 ErrExit:
     if (SUCCEEDED(hr))
     {
@@ -502,9 +502,9 @@ ErrExit:
 //*****************************************************************************
 // Init the Stgdb and its subcomponents.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::InitNew()
-{ 
+{
     InitializeLogging();
     LOG((LF_METADATA, LL_INFO10, "Metadata logging enabled\n"));
 
@@ -515,7 +515,7 @@ HRESULT CLiteWeightStgdbRW::InitNew()
 //*****************************************************************************
 // Determine what the size of the saved data will be.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     CorSaveSize               fSave,                // Quick or accurate?
     UINT32                   *pcbSaveSize,          // Put the size here.
@@ -525,9 +525,9 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     HRESULT hr = S_OK;              // A result.
     UINT32  cbTotal = 0;            // The total size.
     UINT32  cbSize = 0;             // Size of a component.
-    
+
     m_cbSaveSize = 0;
-    
+
     // Allocate stream list if not already done.
     if (m_pStreamList == NULL)
     {
@@ -537,23 +537,23 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     {
         m_pStreamList->Clear();
     }
-    
+
     // Make sure the user string pool is not empty. An empty user string pool causes
     // problems with edit and continue
-    
+
     if (m_MiniMd.m_UserStringHeap.GetUnalignedSize() <= 1)
     {
-        if (!IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode) && 
+        if (!IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode) &&
             !m_MiniMd.IsMinimalDelta())
         {
             BYTE   rgData[] = {' ', 0, 0};
             UINT32 nIndex_Ignore;
             IfFailGo(m_MiniMd.PutUserString(
-                MetaData::DataBlob(rgData, sizeof(rgData)), 
+                MetaData::DataBlob(rgData, sizeof(rgData)),
                 &nIndex_Ignore));
         }
     }
-    
+
     // If we're saving a delta metadata, figure out how much space it will take to
     // save the minimal metadata stream (used only to identify that we have a delta
     // metadata... nothing should be in that stream.
@@ -564,7 +564,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
         IfFailGo(TiggerStorage::GetStreamSaveSize(MINIMAL_MD_STREAM, 0, &cbSize));
         cbTotal += cbSize;
     }
-    
+
     if (reorderingOptions & ReArrangeStringPool)
     {
         if (pProfileData != NULL)
@@ -572,37 +572,37 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
             UINT32 cbHotSize = 0;          // Size of pool data.
             UINT32 cbStream;               // Size of just the stream.
             DWORD  bCompressed;            // Will the stream be compressed data?
-            
+
             // Ask the metadata to size its hot data.
             IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
             cbStream = cbHotSize;
             m_bSaveCompressed = bCompressed;
-            
+
             if (cbHotSize != 0)
             {
                 // Add this item to the save list.
                 IfFailGo(AddStreamToList(cbHotSize, HOT_MODEL_STREAM));
-                
+
                 // Ask the storage system to add stream fixed overhead.
                 IfFailGo(TiggerStorage::GetStreamSaveSize(HOT_MODEL_STREAM, cbHotSize, &cbHotSize));
-                
+
                 // Log the size info.
                 LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
                     HOT_MODEL_STREAM, cbStream, cbHotSize));
-                
+
                 cbTotal += cbHotSize;
             }
         }
-        
+
         // get string pool save size
         IfFailGo(GetPoolSaveSize(STRING_POOL_STREAM, MDPoolStrings, &cbSize));
         cbTotal += cbSize;
     }
-    
+
     // Query the MiniMd for its size.
     IfFailGo(GetTablesSaveSize(fSave, &cbSize, reorderingOptions, pProfileData));
     cbTotal += cbSize;
-    
+
     // Get the pools' sizes.
     if( !(reorderingOptions & ReArrangeStringPool) )
     {
@@ -615,30 +615,30 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     cbTotal += cbSize;
     IfFailGo(GetPoolSaveSize(BLOB_POOL_STREAM, MDPoolBlobs, &cbSize));
     cbTotal += cbSize;
-    
+
     // Finally, ask the storage system to add fixed overhead it needs for the
     // file format.  The overhead of each stream has already be calculated as
     // part of GetStreamSaveSize.  What's left is the signature and header
     // fixed size overhead.
     IfFailGo(TiggerStorage::GetStorageSaveSize((ULONG *)&cbTotal, 0, m_MiniMd.m_OptionValue.m_RuntimeVersion));
-    
+
     // Log the size info.
     LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize total is %d.\n", cbTotal));
-    
+
     // The list of streams that will be saved are now in the stream save list.
-    // Next step is to walk that list and fill out the correct offsets.  This is 
+    // Next step is to walk that list and fill out the correct offsets.  This is
     // done here so that the data can be streamed without fixing up the header.
     TiggerStorage::CalcOffsets(m_pStreamList, 0, m_MiniMd.m_OptionValue.m_RuntimeVersion);
-    
+
     if (pcbSaveSize != NULL)
     {
         *pcbSaveSize = cbTotal;
     }
-    
+
     // Don't cache the value for the EnC case
     if (!IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode))
         m_cbSaveSize = cbTotal;
-    
+
 ErrExit:
     return hr;
 } // CLiteWeightStgdbRW::GetSaveSize
@@ -647,8 +647,8 @@ ErrExit:
 // Get the save size of one of the pools.  Also adds the pool's stream to
 //  the list of streams to be saved.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CLiteWeightStgdbRW::GetPoolSaveSize(
     LPCWSTR szHeap,         // Name of the heap stream.
     int     iPool,          // The pool of which to get size.
@@ -690,7 +690,7 @@ ErrExit:
 // Get the save size of the metadata tables.  Also adds the tables stream to
 //  the list of streams to be saved.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
     CorSaveSize               fSave,
     UINT32                   *pcbSaveSize,
@@ -703,7 +703,7 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
     DWORD   bCompressed;            // Will the stream be compressed data?
     LPCWSTR szName;                 // What will the name of the pool be?
     HRESULT hr;
-    
+
     *pcbSaveSize = 0;
 
     if( !(reorderingOptions & ReArrangeStringPool) )
@@ -714,17 +714,17 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
             IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
             cbStream = cbHotSize;
             m_bSaveCompressed = bCompressed;
-    
+
             if (cbHotSize != 0)
             {
                 szName = HOT_MODEL_STREAM;
-    
+
                 // Add this item to the save list.
                 IfFailGo(AddStreamToList(cbHotSize, szName));
-        
+
                 // Ask the storage system to add stream fixed overhead.
                 IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbHotSize, &cbHotSize));
-    
+
                 // Log the size info.
                 LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
                     szName, cbStream, cbHotSize));
@@ -739,7 +739,7 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     // Add this item to the save list.
     IfFailGo(AddStreamToList(cbSize, szName));
-    
+
     // Ask the storage system to add stream fixed overhead.
     IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbSize, &cbSize));
 
@@ -757,7 +757,7 @@ ErrExit:
 //*****************************************************************************
 // Add a stream, and its size, to the list of streams to be saved.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::AddStreamToList(
     UINT32  cbSize,
     LPCWSTR szName)
@@ -781,7 +781,7 @@ ErrExit:
 // Save the data to a stream.  A TiggerStorage sub-allocates streams within
 //   the stream.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStream(
     IStream                  *pIStream,
     MetaDataReorderingOptions reorderingOptions,
@@ -790,24 +790,24 @@ HRESULT CLiteWeightStgdbRW::SaveToStream(
     HRESULT     hr = S_OK;              // A result.
     StgIO       *pStgIO = 0;
     TiggerStorage *pStorage = 0;
-    
+
     // Allocate a storage subsystem and backing store.
     IfNullGo(pStgIO = new (nothrow) StgIO);
     IfNullGo(pStorage = new (nothrow) TiggerStorage);
-    
+
     // Open around this stream for write.
-    IfFailGo(pStgIO->Open(W(""), 
-        DBPROP_TMODEF_DFTWRITEMASK, 
+    IfFailGo(pStgIO->Open(W(""),
+        DBPROP_TMODEF_DFTWRITEMASK,
         0, 0,                           // pbData, cbData
         pIStream,
         0));                            // LPSecurityAttributes
     OptionValue ov;
     IfFailGo(m_MiniMd.GetOption(&ov));
     IfFailGo(pStorage->Init(pStgIO, ov.m_RuntimeVersion));
-    
+
     // Save worker will do tables, pools.
     IfFailGo(SaveToStorage(pStorage, reorderingOptions, pProfileData));
-    
+
 ErrExit:
     if (pStgIO != NULL)
         pStgIO->Release();
@@ -818,7 +818,7 @@ ErrExit:
 
 //*****************************************************************************
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStorage(
     TiggerStorage            *pStorage,
     MetaDataReorderingOptions reorderingOptions,
@@ -829,65 +829,65 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IStream *pIStreamTbl = 0;
     UINT32   cb;
     UINT32   cbSaveSize = m_cbSaveSize;
-    
+
     // Must call GetSaveSize to cache the streams up front.
-    // Don't trust cached values in the delta case... if there was a previous call to get 
+    // Don't trust cached values in the delta case... if there was a previous call to get
     // a non-delta size, it will be incorrect.
     if ((m_cbSaveSize == 0) || IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode))
     {
         IfFailGo(GetSaveSize(cssAccurate, &cbSaveSize));
     }
-    
+
     // Save the header of the data file.
     IfFailGo(pStorage->WriteHeader(m_pStreamList, 0, NULL));
-    
-    // If this is a minimal delta, write a stream marker 
+
+    // If this is a minimal delta, write a stream marker
     if (IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode))
     {
-        IfFailGo(pStorage->CreateStream(MINIMAL_MD_STREAM, 
-            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE, 
+        IfFailGo(pStorage->CreateStream(MINIMAL_MD_STREAM,
+            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStreamTbl));
         pIStreamTbl->Release();
         pIStreamTbl = 0;
     }
-    
+
     if (pProfileData != NULL)
     {
         DWORD bCompressed;
         UINT32 cbHotSize;
         // Will the stream be compressed data?
-        
+
         // Only create this additional stream if it will be non-empty
         IfFailGo(m_MiniMd.GetSaveSize(cssAccurate, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-        
+
         if (cbHotSize > 0)
         {
             // Create a stream and save the hot tables.
             szName = HOT_MODEL_STREAM;
-            IfFailGo(pStorage->CreateStream(szName, 
-                    STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE, 
+            IfFailGo(pStorage->CreateStream(szName,
+                    STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
                     0, 0, &pIStreamTbl));
             IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, reorderingOptions, pProfileData));
             pIStreamTbl->Release();
             pIStreamTbl = 0;
         }
     }
-    
+
     if (reorderingOptions & ReArrangeStringPool)
     {
         // Save the string pool before the tables when we do not have the string pool cache
         IfFailGo(SavePool(STRING_POOL_STREAM, pStorage, MDPoolStrings));
     }
-    
+
     // Create a stream and save the tables.
     szName = m_bSaveCompressed ? COMPRESSED_MODEL_STREAM : ENC_MODEL_STREAM;
-    IfFailGo(pStorage->CreateStream(szName, 
-            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE, 
+    IfFailGo(pStorage->CreateStream(szName,
+            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStreamTbl));
     IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, NoReordering, NULL));
     pIStreamTbl->Release();
     pIStreamTbl = 0;
-    
+
     // Save the pools.
     if (!(reorderingOptions & ReArrangeStringPool))
     {
@@ -897,20 +897,20 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(SavePool(US_BLOB_POOL_STREAM, pStorage, MDPoolUSBlobs));
     IfFailGo(SavePool(GUID_POOL_STREAM, pStorage, MDPoolGuids));
     IfFailGo(SavePool(BLOB_POOL_STREAM, pStorage, MDPoolBlobs));
-    
+
     // Write the header to disk.
     OptionValue ov;
     IfFailGo(m_MiniMd.GetOption(&ov));
-    
+
     IfFailGo(pStorage->WriteFinished(m_pStreamList, (ULONG *)&cb, IsENCDelta(ov.m_UpdateMode)));
-    
+
     _ASSERTE(cbSaveSize == cb);
-    
+
     // Let the Storage release some memory.
     pStorage->ResetBackingStore();
-    
+
     IfFailGo(m_MiniMd.SaveDone());
-    
+
 ErrExit:
     if (pIStreamTbl != NULL)
         pIStreamTbl->Release();
@@ -923,7 +923,7 @@ ErrExit:
 //*****************************************************************************
 // Save a pool of data out to a stream.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
     LPCWSTR     szName,                 // Name of stream on disk.
     TiggerStorage *pStorage,            // The storage to put data in.
@@ -937,8 +937,8 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
         return (S_OK);
 
     // Create the new stream to hold this table and save it.
-    IfFailGo(pStorage->CreateStream(szName, 
-            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE, 
+    IfFailGo(pStorage->CreateStream(szName,
+            STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStream));
     IfFailGo(m_MiniMd.SavePoolToStream(iPool, pIStream));
 
@@ -952,7 +952,7 @@ ErrExit:
 //*****************************************************************************
 // Save the metadata to a file.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::Save(
     LPCWSTR szDatabase,     // Name of file to which to save.
     DWORD   dwSaveFlags)    // Flags for the save.
@@ -960,7 +960,7 @@ HRESULT CLiteWeightStgdbRW::Save(
     TiggerStorage * pStorage = NULL;    // IStorage object.
     StgIO *         pStgIO = NULL;      // Backing storage.
     HRESULT         hr = S_OK;
-    
+
     if (m_wszFileName == NULL)
     {
         if (szDatabase == NULL)
@@ -980,36 +980,36 @@ HRESULT CLiteWeightStgdbRW::Save(
         // Save the file name.
         IfFailGo(SetFileName(szDatabase));
     }
-    
+
     // Sanity check the name.
     if (!IsValidFileNameLength(m_wszFileName))
     {
         IfFailGo(E_INVALIDARG);
     }
-    
+
     m_eFileType = FILETYPE_CLB;
-    
+
     // Allocate a new storage object.
     IfNullGo(pStgIO = new (nothrow) StgIO);
-    
+
     // Create the output file.
-    IfFailGo(pStgIO->Open(m_wszFileName, 
+    IfFailGo(pStgIO->Open(m_wszFileName,
         DBPROP_TMODEF_DFTWRITEMASK,
         0,0,                // pbData, cbData
         0,                  // IStream*
         0));                // LPSecurityAttributes
-    
+
     // Allocate an IStorage object to use.
     IfNullGo(pStorage = new (nothrow) TiggerStorage);
-    
+
     // Init the storage object on the i/o system.
     OptionValue ov;
     IfFailGo(m_MiniMd.GetOption(&ov));
     IfFailGo(pStorage->Init(pStgIO, ov.m_RuntimeVersion));
-    
+
     // Save the data.
     IfFailGo(SaveToStorage(pStorage));
-    
+
 ErrExit:
     if (pStgIO != NULL)
         pStgIO->Release();
@@ -1021,7 +1021,7 @@ ErrExit:
 //*****************************************************************************
 // Pull the PEKind and Machine out of PE headers -- if we have PE headers.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::GetPEKind(  // S_OK or error.
     MAPPINGTYPE mtMapping,              // The type of mapping the image has
     DWORD       *pdwPEKind,             // [OUT] The kind of PE (0 - not a PE)
@@ -1041,15 +1041,15 @@ HRESULT CLiteWeightStgdbRW::GetPEKind(  // S_OK or error.
     else if (m_pImage)
     {
         PEDecoder pe;
-        
+
         // We need to use different PEDecoder initialization based on the type of data we give it.
         // We use the one with a 'bool' as the second argument when dealing with a mapped file,
         // and we use the one that takes a COUNT_T as the second argument when dealing with a
         // flat file.
-        
+
         if (mtMapping == MTYPE_IMAGE)
         {
-            if (FAILED(pe.Init(m_pImage, false)) || 
+            if (FAILED(pe.Init(m_pImage, false)) ||
                 !pe.CheckNTHeaders())
             {
                 IfFailRet(COR_E_BADIMAGEFORMAT);
@@ -1059,7 +1059,7 @@ HRESULT CLiteWeightStgdbRW::GetPEKind(  // S_OK or error.
         {
             pe.Init(m_pImage, (COUNT_T)(m_dwImageSize));
         }
-        
+
         if (pe.HasContents() && pe.HasNTHeaders())
         {
             pe.GetPEKindAndMachine(&dwPEKind, &dwMachine);
@@ -1079,9 +1079,9 @@ HRESULT CLiteWeightStgdbRW::GetPEKind(  // S_OK or error.
         hr = S_FALSE;
     }
 #endif
-    if (pdwPEKind) 
+    if (pdwPEKind)
         *pdwPEKind = dwPEKind;
-    if (pdwMachine) 
+    if (pdwMachine)
         *pdwMachine = dwMachine;
 
     return hr;
@@ -1090,7 +1090,7 @@ HRESULT CLiteWeightStgdbRW::GetPEKind(  // S_OK or error.
 //*****************************************************************************
 // Low level access to the data.  Intended for metainfo, and such.
 //*****************************************************************************
-__checkReturn 
+__checkReturn
 HRESULT CLiteWeightStgdbRW::GetRawData(
     const void **ppvMd,                 // [OUT] put pointer to MD section here (aka, 'BSJB').
     ULONG   *pcbMd)                     // [OUT] put size of the stream here.
@@ -1109,8 +1109,8 @@ HRESULT CLiteWeightStgdbRW::GetRawData(
 // Get info about the MD stream.
 // Low level access to stream data.  Intended for metainfo, and such.
 //*****************************************************************************
-__checkReturn 
-STDMETHODIMP 
+__checkReturn
+STDMETHODIMP
 CLiteWeightStgdbRW::GetRawStreamInfo(
     ULONG        ix,            // [IN] Stream ordinal desired.
     const char **ppchName,      // [OUT] put pointer to stream name here.
@@ -1131,10 +1131,10 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
 
     pData = m_pStgIO->m_pData;
     cbData = m_pStgIO->m_cbData;
-    
+
     // Validate the signature of the format, or it isn't ours.
     IfFailGo(MDFormat::VerifySignature((PSTORAGESIGNATURE) pData, cbData));
-    
+
     // Get back the first stream.
     pStream = MDFormat::GetFirstStream(&sHdr, pData);
     if (pStream == NULL)
@@ -1142,40 +1142,40 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
         Debug_ReportError("Invalid MetaData storage signature - cannot get the first stream header.");
         IfFailGo(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // Check that the requested stream exists.
     if (ix >= sHdr.GetiStreams())
         return S_FALSE;
-    
+
     // Skip to the desired stream.
     for (i = 0; i < ix; i++)
     {
         PSTORAGESTREAM pNext = pStream->NextStream();
-        
+
         // Check that stream header is within the buffer.
-        if (((LPBYTE)pStream >= ((LPBYTE)pData + cbData)) || 
+        if (((LPBYTE)pStream >= ((LPBYTE)pData + cbData)) ||
             ((LPBYTE)pNext   >  ((LPBYTE)pData + cbData)))
         {
             Debug_ReportError("Stream header is not within MetaData block.");
             hr = CLDB_E_FILE_CORRUPT;
             goto ErrExit;
         }
-        
+
         // Check that the stream data starts and fits within the buffer.
         //  need two checks on size because of wraparound.
-        if ((pStream->GetOffset() > cbData) || 
-            (pStream->GetSize() > cbData) || 
+        if ((pStream->GetOffset() > cbData) ||
+            (pStream->GetSize() > cbData) ||
             ((pStream->GetSize() + pStream->GetOffset()) > cbData))
         {
             Debug_ReportError("Stream data are not within MetaData block.");
             hr = CLDB_E_FILE_CORRUPT;
             goto ErrExit;
         }
-        
+
         // Pick off the next stream if there is one.
         pStream = pNext;
     }
-    
+
     if (pStream != NULL)
     {
         *ppv = (const void *)((const BYTE *)pData + pStream->GetOffset());
@@ -1187,62 +1187,62 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
         *ppv = NULL;
         *pcb = 0;
         *ppchName = NULL;
-        
+
         // Invalid input to the method
         hr = CLDB_E_FILE_CORRUPT;
     }
-    
+
 ErrExit:
     return hr;
 } // CLiteWeightStgdbRW::GetRawStreamInfo
 
 //=======================================================================================
-// 
+//
 // Set file name of this database (makes copy of the file name).
-// 
+//
 // Return value: S_OK or E_OUTOFMEMORY
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CLiteWeightStgdbRW::SetFileName(
     const WCHAR * wszFileName)
 {
     HRESULT hr = S_OK;
-    
+
     if (m_wszFileName != NULL)
     {
         delete [] m_wszFileName;
         m_wszFileName = NULL;
     }
-    
+
     if ((wszFileName == NULL) || (*wszFileName == 0))
     {   // The new file name is empty
         _ASSERTE(m_wszFileName == NULL);
-        
+
         // No need to allocate anything, NULL means empty name
         hr = S_OK;
         goto ErrExit;
     }
-    
+
     // Size of the file name incl. null terminator
     size_t cchFileName;
     cchFileName = wcslen(wszFileName) + 1;
-    
+
     // Allocate and copy the file name
     m_wszFileName = new (nothrow) WCHAR[cchFileName];
     IfNullGo(m_wszFileName);
     wcscpy_s(m_wszFileName, cchFileName, wszFileName);
-    
+
 ErrExit:
     return hr;
 } // CLiteWeightStgdbRW::SetFileName
 
 //=======================================================================================
-// 
+//
 // Returns TRUE if wszFileName has valid path length (MAX_PATH or 32767 if prefixed with \\?\).
-// 
+//
 //static
-BOOL 
+BOOL
 CLiteWeightStgdbRW::IsValidFileNameLength(
     const WCHAR * wszFileName)
 {

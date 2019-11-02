@@ -5,7 +5,7 @@
 // versionandlocationinfo.h
 //
 // a simple struct encapsulating version# and location code
-// 
+//
 // Note: must be platform independent
 //
 // ======================================================================================

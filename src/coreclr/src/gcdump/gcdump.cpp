@@ -4,8 +4,8 @@
 /*****************************************************************************
  *                                  GCDump.cpp
  *
- * Defines functions to display the GCInfo as defined by the GC-encoding 
- * spec. The GC information may be either dynamically created by a 
+ * Defines functions to display the GCInfo as defined by the GC-encoding
+ * spec. The GC information may be either dynamically created by a
  * Just-In-Time compiler conforming to the standard code-manager spec,
  * or may be persisted by a managed native code compiler conforming
  * to the standard code-manager spec.
@@ -22,11 +22,11 @@
 
 GCDump::GCDump(UINT32 gcInfoVer, bool encBytes, unsigned maxEncBytes, bool dumpCodeOffs)
   : gcInfoVersion   (gcInfoVer),
-    fDumpEncBytes   (encBytes    ), 
-    cMaxEncBytes    (maxEncBytes ), 
+    fDumpEncBytes   (encBytes    ),
+    cMaxEncBytes    (maxEncBytes ),
     fDumpCodeOffsets(dumpCodeOffs)
 {
-    // By default, use the standard printf function to dump 
+    // By default, use the standard printf function to dump
     GCDump::gcPrintf = (printfFtn) ::printf;
 }
 
@@ -46,7 +46,7 @@ PTR_CBYTE GCDump::DumpEncoding(PTR_CBYTE gcInfoBlock, int cDumpBytes)
         int             cBytesLeft;
 
         for (count = cMaxEncBytes, cBytesLeft = cDumpBytes, pCurPos = gcInfoBlock;
-             count > 0; 
+             count > 0;
              count--, pCurPos++, cBytesLeft--)
         {
             if  (cBytesLeft > 0)
@@ -75,7 +75,7 @@ void                GCDump::DumpOffset(unsigned o)
 
 void                GCDump::DumpOffsetEx(unsigned o)
 {
-    if (fDumpCodeOffsets) 
+    if (fDumpCodeOffsets)
         DumpOffset(o);
 }
 

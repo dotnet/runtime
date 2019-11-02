@@ -95,14 +95,14 @@ namespace R2RDump
         public RuntimeFunction() { }
 
         public RuntimeFunction(
-            int id, 
-            int startRva, 
-            int endRva, 
-            int unwindRva, 
-            int codeOffset, 
-            R2RMethod method, 
-            BaseUnwindInfo unwindInfo, 
-            BaseGcInfo gcInfo, 
+            int id,
+            int startRva,
+            int endRva,
+            int unwindRva,
+            int codeOffset,
+            R2RMethod method,
+            BaseUnwindInfo unwindInfo,
+            BaseGcInfo gcInfo,
             EHInfo ehInfo,
             DebugInfo debugInfo)
         {
@@ -326,12 +326,12 @@ namespace R2RDump
         /// Extracts the method signature from the metadata by rid
         /// </summary>
         public R2RMethod(
-            int index, 
+            int index,
             MetadataReader metadataReader,
-            EntityHandle methodHandle, 
-            int entryPointId, 
-            string owningType, 
-            string constrainedType, 
+            EntityHandle methodHandle,
+            int entryPointId,
+            string owningType,
+            string constrainedType,
             string[] instanceArgs,
             FixupCell[] fixups)
         {

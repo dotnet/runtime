@@ -5,8 +5,8 @@
 
 //
 // ===========================================================================
-// File: ntimage.h 
-// 
+// File: ntimage.h
+//
 // ===========================================================================
 
 //
@@ -16,7 +16,7 @@
 //
 //Author:
 //
-//     
+//
 //
 //Revision History:
 //
@@ -30,7 +30,7 @@
 #endif
 
 //
-// Define the linker version number.  
+// Define the linker version number.
 
 #define IMAGE_MAJOR_LINKER_VERSION 2
 
@@ -1006,7 +1006,7 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 #define IMAGE_REL_IA64_SECREL22         0x000C
 #define IMAGE_REL_IA64_SECREL64I        0x000D
 #define IMAGE_REL_IA64_SECREL32         0x000E
-// 
+//
 #define IMAGE_REL_IA64_DIR32NB          0x0010
 #define IMAGE_REL_IA64_SREL14           0x0011
 #define IMAGE_REL_IA64_SREL22           0x0012
@@ -1584,7 +1584,7 @@ typedef struct _IMAGE_DEBUG_DIRECTORY {
 
 // end_winnt
 
-// 
+//
 
 // begin_winnt
 

@@ -54,13 +54,13 @@ struct GCHeapHashTraitsPointerToPointerList : public DefaultGCHeapHashTraits<sup
 };
 
 
-// GCHeapHash is based on the logic of SHash, and utilizes the same basic structure (which allows the key/value 
+// GCHeapHash is based on the logic of SHash, and utilizes the same basic structure (which allows the key/value
 // to be one and the same, or other interesting memory tweaks.) To avoid GC pointer issues, responsibility for allocating
 // the underlying arrays and manipulating the entries is entirely extracted to the traits class, and responsibility
 // for creation of elements is deferred into the caller of the add function. (See example uses in CrossLoaderAllocatorHash)
-// As the GCHeapHash is actually a managed object, but the code for manipulating the hash is written here in native code, 
+// As the GCHeapHash is actually a managed object, but the code for manipulating the hash is written here in native code,
 // allocating an instance of this class does not actually allocate a hashtable. Instead, the hashtable is allocated by
-// allocating an instance of the GCHeapHash type, and then passing the allocated object into this type's constructor to 
+// allocating an instance of the GCHeapHash type, and then passing the allocated object into this type's constructor to
 // assign the value. This class is designed to be used protected within a GC_PROTECT region. See examples in CrossLoaderAllocatorHash.
 template <class TRAITS>
 class GCHeapHash
@@ -123,7 +123,7 @@ class GCHeapHash
     template<class TElement>
     void GetElement(INT32 index, TElement& foundElement);
 
-    // Use this to update an value within the hashtable directly. 
+    // Use this to update an value within the hashtable directly.
     // It is ONLY safe to do if the index already points at an element
     // which already exists and has the same key as the newElementValue
     template<class TElement>

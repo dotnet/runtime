@@ -300,7 +300,7 @@ public:
     //  true if it has succeeded, false if it has failed
     static bool VirtualDecommit(void *address, size_t size);
 
-    // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no 
+    // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
     // longer of interest, but it should not be decommitted.
     // Parameters:
     //  address - starting virtual address
@@ -368,7 +368,7 @@ public:
     // Get numeric id of the current thread if possible on the
     // current platform. It is indended for logging purposes only.
     // Return:
-    //  Numeric id of the current thread or 0 if the 
+    //  Numeric id of the current thread or 0 if the
     static uint64_t GetCurrentThreadIdForLogging();
 
     // Get id of the current process
@@ -431,10 +431,10 @@ public:
     //  non zero if it has succeeded, 0 if it has failed
     //  *is_restricted is set to true if asked and running in restricted.
     // Remarks:
-    //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
+    //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
     //  specified, it returns amount of actual physical memory.
     //
-    // PERF TODO: Requires more work to not treat the restricted case to be special. 
+    // PERF TODO: Requires more work to not treat the restricted case to be special.
     // To be removed before 3.0 ships.
     static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 

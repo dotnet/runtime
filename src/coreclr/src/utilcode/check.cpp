@@ -100,7 +100,7 @@ SPECIALIZED_VIOLATION(FaultNotFatal|TakesLockViolation);
 // Trigger triggers the actual check failure.  The trigger may provide a reason
 // to include in the failure message.
 
-void CHECK::Trigger(LPCSTR reason) 
+void CHECK::Trigger(LPCSTR reason)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -146,13 +146,13 @@ void CHECK::Trigger(LPCSTR reason)
 #ifdef _DEBUG
 // Setup records context info after a failure.
 
-void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line) 
+void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    // 
+    //
     // It might be nice to collect all of the message here.  But for now, we will just
     // retain the innermost one.
     //
@@ -175,9 +175,9 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
 
             StackSString context;
             context.Printf("%s\n\t%s%s FAILED: %s\n\t\t%s, line: %d",
-                           m_condition, 
-                           message && *message ? message : "", 
-                           message && *message ? ": " : "", 
+                           m_condition,
+                           message && *message ? message : "",
+                           message && *message ? ": " : "",
                            condition,
                            file, line);
 
@@ -209,7 +209,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     // We never delete this allocated string. A dtor would conflict with places
     // we use this around SEH stuff. We could have some fancy stack-based allocator,
     // but that's too much work for now. In fact we believe that leaking is a reasonable
-    // policy, since allocations will only happen on a failed assert, and a failed assert 
+    // policy, since allocations will only happen on a failed assert, and a failed assert
     // will generally be fatal to the process.
 
     // The most common place for format strings will be in an assert; in
@@ -229,8 +229,8 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
         EX_TRY
         {
             SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        
-            // Format it.   
+
+            // Format it.
             va_list args;
             va_start( args, messageFormat);
 
@@ -245,7 +245,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
         EX_CATCH
         {
             // If anything goes wrong, just use the format string.
-            result = messageFormat;    
+            result = messageFormat;
         }
         EX_END_CATCH(SwallowAllExceptions)
     }
@@ -263,7 +263,7 @@ LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
     const char * pMsg = s.GetANSI(buffer);
 
     // Must copy that into our own field.
-    size_t len = strlen(pMsg) + 1;    
+    size_t len = strlen(pMsg) + 1;
     char * p = new char[len];
     strcpy(p, pMsg);
 
@@ -271,7 +271,7 @@ LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
     s_cLeakedBytes += len;
     s_cNumFailures ++;
 
-    // This should never fire. 
+    // This should never fire.
     // Note use an ASSERTE (not a check) to avoid a recursive deadlock.
     _ASSERTE(s_cLeakedBytes < 10000 || !"Warning - check misuse - leaked over 10,000B due to unexpected usage pattern");
     return p;
@@ -279,7 +279,7 @@ LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
 
 void WINAPI ReleaseCheckTls(LPVOID pTlsData)
 {
-    CHECK::ReleaseTls(pTlsData);    
+    CHECK::ReleaseTls(pTlsData);
 }
 
 #endif

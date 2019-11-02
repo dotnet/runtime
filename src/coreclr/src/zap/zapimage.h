@@ -389,10 +389,10 @@ private:
 
         static const element_t Null()
         {
-            LIMITED_METHOD_CONTRACT; 
-            ProfileDataHashEntry e; 
-            e.md = 0; 
-            e.size = 0; 
+            LIMITED_METHOD_CONTRACT;
+            ProfileDataHashEntry e;
+            e.md = 0;
+            e.size = 0;
             e.pos = 0;
             e.flags = 0;
             e.status = NOT_COMPILED;

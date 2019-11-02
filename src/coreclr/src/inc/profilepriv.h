@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // ProfilePriv.h
-// 
+//
 
 //
 // Structures, etc. used by the Profiling API and throughout the EE
-// 
+//
 
 // ======================================================================================
 
@@ -29,7 +29,7 @@ struct ScanContext;
 
 //---------------------------------------------------------------------------------------
 // Enumerates the various init states of profiling.
-// 
+//
 // *** NOTE: The order is important here, as some of the status checks (e.g.,
 // CORProfilerPresentOrInitializing) use ">" with these enum values. ***
 
@@ -60,7 +60,7 @@ public:
 // Global struct that lets the EE see the load status of the profiler, and provides a
 // pointer (pProfInterface) through which profiler calls can be made
 //
-// When you are adding new session, please refer to 
+// When you are adding new session, please refer to
 // code:ProfControlBlock::ResetPerSessionStatus#ProfileResetSessionStatus for more details.
 struct ProfControlBlock
 {
@@ -73,7 +73,7 @@ struct ProfControlBlock
     // code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
     VolatilePtr<EEToProfInterfaceImpl> pProfInterface;
     // **** IMPORTANT!! ****
-    
+
     DWORD dwEventMask;          // Original low event mask bits
     DWORD dwEventMaskHigh;      // New high event mask bits
     CurrentProfilerStatus curProfStatus;
@@ -88,7 +88,7 @@ struct ProfControlBlock
     // (e.g., stack walking). When this BOOL is TRUE, the JIT will insert calls to the
     // slow-path profiling API enter/leave/tailcall hooks, which will forward the call to
     // a profiler if one is loaded (and do nothing otherwise).
-    // 
+    //
     // See code:AreCallbackStateFlagsSet#P2CLRRestrictionsOverview for general information
     // on how the test hooks lift restrictions normally in place for the Info functions.
     BOOL fTestOnlyForceEnterLeave;
@@ -97,19 +97,19 @@ struct ProfControlBlock
 #ifdef PROF_TEST_ONLY_FORCE_OBJECT_ALLOCATED_DATA
     // #TestOnlyObjectAllocated This implements a test-only (and debug-only) hook that allows
     // a test profiler to ensure ObjectAllocated callback is enabled on startup even though no
-    // profiler is loaded on startup. This allows an attach profiler to use ObjectAllocated 
+    // profiler is loaded on startup. This allows an attach profiler to use ObjectAllocated
     // callback for the sole purpose of verifying OTHER GC areas of the profiling API
-    // (e.g., constructing a object graph). When this BOOL is TRUE, the JIT will use special 
-    // version of new allocators that issue object allocation notifications, which will forward 
+    // (e.g., constructing a object graph). When this BOOL is TRUE, the JIT will use special
+    // version of new allocators that issue object allocation notifications, which will forward
     // the notifications to a profiler if one is loaded (and do nothing otherwise).
-    // 
+    //
     // See code:AreCallbackStateFlagsSet#P2CLRRestrictionsOverview for general information
     // on how the test hooks lift restrictions normally in place for the Info functions.
     BOOL fTestOnlyForceObjectAllocated;
-#endif 
+#endif
 
 #ifdef _DEBUG
-    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,  
+    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,
     // which would otherwise be disallowed for attaching profilers
     BOOL                    fTestOnlyEnableICorProfilerInfo;
 #endif // _DEBUG
@@ -120,9 +120,9 @@ struct ProfControlBlock
     Volatile<BOOL> fProfControlBlockInitialized;
 
     Volatile<BOOL> fProfilerRequestedRuntimeSuspend;
-    
+
     void Init();
-    void ResetPerSessionStatus();    
+    void ResetPerSessionStatus();
 };
 
 

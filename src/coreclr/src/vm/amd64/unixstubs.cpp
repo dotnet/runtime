@@ -26,7 +26,7 @@ extern "C"
           );
         return eax;
     }
-    
+
     DWORD getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
     {
         DWORD eax;

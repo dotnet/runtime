@@ -160,13 +160,13 @@ public:
         len_(typeSpec->length()),
         hash_(typeSpec->length()),
         token_(mdTokenNil)
-    {        
+    {
         for (unsigned i = 0; i < len_; i++)
             hash_ = (hash_ * 257) ^ ((i + 1) * (ptr_[i] ^ 0xA5));
     }
     // Constructor for a 'permanent' object
     // Don't bother re-hashing, since we will always have already constructed the lookup object
-    TypeSpecContainer(const TypeSpecContainer &t, mdToken tk) : 
+    TypeSpecContainer(const TypeSpecContainer &t, mdToken tk) :
         ptr_(new unsigned __int8[t.len_]),
         len_(t.len_),
         hash_(t.hash_),
@@ -305,13 +305,13 @@ mdToken Assembler::GetBaseAsmRef()
     return GetAsmRef("mscorlib");
 }
 
-mdToken Assembler::GetInterfaceImpl(mdToken tsClass, mdToken tsInterface) 
+mdToken Assembler::GetInterfaceImpl(mdToken tsClass, mdToken tsInterface)
 {
     mdToken result = mdTokenNil;
     HCORENUM iiEnum = 0;
     ULONG actualInterfaces;
     mdInterfaceImpl impls;
-    
+
     while (SUCCEEDED(m_pImporter->EnumInterfaceImpls(&iiEnum, tsClass, &impls, 1, &actualInterfaces)))
     {
         if (actualInterfaces == 1)
@@ -670,7 +670,7 @@ void Assembler::StartMethod(__in __nullterminated char* name, BinStr* sig, CorMe
                     pMethod->m_dwNumEndfilters = 0;
                     if(pMethod->m_pRetMarshal) delete pMethod->m_pRetMarshal;
                     if(pMethod->m_pRetValue) delete pMethod->m_pRetValue;
-                    
+
                     pMethod->m_MethodImplDList.RESET(false); // ptrs in m_MethodImplDList are dups of those in Assembler
 
                     pMethod->m_CustomDescrList.RESET(true);
@@ -833,7 +833,7 @@ void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr
         if(IsTdInterface(m_pCurClass->m_Attr))
         {
             if(!IsFdStatic(flags))
-            { 
+            {
                 report->warn("Instance field in interface (CLS violation)\n");
                 if(!IsFdPublic(flags)) report->error("Non-public instance field in interface\n");
             }
@@ -1261,7 +1261,7 @@ void Assembler::EmitData(__in_opt void *buffer, unsigned len)
             report->error("Could not extend data section (out of memory?)");
             exit(1);
         }
-        
+
         if (buffer != NULL)
         {
             memcpy(ptr, buffer, len);
@@ -2216,14 +2216,14 @@ BinStr* Assembler::EncodeSecAttr(__in __nullterminated char* szReflName, BinStr*
     if((pb = pbsRet->getBuff(L)) != NULL)
         memcpy(pb,szReflName,L);
     // find out the size of compressed nProps
-    cnt = CorSigCompressData(nProps, pbsRet->getBuff(5)); 
+    cnt = CorSigCompressData(nProps, pbsRet->getBuff(5));
     pbsRet->remove(5);
     // encode blob size
     unsigned nSize = cnt + pbsSecAttrBlob->length();
-    cnt = CorSigCompressData(nSize, pbsRet->getBuff(5));  
+    cnt = CorSigCompressData(nSize, pbsRet->getBuff(5));
     pbsRet->remove(5 - cnt);
     // actually encode nProps
-    cnt = CorSigCompressData(nProps, pbsRet->getBuff(5));  
+    cnt = CorSigCompressData(nProps, pbsRet->getBuff(5));
     pbsRet->remove(5 - cnt);
     // append the props/values blob
     pbsRet->append(pbsSecAttrBlob);
@@ -2504,7 +2504,7 @@ bool Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
 
     // Look for an existing match in m_pCurClass->m_GPCList
     //
-    // Iterate the GenericParamConstraints list 
+    // Iterate the GenericParamConstraints list
     //
     bool match = false;
     GenericParamConstraintDescriptor *pGPC = nullptr;
@@ -2539,14 +2539,14 @@ bool Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
     }
 }
 
-// Emit the proper metadata for the generic parameter type constraints 
+// Emit the proper metadata for the generic parameter type constraints
 // This will create one GenericParamConstraint tokens for each type constraint.
 // Finally associate any custom attributes with their GenericParamConstraint
 // and emit them as well
 //
 void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL)
 {
-    // If we haver no generic parameters, or a null or empty list of generic param constraints 
+    // If we haver no generic parameters, or a null or empty list of generic param constraints
     // then we can early out and just return.
     //
     if ((numTyPars == 0) || (pGPCL == NULL) || (pGPCL->COUNT() == 0))
@@ -2607,7 +2607,7 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         }
     }
 
-    // Iterate the GenericParamConstraints list again and 
+    // Iterate the GenericParamConstraints list again and
     // record the type constraints in the pConstraintsArr[][]
     for (listIndex = 0; (pGPC = pGPCL->PEEK(listIndex)) != nullptr; listIndex++)
     {
@@ -2625,7 +2625,7 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         nConstraintIndexArr[paramIndex] = currConstraintArrIndex;
     }
 
-    // Next emit the metadata for the Generic parameter type constraints 
+    // Next emit the metadata for the Generic parameter type constraints
     //
     for (paramIndex = 0; paramIndex < numTyPars; paramIndex++)
     {
@@ -2653,7 +2653,7 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
                 // We now need to fetch the values of the new GenericParamConstraint tokens
                 // that were created by the call to SetGenericParamProps
                 //
-                // These tokens are the token owners for the custom attributes 
+                // These tokens are the token owners for the custom attributes
                 // such as NulableAttribute and TupleElementNamesAttribute
                 //
                 HCORENUM hEnum = NULL;
@@ -2695,7 +2695,7 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         }
         _ASSERTE(tkOwnerOfCA != mdTokenNil);
 
-        // Record the Generic Param Constraint token 
+        // Record the Generic Param Constraint token
         // and supply it as the owner for the list of Custom attributes.
         //
         pGPC->Token(tkOwnerOfCA);

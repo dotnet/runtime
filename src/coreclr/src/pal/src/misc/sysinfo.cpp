@@ -460,11 +460,11 @@ GlobalMemoryStatusEx(
 #endif // __APPLE__
     }
 
-    // There is no API to get the total virtual address space size on 
-    // Unix, so we use a constant value representing 128TB, which is 
+    // There is no API to get the total virtual address space size on
+    // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
-    static const UINT64 _128TB = (1ull << 47); 
+    static const UINT64 _128TB = (1ull << 47);
     lpBuffer->ullTotalVirtual = _128TB;
     lpBuffer->ullAvailVirtual = lpBuffer->ullAvailPhys;
 

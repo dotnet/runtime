@@ -18,7 +18,7 @@
 #include "virtualcallstub.h"
 
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 // get the method table for dynamic methods
 DynamicMethodTable* DomainFile::GetDynamicMethodTable()
@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     //
     // allocate as many chunks as needed to hold the methods
     //
-    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */, 
+    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
         mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
@@ -191,7 +191,7 @@ void DynamicMethodTable::AddMethodsToList()
 
         pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
         pNewMD->m_pDebugMethodTable.SetValue(m_pMethodTable);
 #endif
 
@@ -247,7 +247,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
             if (pNewMD)
             {
                 m_DynamicMethodList = pNewMD->GetLCGMethodResolver()->m_next;
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 m_Used++;
 #endif
                 break;
@@ -263,7 +263,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Reset the method desc into pristine state
 
-    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here 
+    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
     // since it will always reuse the existing jump stub.
     pNewMD->Reset();
 
@@ -276,7 +276,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
     pNewMD->m_pszDebugClassName  = (LPUTF8)"dynamicclass";
     pNewMD->m_pszDebugMethodSignature = "DynamicMethod Signature not available";
@@ -308,7 +308,7 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
         LockHolder lh(this);
         pMethod->GetLCGMethodResolver()->m_next = m_DynamicMethodList;
         m_DynamicMethodList = pMethod;
-#ifdef _DEBUG 
+#ifdef _DEBUG
         m_Used--;
 #endif
     }
@@ -685,7 +685,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP))
     {
         char *a = new (nothrow) char;
@@ -752,7 +752,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
 #endif //!DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
 void HostCodeHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
@@ -814,7 +814,7 @@ HostCodeHeap* HostCodeHeap::GetCodeHeap(TADDR codeStart)
 }
 
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 void HostCodeHeap::FreeMemForCode(void * codeStart)
 {
@@ -876,7 +876,7 @@ void DynamicMethodDesc::Destroy()
 }
 
 //
-// The resolver object is reused when the method is destroyed, 
+// The resolver object is reused when the method is destroyed,
 // this will reset its state for the next use.
 //
 void LCGMethodResolver::Reset()
@@ -963,7 +963,7 @@ void LCGMethodResolver::Destroy()
         // we cannot use GetGlobalStringLiteralMap() here because it might throw
         CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-        // Access to m_DynamicStringLiterals doesn't need to be syncrhonized because 
+        // Access to m_DynamicStringLiterals doesn't need to be syncrhonized because
         // this can be run in only one thread: the finalizer thread.
         while (m_DynamicStringLiterals != NULL)
         {
@@ -995,7 +995,7 @@ void LCGMethodResolver::Destroy()
 
     if (m_pJumpStubCache != NULL)
     {
-        JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;  
+        JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;
         while (current)
         {
             JumpStubBlockHeader* next = current->m_next;
@@ -1042,7 +1042,7 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
         PRECONDITION(CheckPointer(securityControlFlags));
         PRECONDITION(CheckPointer(typeOwner));
     } CONTRACTL_END;
-    
+
     GCX_COOP();
 
     MethodDescCallSite getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT, m_managedResolver);
@@ -1101,7 +1101,7 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         m_StackSize = static_cast<unsigned short>(stackSize);
         m_Options = (initLocals) ? CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
         _ASSERTE(FitsIn<unsigned short>(EHSize));
-        m_EHSize = static_cast<unsigned short>(EHSize); 
+        m_EHSize = static_cast<unsigned short>(EHSize);
         m_Code = (BYTE*)code;
         code.SuppressRelease();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: CodeInfo {0x%p} on resolver %p\n", m_Code, this));
@@ -1119,8 +1119,8 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
 }
 
 //---------------------------------------------------------------------------------------
-// 
-SigPointer 
+//
+SigPointer
 LCGMethodResolver::GetLocalSig()
 {
     STANDARD_VM_CONTRACT;
@@ -1154,8 +1154,8 @@ LCGMethodResolver::GetLocalSig()
 } // LCGMethodResolver::GetLocalSig
 
 //---------------------------------------------------------------------------------------
-// 
-OBJECTHANDLE 
+//
+OBJECTHANDLE
 LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
@@ -1181,7 +1181,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 BOOL
 LCGMethodResolver::IsValidStringRef(mdToken metaTok)
 {
@@ -1193,7 +1193,7 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 STRINGREF
 LCGMethodResolver::GetStringLiteral(
     mdToken token)
@@ -1216,7 +1216,7 @@ LCGMethodResolver::GetStringLiteral(
     return getStringLiteral.Call_RetSTRINGREF(args);
 }
 
-// This method will get the interned string by calling GetInternedString on the 
+// This method will get the interned string by calling GetInternedString on the
 // global string liternal interning map. It will also store the returned entry
 // in m_DynamicStringLiterals
 STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
@@ -1237,14 +1237,14 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
 
     // lock the global string literal interning map
     CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
-    
+
     StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
     pStringLiteral->m_pEntry = pEntry.Extract();
 
     // Add to m_DynamicStringLiterals:
-    //  we don't need to check for duplicate because the string literal entries in 
+    //  we don't need to check for duplicate because the string literal entries in
     //      the global string literal map are ref counted.
     pStringLiteral->m_pNext = m_DynamicStringLiterals;
     m_DynamicStringLiterals = pStringLiteral;
@@ -1308,8 +1308,8 @@ void LCGMethodResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc
 }
 
 //---------------------------------------------------------------------------------------
-// 
-SigPointer 
+//
+SigPointer
 LCGMethodResolver::ResolveSignature(
     mdToken token)
 {
@@ -1339,8 +1339,8 @@ LCGMethodResolver::ResolveSignature(
 } // LCGMethodResolver::ResolveSignature
 
 //---------------------------------------------------------------------------------------
-// 
-SigPointer 
+//
+SigPointer
 LCGMethodResolver::ResolveSignatureForVarArg(
     mdToken token)
 {
@@ -1370,7 +1370,7 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 } // LCGMethodResolver::ResolveSignatureForVarArg
 
 //---------------------------------------------------------------------------------------
-// 
+//
 void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 {
     STANDARD_VM_CONTRACT;
@@ -1428,7 +1428,7 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 // Get the associated managed resolver. This method will be called during a GC so it should not throw, trigger a GC or cause the
 // object in question to be validated.
 OBJECTREF LCGMethodResolver::GetManagedResolver()
-{ 
+{
     LIMITED_METHOD_CONTRACT;
     return ObjectFromHandle(m_managedResolver);
 }
@@ -1491,7 +1491,7 @@ void* ChunkAllocator::New(size_t size)
         // make the allocation
         NewArrayHolder<BYTE> newBlock(new BYTE[CHUNK_SIZE]);
         pNewBlock = (BYTE*)newBlock;
-        ((size_t*)pNewBlock)[1] = CHUNK_SIZE - size - (sizeof(void*) * 2); 
+        ((size_t*)pNewBlock)[1] = CHUNK_SIZE - size - (sizeof(void*) * 2);
         LOG((LF_BCL, LL_INFO10, "Level1 - DM - Allocator [0x%p] - new block {0x%p}\n", this, pNewBlock));
         newBlock.SuppressRelease();
     }

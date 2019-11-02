@@ -21,12 +21,12 @@ public:
 
     // IsTransient
     // Determine if a Module is transient
-    static 
+    static
     BOOL QCALLTYPE IsTransient(QCall::ModuleHandle pModule);
 
     // GetTypeRef
     // This function will return the class token for the named element.
-    static 
+    static
     mdTypeRef QCALLTYPE GetTypeRef(QCall::ModuleHandle pModule,
                                    LPCWSTR wszFullName,
                                    QCall::ModuleHandle pRefedModule,
@@ -40,15 +40,15 @@ public:
 
 
     //GetArrayMethodToken
-    static 
+    static
     INT32 QCALLTYPE GetArrayMethodToken(QCall::ModuleHandle pModule,
-                                        INT32 tkTypeSpec, 
+                                        INT32 tkTypeSpec,
                                         LPCWSTR wszMethodName,
                                         LPCBYTE pSignature,
                                         INT32 sigLength);
 
     // GetMemberRefToken
-    // This function will return the MemberRef token 
+    // This function will return the MemberRef token
     static
     INT32 QCALLTYPE GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token);
 
@@ -65,7 +65,7 @@ public:
     // GetMemberRefFromSignature
     // This function will return the MemberRef token given the signature from managed code
     static
-    INT32 QCALLTYPE GetMemberRefFromSignature(QCall::ModuleHandle pModule, 
+    INT32 QCALLTYPE GetMemberRefFromSignature(QCall::ModuleHandle pModule,
                                               INT32 tr,
                                               LPCWSTR wszMemberName,
                                               LPCBYTE pSignature,
@@ -86,7 +86,7 @@ public:
     static FCDECL1(Object*, GetTypes,  ReflectModuleBaseObject* pModuleUNSAFE);
 
     // GetStringConstant
-    // If this is a dynamic module, this routine will define a new 
+    // If this is a dynamic module, this routine will define a new
     //  string constant or return the token of an existing constant.
     static
     mdString QCALLTYPE GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength);
@@ -102,7 +102,7 @@ public:
     static
     void QCALLTYPE GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString);
 
-    static 
+    static
     void QCALLTYPE GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString);
 
     static

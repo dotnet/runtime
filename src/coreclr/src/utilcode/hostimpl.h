@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 // ==++==
-// 
+//
 
-// 
+//
 //
 
 //
@@ -20,8 +20,8 @@ extern HANDLE g_ExecutableHeapHandle;
 
 // We have an internal class that is used to make sure the hosting api
 // is forwarded to the os. This is a must for the shim because mscorwks
-// which normally contains the implementation of the hosting api has not 
-// been loaded yet. In fact the shim is the one component responsible 
+// which normally contains the implementation of the hosting api has not
+// been loaded yet. In fact the shim is the one component responsible
 // for that loading
 class UtilExecutionEngine : public IExecutionEngine, public IEEMemoryManager
 {
@@ -46,7 +46,7 @@ private:
 
     // Get the value at a slot
     LPVOID STDMETHODCALLTYPE TLS_GetValue(DWORD slot);
-    
+
     // Get the value at a slot, return FALSE if TLS info block doesn't exist
     BOOL STDMETHODCALLTYPE TLS_CheckValue(DWORD slot, LPVOID * pValue);
     // Set the value at a slot
@@ -62,7 +62,7 @@ private:
     void STDMETHODCALLTYPE DestroyLock(CRITSEC_COOKIE lock);
     void STDMETHODCALLTYPE AcquireLock(CRITSEC_COOKIE lock);
     void STDMETHODCALLTYPE ReleaseLock(CRITSEC_COOKIE lock);
-    
+
     EVENT_COOKIE STDMETHODCALLTYPE CreateAutoEvent(BOOL bInitialState);
     EVENT_COOKIE STDMETHODCALLTYPE CreateManualEvent(BOOL bInitialState);
     void STDMETHODCALLTYPE CloseEvent(EVENT_COOKIE event);
@@ -105,7 +105,7 @@ private:
     BOOL STDMETHODCALLTYPE ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem);
     BOOL STDMETHODCALLTYPE ClrHeapValidate(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem);
     HANDLE STDMETHODCALLTYPE ClrGetProcessExecutableHeap();
-    
+
 };  // class UtilExecutionEngine
 
 #endif //__HOSTIMPL_H__

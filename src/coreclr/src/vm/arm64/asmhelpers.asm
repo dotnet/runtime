@@ -38,7 +38,7 @@
 
     IMPORT ObjIsInstanceOfCached
     IMPORT ArrayStoreCheck
-    SETALIAS g_pObjectClass,  ?g_pObjectClass@@3PEAVMethodTable@@EA 
+    SETALIAS g_pObjectClass,  ?g_pObjectClass@@3PEAVMethodTable@@EA
     IMPORT  $g_pObjectClass
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -195,7 +195,7 @@ Done
 
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
         SAVE_ARGUMENT_REGISTERS        sp, 16
-        SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96 
+        SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
         mov     x0, x12
         bl      NDirectImportWorker
@@ -279,8 +279,8 @@ ThePreStubPatchLabel
     ; The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
     ;
     MACRO
-      WRITE_BARRIER_END $__write_barrier_name 
-      
+      WRITE_BARRIER_END $__write_barrier_name
+
       LEAF_END_MARKED $__write_barrier_name
 
     MEND
@@ -404,7 +404,7 @@ wbs_highest_address
         ldr      x15, [x13], 8
         b        JIT_CheckedWriteBarrier
 
-    WRITE_BARRIER_END JIT_ByRefWriteBarrier 
+    WRITE_BARRIER_END JIT_ByRefWriteBarrier
 
 ;-----------------------------------------------------------------------------
 ; Simple WriteBarriers
@@ -447,11 +447,11 @@ NotInHeap
         stlr     x15, [x14]
 
 #ifdef WRITE_BARRIER_CHECK
-        ; Update GC Shadow Heap 
+        ; Update GC Shadow Heap
 
         ; Do not perform the work if g_GCShadow is 0
         ldr      x12, wbs_GCShadow
-        cbz      x12, ShadowUpdateDisabled 
+        cbz      x12, ShadowUpdateDisabled
 
         ; need temporary register. Save before using.
         str      x13, [sp, #-16]!
@@ -571,7 +571,7 @@ Exit
     ; Save arguments and return address
     PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
     SAVE_ARGUMENT_REGISTERS        sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96 
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
     ; Refer to ZapImportVirtualThunk::Save
     ; for details on this.
@@ -612,7 +612,7 @@ Exit
 ;
 ; On entry:
 ;
-; x12 = Address of thunk 
+; x12 = Address of thunk
 
     NESTED_ENTRY ExternalMethodFixupStub
 
@@ -726,9 +726,9 @@ NoFloatingPointRetVal
         add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         x1, x12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *). 
+        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *).
         ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
-        ; linking to the thread), make the client call and return with correct registers set 
+        ; linking to the thread), make the client call and return with correct registers set
         ; (x0/x1/s0-s3/d0-d3 as appropriate).
 
         bl          CLRToCOMWorker
@@ -758,12 +758,12 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_FrameSize
     GBLA ComCallPreStub_StackAlloc
     GBLA ComCallPreStub_FrameOffset
-    GBLA ComCallPreStub_ErrorReturnOffset 
+    GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
 ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
-ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust 
+ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
     IF ComCallPreStub_StackAlloc:MOD:16 != 0
 ComCallPreStub_StackAlloc     SETA ComCallPreStub_StackAlloc + 8
@@ -778,7 +778,7 @@ ComCallPreStub_FirstStackAdjust     SETA ComCallPreStub_FirstStackAdjust + 8
 
     ; Save arguments and return address
     PROLOG_SAVE_REG_PAIR           fp, lr, #-ComCallPreStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  ComCallPreStub_StackAlloc 
+    PROLOG_STACK_ALLOC  ComCallPreStub_StackAlloc
 
     SAVE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
 
@@ -802,10 +802,10 @@ ComCallPreStub_FirstStackAdjust     SETA ComCallPreStub_FirstStackAdjust + 8
 
     ; and tailcall to the actual method
     EPILOG_BRANCH_REG x12
-    
+
 ComCallPreStub_ErrorExit
     ldr x0, [sp, #(ComCallPreStub_ErrorReturnOffset)] ; ErrorReturn
-    
+
     ; pop the stack
     EPILOG_STACK_FREE ComCallPreStub_StackAlloc
     EPILOG_RESTORE_REG_PAIR           fp, lr, #ComCallPreStub_FirstStackAdjust!
@@ -849,7 +849,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
 
     ; Save arguments and return address
     PROLOG_SAVE_REG_PAIR           fp, lr, #-GenericComCallStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  GenericComCallStub_StackAlloc 
+    PROLOG_STACK_ALLOC  GenericComCallStub_StackAlloc
 
     SAVE_ARGUMENT_REGISTERS        sp, (16+GenericComCallStub_StackAlloc)
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
@@ -857,7 +857,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
     add x1, sp, #GenericComCallStub_FrameOffset
     bl COMToCLRWorker
-    
+
     ; pop the stack
     EPILOG_STACK_FREE GenericComCallStub_StackAlloc
     EPILOG_RESTORE_REG_PAIR           fp, lr, #GenericComCallStub_FirstStackAdjust!
@@ -902,7 +902,7 @@ COMToCLRDispatchHelper_StackLoop
     stp     x7, x8, [sp, #-16]! ; pre-index
     subs    x0, x0, #2
     bne     COMToCLRDispatchHelper_StackLoop
-    
+
 COMToCLRDispatchHelper_RegSetup
 
     ; We need an aligned offset for restoring float args, so do the subtraction into
@@ -923,11 +923,11 @@ COMToCLRDispatchHelper_RegSetup
     ldr x1, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 8)]
 
     blr lr
-    
+
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR           fp, lr, #16!
     EPILOG_RETURN
-    
+
     NESTED_END
 
 #endif ; FEATURE_COMINTEROP
@@ -1009,7 +1009,7 @@ UMThunkStub_InCooperativeMode
     add                 x0, fp, #UMThunkStub_StackArgs
 
     ; move source pointer to end of Stack Args
-    add                 x0, x0, x2 
+    add                 x0, x0, x2
 
     ; Count of stack slot pairs to copy (divide by 16)
     lsr                 x1, x2, #4
@@ -1018,10 +1018,10 @@ UMThunkStub_InCooperativeMode
     and                 x2, x2, #8
 
     ; If yes then start source pointer from 16 byte aligned stack slot
-    add                 x0, x0, x2      
+    add                 x0, x0, x2
 
     ; increment stack slot pair count by 1 if x2 is not zero
-    add                 x1, x1, x2, LSR #3 
+    add                 x1, x1, x2, LSR #3
 
 UMThunkStub_StackLoop
     ldp                 x4, x5, [x0, #-16]! ; pre-Index
@@ -1033,7 +1033,7 @@ UMThunkStub_RegArgumentsSetup
     ldr                 x16, [x3, #UMThunkMarshInfo__m_pILStub]
 
     RESTORE_ARGUMENT_REGISTERS        fp, 16
-    
+
     blr                 x16
 
 UMThunkStub_PostCall
@@ -1069,13 +1069,13 @@ UMThunkStub_DoTrapReturningThreads
     NESTED_END
 
     INLINE_GETTHREAD_CONSTANT_POOL
-    
+
 #ifdef FEATURE_HIJACK
 ; ------------------------------------------------------------------
 ; Hijack function for functions which return a scalar type or a struct (value type)
     NESTED_ENTRY OnHijackTripThread
     PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
-    ; Spill callee saved registers 
+    ; Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, #16
     PROLOG_SAVE_REG_PAIR   x21, x22, #32
     PROLOG_SAVE_REG_PAIR   x23, x24, #48
@@ -1091,7 +1091,7 @@ UMThunkStub_DoTrapReturningThreads
 
     mov x0, sp
     bl OnHijackWorker
-	
+
     ; restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
@@ -1131,7 +1131,7 @@ UMThunkStub_DoTrapReturningThreads
         NESTED_ENTRY CallEHFunclet
         ; On entry:
         ;
-        ; X0 = throwable        
+        ; X0 = throwable
         ; X1 = PC to invoke
         ; X2 = address of X19 register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
@@ -1176,7 +1176,7 @@ UMThunkStub_DoTrapReturningThreads
 
         NESTED_END CallEHFunclet
 
-        ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the 
+        ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
         ; frame pointer for accessing the locals in the parent method.
         NESTED_ENTRY CallEHFilterFunclet
 
@@ -1184,7 +1184,7 @@ UMThunkStub_DoTrapReturningThreads
 
         ; On entry:
         ;
-        ; X0 = throwable        
+        ; X0 = throwable
         ; X1 = SP of the caller of the method/funclet containing the filter
         ; X2 = PC to invoke
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
@@ -1209,7 +1209,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET
 
-        ; 
+        ;
         ; This is the primary function to which execution will be redirected to.
         ;
         NESTED_ENTRY $STUB
@@ -1225,7 +1225,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
         ; triggered in the prolog or epilog of the managed method. For such a case, we must
         ; align the stack before calling into the VM.
         ;
-        ; Runtime check for 16-byte alignment. 
+        ; Runtime check for 16-byte alignment.
         mov x0, sp
         and x0, x0, #15
         sub sp, sp, x0
@@ -1274,10 +1274,10 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
-; This method will perform a quick chained lookup of the entry if the 
+; This method will perform a quick chained lookup of the entry if the
 ;  initial cache lookup fails.
-; 
-; On Entry:  
+;
+; On Entry:
 ;   x9        contains the pointer to the current ResolveCacheElem
 ;   x11       contains the address of the indirection (and the flags in the low two bits)
 ;   x12       contains our contract the DispatchToken
@@ -1286,29 +1286,29 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 ;   x9        Must point to a ResolveCacheElem [For Sanity]
 ;  [x1-x7]    contains any additional register arguments for the interface method
 ;
-; Loaded from x0 
+; Loaded from x0
 ;   x13       contains our type     the MethodTable  (from object ref in x0)
-; 
+;
 ; On Exit:
 ;   x0, [x1-x7] arguments for the interface implementation target
-; 
-; On Exit (to ResolveWorkerAsmStub):  
+;
+; On Exit (to ResolveWorkerAsmStub):
 ;   x11       contains the address of the indirection and the flags in the low two bits.
 ;   x12       contains our contract (DispatchToken)
 ;   x16,x17   will be trashed
-; 
+;
     GBLA BACKPATCH_FLAG      ; two low bit flags used by ResolveWorkerAsmStub
     GBLA PROMOTE_CHAIN_FLAG  ; two low bit flags used by ResolveWorkerAsmStub
 BACKPATCH_FLAG      SETA  1
 PROMOTE_CHAIN_FLAG  SETA  2
-        
+
     NESTED_ENTRY ResolveWorkerChainLookupAsmStub
 
         tst     x11, #BACKPATCH_FLAG    ; First we check if x11 has the BACKPATCH_FLAG set
         bne     Fail                    ; If the BACKPATCH_FLAGS is set we will go directly to the ResolveWorkerAsmStub
-        
+
         ldr     x13, [x0]         ; retrieve the MethodTable from the object ref in x0
-MainLoop 
+MainLoop
         ldr     x9, [x9, #ResolveCacheElem__pNext]     ; x9 <= the next entry in the chain
         cmp     x9, #0
         beq     Fail
@@ -1316,11 +1316,11 @@ MainLoop
         ldp     x16, x17, [x9]
         cmp     x16, x13          ; compare our MT with the one in the ResolveCacheElem
         bne     MainLoop
-        
+
         cmp     x17, x12          ; compare our DispatchToken with one in the ResolveCacheElem
         bne     MainLoop
-        
-Success         
+
+Success
         ldr     x13, =g_dispatch_cache_chain_success_counter
         ldr     x16, [x13]
         subs    x16, x16, #1
@@ -1329,17 +1329,17 @@ Success
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
         br      x16               ; branch to interface implemenation target
-        
+
 Promote
                                   ; Move this entry to head postion of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
-        orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG 
+        orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG
         mov     x12, x9           ; We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
-Fail           
+Fail
         b       ResolveWorkerAsmStub ; call the ResolveWorkerAsmStub method to transition into the VM
-    
+
     NESTED_END ResolveWorkerChainLookupAsmStub
 
 ;; ------------------------------------------------------------------
@@ -1356,7 +1356,7 @@ Fail
         and x3, x11, #3 ; flag
         bl VSD_ResolveWorker
         mov x9, x0
-       
+
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         EPILOG_BRANCH_REG  x9
@@ -1374,7 +1374,7 @@ Fail
     mov x3, x10 ; Module*
     bl ExternalMethodFixupWorker
     mov x12, x0
-    
+
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     ; Share patch label
     b ExternalMethodFixupPatchLabel
@@ -1384,13 +1384,13 @@ Fail
         DynamicHelper $frameFlags, $suffix
 
         NESTED_ENTRY DelayLoad_Helper$suffix
-        
+
         PROLOG_WITH_TRANSITION_BLOCK
 
         add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov x1, x11 ; Indirection cell
         mov x2, x9 ; sectionIndex
-        mov x3, x10 ; Module*		
+        mov x3, x10 ; Module*
         mov x4, $frameFlags
         bl DynamicHelperWorker
         cbnz x0, %FT0
@@ -1406,8 +1406,8 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_Default
     DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
-#endif // FEATURE_READYTORUN		
-        
+#endif // FEATURE_READYTORUN
+
 #ifdef FEATURE_PREJIT
 ;; ------------------------------------------------------------------
 ;; void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags)
@@ -1465,7 +1465,7 @@ Fail
 #endif
 
 ;
-; JIT Static access helpers when coreclr host specifies single appdomain flag 
+; JIT Static access helpers when coreclr host specifies single appdomain flag
 ;
 
 ; ------------------------------------------------------------------
@@ -1569,15 +1569,15 @@ ThrowIndexOutOfRangeException
     ldr     x0, =CORINFO_IndexOutOfRangeException_ASM
     b       JIT_InternalThrow
 
-   LEAF_END 
+   LEAF_END
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
 ;                                                       unsigned idx, Object* val)
 ;   x12 = array->GetArrayElementTypeHandle()
 ;
-    NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch    
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-48!    
+    NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch
+    PROLOG_SAVE_REG_PAIR           fp, lr, #-48!
     stp     x0, x1, [sp, #16]
     str     x2, [sp, #32]
 
@@ -1596,12 +1596,12 @@ NeedFrame
 
     bl      ArrayStoreCheck ; ArrayStoreCheck(&val, &array)
 
-DoWrite        
+DoWrite
     ldp     x0, x1, [sp, #16]
-    ldr     x2, [sp, #32]	
+    ldr     x2, [sp, #32]
     EPILOG_RESTORE_REG_PAIR           fp, lr, #48!
-    EPILOG_BRANCH JIT_Stelem_DoWrite    
-    NESTED_END 
+    EPILOG_BRANCH JIT_Stelem_DoWrite
+    NESTED_END
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)

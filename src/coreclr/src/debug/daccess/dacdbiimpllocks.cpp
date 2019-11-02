@@ -19,8 +19,8 @@
 
 // ============================================================================
 // Functions to test data safety. In these functions we determine whether a lock
-// is held in a code path we need to execute for inspection. If so, we throw an 
-// exception. 
+// is held in a code path we need to execute for inspection. If so, we throw an
+// exception.
 // ============================================================================
 
 #ifdef TEST_DATA_CONSISTENCY

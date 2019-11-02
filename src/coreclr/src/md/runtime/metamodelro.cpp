@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModelRO.cpp -- Read-only implementation of compressed COM+ metadata.
-// 
+//
 
 //
 //*****************************************************************************
@@ -17,20 +17,20 @@
 //*****************************************************************************
 // Set the pointers to consecutive areas of a large buffer.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMd::InitializeTables(
     MetaData::DataBlob tablesData)
 {
     HRESULT hr;
-    
+
     for (int i = 0; i < TBL_COUNT; i++)
     {
         // This table data
         MetaData::DataBlob tableData;
-        
-        S_UINT32 cbTableSize = 
-            S_UINT32(m_TableDefs[i].m_cbRec) * 
+
+        S_UINT32 cbTableSize =
+            S_UINT32(m_TableDefs[i].m_cbRec) *
             S_UINT32(m_Schema.m_cRecs[i]);
         if (cbTableSize.IsOverflow())
         {
@@ -43,48 +43,48 @@ CMiniMd::InitializeTables(
             return CLDB_E_FILE_CORRUPT;
         }
         _ASSERTE(cbTableSize.Value() == tableData.GetSize());
-        
+
         METADATATRACKER_ONLY(MetaDataTracker::NoteSection(
-            i, 
-            tableData.GetDataPointer(), 
-            tableData.GetSize(), 
+            i,
+            tableData.GetDataPointer(),
+            tableData.GetSize(),
             m_TableDefs[i].m_cbRec));
-        
+
         IfFailRet(m_Tables[i].Initialize(
-            m_TableDefs[i].m_cbRec, 
-            tableData, 
+            m_TableDefs[i].m_cbRec,
+            tableData,
             FALSE));    // fCopyData
     }
-    
+
     return S_OK;
 } // CMiniMd::SetTablePointers
 
 //*****************************************************************************
 // Given a buffer that contains a MiniMd, init to read it.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMd::InitOnMem(
-    void *pvBuf,        // The buffer.    
+    void *pvBuf,        // The buffer.
     ULONG ulBufLen)     // Size of the buffer..
 {
     HRESULT hr = S_OK;
     ULONG   cbData;
     BYTE   *pBuf = reinterpret_cast<BYTE*>(pvBuf);
-    
+
     // Uncompress the schema from the buffer into our structures.
     IfFailGo(SchemaPopulate(pvBuf, ulBufLen, &cbData));
     PREFAST_ASSUME(cbData <= ulBufLen);
-    
+
     // There shouldn't be any pointer tables.
     if ((m_Schema.m_cRecs[TBL_MethodPtr] != 0) || (m_Schema.m_cRecs[TBL_FieldPtr] != 0))
     {
         Debug_ReportError("MethodPtr and FieldPtr tables are not allowed in Read-Only format.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // initialize the pointers to the rest of the data.
     IfFailGo(InitializeTables(MetaData::DataBlob(pBuf + Align4(cbData), ulBufLen-cbData)));
-    
+
 ErrExit:
     return hr;
 } // CMiniMd::InitOnMem
@@ -92,7 +92,7 @@ ErrExit:
 //*****************************************************************************
 // Validate cross-stream consistency.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMd::PostInit(
     int iLevel)
 {
@@ -102,19 +102,19 @@ CMiniMd::PostInit(
 //*****************************************************************************
 // converting a ANSI heap string to unicode string to an output buffer
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMd::Impl_GetStringW(
-    ULONG  ix, 
-    __inout_ecount (cchBuffer) LPWSTR szOut, 
-    ULONG  cchBuffer, 
+    ULONG  ix,
+    __inout_ecount (cchBuffer) LPWSTR szOut,
+    ULONG  cchBuffer,
     ULONG *pcchBuffer)
 {
     LPCSTR  szString;       // Single byte version.
     int     iSize;          // Size of resulting string, in wide chars.
     HRESULT hr = NOERROR;
-    
+
     IfFailGo(getString(ix, &szString));
-    
+
     if (*szString == 0)
     {
         // If emtpy string "", return pccBuffer 0
@@ -129,42 +129,42 @@ CMiniMd::Impl_GetStringW(
     {
         // What was the problem?
         DWORD dwNT = GetLastError();
-        
+
         // Not truncation?
         if (dwNT != ERROR_INSUFFICIENT_BUFFER)
             IfFailGo(HRESULT_FROM_NT(dwNT));
-        
+
         // Truncation error; get the size required.
         if (pcchBuffer != NULL)
             *pcchBuffer = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
-        
+
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string
             szOut[cchBuffer - 1] = W('\0');
         }
-        
+
         hr = CLDB_S_TRUNCATION;
         goto ErrExit;
     }
     if (pcchBuffer != NULL)
         *pcchBuffer = iSize;
-    
+
 ErrExit:
     return hr;
 } // CMiniMd::Impl_GetStringW
 
 
 //*****************************************************************************
-// Given a table with a pointer (index) to a sequence of rows in another 
+// Given a table with a pointer (index) to a sequence of rows in another
 //  table, get the RID of the end row.  This is the STL-ish end; the first row
 //  not in the list.  Thus, for a list of 0 elements, the start and end will
 //  be the same.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMd::Impl_GetEndRidForColumn(   // The End rid.
-    UINT32       nTableIndex, 
-    RID          nRowIndex, 
+    UINT32       nTableIndex,
+    RID          nRowIndex,
     CMiniColDef &def,                   // Column containing the RID into other table.
     UINT32       nTargetTableIndex,     // The other table.
     RID         *pEndRid)
@@ -172,7 +172,7 @@ CMiniMd::Impl_GetEndRidForColumn(   // The End rid.
     HRESULT hr;
     _ASSERTE(nTableIndex < TBL_COUNT);
     RID nLastRowIndex = m_Schema.m_cRecs[nTableIndex];
-    
+
     // Last rid in range from NEXT record, or count of table, if last record.
     if (nRowIndex < nLastRowIndex)
     {
@@ -190,7 +190,7 @@ CMiniMd::Impl_GetEndRidForColumn(   // The End rid.
         _ASSERTE(nTargetTableIndex < TBL_COUNT);
         *pEndRid = m_Schema.m_cRecs[nTargetTableIndex] + 1;
     }
-    
+
     return S_OK;
 } // CMiniMd::Impl_GetEndRidForColumn
 
@@ -198,7 +198,7 @@ CMiniMd::Impl_GetEndRidForColumn(   // The End rid.
 //*****************************************************************************
 // return all found CAs in an enumerator
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMd::CommonEnumCustomAttributeByName(
     mdToken        tkObj,               // [IN] Object with Custom Attribute.
     LPCUTF8        szName,              // [IN] Name of desired Custom Attribute.
@@ -206,23 +206,23 @@ CMiniMd::CommonEnumCustomAttributeByName(
     HENUMInternal *phEnum)              // enumerator to fill up
 {
     HRESULT hr = S_OK;
-    HRESULT hrRet = S_FALSE;    // Assume that we won't find any 
+    HRESULT hrRet = S_FALSE;    // Assume that we won't find any
     ULONG   ridStart, ridEnd;   // Loop start and endpoints.
-    
+
     _ASSERTE(phEnum != NULL);
-    
+
     memset(phEnum, 0, sizeof(HENUMInternal));
-    
+
     HENUMInternal::InitDynamicArrayEnum(phEnum);
-    
+
     phEnum->m_tkKind = mdtCustomAttribute;
-    
+
     // Get the list of custom values for the parent object.
-    
+
     IfFailGo(getCustomAttributeForToken(tkObj, &ridEnd, &ridStart));
     if (ridStart == 0)
         return S_FALSE;
-    
+
     // Look for one with the given name.
     for (; ridStart < ridEnd; ++ridStart)
     {
@@ -232,13 +232,13 @@ CMiniMd::CommonEnumCustomAttributeByName(
             // If here, found a match.
             hrRet = S_OK;
             IfFailGo(HENUMInternal::AddElementToEnum(
-                phEnum, 
+                phEnum,
                 TokenFromRid(ridStart, mdtCustomAttribute)));
             if (fStopAtFirstFind)
                 goto ErrExit;
         }
     }
-    
+
 ErrExit:
     if (FAILED(hr))
         return hr;
@@ -251,8 +251,8 @@ ErrExit:
 //  EG. Constant table has pointer back to Param or Field.
 //
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMd::vSearchTable(
     ULONG       ixTbl,      // Table to search.
     CMiniColDef sColumn,    // Sorted key column, containing search value.
@@ -300,11 +300,11 @@ CMiniMd::vSearchTable(
 
 //*****************************************************************************
 // Search a table for the highest-RID row containing a value that is less than
-//  or equal to the target value.  EG.  TypeDef points to first Field, but if 
+//  or equal to the target value.  EG.  TypeDef points to first Field, but if
 //  a TypeDef has no fields, it points to first field of next TypeDef.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMd::vSearchTableNotGreater(
     ULONG       ixTbl,          // Table to search.
     CMiniColDef sColumn,        // the column def containing search value
@@ -316,8 +316,8 @@ CMiniMd::vSearchTableNotGreater(
     ULONG  cRecs;               // Rows in the table.
     ULONG  val = 0;             // Value from a table.
     ULONG  lo, mid = 0, hi;     // binary search indices.
-    
-    cRecs = GetCountRecs(ixTbl); 
+
+    cRecs = GetCountRecs(ixTbl);
 
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // If you change the rows touched while searching, please update
@@ -354,7 +354,7 @@ CMiniMd::vSearchTableNotGreater(
     // May or may not have found anything that matched.  Mid will be close, but may
     //  be to high or too low.  It should point to the highest acceptable
     //  record.
-    
+
     // If the value is greater than the target, back up just until the value is
     //  less than or equal to the target.  SHOULD only be one step.
     if (val > ulTarget)
@@ -370,7 +370,7 @@ CMiniMd::vSearchTableNotGreater(
     }
     else
     {
-        // Value is less than or equal to the target.  As long as the next 
+        // Value is less than or equal to the target.  As long as the next
         //  record is also acceptable, move forward.
         while (mid < cRecs)
         {
@@ -383,7 +383,7 @@ CMiniMd::vSearchTableNotGreater(
             mid++;
         }
     }
-    
+
     // Return the value that's just less than the target.
     *pRid = mid;
     return S_OK;
@@ -393,7 +393,7 @@ CMiniMd::vSearchTableNotGreater(
 // return just the blob value of the first found CA matching the query.
 // returns S_FALSE if there is no match
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMd::CommonGetCustomAttributeByNameEx(
         mdToken            tkObj,            // [IN] Object with Custom Attribute.
         LPCUTF8            szName,           // [IN] Name of desired Custom Attribute.
@@ -405,11 +405,11 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
 
     ULONG               cbData;
     CustomAttributeRec *pRec;
-    
+
     ULONG   ridStart, ridEnd;   // Loop start and endpoints.
-    
+
     // Get the list of custom values for the parent object.
-    
+
     IfFailGo(getCustomAttributeForToken(tkObj, &ridEnd, &ridStart));
 
     hr = S_FALSE;
@@ -429,7 +429,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
                 // now get the record out.
                 if (pcbData == NULL)
                     pcbData = &cbData;
-                
+
                 IfFailGo(GetCustomAttributeRecord(ridStart, &pRec));
                 IfFailGo(getValueOfCustomAttribute(pRec, reinterpret_cast<const BYTE **>(ppData), pcbData));
                 if (ptkCA)
@@ -438,7 +438,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
             break;
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMd::CommonGetCustomAttributeByName

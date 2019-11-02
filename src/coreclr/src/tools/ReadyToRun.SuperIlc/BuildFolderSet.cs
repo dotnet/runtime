@@ -159,7 +159,7 @@ namespace ReadyToRun.SuperIlc
             }
 
             ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism, _options.MeasurePerf);
-            
+
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
@@ -1071,7 +1071,7 @@ namespace ReadyToRun.SuperIlc
 
             int topCount;
             int bottomCount;
-            
+
             if (sizeStats.Count <= 2 * TopExeCount)
             {
                 topCount = sizeStats.Count;
@@ -1479,7 +1479,7 @@ namespace ReadyToRun.SuperIlc
                     {
                         ProcessInfo compilationPerRunner = compilation[(int)runner.Index];
                         if (compilationPerRunner != null &&
-                            GetCompilationOutcome(compilationPerRunner) == outcome && 
+                            GetCompilationOutcome(compilationPerRunner) == outcome &&
                             compilationPerRunner.Parameters != null)
                         {
                             filteredTestList.Add(compilationPerRunner.Parameters.OutputFileName);

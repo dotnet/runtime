@@ -420,7 +420,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
         else if (*Prefix == SCANF_PREFIX_LONGLONG)
         {
             CHECK_OUT_IN_ITS_RANGE(Out,BaseOut,EndOut)
-            
+
             if (strcpy_s(Out, iOutSize-(Out-BaseOut), scanf_longlongfmt) != SAFECRT_SUCCESS)
             {
                 ERROR("strcpy_s failed\n");
@@ -461,7 +461,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
     {
         /* There is a small compatibility problem in the handling of the []
            option in FreeBSD vs. Windows.  In Windows, you can have [z-a]
-           as well as [a-z].  In FreeBSD, [z-a] fails.  So, we need to 
+           as well as [a-z].  In FreeBSD, [z-a] fails.  So, we need to
            reverse the instances of z-a to a-z (and [m-e] to [e-m], etc). */
 
         /* step 1 : copy the leading [ */
@@ -477,8 +477,8 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
             (*Fmt)++;
         }
 
-        /* step 3 : copy a leading ], if present; a ] immediately after the 
-           leading [ (or [^) does *not* end the sequence, it is part of the 
+        /* step 3 : copy a leading ], if present; a ] immediately after the
+           leading [ (or [^) does *not* end the sequence, it is part of the
            characters to match */
         if( ']' == **Fmt )
         {
@@ -487,7 +487,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
             (*Fmt)++;
         }
 
-        /* step 4 : if the next character is already a '-', it's not part of an 
+        /* step 4 : if the next character is already a '-', it's not part of an
            interval specifier, so just copy it */
         if('-' == **Fmt )
         {
@@ -497,7 +497,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
         }
 
         /* ok then, process the rest of it */
-        while( '\0' != **Fmt ) 
+        while( '\0' != **Fmt )
         {
             if(']' == **Fmt)
             {
@@ -511,7 +511,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
             {
                 if( ']' == (*Fmt)[1] )
                 {
-                    /* got a '-', next character is the terminating ']'; 
+                    /* got a '-', next character is the terminating ']';
                        copy '-' literally */
                     CHECK_OUT_IN_ITS_RANGE(Out,BaseOut,EndOut)
                     *Out++ = '-';
@@ -526,14 +526,14 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
                     prev = (*Fmt)[-1];
                     next = (*Fmt)[1];
 
-                    /* if boundaries were inverted, replace the already-copied 
+                    /* if boundaries were inverted, replace the already-copied
                        low boundary by the 'real' low boundary */
                     if( prev > next )
                     {
                         CHECK_OUT_IN_ITS_RANGE(Out-1,BaseOut,EndOut)
                         Out[-1] = next;
 
-                        /* ...and save the 'real' upper boundary, which will be 
+                        /* ...and save the 'real' upper boundary, which will be
                            copied to 'Out' below */
                         next = prev;
                     }
@@ -543,7 +543,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
                     CHECK_OUT_IN_ITS_RANGE(Out,BaseOut,EndOut)
                     *Out++ = next;
 
-                    /* skip over the '-' and the next character, which we 
+                    /* skip over the '-' and the next character, which we
                        already copied */
                     (*Fmt)+=2;
                 }
@@ -554,7 +554,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
                 CHECK_OUT_IN_ITS_RANGE(Out,BaseOut,EndOut)
                 *Out++ = **Fmt;
                 (*Fmt)++;
-            }            
+            }
         }
 
         *Type = SCANF_TYPE_BRACKETS;
@@ -564,7 +564,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
     {
         *Type = SCANF_TYPE_SPACE;
     }
-    
+
     /* add %n so we know how far to increment the pointer */
     CHECK_OUT_IN_ITS_RANGE(Out,BaseOut,EndOut)
     *Out++ = '%';
@@ -765,7 +765,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
     {
         /* There is a small compatibility problem in the handling of the []
            option in FreeBSD vs. Windows.  In Windows, you can have [z-a]
-           as well as [a-z].  In FreeBSD, [z-a] fails.  So, we need to 
+           as well as [a-z].  In FreeBSD, [z-a] fails.  So, we need to
            reverse the instances of z-a to a-z (and [m-e] to [e-m], etc). */
 
         /* step 1 : copy the leading [ */
@@ -779,8 +779,8 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
             (*Fmt)++;
         }
 
-        /* step 3 : copy a leading ], if present; a ] immediately after the 
-           leading [ (or [^) does *not* end the sequence, it is part of the 
+        /* step 3 : copy a leading ], if present; a ] immediately after the
+           leading [ (or [^) does *not* end the sequence, it is part of the
            characters to match */
         if( ']' == **Fmt )
         {
@@ -788,7 +788,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
             (*Fmt)++;
         }
 
-        /* step 4 : if the next character is already a '-', it's not part of an 
+        /* step 4 : if the next character is already a '-', it's not part of an
            interval specifier, so just copy it */
         if('-' == **Fmt )
         {
@@ -797,7 +797,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         }
 
         /* ok then, process the rest of it */
-        while( '\0' != **Fmt ) 
+        while( '\0' != **Fmt )
         {
             if(']' == **Fmt)
             {
@@ -810,7 +810,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
             {
                 if( ']' == (*Fmt)[1] )
                 {
-                    /* got a '-', next character is the terminating ']'; 
+                    /* got a '-', next character is the terminating ']';
                        copy '-' literally */
                     *Out++ = '-';
                     (*Fmt)++;
@@ -824,13 +824,13 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
                     prev = (*Fmt)[-1];
                     next = (*Fmt)[1];
 
-                    /* if boundaries were inverted, replace the already-copied 
+                    /* if boundaries were inverted, replace the already-copied
                        low boundary by the 'real' low boundary */
                     if( prev > next )
                     {
                         Out[-1] = next;
 
-                        /* ...and save the 'real' upper boundary, which will be 
+                        /* ...and save the 'real' upper boundary, which will be
                            copied to 'Out' below */
                         next = prev;
                     }
@@ -838,7 +838,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
                     *Out++ = '-';
                     *Out++ = next;
 
-                    /* skip over the '-' and the next character, which we 
+                    /* skip over the '-' and the next character, which we
                        already copied */
                     (*Fmt)+=2;
                 }
@@ -848,7 +848,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
                 /* plain character; just copy it */
                 *Out++ = **Fmt;
                 (*Fmt)++;
-            }            
+            }
         }
 
         *Type = SCANF_TYPE_BRACKETS;
@@ -991,7 +991,7 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
                 {
                     ASSERT("WideCharToMultiByte failed.  Error is %d\n",
                         GetLastError());
-                    PAL_free(newBuff);    
+                    PAL_free(newBuff);
                     return -1;
                 }
 
@@ -1013,16 +1013,16 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
                         TempBuff[0] = '%';
                         TempBuff[1] = '*';
 
-                        /* %n doesn't count as a conversion. Since we're 
-                           suppressing conversion of the %[], sscanf will 
-                           always return 0, so we can't use the return value 
-                           to determine success. Set n to 0 before the call; if 
+                        /* %n doesn't count as a conversion. Since we're
+                           suppressing conversion of the %[], sscanf will
+                           always return 0, so we can't use the return value
+                           to determine success. Set n to 0 before the call; if
                            it's still 0 afterwards, we know the call failed */
                         n = 0;
                         sscanf_s(newBuff, TempBuff, &n);
                         if(0 == n)
                         {
-                            /* sscanf failed, nothing matched. set ret to 0, 
+                            /* sscanf failed, nothing matched. set ret to 0,
                                so we know we have to break */
                             ret = 0;
                         }
@@ -1048,7 +1048,7 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
                             // We don’t really know the size of the destination buffer provided by the
                             // caller. So we have to assume that the caller has allocated enough space
                             // to hold either the width specified in the format or the entire input
-                            // string plus ‘\0’. 
+                            // string plus ‘\0’.
                             typeLen = ((Width > 0) ? Width : PAL_wcslen(Buffer)) + 1;
                         }
                         else if (Type == SCANF_TYPE_CHAR)
@@ -1078,7 +1078,7 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
                     ret = SscanfFloatCheckExponent(newBuff, TempBuff, voidPtr, &n);
                 }
 #endif // SSCANF_CANNOT_HANDLE_MISSING_EXPONENT
-                
+
                 PAL_free(newBuff);
                 if (ret > 0)
                 {
@@ -1107,7 +1107,7 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
             }
         }
     }
-	
+
     return Length;
 }
 
@@ -1146,21 +1146,21 @@ Function:
   SscanfFloatCheckExponent
 
   Parameters:
-  buff:     pointer to the buffer to be parsed; the target float must be at 
-            the beginning of the buffer, except for any number of leading 
+  buff:     pointer to the buffer to be parsed; the target float must be at
+            the beginning of the buffer, except for any number of leading
             spaces
   floatFmt: must be "%e%n" (or "%f%n" or "%g%n")
   voidptr:  optional pointer to output variable (which should be a float)
   pn:       pointer to an int to receive the number of bytes parsed.
-  
+
   Notes:
-  On some platforms (specifically AIX) sscanf fails to parse a float from 
-  a string such as 12.34e (while it succeeds for e.g. 12.34a). Sscanf 
-  initially interprets the 'e' as the keyword for the beginning of a 
-  10-exponent of a floating point in scientific notation (as in 12.34e5), 
-  but then it fails to parse the actual exponent. At this point sscanf should 
-  be able to fall back on the narrower pattern, and parse the floating point 
-  in common decimal notation (i.e. 12.34). However AIX's sscanf fails to do 
+  On some platforms (specifically AIX) sscanf fails to parse a float from
+  a string such as 12.34e (while it succeeds for e.g. 12.34a). Sscanf
+  initially interprets the 'e' as the keyword for the beginning of a
+  10-exponent of a floating point in scientific notation (as in 12.34e5),
+  but then it fails to parse the actual exponent. At this point sscanf should
+  be able to fall back on the narrower pattern, and parse the floating point
+  in common decimal notation (i.e. 12.34). However AIX's sscanf fails to do
   so and it does not parse any number.
   This function checks the given string for a such case and removes
   the 'e' before parsing the float.
@@ -1195,11 +1195,11 @@ static int SscanfFloatCheckExponent(LPCSTR buff, LPCSTR floatFmt,
         pos++;
     }
 
-    /* check if it is something like 12.34e and the trailing 'e' is not 
+    /* check if it is something like 12.34e and the trailing 'e' is not
        the suffix of a valid exponent of 10, such as 12.34e+5 */
     if ( digits > 0 && *pos && tolower(*pos) == 'e' &&
-         !( *(pos+1) && 
-            ( isdigit(*(pos+1)) || 
+         !( *(pos+1) &&
+            ( isdigit(*(pos+1)) ||
               ( (*(pos+1) == '+' || *(pos+1) == '-') && isdigit(*(pos+2)) )
                 )
              )
@@ -1209,7 +1209,7 @@ static int SscanfFloatCheckExponent(LPCSTR buff, LPCSTR floatFmt,
         if (pLocBuf)
         {
             memcpy(pLocBuf, buff, (pos-buff)*sizeof(CHAR));
-            pLocBuf[pos-buff] = 0;                              
+            pLocBuf[pos-buff] = 0;
             if (voidPtr)
                 ret = sscanf_s(pLocBuf, floatFmt, voidPtr, pn);
             else

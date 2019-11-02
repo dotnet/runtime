@@ -8,7 +8,7 @@
 
 #include <utilcode.h>                   // Utility helpers.
 #include <posterror.h>                  // Error handlers
-#define INIT_GUIDS  
+#define INIT_GUIDS
 #include <corpriv.h>
 #include <winwrap.h>
 #include <mscoree.h>
@@ -68,14 +68,14 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     switch (dwReason)
     {
         case DLL_PROCESS_ATTACH:
-#ifndef FEATURE_PAL        
+#ifndef FEATURE_PAL
             // Make sure the /GS security cookie is initialized before we call anything else.
             // BinScope detects the call to __security_init_cookie in its "Has Non-GS-friendly
             // Initialization" check and makes it pass.
             __security_init_cookie();
-#endif // FEATURE_PAL        
+#endif // FEATURE_PAL
 
-            // It's critical that we invoke InitUtilCode() before the CRT initializes. 
+            // It's critical that we invoke InitUtilCode() before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
             // this step having been done.
 
@@ -87,13 +87,13 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
             if (!(result = _CRT_INIT(hInstance, dwReason, lpReserved)))
             {
-                // CRT_INIT may fail to initialize the CRT heap. Make sure we don't continue 
+                // CRT_INIT may fail to initialize the CRT heap. Make sure we don't continue
                 // down a path that would trigger an AV and tear down the host process
                 break;
             }
             result = DllMain(hInstance, dwReason, lpReserved);
             break;
-        
+
         case DLL_THREAD_ATTACH:
             _CRT_INIT(hInstance, dwReason, lpReserved);
             result = DllMain(hInstance, dwReason, lpReserved);
@@ -107,7 +107,7 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         default:
             result = FALSE;  // it'd be an OS bug if we got here - not much we can do.
-            break;   
+            break;
     }
     return result;
 }
@@ -156,8 +156,8 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 #ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
-// %%Function: DllCanUnloadNowInternal  
-// 
+// %%Function: DllCanUnloadNowInternal
+//
 // Returns:
 //  S_FALSE                 - Indicating that COR, once loaded, may not be
 //                            unloaded.
@@ -165,15 +165,15 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 STDAPI DllCanUnloadNowInternal(void)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_ENTRY_POINT;    
+    STATIC_CONTRACT_ENTRY_POINT;
 
     //we should never unload unless the process is dying
     return S_FALSE;
 }  // DllCanUnloadNowInternal
 
 // ---------------------------------------------------------------------------
-// %%Function: DllRegisterServerInternal 
-// 
+// %%Function: DllRegisterServerInternal
+//
 // Description:
 //  Registers
 // ---------------------------------------------------------------------------
@@ -191,7 +191,7 @@ STDAPI DllRegisterServerInternal(HINSTANCE hMod, LPCWSTR version)
 }  // DllRegisterServerInternal
 
 // ---------------------------------------------------------------------------
-// %%Function: DllUnregisterServerInternal      
+// %%Function: DllUnregisterServerInternal
 // ---------------------------------------------------------------------------
 STDAPI DllUnregisterServerInternal(void)
 {
@@ -205,7 +205,7 @@ STDAPI DllUnregisterServerInternal(void)
     CONTRACTL_END;
 
     return S_OK;
-    
+
 }  // DllUnregisterServerInternal
 #endif // FEATURE_COMINTEROP
 
@@ -233,7 +233,7 @@ STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
         ENTRY_POINT;
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
-    
+
     NonVMComHolder<IClassFactory> pcf(NULL);
     HRESULT hr;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -292,7 +292,7 @@ STDAPI DLLEXPORT GetMetaDataInternalInterfaceFromPublic(
         PRECONDITION(CheckPointer(pv));
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -319,7 +319,7 @@ STDAPI DLLEXPORT GetMetaDataPublicInterfaceFromInternal(
         PRECONDITION(CheckPointer(ppv));
         ENTRY_POINT;
     } CONTRACTL_END;
-    
+
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -348,7 +348,7 @@ STDAPI ReOpenMetaDataWithMemory(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;    
+    HRESULT hr = S_OK;
 
     BEGIN_ENTRYPOINT_NOTHROW;
     hr = MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
@@ -365,7 +365,7 @@ STDAPI ReOpenMetaDataWithMemoryEx(
     void        *pUnk,                  // [IN] Given scope. public interfaces
     LPCVOID     pData,                  // [in] Location of scope data.
     ULONG       cbData,                 // [in] Size of the data pointed to by pData.
-    DWORD       dwReOpenFlags)          // [in] ReOpen flags              
+    DWORD       dwReOpenFlags)          // [in] ReOpen flags
 {
     CONTRACTL{
         NOTHROW;
@@ -375,7 +375,7 @@ STDAPI ReOpenMetaDataWithMemoryEx(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;    
+    HRESULT hr = S_OK;
 
     BEGIN_ENTRYPOINT_NOTHROW;
     hr = MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
@@ -385,16 +385,16 @@ STDAPI ReOpenMetaDataWithMemoryEx(
 
 // Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
 // Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-HRESULT 
+HRESULT
 CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_opt(*pcchBuffer) LPWSTR wszBuffer, 
+    __out_ecount_opt(*pcchBuffer) LPWSTR wszBuffer,
     __inout                       DWORD *pcchBuffer)
 {
     // Simply forward the call to the ICLRRuntimeHostInternal implementation.
     STATIC_CONTRACT_WRAPPER;
 
     HRESULT hr = GetCORVersionInternal(wszBuffer, *pcchBuffer, pcchBuffer);
-    
+
     return hr;
 } // CLRRuntimeHostInternal_GetImageVersionString
 
@@ -403,25 +403,25 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        ENTRY_POINT;        
+        ENTRY_POINT;
     } CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
-    
-        
+
+
 #ifdef CROSSGEN_COMPILE
 
     if (WszGetModuleFileName(NULL, pBuffer) > 0)
-    {     
-        hr = CopySystemDirectory(pBuffer, pBuffer);    
+    {
+        hr = CopySystemDirectory(pBuffer, pBuffer);
     }
     else {
         hr = HRESULT_FROM_GetLastError();
     }
-        
+
 #else
-       
+
     if (!PAL_GetPALDirectoryWrapper(pBuffer)) {
         hr = HRESULT_FROM_GetLastError();
     }
@@ -433,20 +433,20 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 
 //
 // Returns version of the runtime (null-terminated).
-// 
+//
 // Arguments:
 //    pBuffer - [out] Output buffer allocated by caller of size cchBuffer.
 //    cchBuffer - Size of pBuffer in characters.
-//    pdwLength - [out] Size of the version string in characters (incl. null-terminator). Will be filled 
+//    pdwLength - [out] Size of the version string in characters (incl. null-terminator). Will be filled
 //                even if ERROR_INSUFFICIENT_BUFFER is returned.
-// 
+//
 // Return Value:
 //    S_OK - Output buffer contains the version string.
-//    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in 
+//    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in
 //                                                    characters.
 
 STDAPI GetCORVersionInternal(
-__out_ecount_z_opt(cchBuffer) LPWSTR pBuffer, 
+__out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
                               DWORD cchBuffer,
                         __out DWORD *pdwLength)
 {
@@ -457,10 +457,10 @@ __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
         PRECONDITION(CheckPointer(pBuffer, NULL_OK));
         PRECONDITION(CheckPointer(pdwLength));
     } CONTRACTL_END;
-        
+
     HRESULT hr;
     BEGIN_ENTRYPOINT_NOTHROW;
-    
+
     if ((pBuffer != NULL) && (cchBuffer > 0))
     {   // Initialize the output for case the function fails
         *pBuffer = W('\0');
@@ -503,14 +503,14 @@ HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) 
         PRECONDITION(CheckPointer(buffer, NULL_OK));
         PRECONDITION(CheckPointer(pdwLength));
     } CONTRACTL_END;
-    
+
     if (g_dwSystemDirectory == 0)
         SetInternalSystemDirectory();
 
     //
     // g_dwSystemDirectory includes the NULL in its count!
     //
-    if(*pdwLength < g_dwSystemDirectory) 
+    if(*pdwLength < g_dwSystemDirectory)
     {
         *pdwLength = g_dwSystemDirectory;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
@@ -519,7 +519,7 @@ HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) 
     if (buffer != NULL)
     {
         //
-        // wcsncpy_s will automatically append a null and g_dwSystemDirectory 
+        // wcsncpy_s will automatically append a null and g_dwSystemDirectory
         // includes the null in its count, so we have to subtract 1.
         //
         wcsncpy_s(buffer, *pdwLength, g_pSystemDirectory, g_dwSystemDirectory-1);
@@ -537,7 +537,7 @@ LPCWSTR GetInternalSystemDirectory(__out DWORD* pdwLength)
     {
         SetInternalSystemDirectory();
     }
-    
+
     if (pdwLength != NULL)
     {
         * pdwLength = g_dwSystemDirectory;
@@ -563,7 +563,7 @@ HRESULT SetInternalSystemDirectory()
 
             // use local buffer for thread safety
             PathString wzSystemDirectory;
-            
+
             hr = GetCORSystemDirectoryInternaL(wzSystemDirectory);
 
             if (FAILED(hr)) {
@@ -582,7 +582,7 @@ HRESULT SetInternalSystemDirectory()
 
         // publish results idempotently with correct memory ordering
         g_pSystemDirectory = pSystemDirectory.Extract();
-        
+
         (void)InterlockedExchange((LONG *)&g_dwSystemDirectory, len);
     }
 
@@ -599,16 +599,16 @@ void SetMscorlibPath(LPCWSTR wzSystemDirectory)
     {
         delete [] g_pSystemDirectory;
         g_pSystemDirectory = new (nothrow) WCHAR[lenAlloc];
-        
+
         if (g_pSystemDirectory == NULL)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             return;
         }
     }
-    
+
     wcscpy_s(g_pSystemDirectory, len+1, wzSystemDirectory);
-    
+
     if(appendSeparator)
     {
         g_pSystemDirectory[len] = DIRECTORY_SEPARATOR_CHAR_W;

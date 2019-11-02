@@ -29,7 +29,7 @@ namespace BINDER_SPACE
             const FailureCacheEntry *pFailureCacheEntry = *i;
             delete pFailureCacheEntry;
         }
-        RemoveAll();        
+        RemoveAll();
     }
 
     HRESULT FailureCache::Add(SString &assemblyNameorPath,
@@ -45,7 +45,7 @@ namespace BINDER_SPACE
 
         pFailureCacheEntry->GetAssemblyNameOrPath().Set(assemblyNameorPath);
         pFailureCacheEntry->SetBindingResult(hrBindingResult);
-        
+
         Hash::Add(pFailureCacheEntry);
         pFailureCacheEntry.SuppressRelease();
 

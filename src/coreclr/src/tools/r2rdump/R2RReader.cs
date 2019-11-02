@@ -217,7 +217,7 @@ namespace R2RDump
         public int PointerSize { get; set; }
 
         /// <summary>
-        /// The preferred address of the first byte of image when loaded into memory; 
+        /// The preferred address of the first byte of image when loaded into memory;
         /// must be a multiple of 64K.
         /// </summary>
         public ulong ImageBase { get; set; }
@@ -513,13 +513,13 @@ namespace R2RDump
                 FixupCell[] fixups;
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixups);
                 R2RMethod method = new R2RMethod(
-                    R2RMethods.Count, 
-                    mdReader == null ? MetadataReader : mdReader, 
-                    methodHandle, 
-                    runtimeFunctionId, 
-                    owningType, 
-                    constrainedType, 
-                    methodTypeArgs, 
+                    R2RMethods.Count,
+                    mdReader == null ? MetadataReader : mdReader,
+                    methodHandle,
+                    runtimeFunctionId,
+                    owningType,
+                    constrainedType,
+                    methodTypeArgs,
                     fixups);
                 if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                 {

@@ -25,9 +25,9 @@
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' AND '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
   </PropertyGroup>
 
-  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
+  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
-  --> 
+  -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceConfiguration Include="$(BuildConfiguration)">
       <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
@@ -125,10 +125,10 @@
     <Exec Command="$(AsmDiffCmd) $(AsmDiffListArgs)" />
     <Message Text="Assembly trimming report: $(AsmDiffList)" />
   </Target>
-  
-  <!-- Similar to _CheckForCompileOutputs and runs in the same places, 
+
+  <!-- Similar to _CheckForCompileOutputs and runs in the same places,
        always set these even if compile didn't run. -->
-  <Target Name="_CheckForILLinkTrimAssemblyOutputs" 
+  <Target Name="_CheckForILLinkTrimAssemblyOutputs"
           BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>

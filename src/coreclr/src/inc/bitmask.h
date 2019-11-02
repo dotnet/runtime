@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 // --------------------------------------------------------------------------------
 // BitMask.h
 // --------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------
-// BitMask is an arbitrarily large sized bitfield which has optimal storage 
-// for 32 bits or less.  
-// Storage is proportional to the highest index which is set. 
+// BitMask is an arbitrarily large sized bitfield which has optimal storage
+// for 32 bits or less.
+// Storage is proportional to the highest index which is set.
 // --------------------------------------------------------------------------------
 
 
@@ -63,7 +63,7 @@ class BitMask
 
     // Need more bits...
     void GrowArray(COUNT_T newSize);
-    
+
     union
     {
         COUNT_T     m_mask;

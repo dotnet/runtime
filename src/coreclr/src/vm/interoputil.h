@@ -30,7 +30,7 @@ do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
 #define DISPID_NAME_FORMAT_STRING                       W("[DISPID=%i]")
 
 //---------------------------------------------------------------------------
-// This method returns the default interface for the class as well as the 
+// This method returns the default interface for the class as well as the
 // type of default interface we are dealing with.
 enum DefaultInterfaceType
 {
@@ -45,7 +45,7 @@ enum DefaultInterfaceType
 
 struct SYSTEMCOLOR
 {
-#ifdef BIT64    
+#ifdef BIT64
     STRINGREF name;
     INT64     value;
 #else
@@ -99,7 +99,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW = NULL);
 
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
-// you already know you're in preemptive mode for other reasons.  
+// you already know you're in preemptive mode for other reasons.
 ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
 
 //--------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ BOOL IsComWrapperClass(TypeHandle type);
 BOOL IsComObjectClass(TypeHandle type);
 
 //---------------------------------------------------------
-// Read the BestFit custom attribute info from 
+// Read the BestFit custom attribute info from
 // both assembly level and interface level
 //---------------------------------------------------------
 VOID ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
@@ -122,7 +122,7 @@ VOID ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BO
 int  InternalWideToAnsi(__in_ecount(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, __out_ecount_opt(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar);
 
 //---------------------------------------------------------
-// Read the ClassInterfaceType custom attribute info from 
+// Read the ClassInterfaceType custom attribute info from
 // both assembly level and interface level
 //---------------------------------------------------------
 CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type);
@@ -136,7 +136,7 @@ void FillExceptionData(
     _In_opt_ IRestrictedErrorInfo* pRestrictedErrorInfo);
 
 //---------------------------------------------------------------------------
-// If pImport has the DefaultDllImportSearchPathsAttribute, 
+// If pImport has the DefaultDllImportSearchPathsAttribute,
 // set the value of the attribute in pDlImportSearchPathFlags and return true.
 BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token, DWORD * pDlImportSearchPathFlags);
 
@@ -170,7 +170,7 @@ HRESULT SafeGetErrorInfo(_Outptr_ IErrorInfo **ppIErrInfo);
 HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 
 //--------------------------------------------------------------------------------
-// QI helper, must be called in preemptive mode.  Faster than the MODE_ANY version 
+// QI helper, must be called in preemptive mode.  Faster than the MODE_ANY version
 // because it doesn't need to toggle the mode.  Use this version only if you already
 // know that you're in preemptive mode for other reasons.
 HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
@@ -219,7 +219,7 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);
 ULONG SafeAddRef(IUnknown* pUnk);
 //--------------------------------------------------------------------------------
 // AddRef helper, must be called in preemptive mode.  Only use this variant if
-// you already know you're in preemptive mode for other reasons.  
+// you already know you're in preemptive mode for other reasons.
 ULONG SafeAddRefPreemp(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
@@ -263,7 +263,7 @@ BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction);
 
 // Is the tear-off a CLR created tear-off
 BOOL IsInProcCCWTearOff(IUnknown* pUnk);
-    
+
 // is the tear-off represent one of the standard interfaces such as IProvideClassInfo, IErrorInfo etc.
 BOOL IsSimpleTearOff(IUnknown* pUnk);
 
@@ -285,7 +285,7 @@ BOOL ClassSupportsIClassX(MethodTable *pMT);
  //  Calls COM class factory and instantiates a new RCW.
 OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
- 
+
 //---------------------------------------------------------------------------
  //  get/load data for a given clsid
 MethodTable* GetTypeForCLSID(REFCLSID rclsid, BOOL* pfAssemblyInReg = NULL);
@@ -319,7 +319,7 @@ OLE_COLOR ConvertSystemColorToOleColor(SYSTEMCOLOR *pSrcSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj);
 
 //--------------------------------------------------------------------------------
-// This method generates a stringized version of a class interface that contains 
+// This method generates a stringized version of a class interface that contains
 // the signatures of all the methods and fields.
 ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef);
 
@@ -346,7 +346,7 @@ HRESULT GetTypeLibVersionForAssembly(
 BOOL IsMethodVisibleFromCom(MethodDesc *pMD);
 
 //---------------------------------------------------------------------------
-// This method determines if a type is visible from COM or not based on 
+// This method determines if a type is visible from COM or not based on
 // its visibility. This version of the method works with a type handle.
 BOOL IsTypeVisibleFromCom(TypeHandle hndType);
 
@@ -488,7 +488,7 @@ void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable 
 inline HRESULT EnsureComStartedNoThrow()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     return S_OK;
 }
 
@@ -496,7 +496,7 @@ inline VOID EnsureComStarted()
 {
     LIMITED_METHOD_CONTRACT;
 }
-    
+
 #define LogInteropRelease(x, y, z)
 
 #endif // FEATURE_COMINTEROP

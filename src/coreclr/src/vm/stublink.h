@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // STUBLINK.H
-// 
+//
 
 //
 // A StubLinker object provides a way to link several location-independent
@@ -308,7 +308,7 @@ public:
                                             //   labels, and
                                             //   internals.
         BOOL          m_fDataOnly;          // the stub contains only data - does not need FlushInstructionCache
-        
+
 #ifdef _TARGET_ARM_
 protected:
         BOOL            m_fProlog;              // True if DescribeProlog has been called
@@ -561,7 +561,7 @@ class Stub
             WRAPPER_NO_CONTRACT;
 
             return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
-        }                
+        }
 
         //-------------------------------------------------------------------
         // Unwind information.
@@ -652,7 +652,7 @@ class Stub
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
-            
+
             return m_numCodeBytes;
         }
 
@@ -672,7 +672,7 @@ class Stub
 
         //-------------------------------------------------------------------
         // Return the Stub as in GetEntryPoint and size of the stub+code in bytes
-        //   WARNING: Depending on the stub kind this may be just Stub size as 
+        //   WARNING: Depending on the stub kind this may be just Stub size as
         //            not all stubs have the info about the code size.
         //            It's the caller responsibility to determine that
         //-------------------------------------------------------------------
@@ -812,14 +812,14 @@ class Stub
         };
 
         UINT32  m_signature;
-#else 
+#else
 #ifdef BIT64
         //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
         //                   after the Stub struct. This is to pad properly
-        UINT    m_pad_code_bytes; 
+        UINT    m_pad_code_bytes;
 #endif // BIT64
 #endif // _DEBUG
-        
+
 #ifdef _DEBUG
         Stub()      // Stubs are created by NewStub(), not "new". Hide the
         { LIMITED_METHOD_CONTRACT; }          //  constructor to enforce this.
@@ -1128,7 +1128,7 @@ class InstructionFormat
 
                     case InstructionFormat::k16:
                         return FitsInI2(offset);
-                        
+
 #ifdef INSTRFMT_K24
                     case InstructionFormat::k24:
                         return FitsInI2(offset>>8);

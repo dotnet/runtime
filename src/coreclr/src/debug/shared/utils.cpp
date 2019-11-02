@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 // Type-safe helper wrapper to get an EXCEPTION_RECORD slot as a CORDB_ADDRESS
-// 
+//
 // Arguments:
 //    pRecord - exception record
 //    idxSlot - slot to retrieve from.
-//    
+//
 // Returns:
 //    contents of slot as a CordbAddress.
 CORDB_ADDRESS GetExceptionInfoAsAddress(const EXCEPTION_RECORD * pRecord, int idxSlot)
@@ -21,15 +21,15 @@ CORDB_ADDRESS GetExceptionInfoAsAddress(const EXCEPTION_RECORD * pRecord, int id
 
 
 // Determine if an exception event is a Debug event for this flavor of the CLR.
-// 
+//
 // Arguments:
 //    pRecord - exception record
 //    pClrBaseAddress - clr Instance ID for which CLR in the target we're checking against.
-//    
+//
 // Returns:
 //    NULL if the exception is not a CLR managed debug event for the given Clr instance.
 //    Else, address in target process of managed debug event described by the exception (the payload).
-//    
+//
 // Notes:
 //    This decodes events raised by code:Debugger.SendRawEvent
 //    Anybody can spoof our exception, so this is not a reliably safe method.
@@ -75,18 +75,18 @@ CORDB_ADDRESS IsEventDebuggerNotification(
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     // If base-address doesn't match, then it's likely an event from another version of the CLR
     // in the target.
-    // We need to be careful here.  CORDB_ADDRESS is a ULONG64, whereas ExceptionInformation[1] 
+    // We need to be careful here.  CORDB_ADDRESS is a ULONG64, whereas ExceptionInformation[1]
     // is ULONG_PTR.  So on 32-bit, their sizes don't match.
     CORDB_ADDRESS pTargetBase = GetExceptionInfoAsAddress(pRecord, 1);
     if (pTargetBase != pClrBaseAddress)
     {
-        return NULL;        
+        return NULL;
     }
 #endif
 
     // It passes all the format checks. So now get the payload.
     CORDB_ADDRESS ptrRemoteManagedEvent = GetExceptionInfoAsAddress(pRecord, 2);
-    
+
     return ptrRemoteManagedEvent;
 }
 
@@ -114,7 +114,7 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
     pDebugEvent->u.Exception.ExceptionRecord.ExceptionInformation[1] = (ULONG_PTR)CORDB_ADDRESS_TO_PTR(pClrBaseAddress);
     pDebugEvent->u.Exception.ExceptionRecord.ExceptionInformation[2] = (ULONG_PTR)pIPCEvent;
 
-    _ASSERTE(IsEventDebuggerNotification(&(pDebugEvent->u.Exception.ExceptionRecord), pClrBaseAddress) == 
+    _ASSERTE(IsEventDebuggerNotification(&(pDebugEvent->u.Exception.ExceptionRecord), pClrBaseAddress) ==
              PTR_TO_CORDB_ADDRESS(pIPCEvent));
 }
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)

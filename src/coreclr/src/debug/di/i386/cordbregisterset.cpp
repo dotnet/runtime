@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: CordbRegisterSet.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -45,7 +45,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64 *pAvailable)
 
 HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
                                        CORDB_REGISTER regBuffer[])
-{ 
+{
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
@@ -53,7 +53,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     UINT iRegister = 0;
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(regBuffer, CORDB_REGISTER, regCount, true, true);
-    
+
     //If we need some floating point value, tell the thread to get it
     if ( mask & (       SETBITULONG64(REGISTER_X86_FPSTACK_0)
                     |   SETBITULONG64(REGISTER_X86_FPSTACK_1)
@@ -97,14 +97,14 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     }
 
     for ( int i = REGISTER_INSTRUCTION_POINTER
-        ; i<=REGISTER_X86_FPSTACK_7 && iRegister < regCount 
+        ; i<=REGISTER_X86_FPSTACK_7 && iRegister < regCount
         ; i++)
     {
         if( mask &  SETBITULONG64(i) )
         {
             switch( i )
             {
-            case REGISTER_INSTRUCTION_POINTER: 
+            case REGISTER_INSTRUCTION_POINTER:
                 regBuffer[iRegister++] = m_rd->PC; break;
             case REGISTER_STACK_POINTER:
                 regBuffer[iRegister++] = m_rd->SP; break;
@@ -123,17 +123,17 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             case REGISTER_X86_EDI:
                 regBuffer[iRegister++] = m_rd->Edi; break;
 
-            //for floats, copy the bits, not the integer part of 
+            //for floats, copy the bits, not the integer part of
             //the value, into the register
             case REGISTER_X86_FPSTACK_0:
                 memcpy(&regBuffer[iRegister++],
                        &(FPSTACK_FROM_INDEX(0)),
-                       sizeof(CORDB_REGISTER)); 
+                       sizeof(CORDB_REGISTER));
                 break;
             case REGISTER_X86_FPSTACK_1:
                 memcpy( &regBuffer[iRegister++],
                     & (FPSTACK_FROM_INDEX( 1 ) ),
-                    sizeof(CORDB_REGISTER) ); 
+                    sizeof(CORDB_REGISTER) );
                 break;
             case    REGISTER_X86_FPSTACK_2:
                 memcpy( &regBuffer[iRegister++],
@@ -168,7 +168,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount, 
+HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
                                                 BYTE    pAvailable[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
@@ -180,7 +180,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[], 
+HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
                                        ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);

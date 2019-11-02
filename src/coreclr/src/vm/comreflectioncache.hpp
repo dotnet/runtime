@@ -39,13 +39,13 @@ public:
         CONTRACTL_END;
 
         this->EnterRead();
-        
+
         rv = 0;
         int i = SlotInCache(pElement);
         BOOL fGotIt = (i != CacheSize);
         if (fGotIt)
         {
-            rv = m_pResult[i].element.GetValue();            
+            rv = m_pResult[i].element.GetValue();
             m_pResult[i].stamp = InterlockedIncrement(&currentStamp);
         }
         this->LeaveRead();
@@ -55,7 +55,7 @@ public:
 
         return fGotIt;
     }
-    
+
     void AddToCache(Element *pElement, CacheType obj)
     {
         CONTRACTL
@@ -96,7 +96,7 @@ public:
             m_pResult[slot].stamp = currentStamp;
 
             UpdateHashTable(pElement->GetHash(), slot);
-            
+
             if (index < CacheSize)
                 index++;
         }
@@ -126,10 +126,10 @@ private:
         int slot = m_pHashTable[hash%CacheSize].slot;
         if (slot == -1)
             return CacheSize;
-        
+
         if (m_pResult[slot].element == *pElement)
             return slot;
-        
+
         for (int i = 0; i < index; i ++)
         {
             if (i != slot && m_pHashTable[i].hash == hash)
@@ -161,7 +161,7 @@ private:
         }
         else
             _ASSERTE (IsWriterLock());
-        
+
         if (currentStamp & 0x40000000)
         {
             currentStamp >>= 1;
@@ -186,7 +186,7 @@ private:
         m_pHashTable[slot].hash = hash;
         m_pHashTable[hash%CacheSize].slot = slot;
     }
-    
+
     struct CacheTable
     {
         Element element;
@@ -248,7 +248,7 @@ struct DispIDCacheElement
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     void SetValue (DISPID Id)
     {
         LIMITED_METHOD_CONTRACT;

@@ -23,7 +23,7 @@ public:
 
     // Return an integer config value for the given key, if any exists.
     virtual int getIntConfigValue(
-        const WCHAR* name, 
+        const WCHAR* name,
         int defaultValue
         ) = 0;
 

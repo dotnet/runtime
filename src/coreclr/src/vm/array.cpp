@@ -95,7 +95,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     ,BOOL fForStubAsIL
 #endif
-    ) 
+    )
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
@@ -172,14 +172,14 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
             *pSig++ = 0;        // variable 0
             break;
     }
-	
+
 #if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(_TARGET_X86_)
     if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
     }
 #endif
-	
+
     for (i = 0; i < dwRank; i++)
         *pSig++ = ELEMENT_TYPE_I4;
 
@@ -227,7 +227,7 @@ void ArrayClass::InitArrayMethodDesc(
     _ASSERTE(!pNewMD->MayHaveNativeCode());
     pNewMD->SetTemporaryEntryPoint(pLoaderAllocator, pamTracker);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
     pNewMD->m_pszDebugMethodName = pNewMD->GetMethodName();
     pNewMD->m_pszDebugClassName  = GetDebugClassName();
@@ -245,7 +245,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     MethodTable * pElemMT = elemTypeHnd.GetMethodTable();
 
-    CorElementType elemType = elemTypeHnd.GetSignatureCorElementType();    
+    CorElementType elemType = elemTypeHnd.GetSignatureCorElementType();
 
     // Shared EEClass if there is one
     MethodTable * pCanonMT = NULL;
@@ -382,7 +382,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // ArrayClass already includes one void*
-    LoaderAllocator* pAllocator= this->GetLoaderAllocator(); 
+    LoaderAllocator* pAllocator= this->GetLoaderAllocator();
     BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbArrayClass) +
                                                                                             S_SIZE_T(cbMT)));
 
@@ -405,7 +405,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *) 
+    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
     pMT->SetWriteableData(pMTWriteableData);
 
@@ -524,7 +524,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 // Share the parent chunk
                 it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
             }
-            else 
+            else
             {
                 // Use the locally allocated chunk
                 it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+cbArrayClass+offsetOfUnsharedVtableChunks));
@@ -547,7 +547,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             pMT->SetNonVirtualSlotsArray((PTR_PCODE)(pMemory+cbArrayClass+offsetOfNonVirtualSlots));
     }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     StackSString debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
     StackScratchBuffer buff;
@@ -804,10 +804,10 @@ public:
             if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_SET)
             {
                 ILCodeLabel * pTypeCheckOK = NewCodeLabel();
-                
+
                 m_pCode->EmitLDARG(rank); // load value to store
                 m_pCode->EmitBRFALSE(pTypeCheckOK); //Storing NULL is OK
-                
+
                 m_pCode->EmitLDARG(rank); // return param
                 m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
@@ -822,12 +822,12 @@ public:
                 m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I();
-                
+
                 m_pCode->EmitCEQ();
                 m_pCode->EmitBRTRUE(pTypeCheckOK); // Same type is OK
 
                 // Call type check helper
-                m_pCode->EmitLDARG(rank);               
+                m_pCode->EmitLDARG(rank);
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitCALL(METHOD__STUBHELPERS__ARRAY_TYPE_CHECK,2,0);
 
@@ -843,11 +843,11 @@ public:
                 m_pCode->EmitLDARG(hiddenArgIdx); // hidden param
                 m_pCode->EmitBRFALSE(pTypeCheckPassed);
                 m_pCode->EmitLDARG(hiddenArgIdx);
-                m_pCode->EmitLDFLDA(tokRawData);          
+                m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(offsetof(ParamTypeDesc, m_Arg) - (Object::GetOffsetOfFirstField()+2));
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I();
-                
+
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
@@ -856,7 +856,7 @@ public:
                 m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I();
-                
+
                 m_pCode->EmitCEQ();
                 m_pCode->EmitBRFALSE(pTypeMismatchExceptionLabel); // throw exception if not same
                 m_pCode->EmitLabel(pTypeCheckPassed);
@@ -975,7 +975,7 @@ public:
         case ArrayMethodDesc::ARRAY_FUNC_SET:
             // Value to store into the array
             m_pCode->EmitLDARG(rank);
-            
+
             if(elemType.ElementType[0]==ELEMENT_TYPE_VALUETYPE)
             {
                 m_pCode->EmitSTOBJ(GetToken(pMT->GetApproxArrayElementTypeHandle()));
@@ -1175,7 +1175,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 
         case ELEMENT_TYPE_VALUETYPE:
             paos->m_elemsize = pMT->GetComponentSize();
-            if (pMT->ContainsPointers()) 
+            if (pMT->ContainsPointers())
             {
                 paos->m_gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
                 paos->m_flags |= paos->NEEDSWRITEBARRIER;
@@ -1198,7 +1198,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
         paos->m_fRetBufLoc = argit.GetRetBuffArgOffset();
     }
 
-    if (paos->m_op == ArrayOpScript::LOADADDR) 
+    if (paos->m_op == ArrayOpScript::LOADADDR)
     {
         paos->m_typeParamOffs = argit.GetParamTypeArgOffset();
     }
@@ -1341,7 +1341,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
     // Subtract one for the non-generic IEnumerable that the generic enumerable inherits from
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
     PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < NumItems(startingMethod));
-   
+
     MethodDesc *pGenericImplementor = MscorlibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 
     // The most common reason for this assert is that the order of the SZArrayHelper methods in
@@ -1350,7 +1350,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 
     // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute
     // "Object" for reference-type theT's. This causes fewer methods to be instantiated.
-    if (startingMethod[inheritanceDepth] != METHOD__SZARRAYHELPER__GETENUMERATOR && 
+    if (startingMethod[inheritanceDepth] != METHOD__SZARRAYHELPER__GETENUMERATOR &&
         !theT.IsValueType())
     {
         theT = TypeHandle(g_pObjectClass);

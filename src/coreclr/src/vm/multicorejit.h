@@ -62,7 +62,7 @@ struct MulticoreJitPlayerStat
     unsigned short    m_nTotalDelay;
     unsigned short    m_nDelayCount;
     unsigned short    m_nWalkBack;
-    
+
     HRESULT           m_hr;
 
     void Clear()
@@ -102,7 +102,7 @@ public:
 #endif
 
     void StoreMethodCode(MethodDesc * pMethod, PCODE pCode);
-    
+
     PCODE QueryMethodCode(MethodDesc * pMethod, BOOL shouldRemoveCode);
 
     inline unsigned GetRemainingMethodCount() const
@@ -136,10 +136,10 @@ const LONG SETPROFILEROOTCALLED = 1;
 class MulticoreJitManager
 {
 private:
-    MulticoreJitCounter     m_ProfileSession;          // Sequential profile session within the domain, 
+    MulticoreJitCounter     m_ProfileSession;          // Sequential profile session within the domain,
                                                        // incremented for every StartProfile/StopProfile/AbortProfile call to signal older players to quit
                                                        // We're just afraid of keeping pointer to player
-    
+
     MulticoreJitRecorder  * m_pMulticoreJitRecorder;   // pointer to current recorder
     SString                 m_profileRoot;             // profile root string
     LONG                    m_fSetProfileRootCalled;   // SetProfileRoot has been called
@@ -147,7 +147,7 @@ private:
     bool                    m_fRecorderActive;         // Manager open for recording/event, turned on when initialized properly, turned off when at full capacity
     bool                    m_fAppxMode;
     CrstExplicitInit        m_playerLock;              // Thread protection (accessing m_pMulticoreJitRecorder)
-    MulticoreJitPlayerStat  m_stats;                   // Statistics: normally gathered by player, written to profile   
+    MulticoreJitPlayerStat  m_stats;                   // Statistics: normally gathered by player, written to profile
 
     MulticoreJitCodeStorage m_MulticoreJitCodeStorage;
 

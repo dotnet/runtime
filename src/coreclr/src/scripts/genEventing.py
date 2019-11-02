@@ -701,7 +701,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 
             #eventpipe: create clreventpipewriteevents.h
             Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern) + "\n")
-                
+
     # Write secondary headers for FireEtXplat* and EventPipe* functions
     if write_xplatheader:
         clrxplatevents = os.path.join(incDir, "clrxplatevents.h")

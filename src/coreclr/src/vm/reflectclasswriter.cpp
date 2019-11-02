@@ -5,7 +5,7 @@
 
 //
 
-#include "common.h" 
+#include "common.h"
 #include "reflectclasswriter.h"
 
 // Forward declaration.
@@ -25,10 +25,10 @@ HRESULT RefClassWriter::Init(ICeeGen *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
         NOTHROW;
         GC_NOTRIGGER;
         // we know that the com implementation is ours so we use mode-any to simplify
-        // having to switch mode 
-        MODE_ANY; 
+        // having to switch mode
+        MODE_ANY;
         INJECT_FAULT(CONTRACT_RETURN(E_OUTOFMEMORY));
-        
+
         PRECONDITION(CheckPointer(pCeeGen));
         PRECONDITION(CheckPointer(pUnk));
 
@@ -88,8 +88,8 @@ RefClassWriter::~RefClassWriter()
         NOTHROW;
         GC_TRIGGERS;
         // we know that the com implementation is ours so we use mode-any to simplify
-        // having to switch mode 
-        MODE_ANY; 
+        // having to switch mode
+        MODE_ANY;
         FORBID_FAULT;
     }
     CONTRACTL_END;

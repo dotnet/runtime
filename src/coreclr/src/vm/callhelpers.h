@@ -70,7 +70,7 @@ void CallDescrWorkerWithHandler(
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy, 
+                    DWORD numStackSlotsToCopy,
                     PCODE pTargetAddress,
                     DWORD dwDispatchCallSimpleFlags);
 
@@ -84,7 +84,7 @@ private:
     MetaSig     m_methodSig;
     ArgIterator m_argIt;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     NOINLINE void LogWeakAssert()
     {
         LIMITED_METHOD_CONTRACT;
@@ -102,7 +102,7 @@ private:
         }
         CONTRACTL_END;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
         //
         // Make sure we are passing in a 'this' if and only if it is required
         //
@@ -249,7 +249,7 @@ public:
 
         DefaultInit(porProtectedThis);
     }
-    
+
     MethodDescCallSite(MethodDesc* pMD, TypeHandle th) :
         m_pMD(pMD),
         m_methodSig(pMD, th),
@@ -494,7 +494,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap);
 // code.
 #define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER() \
     NativeExceptionHolderNoCatch __exceptionHolder;    \
-    __exceptionHolder.Push();                           
+    __exceptionHolder.Push();
 #else // FEATURE_PAL
 #define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER()
 #endif // FEATURE_PAL
@@ -506,7 +506,7 @@ enum EEToManagedCallFlags
 };
 
 #define BEGIN_CALL_TO_MANAGED()                                                 \
-    BEGIN_CALL_TO_MANAGEDEX(EEToManagedDefault) 
+    BEGIN_CALL_TO_MANAGEDEX(EEToManagedDefault)
 
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
@@ -550,12 +550,12 @@ enum DispatchCallSimpleFlags
 #define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
 #define PTR_TO_ARGHOLDER(x) (LPVOID)x
 #define DWORD_TO_ARGHOLDER(x)   (LPVOID)(SIZE_T)x
-#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))   
+#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))
 
 #define INIT_VARIABLES(count)                               \
         DWORD   __numArgs = count;                          \
         DWORD   __dwDispatchCallSimpleFlags = 0;            \
-    
+
 #define PREPARE_NONVIRTUAL_CALLSITE(id) \
         static PCODE s_pAddr##id = NULL;                    \
         PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
@@ -574,7 +574,7 @@ enum DispatchCallSimpleFlags
 #define PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pMD, objref)                \
         PCODE __pSlot = pMD->GetCallTarget(&objref);
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 #define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, methodTable)                     \
         {                                                                        \
             MethodDesc* __pMeth = methodTable->GetMethodDescForSlot(slotNumber); \
@@ -584,7 +584,7 @@ enum DispatchCallSimpleFlags
         }
 #else
 #define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, objref)
-#endif 
+#endif
 
 // a simple virtual method is a non-interface/non-generic method
 // Note: objref has to be protected!
@@ -605,7 +605,7 @@ enum DispatchCallSimpleFlags
         MethodTable* __pObjMT = (objref)->GetMethodTable();                      \
         SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, __pObjMT);                       \
         PCODE __pSlot = (PCODE) __pObjMT->GetRestoredSlot(slotNumber);
-        
+
 #define PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD)   \
         PCODE __pSlot = (pMD)->GetSingleCallableAddrOfCode();
 
@@ -614,12 +614,12 @@ enum DispatchCallSimpleFlags
 
 #define CRITICAL_CALLSITE                                   \
         __dwDispatchCallSimpleFlags |= DispatchCallSimple_CriticalCall;
-  
+
 // This flag should be used for callsites that catch exception up the stack inside the VM. The most common causes are
 // such as END_DOMAIN_TRANSITION or EX_CATCH. Catching exceptions in the managed code is properly instrumented and
 // does not need this notification.
 //
-// The notification is what enables both the managed 'unhandled exception' dialog and the 'user unhandled' dialog when 
+// The notification is what enables both the managed 'unhandled exception' dialog and the 'user unhandled' dialog when
 // JMC is turned on. Many things that VS puts up the unhandled exception dialog for are actually cases where the native
 // exception was caught, for example catching exceptions at the thread base. JMC requires further accuracy - in that case
 // VS is checking to see if an exception escaped particular ranges of managed code frames.

@@ -94,8 +94,8 @@ TRUE if the Unicode character was found.
 
 --*/
 BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
-{ 
-    BOOL bRet; 
+{
+    BOOL bRet;
 
     UnicodeDataRec *dataRec;
     INT nNumOfChars = UNICODE_DATA_SIZE;

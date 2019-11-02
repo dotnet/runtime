@@ -38,7 +38,7 @@ Profilers subscribe to events by specifying the corresponding flag in a call to 
         BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
 
         //call the wrapper around the profiler's callback implementation
-        g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);          
+        g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);
 
         //unpin profiler
         END_PIN_PROFILER();
@@ -141,8 +141,8 @@ The alternative is for the profiler to set a flag specifying that it wants argum
 Asynchronous Info functions are those that are safe to be called anytime (from a callback or not).  There are relatively few asynchronous Info functions.  They are what a hijacking sampling profiler (e.g., Visual Studio profiler) might want to call from within one of its samples.  It is critical that an Info function labeled as asynchronous be able to execute from any possible call stack.  A thread could be interrupted while holding any number of locks (spin locks, thread store lock, OS heap lock, etc.), and then forced by the profiler to reenter the runtime via an asynchronous Info function.  This can easily cause deadlock or data corruption.  There are two ways an asynchronous Info function can ensure its own safety:
 
 - Be very, very simple. Don't take locks, don't trigger a GC, don't access data that could be inconsistent, etc. OR
-- If you need to be more complex than that, have sufficient checks at the top to ensure locks, data structures, etc., are in a safe state before proceeding. 
-    - Often, this includes asking whether the current thread is currently inside a forbid suspend thread region, and bailing with an error if it is, though this is not a sufficient check in all cases. 
+- If you need to be more complex than that, have sufficient checks at the top to ensure locks, data structures, etc., are in a safe state before proceeding.
+    - Often, this includes asking whether the current thread is currently inside a forbid suspend thread region, and bailing with an error if it is, though this is not a sufficient check in all cases.
     - DoStackSnapshot is an example of a complex asynchronous function. It uses a combination of checks (including asking whether the current thread is currently inside a forbid suspend thread region) to determine whether to proceed or bail.
 
 Contracts

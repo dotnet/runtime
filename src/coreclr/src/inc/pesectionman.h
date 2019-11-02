@@ -42,21 +42,21 @@ public:
     HRESULT cloneInstance(PESectionMan *destination);
 
 protected:
-    
+
     // Finds section with given name.  returns 0 if not found
     virtual PESection *getSection(const char *name);
-    
+
     // Create a new section
     virtual HRESULT newSection(
-        const char *name, 
+        const char *name,
         PESection **section,
-        unsigned    flags     = sdNone, 
-        unsigned    estSize   = 0x10000, 
+        unsigned    flags     = sdNone,
+        unsigned    estSize   = 0x10000,
         unsigned    estRelocs = 1);
-    
-    // Keep proctected & no accessors, so that derived class PEWriter 
+
+    // Keep proctected & no accessors, so that derived class PEWriter
     // is the ONLY one with access
-    
+
     PESection **sectStart;
     PESection **sectCur;
     PESection **sectEnd;
@@ -72,38 +72,38 @@ protected:
  * as a flat consecutive piece of memory which can be indexed into
  * using offsets.
  */
- 
+
 class PESection : public CeeSectionImpl {
   public:
     // bytes in this section at present
-    unsigned dataLen();     
+    unsigned dataLen();
 
     // Apply all the relocs for in memory conversion
     HRESULT applyRelocs(CeeGenTokenMapper *pTokenMapper);
-    
+
     // get a block to write on (use instead of write to avoid copy)
     char* getBlock(unsigned len, unsigned align=1);
 
     // writes 'val' (which is offset into section 'relativeTo')
     // and adds a relocation fixup for that section
-    void writeSectReloc(unsigned val, CeeSection& relativeTo, 
+    void writeSectReloc(unsigned val, CeeSection& relativeTo,
                 CeeSectionRelocType reloc = srRelocHighLow,
                 CeeSectionRelocExtra *extra=0);
-                        
+
     // Indicates that the DWORD at 'offset' in the current section should
     // have the base of section 'relativeTo' added to it
-    HRESULT addSectReloc(unsigned offset, CeeSection& relativeTo, 
+    HRESULT addSectReloc(unsigned offset, CeeSection& relativeTo,
                             CeeSectionRelocType reloc = srRelocHighLow,
                             CeeSectionRelocExtra *extra=0);
 
     // If relativeTo is NULL, it is treated as a base reloc.
     // ie. the value only needs to be fixed at load time if the module gets rebased.
-    HRESULT addSectReloc(unsigned offset, PESection *relativeTo, 
+    HRESULT addSectReloc(unsigned offset, PESection *relativeTo,
                             CeeSectionRelocType reloc = srRelocHighLow,
                             CeeSectionRelocExtra *extra=0);
 
     // Add a base reloc for the given offset in the current section
-    HRESULT addBaseReloc(unsigned offset, CeeSectionRelocType reloc = srRelocHighLow, 
+    HRESULT addBaseReloc(unsigned offset, CeeSectionRelocType reloc = srRelocHighLow,
                             CeeSectionRelocExtra *extra = 0);
 
     // section name
@@ -152,29 +152,29 @@ class PESection : public CeeSectionImpl {
     virtual ~PESection();
 private:
 
-    // purposely not defined, 
-    PESection();            
+    // purposely not defined,
+    PESection();
 
     // purposely not defined,
-    PESection(const PESection&);                     
+    PESection(const PESection&);
 
     // purposely not defined,
-    PESection& operator=(const PESection& x);        
+    PESection& operator=(const PESection& x);
 
     // this dir entry points to this section
-    int dirEntry;           
+    int dirEntry;
 
 protected:
     friend class PEWriter;
     friend class PEWriterSection;
     friend class PESectionMan;
 
-    PESection(const char* name, unsigned flags, 
+    PESection(const char* name, unsigned flags,
               unsigned estSize, unsigned estRelocs);
 
     // Blob fetcher handles getBlock() and fetching binary chunks.
     CBlobFetcher m_blobFetcher;
-    
+
     PESectionReloc* m_relocStart;
     PESectionReloc* m_relocCur;
     PESectionReloc* m_relocEnd;
@@ -183,7 +183,7 @@ protected:
     unsigned    m_baseRVA;      // RVA into the file of this section.
     unsigned    m_filePos;      // Start offset into the file (treated as a data image)
     unsigned    m_filePad;      // Padding added to the end of the section for alignment
-    
+
     char        m_name[8+6];    // extra room for digits
     unsigned    m_flags;
 
@@ -193,10 +193,10 @@ protected:
 /***************************************************************/
 /* implementation section */
 
-inline HRESULT PESection::directoryEntry(unsigned num) { 
+inline HRESULT PESection::directoryEntry(unsigned num) {
     WRAPPER_NO_CONTRACT;
     TESTANDRETURN(num < 16, E_INVALIDARG);
-    dirEntry = num; 
+    dirEntry = num;
     return S_OK;
 }
 

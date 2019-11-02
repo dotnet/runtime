@@ -10,7 +10,7 @@
 //*****************************************************************************
 // ClassFactory.h
 //
-// Class factories are used by the pluming in COM to activate new objects.  
+// Class factories are used by the pluming in COM to activate new objects.
 // This module contains the class factory code to instantiate the
 // ISymUnmanaged Reader,Writer and Binder
 //*****************************************************************************
@@ -35,34 +35,34 @@ struct COCLASS_REGISTER
 
 
 //*****************************************************************************
-// One class factory object satifies all of our clsid's, to reduce overall 
+// One class factory object satifies all of our clsid's, to reduce overall
 // code bloat.
 //*****************************************************************************
 class CIldbClassFactory :
     public IClassFactory
 {
     CIldbClassFactory() { }                     // Can't use without data.
-    
+
 public:
     CIldbClassFactory(const COCLASS_REGISTER *pCoClass)
         : m_cRef(1), m_pCoClass(pCoClass)
     { }
 
     virtual ~CIldbClassFactory() {}
-    
+
     //
     // IUnknown methods.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID      riid,
         void        **ppvObject);
-    
+
     virtual ULONG STDMETHODCALLTYPE AddRef()
     {
         return InterlockedIncrement(&m_cRef);
     }
-    
+
     virtual ULONG STDMETHODCALLTYPE Release()
     {
         LONG        cRef = InterlockedDecrement(&m_cRef);
@@ -76,12 +76,12 @@ public:
     // IClassFactory methods.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE CreateInstance( 
+    virtual HRESULT STDMETHODCALLTYPE CreateInstance(
         IUnknown    *pUnkOuter,
         REFIID      riid,
         void        **ppvObject);
-    
-    virtual HRESULT STDMETHODCALLTYPE LockServer( 
+
+    virtual HRESULT STDMETHODCALLTYPE LockServer(
         BOOL        fLock);
 
 

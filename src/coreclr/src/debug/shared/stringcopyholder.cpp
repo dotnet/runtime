@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 // StringCopyHolder.cpp
-// 
+//
 
 //
 // This is the implementation of a simple holder for a copy of a string.
@@ -40,22 +40,22 @@ void StringCopyHolder::Clear()
 //
 // Arguments:
 //    pStringSrc - string to be duplicated
-//    
+//
 // Returns:
 //    S_OK on success. That means it succeeded in allocating and copying pStringSrc.
 //    If the incoming string is NULL, then the underlying string will be NULL as welll.
 //    Callers may want to assert that IsSet() is true if they don't expect a NULL string.
 //
 //    E_OUTOFMEMORY on failure. Only happens in an OOM scenario.
-// 
+//
 // Notes:
 //    Since this function is a callback from DAC, it must not take the process lock.
-//    If it does, we may deadlock between the DD lock and the process lock.  
+//    If it does, we may deadlock between the DD lock and the process lock.
 //    If we really need to take the process lock for whatever reason, we must take it in the DBI functions
 //    which call the DAC API that ends up calling this function.
 //    See code:InternalDacCallbackHolder for more information.
 //
- 
+
 HRESULT StringCopyHolder::AssignCopy(const WCHAR * pStringSrc)
 {
     if (m_szData != NULL)

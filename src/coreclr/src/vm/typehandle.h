@@ -58,14 +58,14 @@ class ComCallWrapperTemplate;
 /*************************************************************************/
 // A TypeHandle is the FUNDAMENTAL concept of type identity in the CLR.
 // That is two types are equal if and only if their type handles
-// are equal.  A TypeHandle, is a pointer sized struture that encodes 
+// are equal.  A TypeHandle, is a pointer sized struture that encodes
 // everything you need to know to figure out what kind of type you are
-// actually dealing with.  
+// actually dealing with.
 
 // At the present time a TypeHandle can point at two possible things
 //
 //      1) A MethodTable    (Intrinsics, Classes, Value Types and their instantiations)
-//      2) A TypeDesc       (all other cases: arrays, byrefs, pointer types, function pointers, generic type variables)  
+//      2) A TypeDesc       (all other cases: arrays, byrefs, pointer types, function pointers, generic type variables)
 //
 // or with IL stubs, a third thing:
 //
@@ -74,8 +74,8 @@ class ComCallWrapperTemplate;
 // Array MTs are not valid TypeHandles: for example no allocated object will
 // ever return such a type handle from Object::GetTypeHandle(), and
 // these type handles should not be passed across the JIT Interface
-// as CORINFO_CLASS_HANDLEs.  However some code in the EE does create 
-// temporary TypeHandles out of these MTs, so we can't yet assert 
+// as CORINFO_CLASS_HANDLEs.  However some code in the EE does create
+// temporary TypeHandles out of these MTs, so we can't yet assert
 // !pMT->IsArray() in the TypeHandle constructor.
 //
 // Wherever possible, you should be using TypeHandles or MethodTables.
@@ -94,24 +94,24 @@ class ComCallWrapperTemplate;
 // Clients of TypeHandle don't need to know any of this detail; just use the
 // GetInstantiation and HasInstantiation methods.
 
-class TypeHandle 
+class TypeHandle
 {
 public:
-    TypeHandle() { 
+    TypeHandle() {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        m_asTAddr = 0; 
+        m_asTAddr = 0;
     }
 
     static TypeHandle FromPtr(PTR_VOID aPtr)
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return TypeHandle(dac_cast<TADDR>(aPtr));
     }
     // Create a TypeHandle from the target address of a MethodTable
     static TypeHandle FromTAddr(TADDR data)
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return TypeHandle(data);
@@ -131,7 +131,7 @@ public:
     TypeHandle(MethodTable const * aMT) {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        m_asTAddr = dac_cast<TADDR>(aMT); 
+        m_asTAddr = dac_cast<TADDR>(aMT);
         INDEBUGIMPL(Verify());
     }
 
@@ -139,7 +139,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(aType);
 
-        m_asTAddr = (dac_cast<TADDR>(aType) | 2); 
+        m_asTAddr = (dac_cast<TADDR>(aType) | 2);
         INDEBUGIMPL(Verify());
     }
 
@@ -148,16 +148,16 @@ public:
 
 private:
     // This constructor has been made private.  You must use the explicit static functions
-    // TypeHandle::FromPtr and TypeHandle::TAddr instead of these constructors.  
+    // TypeHandle::FromPtr and TypeHandle::TAddr instead of these constructors.
     // Allowing a public constructor that takes a "void *" or a "TADDR" is error-prone.
     explicit TypeHandle(TADDR aTAddr)
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         m_asTAddr = aTAddr;
         INDEBUGIMPL(Verify());
     }
 
-    
+
 public:
     FORCEINLINE int operator==(const TypeHandle& typeHnd) const {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -172,7 +172,7 @@ public:
     }
 
         // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const { 
+    FORCEINLINE BOOL IsNull() const {
         LIMITED_METHOD_DAC_CONTRACT;
 #ifdef _PREFIX_
         if (m_asTAddr == 0) {
@@ -186,9 +186,9 @@ public:
             PREFIX_ASSUME(m_asPtr != NULL);
 #endif
             return false;
-        }            
+        }
 #else
-        return(m_asTAddr == 0); 
+        return(m_asTAddr == 0);
 #endif
     }
 
@@ -205,7 +205,7 @@ public:
         }
         else {
             return false;
-        }            
+        }
 #else
         return(m_asTAddr & 2);
 #endif
@@ -214,7 +214,7 @@ public:
     BOOL IsEnum() const;
 
     BOOL IsFnPtrType() const;
-                             
+
     inline PTR_MethodTable AsMethodTable() const;
 
     inline PTR_TypeDesc AsTypeDesc() const;
@@ -223,7 +223,7 @@ public:
     // below that treat all types uniformly.
 
     // Gets the size that this type would take up embedded in another object
-    // thus objects all return sizeof(void*).  
+    // thus objects all return sizeof(void*).
     unsigned GetSize() const;
 
     // Returns the type name, including the generic instantiation if possible.
@@ -236,7 +236,7 @@ public:
     // value type Pair<int,int>)) this returns either ELEMENT_TYPE_CLASS
     // or ELEMENT_TYPE_VALUE, _not_ ELEMENT_TYPE_WITH.
     CorElementType GetSignatureCorElementType() const;
-         
+
     // This helper:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
@@ -254,7 +254,7 @@ public:
     //
     // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
     // should).  Use CorTypeInfo::IsObjRef for that.
-    CorElementType GetInternalCorElementType() const; 
+    CorElementType GetInternalCorElementType() const;
 
     // This helper will return the same as GetSignatureCorElementType except:
     // - Will return enums underlying type
@@ -262,7 +262,7 @@ public:
 
     //-------------------------------------------------------------------
     // CASTING
-    // 
+    //
     // There are two variants of the "CanCastTo" method:
     //
     // CanCastTo
@@ -311,7 +311,7 @@ public:
     TypeHandle MakeArray(int rank) const;
     TypeHandle MakeNativeValueType() const;
 
-    // Obtain instantiation from an instantiated type *or* a pointer to the element type for an array 
+    // Obtain instantiation from an instantiated type *or* a pointer to the element type for an array
     Instantiation GetClassOrArrayInstantiation() const;
 
     // Is this type instantiated?
@@ -323,7 +323,7 @@ public:
     // Is this either a non-generic type (e.g. a non-genric class type or an array type or a pointer type etc.)
     // or a generic type whose type arguments are its formal type parameters?
     //Equivalent to (!HasInstantiation() || IsGenericTypeDefinition());
-    inline BOOL IsTypicalTypeDefinition() const;     
+    inline BOOL IsTypicalTypeDefinition() const;
 
     enum InteropKind
     {
@@ -375,9 +375,9 @@ public:
 
     inline void SetIsFullyLoaded();
 
- 
+
 #ifdef _DEBUG
-    // Check that this type matches the key given 
+    // Check that this type matches the key given
     // i.e. that all aspects (element type, module/token, rank for arrays, instantiation for generic types) match up
     CHECK CheckMatchesKey(TypeKey *pKey) const;
 
@@ -389,7 +389,7 @@ public:
     CHECK CheckFullyLoaded();
 #endif
 
-    bool IsHFA() const;   
+    bool IsHFA() const;
     CorElementType GetHFAType() const;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -400,7 +400,7 @@ public:
 
     BOOL IsBlittable() const;
     BOOL HasLayout() const;
-    
+
 #ifdef FEATURE_COMINTEROP
     TypeHandle GetCoClassForInterface() const;
     DWORD IsComClassInterface() const;
@@ -416,7 +416,7 @@ public:
     BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate);
 #endif // FEATURE_COMINTEROP
 
-#endif 
+#endif
 
     // Unlike AsMethodTable, GetMethodTable will get the method table
     // of the type, regardless of whether it is an array etc. Note, however
@@ -426,7 +426,7 @@ public:
 
     // Returns the method table which should be used for visibility checking.
     // Like GetMethodTable except for TypeDescs returns the root ElementType.
-    // So for Foo[] instead of returning Array returns Foo. 
+    // So for Foo[] instead of returning Array returns Foo.
     inline MethodTable* GetMethodTableOfElementType() const;
 
     // Returns the MethodTable for the SZARRAY or ARRAY type
@@ -459,8 +459,8 @@ public:
     Assembly * GetAssembly() const;
 
     // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral), 
-    // and returns an AppDomain if any of the parts are from an AppDomain, 
+    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
+    // and returns an AppDomain if any of the parts are from an AppDomain,
     // i.e. are domain-bound.  If any of the parts are domain-bound
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain() const;
@@ -483,12 +483,12 @@ public:
     //
     // All arrays, even those with a unique unshared MethodTable, have an ArrayTypeDesc
     // which is used for type identity. However, over time, people have started
-    // wrapping the MethodTables directly in a TypeHandle. Note that such 
+    // wrapping the MethodTables directly in a TypeHandle. Note that such
     // TypeHandles cannot be used for type identity. However, IsArrayType() lets
     // you check even for such cases where IsArray() returns FALSE, but the type
     // still is an array type.
     //
-    // @TODO: Change all the constructors of TypeHandle which take a MethodTable 
+    // @TODO: Change all the constructors of TypeHandle which take a MethodTable
     // to call TypeHandle::Verify() that can then enforce that IsArray() is fully correct.
     BOOL IsArrayType() const;
 
@@ -507,7 +507,7 @@ public:
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
 
-    Module* GetDefiningModuleForOpenType() const;    
+    Module* GetDefiningModuleForOpenType() const;
 
     // Is actually ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
@@ -524,7 +524,7 @@ public:
     // Only used at NGEN-time
     BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const;
 
-    void DoRestoreTypeKey();    
+    void DoRestoreTypeKey();
 
     void CheckRestore() const;
     BOOL IsExternallyVisible() const;
@@ -532,36 +532,36 @@ public:
     // Does this type participate in type equivalence?
     inline BOOL HasTypeEquivalence() const;
 
-    // Not clear we should have this.  
+    // Not clear we should have this.
     inline PTR_ArrayTypeDesc AsArray() const;
-    
+
     FnPtrTypeDesc* AsFnPtrType() const;
-    
+
     TypeVarTypeDesc* AsGenericVariable() const;
-    
+
     Instantiation GetInstantiationOfParentClass(MethodTable *pWhichParent) const;
 
     PTR_VOID AsPtr() const {                     // Please don't use this if you can avoid it
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return(PTR_VOID(m_asTAddr)); 
+        return(PTR_VOID(m_asTAddr));
     }
 
-    TADDR AsTAddr() const {       
+    TADDR AsTAddr() const {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_asTAddr;
     }
 
-    INDEBUGIMPL(BOOL Verify();)             // DEBUGGING Make certain this is a valid type handle 
+    INDEBUGIMPL(BOOL Verify();)             // DEBUGGING Make certain this is a valid type handle
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    
+
     OBJECTREF GetManagedClassObject() const;
     OBJECTREF GetManagedClassObjectFast() const;
-    
+
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
 
@@ -581,7 +581,7 @@ private:
     static TypeHandle MergeClassWithInterface(
         TypeHandle tClass, TypeHandle tInterface);
 
-    union 
+    union
     {
         TADDR               m_asTAddr;      // we look at the low order bits
 #ifndef DACCESS_COMPILE
@@ -694,7 +694,7 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 // TypeHandle is wrapper around pointer to MethodTable or TypeDesc. Even though
 // it may feel counterintuitive, it is possible to treat it like a pointer and
 // use the regular FixupPointer to implement TypeHandle indirection cells.
-// The lowest bit of TypeHandle (when wrapped inside FixupPointer) is 
+// The lowest bit of TypeHandle (when wrapped inside FixupPointer) is
 // used to mark optional indirection.
 //
 template<>
@@ -712,7 +712,7 @@ inline TypeHandle dac_cast(TADDR src)
 }
 
 /*************************************************************************/
-// Instantiation is representation of generic instantiation. 
+// Instantiation is representation of generic instantiation.
 // It is simple read-only array of TypeHandles. In NGen, the type handles
 // may be encoded using indirections. That's one reason why it is convenient
 // to have wrapper class that performs the decoding.

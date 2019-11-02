@@ -18,11 +18,11 @@ public:
     ReleaseHolder()
         : m_ptr(NULL)
     {}
-    
+
     ReleaseHolder(T* ptr)
         : m_ptr(ptr)
     {}
-    
+
     ~ReleaseHolder()
     {
         Release();
@@ -61,7 +61,7 @@ public:
         m_ptr = NULL;
         return pT;
     }
-    
+
     void Release()
     {
         if (m_ptr != NULL)
@@ -72,6 +72,6 @@ public:
     }
 
 private:
-    T* m_ptr;    
+    T* m_ptr;
 };
 

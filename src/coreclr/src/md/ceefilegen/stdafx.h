@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // stdafx.h
-// 
+//
 
 //
 // Common include file for utility code.

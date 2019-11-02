@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #if !defined( __STREAMUTIL_H__ )
 #define __STREAMUTIL_H__
@@ -80,7 +80,7 @@ HRESULT AlignDWORD( IStream * strm, UINT32 * totalBytes )
     {   // We got an integer overflow in 'aligned' expression above
         hr = COR_E_OVERFLOW;
     }
-    
+
     return hr;
 }
 
@@ -104,7 +104,7 @@ public:
     NullStream()
         : m_pos( 0 )
     {}
-    
+
     ULONG STDMETHODCALLTYPE AddRef()
     {
         _ASSERTE( false );
@@ -123,13 +123,13 @@ public:
         _ASSERTE( false );
         return E_NOTIMPL;
     }
-    
+
     HRESULT STDMETHODCALLTYPE Read(void *pv, ULONG cb, ULONG *pcbRead)
     {
         _ASSERTE( false );
         return E_NOTIMPL;
     }
-    
+
     HRESULT STDMETHODCALLTYPE Write(const void  *pv, ULONG cb, ULONG *pcbWritten)
     {
         m_pos += cb;
@@ -139,7 +139,7 @@ public:
         }
         return S_OK;
     }
-    
+
     HRESULT STDMETHODCALLTYPE Seek(LARGE_INTEGER dlibMove,DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition)
     {
         if ( dwOrigin != STREAM_SEEK_CUR || dlibMove.QuadPart != 0 || plibNewPosition == NULL )

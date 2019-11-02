@@ -1459,14 +1459,14 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { EJ_ja  }, // UGT
     { EJ_jb  }, // C
     { EJ_jae }, // NC
-                        
+
     // Floating point compare instructions (UCOMISS, UCOMISD etc.) set the condition flags as follows:
-    //    ZF PF CF  Meaning   
+    //    ZF PF CF  Meaning
     //   ---------------------
-    //    1  1  1   Unordered 
-    //    0  0  0   Greater   
-    //    0  0  1   Less Than 
-    //    1  0  0   Equal     
+    //    1  1  1   Unordered
+    //    0  0  0   Greater
+    //    0  0  1   Less Than
+    //    1  0  0   Equal
     //
     // Since ZF and CF are also set when the result is unordered, in some cases we first need to check
     // PF before checking ZF/CF. In general, ordered conditions will result in a jump only if PF is not
@@ -1480,7 +1480,7 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { EJ_ja                  }, // FGT
     { EJ_jo                  }, // O
     { EJ_jno                 }, // NO
-                        
+
     { EJ_je                }, // FEQU
     { EJ_jp, GT_OR, EJ_jne }, // FNEU
     { EJ_jb                }, // FLTU

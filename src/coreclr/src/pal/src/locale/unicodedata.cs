@@ -42,7 +42,7 @@ class Program
                 if (!hasLowerCaseMapping && !hasUpperCaseMapping)
                     continue;
 
-                
+
                 int opposingCase = hasUpperCaseMapping ?
                     int.Parse(fields[12], NumberStyles.HexNumber) :
                     int.Parse(fields[13], NumberStyles.HexNumber);

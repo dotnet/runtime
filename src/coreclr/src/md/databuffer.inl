@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: DataBuffer.inl
-// 
+//
 
-// 
+//
 // Class code:DataBuffer provides secure access to a block of memory.
-// 
+//
 // ======================================================================================
 
 #pragma once
@@ -15,22 +15,22 @@
 #include "databuffer.h"
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Creates empty memory block.
-// 
-inline 
+//
+inline
 DataBuffer::DataBuffer()
 {
     Clear();
 } // DataBuffer::DataBuffer
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Creates memory block (pbData, of size cbSize).
-// 
-inline 
+//
+inline
 DataBuffer::DataBuffer(
-    __in_bcount(cbSize) BYTE  *pbData, 
+    __in_bcount(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;
@@ -38,10 +38,10 @@ DataBuffer::DataBuffer(
 } // DataBuffer::DataBuffer
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Creates memory block copy.
-// 
-inline 
+//
+inline
 DataBuffer::DataBuffer(
     const DataBuffer &source)
 {
@@ -56,11 +56,11 @@ DataBuffer::DataBuffer(
 #endif //!BIT64
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Initializes memory block to empty data. The object could be already initialzied.
-// 
-inline 
-void 
+//
+inline
+void
 DataBuffer::Clear()
 {
     m_cbSize = 0;
@@ -71,33 +71,33 @@ DataBuffer::Clear()
 #undef const_pbBadFood
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
-// 
-inline 
-void 
+//
+inline
+void
 DataBuffer::Init(
-    __in_bcount(cbSize) BYTE  *pbData, 
+    __in_bcount(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     _ASSERTE(IsEmpty());
-    
+
     m_pbData = pbData;
     m_cbSize = cbSize;
 } // DataBuffer::Init
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Reads data of type T without skipping the read data (returns pointer to the type in *ppTypeData).
-// Returns FALSE if there's not enough data (of size T) in the blob, doesn't initialize the pointer 
+// Returns FALSE if there's not enough data (of size T) in the blob, doesn't initialize the pointer
 // *ppTypeData then.
-// Returns TRUE otherwise, fills *ppTypeData with the "read" type start, but doesn't move the memory 
+// Returns TRUE otherwise, fills *ppTypeData with the "read" type start, but doesn't move the memory
 // block (doesn't skip the "read" data).
-// 
-template<class T> 
-__checkReturn 
-inline 
-BOOL 
+//
+template<class T>
+__checkReturn
+inline
+BOOL
 DataBuffer::PeekData(
     __deref_out T **ppTypeData)
 {
@@ -111,19 +111,19 @@ DataBuffer::PeekData(
 } // DataBuffer::PeekData
 
 // --------------------------------------------------------------------------------------
-// 
-// Reads data of type T at offset nOffset without skipping the read data (returns pointer to the type in 
+//
+// Reads data of type T at offset nOffset without skipping the read data (returns pointer to the type in
 // *ppTypeData).
-// Returns FALSE if there's not enough data (of size T) at offset nOffset in the buffer, doesn't 
+// Returns FALSE if there's not enough data (of size T) at offset nOffset in the buffer, doesn't
 // initialize the pointer *ppTypeData then.
-// Returns TRUE otherwise, fills *ppTypeData with the type start, but doesn't move the memory block 
+// Returns TRUE otherwise, fills *ppTypeData with the type start, but doesn't move the memory block
 // (doesn't skip any "read" data).
-template<class T> 
-__checkReturn 
-inline 
-BOOL 
+template<class T>
+__checkReturn
+inline
+BOOL
 DataBuffer::PeekDataAt(
-                UINT32 nOffset, 
+                UINT32 nOffset,
     __deref_out T    **ppTypeData)
 {
     if (m_cbSize < nOffset)
@@ -140,18 +140,18 @@ DataBuffer::PeekDataAt(
 } // DataBuffer::PeekDataAt
 
 // --------------------------------------------------------------------------------------
-// 
-// Reads data of type T and skips the data (instead of reading the bytes, returns pointer to the type in 
+//
+// Reads data of type T and skips the data (instead of reading the bytes, returns pointer to the type in
 // *ppTypeData).
-// Returns FALSE if there's not enough data (of size T) in the blob, doesn't initialize the pointer 
+// Returns FALSE if there's not enough data (of size T) in the blob, doesn't initialize the pointer
 // *ppTypeData then.
-// Returns TRUE otherwise, fills *ppTypeData with the "read" type start and moves the memory block 
+// Returns TRUE otherwise, fills *ppTypeData with the "read" type start and moves the memory block
 // behind the "read" type.
-// 
-template<class T> 
-__checkReturn 
-inline 
-BOOL 
+//
+template<class T>
+__checkReturn
+inline
+BOOL
 DataBuffer::GetData(
     __deref_out T **ppTypeData)
 {
@@ -166,19 +166,19 @@ DataBuffer::GetData(
 } // DataBuffer::GetData
 
 // --------------------------------------------------------------------------------------
-// 
-// Reads data of size cbDataSize and skips the data (instead of reading the bytes, returns pointer to 
+//
+// Reads data of size cbDataSize and skips the data (instead of reading the bytes, returns pointer to
 // the bytes in *ppbDataPointer).
-// Returns FALSE if there's not enough data in the blob, doesn't initialize the pointer *ppbDataPointer 
+// Returns FALSE if there's not enough data in the blob, doesn't initialize the pointer *ppbDataPointer
 // then.
-// Returns TRUE otherwise, fills *ppbDataPointer with the "read" data start and moves the memory block 
+// Returns TRUE otherwise, fills *ppbDataPointer with the "read" data start and moves the memory block
 // behind the "read" data.
-// 
-__checkReturn 
-inline 
-BOOL 
+//
+__checkReturn
+inline
+BOOL
 DataBuffer::GetDataOfSize(
-                             UINT32 cbDataSize, 
+                             UINT32 cbDataSize,
     __out_bcount(cbDataSize) BYTE **ppbDataPointer)
 {
     if (m_cbSize < cbDataSize)
@@ -192,14 +192,14 @@ DataBuffer::GetDataOfSize(
 } // DataBuffer::GetDataOfSize
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Truncates the buffer to exact size (cbSize).
 // Returns FALSE if there's less than cbSize data represented.
 // Returns TRUE otherwise and truncates the represented data size to cbSize.
-// 
-__checkReturn 
-inline 
-BOOL 
+//
+__checkReturn
+inline
+BOOL
 DataBuffer::TruncateToExactSize(UINT32 cbSize)
 {
     // Check if there's at least cbSize data present
@@ -214,14 +214,14 @@ DataBuffer::TruncateToExactSize(UINT32 cbSize)
 } // DataBuffer::TruncateToExactSize
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Truncates the buffer by size (cbSize).
 // Returns FALSE if there's less than cbSize data represented.
 // Returns TRUE otherwise and truncates the represented data size by cbSize.
-// 
-__checkReturn 
-inline 
-BOOL 
+//
+__checkReturn
+inline
+BOOL
 DataBuffer::TruncateBySize(UINT32 cbSize)
 {
     // Check if there's at least cbSize data present
@@ -236,14 +236,14 @@ DataBuffer::TruncateBySize(UINT32 cbSize)
 } // DataBuffer::TruncateBySize
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Skips the buffer to size (cbSize).
 // Returns FALSE if there's less than cbSize data represented.
 // Returns TRUE otherwise and skips data at the beggining, so that the result has size cbSize.
-// 
-__checkReturn 
-inline 
-BOOL 
+//
+__checkReturn
+inline
+BOOL
 DataBuffer::SkipToExactSize(UINT32 cbSize)
 {
     // Check if there's at least cbSize data present
@@ -257,13 +257,13 @@ DataBuffer::SkipToExactSize(UINT32 cbSize)
 } // DataBuffer::SkipToExactSize
 
 // --------------------------------------------------------------------------------------
-// 
-// Skips 'cbSize' bytes in the represented memory block. The caller is responsible for making sure that the 
+//
+// Skips 'cbSize' bytes in the represented memory block. The caller is responsible for making sure that the
 // represented memory block contains at least 'cbSize' bytes, otherwise there will be a security issue.
 // Should be used only internally, never call it from outside of this class.
-// 
-inline 
-void 
+//
+inline
+void
 DataBuffer::SkipBytes_InternalInsecure(UINT32 cbSize)
 {
     // The caller is responsible for this check, just double check here

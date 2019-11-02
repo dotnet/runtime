@@ -24,9 +24,9 @@ extern FixRedirectContextHandler:proc
 ;
 ; WARNING!!  These functions immediately ruin thread unwindability.  This is
 ; WARNING!!  OK as long as there is a mechanism for saving the thread context
-; WARNING!!  prior to running these functions as well as a mechanism for 
+; WARNING!!  prior to running these functions as well as a mechanism for
 ; WARNING!!  restoring the context prior to any stackwalk.  This means that
-; WARNING!!  we need to ensure that no GC can occur while the stack is 
+; WARNING!!  we need to ensure that no GC can occur while the stack is
 ; WARNING!!  unwalkable.  This further means that we cannot allow any exception
 ; WARNING!!  to occure when the stack is unwalkable
 ;
@@ -84,7 +84,7 @@ NESTED_ENTRY RedirectedHandledJITCaseFor&reason&_Stub, _TEXT, FixRedirectContext
         ; of the target thread, and will RtlRestoreContext when it is done.
         ;
         call            ?RedirectedHandledJITCaseFor&reason&@Thread@@CAXXZ
-        
+
         int             3                       ; target shouldn't return.
 
 ; Put a label here to tell the debugger where the end of this function is.
@@ -172,7 +172,7 @@ LEAF_ENTRY STUB&_FixRsp, _TEXT
 
         ; Target should not return.
         int             3
-        
+
 LEAF_END STUB&_FixRsp, _TEXT
 
         endm

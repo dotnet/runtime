@@ -420,7 +420,7 @@ public:
         m_SignatureSize = VAL32(SignatureSize);
     }
     VARIANT Value(UINT32 *pValueBstr)
-    {   
+    {
         *pValueBstr = VAL32(m_ValueBstr);
 #if BIGENDIAN
         VARIANT VariantValue;
@@ -435,7 +435,7 @@ public:
             VariantSwap(false, &VariantValue, &m_Value);
         }
         return VariantValue;
-#else   
+#else
         return m_Value;
 #endif
     }
@@ -471,7 +471,7 @@ private:
     // the end of the array).  Start may equal end if the method has none of the item.
     UINT32          m_StartScopes;
     UINT32          m_EndScopes;
-    UINT32          m_StartVars;      
+    UINT32          m_StartVars;
     UINT32          m_EndVars;
     UINT32          m_StartUsing;
     UINT32          m_EndUsing;
@@ -493,8 +493,8 @@ public:
     {
         m_MethodToken = VAL32(MethodToken);
     }
-    UINT32  StartScopes() 
-    { 
+    UINT32  StartScopes()
+    {
         return VAL32(m_StartScopes);
     }
     void SetStartScopes(UINT32 StartScopes)
@@ -792,7 +792,7 @@ public:
         m_UrlEntry = VAL32(UrlEntry);
     }
 
-} DocumentInfo; 
+} DocumentInfo;
 
 template <class T>
 class ArrayStorage
@@ -806,26 +806,26 @@ public:
     }
     ~ArrayStorage()
     {
-        
+
         if ( m_array )
             DELETEARRAY(m_array);
         m_array = NULL;
         m_spaceSize = 0;
         m_instanceCount = 0;
     }
-    T* next() 
+    T* next()
     {
-        if( !grow ( m_instanceCount ) ) 
+        if( !grow ( m_instanceCount ) )
             return NULL;
         _ASSERTE( m_instanceCount < m_spaceSize );
         return &m_array[ m_instanceCount++ ];
     }
-    bool grab(UINT32 n, UINT32 * pIndex) 
+    bool grab(UINT32 n, UINT32 * pIndex)
     {
         S_UINT32 newSize = S_UINT32(m_instanceCount) + S_UINT32(n);
         if (newSize.IsOverflow())
             return false;
-        if (!grow(newSize.Value())) 
+        if (!grow(newSize.Value()))
             return false;
         _ASSERTE( m_instanceCount < m_spaceSize );
         *pIndex = m_instanceCount;
@@ -1020,7 +1020,7 @@ public:
                         IStream *pIStream,
                         BOOL fFullBuild,
                         const WCHAR *pdbFinalPath); // location exe should contain for pdb file
-                        
+
     COM_METHOD GetDebugInfo(IMAGE_DEBUG_DIRECTORY *pIDD,
                          DWORD cData,
                          DWORD *pcData,
@@ -1033,7 +1033,7 @@ public:
                         VARIANT value,
                         ULONG32 cSig,
                         unsigned char __RPC_FAR signature[  ]);
-    
+
     COM_METHOD Abort(void);
 
     //-----------------------------------------------------------
@@ -1093,7 +1093,7 @@ public:
 
     void SetFullPathName(const WCHAR *szFullPathName)
     {
-        
+
     }
 
 private:

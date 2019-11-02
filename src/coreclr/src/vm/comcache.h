@@ -55,14 +55,14 @@ private:
 
     // Initialization method called from the CtxEntryCache.
     VOID Init();
-    
+
 public:
     // Add a reference to the CtxEntry.
     DWORD AddRef();
 
     // Release a reference to the CtxEntry.
     DWORD Release();
-    
+
     // Function to enter the context. The specified callback function will
     // be called from within the context.
     HRESULT EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData);
@@ -92,7 +92,7 @@ private:
 };
 
 //==============================================================
-// IUnkEntry: represent a single COM component 
+// IUnkEntry: represent a single COM component
 struct IUnkEntry
 {
     // The context entry needs to be a friend to be able to call InitSpecial.
@@ -106,7 +106,7 @@ struct IUnkEntry
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_pUnknown != NULL && m_pUnknown != (IUnknown*)0xBADF00D);
-        
+
         return m_pUnknown;
     }
 #endif // _DEBUG
@@ -135,7 +135,7 @@ struct IUnkEntry
     LPVOID GetCtxCookie()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_pCtxCookie;
     }
 
@@ -143,12 +143,12 @@ struct IUnkEntry
     inline bool IsDisconnected()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pUnknown == (IUnknown*)0xBADF00D || 
+        return (m_pUnknown == (IUnknown*)0xBADF00D ||
            (GetCtxEntry() != NULL && m_pCtxCookie != GetCtxEntry()->GetCtxCookie()));
     }
-    
-    
-private :    
+
+
+private :
     // Initialize the entry, returns true if we are in an STA.
     // We assert inside Init that this IUnkEntry is indeed within a RCW
     void Init(IUnknown* pUnk, BOOL bIsFreeThreaded, Thread *pThread DEBUGARG(RCW *pRCW));
@@ -162,7 +162,7 @@ private :
     // Get the RCW associated with this IUnkEntry
     // We assert inside Init that this IUnkEntry is indeed within a RCW
     RCW *GetRCW();
-    
+
     // Get IUnknown for the current context from IUnkEntry
     IUnknown* GetIUnknownForCurrContext(bool fNoAddRef);
 
@@ -180,7 +180,7 @@ private :
     inline bool IsMarshalingInhibited();
 
     VOID CheckValidIUnkEntry();
-    
+
     HRESULT HRCheckValidIUnkEntry();
 
     // Unmarshal IUnknown for the current context if the lock is held
@@ -198,10 +198,10 @@ private :
 
     // Method to try and start updating the the entry.
     bool TryUpdateEntry();
-    
+
     // Method to end updating the entry.
     VOID EndUpdateEntry();
-    
+
     // Helper function to determine if a COM component aggregates the FTM.
     static bool IsComponentFreeThreaded(IUnknown *pUnk);
 
@@ -221,7 +221,7 @@ private :
     // We use the lowest bit for synchronization and we rely on the fact that the
     // context itself (the rest of the bits) does not change throughout the lifetime
     // of this object.
-    PTR_CtxEntry    m_pCtxEntry;    
+    PTR_CtxEntry    m_pCtxEntry;
 
     // IUnknown interface
     IUnknown*       m_pUnknown;
@@ -250,7 +250,7 @@ struct InterfaceEntry
     // Member of the entry. These must be volatile so the compiler
     // will not try and optimize reads and writes to them.
     Volatile<IE_METHODTABLE_PTR> m_pMT;                  // Interface asked for
-    Volatile<IUnknown*>          m_pUnknown;             // Result of query    
+    Volatile<IUnknown*>          m_pUnknown;             // Result of query
 };
 
 class CtxEntryCacheTraits : public DefaultSHashTraits<CtxEntry *>
@@ -288,7 +288,7 @@ public:
 
     // Method to retrieve/create a CtxEntry for the specified context cookie.
     CtxEntry *FindCtxEntry(LPVOID pCtxCookie, Thread *pSTAThread);
-    
+
 private:
     CtxEntry * CreateCtxEntry(LPVOID pCtxCookie, Thread * pSTAThread);
 
@@ -299,7 +299,7 @@ private:
 
     // spin lock for fast synchronization
     SpinLock                m_Lock;
-    
+
     // The one and only instance for the context entry cache.
     static CtxEntryCache*   s_pCtxEntryCache;
 };

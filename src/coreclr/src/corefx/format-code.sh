@@ -19,7 +19,7 @@ for D in */; do
             $CF -style=file -i "$file"
         fi
     done
-   
+
     for file in "${D}"*.h ; do
         if [ -e $file ] ; then
             $CF -style=file -i "$file"

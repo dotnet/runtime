@@ -75,7 +75,7 @@ BOOL PELoader::open(LPCSTR moduleName)
     if (m_hFile == INVALID_HANDLE_VALUE)
         return FALSE;
 
-    dwFileSizeLow = GetFileSize( m_hFile, NULL); 
+    dwFileSizeLow = GetFileSize( m_hFile, NULL);
     if (dwFileSizeLow == INVALID_FILE_SIZE)
         return FALSE;
     m_FileSize = dwFileSizeLow;
@@ -104,7 +104,7 @@ BOOL PELoader::open(const WCHAR* moduleName)
     if (m_hFile == INVALID_HANDLE_VALUE)
         return FALSE;
 
-    dwFileSizeLow = GetFileSize( m_hFile, NULL); 
+    dwFileSizeLow = GetFileSize( m_hFile, NULL);
     if (dwFileSizeLow == INVALID_FILE_SIZE)
         return FALSE;
     m_FileSize = dwFileSizeLow;
@@ -124,7 +124,7 @@ BOOL PELoader::open(const WCHAR* moduleName)
 BOOL PELoader::open(HMODULE hMod)
 {
     IMAGE_DOS_HEADER * pdosHeader;
-    
+
     // get the dos header...
     m_hMod = hMod;
     pdosHeader = (IMAGE_DOS_HEADER*) hMod;

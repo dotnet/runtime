@@ -18,7 +18,7 @@ EXPORTS
 
         ; VS depends on CLRJitAttachState having a ordinal of 3. This cannot change.
         CLRJitAttachState                                   @3 data
-        
+
         ; Unix hosting API
         coreclr_create_delegate
         coreclr_execute_assembly

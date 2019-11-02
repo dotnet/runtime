@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // This module defines a Utility Class used by reflection
 //
-//  
+//
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +66,7 @@ public:
     virtual MethodDesc* GetCallerMethod();
     virtual Assembly* GetCallerAssembly();
     virtual bool IsCalledFromInterop();
-    
+
     AccessCheckOptions::AccessCheckType GetAccessCheckType() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -75,13 +75,13 @@ public:
 
     AppDomain* GetCallerDomain();
 
-private:    
+private:
     bool            m_fCheckedCaller;
     bool            m_fCheckedPerm;
     bool            m_fCallerHasPerm;
-	
-    
-    // @review GENERICS: 
+
+
+    // @review GENERICS:
     // These method descriptors may be shared between compatible instantiations
     // Check that this does not open any security holes
     MethodDesc*     m_pCaller;
@@ -101,9 +101,9 @@ class InvokeUtil
 
 public:
     static void CopyArg(TypeHandle th, OBJECTREF *obj, ArgDestination *argDest);
-   
+
     // Given a type, this routine will convert an return value representing that
-    //  type into an ObjectReference.  If the type is a primitive, the 
+    //  type into an ObjectReference.  If the type is a primitive, the
     //  value is wrapped in one of the Value classes.
     static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
 
@@ -129,7 +129,7 @@ public:
     static OBJECTREF ChangeType(OBJECTREF binder,OBJECTREF srcObj,TypeHandle th,OBJECTREF locale);
 
     // CreatePrimitiveValue
-    // This routine will validate the object and then place the value into 
+    // This routine will validate the object and then place the value into
     //  the destination
     //  dstType -- The type of the destination
     //  srcType -- The type of the source
@@ -138,7 +138,7 @@ public:
     static void CreatePrimitiveValue(CorElementType dstType, CorElementType srcType, OBJECTREF srcObj, ARG_SLOT* pDst);
 
     // CreatePrimitiveValue
-    // This routine will validate the object and then place the value into 
+    // This routine will validate the object and then place the value into
     //  the destination
     //  dstType -- The type of the destination
     //  srcType -- The type of the source
@@ -154,7 +154,7 @@ public:
     inline static DWORD IsPrimitiveType(const CorElementType type)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         if (type >= PRIMITIVE_TABLE_SIZE)
         {
             if (ELEMENT_TYPE_I==type || ELEMENT_TYPE_U==type)
@@ -176,7 +176,7 @@ public:
     inline static DWORD CanPrimitiveWiden(const CorElementType destType, const CorElementType srcType)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         if (destType >= PRIMITIVE_TABLE_SIZE || srcType >= PRIMITIVE_TABLE_SIZE)
         {
             if ((ELEMENT_TYPE_I==destType && ELEMENT_TYPE_I==srcType) ||
@@ -223,7 +223,7 @@ public:
                                 BOOL            fCriticalToFullDemand = TRUE,
                                 BOOL            checkSkipVer = FALSE);
 
-    // Check accessability of a field 
+    // Check accessability of a field
     static void CanAccessField(RefSecContext*   pCtx,
                                MethodTable*     pTargetMT,
                                MethodTable*     pInstanceMT,
@@ -273,7 +273,7 @@ public:
                                   MethodDesc          *pTargetMethod);
 
 private:
-    // Check accessability of a field 
+    // Check accessability of a field
     static void CheckAccessField(RefSecContext       *pCtx,
                                  MethodTable         *pTargetMT,
                                  MethodTable         *pInstanceMT,
@@ -281,7 +281,7 @@ private:
 
     // Check accessability of a field or method.
     // pTargetMD should be NULL for a field, and may be NULL for a method.
-    // If checking a generic method with a method instantiation, 
+    // If checking a generic method with a method instantiation,
     // the method should be in as pOptionalTargetMethod so
     // that the accessibilty of its type arguments is checked too.
     static void CheckAccess(RefSecContext               *pCtx,

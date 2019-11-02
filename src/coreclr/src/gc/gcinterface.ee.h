@@ -230,9 +230,9 @@ public:
     virtual
     bool IsPreemptiveGCDisabled() = 0;
 
-    // Enables preemptive GC on the current thread. Returns true if the thread mode 
+    // Enables preemptive GC on the current thread. Returns true if the thread mode
     // was changed and false if the thread mode wasn't changed or the thread is not
-    // a managed thread. 
+    // a managed thread.
     virtual
     bool EnablePreemptiveGC() = 0;
 
@@ -292,8 +292,8 @@ public:
     virtual
     void DiagWalkFReachableObjects(void* gcContext) = 0;
 
-    // During a GC after we discover the survivors and the relocation info, 
-    // gives the diagnostics code a chance to run. This includes LOH if we are 
+    // During a GC after we discover the survivors and the relocation info,
+    // gives the diagnostics code a chance to run. This includes LOH if we are
     // compacting LOH.
     virtual
     void DiagWalkSurvivors(void* gcContext, bool fCompacting) = 0;
@@ -413,7 +413,7 @@ public:
     virtual
     void AnalyzeSurvivorsFinished(int condemnedGeneration) = 0;
 
-    virtual 
+    virtual
     void VerifySyncTableEntry() = 0;
 
     virtual

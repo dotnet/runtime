@@ -23,10 +23,10 @@ One advantage of the CLR is that the VM (mostly) hides the (non-ABI) OS differen
 
 ## Front-end changes
 * Calling Convention
-  * Struct args and returns seem to be the most complex differences 
+  * Struct args and returns seem to be the most complex differences
     * Importer and morph are highly aware of these
       * E.g. fgMorphArgs(), fgFixupStructReturn(), fgMorphCall(), fgPromoteStructs() and the various struct assignment morphing methods
-  * HFAs on ARM 
+  * HFAs on ARM
 * Tail calls are target-dependent, but probably should be less so
 * Intrinsics: each platform recognizes different methods as intrinsics (e.g. Sin only for x86, Round everywhere BUT amd64)
 * Target-specific morphs such as for mul, mod and div
@@ -106,7 +106,7 @@ emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* s
 * For the most part, the code generation method structure is the same for all architectures
   * Most code generation methods start with "gen"
 * Theoretically, CodeGenCommon.cpp contains code "mostly" common to all targets (this factoring is imperfect)
-  * Method prolog, epilog, 
+  * Method prolog, epilog,
 * genCodeForBBList
   * walks the trees in execution order, calling genCodeForTreeNode, which needs to handle all nodes that are not "contained"
   * generates control flow code (branches, EH) for the block

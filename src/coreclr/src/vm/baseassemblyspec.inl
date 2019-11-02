@@ -4,7 +4,7 @@
 // ============================================================
 //
 // BaseAssemblySpec.inl
-// 
+//
 
 
 //
@@ -23,7 +23,7 @@ inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
     SString s1;
     SString s2;
     s1.SetUTF8(string1);
-    s2.SetUTF8(string2);        
+    s2.SetUTF8(string2);
     return s1.CompareCaseInsensitive(s2);
 }
 
@@ -56,7 +56,7 @@ inline BaseAssemblySpec::~BaseAssemblySpec()
 }
 
 inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyName,
-                         const AssemblyMetaDataInternal* pContext, 
+                         const AssemblyMetaDataInternal* pContext,
                          const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
                          DWORD dwFlags)
 {
@@ -107,7 +107,7 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
         m_ownedFlags |= NAME_OWNED;
     }
 
-    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) && 
+    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) &&
         (ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) && m_pbPublicKeyOrToken) {
         BYTE *temp = new BYTE [m_cbPublicKeyOrToken];
         memcpy(temp, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
@@ -123,7 +123,7 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
         m_context.szLocale = temp;
         m_ownedFlags |= LOCALE_OWNED;
     }
-    
+
     if ((~m_ownedFlags & CODEBASE_OWNED) && (ownedFlags & CODEBASE_OWNED) &&
         m_wszCodeBase) {
         size_t len = wcslen(m_wszCodeBase) + 1;
@@ -134,11 +134,11 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
     }
 
     if ((~m_ownedFlags & WINRT_TYPE_NAME_OWNED) && (ownedFlags & WINRT_TYPE_NAME_OWNED)) {
-            
+
 	NewArrayHolder<CHAR> nameTemp, namespaceTemp;
 
         if (m_szWinRtTypeClassName) {
-        
+
             size_t nameLen = strlen(m_szWinRtTypeClassName) + 1;
             nameTemp = new CHAR [nameLen];
             strcpy_s(nameTemp, nameLen, m_szWinRtTypeClassName);
@@ -150,7 +150,7 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
             namespaceTemp = new CHAR [namespaceLen];
             strcpy_s(namespaceTemp, namespaceLen, m_szWinRtTypeNamespace);
         }
-            
+
 	m_szWinRtTypeClassName = nameTemp.Extract();
         m_szWinRtTypeNamespace = namespaceTemp.Extract();
         if (m_szWinRtTypeClassName != NULL || m_szWinRtTypeNamespace != NULL)
@@ -253,7 +253,7 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
     m_wszCodeBase=pSpec->m_wszCodeBase;
     m_szWinRtTypeNamespace = pSpec->m_szWinRtTypeNamespace;
     m_szWinRtTypeClassName = pSpec->m_szWinRtTypeClassName;
-    
+
     m_context = pSpec->m_context;
 
     if ((pSpec->m_ownedFlags & BAD_NAME_OWNED) != 0)
@@ -288,7 +288,7 @@ inline DWORD BaseAssemblySpec::Hash()
 
     hash ^= HashBytes(m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
     hash = _rotl(hash, 4);
-        
+
     hash ^= m_dwFlags;
     hash = _rotl(hash, 4);
 
@@ -299,11 +299,11 @@ inline DWORD BaseAssemblySpec::Hash()
     if (m_context.usMajorVersion != (USHORT) -1) {
         hash ^= m_context.usMinorVersion;
         hash = _rotl(hash, 8);
-        
+
         if (m_context.usMinorVersion != (USHORT) -1) {
             hash ^= m_context.usBuildNumber;
             hash = _rotl(hash, 8);
-        
+
             if (m_context.usBuildNumber != (USHORT) -1) {
                 hash ^= m_context.usRevisionNumber;
                 hash = _rotl(hash, 8);
@@ -339,7 +339,7 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
 
     if(m_wszCodeBase || pSpec->m_wszCodeBase)
     {
-        if(!m_wszCodeBase || !pSpec->m_wszCodeBase)    
+        if(!m_wszCodeBase || !pSpec->m_wszCodeBase)
             return FALSE;
         return wcscmp(m_wszCodeBase,(pSpec->m_wszCodeBase))==0;
     }
@@ -369,7 +369,7 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
         if (m_context.usMinorVersion != (USHORT) -1) {
             if (m_context.usBuildNumber != pSpec->m_context.usBuildNumber)
                 return FALSE;
-            
+
             if (m_context.usBuildNumber != (USHORT) -1) {
                 if (m_context.usRevisionNumber != pSpec->m_context.usRevisionNumber)
                     return FALSE;
@@ -414,11 +414,11 @@ inline HRESULT BaseAssemblySpec::Init(mdToken kAssemblyToken,
         IfFailRet(pImport->GetAssemblyProps(kAssemblyToken,
                                   (const void **) &m_pbPublicKeyOrToken,
                                   &m_cbPublicKeyOrToken,
-                                  NULL, 
+                                  NULL,
                                   &m_pAssemblyName,
                                   &m_context,
                                   &m_dwFlags));
-        
+
         if (m_cbPublicKeyOrToken != 0)
             m_dwFlags |= afPublicKey;
     }
@@ -571,7 +571,7 @@ inline void BaseAssemblySpec::SetCulture(LPCSTR szCulture)
     LIMITED_METHOD_CONTRACT;
     if (m_context.szLocale && (m_ownedFlags & LOCALE_OWNED))
         delete [] m_context.szLocale;
-    m_ownedFlags &= ~LOCALE_OWNED;    
+    m_ownedFlags &= ~LOCALE_OWNED;
     if (strcmp(szCulture,"neutral")==0)
         m_context.szLocale="";
     else
@@ -594,18 +594,18 @@ inline void BaseAssemblySpec::SetContext(ASSEMBLYMETADATA* assemblyData)
     m_context.ulProcessor=assemblyData->ulProcessor;
     m_context.rOS=assemblyData->rOS;
     m_context.ulOS=assemblyData->ulOS;
-    m_context.szLocale=""; 
+    m_context.szLocale="";
 };
 
 inline BOOL BaseAssemblySpec::IsStrongNamed() const
 {
-    LIMITED_METHOD_CONTRACT; 
+    LIMITED_METHOD_CONTRACT;
     return m_cbPublicKeyOrToken;
 }
 
 inline BOOL BaseAssemblySpec::HasPublicKey() const
 {
-    LIMITED_METHOD_CONTRACT; 
+    LIMITED_METHOD_CONTRACT;
     return IsAfPublicKey(m_dwFlags) && m_cbPublicKeyOrToken != 0;
 }
 
@@ -616,14 +616,14 @@ inline BOOL BaseAssemblySpec::HasPublicKeyToken() const
 }
 
 inline LPCSTR BaseAssemblySpec::GetName()  const
-{ 
-    LIMITED_METHOD_CONTRACT; 
-    return m_pAssemblyName; 
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_pAssemblyName;
 }
 
 
 
-inline BOOL BaseAssemblySpec::VerifyBindingString(LPCWSTR pwStr) 
+inline BOOL BaseAssemblySpec::VerifyBindingString(LPCWSTR pwStr)
 {
     WRAPPER_NO_CONTRACT;
     if (wcschr(pwStr, '\\') ||

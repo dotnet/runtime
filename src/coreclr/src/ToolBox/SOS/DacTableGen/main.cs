@@ -7,31 +7,31 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 
-#if !FEATURE_PAL  
+#if !FEATURE_PAL
 using Dia;
 using Dia.Util;
-#endif // !FEATURE_PAL   
+#endif // !FEATURE_PAL
 using System.Globalization;
 
 /******************************************************************************
  *
  *****************************************************************************/
 
-public abstract class SymbolProvider 
+public abstract class SymbolProvider
 {
     public enum SymType
     {
         GlobalData,
         GlobalFunction,
     };
-    
+
     public abstract UInt32 GetGlobalRVA(String symbolName,
                                         SymType symType);
     public abstract UInt32 GetVTableRVA(String symbolName,
                                         String keyBaseName);
 }
 
-#if !FEATURE_PAL 
+#if !FEATURE_PAL
 public class PdbSymbolProvider : SymbolProvider
 {
     public PdbSymbolProvider(String symbolFilename, String dllFilename)
@@ -71,14 +71,14 @@ public class PdbSymbolProvider : SymbolProvider
                                                 symbolName +
                                                 " overflows UInt32");
         }
-        
+
         return (UInt32)sy.Address;
     }
-    
+
     private DiaSymbol GetValidPublicSymbolEntry(String name)
     {
         IDiaEnumSymbols e = df.FindPublicSymbols(name);
-        
+
         if (e.count != 1)
         {
             return null;
@@ -87,7 +87,7 @@ public class PdbSymbolProvider : SymbolProvider
         {
             IDiaSymbol s;
             UInt32 celt;
-            
+
             e.Next(1, out s, out celt);
             return new DiaSymbol(s);
         }
@@ -147,9 +147,9 @@ public class PdbSymbolProvider : SymbolProvider
     }
 
     FileInfo fPDB = null;
-    DiaFile df = null;  
+    DiaFile df = null;
 }
-#endif // !FEATURE_PAL   
+#endif // !FEATURE_PAL
 
 public class Shell
 {
@@ -181,18 +181,18 @@ Copyright (C) Microsoft Corp.  All rights reserved.";
 
     public static void HelpBody()
     {
-  
+
 String helpMsg =
 
 ////////////
 @"Usage:
   DacTableGen /dac:<file> [/pdb:<file> /dll:<file>] [/map:<file>] /bin:<file> [/ignoreerrors]
- 
+
 Required:
   /dac:   The data access header file containing items to be added.
   /pdb:   The PDB file from which to get details.
   /map:   The MAP file from which to get details.
-          In Windows, this file is created by providing /MAP in link.exe. 
+          In Windows, this file is created by providing /MAP in link.exe.
           In UNIX, this file is created by the nm utility.
           OBSOLETE - Use DacTableGen.pl instead for UNIX systems
   /dll:   The DLL which matches the specified PDB or MAP file.
@@ -295,7 +295,7 @@ Required:
 
         if (pdbFile != null)
         {
-#if FEATURE_PAL     
+#if FEATURE_PAL
             throw new InvalidOperationException("PDBs are only supported on Windows.");
 #else
             PdbSymbolProvider pdbSymProvider = new PdbSymbolProvider(pdbFile, dllFile);
@@ -318,8 +318,8 @@ Required:
                 // also exists in a sub-directory that DIA automatically probes for ("retail" etc.).  There doesn't
                 // appear to be any mechanism for turning this sub-directory probing off, but all other searching mechanisms
                 // should be turned off by the DiaLoadCallback.  This could also happen if the user specified an incorrect
-                // (but still existing) filename in a path containing the real PDB.  Since DIA loaded it, it must match the DLL, 
-                // and so should only be an exact copy of the requested PDB (if the requested PDB actually matches the DLL).  So 
+                // (but still existing) filename in a path containing the real PDB.  Since DIA loaded it, it must match the DLL,
+                // and so should only be an exact copy of the requested PDB (if the requested PDB actually matches the DLL).  So
                 // go ahead and use it anyway with a warning.  To be less confusing, we could update the command-line syntax
                 // to take a PDB search path instead of a filename, but that inconsistent with the map path, and probably not
                 // worth changing semantics for.  In practice this warning will probably never be hit.
@@ -327,9 +327,9 @@ Required:
             }
             Console.WriteLine();
 
-            ScanDacFile(dacFile, 
+            ScanDacFile(dacFile,
                 pdbSymProvider,
-                rvaArray, 
+                rvaArray,
                 out numGlobals);
 
             if (mapFile != null)
@@ -338,9 +338,9 @@ Required:
                 UInt32 mapNumGlobals;
 
                 // check that both map file and pdb file produce same output to avoid breakages
-                ScanDacFile(dacFile, 
+                ScanDacFile(dacFile,
                     new MapSymbolProvider(mapFile),
-                    mapRvaArray, 
+                    mapRvaArray,
                     out mapNumGlobals);
 
                 // Produce a nice message to include with any errors.  For some reason, binplace will silently fail
@@ -348,7 +348,7 @@ Required:
                 // occur when mscorwks.pdb was locked when mscorwks.dll was last rebuilt.
                 string diagMsg = String.Format(".  This is usually caused by mscorwks.pdb and mscorwks.map being out of sync.  " +
                     "Was {0} (last modified {1}) in-use and locked when {2} was built (last modified {3})?  " +
-                    "Both should have been created when {4} was last rebuilt (last modified {5}).",  
+                    "Both should have been created when {4} was last rebuilt (last modified {5}).",
                     pdbFile, File.GetLastWriteTime(pdbFile),
                     mapFile, File.GetLastWriteTime(mapFile),
                     dllFile, File.GetLastWriteTime(dllFile));
@@ -357,7 +357,7 @@ Required:
                     throw new InvalidOperationException("Number of RVAs differes between pdb file and map file: " +
                         numGlobals + " " + mapNumGlobals + diagMsg);
 
-                for (int i = 0; i < rvaArray.Count; i++) 
+                for (int i = 0; i < rvaArray.Count; i++)
                 {
                     if (rvaArray[i] != mapRvaArray[i]
                         // it is ok if we find more stuff in the MAP file
@@ -370,7 +370,7 @@ Required:
 
                 if (numGlobals != mapNumGlobals)
                     throw new InvalidOperationException("Number of globals differes between pdb file and map file: " +
-                        numGlobals + " " + mapNumGlobals + diagMsg);                
+                        numGlobals + " " + mapNumGlobals + diagMsg);
             }
 #endif
         }
@@ -399,7 +399,7 @@ Required:
                                             FileAccess.Write);
         BinaryWriter binWrite = new BinaryWriter(outFile);
 
-        // Write header information 
+        // Write header information
         binWrite.Write(numGlobals);
         binWrite.Write(numVptrs);
         binWrite.Write(debugTimestamp);
@@ -437,10 +437,10 @@ Required:
         }
         return exitCode;
     }
-    
-    private static void ScanDacFile(String file, 
+
+    private static void ScanDacFile(String file,
                                     SymbolProvider sf,
-                                    List<UInt32> rvaArray, 
+                                    List<UInt32> rvaArray,
                                     out UInt32 numGlobals)
     {
         StreamReader strm =
@@ -466,12 +466,12 @@ Required:
                 break;
             }
         }
-    
+
         if (strm.ReadLine() != "{")
         {
             throw new InvalidOperationException("Invalid dac header format");
         }
-    
+
         //
         // All the globals come first so pick up each line that
         // begins with ULONG.
@@ -479,7 +479,7 @@ Required:
 
         bool fFoundVptrs = false;
         numGlobals = 0;
-    
+
         for (;;)
         {
             line = strm.ReadLine().Trim();
@@ -495,7 +495,7 @@ Required:
             else if (line.StartsWith("ULONG "))
             {
                 UInt32 rva = 0;
-                
+
                 line = line.Remove(0, 6);
                 line = line.TrimEnd(";".ToCharArray());
 
@@ -541,7 +541,7 @@ Required:
                     }
 
                     rva = sf.GetVTableRVA(line, keyBaseName);
-                    
+
                     if (rva == UInt32.MaxValue)
                     {
                         Console.WriteLine("    " + ToHexNB(rva));
@@ -551,11 +551,11 @@ Required:
                     {
                         String existing = (String)vtables[rva];
                         if (existing != null)
-                        {                       
+                        {
                             throw new InvalidOperationException(existing + " and " + line + " are at the same offsets." +
                                  " Add VPTR_UNIQUE(<a random unique number here>) to the offending classes to make their vtables unique.");
                         }
-                        vtables[rva] = line;       
+                        vtables[rva] = line;
 
                         Console.WriteLine("    " + ToHexNB(rva) +
                                           ", // vtable " + line + descTail);
@@ -564,10 +564,10 @@ Required:
                 else
                 {
                     SymbolProvider.SymType symType;
-                    
+
                     if (fFoundVptrs)
                         throw new InvalidOperationException("Invalid dac header format.  Vtable pointers must be last.");
-                        
+
                     if (line.StartsWith("dac__"))
                     {
                         // Global variables, use the prefix.
@@ -628,7 +628,7 @@ Required:
         if (!fFoundVptrs)
             throw new InvalidOperationException("Invalid dac header format.  Vtable pointers not found.");
     }
-    
+
     private static String ToHex(Object o)
     {
         if (o is UInt32 || o is Int32)

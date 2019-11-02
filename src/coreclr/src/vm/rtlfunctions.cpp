@@ -78,7 +78,7 @@ VOID InstallEEFunctionTable (
     static LPWSTR wszModuleName = NULL;
     static WCHAR  rgwModuleName[MAX_LONGPATH] = { 0 };
 
-    if (wszModuleName == NULL)        
+    if (wszModuleName == NULL)
     {
         StackSString ssTempName;
         DWORD dwTempNameSize;

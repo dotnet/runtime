@@ -481,7 +481,7 @@ namespace NativeFormat
         int startOffset = pWriter->GetCurrentOffset();
         int bucketMask = (m_nBuckets - 1);
 
-        // Lowest two bits are entry index size, the rest is log2 number of buckets 
+        // Lowest two bits are entry index size, the rest is log2 number of buckets
         int numberOfBucketsShift = HighestBit(m_nBuckets) - 1;
         pWriter->WriteByte(static_cast<uint8_t>((numberOfBucketsShift << 2) | m_entryIndexSize));
 
@@ -489,7 +489,7 @@ namespace NativeFormat
 
         pWriter->WritePad((m_nBuckets + 1) << m_entryIndexSize);
 
-        // For faster lookup at runtime, we store the first entry index even though it is redundant (the value can be 
+        // For faster lookup at runtime, we store the first entry index even though it is redundant (the value can be
         // inferred from number of buckets)
         PatchEntryIndex(pWriter, bucketsOffset, m_entryIndexSize, pWriter->GetCurrentOffset() - bucketsOffset);
 

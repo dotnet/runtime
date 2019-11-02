@@ -6,7 +6,7 @@
 //
 
 //
-// ZapNodes for everything directly related to zapping of native code 
+// ZapNodes for everything directly related to zapping of native code
 //
 // code:ZapMethodHeader
 // code:ZapMethodEntryPoint
@@ -17,7 +17,7 @@
 // code:ZapGCInfoTable
 
 
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPCODE_H__
@@ -302,16 +302,16 @@ class ZapMethodEntryPointTable
         typedef MethodEntryPointKey key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return MethodEntryPointKey(e->GetHandle(), e->GetAccessFlags());
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1.m_handle == k2.m_handle) && (k1.m_accessFlags == k2.m_accessFlags);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k.m_handle ^ (count_t)k.m_accessFlags;
@@ -502,16 +502,16 @@ class ZapUnwindDataTable
         typedef ZapUnwindDataKey key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return ZapUnwindDataKey(e->GetData(), e->GetBlobSize(), e->IsFilterFunclet());
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return ZapBlob::SHashTraits::Equals(k1.m_unwindData, k2.m_unwindData) && (k1.m_fIsFilterFunclet == k2.m_fIsFilterFunclet);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return ZapBlob::SHashTraits::Hash(k.m_unwindData) ^ k.m_fIsFilterFunclet;
@@ -623,16 +623,16 @@ class ZapGCInfoTable
         typedef GCInfoKey key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return GCInfoKey(e->GetGCInfo(), e->GetGCInfoSize(), e->GetUnwindInfo(), e->GetUnwindInfoSize());
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return ZapBlob::SHashTraits::Equals(k1.m_gcInfo, k2.m_gcInfo) && ZapBlob::SHashTraits::Equals(k1.m_unwindInfo, k2.m_unwindInfo);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return ZapBlob::SHashTraits::Hash(k.m_gcInfo) ^ ZapBlob::SHashTraits::Hash(k.m_unwindInfo);
@@ -805,7 +805,7 @@ public:
 
 // Zapping of ExceptionInfoTable
 // ExceptionInfoTable is a lookup table that has 1 entry for each method with EH information.
-// The table is sorted by method start address, so binary search is used during runtime to find 
+// The table is sorted by method start address, so binary search is used during runtime to find
 // the EH info for a given method given a method start address.
 class ZapExceptionInfoLookupTable : public ZapNode
 {
@@ -889,7 +889,7 @@ private:
     ZapVirtualSection * m_pRuntimeFunctionSection;
 };
 
-// 
+//
 //---------------------------------------------------------------------------------------
 //
 // Jump thunk for JIT helper

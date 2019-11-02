@@ -244,7 +244,7 @@ def main(argv):
     provider_dirname = os.path.join(intermediate, etw_dirname)
     if not os.path.exists(provider_dirname):
         os.makedirs(provider_dirname)
-        
+
     update_directory(provider_temp_dirname, provider_dirname)
     shutil.rmtree(provider_temp_dirname)
 

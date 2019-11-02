@@ -54,7 +54,7 @@ struct SharedState
         CONTRACTL_END;
 
         AppDomain *ad = ::GetAppDomain();
-    
+
         m_Threadable = ad->CreateHandle(threadable);
         m_ThreadStartArg = ad->CreateHandle(threadStartArg);
 
@@ -321,7 +321,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         EX_END_CATCH(SwallowAllExceptions);
         if (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL)
         {
-            // We can not 
+            // We can not
             pThread->SetThreadState(Thread::TS_FailStarted);
             pThread->DetachThread(FALSE);
             // !!! Do not touch any field of Thread object.  The Thread object is subject to delete
@@ -484,15 +484,15 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         ret = pNewThread->StartThread();
 
         // When running under a user mode native debugger there is a race
-        // between the moment we've created the thread (in CreateNewThread) and 
-        // the moment we resume it (in StartThread); the debugger may receive 
-        // the "ct" (create thread) notification, and it will attempt to 
+        // between the moment we've created the thread (in CreateNewThread) and
+        // the moment we resume it (in StartThread); the debugger may receive
+        // the "ct" (create thread) notification, and it will attempt to
         // suspend/resume all threads in the process.  Now imagine the debugger
         // resumes this thread first, and only later does it try to resume the
-        // newly created thread.  In these conditions our call to ResumeThread  
-        // may come before the debugger's call to ResumeThread actually causing 
+        // newly created thread.  In these conditions our call to ResumeThread
+        // may come before the debugger's call to ResumeThread actually causing
         // ret to equal 2.
-        // We cannot use IsDebuggerPresent() in the condition below because the 
+        // We cannot use IsDebuggerPresent() in the condition below because the
         // debugger may have been detached between the time it got the notification
         // and the moment we execute the test below.
         _ASSERTE(ret == 1 || ret == 2);
@@ -522,7 +522,7 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         EX_RETHROW;
     }
     EX_END_CATCH_UNREACHABLE;
-    
+
     gc.pThis->LeaveObjMonitor();
 
     GCPROTECT_END();
@@ -621,7 +621,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
     BOOL ret = false;
 
     // Keep managed Thread object alive, since the native object's
-    // lifetime is tied to the managed object's finalizer.  And with 
+    // lifetime is tied to the managed object's finalizer.  And with
     // resurrection, it may be possible to get a dangling pointer here -
     // consider both protecting thisRef and setting the managed object's
     // Thread* to NULL in the GC's ScanForFinalization method.
@@ -676,7 +676,7 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     if ((iTime < 0) && (iTime != INFINITE_TIMEOUT))
         COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
 
-    GetThread()->UserSleep(iTime);       
+    GetThread()->UserSleep(iTime);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -1144,11 +1144,11 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
             if(!DyingInternal->HasValidThreadHandle())
                 return TRUE;
             break;
-            
+
         default:
             _ASSERTE(!"This return code is not understood \n");
             break;
-    }    
+    }
 
     return FALSE;
 }
@@ -1280,7 +1280,7 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    
+
     Thread* pThread = &(*thread);
 
 #ifndef FEATURE_PAL

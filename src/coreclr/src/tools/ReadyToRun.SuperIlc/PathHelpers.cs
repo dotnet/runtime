@@ -35,7 +35,7 @@ static class PathExtensions
     internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 
     internal static string ToAbsoluteDirectoryPath(this string argValue) => argValue.ToAbsolutePath().StripTrailingDirectorySeparators();
-        
+
     internal static string StripTrailingDirectorySeparators(this string str)
     {
         if (String.IsNullOrWhiteSpace(str))

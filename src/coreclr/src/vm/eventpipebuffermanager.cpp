@@ -419,10 +419,10 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
         }
     }
 
-    // allocNewBuffer is reused below to detect if overflow happened, so cache it here to see if we should 
+    // allocNewBuffer is reused below to detect if overflow happened, so cache it here to see if we should
     // signal the reader thread
     bool shouldSignalReaderThread = allocNewBuffer;
-    
+
     // Check to see if we need to allocate a new buffer, and if so, do it here.
     if (allocNewBuffer)
     {

@@ -7,7 +7,7 @@
 
 //
 // Zapping of headers (IMAGE_COR20_HEADER, CORCOMPILE_HEADER, etc.)
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -76,7 +76,7 @@ void ZapImage::SaveNativeHeader()
 
     if (m_ModuleDecoder.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_SECURITY))
         nativeHeader.Flags |= CORCOMPILE_HEADER_HAS_SECURITY_DIRECTORY;
-            
+
     nativeHeader.COR20Flags = m_ModuleDecoder.GetCorHeader()->Flags;
 
 #ifdef CROSSGEN_COMPILE
@@ -85,9 +85,9 @@ void ZapImage::SaveNativeHeader()
         // Bug fix #814972
         // In buildlabs NI images are produced before binaries are strongname signed or authenticode signed.
         // which results in crossgen'ed NI different on the user box vs. the one from build lab.
-        // Setting source IL authenticode signed and strong name bit for crossgen'ed images should make both the images identical.             
+        // Setting source IL authenticode signed and strong name bit for crossgen'ed images should make both the images identical.
         nativeHeader.Flags |= CORCOMPILE_HEADER_HAS_SECURITY_DIRECTORY;
-        
+
         if (m_ModuleDecoder.GetCorHeader()->StrongNameSignature.Size != 0)
             nativeHeader.COR20Flags |= COMIMAGE_FLAGS_STRONGNAMESIGNED;
     }
@@ -196,8 +196,8 @@ void ZapImage::SaveCodeManagerEntry()
 void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
 {
     //
-    // The IMAGE_RESOURCE_DIRECTORY resource data structure is followed by a number of IMAGE_RESOURCE_DIRECTORY_ENTRY entries, which can either 
-    // point to other resource directories (RVAs to other ZapWin32ResourceDirectory nodes), or point to actual resource data (RVAs to a number 
+    // The IMAGE_RESOURCE_DIRECTORY resource data structure is followed by a number of IMAGE_RESOURCE_DIRECTORY_ENTRY entries, which can either
+    // point to other resource directories (RVAs to other ZapWin32ResourceDirectory nodes), or point to actual resource data (RVAs to a number
     // of IMAGE_RESOURCE_DATA_ENTRY entries that immediately follow the IMAGE_RESOURCE_DIRECTORY_ENTRY entries).
     //
 
@@ -237,7 +237,7 @@ void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
 
     // Offsets are based from the begining of the resources blob (see PE format documentation)
     DWORD dataEntryRVA = this->GetRVA() - m_pWin32ResourceSection->GetRVA()
-        + sizeof(IMAGE_RESOURCE_DIRECTORY) + 
+        + sizeof(IMAGE_RESOURCE_DIRECTORY) +
         (DWORD)m_entries.size() * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY);
 
     for (auto& entry : m_entries)
@@ -292,7 +292,7 @@ void ZapImage::CopyWin32Resources()
 #ifdef FEATURE_PREJIT
     if (!IsReadyToRunCompilation())
     {
-        // When compiling a fragile NGEN image, in order to avoid the risk of regression, only copy the RT_VERSION resource over so it 
+        // When compiling a fragile NGEN image, in order to avoid the risk of regression, only copy the RT_VERSION resource over so it
         // is easy to see in the dumps where the ngened module came from. For R2R, we copy all resources (new behavior).
         COUNT_T cbResourceData;
         PVOID pResourceData = m_ModuleDecoder.GetWin32Resource(MAKEINTRESOURCE(1), RT_VERSION, &cbResourceData);
@@ -370,7 +370,7 @@ void ZapImage::CopyWin32Resources()
         static bool EnumResourcesCallback(LPCWSTR lpszResourceName, LPCWSTR lpszResourceType, DWORD langID, BYTE* data, COUNT_T cbData, void *context)
         {
             ResourceEnumerationCallback* pCallback = (ResourceEnumerationCallback*)context;
-            // Third level in the enumeration: resources by langid for each name/type. 
+            // Third level in the enumeration: resources by langid for each name/type.
 
             // Note that this callback is not equivalent to the Windows enumeration apis as this api provides the resource data
             // itself, and the resources are guaranteed to be present directly in the associated binary. This does not exactly
@@ -385,7 +385,7 @@ void ZapImage::CopyWin32Resources()
 
             ResourceEnumerationCallback* pCallback = (ResourceEnumerationCallback*)context;
             pCallback->m_pCurrentNamesDirectory = pCallback->CreateResourceSubDirectory(pCallback->m_pCurrentTypesDirectory, lpszResourceName);
-            
+
             return pCallback->m_pModuleDecoder->EnumerateWin32Resources(lpszResourceName, lpszResourceType, ResourceEnumerationCallback::EnumResourcesCallback, context);
         }
 
@@ -408,7 +408,7 @@ void ZapImage::CopyWin32Resources()
             m_pRootDirectory->PlaceNodeAndDependencies(pWin32ResourceSection);
 
             //
-            // These strings are stored together after the last Resource Directory entry and before the first Resource Data entry. This 
+            // These strings are stored together after the last Resource Directory entry and before the first Resource Data entry. This
             // minimizes the impact of these variable-length strings on the alignment of the fixed-size directory entries
             //
             for (auto& entry : m_stringEntries)
@@ -518,12 +518,12 @@ void ZapDebugDirectory::Save(ZapWriter * pZapWriter)
     }
 }
 
-ZapPEExports::ZapPEExports(LPCWSTR dllPath) 
+ZapPEExports::ZapPEExports(LPCWSTR dllPath)
 {
 	m_dllFileName = wcsrchr(dllPath, DIRECTORY_SEPARATOR_CHAR_W);
 	if (m_dllFileName != NULL)
 		m_dllFileName++;
-	else 
+	else
 		m_dllFileName = dllPath;
 }
 
@@ -541,10 +541,10 @@ void ZapPEExports::Save(ZapWriter * pZapWriter)
 
 	exports.Name = pZapWriter->GetCurrentRVA() + sizeof(exports);
 
-	// Write out exports header 
+	// Write out exports header
 	pZapWriter->Write(&exports, sizeof(exports));
 
-	// Write out string that exports.Name points at.  
+	// Write out string that exports.Name points at.
 	for (LPCWSTR ptr = m_dllFileName; ; ptr++)
 	{
 		pZapWriter->Write((PVOID) ptr, 1);
@@ -572,7 +572,7 @@ void ZapImage::CopyDebugDirEntry()
         m_pNGenPdbDebugData = ZapBlob::NewBlob(static_cast<ZapWriter *>(this), &rsds, sizeof rsds);
     }
 
-    // IL PDB entry: copy of the (first of possibly many) IMAGE_DEBUG_DIRECTORY entry 
+    // IL PDB entry: copy of the (first of possibly many) IMAGE_DEBUG_DIRECTORY entry
     // in the IL image
     DWORD nDebugEntry = 0;
     PIMAGE_DEBUG_DIRECTORY pDebugDir = NULL;
@@ -588,17 +588,17 @@ void ZapImage::CopyDebugDirEntry()
                 m_zapper->Warning(W("IMAGE_DIRECTORY_ENTRY_DEBUG size (%d) should be a multiple of %d\n"),
                                   debugEntrySize, sizeof(IMAGE_DEBUG_DIRECTORY));
             } else {
-                
+
                 // Since pDebugEntry is an array of IMAGE_DEBUG_DIRECTORYs, debugEntrySize
                 // should be a multiple of sizeof(IMAGE_DEBUG_DIRECTORY).
                 _ASSERTE(0 == (debugEntrySize % sizeof(IMAGE_DEBUG_DIRECTORY)));
-                
+
                 nDebugEntry = DWORD(debugEntrySize / sizeof(IMAGE_DEBUG_DIRECTORY));
                 pDebugDir = new (GetHeap()) IMAGE_DEBUG_DIRECTORY[nDebugEntry];
                 memcpy(pDebugDir, (const void *)pDebugEntry, sizeof(IMAGE_DEBUG_DIRECTORY) * nDebugEntry);
                 ppDebugData = new (GetHeap()) ZapNode*[nDebugEntry];
                 memset(ppDebugData, 0, nDebugEntry * sizeof(ZapNode*));
-                
+
                 for (DWORD i = 0; i < nDebugEntry; i++)
                 {
                     // Some compilers set PointerToRawData but not AddressOfRawData as they put the
@@ -620,7 +620,7 @@ void ZapImage::CopyDebugDirEntry()
         }
     }
 
-    ZapDebugDirectory * pDebugDirectory = new (GetHeap()) ZapDebugDirectory(m_pNGenPdbDebugData, 
+    ZapDebugDirectory * pDebugDirectory = new (GetHeap()) ZapDebugDirectory(m_pNGenPdbDebugData,
                                                                             nDebugEntry,
                                                                             pDebugDir,
                                                                             ppDebugData);

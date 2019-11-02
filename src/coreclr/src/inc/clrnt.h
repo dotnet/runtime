@@ -31,7 +31,7 @@
 #define STATUS_UNWIND                    ((NTSTATUS)0x80000027L)
 #endif
 
-#ifndef DBG_PRINTEXCEPTION_C 
+#ifndef DBG_PRINTEXCEPTION_C
 #define DBG_PRINTEXCEPTION_C             ((DWORD)0x40010006L)
 #endif
 
@@ -58,22 +58,22 @@
 
 #ifndef __out_xcount_opt
 #define __out_xcount_opt(var) __out
-#endif 
+#endif
 
 #ifndef __encoded_pointer
 #define __encoded_pointer
-#endif 
+#endif
 
 #ifndef __range
 #define __range(min, man)
-#endif 
+#endif
 
 #ifndef __field_bcount
 #define __field_bcount(size)
 #endif
 
 #ifndef __field_ecount_opt
-#define __field_ecount_opt(nFields) 
+#define __field_ecount_opt(nFields)
 #endif
 
 #ifndef __field_ecount
@@ -81,7 +81,7 @@
 #endif
 
 #undef _Ret_bytecap_
-#define _Ret_bytecap_(_Size) 
+#define _Ret_bytecap_(_Size)
 
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
@@ -762,7 +762,7 @@ typedef struct _DYNAMIC_FUNCTION_TABLE {
     LIST_ENTRY Links;
     PT_RUNTIME_FUNCTION FunctionTable;
     LARGE_INTEGER TimeStamp;
-    
+
 #ifdef _TARGET_ARM_
     ULONG MinimumAddress;
     ULONG MaximumAddress;
@@ -901,7 +901,7 @@ RtlVirtualUnwind (
 #define UNW_FLAG_NHANDLER               0x0             /* any handler */
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
 #define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
-                                                            
+
 // This function returns the length of a function using the new unwind info on arm.
 // Taken from minkernel\ntos\rtl\arm\ntrtlarm.h.
 FORCEINLINE
@@ -912,14 +912,14 @@ RtlpGetFunctionEndAddress (
     )
 {
     ULONG FunctionLength;
-    
+
     FunctionLength = FunctionEntry->UnwindData;
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
         FunctionLength = *(PTR_ULONG)(ImageBase + FunctionLength) & 0x3ffff;
     }
-    
+
     return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
@@ -985,14 +985,14 @@ RtlpGetFunctionEndAddress (
     )
 {
     ULONG64 FunctionLength;
-    
+
     FunctionLength = FunctionEntry->UnwindData;
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
-    
+
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
 }
 

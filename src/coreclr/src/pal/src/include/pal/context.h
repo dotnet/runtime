@@ -707,11 +707,11 @@ CONTEXT_GetThreadContextFromThreadState(
 /*++
 Function :
     CONTEXTToNativeContext
-    
+
     Converts a CONTEXT record to a native context.
 
 Parameters :
-    CONST CONTEXT *lpContext : CONTEXT to convert, including 
+    CONST CONTEXT *lpContext : CONTEXT to convert, including
                                flags that determine which registers are valid in
                                lpContext and which ones to set in native
     native_context_t *native : native context to fill in
@@ -725,7 +725,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native);
 /*++
 Function :
     CONTEXTFromNativeContext
-    
+
     Converts a native context to a CONTEXT record.
 
 Parameters :
@@ -744,7 +744,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 /*++
 Function :
     GetNativeContextPC
-    
+
     Returns the program counter from the native context.
 
 Parameters :
@@ -774,7 +774,7 @@ LPVOID GetNativeContextSP(const native_context_t *context);
 /*++
 Function :
     CONTEXTGetExceptionCodeForSignal
-    
+
     Translates signal and context information to a Win32 exception code.
 
 Parameters :

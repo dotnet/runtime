@@ -14,9 +14,9 @@ class SymScope;
 class SymReaderVar;
 class SymDocument;
 
-// ------------------------------------------------------------------------- 
+// -------------------------------------------------------------------------
 // SymReader class
-// ------------------------------------------------------------------------- 
+// -------------------------------------------------------------------------
 
 class SymReader : public ISymUnmanagedReader
 {
@@ -265,8 +265,8 @@ public:
         pSymReader->AddRef();
     }
 
-    virtual ~SymMethod() 
-    { 
+    virtual ~SymMethod()
+    {
         RELEASE(m_pReader);
     };
 
@@ -324,7 +324,7 @@ public:
                                  ULONG32 columns[],
                                  ULONG32 endlines[],
                                  ULONG32 endcolumns[]);
-    
+
 // Data members
 private:
     // AddRef/Release support
@@ -353,9 +353,9 @@ public:
         ISymUnmanagedMethod *pSymMethod,
         PDBDataPointers *pData,
         UINT32 MethodEntry,
-        UINT32 ScopeEntry) 
+        UINT32 ScopeEntry)
     {
-        m_pSymMethod = pSymMethod;        
+        m_pSymMethod = pSymMethod;
         m_pSymMethod->AddRef();
         m_pData = pData;
         m_MethodEntry = MethodEntry;
@@ -385,7 +385,7 @@ public:
         return (refCount);
     }
     STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject);
-    
+
 // ISymUnmanagedScope
 public:
     STDMETHOD(GetMethod)(ISymUnmanagedMethod **pRetVal);
@@ -474,7 +474,7 @@ public:
     STDMETHOD(GetStartOffset)(ULONG32 *pRetVal);
     STDMETHOD(GetEndOffset)(ULONG32 *pRetVal);
 
-        
+
 // Data members
 private:
     UINT32      m_refCount; // Add/Ref Release
@@ -484,7 +484,7 @@ private:
 
     // Scope of the variable
     SymScope *m_pScope;
-    
+
     // Entry into the SymMethodInfo array
     UINT32 m_VarEntry;
 };

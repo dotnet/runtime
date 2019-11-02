@@ -55,7 +55,7 @@ public:
 
 /* BBSweep is used by both the CLR and the BBSweep utility.
  * BBSweep: calls the PerformSweep method which returns after all the CLR processes
- *          have written their profile data to disk. 
+ *          have written their profile data to disk.
  * CLR:     starts up a sweeper thread which calls WatchForSweepEvents and waits until the
  *          sweeper program is invoked.  At that point, all the CLR processes will synchronize
  *          and write their profile data to disk one at a time.  The sweeper threads will then
@@ -66,7 +66,7 @@ public:
 class BBSweep
 {
 public:
-    BBSweep() 
+    BBSweep()
     {
         // The BBSweep constructor could be called even the the object is not used, so
         // don't do any work here.
@@ -99,12 +99,12 @@ public:
         {
             success = success && ::SetEvent(hSweepEvent);
             {
-                for (int i=0; i<MAX_COUNT; i++) 
+                for (int i=0; i<MAX_COUNT; i++)
                 {
                     ::WaitForSingleObject(hProfWriterSemaphore, INFINITE);
                 }
 
-                ::ReleaseSemaphore(hProfWriterSemaphore, MAX_COUNT, NULL);            
+                ::ReleaseSemaphore(hProfWriterSemaphore, MAX_COUNT, NULL);
 
             }
             success = success && ::ResetEvent(hSweepEvent);
@@ -123,7 +123,7 @@ public:
 
         bool success = true;
 
-        while (!bTerminate) 
+        while (!bTerminate)
         {
             ::WaitForSingleObject(hSweepMutex, INFINITE);
             {
@@ -158,7 +158,7 @@ public:
     {
         // Set the termination event and wait for the BBSweep thread to terminate on its own.
         // Note that this is called by the shutdown thread (and never called by the BBSweep thread).
-        if (hBBSweepThread && bInitialized) 
+        if (hBBSweepThread && bInitialized)
         {
             bTerminate = true;
             ::SetEvent(hTerminationEvent);
@@ -182,7 +182,7 @@ private:
     // IF YOU CHANGE THIS CODE, YOU MUST ALSO CHANGE THAT TO MATCH!
     bool Initialize(DWORD processID = INVALID_PID, BOOL fromRuntime = TRUE)
     {
-        if (!bInitialized) 
+        if (!bInitialized)
         {
             SECURITY_ATTRIBUTES * pSecurityAttributes = NULL;
 
@@ -206,7 +206,7 @@ private:
 
 #ifdef _PREFAST_
 #pragma warning(push)
-#pragma warning(disable:6211) // PREfast warning: Leaking memory 'pSD' due to an exception. 
+#pragma warning(disable:6211) // PREfast warning: Leaking memory 'pSD' due to an exception.
 #endif /*_PREFAST_ */
                 pSD = (PSECURITY_DESCRIPTOR) new char[SECURITY_DESCRIPTOR_MIN_LENGTH];
                 if (!pSD)
@@ -258,7 +258,7 @@ private:
                 ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
                 ea[1].Trustee.ptstrName  = (LPTSTR) pAdminSid;
 
-                if (SetEntriesInAcl(2, ea, NULL, &pACL) != ERROR_SUCCESS) 
+                if (SetEntriesInAcl(2, ea, NULL, &pACL) != ERROR_SUCCESS)
                     goto cleanup;
 
                 if (!InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION))
@@ -305,7 +305,7 @@ cleanup:
 #endif
         }
 
-        bInitialized = hSweepMutex          && 
+        bInitialized = hSweepMutex          &&
             hProfDataWriterMutex &&
             hSweepEvent          &&
             hTerminationEvent    &&
@@ -403,7 +403,7 @@ cleanup:
                 }
             }
         }
-#endif // FEATURE_PAL        
+#endif // FEATURE_PAL
     }
 private:
 

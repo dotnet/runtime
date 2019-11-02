@@ -71,14 +71,14 @@ void SyncClean::CleanUp ()
     LIMITED_METHOD_CONTRACT;
 
     // Only GC thread can call this.
-    _ASSERTE (g_fProcessDetach || 
+    _ASSERTE (g_fProcessDetach ||
               IsGCSpecialThread() ||
               (GCHeapUtilities::IsGCInProgress()  && GetThread() == ThreadSuspend::GetSuspensionThread()));
     if (m_HashMap)
     {
         Bucket * pTempBucket = FastInterlockExchangePointer(m_HashMap.GetPointer(), NULL);
-        
-        while (pTempBucket) 
+
+        while (pTempBucket)
         {
             Bucket* pNextBucket = NextObsolete (pTempBucket);
             delete [] pTempBucket;
@@ -95,8 +95,8 @@ void SyncClean::CleanUp ()
             pTempHashEntry --;
             delete [] pTempHashEntry;
             pTempHashEntry = pNextHashEntry;
-        }        
-    }    
+        }
+    }
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();

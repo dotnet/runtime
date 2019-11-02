@@ -140,7 +140,7 @@ written back to the stack location.
 
 The initial prototype that produced the example bellow is currently being
 improved to make it production ready.  At the same time a more extensive suite
-of example tests are being developed. 
+of example tests are being developed.
 
 - [X] Proof of concept prototype.
 - [ ] Production implementation of WriteThru phase.
@@ -191,9 +191,9 @@ class Enreg01
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public int TryValue(int y) 
+    public int TryValue(int y)
     {
-        if (y == 97) 
+        if (y == 97)
         {
             Console.WriteLine("Throwing 97");
             throw new ValueException(97);
@@ -222,137 +222,137 @@ Trees after EH Write Thru
 ---------------------------------------------------------------------------------------------------------------------------
 BBnum         descAddr ref try hnd preds           weight   [IL range]      [jump]      [EH region]         [flags]
 ---------------------------------------------------------------------------------------------------------------------------
-BB01 [00000263A1C161B8]  1                              1   [000..007)                                     i label target 
-BB02 [00000263A1C162D0]  1  0    BB01                   1   [007..012)                 T0      try { }     keep i try label gcsafe 
-BB03 [00000263A1C16500]  2       BB02,BB04              1   [050..052)        (return)                     i label target gcsafe 
+BB01 [00000263A1C161B8]  1                              1   [000..007)                                     i label target
+BB02 [00000263A1C162D0]  1  0    BB01                   1   [007..012)                 T0      try { }     keep i try label gcsafe
+BB03 [00000263A1C16500]  2       BB02,BB04              1   [050..052)        (return)                     i label target gcsafe
 ++++ funclets follow
-BB04 [00000263A1C163E8]  0     0                        0   [012..050)-> BB03 ( cret )    H0 F catch { }   keep i rare label target gcsafe flet 
+BB04 [00000263A1C163E8]  0     0                        0   [012..050)-> BB03 ( cret )    H0 F catch { }   keep i rare label target gcsafe flet
 -------------------------------------------------------------------------------------------------------------------------------------
 
 ------------ BB01 [000..007), preds={} succs={BB02}
 
 ***** BB01, stmt 1
      (  3,  3) [000123] ------------             *  stmtExpr  void  (IL   ???...  ???)
-N001 (  3,  2) [000120] ------------             |  /--*  lclVar    ref    V00 this         
-N003 (  3,  3) [000122] -A------R---             \--*  =         ref   
-N002 (  1,  1) [000121] D------N----                \--*  lclVar    ref    V08 tmp5         
+N001 (  3,  2) [000120] ------------             |  /--*  lclVar    ref    V00 this
+N003 (  3,  3) [000122] -A------R---             \--*  =         ref
+N002 (  1,  1) [000121] D------N----                \--*  lclVar    ref    V08 tmp5
 
 ***** BB01, stmt 2
      ( 17, 13) [000005] ------------             *  stmtExpr  void  (IL 0x000...0x006)
-N007 (  3,  2) [000097] ------------             |     /--*  lclVar    int    V09 tmp6         
-N009 (  7,  5) [000098] -A------R---             |  /--*  =         int   
-N008 (  3,  2) [000096] D------N----             |  |  \--*  lclVar    int    V01 loc0         
-N010 ( 17, 13) [000099] -A-XG-------             \--*  comma     void  
-N004 (  6,  5) [000002] ---XG-------                |  /--*  indir     int   
+N007 (  3,  2) [000097] ------------             |     /--*  lclVar    int    V09 tmp6
+N009 (  7,  5) [000098] -A------R---             |  /--*  =         int
+N008 (  3,  2) [000096] D------N----             |  |  \--*  lclVar    int    V01 loc0
+N010 ( 17, 13) [000099] -A-XG-------             \--*  comma     void
+N004 (  6,  5) [000002] ---XG-------                |  /--*  indir     int
 N002 (  1,  1) [000059] ------------                |  |  |  /--*  const     long   16 field offset Fseq[val]
-N003 (  4,  3) [000060] -------N----                |  |  \--*  +         byref 
-N001 (  3,  2) [000001] ------------                |  |     \--*  lclVar    ref    V08 tmp5         
-N006 ( 10,  8) [000004] -A-XG---R---                \--*  =         int   
-N005 (  3,  2) [000003] D------N----                   \--*  lclVar    int    V09 tmp6         
+N003 (  4,  3) [000060] -------N----                |  |  \--*  +         byref
+N001 (  3,  2) [000001] ------------                |  |     \--*  lclVar    ref    V08 tmp5
+N006 ( 10,  8) [000004] -A-XG---R---                \--*  =         int
+N005 (  3,  2) [000003] D------N----                   \--*  lclVar    int    V09 tmp6
 
 ------------ BB02 [007..012), preds={BB01} succs={BB03}
 
 ***** BB02, stmt 3
      ( 16, 10) [000013] ------------             *  stmtExpr  void  (IL 0x007...0x00F)
 N008 ( 16, 10) [000011] --C-G-------             \--*  call      int    Enreg01.TryIncrement
-N004 (  1,  1) [000009] ------------ this in rcx    +--*  lclVar    ref    V08 tmp5         
+N004 (  1,  1) [000009] ------------ this in rcx    +--*  lclVar    ref    V08 tmp5
 N005 (  1,  1) [000010] ------------ arg1 in rdx    \--*  const     int    97
 
 ------------ BB03 [050..052) (return), preds={BB02,BB04} succs={}
 
 ***** BB03, stmt 4
      (  3,  3) [000119] ------------             *  stmtExpr  void  (IL   ???...  ???)
-N001 (  3,  2) [000116] ------------             |  /--*  lclVar    int    V01 loc0         
-N003 (  3,  3) [000118] -A------R---             \--*  =         int   
-N002 (  1,  1) [000117] D------N----                \--*  lclVar    int    V09 tmp6         
+N001 (  3,  2) [000116] ------------             |  /--*  lclVar    int    V01 loc0
+N003 (  3,  3) [000118] -A------R---             \--*  =         int
+N002 (  1,  1) [000117] D------N----                \--*  lclVar    int    V09 tmp6
 
 ***** BB03, stmt 5
      (  4,  3) [000017] ------------             *  stmtExpr  void  (IL 0x050...0x051)
-N002 (  4,  3) [000016] ------------             \--*  return    int   
-N001 (  3,  2) [000015] ------------                \--*  lclVar    int    V09 tmp6         
+N002 (  4,  3) [000016] ------------             \--*  return    int
+N001 (  3,  2) [000015] ------------                \--*  lclVar    int    V09 tmp6
 
 ------------ BB04 [012..050) -> BB03 (cret), preds={} succs={BB03}
 
 ***** BB04, stmt 6
      (  5,  4) [000021] ------------             *  stmtExpr  void  (IL 0x012...0x012)
-N001 (  1,  1) [000007] -----O------             |  /--*  catchArg  ref   
-N003 (  5,  4) [000020] -A---O--R---             \--*  =         ref   
-N002 (  3,  2) [000019] D------N----                \--*  lclVar    ref    V03 tmp0         
+N001 (  1,  1) [000007] -----O------             |  /--*  catchArg  ref
+N003 (  5,  4) [000020] -A---O--R---             \--*  =         ref
+N002 (  3,  2) [000019] D------N----                \--*  lclVar    ref    V03 tmp0
 
 ***** BB04, stmt 7
      (  3,  3) [000111] ------------             *  stmtExpr  void  (IL   ???...  ???)
-N001 (  3,  2) [000108] ------------             |  /--*  lclVar    ref    V00 this         
-N003 (  3,  3) [000110] -A------R---             \--*  =         ref   
-N002 (  1,  1) [000109] D------N----                \--*  lclVar    ref    V08 tmp5         
+N001 (  3,  2) [000108] ------------             |  /--*  lclVar    ref    V00 this
+N003 (  3,  3) [000110] -A------R---             \--*  =         ref
+N002 (  1,  1) [000109] D------N----                \--*  lclVar    ref    V08 tmp5
 
 ***** BB04, stmt 8
      (  3,  3) [000115] ------------             *  stmtExpr  void  (IL   ???...  ???)
-N001 (  3,  2) [000112] ------------             |  /--*  lclVar    int    V01 loc0         
-N003 (  3,  3) [000114] -A------R---             \--*  =         int   
-N002 (  1,  1) [000113] D------N----                \--*  lclVar    int    V09 tmp6         
+N001 (  3,  2) [000112] ------------             |  /--*  lclVar    int    V01 loc0
+N003 (  3,  3) [000114] -A------R---             \--*  =         int
+N002 (  1,  1) [000113] D------N----                \--*  lclVar    int    V09 tmp6
 
 ***** BB04, stmt 9
      ( 59, 43) [000034] ------------             *  stmtExpr  void  (IL 0x013...0x037)
 N021 ( 59, 43) [000031] --CXG-------             \--*  call      void   System.Console.WriteLine
-N002 (  5, 12) [000066] ----G-------                |  /--*  indir     ref   
+N002 (  5, 12) [000066] ----G-------                |  /--*  indir     ref
 N001 (  3, 10) [000065] ------------                |  |  \--*  const(h)  long   0xB3963070 "Catching {0}"
-N004 (  9, 15) [000076] -A--G---R-L- arg0 SETUP     +--*  =         ref   
-N003 (  3,  2) [000075] D------N----                |  \--*  lclVar    ref    V05 tmp2         
+N004 (  9, 15) [000076] -A--G---R-L- arg0 SETUP     +--*  =         ref
+N003 (  3,  2) [000075] D------N----                |  \--*  lclVar    ref    V05 tmp2
 N012 ( 20, 14) [000029] --CXG-------                |  /--*  call      ref    System.Convert.ToString
-N010 (  6,  8) [000028] ---XG------- arg0 in rcx    |  |  \--*  indir     int   
+N010 (  6,  8) [000028] ---XG------- arg0 in rcx    |  |  \--*  indir     int
 N008 (  1,  4) [000067] ------------                |  |     |  /--*  const     long   140 field offset Fseq[x]
-N009 (  4,  6) [000068] -------N----                |  |     \--*  +         byref 
-N007 (  3,  2) [000027] ------------                |  |        \--*  lclVar    ref    V03 tmp0         
-N014 ( 24, 17) [000072] -ACXG---R-L- arg1 SETUP     +--*  =         ref   
-N013 (  3,  2) [000071] D------N----                |  \--*  lclVar    ref    V04 tmp1         
+N009 (  4,  6) [000068] -------N----                |  |     \--*  +         byref
+N007 (  3,  2) [000027] ------------                |  |        \--*  lclVar    ref    V03 tmp0
+N014 ( 24, 17) [000072] -ACXG---R-L- arg1 SETUP     +--*  =         ref
+N013 (  3,  2) [000071] D------N----                |  \--*  lclVar    ref    V04 tmp1
 N017 (  3,  2) [000073] ------------ arg1 in rdx    +--*  lclVar    ref    V04 tmp1          (last use)
 N018 (  3,  2) [000077] ------------ arg0 in rcx    \--*  lclVar    ref    V05 tmp2          (last use)
 
 ***** BB04, stmt 10
      ( 18, 19) [000044] ------------             *  stmtExpr  void  (IL 0x028...  ???)
-N014 (  1,  1) [000101] ------------             |     /--*  lclVar    int    V09 tmp6         
-N016 (  5,  4) [000102] -A------R---             |  /--*  =         int   
-N015 (  3,  2) [000100] D------N----             |  |  \--*  lclVar    int    V01 loc0         
-N017 ( 18, 19) [000103] -A-XG-------             \--*  comma     void  
-N010 (  6,  8) [000039] ---XG-------                |     /--*  indir     int   
+N014 (  1,  1) [000101] ------------             |     /--*  lclVar    int    V09 tmp6
+N016 (  5,  4) [000102] -A------R---             |  /--*  =         int
+N015 (  3,  2) [000100] D------N----             |  |  \--*  lclVar    int    V01 loc0
+N017 ( 18, 19) [000103] -A-XG-------             \--*  comma     void
+N010 (  6,  8) [000039] ---XG-------                |     /--*  indir     int
 N008 (  1,  4) [000081] ------------                |     |  |  /--*  const     long   140 field offset Fseq[x]
-N009 (  4,  6) [000082] -------N----                |     |  \--*  +         byref 
+N009 (  4,  6) [000082] -------N----                |     |  \--*  +         byref
 N007 (  3,  2) [000038] ------------                |     |     \--*  lclVar    ref    V03 tmp0          (last use)
-N011 ( 13, 15) [000041] ---XG-------                |  /--*  +         int   
-N005 (  4,  4) [000037] ---XG-------                |  |  |  /--*  indir     int   
+N011 ( 13, 15) [000041] ---XG-------                |  /--*  +         int
+N005 (  4,  4) [000037] ---XG-------                |  |  |  /--*  indir     int
 N003 (  1,  1) [000079] ------------                |  |  |  |  |  /--*  const     long   16 field offset Fseq[val]
-N004 (  2,  2) [000080] -------N----                |  |  |  |  \--*  +         byref 
-N002 (  1,  1) [000036] ------------                |  |  |  |     \--*  lclVar    ref    V08 tmp5         
-N006 (  6,  6) [000040] ---XG-------                |  |  \--*  +         int   
-N001 (  1,  1) [000035] ------------                |  |     \--*  lclVar    int    V09 tmp6         
-N013 ( 13, 15) [000043] -A-XG---R---                \--*  =         int   
-N012 (  1,  1) [000042] D------N----                   \--*  lclVar    int    V09 tmp6         
+N004 (  2,  2) [000080] -------N----                |  |  |  |  \--*  +         byref
+N002 (  1,  1) [000036] ------------                |  |  |  |     \--*  lclVar    ref    V08 tmp5
+N006 (  6,  6) [000040] ---XG-------                |  |  \--*  +         int
+N001 (  1,  1) [000035] ------------                |  |     \--*  lclVar    int    V09 tmp6
+N013 ( 13, 15) [000043] -A-XG---R---                \--*  =         int
+N012 (  1,  1) [000042] D------N----                   \--*  lclVar    int    V09 tmp6
 
 ***** BB04, stmt 11
      ( 20, 14) [000051] ------------             *  stmtExpr  void  (IL 0x038...0x044)
 N013 ( 20, 14) [000049] --CXGO------             \--*  call      int    Enreg01.foo
 N007 (  1,  1) [000086] ------------                |     /--*  const     long   8 field offset Fseq[dist]
-N008 (  3,  3) [000087] ------------                |  /--*  +         byref 
-N006 (  1,  1) [000085] ------------                |  |  \--*  lclVar    ref    V08 tmp5         
-N009 (  5,  5) [000088] ---XGO-N---- arg1 in rdx    +--*  comma     byref 
-N005 (  2,  2) [000084] ---X-O-N----                |  \--*  nullcheck byte  
-N004 (  1,  1) [000083] ------------                |     \--*  lclVar    ref    V08 tmp5         
-N010 (  1,  1) [000045] ------------ this in rcx    \--*  lclVar    ref    V08 tmp5         
+N008 (  3,  3) [000087] ------------                |  /--*  +         byref
+N006 (  1,  1) [000085] ------------                |  |  \--*  lclVar    ref    V08 tmp5
+N009 (  5,  5) [000088] ---XGO-N---- arg1 in rdx    +--*  comma     byref
+N005 (  2,  2) [000084] ---X-O-N----                |  \--*  nullcheck byte
+N004 (  1,  1) [000083] ------------                |     \--*  lclVar    ref    V08 tmp5
+N010 (  1,  1) [000045] ------------ this in rcx    \--*  lclVar    ref    V08 tmp5
 
 ***** BB04, stmt 12
      ( 11, 10) [000058] ------------             *  stmtExpr  void  (IL 0x045...0x04D)
-N009 (  1,  1) [000105] ------------             |     /--*  lclVar    int    V09 tmp6         
-N011 (  5,  4) [000106] -A------R---             |  /--*  =         int   
-N010 (  3,  2) [000104] D------N----             |  |  \--*  lclVar    int    V01 loc0         
-N012 ( 11, 10) [000107] -A-XG-------             \--*  comma     void  
-N005 (  4,  4) [000054] ---XG-------                |     /--*  indir     int   
+N009 (  1,  1) [000105] ------------             |     /--*  lclVar    int    V09 tmp6
+N011 (  5,  4) [000106] -A------R---             |  /--*  =         int
+N010 (  3,  2) [000104] D------N----             |  |  \--*  lclVar    int    V01 loc0
+N012 ( 11, 10) [000107] -A-XG-------             \--*  comma     void
+N005 (  4,  4) [000054] ---XG-------                |     /--*  indir     int
 N003 (  1,  1) [000094] ------------                |     |  |  /--*  const     long   16 field offset Fseq[val]
-N004 (  2,  2) [000095] -------N----                |     |  \--*  +         byref 
-N002 (  1,  1) [000053] ------------                |     |     \--*  lclVar    ref    V08 tmp5         
-N006 (  6,  6) [000055] ---XG-------                |  /--*  +         int   
-N001 (  1,  1) [000052] ------------                |  |  \--*  lclVar    int    V09 tmp6         
-N008 (  6,  6) [000057] -A-XG---R---                \--*  =         int   
-N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V09 tmp6         
+N004 (  2,  2) [000095] -------N----                |     |  \--*  +         byref
+N002 (  1,  1) [000053] ------------                |     |     \--*  lclVar    ref    V08 tmp5
+N006 (  6,  6) [000055] ---XG-------                |  /--*  +         int
+N001 (  1,  1) [000052] ------------                |  |  \--*  lclVar    int    V09 tmp6
+N008 (  6,  6) [000057] -A-XG---R---                \--*  =         int
+N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V09 tmp6
 
 ```
 
@@ -365,7 +365,7 @@ N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V0
  *************** After end code gen, before unwindEmit()
 -G_M16307_IG01:        ; func=00, offs=000000H, size=0014H, gcVars=0000000000000000 {}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref, nogc <-- Prolog IG
 +G_M16307_IG01:        ; func=00, offs=000000H, size=0017H, gcVars=0000000000000000 {}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref, nogc <-- Prolog IG
- 
+
  push     rbp
 +push     r14
  push     rdi
@@ -377,36 +377,36 @@ N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V0
 +lea      rbp, [rsp+50H]
 +mov      qword ptr [V07 rbp-30H], rsp
  mov      gword ptr [V00 rbp+10H], rcx
- 
+
 -G_M16307_IG02:        ; offs=000014H, size=000AH, gcVars=0000000000000001 {V00}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref
 +G_M16307_IG02:        ; offs=000017H, size=000AH, gcVars=0000000000000001 {V00}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref
- 
+
 -mov      rcx, gword ptr [V00 rbp+10H]
 -mov      ecx, dword ptr [rcx+16]
 -mov      dword ptr [V01 rbp-14H], ecx
 +mov      rsi, gword ptr [V00 rbp+10H]
 +mov      edi, dword ptr [rsi+16]
 +mov      dword ptr [V01 rbp-24H], edi
- 
+
 -G_M16307_IG03:        ; offs=00001EH, size=000FH, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, byref
 +G_M16307_IG03:        ; offs=000021H, size=000EH, gcrefRegs=00000040 {rsi}, byrefRegs=00000000 {}, byref
- 
+
 -mov      rcx, gword ptr [V00 rbp+10H]
 +mov      rcx, rsi     ; Elided reload in try region
  mov      edx, 97
  call     Enreg01:TryIncrement(int):int:this
- nop      
- 
+ nop
+
 -G_M16307_IG04:        ; offs=00002DH, size=0003H, gcVars=0000000000000000 {}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref
 +G_M16307_IG04:        ; offs=00002FH, size=0005H, gcVars=0000000000000000 {}, gcrefRegs=00000000 {}, byrefRegs=00000000 {}, gcvars, byref
- 
+
 -mov      eax, dword ptr [V01 rbp-14H]
 +mov      edi, dword ptr [V01 rbp-24H]
 +mov      eax, edi
- 
+
 -G_M16307_IG05:        ; offs=000030H, size=0008H, epilog, nogc, emitadd
 +G_M16307_IG05:        ; offs=000034H, size=000BH, epilog, nogc, emitadd
- 
+
 -lea      rsp, [rbp-10H]
 +lea      rsp, [rbp-20H]
 +pop      rbx
@@ -414,25 +414,25 @@ N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V0
  pop      rdi
 +pop      r14
  pop      rbp
- ret      
- 
+ ret
+
 -G_M16307_IG06:        ; func=01, offs=000038H, size=0014H, gcrefRegs=00000004 {rdx}, byrefRegs=00000000 {}, byref, funclet prolog, nogc
 +G_M16307_IG06:        ; func=01, offs=00003FH, size=0017H, gcrefRegs=00000004 {rdx}, byrefRegs=00000000 {}, byref, funclet prolog, nogc
- 
+
  push     rbp
-+push     r14 
++push     r14
  push     rdi
  push     rsi
-+push     rbx 
++push     rbx
  sub      rsp, 48
  mov      rbp, qword ptr [rcx+32]
  mov      qword ptr [rsp+20H], rbp
 -lea      rbp, [rbp+40H]
 +lea      rbp, [rbp+50H]
- 
+
 -G_M16307_IG07:        ; offs=00004CH, size=005EH, gcVars=0000000000000001 {V00}, gcrefRegs=00000004 {rdx}, byrefRegs=00000000 {}, gcvars, byref, isz
 +G_M16307_IG07:        ; offs=000056H, size=0054H, gcVars=0000000000000001 {V00}, gcrefRegs=00000004 {rdx}, byrefRegs=00000000 {}, gcvars, byref, isz
- 
+
  mov      rsi, rdx
 -mov      rcx, 0x18A3C473070
 -mov      rdi, gword ptr [rcx]
@@ -468,22 +468,22 @@ N007 (  1,  1) [000056] D------N----                   \--*  lclVar    int    V0
 +add      ebx, dword ptr [rdi+16]
 +mov      dword ptr [V01 rbp-24H], ebx        ; Store of proxy register
  lea      rax, G_M16307_IG04
- 
+
 -G_M16307_IG08:        ; offs=0000AAH, size=0008H, funclet epilog, nogc, emitadd
 +G_M16307_IG08:        ; offs=0000AAH, size=000BH, funclet epilog, nogc, emitadd
- 
+
  add      rsp, 48
 +pop      rbx
  pop      rsi
  pop      rdi
 +pop      r14
  pop      rbp
- ret 
+ ret
 
 ```
 
 Summary of diff:
 replaced 6 loads and 2 stores with 2 loads, 1 store, 2 push, 2 pop.
 
- 
+
 

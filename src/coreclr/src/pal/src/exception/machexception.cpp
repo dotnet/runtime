@@ -161,8 +161,8 @@ Function :
 Return value :
     mach exception mask
 --*/
-static 
-exception_mask_t 
+static
+exception_mask_t
 GetExceptionMask()
 {
     static MachExceptionMode exMode = MachException_Uninitialized;
@@ -215,7 +215,7 @@ GetExceptionMask()
 
 /*++
 Function :
-    CPalThread::EnableMachExceptions 
+    CPalThread::EnableMachExceptions
 
     Hook Mach exceptions, i.e., call thread_swap_exception_ports
     to replace the thread's current exception ports with our own.
@@ -249,7 +249,7 @@ PAL_ERROR CorUnix::CPalThread::EnableMachExceptions()
         }
 #endif // _DEBUG
 
-        NONPAL_TRACE("Enabling handlers for thread %08x exception mask %08x exception port %08x\n", 
+        NONPAL_TRACE("Enabling handlers for thread %08x exception mask %08x exception port %08x\n",
             GetMachPortSelf(), machExceptionMask, s_ExceptionPort);
 
         CThreadMachExceptionHandlers *pSavedHandlers = GetSavedMachHandlers();
@@ -316,11 +316,11 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
     TRACE("%08X: Leave()\n", (unsigned int)(size_t)this);
 
     PAL_ERROR palError = NO_ERROR;
-    
+
     // We only store exceptions when we're installing exceptions.
     if (0 == GetExceptionMask())
         return palError;
-    
+
     // Get the handlers to restore.
     CThreadMachExceptionHandlers *savedPorts = GetSavedMachHandlers();
 
@@ -342,11 +342,11 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
 
         kern_return_t MachRetDeallocate = mach_port_deallocate(mach_task_self(), thread);
         CHECK_MACH("mach_port_deallocate", MachRetDeallocate);
-                                             
+
         if (MachRet != KERN_SUCCESS)
             break;
     }
-    
+
     if (MachRet != KERN_SUCCESS)
     {
         ASSERT("thread_set_exception_ports failed: %d\n", MachRet);
@@ -361,8 +361,8 @@ extern "C"
 void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
 #else // defined(_AMD64_)
 
-// Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the 
-// signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack 
+// Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the
+// signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack
 // per GCC64 calling convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
 extern "C"
 void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 dwRCX, DWORD64 dwR8, DWORD64 dwR9, PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
@@ -428,8 +428,8 @@ Parameters :
     exceptionInfo - exception info to build the exception record
     pExceptionRecord - exception record to setup
 */
-static 
-void 
+static
+void
 BuildExceptionRecord(
     MachExceptionInfo& exceptionInfo,               // [in] exception info
     EXCEPTION_RECORD *pExceptionRecord)             // [out] Used to return exception parameters
@@ -440,12 +440,12 @@ BuildExceptionRecord(
 
     switch(exceptionInfo.ExceptionType)
     {
-    // Could not access memory. subcode contains the bad memory address. 
+    // Could not access memory. subcode contains the bad memory address.
     case EXC_BAD_ACCESS:
         if (exceptionInfo.SubcodeCount != 2)
         {
             NONPAL_RETAIL_ASSERT("Got an unexpected subcode");
-            exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; 
+            exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         }
         else
         {
@@ -458,19 +458,19 @@ BuildExceptionRecord(
         }
         break;
 
-    // Instruction failed. Illegal or undefined instruction or operand. 
+    // Instruction failed. Illegal or undefined instruction or operand.
     case EXC_BAD_INSTRUCTION :
         // TODO: Identify privileged instruction. Need to get the thread state and read the machine code. May
         // be better to do this in the place that calls SEHProcessException, similar to how it's done on Linux.
-        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; 
+        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         break;
 
-    // Arithmetic exception; exact nature of exception is in subcode field. 
+    // Arithmetic exception; exact nature of exception is in subcode field.
     case EXC_ARITHMETIC:
         if (exceptionInfo.SubcodeCount != 2)
         {
             NONPAL_RETAIL_ASSERT("Got an unexpected subcode");
-            exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; 
+            exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         }
         else
         {
@@ -507,7 +507,7 @@ BuildExceptionRecord(
 #error Trap code to exception mapping not defined for this architecture
 #endif
 
-    // Trace, breakpoint, etc. Details in subcode field. 
+    // Trace, breakpoint, etc. Details in subcode field.
     case EXC_BREAKPOINT:
 #if defined(_X86_) || defined(_AMD64_)
         if (exceptionInfo.Subcodes[0] == EXC_I386_SGL)
@@ -529,14 +529,14 @@ BuildExceptionRecord(
         break;
 
 
-    // System call requested. Details in subcode field. 
+    // System call requested. Details in subcode field.
     case EXC_SYSCALL:
-        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; 
+        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         break;
 
-    // System call with a number in the Mach call range requested. Details in subcode field. 
+    // System call with a number in the Mach call range requested. Details in subcode field.
     case EXC_MACH_SYSCALL:
-        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; 
+        exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         break;
 
     default:
@@ -613,7 +613,7 @@ HijackFaultingThread(
 
     // Fill in the exception record from the exception info
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
-    
+
 #ifdef _X86_
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
@@ -792,7 +792,7 @@ HijackFaultingThread(
         ts32.eflags &= ~EFL_TF;
     }
 
-    exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL; 
+    exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = (void *)ts32.eip;
 
@@ -857,7 +857,7 @@ HijackFaultingThread(
         ts64.__rflags &= ~EFL_TF;
     }
 
-    exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL; 
+    exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = (void *)ts64.__rip;
 
@@ -1004,9 +1004,9 @@ SEHExceptionThread(void *args)
         sMessage.Receive(s_ExceptionPort);
 
         NONPAL_TRACE("Received message %s (%08x) from (remote) %08x to (local) %08x\n",
-            sMessage.GetMessageTypeName(), 
+            sMessage.GetMessageTypeName(),
             sMessage.GetMessageType(),
-            sMessage.GetRemotePort(), 
+            sMessage.GetRemotePort(),
             sMessage.GetLocalPort());
 
         if (sMessage.IsSetThreadRequest())
@@ -1018,7 +1018,7 @@ SEHExceptionThread(void *args)
             // Suspend the target thread
             machret = SuspendMachThread(thread);
             CHECK_MACH("SuspendMachThread", machret);
-            
+
             machret = CONTEXT_SetThreadContextOnPort(thread, &sContext);
             CHECK_MACH("CONTEXT_SetThreadContextOnPort", machret);
 
@@ -1031,7 +1031,7 @@ SEHExceptionThread(void *args)
             exception_type_t exceptionType = sMessage.GetException();
             thread = sMessage.GetThread();
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
             if (NONPAL_TRACE_ENABLED)
             {
                 NONPAL_TRACE("ExceptionNotification %s (%u) thread %08x flavor %u\n",
@@ -1096,7 +1096,7 @@ SEHExceptionThread(void *args)
                         // Unlink and delete the forwarded exception instance
                         feList.Delete();
 
-                        // Check if the current exception type matches the forwarded one and whether 
+                        // Check if the current exception type matches the forwarded one and whether
                         // there's a handler for the particular exception we've been handed.
                         MachExceptionHandler sHandler;
                         if (isSameException && pHandlers->GetHandler(exceptionType, &sHandler))
@@ -1106,7 +1106,7 @@ SEHExceptionThread(void *args)
                         }
                         else
                         {
-                            NONPAL_TRACE("ReplyToNotification KERN_FAILURE thread %08x port %08x sameException %d\n", 
+                            NONPAL_TRACE("ReplyToNotification KERN_FAILURE thread %08x port %08x sameException %d\n",
                                 thread, sMessage.GetRemotePort(), isSameException);
                             sReplyOrForward.ReplyToNotification(sMessage, KERN_FAILURE);
                         }
@@ -1133,7 +1133,7 @@ SEHExceptionThread(void *args)
 
             NONPAL_TRACE("ForwardExceptionRequest for thread %08x\n", thread);
 
-            // Suspend the faulting thread. 
+            // Suspend the faulting thread.
             machret = SuspendMachThread(thread);
             CHECK_MACH("SuspendMachThread", machret);
 
@@ -1165,7 +1165,7 @@ SEHExceptionThread(void *args)
         }
     }
 }
-	
+
 /*++
 Function :
     MachExceptionInfo constructor
@@ -1256,8 +1256,8 @@ Parameters:
 Return value :
     Doesn't return
 --*/
-PAL_NORETURN 
-void 
+PAL_NORETURN
+void
 MachSetThreadContext(CONTEXT *lpContext)
 {
     // We need to send a message to the worker thread so that it can set our thread context.
@@ -1274,7 +1274,7 @@ MachSetThreadContext(CONTEXT *lpContext)
 
 /*++
 Function :
-    SEHInitializeMachExceptions 
+    SEHInitializeMachExceptions
 
     Initialize all SEH-related stuff related to mach exceptions
 
@@ -1284,7 +1284,7 @@ Return value :
     TRUE  if SEH support initialization succeeded
     FALSE otherwise
 --*/
-BOOL 
+BOOL
 SEHInitializeMachExceptions(DWORD flags)
 {
     pthread_t exception_thread;
@@ -1364,8 +1364,8 @@ SEHInitializeMachExceptions(DWORD flags)
     return TRUE;
 }
 
-extern "C" 
-void 
+extern "C"
+void
 ActivationHandler(CONTEXT* context)
 {
     if (g_activationFunction != NULL)
@@ -1393,7 +1393,7 @@ Parameters:
 Return value :
     PAL_ERROR
 --*/
-PAL_ERROR 
+PAL_ERROR
 InjectActivationInternal(CPalThread* pThread)
 {
     PAL_ERROR palError;

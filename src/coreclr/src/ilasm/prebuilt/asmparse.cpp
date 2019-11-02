@@ -47,291 +47,291 @@ typedef union  {
         CustomDescr*  cad;
         unsigned short opcode;
 } YYSTYPE;
-# define ERROR_ 257 
-# define BAD_COMMENT_ 258 
-# define BAD_LITERAL_ 259 
-# define ID 260 
-# define DOTTEDNAME 261 
-# define QSTRING 262 
-# define SQSTRING 263 
-# define INT32 264 
-# define INT64 265 
-# define FLOAT64 266 
-# define HEXBYTE 267 
-# define TYPEDEF_T 268 
-# define TYPEDEF_M 269 
-# define TYPEDEF_F 270 
-# define TYPEDEF_TS 271 
-# define TYPEDEF_MR 272 
-# define TYPEDEF_CA 273 
-# define DCOLON 274 
-# define ELIPSIS 275 
-# define VOID_ 276 
-# define BOOL_ 277 
-# define CHAR_ 278 
-# define UNSIGNED_ 279 
-# define INT_ 280 
-# define INT8_ 281 
-# define INT16_ 282 
-# define INT32_ 283 
-# define INT64_ 284 
-# define FLOAT_ 285 
-# define FLOAT32_ 286 
-# define FLOAT64_ 287 
-# define BYTEARRAY_ 288 
-# define UINT_ 289 
-# define UINT8_ 290 
-# define UINT16_ 291 
-# define UINT32_ 292 
-# define UINT64_ 293 
-# define FLAGS_ 294 
-# define CALLCONV_ 295 
-# define MDTOKEN_ 296 
-# define OBJECT_ 297 
-# define STRING_ 298 
-# define NULLREF_ 299 
-# define DEFAULT_ 300 
-# define CDECL_ 301 
-# define VARARG_ 302 
-# define STDCALL_ 303 
-# define THISCALL_ 304 
-# define FASTCALL_ 305 
-# define CLASS_ 306 
-# define TYPEDREF_ 307 
-# define UNMANAGED_ 308 
-# define FINALLY_ 309 
-# define HANDLER_ 310 
-# define CATCH_ 311 
-# define FILTER_ 312 
-# define FAULT_ 313 
-# define EXTENDS_ 314 
-# define IMPLEMENTS_ 315 
-# define TO_ 316 
-# define AT_ 317 
-# define TLS_ 318 
-# define TRUE_ 319 
-# define FALSE_ 320 
-# define _INTERFACEIMPL 321 
-# define VALUE_ 322 
-# define VALUETYPE_ 323 
-# define NATIVE_ 324 
-# define INSTANCE_ 325 
-# define SPECIALNAME_ 326 
-# define FORWARDER_ 327 
-# define STATIC_ 328 
-# define PUBLIC_ 329 
-# define PRIVATE_ 330 
-# define FAMILY_ 331 
-# define FINAL_ 332 
-# define SYNCHRONIZED_ 333 
-# define INTERFACE_ 334 
-# define SEALED_ 335 
-# define NESTED_ 336 
-# define ABSTRACT_ 337 
-# define AUTO_ 338 
-# define SEQUENTIAL_ 339 
-# define EXPLICIT_ 340 
-# define ANSI_ 341 
-# define UNICODE_ 342 
-# define AUTOCHAR_ 343 
-# define IMPORT_ 344 
-# define ENUM_ 345 
-# define VIRTUAL_ 346 
-# define NOINLINING_ 347 
-# define AGGRESSIVEINLINING_ 348 
-# define NOOPTIMIZATION_ 349 
-# define AGGRESSIVEOPTIMIZATION_ 350 
-# define UNMANAGEDEXP_ 351 
-# define BEFOREFIELDINIT_ 352 
-# define STRICT_ 353 
-# define RETARGETABLE_ 354 
-# define WINDOWSRUNTIME_ 355 
-# define NOPLATFORM_ 356 
-# define METHOD_ 357 
-# define FIELD_ 358 
-# define PINNED_ 359 
-# define MODREQ_ 360 
-# define MODOPT_ 361 
-# define SERIALIZABLE_ 362 
-# define PROPERTY_ 363 
-# define TYPE_ 364 
-# define ASSEMBLY_ 365 
-# define FAMANDASSEM_ 366 
-# define FAMORASSEM_ 367 
-# define PRIVATESCOPE_ 368 
-# define HIDEBYSIG_ 369 
-# define NEWSLOT_ 370 
-# define RTSPECIALNAME_ 371 
-# define PINVOKEIMPL_ 372 
-# define _CTOR 373 
-# define _CCTOR 374 
-# define LITERAL_ 375 
-# define NOTSERIALIZED_ 376 
-# define INITONLY_ 377 
-# define REQSECOBJ_ 378 
-# define CIL_ 379 
-# define OPTIL_ 380 
-# define MANAGED_ 381 
-# define FORWARDREF_ 382 
-# define PRESERVESIG_ 383 
-# define RUNTIME_ 384 
-# define INTERNALCALL_ 385 
-# define _IMPORT 386 
-# define NOMANGLE_ 387 
-# define LASTERR_ 388 
-# define WINAPI_ 389 
-# define AS_ 390 
-# define BESTFIT_ 391 
-# define ON_ 392 
-# define OFF_ 393 
-# define CHARMAPERROR_ 394 
-# define INSTR_NONE 395 
-# define INSTR_VAR 396 
-# define INSTR_I 397 
-# define INSTR_I8 398 
-# define INSTR_R 399 
-# define INSTR_BRTARGET 400 
-# define INSTR_METHOD 401 
-# define INSTR_FIELD 402 
-# define INSTR_TYPE 403 
-# define INSTR_STRING 404 
-# define INSTR_SIG 405 
-# define INSTR_TOK 406 
-# define INSTR_SWITCH 407 
-# define _CLASS 408 
-# define _NAMESPACE 409 
-# define _METHOD 410 
-# define _FIELD 411 
-# define _DATA 412 
-# define _THIS 413 
-# define _BASE 414 
-# define _NESTER 415 
-# define _EMITBYTE 416 
-# define _TRY 417 
-# define _MAXSTACK 418 
-# define _LOCALS 419 
-# define _ENTRYPOINT 420 
-# define _ZEROINIT 421 
-# define _EVENT 422 
-# define _ADDON 423 
-# define _REMOVEON 424 
-# define _FIRE 425 
-# define _OTHER 426 
-# define _PROPERTY 427 
-# define _SET 428 
-# define _GET 429 
-# define _PERMISSION 430 
-# define _PERMISSIONSET 431 
-# define REQUEST_ 432 
-# define DEMAND_ 433 
-# define ASSERT_ 434 
-# define DENY_ 435 
-# define PERMITONLY_ 436 
-# define LINKCHECK_ 437 
-# define INHERITCHECK_ 438 
-# define REQMIN_ 439 
-# define REQOPT_ 440 
-# define REQREFUSE_ 441 
-# define PREJITGRANT_ 442 
-# define PREJITDENY_ 443 
-# define NONCASDEMAND_ 444 
-# define NONCASLINKDEMAND_ 445 
-# define NONCASINHERITANCE_ 446 
-# define _LINE 447 
-# define P_LINE 448 
-# define _LANGUAGE 449 
-# define _CUSTOM 450 
-# define INIT_ 451 
-# define _SIZE 452 
-# define _PACK 453 
-# define _VTABLE 454 
-# define _VTFIXUP 455 
-# define FROMUNMANAGED_ 456 
-# define CALLMOSTDERIVED_ 457 
-# define _VTENTRY 458 
-# define RETAINAPPDOMAIN_ 459 
-# define _FILE 460 
-# define NOMETADATA_ 461 
-# define _HASH 462 
-# define _ASSEMBLY 463 
-# define _PUBLICKEY 464 
-# define _PUBLICKEYTOKEN 465 
-# define ALGORITHM_ 466 
-# define _VER 467 
-# define _LOCALE 468 
-# define EXTERN_ 469 
-# define _MRESOURCE 470 
-# define _MODULE 471 
-# define _EXPORT 472 
-# define LEGACY_ 473 
-# define LIBRARY_ 474 
-# define X86_ 475 
-# define AMD64_ 476 
-# define ARM_ 477 
-# define ARM64_ 478 
-# define MARSHAL_ 479 
-# define CUSTOM_ 480 
-# define SYSSTRING_ 481 
-# define FIXED_ 482 
-# define VARIANT_ 483 
-# define CURRENCY_ 484 
-# define SYSCHAR_ 485 
-# define DECIMAL_ 486 
-# define DATE_ 487 
-# define BSTR_ 488 
-# define TBSTR_ 489 
-# define LPSTR_ 490 
-# define LPWSTR_ 491 
-# define LPTSTR_ 492 
-# define OBJECTREF_ 493 
-# define IUNKNOWN_ 494 
-# define IDISPATCH_ 495 
-# define STRUCT_ 496 
-# define SAFEARRAY_ 497 
-# define BYVALSTR_ 498 
-# define LPVOID_ 499 
-# define ANY_ 500 
-# define ARRAY_ 501 
-# define LPSTRUCT_ 502 
-# define IIDPARAM_ 503 
-# define IN_ 504 
-# define OUT_ 505 
-# define OPT_ 506 
-# define _PARAM 507 
-# define _OVERRIDE 508 
-# define WITH_ 509 
-# define NULL_ 510 
-# define HRESULT_ 511 
-# define CARRAY_ 512 
-# define USERDEFINED_ 513 
-# define RECORD_ 514 
-# define FILETIME_ 515 
-# define BLOB_ 516 
-# define STREAM_ 517 
-# define STORAGE_ 518 
-# define STREAMED_OBJECT_ 519 
-# define STORED_OBJECT_ 520 
-# define BLOB_OBJECT_ 521 
-# define CF_ 522 
-# define CLSID_ 523 
-# define VECTOR_ 524 
-# define _SUBSYSTEM 525 
-# define _CORFLAGS 526 
-# define ALIGNMENT_ 527 
-# define _IMAGEBASE 528 
-# define _STACKRESERVE 529 
-# define _TYPEDEF 530 
-# define _TEMPLATE 531 
-# define _TYPELIST 532 
-# define _MSCORLIB 533 
-# define P_DEFINE 534 
-# define P_UNDEF 535 
-# define P_IFDEF 536 
-# define P_IFNDEF 537 
-# define P_ELSE 538 
-# define P_ENDIF 539 
-# define P_INCLUDE 540 
-# define CONSTRAINT_ 541 
+# define ERROR_ 257
+# define BAD_COMMENT_ 258
+# define BAD_LITERAL_ 259
+# define ID 260
+# define DOTTEDNAME 261
+# define QSTRING 262
+# define SQSTRING 263
+# define INT32 264
+# define INT64 265
+# define FLOAT64 266
+# define HEXBYTE 267
+# define TYPEDEF_T 268
+# define TYPEDEF_M 269
+# define TYPEDEF_F 270
+# define TYPEDEF_TS 271
+# define TYPEDEF_MR 272
+# define TYPEDEF_CA 273
+# define DCOLON 274
+# define ELIPSIS 275
+# define VOID_ 276
+# define BOOL_ 277
+# define CHAR_ 278
+# define UNSIGNED_ 279
+# define INT_ 280
+# define INT8_ 281
+# define INT16_ 282
+# define INT32_ 283
+# define INT64_ 284
+# define FLOAT_ 285
+# define FLOAT32_ 286
+# define FLOAT64_ 287
+# define BYTEARRAY_ 288
+# define UINT_ 289
+# define UINT8_ 290
+# define UINT16_ 291
+# define UINT32_ 292
+# define UINT64_ 293
+# define FLAGS_ 294
+# define CALLCONV_ 295
+# define MDTOKEN_ 296
+# define OBJECT_ 297
+# define STRING_ 298
+# define NULLREF_ 299
+# define DEFAULT_ 300
+# define CDECL_ 301
+# define VARARG_ 302
+# define STDCALL_ 303
+# define THISCALL_ 304
+# define FASTCALL_ 305
+# define CLASS_ 306
+# define TYPEDREF_ 307
+# define UNMANAGED_ 308
+# define FINALLY_ 309
+# define HANDLER_ 310
+# define CATCH_ 311
+# define FILTER_ 312
+# define FAULT_ 313
+# define EXTENDS_ 314
+# define IMPLEMENTS_ 315
+# define TO_ 316
+# define AT_ 317
+# define TLS_ 318
+# define TRUE_ 319
+# define FALSE_ 320
+# define _INTERFACEIMPL 321
+# define VALUE_ 322
+# define VALUETYPE_ 323
+# define NATIVE_ 324
+# define INSTANCE_ 325
+# define SPECIALNAME_ 326
+# define FORWARDER_ 327
+# define STATIC_ 328
+# define PUBLIC_ 329
+# define PRIVATE_ 330
+# define FAMILY_ 331
+# define FINAL_ 332
+# define SYNCHRONIZED_ 333
+# define INTERFACE_ 334
+# define SEALED_ 335
+# define NESTED_ 336
+# define ABSTRACT_ 337
+# define AUTO_ 338
+# define SEQUENTIAL_ 339
+# define EXPLICIT_ 340
+# define ANSI_ 341
+# define UNICODE_ 342
+# define AUTOCHAR_ 343
+# define IMPORT_ 344
+# define ENUM_ 345
+# define VIRTUAL_ 346
+# define NOINLINING_ 347
+# define AGGRESSIVEINLINING_ 348
+# define NOOPTIMIZATION_ 349
+# define AGGRESSIVEOPTIMIZATION_ 350
+# define UNMANAGEDEXP_ 351
+# define BEFOREFIELDINIT_ 352
+# define STRICT_ 353
+# define RETARGETABLE_ 354
+# define WINDOWSRUNTIME_ 355
+# define NOPLATFORM_ 356
+# define METHOD_ 357
+# define FIELD_ 358
+# define PINNED_ 359
+# define MODREQ_ 360
+# define MODOPT_ 361
+# define SERIALIZABLE_ 362
+# define PROPERTY_ 363
+# define TYPE_ 364
+# define ASSEMBLY_ 365
+# define FAMANDASSEM_ 366
+# define FAMORASSEM_ 367
+# define PRIVATESCOPE_ 368
+# define HIDEBYSIG_ 369
+# define NEWSLOT_ 370
+# define RTSPECIALNAME_ 371
+# define PINVOKEIMPL_ 372
+# define _CTOR 373
+# define _CCTOR 374
+# define LITERAL_ 375
+# define NOTSERIALIZED_ 376
+# define INITONLY_ 377
+# define REQSECOBJ_ 378
+# define CIL_ 379
+# define OPTIL_ 380
+# define MANAGED_ 381
+# define FORWARDREF_ 382
+# define PRESERVESIG_ 383
+# define RUNTIME_ 384
+# define INTERNALCALL_ 385
+# define _IMPORT 386
+# define NOMANGLE_ 387
+# define LASTERR_ 388
+# define WINAPI_ 389
+# define AS_ 390
+# define BESTFIT_ 391
+# define ON_ 392
+# define OFF_ 393
+# define CHARMAPERROR_ 394
+# define INSTR_NONE 395
+# define INSTR_VAR 396
+# define INSTR_I 397
+# define INSTR_I8 398
+# define INSTR_R 399
+# define INSTR_BRTARGET 400
+# define INSTR_METHOD 401
+# define INSTR_FIELD 402
+# define INSTR_TYPE 403
+# define INSTR_STRING 404
+# define INSTR_SIG 405
+# define INSTR_TOK 406
+# define INSTR_SWITCH 407
+# define _CLASS 408
+# define _NAMESPACE 409
+# define _METHOD 410
+# define _FIELD 411
+# define _DATA 412
+# define _THIS 413
+# define _BASE 414
+# define _NESTER 415
+# define _EMITBYTE 416
+# define _TRY 417
+# define _MAXSTACK 418
+# define _LOCALS 419
+# define _ENTRYPOINT 420
+# define _ZEROINIT 421
+# define _EVENT 422
+# define _ADDON 423
+# define _REMOVEON 424
+# define _FIRE 425
+# define _OTHER 426
+# define _PROPERTY 427
+# define _SET 428
+# define _GET 429
+# define _PERMISSION 430
+# define _PERMISSIONSET 431
+# define REQUEST_ 432
+# define DEMAND_ 433
+# define ASSERT_ 434
+# define DENY_ 435
+# define PERMITONLY_ 436
+# define LINKCHECK_ 437
+# define INHERITCHECK_ 438
+# define REQMIN_ 439
+# define REQOPT_ 440
+# define REQREFUSE_ 441
+# define PREJITGRANT_ 442
+# define PREJITDENY_ 443
+# define NONCASDEMAND_ 444
+# define NONCASLINKDEMAND_ 445
+# define NONCASINHERITANCE_ 446
+# define _LINE 447
+# define P_LINE 448
+# define _LANGUAGE 449
+# define _CUSTOM 450
+# define INIT_ 451
+# define _SIZE 452
+# define _PACK 453
+# define _VTABLE 454
+# define _VTFIXUP 455
+# define FROMUNMANAGED_ 456
+# define CALLMOSTDERIVED_ 457
+# define _VTENTRY 458
+# define RETAINAPPDOMAIN_ 459
+# define _FILE 460
+# define NOMETADATA_ 461
+# define _HASH 462
+# define _ASSEMBLY 463
+# define _PUBLICKEY 464
+# define _PUBLICKEYTOKEN 465
+# define ALGORITHM_ 466
+# define _VER 467
+# define _LOCALE 468
+# define EXTERN_ 469
+# define _MRESOURCE 470
+# define _MODULE 471
+# define _EXPORT 472
+# define LEGACY_ 473
+# define LIBRARY_ 474
+# define X86_ 475
+# define AMD64_ 476
+# define ARM_ 477
+# define ARM64_ 478
+# define MARSHAL_ 479
+# define CUSTOM_ 480
+# define SYSSTRING_ 481
+# define FIXED_ 482
+# define VARIANT_ 483
+# define CURRENCY_ 484
+# define SYSCHAR_ 485
+# define DECIMAL_ 486
+# define DATE_ 487
+# define BSTR_ 488
+# define TBSTR_ 489
+# define LPSTR_ 490
+# define LPWSTR_ 491
+# define LPTSTR_ 492
+# define OBJECTREF_ 493
+# define IUNKNOWN_ 494
+# define IDISPATCH_ 495
+# define STRUCT_ 496
+# define SAFEARRAY_ 497
+# define BYVALSTR_ 498
+# define LPVOID_ 499
+# define ANY_ 500
+# define ARRAY_ 501
+# define LPSTRUCT_ 502
+# define IIDPARAM_ 503
+# define IN_ 504
+# define OUT_ 505
+# define OPT_ 506
+# define _PARAM 507
+# define _OVERRIDE 508
+# define WITH_ 509
+# define NULL_ 510
+# define HRESULT_ 511
+# define CARRAY_ 512
+# define USERDEFINED_ 513
+# define RECORD_ 514
+# define FILETIME_ 515
+# define BLOB_ 516
+# define STREAM_ 517
+# define STORAGE_ 518
+# define STREAMED_OBJECT_ 519
+# define STORED_OBJECT_ 520
+# define BLOB_OBJECT_ 521
+# define CF_ 522
+# define CLSID_ 523
+# define VECTOR_ 524
+# define _SUBSYSTEM 525
+# define _CORFLAGS 526
+# define ALIGNMENT_ 527
+# define _IMAGEBASE 528
+# define _STACKRESERVE 529
+# define _TYPEDEF 530
+# define _TEMPLATE 531
+# define _TYPELIST 532
+# define _MSCORLIB 533
+# define P_DEFINE 534
+# define P_UNDEF 535
+# define P_IFDEF 536
+# define P_IFNDEF 537
+# define P_ELSE 538
+# define P_ENDIF 539
+# define P_INCLUDE 540
+# define CONSTRAINT_ 541
 #define yyclearin yychar = -1
 #define yyerrok yyerrflag = 0
 #ifndef YYMAXDEPTH
@@ -1747,7 +1747,7 @@ YYSTATIC YYCONST short yyrecover[] = {
 #line 3 "D:\\CodegenMirror\\src\\tools\\devdiv\\x86\\yypars.c"
 #if ! defined(YYAPI_PACKAGE)
 /*
-**  YYAPI_TOKENNAME		: name used for return value of yylex	
+**  YYAPI_TOKENNAME		: name used for return value of yylex
 **	YYAPI_TOKENTYPE		: type of the token
 **	YYAPI_TOKENEME(t)	: the value of the token that the parser should see
 **	YYAPI_TOKENNONE		: the representation when there is no token
@@ -2080,7 +2080,7 @@ yyreduce:
 		yydumpinfo();
 #endif
 		switch(yym){
-			
+
 case 3:
 #line 194 "asmparse.y"
 { PASM->EndClass(); } break;
@@ -2107,7 +2107,7 @@ case 15:
 { PASMM->EndManifestRes(); } break;
 case 19:
 #line 213 "asmparse.y"
-{ 
+{
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
@@ -2122,12 +2122,12 @@ case 20:
 { PASM->m_dwComImageFlags = yypvt[-0].int32; } break;
 case 21:
 #line 224 "asmparse.y"
-{ PASM->m_dwFileAlignment = yypvt[-0].int32; 
+{ PASM->m_dwFileAlignment = yypvt[-0].int32;
                                                                                   if((yypvt[-0].int32 & (yypvt[-0].int32 - 1))||(yypvt[-0].int32 < 0x200)||(yypvt[-0].int32 > 0x10000))
                                                                                     PASM->report->error("Invalid file alignment, must be power of 2 from 0x200 to 0x10000\n");} break;
 case 22:
 #line 227 "asmparse.y"
-{ PASM->m_stBaseAddress = (ULONGLONG)(*(yypvt[-0].int64)); delete yypvt[-0].int64; 
+{ PASM->m_stBaseAddress = (ULONGLONG)(*(yypvt[-0].int64)); delete yypvt[-0].int64;
                                                                                   if(PASM->m_stBaseAddress & 0xFFFF)
                                                                                     PASM->report->error("Invalid image base, must be 0x10000-aligned\n");} break;
 case 23:
@@ -2147,11 +2147,11 @@ case 33:
 { LPCSTRToGuid(yypvt[-0].string,&(PASM->m_guidLang)); } break;
 case 34:
 #line 247 "asmparse.y"
-{ LPCSTRToGuid(yypvt[-2].string,&(PASM->m_guidLang)); 
+{ LPCSTRToGuid(yypvt[-2].string,&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid(yypvt[-0].string,&(PASM->m_guidLangVendor));} break;
 case 35:
 #line 249 "asmparse.y"
-{ LPCSTRToGuid(yypvt[-4].string,&(PASM->m_guidLang)); 
+{ LPCSTRToGuid(yypvt[-4].string,&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid(yypvt[-2].string,&(PASM->m_guidLangVendor));
                                                                                   LPCSTRToGuid(yypvt[-2].string,&(PASM->m_guidDoc));} break;
 case 36:
@@ -2279,7 +2279,7 @@ case 73:
 { yyval.token = yypvt[-0].token; } break;
 case 74:
 #line 334 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                                   yyval.binstr->appendInt16(nCustomBlobNVPairs);
                                                                                   yyval.binstr->append(yypvt[-0].binstr);
                                                                                   nCustomBlobNVPairs = 0; } break;
@@ -2299,7 +2299,7 @@ case 78:
 case 79:
 #line 348 "asmparse.y"
 { yyval.binstr = yypvt[-5].binstr; yyval.binstr->appendInt8(yypvt[-4].int32);
-                                                                                  yyval.binstr->append(yypvt[-3].binstr); 
+                                                                                  yyval.binstr->append(yypvt[-3].binstr);
                                                                                   AppendStringWithLength(yyval.binstr,yypvt[-2].string);
                                                                                   yyval.binstr->appendFrom(yypvt[-0].binstr, (*(yypvt[-0].binstr->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
                                                                                   nCustomBlobNVPairs++; } break;
@@ -2314,7 +2314,7 @@ case 82:
 { yyval.int32 = SERIALIZATION_TYPE_PROPERTY; } break;
 case 83:
 #line 360 "asmparse.y"
-{ if(yypvt[-0].cad->tkOwner && !yypvt[-0].cad->tkInterfacePair) 
+{ if(yypvt[-0].cad->tkOwner && !yypvt[-0].cad->tkInterfacePair)
                                                                                     PASM->DefineCV(yypvt[-0].cad);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH(yypvt[-0].cad); } break;
@@ -2325,7 +2325,7 @@ case 85:
 #line 365 "asmparse.y"
 { CustomDescr* pNew = new CustomDescr(yypvt[-0].tdd->m_pCA);
                                                                                   if(pNew->tkOwner == 0) pNew->tkOwner = PASM->m_tkCurrentCVOwner;
-                                                                                  if(pNew->tkOwner) 
+                                                                                  if(pNew->tkOwner)
                                                                                     PASM->DefineCV(pNew);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH(pNew); } break;
@@ -2398,7 +2398,7 @@ case 105:
 case 106:
 #line 419 "asmparse.y"
 { if(yypvt[-0].typarlist) FixupConstraints();
-                                                                                  PASM->StartClass(yypvt[-1].string, yypvt[-2].classAttr, yypvt[-0].typarlist); 
+                                                                                  PASM->StartClass(yypvt[-1].string, yypvt[-2].classAttr, yypvt[-0].typarlist);
                                                                                   TyParFixupList.RESET(false);
                                                                                   newclass = FALSE;
                                                                                 } break;
@@ -2584,10 +2584,10 @@ case 175:
 { PASMM->EndComType(); } break;
 case 176:
 #line 532 "asmparse.y"
-{ BinStr *sig1 = parser->MakeSig(yypvt[-7].int32, yypvt[-6].binstr, yypvt[-1].binstr); 
-                                                                  BinStr *sig2 = new BinStr(); sig2->append(sig1); 
+{ BinStr *sig1 = parser->MakeSig(yypvt[-7].int32, yypvt[-6].binstr, yypvt[-1].binstr);
+                                                                  BinStr *sig2 = new BinStr(); sig2->append(sig1);
                                                                   PASM->AddMethodImpl(yypvt[-11].token,yypvt[-9].string,sig1,yypvt[-5].token,yypvt[-3].string,sig2);
-                                                                  PASM->ResetArgNameList(); 
+                                                                  PASM->ResetArgNameList();
                                                                 } break;
 case 177:
 #line 538 "asmparse.y"
@@ -2596,7 +2596,7 @@ case 177:
                                                                       parser->MakeSig(yypvt[-19].int32| IMAGE_CEE_CS_CALLCONV_GENERIC,yypvt[-18].binstr,yypvt[-12].binstr,yypvt[-14].int32)),
                                                                       yypvt[-6].token,yypvt[-4].string,
                                                                       (yypvt[-3].int32==0 ? parser->MakeSig(yypvt[-8].int32,yypvt[-7].binstr,yypvt[-1].binstr) :
-                                                                      parser->MakeSig(yypvt[-8].int32| IMAGE_CEE_CS_CALLCONV_GENERIC,yypvt[-7].binstr,yypvt[-1].binstr,yypvt[-3].int32))); 
+                                                                      parser->MakeSig(yypvt[-8].int32| IMAGE_CEE_CS_CALLCONV_GENERIC,yypvt[-7].binstr,yypvt[-1].binstr,yypvt[-3].int32)));
                                                                    PASM->ResetArgNameList();
                                                                  } break;
 case 180:
@@ -2701,24 +2701,24 @@ case 208:
 { PASM->ResetArgNameList();
                                                                if (yypvt[-3].binstr == NULL)
                                                                {
-                                                                 if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  yyval.token = PASM->MakeMemberRef(yypvt[-6].token, yypvt[-4].string, parser->MakeSig(yypvt[-8].int32|iCallConv, yypvt[-7].binstr, yypvt[-1].binstr));
                                                                }
                                                                else
                                                                {
                                                                  mdToken mr;
-                                                                 if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
-                                                                 mr = PASM->MakeMemberRef(yypvt[-6].token, yypvt[-4].string, 
+                                                                 if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
+                                                                 mr = PASM->MakeMemberRef(yypvt[-6].token, yypvt[-4].string,
                                                                    parser->MakeSig(yypvt[-8].int32 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, yypvt[-7].binstr, yypvt[-1].binstr, corCountArgs(yypvt[-3].binstr)));
-                                                                 yyval.token = PASM->MakeMethodSpec(mr, 
+                                                                 yyval.token = PASM->MakeMethodSpec(mr,
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, yypvt[-3].binstr));
                                                                }
                                                              } break;
 case 209:
 #line 634 "asmparse.y"
 { PASM->ResetArgNameList();
-                                                               if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
-                                                               yyval.token = PASM->MakeMemberRef(yypvt[-6].token, yypvt[-4].string, 
+                                                               if((iCallConv)&&((yypvt[-8].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
+                                                               yyval.token = PASM->MakeMemberRef(yypvt[-6].token, yypvt[-4].string,
                                                                  parser->MakeSig(yypvt[-8].int32 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, yypvt[-7].binstr, yypvt[-1].binstr, yypvt[-3].int32));
                                                              } break;
 case 210:
@@ -2726,22 +2726,22 @@ case 210:
 { PASM->ResetArgNameList();
                                                                if (yypvt[-3].binstr == NULL)
                                                                {
-                                                                 if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  yyval.token = PASM->MakeMemberRef(mdTokenNil, yypvt[-4].string, parser->MakeSig(yypvt[-6].int32|iCallConv, yypvt[-5].binstr, yypvt[-1].binstr));
                                                                }
                                                                else
                                                                {
                                                                  mdToken mr;
-                                                                 if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                                 if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                  mr = PASM->MakeMemberRef(mdTokenNil, yypvt[-4].string, parser->MakeSig(yypvt[-6].int32 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, yypvt[-5].binstr, yypvt[-1].binstr, corCountArgs(yypvt[-3].binstr)));
-                                                                 yyval.token = PASM->MakeMethodSpec(mr, 
+                                                                 yyval.token = PASM->MakeMethodSpec(mr,
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, yypvt[-3].binstr));
                                                                }
                                                              } break;
 case 211:
 #line 656 "asmparse.y"
 { PASM->ResetArgNameList();
-                                                               if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n"); 
+                                                               if((iCallConv)&&((yypvt[-6].int32 & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                yyval.token = PASM->MakeMemberRef(mdTokenNil, yypvt[-4].string, parser->MakeSig(yypvt[-6].int32 | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, yypvt[-5].binstr, yypvt[-1].binstr, yypvt[-3].int32));
                                                              } break;
 case 212:
@@ -2791,20 +2791,20 @@ case 226:
 { yyval.token = yypvt[-1].int32; } break;
 case 227:
 #line 683 "asmparse.y"
-{ yyval.token = yypvt[-0].token; 
+{ yyval.token = yypvt[-0].token;
                                                                PASM->delArgNameList(PASM->m_firstArgName);
                                                                PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                                PASM->SetMemberRefFixup(yypvt[-0].token,iOpcodeLen); } break;
 case 228:
 #line 689 "asmparse.y"
-{ yypvt[-3].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
-                                                               yyval.token = PASM->MakeMemberRef(yypvt[-2].token, yypvt[-0].string, yypvt[-3].binstr); 
+{ yypvt[-3].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
+                                                               yyval.token = PASM->MakeMemberRef(yypvt[-2].token, yypvt[-0].string, yypvt[-3].binstr);
                                                                PASM->SetMemberRefFixup(yyval.token,iOpcodeLen); } break;
 case 229:
 #line 693 "asmparse.y"
-{ yypvt[-1].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
-                                                               yyval.token = PASM->MakeMemberRef(NULL, yypvt[-0].string, yypvt[-1].binstr); 
+{ yypvt[-1].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
+                                                               yyval.token = PASM->MakeMemberRef(NULL, yypvt[-0].string, yypvt[-1].binstr);
                                                                PASM->SetMemberRefFixup(yyval.token,iOpcodeLen); } break;
 case 230:
 #line 696 "asmparse.y"
@@ -2816,7 +2816,7 @@ case 231:
                                                                PASM->SetMemberRefFixup(yyval.token,iOpcodeLen); } break;
 case 232:
 #line 700 "asmparse.y"
-{ yyval.token = yypvt[-0].token; 
+{ yyval.token = yypvt[-0].token;
                                                                PASM->SetMemberRefFixup(yyval.token,iOpcodeLen); } break;
 case 233:
 #line 705 "asmparse.y"
@@ -2847,7 +2847,7 @@ case 243:
 { PASM->SetEventMethod(3, yypvt[-0].token); } break;
 case 248:
 #line 731 "asmparse.y"
-{ PASM->ResetProp(yypvt[-4].string, 
+{ PASM->ResetProp(yypvt[-4].string,
                                                               parser->MakeSig((IMAGE_CEE_CS_CALLCONV_PROPERTY |
                                                               (yypvt[-6].int32 & IMAGE_CEE_CS_CALLCONV_HASTHIS)),yypvt[-5].binstr,yypvt[-2].binstr), yypvt[-7].propAttr, yypvt[-0].binstr);} break;
 case 249:
@@ -2870,7 +2870,7 @@ case 256:
 { PASM->SetPropMethod(2, yypvt[-0].token); } break;
 case 261:
 #line 756 "asmparse.y"
-{ PASM->ResetForNextMethod(); 
+{ PASM->ResetForNextMethod();
                                                               uMethodBeginLine = PASM->m_ulCurLine;
                                                               uMethodBeginColumn=PASM->m_ulCurColumn;
                                                             } break;
@@ -2900,9 +2900,9 @@ case 267:
                                                               }
                                                               PASM->StartMethod(yypvt[-6].string, sig, yypvt[-11].methAttr, yypvt[-7].binstr, yypvt[-9].int32, yypvt[-5].typarlist);
                                                               TyParFixupList.RESET(false);
-                                                              PASM->SetImplAttr((USHORT)yypvt[-1].implAttr);  
+                                                              PASM->SetImplAttr((USHORT)yypvt[-1].implAttr);
                                                               PASM->m_pCurMethod->m_ulLines[0] = uMethodBeginLine;
-                                                              PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn; 
+                                                              PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn;
                                                             } break;
 case 268:
 #line 789 "asmparse.y"
@@ -2966,15 +2966,15 @@ case 287:
 { yyval.methAttr = (CorMethodAttr) (yypvt[-1].int32); } break;
 case 288:
 #line 810 "asmparse.y"
-{ PASM->SetPinvoke(yypvt[-4].binstr,0,yypvt[-2].binstr,yypvt[-1].pinvAttr); 
+{ PASM->SetPinvoke(yypvt[-4].binstr,0,yypvt[-2].binstr,yypvt[-1].pinvAttr);
                                                               yyval.methAttr = (CorMethodAttr) (yypvt[-7].methAttr | mdPinvokeImpl); } break;
 case 289:
 #line 813 "asmparse.y"
-{ PASM->SetPinvoke(yypvt[-2].binstr,0,NULL,yypvt[-1].pinvAttr); 
+{ PASM->SetPinvoke(yypvt[-2].binstr,0,NULL,yypvt[-1].pinvAttr);
                                                               yyval.methAttr = (CorMethodAttr) (yypvt[-5].methAttr | mdPinvokeImpl); } break;
 case 290:
 #line 816 "asmparse.y"
-{ PASM->SetPinvoke(new BinStr(),0,NULL,yypvt[-1].pinvAttr); 
+{ PASM->SetPinvoke(new BinStr(),0,NULL,yypvt[-1].pinvAttr);
                                                               yyval.methAttr = (CorMethodAttr) (yypvt[-4].methAttr | mdPinvokeImpl); } break;
 case 291:
 #line 820 "asmparse.y"
@@ -3098,7 +3098,7 @@ case 330:
 { yyval.implAttr = (CorMethodImpl) (yypvt[-1].int32); } break;
 case 331:
 #line 868 "asmparse.y"
-{ PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL; 
+{ PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL;
                                                             } break;
 case 334:
 #line 876 "asmparse.y"
@@ -3111,12 +3111,12 @@ case 336:
 { PASM->EmitMaxStack(yypvt[-0].int32); } break;
 case 337:
 #line 879 "asmparse.y"
-{ PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, yypvt[-1].binstr)); 
+{ PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, yypvt[-1].binstr));
                                                             } break;
 case 338:
 #line 881 "asmparse.y"
-{ PASM->EmitZeroInit(); 
-                                                              PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, yypvt[-1].binstr)); 
+{ PASM->EmitZeroInit();
+                                                              PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, yypvt[-1].binstr));
                                                             } break;
 case 339:
 #line 884 "asmparse.y"
@@ -3163,7 +3163,7 @@ case 353:
 { PASM->AddMethodImpl(yypvt[-6].token,yypvt[-4].string,
                                                               (yypvt[-3].int32==0 ? parser->MakeSig(yypvt[-8].int32,yypvt[-7].binstr,yypvt[-1].binstr) :
                                                               parser->MakeSig(yypvt[-8].int32| IMAGE_CEE_CS_CALLCONV_GENERIC,yypvt[-7].binstr,yypvt[-1].binstr,yypvt[-3].int32))
-                                                              ,NULL,NULL,NULL); 
+                                                              ,NULL,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             } break;
 case 355:
@@ -3244,11 +3244,11 @@ case 373:
 { PASM->m_SEHD->sehHandler = PASM->m_CurPC; } break;
 case 374:
 #line 995 "asmparse.y"
-{ PASM->SetFilterLabel(yypvt[-0].string); 
+{ PASM->SetFilterLabel(yypvt[-0].string);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; } break;
 case 375:
 #line 997 "asmparse.y"
-{ PASM->m_SEHD->sehFilter = yypvt[-0].int32; 
+{ PASM->m_SEHD->sehFilter = yypvt[-0].int32;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; } break;
 case 376:
 #line 1001 "asmparse.y"
@@ -3257,7 +3257,7 @@ case 376:
 case 377:
 #line 1005 "asmparse.y"
 {  PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_NONE;
-                                                               PASM->SetCatchClass(yypvt[-0].token); 
+                                                               PASM->SetCatchClass(yypvt[-0].token);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; } break;
 case 378:
 #line 1010 "asmparse.y"
@@ -3311,7 +3311,7 @@ case 398:
 { float f = (float) (*yypvt[-2].float64); float* p = new (nothrow) float[yypvt[-0].int32];
                                                                if(p != NULL) {
                                                                  for(int i=0; i < yypvt[-0].int32; i++) p[i] = f;
-                                                                 PASM->EmitData(p, sizeof(float)*yypvt[-0].int32); delete yypvt[-2].float64; delete [] p; 
+                                                                 PASM->EmitData(p, sizeof(float)*yypvt[-0].int32); delete yypvt[-2].float64; delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(float)*yypvt[-0].int32); } break;
 case 399:
@@ -3381,71 +3381,71 @@ case 410:
                                                                yyval.binstr->appendInt32(*((__int32*)&f)); delete yypvt[-1].float64; } break;
 case 411:
 #line 1110 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R8); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R8);
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-1].float64); delete yypvt[-1].float64; } break;
 case 412:
 #line 1112 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R4); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R4);
                                                                yyval.binstr->appendInt32(yypvt[-1].int32); } break;
 case 413:
 #line 1114 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R8); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_R8);
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-1].int64); delete yypvt[-1].int64; } break;
 case 414:
 #line 1116 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I8); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I8);
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-1].int64); delete yypvt[-1].int64; } break;
 case 415:
 #line 1118 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I4); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I4);
                                                                yyval.binstr->appendInt32(yypvt[-1].int32); } break;
 case 416:
 #line 1120 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I2); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I2);
                                                                yyval.binstr->appendInt16(yypvt[-1].int32); } break;
 case 417:
 #line 1122 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I1); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_I1);
                                                                yyval.binstr->appendInt8(yypvt[-1].int32); } break;
 case 418:
 #line 1124 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U8); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U8);
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-1].int64); delete yypvt[-1].int64; } break;
 case 419:
 #line 1126 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U4); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U4);
                                                                yyval.binstr->appendInt32(yypvt[-1].int32); } break;
 case 420:
 #line 1128 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U2); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U2);
                                                                yyval.binstr->appendInt16(yypvt[-1].int32); } break;
 case 421:
 #line 1130 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U1); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U1);
                                                                yyval.binstr->appendInt8(yypvt[-1].int32); } break;
 case 422:
 #line 1132 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U8); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U8);
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-1].int64); delete yypvt[-1].int64; } break;
 case 423:
 #line 1134 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U4); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U4);
                                                                yyval.binstr->appendInt32(yypvt[-1].int32); } break;
 case 424:
 #line 1136 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U2); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U2);
                                                                yyval.binstr->appendInt16(yypvt[-1].int32); } break;
 case 425:
 #line 1138 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U1); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_U1);
                                                                yyval.binstr->appendInt8(yypvt[-1].int32); } break;
 case 426:
 #line 1140 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_CHAR); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_CHAR);
                                                                yyval.binstr->appendInt16(yypvt[-1].int32); } break;
 case 427:
 #line 1142 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_BOOLEAN); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_BOOLEAN);
                                                                yyval.binstr->appendInt8(yypvt[-1].int32);} break;
 case 428:
 #line 1144 "asmparse.y"
@@ -3474,7 +3474,7 @@ case 435:
 { yyval.binstr = BinStrToUnicode(yypvt[-0].binstr,true); yyval.binstr->insertInt8(ELEMENT_TYPE_STRING);} break;
 case 436:
 #line 1162 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_CLASS); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_CLASS);
                                                                yyval.binstr->appendInt32(0); } break;
 case 437:
 #line 1167 "asmparse.y"
@@ -3484,15 +3484,15 @@ case 438:
 { yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_STRING); yyval.binstr->appendInt8(0xFF); } break;
 case 439:
 #line 1169 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_STRING); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_STRING);
                                                                AppendStringWithLength(yyval.binstr,yypvt[-1].string); delete [] yypvt[-1].string;} break;
 case 440:
 #line 1171 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(SERIALIZATION_TYPE_TYPE); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength(yyval.binstr,yypvt[-1].string); delete [] yypvt[-1].string;} break;
 case 441:
 #line 1173 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(SERIALIZATION_TYPE_TYPE); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength(yyval.binstr,PASM->ReflectionNotation(yypvt[-1].token));} break;
 case 442:
 #line 1175 "asmparse.y"
@@ -3604,25 +3604,25 @@ case 464:
                                                                float f = (float) (*yypvt[-0].float64); yyval.binstr->appendInt32(*((__int32*)&f)); delete yypvt[-0].float64; } break;
 case 465:
 #line 1259 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                yyval.binstr->appendInt32(yypvt[-0].int32); } break;
 case 466:
 #line 1263 "asmparse.y"
 { yyval.binstr = new BinStr(); } break;
 case 467:
 #line 1264 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-0].float64); delete yypvt[-0].float64; } break;
 case 468:
 #line 1266 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-0].int64); delete yypvt[-0].int64; } break;
 case 469:
 #line 1270 "asmparse.y"
 { yyval.binstr = new BinStr(); } break;
 case 470:
 #line 1271 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                yyval.binstr->appendInt64((__int64 *)yypvt[-0].int64); delete yypvt[-0].int64; } break;
 case 471:
 #line 1275 "asmparse.y"
@@ -3647,7 +3647,7 @@ case 477:
 { yyval.binstr = new BinStr(); } break;
 case 478:
 #line 1288 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                yyval.binstr->appendInt8(yypvt[-0].int32);} break;
 case 479:
 #line 1292 "asmparse.y"
@@ -3657,7 +3657,7 @@ case 480:
 { yyval.binstr = yypvt[-1].binstr; yyval.binstr->appendInt8(0xFF); } break;
 case 481:
 #line 1294 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                AppendStringWithLength(yyval.binstr,yypvt[-0].string); delete [] yypvt[-0].string;} break;
 case 482:
 #line 1298 "asmparse.y"
@@ -3667,11 +3667,11 @@ case 483:
 { yyval.binstr = yypvt[-1].binstr; yyval.binstr->appendInt8(0xFF); } break;
 case 484:
 #line 1300 "asmparse.y"
-{ yyval.binstr = yypvt[-2].binstr; 
+{ yyval.binstr = yypvt[-2].binstr;
                                                                AppendStringWithLength(yyval.binstr,yypvt[-0].string); delete [] yypvt[-0].string;} break;
 case 485:
 #line 1302 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; 
+{ yyval.binstr = yypvt[-1].binstr;
                                                                AppendStringWithLength(yyval.binstr,PASM->ReflectionNotation(yypvt[-0].token));} break;
 case 486:
 #line 1306 "asmparse.y"
@@ -3682,7 +3682,7 @@ case 487:
 case 488:
 #line 1311 "asmparse.y"
 { parser->m_ANSFirst.PUSH(PASM->m_firstArgName);
-                                                               parser->m_ANSLast.PUSH(PASM->m_lastArgName);   
+                                                               parser->m_ANSLast.PUSH(PASM->m_lastArgName);
                                                                PASM->m_firstArgName = NULL;
                                                                PASM->m_lastArgName = NULL; } break;
 case 489:
@@ -3705,10 +3705,10 @@ case 494:
 { yyval.instr = SetupInstr(yypvt[-0].opcode); } break;
 case 495:
 #line 1335 "asmparse.y"
-{ yyval.instr = SetupInstr(yypvt[-0].opcode); 
+{ yyval.instr = SetupInstr(yypvt[-0].opcode);
                                                                if((!PASM->OnErrGo)&&
                                                                ((yypvt[-0].opcode == CEE_NEWOBJ)||
-                                                                (yypvt[-0].opcode == CEE_CALLVIRT))) 
+                                                                (yypvt[-0].opcode == CEE_CALLVIRT)))
                                                                   iCallConv = IMAGE_CEE_CS_CALLCONV_HASTHIS;
                                                              } break;
 case 496:
@@ -3757,11 +3757,11 @@ case 510:
 #line 1372 "asmparse.y"
 { unsigned L = yypvt[-1].binstr->length();
                                                                FAIL_UNLESS(L >= sizeof(float), ("%d hexbytes, must be at least %d\n",
-                                                                           L,sizeof(float))); 
-                                                               if(L < sizeof(float)) {YYERROR; } 
+                                                                           L,sizeof(float)));
+                                                               if(L < sizeof(float)) {YYERROR; }
                                                                else {
                                                                    double f = (L >= sizeof(double)) ? *((double *)(yypvt[-1].binstr->ptr()))
-                                                                                    : (double)(*(float *)(yypvt[-1].binstr->ptr())); 
+                                                                                    : (double)(*(float *)(yypvt[-1].binstr->ptr()));
                                                                    PASM->EmitInstrR(yypvt[-2].instr,&f); }
                                                                delete yypvt[-1].binstr; } break;
 case 511:
@@ -3780,7 +3780,7 @@ case 513:
                                                              } break;
 case 514:
 #line 1391 "asmparse.y"
-{ yypvt[-3].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
+{ yypvt[-3].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef(yypvt[-2].token, yypvt[-0].string, yypvt[-3].binstr);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen(yypvt[-4].instr));
                                                                PASM->EmitInstrI(yypvt[-4].instr,mr);
@@ -3789,7 +3789,7 @@ case 514:
                                                              } break;
 case 515:
 #line 1399 "asmparse.y"
-{ yypvt[-1].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD); 
+{ yypvt[-1].binstr->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef(mdTokenNil, yypvt[-0].string, yypvt[-1].binstr);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen(yypvt[-2].instr));
                                                                PASM->EmitInstrI(yypvt[-2].instr,mr);
@@ -3822,7 +3822,7 @@ case 518:
                                                              } break;
 case 519:
 #line 1424 "asmparse.y"
-{ PASM->EmitInstrI(yypvt[-1].instr, yypvt[-0].token); 
+{ PASM->EmitInstrI(yypvt[-1].instr, yypvt[-0].token);
                                                                PASM->m_tkCurrentCVOwner = yypvt[-0].token;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              } break;
@@ -3837,7 +3837,7 @@ case 522:
 { PASM->EmitInstrStringLiteral(yypvt[-3].instr, yypvt[-1].binstr,FALSE,TRUE); } break;
 case 523:
 #line 1434 "asmparse.y"
-{ PASM->EmitInstrSig(yypvt[-5].instr, parser->MakeSig(yypvt[-4].int32, yypvt[-3].binstr, yypvt[-1].binstr)); 
+{ PASM->EmitInstrSig(yypvt[-5].instr, parser->MakeSig(yypvt[-4].int32, yypvt[-3].binstr, yypvt[-1].binstr));
                                                                PASM->ResetArgNameList();
                                                              } break;
 case 524:
@@ -3928,7 +3928,7 @@ case 550:
 case 551:
 #line 1488 "asmparse.y"
 { if(PASM->m_pCurClass != NULL) yyval.token = PASM->m_pCurClass->m_cl;
-                                                                else { yyval.token = 0; PASM->report->error(".this outside class scope\n"); } 
+                                                                else { yyval.token = 0; PASM->report->error(".this outside class scope\n"); }
                                                               } break;
 case 552:
 #line 1491 "asmparse.y"
@@ -3936,14 +3936,14 @@ case 552:
                                                                   yyval.token = PASM->m_pCurClass->m_crExtends;
                                                                   if(RidFromToken(yyval.token) == 0)
                                                                     PASM->report->error(".base undefined\n");
-                                                                } else { yyval.token = 0; PASM->report->error(".base outside class scope\n"); } 
+                                                                } else { yyval.token = 0; PASM->report->error(".base outside class scope\n"); }
                                                               } break;
 case 553:
 #line 1497 "asmparse.y"
 { if(PASM->m_pCurClass != NULL) {
                                                                   if(PASM->m_pCurClass->m_pEncloser != NULL) yyval.token = PASM->m_pCurClass->m_pEncloser->m_cl;
                                                                   else { yyval.token = 0; PASM->report->error(".nester undefined\n"); }
-                                                                } else { yyval.token = 0; PASM->report->error(".nester outside class scope\n"); } 
+                                                                } else { yyval.token = 0; PASM->report->error(".nester outside class scope\n"); }
                                                               } break;
 case 554:
 #line 1504 "asmparse.y"
@@ -3972,7 +3972,7 @@ case 561:
                                                                 corEmitInt(yyval.binstr,yypvt[-7].binstr->length()); yyval.binstr->append(yypvt[-7].binstr);
                                                                 corEmitInt(yyval.binstr,yypvt[-5].binstr->length()); yyval.binstr->append(yypvt[-5].binstr);
                                                                 corEmitInt(yyval.binstr,yypvt[-3].binstr->length()); yyval.binstr->append(yypvt[-3].binstr);
-                                                                corEmitInt(yyval.binstr,yypvt[-1].binstr->length()); yyval.binstr->append(yypvt[-1].binstr); 
+                                                                corEmitInt(yyval.binstr,yypvt[-1].binstr->length()); yyval.binstr->append(yypvt[-1].binstr);
                                                                 PASM->report->warn("Deprecated 4-string form of custom marshaler, first two strings ignored\n");} break;
 case 562:
 #line 1524 "asmparse.y"
@@ -3991,18 +3991,18 @@ case 564:
                                                                 corEmitInt(yyval.binstr,yypvt[-2].int32); yyval.binstr->append(yypvt[-0].binstr); } break;
 case 565:
 #line 1534 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_VARIANT); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_VARIANT);
                                                                 PASM->report->warn("Deprecated native type 'variant'\n"); } break;
 case 566:
 #line 1536 "asmparse.y"
 { yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_CURRENCY); } break;
 case 567:
 #line 1537 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SYSCHAR); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SYSCHAR);
                                                                 PASM->report->warn("Deprecated native type 'syschar'\n"); } break;
 case 568:
 #line 1539 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_VOID); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_VOID);
                                                                 PASM->report->warn("Deprecated native type 'void'\n"); } break;
 case 569:
 #line 1541 "asmparse.y"
@@ -4054,7 +4054,7 @@ case 584:
 { yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_U8); } break;
 case 585:
 #line 1557 "asmparse.y"
-{ yyval.binstr = yypvt[-1].binstr; yyval.binstr->insertInt8(NATIVE_TYPE_PTR); 
+{ yyval.binstr = yypvt[-1].binstr; yyval.binstr->insertInt8(NATIVE_TYPE_PTR);
                                                                 PASM->report->warn("Deprecated native type '*'\n"); } break;
 case 586:
 #line 1559 "asmparse.y"
@@ -4062,30 +4062,30 @@ case 586:
                                                                 yyval.binstr->insertInt8(NATIVE_TYPE_ARRAY); } break;
 case 587:
 #line 1561 "asmparse.y"
-{ yyval.binstr = yypvt[-3].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX); 
+{ yyval.binstr = yypvt[-3].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX);
                                                                 yyval.binstr->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt(yyval.binstr,0);
-                                                                corEmitInt(yyval.binstr,yypvt[-1].int32); 
+                                                                corEmitInt(yyval.binstr,yypvt[-1].int32);
                                                                 corEmitInt(yyval.binstr,0); } break;
 case 588:
 #line 1566 "asmparse.y"
-{ yyval.binstr = yypvt[-5].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX); 
+{ yyval.binstr = yypvt[-5].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX);
                                                                 yyval.binstr->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt(yyval.binstr,yypvt[-1].int32);
                                                                 corEmitInt(yyval.binstr,yypvt[-3].int32);
                                                                 corEmitInt(yyval.binstr,ntaSizeParamIndexSpecified); } break;
 case 589:
 #line 1571 "asmparse.y"
-{ yyval.binstr = yypvt[-4].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX); 
+{ yyval.binstr = yypvt[-4].binstr; if(yyval.binstr->length()==0) yyval.binstr->appendInt8(NATIVE_TYPE_MAX);
                                                                 yyval.binstr->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt(yyval.binstr,yypvt[-1].int32); } break;
 case 590:
 #line 1574 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_DECIMAL); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_DECIMAL);
                                                                 PASM->report->warn("Deprecated native type 'decimal'\n"); } break;
 case 591:
 #line 1576 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_DATE); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_DATE);
                                                                 PASM->report->warn("Deprecated native type 'date'\n"); } break;
 case 592:
 #line 1578 "asmparse.y"
@@ -4101,7 +4101,7 @@ case 595:
 { yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_LPTSTR); } break;
 case 596:
 #line 1582 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_OBJECTREF); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_OBJECTREF);
                                                                 PASM->report->warn("Deprecated native type 'objectref'\n"); } break;
 case 597:
 #line 1584 "asmparse.y"
@@ -4109,7 +4109,7 @@ case 597:
                                                                 if(yypvt[-0].int32 != -1) corEmitInt(yyval.binstr,yypvt[-0].int32); } break;
 case 598:
 #line 1586 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_IDISPATCH); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_IDISPATCH);
                                                                 if(yypvt[-0].int32 != -1) corEmitInt(yyval.binstr,yypvt[-0].int32); } break;
 case 599:
 #line 1588 "asmparse.y"
@@ -4120,13 +4120,13 @@ case 600:
                                                                 if(yypvt[-0].int32 != -1) corEmitInt(yyval.binstr,yypvt[-0].int32); } break;
 case 601:
 #line 1591 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SAFEARRAY); 
-                                                                corEmitInt(yyval.binstr,yypvt[-0].int32); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SAFEARRAY);
+                                                                corEmitInt(yyval.binstr,yypvt[-0].int32);
                                                                 corEmitInt(yyval.binstr,0);} break;
 case 602:
 #line 1594 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SAFEARRAY); 
-                                                                corEmitInt(yyval.binstr,yypvt[-2].int32); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_SAFEARRAY);
+                                                                corEmitInt(yyval.binstr,yypvt[-2].int32);
                                                                 corEmitInt(yyval.binstr,yypvt[-0].binstr->length()); yyval.binstr->append(yypvt[-0].binstr); } break;
 case 603:
 #line 1598 "asmparse.y"
@@ -4139,7 +4139,7 @@ case 605:
 { yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_UINT); } break;
 case 606:
 #line 1601 "asmparse.y"
-{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_NESTEDSTRUCT); 
+{ yyval.binstr = new BinStr(); yyval.binstr->appendInt8(NATIVE_TYPE_NESTEDSTRUCT);
                                                                 PASM->report->warn("Deprecated native type 'nested struct'\n"); } break;
 case 607:
 #line 1603 "asmparse.y"
@@ -4324,7 +4324,7 @@ case 666:
                                                                 {     yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_STRING); }
                                                                 else if(yypvt[-0].token == PASM->m_tkSysObject)
                                                                 {     yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_OBJECT); }
-                                                                else  
+                                                                else
                                                                  yyval.binstr = parser->MakeTypeClass(ELEMENT_TYPE_CLASS, yypvt[-0].token); } break;
 case 667:
 #line 1675 "asmparse.y"
@@ -4361,7 +4361,7 @@ case 676:
 case 677:
 #line 1688 "asmparse.y"
 { yyval.binstr = parser->MakeSig(yypvt[-5].int32, yypvt[-4].binstr, yypvt[-1].binstr);
-                                                                yyval.binstr->insertInt8(ELEMENT_TYPE_FNPTR); 
+                                                                yyval.binstr->insertInt8(ELEMENT_TYPE_FNPTR);
                                                                 PASM->delArgNameList(PASM->m_firstArgName);
                                                                 PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                 PASM->m_lastArgName = parser->m_ANSLast.POP();
@@ -4370,8 +4370,8 @@ case 678:
 #line 1694 "asmparse.y"
 { if(yypvt[-1].binstr == NULL) yyval.binstr = yypvt[-3].binstr;
                                                                 else {
-                                                                  yyval.binstr = new BinStr(); 
-                                                                  yyval.binstr->appendInt8(ELEMENT_TYPE_GENERICINST); 
+                                                                  yyval.binstr = new BinStr();
+                                                                  yyval.binstr->appendInt8(ELEMENT_TYPE_GENERICINST);
                                                                   yyval.binstr->append(yypvt[-3].binstr);
                                                                   corEmitInt(yyval.binstr, corCountArgs(yypvt[-1].binstr));
                                                                   yyval.binstr->append(yypvt[-1].binstr); delete yypvt[-3].binstr; delete yypvt[-1].binstr; }} break;
@@ -4380,7 +4380,7 @@ case 679:
 { //if(PASM->m_pCurMethod)  {
                                                                 //  if(($3 < 0)||((DWORD)$3 >= PASM->m_pCurMethod->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid method type parameter '%d'\n",$3);
-                                                                  yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt(yyval.binstr, yypvt[-0].int32); 
+                                                                  yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt(yyval.binstr, yypvt[-0].int32);
                                                                 //} else PASM->report->error("Method type parameter '%d' outside method scope\n",$3);
                                                               } break;
 case 680:
@@ -4388,7 +4388,7 @@ case 680:
 { //if(PASM->m_pCurClass)  {
                                                                 //  if(($2 < 0)||((DWORD)$2 >= PASM->m_pCurClass->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid type parameter '%d'\n",$2);
-                                                                  yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_VAR); corEmitInt(yyval.binstr, yypvt[-0].int32); 
+                                                                  yyval.binstr = new BinStr(); yyval.binstr->appendInt8(ELEMENT_TYPE_VAR); corEmitInt(yyval.binstr, yypvt[-0].int32);
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
                                                               } break;
 case 681:
@@ -4406,7 +4406,7 @@ case 681:
                                                                 }
                                                                 if(n == -1) { PASM->report->error("Invalid method type parameter '%s'\n",yypvt[-0].string);
                                                                 n = 0x1FFFFFFF; }
-                                                                yyval.binstr = new BinStr(); yyval.binstr->appendInt8(eltype); corEmitInt(yyval.binstr,n); 
+                                                                yyval.binstr = new BinStr(); yyval.binstr->appendInt8(eltype); corEmitInt(yyval.binstr,n);
                                                               } break;
 case 682:
 #line 1728 "asmparse.y"
@@ -4423,7 +4423,7 @@ case 682:
                                                                 }
                                                                 if(n == -1) { PASM->report->error("Invalid type parameter '%s'\n",yypvt[-0].string);
                                                                 n = 0x1FFFFFFF; }
-                                                                yyval.binstr = new BinStr(); yyval.binstr->appendInt8(eltype); corEmitInt(yyval.binstr,n); 
+                                                                yyval.binstr = new BinStr(); yyval.binstr->appendInt8(eltype); corEmitInt(yyval.binstr,n);
                                                               } break;
 case 683:
 #line 1743 "asmparse.y"
@@ -4518,7 +4518,7 @@ case 712:
 case 713:
 #line 1779 "asmparse.y"
 { FAIL_UNLESS(yypvt[-2].int32 <= yypvt[-0].int32, ("lower bound %d must be <= upper bound %d\n", yypvt[-2].int32, yypvt[-0].int32));
-                                                                if (yypvt[-2].int32 > yypvt[-0].int32) { YYERROR; };        
+                                                                if (yypvt[-2].int32 > yypvt[-0].int32) { YYERROR; };
                                                                 yyval.binstr = new BinStr(); yyval.binstr->appendInt32(yypvt[-2].int32); yyval.binstr->appendInt32(yypvt[-0].int32-yypvt[-2].int32+1); } break;
 case 714:
 #line 1782 "asmparse.y"
@@ -4557,11 +4557,11 @@ case 723:
 { yyval.binstr = yypvt[-2].binstr; yyval.binstr->append(yypvt[-0].binstr); nSecAttrBlobs++; } break;
 case 724:
 #line 1809 "asmparse.y"
-{ yyval.binstr = PASM->EncodeSecAttr(PASM->ReflectionNotation(yypvt[-4].token),yypvt[-1].binstr,nCustomBlobNVPairs); 
+{ yyval.binstr = PASM->EncodeSecAttr(PASM->ReflectionNotation(yypvt[-4].token),yypvt[-1].binstr,nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; } break;
 case 725:
 #line 1812 "asmparse.y"
-{ yyval.binstr = PASM->EncodeSecAttr(yypvt[-4].string,yypvt[-1].binstr,nCustomBlobNVPairs); 
+{ yyval.binstr = PASM->EncodeSecAttr(yypvt[-4].string,yypvt[-1].binstr,nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; } break;
 case 726:
 #line 1816 "asmparse.y"
@@ -4699,39 +4699,39 @@ case 759:
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1); } break;
 case 760:
 #line 1898 "asmparse.y"
-{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-3].int32; 
+{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-3].int32;
                                                                 PENV->nExtCol=yypvt[-1].int32; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName(yypvt[-0].string);} break;
 case 761:
 #line 1901 "asmparse.y"
-{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-2].int32; 
+{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-2].int32;
                                                                 PENV->nExtCol=yypvt[-0].int32; PENV->nExtColEnd = static_cast<unsigned>(-1);} break;
 case 762:
 #line 1904 "asmparse.y"
-{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-5].int32; 
+{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-5].int32;
                                                                 PENV->nExtCol=yypvt[-3].int32; PENV->nExtColEnd = yypvt[-1].int32;
                                                                 PASM->SetSourceFileName(yypvt[-0].string);} break;
 case 763:
 #line 1908 "asmparse.y"
-{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-4].int32; 
+{ PENV->nExtLine = PENV->nExtLineEnd = yypvt[-4].int32;
                                                                 PENV->nExtCol=yypvt[-2].int32; PENV->nExtColEnd = yypvt[-0].int32; } break;
 case 764:
 #line 1911 "asmparse.y"
-{ PENV->nExtLine = yypvt[-5].int32; PENV->nExtLineEnd = yypvt[-3].int32; 
+{ PENV->nExtLine = yypvt[-5].int32; PENV->nExtLineEnd = yypvt[-3].int32;
                                                                 PENV->nExtCol=yypvt[-1].int32; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName(yypvt[-0].string);} break;
 case 765:
 #line 1915 "asmparse.y"
-{ PENV->nExtLine = yypvt[-4].int32; PENV->nExtLineEnd = yypvt[-2].int32; 
+{ PENV->nExtLine = yypvt[-4].int32; PENV->nExtLineEnd = yypvt[-2].int32;
                                                                 PENV->nExtCol=yypvt[-0].int32; PENV->nExtColEnd = static_cast<unsigned>(-1); } break;
 case 766:
 #line 1918 "asmparse.y"
-{ PENV->nExtLine = yypvt[-7].int32; PENV->nExtLineEnd = yypvt[-5].int32; 
+{ PENV->nExtLine = yypvt[-7].int32; PENV->nExtLineEnd = yypvt[-5].int32;
                                                                 PENV->nExtCol=yypvt[-3].int32; PENV->nExtColEnd = yypvt[-1].int32;
                                                                 PASM->SetSourceFileName(yypvt[-0].string);} break;
 case 767:
 #line 1922 "asmparse.y"
-{ PENV->nExtLine = yypvt[-6].int32; PENV->nExtLineEnd = yypvt[-4].int32; 
+{ PENV->nExtLine = yypvt[-6].int32; PENV->nExtLineEnd = yypvt[-4].int32;
                                                                 PENV->nExtCol=yypvt[-2].int32; PENV->nExtColEnd = yypvt[-0].int32; } break;
 case 768:
 #line 1924 "asmparse.y"

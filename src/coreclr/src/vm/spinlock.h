@@ -5,7 +5,7 @@
 //  spinlock.h , defines the spin lock class and a profiler class
 //
 
-// 
+//
 //----------------------------------------------------------------------------
 
 
@@ -22,7 +22,7 @@
 
 
 // #SwitchToThreadSpinning
-// 
+//
 // If you call __SwitchToThread in a loop waiting for a condition to be met,
 // it is critical that you insert periodic sleeps.  This is because the thread
 // you are waiting for to set that condition may need your CPU, and simply
@@ -30,18 +30,18 @@
 // If there are other runnable threads of higher priority, or even if there
 // aren't and it is in another processor's queue, you will be spinning a very
 // long time.
-// 
+//
 // To force all callers to consider this issue and to avoid each having to
-// duplicate the same backoff code, __SwitchToThread takes a required second 
+// duplicate the same backoff code, __SwitchToThread takes a required second
 // parameter.  If you want it to handle backoff for you, this parameter should
 // be the number of successive calls you have made to __SwitchToThread (a loop
 // count).  If you want to take care of backing off yourself, you can pass
 // CALLER_LIMITS_SPINNING.  There are three valid cases for doing this:
-// 
+//
 //     - You count iterations and induce a sleep periodically
 //     - The number of consecutive __SwitchToThreads is limited
 //     - Your call to __SwitchToThread includes a non-zero sleep duration
-//     
+//
 // Lastly, to simplify this requirement for the following common coding pattern:
 //
 //     while (!condition)
@@ -66,7 +66,7 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
 
 
 //----------------------------------------------------------------------------
-// class: DangerousNonHostedSpinLock 
+// class: DangerousNonHostedSpinLock
 //
 // PURPOSE:
 //   A simple wrapper around the spinloop without host interactions. To be
@@ -78,7 +78,7 @@ class DangerousNonHostedSpinLock
 {
 public:
     FORCEINLINE DangerousNonHostedSpinLock() { LIMITED_METHOD_CONTRACT; m_value = 0; }
-    
+
 private:
     // Intentionally unimplemented - prevents the compiler from generating default copy ctor.
     DangerousNonHostedSpinLock(DangerousNonHostedSpinLock const & other);
@@ -140,7 +140,7 @@ enum LOCK_TYPE
 };
 
 //----------------------------------------------------------------------------
-// class: Spinlock 
+// class: Spinlock
 //
 // PURPOSE:
 //   spinlock class that contains constructor and out of line spinloop.
@@ -167,7 +167,7 @@ private:
 
 #ifdef _DEBUG
     LOCK_TYPE           m_LockType;     // lock type to track statistics
-    
+
     // Check for dead lock situation.
     bool                m_requireCoopGCMode;
     EEThreadId          m_holdingThreadId;
@@ -188,8 +188,8 @@ public:
 #endif
 
 private:
-    void SpinToAcquire (); // out of line call spins 
-    
+    void SpinToAcquire (); // out of line call spins
+
 #ifdef _DEBUG
     void dbg_PreEnterLock();
     void dbg_EnterLock();
@@ -200,7 +200,7 @@ private:
     // occur via holders, so that exceptions will be sure to release the lock.
 private:
     void GetLock();                     // Acquire lock, blocks if unsuccessful
-    BOOL GetLockNoWait();               // Acquire lock, fail-fast 
+    BOOL GetLockNoWait();               // Acquire lock, fail-fast
     void FreeLock();                    // Release lock
 
 public:
@@ -211,7 +211,7 @@ public:
     {
         SpinLock *  m_pSpinLock;
     public:
-        Holder(SpinLock * s) : 
+        Holder(SpinLock * s) :
           m_pSpinLock(s)
         {
             SCAN_SCOPE_BEGIN;
@@ -261,7 +261,7 @@ __inline BOOL IsOwnerOfSpinLock (LPVOID lock)
 
 #ifdef _DEBUG
 //----------------------------------------------------------------------------
-// class SpinLockProfiler 
+// class SpinLockProfiler
 //  to track contention, useful for profiling
 //
 //----------------------------------------------------------------------------

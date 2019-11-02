@@ -173,7 +173,7 @@ static inline HRESULT UnsignedFitsIn32Bits(UINT64 immediate)
 
 static inline HRESULT AddOvf_RVA(DWORD& a, DWORD b)
 {
-    DWORD r = a + b; 
+    DWORD r = a + b;
     if (r < a)  // Check for overflow
         return E_FAIL;
     a = r;
@@ -317,7 +317,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         int    slotNum      = 0;
         INT64  oldStarPos;
 
-        // If cur->section is NULL then this is a pointer outside the module. 
+        // If cur->section is NULL then this is a pointer outside the module.
         bool externalAddress = (cur->section == NULL);
 
         curType &= ~(srRelocPtr | srNoBaseReloc);
@@ -356,15 +356,15 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         {
             // Calculate the value of ptr to pass to computeOffset
             char * ptr = (char *) pos;
-            
+
             if (curType == srRelocRelative) {
-                // 
-                // Here we add sizeof(int) because we need to calculate 
+                //
+                // Here we add sizeof(int) because we need to calculate
                 // ptr as the true call target address (x86 pc-rel)
                 // We need to true call target address since pass it
                 // to computeOffset and this function would fall if
                 // the address we pass is before the start of a section
-                // 
+                //
                 oldStarPos   = (SSIZE_T) ptr;
                 IfFailRet(AddOvf_S_S32(oldStarPos, GET_UNALIGNED_INT32(pos)));
                 IfFailRet(AddOvf_S_U32(oldStarPos, sizeof(int)));
@@ -507,7 +507,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
                 IfFailRet(AddOvf_S_U32(newStarPos, cur->section->m_baseRVA));
             IfFailRet(SignedFitsIn31Bits(newStarPos));  // Check for overflow
             SET_UNALIGNED_VAL32(pos, newStarPos);
-            
+
         }
         else if (curType == srRelocIA64PcRel25)
         {
@@ -522,15 +522,15 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
                 IfFailRet(AddOvf_S_U32(newStarPos, cur->section->m_baseRVA));
 
             INT64 hiBits = newStarPos >> 24;
-            
+
             _ASSERTE((hiBits==0) || (hiBits==-1));
-            
+
             IfFailRet(AddOvf_S_U32(newStarPos, GetIA64Rel25((UINT64 *) pos, slotNum)));
 
             hiBits = newStarPos >> 24;
-            
+
             _ASSERTE((hiBits==0) || (hiBits==-1));
-            
+
             INT32 delta32 = (INT32) newStarPos;
 
             PutIA64Rel25((UINT64 *) pos, slotNum, delta32);
@@ -551,7 +551,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 
             newStarPos = GetIA64Rel64((UINT64 *) pos);
             IfFailRet(SubOvf_S_U32(newStarPos, m_baseRVA));
-            
+
             if (externalAddress)
                 IfFailRet(SubOvf_S_U(newStarPos, imageBase));
             else
@@ -634,7 +634,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
             if (!externalAddress)
             {
                 // The upper bits of targetOffset must be zero
-                IfFailRet(UnsignedFitsIn32Bits(targetOffset));            
+                IfFailRet(UnsignedFitsIn32Bits(targetOffset));
 
                 IfFailRet(AddOvf_U_U32(targetOffset, cur->section->m_baseRVA));
                 IfFailRet(AddOvf_U_U(targetOffset, imageBase));
@@ -655,8 +655,8 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
             if (!externalAddress)
             {
                 // The upper bits of targetOffset must be zero
-                IfFailRet(UnsignedFitsIn32Bits(targetOffset));            
-            
+                IfFailRet(UnsignedFitsIn32Bits(targetOffset));
+
                 IfFailRet(AddOvf_U_U32(targetOffset, cur->section->m_baseRVA));
                 IfFailRet(AddOvf_U_U(targetOffset, imageBase));
             }
@@ -829,7 +829,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
     {
         m_ntHeaders->FileHeader.Characteristics |= VAL16(IMAGE_FILE_RELOCS_STRIPPED);
     }
-    
+
     // Linker version should be consistent with current VC level
     m_ntHeaders->OptionalHeader.MajorLinkerVersion  = 11;
     m_ntHeaders->OptionalHeader.MinorLinkerVersion  = 0;
@@ -928,7 +928,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
 
         PEDecoder * pPEDecoder = new (nothrow) PEDecoder(baseFileView, (COUNT_T)dwFileLen);
         if (pPEDecoder == NULL) return E_OUTOFMEMORY;
-        
+
         if (pPEDecoder->Has32BitNTHeaders())
         {
             if ((createFlags & ICEE_CREATE_FILE_PE32) == 0)
@@ -949,7 +949,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
 
         hFile.SuppressRelease();
         hMapFile.SuppressRelease();
-        
+
         m_hSeedFile = hFile;
         m_hSeedFileMap = hMapFile;
         m_pSeedFileDecoder = pPEDecoder;
@@ -1374,7 +1374,7 @@ HRESULT PEWriter::linkSortHeaders(entry * entries, unsigned iEntries, unsigned i
 {
     if (headers != NULL)
         delete [] headers;
-    
+
     // 1 extra for .reloc
     S_UINT32 cUniqueSectionsAllocated = S_UINT32(iUniqueSections) + S_UINT32(1);
     if (cUniqueSectionsAllocated.IsOverflow())
@@ -1383,12 +1383,12 @@ HRESULT PEWriter::linkSortHeaders(entry * entries, unsigned iEntries, unsigned i
     }
     headers = new (nothrow) IMAGE_SECTION_HEADER[cUniqueSectionsAllocated.Value()];
     TESTANDRETURNMEMORY(headers);
-    
+
     memset(headers, 0, sizeof(*headers) * cUniqueSectionsAllocated.Value());
-    
+
     entry *ePrev = NULL;
     IMAGE_SECTION_HEADER *h = headers - 1;
-    
+
     //
     // Store the sorting index
     //
@@ -1748,11 +1748,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
         PEWriterSection **curEnd = cur + sections.Size();
         while (cur < curEnd)
         {
-            IfFailRet((*cur)->applyRelocs(m_ntHeaders, 
-                                          &relocSection, 
-                                          pMapper, 
-                                          m_dataRvaBase, 
-                                          m_rdataRvaBase, 
+            IfFailRet((*cur)->applyRelocs(m_ntHeaders,
+                                          &relocSection,
+                                          pMapper,
+                                          m_dataRvaBase,
+                                          m_rdataRvaBase,
                                           m_codeRvaBase));
             cur++;
         }
@@ -2201,7 +2201,7 @@ HRESULT PEWriter::write(__in LPCWSTR fileName) {
     {
         _ASSERTE(!m_pSeedFileDecoder);
         szFileName.Append(L".dil");
-       
+
         HANDLE pDelta = WszCreateFile(szFileName,
                            GENERIC_WRITE,
                            FILE_SHARE_READ | FILE_SHARE_WRITE,

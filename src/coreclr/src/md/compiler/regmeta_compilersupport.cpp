@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RegMeta.cpp
-// 
+//
 
-// 
+//
 // Implementation for meta data public interface methods.
-// 
+//
 //*****************************************************************************
 #include "stdafx.h"
 #include "regmeta.h"
@@ -87,7 +87,7 @@ STDMETHODIMP RegMeta::GetDeltaSaveSize(      // S_OK or error.
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -106,7 +106,7 @@ STDMETHODIMP RegMeta::SaveDelta(                     // S_OK or error.
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
-    
+
     // Make sure we're in EnC mode
     if (!IsENCOn())
     {
@@ -114,7 +114,7 @@ STDMETHODIMP RegMeta::SaveDelta(                     // S_OK or error.
         IfFailGo(META_E_NOT_IN_ENC_MODE);
     }
 
-    
+
 
     m_pStgdb->m_MiniMd.EnableDeltaMetadataGeneration();
     hr = Save(szFile, dwSaveFlags);
@@ -149,7 +149,7 @@ STDMETHODIMP RegMeta::SaveDeltaToStream(     // S_OK or error.
         IfFailGo(META_E_NOT_IN_ENC_MODE);
     }
 
-    
+
 
     m_pStgdb->m_MiniMd.EnableDeltaMetadataGeneration();
     hr = SaveToStream(pIStream, dwSaveFlags);
@@ -157,7 +157,7 @@ STDMETHODIMP RegMeta::SaveDeltaToStream(     // S_OK or error.
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -192,7 +192,7 @@ STDMETHODIMP RegMeta::SaveDeltaToMemory(           // S_OK or error.
 ErrExit:
 
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -201,10 +201,10 @@ ErrExit:
 
 //*****************************************************************************
 // Resets the current edit and continue session
-// 
+//
 // Implements public API code:IMetaDataEmit2::ResetENCLog.
 //*****************************************************************************
-STDMETHODIMP 
+STDMETHODIMP
 RegMeta::ResetENCLog()
 {
 #ifdef FEATURE_METADATA_EMIT_ALL
@@ -222,7 +222,7 @@ RegMeta::ResetENCLog()
     IfFailGo(m_pStgdb->m_MiniMd.ResetENCLog());
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;

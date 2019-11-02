@@ -14,16 +14,16 @@
 // QCALLS
 //
 
-// QCalls are internal calls from managed code in mscorlib.dll to unmanaged code in mscorwks.dll. QCalls are very much like 
+// QCalls are internal calls from managed code in mscorlib.dll to unmanaged code in mscorwks.dll. QCalls are very much like
 // a normal P/Invoke from mscorlib.dll to mscorwks.dll.
 //
 // Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive
 // GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls.
 // QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
 //
-// QCalls perform better compared to FCalls w/ HelperMethodFrame. The QCall overhead is about 1.4x less compared to 
-// FCall w/ HelperMethodFrame overhead on x86. The performance is about the same on x64. However, the implementation 
-// of P/Invoke marshaling on x64 is not tuned for performance yet. The QCalls should become significantly faster compared 
+// QCalls perform better compared to FCalls w/ HelperMethodFrame. The QCall overhead is about 1.4x less compared to
+// FCall w/ HelperMethodFrame overhead on x86. The performance is about the same on x64. However, the implementation
+// of P/Invoke marshaling on x64 is not tuned for performance yet. The QCalls should become significantly faster compared
 // to FCalls w/ HelperMethodFrame on x64 as we do performance tuning of P/Invoke marshaling on x64.
 //
 //
@@ -33,10 +33,10 @@
 // The pointers to common unmanaged EE structures should be wrapped into helper handle types. This is to make the managed implementation
 // type safe and avoid falling into unsafe C# everywhere. See the AssemblyHandle below for a good example.
 //
-// There is a way to pass raw object references in and out of QCalls. It is done by wrapping a pointer to 
-// a local variable in a handle. It is intentionally cumbersome and should be avoided if reasonably possible.  
-// See the StringHandleOnStack in the example below. String arguments will get marshaled in as LPCWSTR. 
-// Returning objects, especially strings, from QCalls is the only common pattern 
+// There is a way to pass raw object references in and out of QCalls. It is done by wrapping a pointer to
+// a local variable in a handle. It is intentionally cumbersome and should be avoided if reasonably possible.
+// See the StringHandleOnStack in the example below. String arguments will get marshaled in as LPCWSTR.
+// Returning objects, especially strings, from QCalls is the only common pattern
 // where returning the raw objects (as an OUT argument) is widely acceptable.
 //
 //
@@ -57,7 +57,7 @@
 //      string retString = null;
 //
 //      // The strings are returned from QCalls by taking address
-//      // of a local variable using JitHelpers.GetStringHandleOnStack method 
+//      // of a local variable using JitHelpers.GetStringHandleOnStack method
 //      if (!Bar(flags, this.Id, JitHelpers.GetStringHandleOnStack(ref retString)))
 //          FatalError();
 //
@@ -70,7 +70,7 @@
 // QCall example - unmanaged part (do not replicate the comments into your actual QCall implementation):
 // -----------------------------------------------------------------------------------------------------
 //
-// The entrypoints of all QCalls has to be registered in tables in vm\ecall.cpp using QCFuncEntry macro, 
+// The entrypoints of all QCalls has to be registered in tables in vm\ecall.cpp using QCFuncEntry macro,
 // For example: QCFuncElement("Bar", FooNative::Bar)
 //
 // class FooNative {
@@ -86,11 +86,11 @@
 //      QCALL_CONTRACT;
 //
 //      // Optionally, use QCALL_CHECK instead and the expanded form of the contract if you want to specify preconditions:
-//      // CONTRACTL { 
-//      //     QCALL_CHECK; 
+//      // CONTRACTL {
+//      //     QCALL_CHECK;
 //      //     PRECONDITION(wszString != NULL);
 //      // } CONTRACTL_END;
-//        
+//
 //      // The only line between QCALL_CONTRACT and BEGIN_QCALL
 //      // should be the return value declaration if there is one.
 //      BOOL retVal = FALSE;
@@ -98,7 +98,7 @@
 //      // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary to make the exception handling work.
 //      BEGIN_QCALL;
 //
-//      // Validate arguments if necessary and throw exceptions like anywhere else in the EE. There is no convention currently 
+//      // Validate arguments if necessary and throw exceptions like anywhere else in the EE. There is no convention currently
 //      // on whether the argument validation should be done in managed or unmanaged code.
 //      if (flags != 0)
 //          COMPlusThrow(kArgumentException, L"InvalidFlags");
@@ -141,14 +141,14 @@
 
 //
 // Scope class for QCall helper methods and types
-// 
+//
 class QCall
 {
 public:
 
     //
     // Helper types to aid marshaling of QCall arguments in type-safe manner
-    // 
+    //
     // The C/C++ compiler has to treat these types as POD (plain old data) to generate
     // a calling convention compatible with P/Invoke marshaling. This means that:
     // NONE OF THESE HELPER TYPES CAN HAVE A CONSTRUCTOR OR DESTRUCTOR!
@@ -309,8 +309,8 @@ public:
         }
     };
 
-    // The lifetime management between managed and native Thread objects is broken. There is a resurrection 
-    // race where one can get a dangling pointer to the unmanaged Thread object. Once this race is fixed 
+    // The lifetime management between managed and native Thread objects is broken. There is a resurrection
+    // race where one can get a dangling pointer to the unmanaged Thread object. Once this race is fixed
     // we may need to revisit how the unmanaged thread handles are passed around.
     struct ThreadHandle
     {

@@ -399,7 +399,7 @@ void EventReporter::Report()
 {
     CONTRACTL
     {
-        NOTHROW; 
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -429,7 +429,7 @@ void EventReporter::Report()
     }
 
     CONTRACT_VIOLATION(ThrowsViolation);
-    
+
     COUNT_T ctSize = m_Description.GetCount();
     LOG((LF_EH, LL_INFO100, "EventReporter::Report - Writing %d bytes to event log.\n", ctSize));
 
@@ -448,7 +448,7 @@ void EventReporter::Report()
             LOG((LF_EH, LL_INFO100, "EventReporter::Report - Error (win32 code %d) while writing to event log.\n", dwRetVal));
 
             // We were unable to log the error to event log - now check why.
-            if ((dwRetVal != ERROR_EVENTLOG_FILE_CORRUPT) && (dwRetVal != ERROR_LOG_FILE_FULL) && 
+            if ((dwRetVal != ERROR_EVENTLOG_FILE_CORRUPT) && (dwRetVal != ERROR_LOG_FILE_FULL) &&
                 (dwRetVal != ERROR_NOT_ENOUGH_MEMORY)) // Writing to the log can fail under OOM (observed on Vista)
             {
                 // If the event log file was neither corrupt nor full, then assert,
@@ -485,7 +485,7 @@ BOOL ShouldLogInEventLog()
 {
     CONTRACTL
     {
-        NOTHROW; 
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -553,7 +553,7 @@ StackWalkAction LogCallstackForEventReporterCallback(
     StackSString str;
     str = *pWordAt;
 
-    TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature); 
+    TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
     pReporter->AddStackTrace(str);
 
     return SWA_CONTINUE;

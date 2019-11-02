@@ -3,27 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 
-// 
+//
 // #Overview
-// 
+//
 // This file provides convenient wrappers for the GC stress functionality.
-// 
+//
 // Exposed APIs:
 //  GCStressPolicy::InhibitHolder
 //  GCStressPolicy::GlobalEnable()
 //  GCStressPolicy::GlobalDisable()
 //  GCStressPolicy::IsEnabled()
-// 
+//
 //  GCStress<> template classes with its IsEnabled() & MaybeTrigger members.
-// 
-//  Use GCStress<> to abstract away the GC stress related decissions. The 
-//  template definitions will resolve to nothing when STRESS_HEAP is not 
+//
+//  Use GCStress<> to abstract away the GC stress related decissions. The
+//  template definitions will resolve to nothing when STRESS_HEAP is not
 //  defined, and will inline the function body at the call site otherwise.
-// 
+//
 // Examples:
 //  GCStress<cfg_any>::IsEnabled()
 //  GCStress<cfg_any, EeconfigFastGcSPolicy, CoopGcModePolicy>::MaybeTrigger()
-// 
+//
 
 #ifndef _GC_STRESS_
 #define _GC_STRESS_
@@ -71,7 +71,7 @@ namespace GCStressPolicy
     class InhibitHolder
     {
     private:
-        // This static controls whether GC stress may induce GCs. EEConfig::GetGCStressLevel() still 
+        // This static controls whether GC stress may induce GCs. EEConfig::GetGCStressLevel() still
         // controls when GCs may occur.
         static Volatile<DWORD> s_nGcStressDisabled;
 
@@ -85,8 +85,8 @@ namespace GCStressPolicy
         { LIMITED_METHOD_CONTRACT; Release(); }
 
         void Release()
-        { 
-            LIMITED_METHOD_CONTRACT; 
+        {
+            LIMITED_METHOD_CONTRACT;
             if (m_bAquired)
             {
                 --s_nGcStressDisabled;
@@ -104,10 +104,10 @@ namespace GCStressPolicy
 
     FORCEINLINE void GlobalDisable()
     { ++InhibitHolder::s_nGcStressDisabled; }
-    
+
     FORCEINLINE void GlobalEnable()
     { --InhibitHolder::s_nGcStressDisabled; }
-    
+
 #else // STRESS_HEAP
 
     class InhibitHolder
@@ -118,7 +118,7 @@ namespace GCStressPolicy
 
     FORCEINLINE void GlobalDisable()
     {}
-    
+
     FORCEINLINE void GlobalEnable()
     {}
 
@@ -141,7 +141,7 @@ namespace _GCStress
         // GetPolicy<>:type will represent either a type in ListT with the same "tag" as DefPolicy
         // or DefPolicy, based on the Traits passed in.
         template <
-            typename ListT, 
+            typename ListT,
             typename DefPolicy,
             template <typename> class Traits
         >
@@ -149,24 +149,24 @@ namespace _GCStress
 
         // Common case: recurse over the type list
         template <
-            typename HeadT, 
-            typename TailT, 
+            typename HeadT,
+            typename TailT,
             typename DefPolicy,
             template<typename> class Traits
         >
         struct GetPolicy<type_list<HeadT, TailT>, DefPolicy, Traits>
         {
-            // is true if HeadT and DefPolicy evaluate to the same tag, 
+            // is true if HeadT and DefPolicy evaluate to the same tag,
             // through Traits<>
             static const bool sameTag = std::is_same<
-                        typename Traits<HeadT>::tag, 
+                        typename Traits<HeadT>::tag,
                         typename Traits<DefPolicy>::tag
                     >::value;
 
             typedef typename std::conditional<
-                        sameTag, 
-                        HeadT, 
-                        typename GetPolicy<TailT, DefPolicy, Traits>::type 
+                        sameTag,
+                        HeadT,
+                        typename GetPolicy<TailT, DefPolicy, Traits>::type
                     >::type type;
         };
 
@@ -195,7 +195,7 @@ namespace _GCStress
             // Most correct would be to test for each specific bits, but we've
             // always only tested against 0...
             return g_pConfig->GetGCStressLevel() != 0;
-            // return (g_pConfig->GetGCStressLevel() & 
+            // return (g_pConfig->GetGCStressLevel() &
             //       (EEConfig::GCSTRESS_ALLOC|EEConfig::GCSTRESS_TRANSITION|
             //        EEConfig::GCSTRESS_INSTR_JIT|EEConfig::GCSTRESS_INSTR_NGEN) != 0);
         }
@@ -237,7 +237,7 @@ namespace _GCStress
         { return false; }
     };
 
-    // This is the overriding Fast GC stress policy that considers the 
+    // This is the overriding Fast GC stress policy that considers the
     // EEConfig setting on checked/debug builds
     class EeconfigFastGcSPolicy
     {
@@ -279,7 +279,7 @@ namespace _GCStress
 
     // GC Trigger policy classes define how a garbage collection is triggered
 
-    // This is the default GC Trigger policy that simply calls 
+    // This is the default GC Trigger policy that simply calls
     // IGCHeap::StressHeap
     class StressGcTriggerPolicy
     {
@@ -305,7 +305,7 @@ namespace _GCStress
     public:
         FORCEINLINE
         static void Trigger()
-        { 
+        {
             DEBUG_ONLY_REGION();
             GetThread()->PulseGCMode();
         }
@@ -354,10 +354,10 @@ namespace _GCStress
     // accessed from the derived GCStress class.
     //
     // Additionally it defines the static methods IsEnabled and MaybeTrigger and
-    // how the policy classes influence their behavior. 
+    // how the policy classes influence their behavior.
     //
     template <
-        enum gcs_trigger_points tp, 
+        enum gcs_trigger_points tp,
         class Policy1 = mpl::null_type,
         class Policy2 = mpl::null_type,
         class Policy3 = mpl::null_type
@@ -385,46 +385,46 @@ namespace _GCStress
             return detail::IsEnabled<tp>() && !FastGcSPolicy::FastGcSEnabled(minFastGc);
         }
 
-        // Triggers a GC iff 
+        // Triggers a GC iff
         //   . the GC stress is not disabled globally (thru GCStressPolicy::GlobalDisable)
         //     AND
         //   . IsEnabled() returns true.
-        // Additionally it switches the GC mode as specified by GcModePolicy, and it 
+        // Additionally it switches the GC mode as specified by GcModePolicy, and it
         // uses GcTriggerPolicy::Trigger() to actually trigger the GC
         FORCEINLINE
         static void MaybeTrigger(DWORD minFastGc = 0)
         {
             if (IsEnabled(minFastGc) && GCStressPolicy::IsEnabled())
             {
-                GcModePolicy gcModeObj; __UNUSED(gcModeObj); 
+                GcModePolicy gcModeObj; __UNUSED(gcModeObj);
                 GcTriggerPolicy::Trigger();
             }
         }
 
-        // Triggers a GC iff 
+        // Triggers a GC iff
         //   . the GC stress is not disabled globally (thru GCStressPolicy::GlobalDisable)
         //     AND
         //   . IsEnabled() returns true.
-        // Additionally it switches the GC mode as specified by GcModePolicy, and it 
+        // Additionally it switches the GC mode as specified by GcModePolicy, and it
         // uses GcTriggerPolicy::Trigger(alloc_context*) to actually trigger the GC
         FORCEINLINE
         static void MaybeTrigger(::gc_alloc_context* acontext, DWORD minFastGc = 0)
         {
             if (IsEnabled(minFastGc) && GCStressPolicy::IsEnabled())
             {
-                GcModePolicy gcModeObj; __UNUSED(gcModeObj); 
+                GcModePolicy gcModeObj; __UNUSED(gcModeObj);
                 GcTriggerPolicy::Trigger(acontext);
             }
         }
     };
 
     template <
-        enum gcs_trigger_points tp, 
+        enum gcs_trigger_points tp,
         class Policy1 = mpl::null_type,
         class Policy2 = mpl::null_type,
         class Policy3 = mpl::null_type
     >
-    class GCStress 
+    class GCStress
         : public GCSBase<tp, Policy1, Policy2, Policy3>
     {
     };
@@ -466,7 +466,7 @@ namespace _GCStress
 
 #ifdef _DEBUG
             Thread *pThread = GetThread();
-            if (pThread) 
+            if (pThread)
             {
                 pThread->EnableStressHeap();
             }
@@ -480,14 +480,14 @@ namespace _GCStress
     {
     public:
 
-        // Triggers a GC iff 
+        // Triggers a GC iff
         //   . the GC stress is not disabled globally (thru GCStressPolicy::GlobalDisable)
         //     AND
         //   . IsEnabled() returns true.
-        // Additionally it protects the passed in OBJECTREF&, and it uses 
+        // Additionally it protects the passed in OBJECTREF&, and it uses
         // GcTriggerPolicy::Trigger() to actually trigger the GC
         //
-        // Note: the OBJECTREF must be passed by reference so MaybeTrigger can protect 
+        // Note: the OBJECTREF must be passed by reference so MaybeTrigger can protect
         // the calling function's stack slot.
         FORCEINLINE
         static void MaybeTriggerAndProtect(OBJECTREF& objref)
@@ -512,7 +512,7 @@ namespace _GCStress
 
     // Everything here should resolve to inlined empty blocks or "false"
     template <
-        enum gcs_trigger_points tp, 
+        enum gcs_trigger_points tp,
         class Policy1 = mpl::null_type,
         class Policy2 = mpl::null_type,
         class Policy3 = mpl::null_type
@@ -522,7 +522,7 @@ namespace _GCStress
     public:
         FORCEINLINE
         static bool IsEnabled(DWORD minFastGc = 0)
-        { 
+        {
             static_assert(tp < cfg_last, "GCStress::IsEnabled only supports cfg_ trigger points.");
             return false;
         }

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: rsthread.cpp
 //
 //*****************************************************************************
@@ -34,7 +34,7 @@ public:
     {
         if (!m_ptr.IsNull())
         {
-            // @dbgtodo  synchronization - push this up. Note that since this is in a dtor; 
+            // @dbgtodo  synchronization - push this up. Note that since this is in a dtor;
             // need to order it well against RSLockHolder.
             RSLockHolder lockHolder(m_pObject->GetProcess()->GetProcessLock());
             T* pObjTest = m_ptr.UnWrapAndRemove(m_pObject->GetProcess());
@@ -67,26 +67,26 @@ public:
 //    process - non-null process object that this thread lives in.
 //    id - OS thread id of this thread.
 //    handle - OS Handle to the native thread in the debuggee.
-//    
+//
 //---------------------------------------------------------------------------------------
 
-CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) : 
-    CordbBase(pProcess, 
+CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
+    CordbBase(pProcess,
               VmPtrToCookie(vmThread),
-              enumCordbThread),    
+              enumCordbThread),
     m_pContext(NULL),
     m_fContextFresh(false),
     m_pAppDomain(NULL),
     m_debugState(THREAD_RUN),
     m_fFramesFresh(false),
-    m_fFloatStateValid(false), 
+    m_fFloatStateValid(false),
     m_floatStackTop(0),
     m_fException(false),
     m_fCreationEventQueued(false),
     m_EnCRemapFunctionIP(NULL),
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
-    m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)    
+    m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)
 {
     m_fHasUnhandledException = FALSE;
     m_pExceptionRecord = NULL;
@@ -94,14 +94,14 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     // Thread id may be a "fake" OS id for a CLRHosted thread.
     m_vmThreadToken     = vmThread;
 
-    // This id must be unique for the thread. V2 uses the current OS thread id. 
+    // This id must be unique for the thread. V2 uses the current OS thread id.
     // If we ever support fibers, then we need to use something more unique than that.
     m_dwUniqueID = pProcess->GetDAC()->GetUniqueThreadID(vmThread); // may throw
 
     LOG((LF_CORDB, LL_INFO1000, "CT::CT new thread 0x%p vmptr=0x%p id=0x%x\n",
         this, m_vmThreadToken, m_dwUniqueID));
 
-    // Unique ID should never be 0. 
+    // Unique ID should never be 0.
     _ASSERTE(m_dwUniqueID != 0);
 
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr();
@@ -130,7 +130,7 @@ CordbThread::~CordbThread()
     _ASSERTE(IsNeutered());
 
     // Cleared in neuter
-    _ASSERTE(m_pContext == NULL);    
+    _ASSERTE(m_pContext == NULL);
     _ASSERTE(m_hCachedThread == INVALID_HANDLE_VALUE);
     _ASSERTE(m_pExceptionRecord == NULL);
 }
@@ -204,11 +204,11 @@ HRESULT CordbThread::QueryInterface(REFIID id, void ** ppInterface)
 
 #ifdef _DEBUG
 // Callback helper for code:CordbThread::DbgAssertThreadDeleted
-// 
+//
 // Arguments:
 //    vmThread - thread from enumeration of threads in the target.
 //    pUserData - the CordbThread for the thread that's deleted
-// 
+//
 // static
 void CordbThread::DbgAssertThreadDeletedCallback(VMPTR_Thread vmThread, void * pUserData)
 {
@@ -216,10 +216,10 @@ void CordbThread::DbgAssertThreadDeletedCallback(VMPTR_Thread vmThread, void * p
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
     VMPTR_Thread vmThreadDelete = pThis->m_vmThreadToken;
-    
-    CONSISTENCY_CHECK_MSGF((vmThread != vmThreadDelete), 
-        ("A Thread Exit event was sent, but it still shows up in the enumeration.\n vmThreadDelete=%p\n", 
-        VmPtrToCookie(vmThreadDelete)));        
+
+    CONSISTENCY_CHECK_MSGF((vmThread != vmThreadDelete),
+        ("A Thread Exit event was sent, but it still shows up in the enumeration.\n vmThreadDelete=%p\n",
+        VmPtrToCookie(vmThreadDelete)));
 }
 
 // Debug-only helper to Assert that this thread is no longer discoverable in DacDbi enumerations
@@ -237,11 +237,11 @@ void CordbThread::DbgAssertThreadDeleted()
 //---------------------------------------------------------------------------------------
 // Mark that this thread has an unhandled native exception on it.
 //
-// Arguments 
+// Arguments
 //    pRecord - exception record of 2nd-chance exception that we're hijacking at. This will
 //            get deep copied into the CordbThread object in case it's needed for hijacking later.
 //
-// Notes: 
+// Notes:
 //    This bit is cleared in code:CordbThread::HijackForUnhandledException
 void CordbThread::SetUnhandledNativeException(const EXCEPTION_RECORD * pExceptionRecord)
 {
@@ -257,7 +257,7 @@ void CordbThread::SetUnhandledNativeException(const EXCEPTION_RECORD * pExceptio
 //-----------------------------------------------------------------------------
 // Returns true if the thread has an unhandled exception
 // This is during the window after code:CordbThread::SetUnhandledNativeException is called,
-// but before code:CordbThread::HijackForUnhandledException 
+// but before code:CordbThread::HijackForUnhandledException
 bool CordbThread::HasUnhandledNativeException()
 {
     return m_fHasUnhandledException;
@@ -268,7 +268,7 @@ bool CordbThread::HasUnhandledNativeException()
 // Determine if the thread's latest exception is a managed exception
 //
 // Notes:
-//    The CLR's UnhandledExceptionFilter has to make this same determination. 
+//    The CLR's UnhandledExceptionFilter has to make this same determination.
 //
 BOOL CordbThread::IsThreadExceptionManaged()
 {
@@ -279,17 +279,17 @@ BOOL CordbThread::IsThreadExceptionManaged()
     CONTRACTL_END;
 
     // A Thread's latest exception is managed if the VM Thread object has a managed object
-    // for the thread's Current Exception property. The CLR's Exception system is very diligent 
-    // about tracking and clearing the thread's managed exception property. The runtime will clear 
+    // for the thread's Current Exception property. The CLR's Exception system is very diligent
+    // about tracking and clearing the thread's managed exception property. The runtime will clear
     // the object if the exception is caught by unmanaged code (it can do this in the 2nd-pass).
 
-    // It's the presence of a throwable that makes the difference between a managed 
-    // exception event and an unmanaged exception event.     
+    // It's the presence of a throwable that makes the difference between a managed
+    // exception event and an unmanaged exception event.
 
     VMPTR_OBJECTHANDLE vmObject = GetProcess()->GetDAC()->GetCurrentException(m_vmThreadToken);
 
     bool fHasThrowable = !vmObject.IsNull();
-    
+
     return fHasThrowable;
 
 }
@@ -297,7 +297,7 @@ BOOL CordbThread::IsThreadExceptionManaged()
 // ----------------------------------------------------------------------------
 // CordbThread::CreateCordbRegisterSet
 //
-// Description: 
+// Description:
 //    This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
 //
 // Arguments:
@@ -307,12 +307,12 @@ BOOL CordbThread::IsThreadExceptionManaged()
 //    * ppRegSet - out parameter; return the newly created ICDRegisterSet
 //
 // Notes:
-//    * Note that the fQuickUnwind argument of the ctor of CordbRegisterSet is only true 
+//    * Note that the fQuickUnwind argument of the ctor of CordbRegisterSet is only true
 //        for an enter-managed chain.  We need to keep the same behaviour here.  That's why we need the
 //        chain reason.
 //
 
-void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext, 
+void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
                                          BOOL                    fLeaf,
                                          CorDebugChainReason     reason,
                                          ICorDebugRegisterSet ** ppRegSet)
@@ -335,8 +335,8 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
     pDAC->ConvertContextToDebuggerRegDisplay(pContext, pDRD, fLeaf);
 
     // create the CordbRegisterSet
-    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD, 
-                                                            this, 
+    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
+                                                            this,
                                                             (fLeaf == TRUE),
                                                             (reason == CHAIN_ENTER_MANAGED),
                                                             true));
@@ -348,15 +348,15 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
 // ----------------------------------------------------------------------------
 // CordbThread::ConvertFrameForILMethodWithoutMetadata
 //
-// Description: 
+// Description:
 //    This is a private hook for the shim to convert an ICDFrame into an ICDInternalFrame for a dynamic
 //    method.  There are two cases where we need this:
-//    1)  In Arrowhead, dynamic methods are exposed as first-class stack frames, not internal frames.  Thus, 
-//        the shim needs a way to convert an ICDNativeFrame for a dynamic method in Arrowhead to an 
-//        ICDInternalFrame of type STUBFRAME_LIGHTWEIGHT_FUNCTION in V2.  Furthermore, IL stubs, 
+//    1)  In Arrowhead, dynamic methods are exposed as first-class stack frames, not internal frames.  Thus,
+//        the shim needs a way to convert an ICDNativeFrame for a dynamic method in Arrowhead to an
+//        ICDInternalFrame of type STUBFRAME_LIGHTWEIGHT_FUNCTION in V2.  Furthermore, IL stubs,
 //        which are also considered as a type of dynamic methods, are not exposed in V2 at all.
-//        
-//    2)  In V2, PrestubMethodFrames (PMFs) can be exposed as one of two things: a chain of type 
+//
+//    2)  In V2, PrestubMethodFrames (PMFs) can be exposed as one of two things: a chain of type
 //        CHAIN_CLASS_INIT in most cases, or an internal frame of type STUBFRAME_LIGHTWEIGHT_FUNCTION if
 //        the method being jitted is a dynamic method.  There is no way to make this distinction at the
 //        public ICD level.
@@ -364,7 +364,7 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
 // Arguments:
 //    * pNativeFrame    - the native frame to be converted
 //    * ppInternalFrame - out parameter; the converted internal frame; could be NULL (see Notes below)
-//    
+//
 // Returns:
 //    Return TRUE if conversion has occurred.  Note that even if the return value is TRUE, ppInternalFrame
 //    could be NULL.  See Notes below.
@@ -390,7 +390,7 @@ BOOL CordbThread::ConvertFrameForILMethodWithoutMetadata(ICorDebugFrame *       
     CordbInternalFrame * pInternalFrame = pRealFrame->GetAsInternalFrame();
     if (pInternalFrame != NULL)
     {
-        // The input is an internal frame.  
+        // The input is an internal frame.
 
         // Check its frame type.
         CorDebugInternalFrameType type;
@@ -419,17 +419,17 @@ BOOL CordbThread::ConvertFrameForILMethodWithoutMetadata(ICorDebugFrame *       
 }
 
 //-----------------------------------------------------------------------------
-// Hijack a thread at an unhandled exception. This lets it execute the 
+// Hijack a thread at an unhandled exception. This lets it execute the
 // CLR's Unhandled Exception Filter (which will send the managed 2nd-chance exception event)
 //
 // Notes:
-//    OS will not execute Unhandled Exception Filter (UEF) when debugger is attached. 
+//    OS will not execute Unhandled Exception Filter (UEF) when debugger is attached.
 //    The CLR's UEF does useful work, like dispatching 2nd-chance managed exception event
-//    and allowing Func-eval and Continuable Exceptions for unhandled exceptions. 
+//    and allowing Func-eval and Continuable Exceptions for unhandled exceptions.
 //    So hijack the thread, and the hijack will then execute the CLR's UEF just
-//    like the OS would. 
+//    like the OS would.
 void CordbThread::HijackForUnhandledException()
-{  
+{
     CONTRACTL
     {
         THROWS;
@@ -444,8 +444,8 @@ void CordbThread::HijackForUnhandledException()
 
     ULONG32 dwThreadId = GetVolatileOSThreadID();
 
-    // Note that the data-target is not atomic, and we have no rollback mechanism. 
-    // We have to do several writes. If the data-target fails the writes half-way through the 
+    // Note that the data-target is not atomic, and we have no rollback mechanism.
+    // We have to do several writes. If the data-target fails the writes half-way through the
     // target will be inconsistent.
 
     // We don't bother remembering the original context. LS hijack will have the
@@ -453,15 +453,15 @@ void CordbThread::HijackForUnhandledException()
     GetProcess()->GetDAC()->Hijack(
             m_vmThreadToken,
             dwThreadId,
-            m_pExceptionRecord, 
+            m_pExceptionRecord,
             NULL, // LS will have the context.
             0, // size of context
-            EHijackReason::kUnhandledException, 
+            EHijackReason::kUnhandledException,
             NULL,
             NULL);
 
-    // Notify debugger to clear the exception. 
-    // This will invoke the data-target. 
+    // Notify debugger to clear the exception.
+    // This will invoke the data-target.
     GetProcess()->ContinueStatusChanged(dwThreadId, DBG_CONTINUE);
 }
 
@@ -482,8 +482,8 @@ HRESULT CordbThread::GetProcess(ICorDebugProcess ** ppProcess)
 // Back in V1.0, GetID originally meant the OS thread ID that this managed thread was running on.
 // In theory, that can change (fibers, logical thread scheduling, etc). However, in practice, in V1.0, it would
 // not. Thus debuggers took a depedency on GetID being constant.
-// In V2, this returns an opaque handle that is unique to this thread and stable for this thread's lifetime. 
-// 
+// In V2, this returns an opaque handle that is unique to this thread and stable for this thread's lifetime.
+//
 // Compare to code:CordbThread::GetVolatileOSThreadID, which returns the actual OS thread Id (which may change).
 HRESULT CordbThread::GetID(DWORD * pdwThreadId)
 {
@@ -496,7 +496,7 @@ HRESULT CordbThread::GetID(DWORD * pdwThreadId)
     return S_OK;
 }
 
-// Returns a unique ID that's stable for the life of this thread. 
+// Returns a unique ID that's stable for the life of this thread.
 // In a non-hosted scenarios, this can be the OS thread id.
 DWORD CordbThread::GetUniqueId()
 {
@@ -530,10 +530,10 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
     EX_CATCH_HRESULT(hr);
 #else  // FEATURE_DBGIPC_TRANSPORT_DI
     // In the old SL implementation of Mac debugging, we return a thread handle faked up by the PAL on the Mac.
-    // The returned handle is meaningless.  Here we explicitly return E_NOTIMPL.  We plan to deprecate this 
+    // The returned handle is meaningless.  Here we explicitly return E_NOTIMPL.  We plan to deprecate this
     // function in Dev10 anyway.
-    // 
-    // @dbgtodo  Mac - Check with VS to see if they need the thread handle, e.g. for waiting on thread 
+    //
+    // @dbgtodo  Mac - Check with VS to see if they need the thread handle, e.g. for waiting on thread
     // termination.
     HRESULT hr = E_NOTIMPL;
 #endif // !FEATURE_DBGIPC_TRANSPORT_DI
@@ -560,7 +560,7 @@ void CordbThread::InternalGetHandle(HANDLE * phThread)
 //    whether the frame lives on the stack of the current thread
 //
 // Assumption:
-//    This function assumes that the stack frames are valid, i.e. the stack frames have not been 
+//    This function assumes that the stack frames are valid, i.e. the stack frames have not been
 //    made dirty since the last stackwalk.
 //
 
@@ -610,7 +610,7 @@ bool CordbThread::OwnsFrame(CordbFrame * pFrame)
 //    hr - It can fail with CORDBG_E_THREAD_NOT_SCHEDULED.
 //
 // Notes:
-//    This method will most likely be deprecated in V3.0.  We can't always return the thread handle.  
+//    This method will most likely be deprecated in V3.0.  We can't always return the thread handle.
 //    For example, what does it mean to return a thread handle in remote debugging scenarios?
 //
 void CordbThread::RefreshHandle(HANDLE * phThread)
@@ -660,8 +660,8 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
                                    hThread,
                                    GetCurrentProcess(),
                                    &m_hCachedThread,
-                                   NULL, 
-                                   FALSE, 
+                                   NULL,
+                                   FALSE,
                                    DUPLICATE_SAME_ACCESS);
         *phThread = m_hCachedThread;
 
@@ -704,7 +704,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
 
     HRESULT hr = S_OK;
     EX_TRY
-    {        
+    {
         hr = EnsureThreadIsAlive();
 
         if (SUCCEEDED(hr))
@@ -712,7 +712,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
             // This lets the debugger suspend / resume threads. This is only called when when the
             // target is already synchronized. That means all the threads are already suspended. So
             // setting the suspend bit here just means that the debugger's continue logic won't resume
-            // this thread when we do a Continue. 
+            // this thread when we do a Continue.
             if ((state != THREAD_SUSPEND) && (state != THREAD_RUN))
             {
                 ThrowHR(E_INVALIDARG);
@@ -778,7 +778,7 @@ HRESULT CordbThread::GetUserState(CorDebugUserState * pState)
 // Notes:
 //    This caches results between continues. The cache is cleared when the target continues or is flushed.
 //    See code:CordbThread::CleanupStack, code:CordbThread::MarkStackFramesDirty
-//    
+//
 CorDebugUserState CordbThread::GetUserState()
 {
     if (m_userState == kInvalidUserState)
@@ -894,9 +894,9 @@ bool CordbThread::IsThreadWaitingOrSleeping()
     CorDebugUserState userState = m_userState;
     if (userState == kInvalidUserState)
     {
-        //If m_userState is not ready, we'll read from DAC only part of it which 
-        //is important for us now, bacuase we don't want possible side effects 
-        //of reading USER_UNSAFE_POINT flag. 
+        //If m_userState is not ready, we'll read from DAC only part of it which
+        //is important for us now, bacuase we don't want possible side effects
+        //of reading USER_UNSAFE_POINT flag.
         //We don't cache the value, because it's potentially incomplete.
         IDacDbiInterface *pDAC = GetProcess()->GetDAC();
         userState = pDAC->GetPartialUserState(m_vmThreadToken);
@@ -907,19 +907,19 @@ bool CordbThread::IsThreadWaitingOrSleeping()
 
 //----------------------------------------------------------------------------
 // check if the thread is dead
-// 
+//
 // Returns: true if the thread is dead.
-// 
+//
 bool CordbThread::IsThreadDead()
 {
     return GetProcess()->GetDAC()->IsThreadMarkedDead(m_vmThreadToken);
 }
 
 // Helper to return CORDBG_E_BAD_THREAD_STATE if IsThreadDead
-// 
+//
 // Notes:
 //   IsThreadDead queries the VM Thread's actual state, regardless of what ExitThread
-//   callbacks have or have not been sent / queued / dispatched. 
+//   callbacks have or have not been sent / queued / dispatched.
 HRESULT CordbThread::EnsureThreadIsAlive()
 {
     if (IsThreadDead())
@@ -935,8 +935,8 @@ HRESULT CordbThread::EnsureThreadIsAlive()
 // ----------------------------------------------------------------------------
 // CordbThread::EnumerateChains
 //
-// Description: 
-//    Create and return an ICDChainEnum for enumerating chains on the stack.  Since chains have been 
+// Description:
+//    Create and return an ICDChainEnum for enumerating chains on the stack.  Since chains have been
 //    deprecated in Arrowhead, this function returns E_NOTIMPL unless there is a shim.
 //
 // Arguments:
@@ -966,13 +966,13 @@ HRESULT CordbThread::EnumerateChains(ICorDebugChainEnum ** ppChains)
         if (GetProcess()->GetShim() != NULL)
         {
             hr = EnsureThreadIsAlive();
-            
+
             if (SUCCEEDED(hr))
             {
                 // use the shim to create an ICDChainEnum
                 PRIVATE_SHIM_CALLBACK_IN_THIS_SCOPE0(GetProcess());
                 ShimStackWalk * pSW = GetProcess()->GetShim()->LookupOrCreateShimStackWalk(this);
-                pSW->EnumerateChains(ppChains);            
+                pSW->EnumerateChains(ppChains);
             }
         }
         else
@@ -989,8 +989,8 @@ HRESULT CordbThread::EnumerateChains(ICorDebugChainEnum ** ppChains)
 // ----------------------------------------------------------------------------
 // CordbThread::GetActiveChain
 //
-// Description: 
-//    Retrieve the leaf chain on this thread.  Since chains have been  deprecated in Arrowhead, 
+// Description:
+//    Retrieve the leaf chain on this thread.  Since chains have been  deprecated in Arrowhead,
 //    this function returns E_NOTIMPL unless there is a shim.
 //
 // Arguments:
@@ -1029,7 +1029,7 @@ HRESULT CordbThread::GetActiveChain(ICorDebugChain ** ppChain)
             }
             else
             {
-                // This is the Arrowhead case, where ICDChain has been deprecated.            
+                // This is the Arrowhead case, where ICDChain has been deprecated.
                 hr = E_NOTIMPL;
             }
         }
@@ -1041,7 +1041,7 @@ HRESULT CordbThread::GetActiveChain(ICorDebugChain ** ppChain)
 // ----------------------------------------------------------------------------
 // CordbThread::GetActiveFrame
 //
-// Description: 
+// Description:
 //    Retrieve the leaf frame on this thread.  Unfortunately, this is one of the cases where we need to
 //    do different things depending on whether there is a shim.  See the Notes below.
 //
@@ -1053,16 +1053,16 @@ HRESULT CordbThread::GetActiveChain(ICorDebugChain ** ppChain)
 //    Return E_INVALIDARG if ppFrame is NULL.
 //    Return CORDBG_E_OBJECT_NEUTERED if the CordbThread is neutered.
 //    Also return whatever CreateStackWalk() and GetFrame() return if they fail.
-//    
+//
 // Notes:
 //    In V2, we return NULL if the leaf frame is not in the leaf chain, i.e. if the leaf chain is
-//    empty.  Note that managed chains are never empty.  Also, in V2 it is possible that this API 
+//    empty.  Note that managed chains are never empty.  Also, in V2 it is possible that this API
 //    will return an internal frame as the active frame on a thread.
-// 
+//
 //    The Arrowhead implementation two breaking changes:
 //    1) It never returns an internal frame.
 //    2) We return a frame if the leaf frame is managed.  Otherwise, we return NULL.
-//    
+//
 
 HRESULT CordbThread::GetActiveFrame(ICorDebugFrame ** ppFrame)
 {
@@ -1107,7 +1107,7 @@ HRESULT CordbThread::GetActiveFrame(ICorDebugFrame ** ppFrame)
 // ----------------------------------------------------------------------------
 // CordbThread::GetActiveRegister
 //
-// Description: 
+// Description:
 //    In V2, retrieve the ICDRegisterSet for the leaf chain.  In Arrowhead, retrieve the ICDRegisterSet
 //    for the leaf CONTEXT.
 //
@@ -1119,7 +1119,7 @@ HRESULT CordbThread::GetActiveFrame(ICorDebugFrame ** ppFrame)
 //    Return E_INVALIDARG if ppFrame is NULL.
 //    Return CORDBG_E_OBJECT_NEUTERED if the CordbThread is neutered.
 //    Also return whatever CreateStackWalk() and GetContext() return if they fail.
-//    
+//
 
 HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
 {
@@ -1166,8 +1166,8 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                 pDAC->ConvertContextToDebuggerRegDisplay(&ctx, pDRD, true);
 
                 // create the CordbRegisterSet
-                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD, 
-                                                                        this, 
+                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
+                                                                        this,
                                                                         true,   // active
                                                                         false,  // !fQuickUnwind
                                                                         true)); // own DRD memory
@@ -1245,7 +1245,7 @@ void CordbThread::RefreshStack()
     }
 
     HRESULT hr = S_OK;
-   
+
     //
     // Clean up old snapshot.
     //
@@ -1278,11 +1278,11 @@ void CordbThread::RefreshStack()
             // add the stack frame to the cache
             CordbFrame ** ppCFrame = m_stackFrames.AppendThrowing();
             *ppCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
-             
+
             // Now that we have saved the pointer, increment the ref count.
             // This has to match the InternalRelease() in code:CordbThread::ClearStackFrameCache.
             (*ppCFrame)->InternalAddRef();
-        }            
+        }
 
         // advance to the next frame
         hr = pSW->Next();
@@ -1296,13 +1296,13 @@ void CordbThread::RefreshStack()
 
 //---------------------------------------------------------------------------------------
 //
-// This function is used to invalidate and clean up the cached stack trace. 
+// This function is used to invalidate and clean up the cached stack trace.
 //
 
 void CordbThread::CleanupStack()
 {
     _ASSERTE(GetProcess()->GetProcessLock()->HasLock());
-    
+
     // Neuter outstanding CordbChainEnums, CordbFrameEnums, some CordbTypeEnums, and some CordbValueEnums.
     m_RefreshStackNeuterList.NeuterAndClear(GetProcess());
 
@@ -1329,9 +1329,9 @@ void CordbThread::MarkStackFramesDirty()
     // invalidate the cached floating point state
     m_fFloatStateValid = false;
 
-    // This flag is only true between the window when we get an exception callback and 
-    // when we call continue.  Since this function is only called when we continue, we 
-    // need to reset this flag here.  Note that in the case of an outstanding funceval, 
+    // This flag is only true between the window when we get an exception callback and
+    // when we call continue.  Since this function is only called when we continue, we
+    // need to reset this flag here.  Note that in the case of an outstanding funceval,
     // we'll set this flag again when the funceval is completed.
     m_fException = false;
 
@@ -1371,7 +1371,7 @@ void CordbThread::SetExInfo(VMPTR_OBJECTHANDLE vmExcepObjHandle)
 // ----------------------------------------------------------------------------
 // CordbThread::FindFrame
 //
-// Description: 
+// Description:
 // Given a FramePointer, find the matching CordbFrame.
 //
 // Arguments:
@@ -1386,8 +1386,8 @@ void CordbThread::SetExInfo(VMPTR_OBJECTHANDLE vmExcepObjHandle)
 //    * This function is only called from the shim.
 //
 // Notes:
-//    * Currently this function is only used by the shim to map the FramePointer it gets via the 
-//        DB_IPCE_EXCEPTION_CALLBACK2 callback.  When we figure out what to do with the 
+//    * Currently this function is only used by the shim to map the FramePointer it gets via the
+//        DB_IPCE_EXCEPTION_CALLBACK2 callback.  When we figure out what to do with the
 //        DB_IPCE_EXCEPTION_CALLBACK2, we should remove this function.
 //
 
@@ -1447,7 +1447,7 @@ extern "C" double FPFillR8(void* pFillSlot);
 // Converts the values in the floating point register area of the context to real number values. See
 // code:CordbThread::LoadFloatState for more details.
 // Arguments:
-//     input:  pContext 
+//     input:  pContext
 //     output: none (initializes m_floatValues)
 
 void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
@@ -1479,12 +1479,12 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     floatarea.StatusWord &= 0xFF00; // remove any error codes.
     floatarea.ControlWord |= 0x3F; // mask all exceptions.
 
-    // the x86 FPU stores real numbers as 10 byte values in IEEE format. Here we use 
-    // the hardware to convert these to doubles. 
-    
-    // @dbgtodo Microsoft crossplat: the conversion from a series of bytes to a floating 
+    // the x86 FPU stores real numbers as 10 byte values in IEEE format. Here we use
+    // the hardware to convert these to doubles.
+
+    // @dbgtodo Microsoft crossplat: the conversion from a series of bytes to a floating
     // point value will need to be done with an explicit conversion routine to unpack
-    // the IEEE format and compute the real number value represented. 
+    // the IEEE format and compute the real number value represented.
 
 #ifdef _MSC_VER
     __asm
@@ -1541,7 +1541,7 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
 //             registerSize    - the size of a floating point register
 //             start           - the index into m_floatValues where we start initializing. For amd64, we start
 //                               at the beginning, but for ia64, the first two registers have fixed values,
-//                               so we start at two. 
+//                               so we start at two.
 //             nRegisters      - the number of registers to be initialized
 //     output: none (initializes m_floatValues)
 
@@ -1552,7 +1552,7 @@ void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int s
     // We convert and copy all the fp registers.
     for (int reg = start; reg < nRegisters; reg++)
     {
-        // @dbgtodo Microsoft crossplat: the conversion from a FLOAT128 or M128A struct to a floating 
+        // @dbgtodo Microsoft crossplat: the conversion from a FLOAT128 or M128A struct to a floating
         // point value will need to be done with an explicit conversion routine instead
         // of the call to FPFillR8
         m_floatValues[reg] = FPFillR8(&rgContextFPRegisters[reg - start]);
@@ -1570,8 +1570,8 @@ void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int s
 // the hardware do it instead. We load a floating point register with the representation from the context
 // and then store it in m_floatValues. Using the hardware is obviously a huge perf win. If/when we make
 // cross-plat work, we should at least code necessary conversion routines in assembly. Even with cross-plat,
-// we can probably still use the hardware in most cases, as long as the size is appropriate. 
-// 
+// we can probably still use the hardware in most cases, as long as the size is appropriate.
+//
 // Arguments: none
 // Return Value: none (initializes data members)
 // Note: Throws
@@ -1593,7 +1593,7 @@ void CordbThread::LoadFloatState()
     Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
 #elif defined (_TARGET_ARM_)
     Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
-#else 
+#else
     _ASSERTE(!"nyi for platform");
 #endif // !_TARGET_X86_
 
@@ -1657,10 +1657,10 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%x"
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
-         VmPtrToCookie(m_vmThreadToken), 
+         VmPtrToCookie(m_vmThreadToken),
          VmPtrToCookie(vmDomainFile),
-         pNativeCode->GetMetadataToken(), 
-         offset, 
+         pNativeCode->GetMetadataToken(),
+         offset,
          fIsIL));
 
     LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%x **********\n",
@@ -1807,7 +1807,7 @@ HRESULT CordbThread::GetAppDomain(ICorDebugAppDomain ** ppAppDomain)
             hr = GetCurrentAppDomain(&pAppDomain);
             IfFailThrow(hr);
             _ASSERTE( pAppDomain != NULL );
-            
+
             *ppAppDomain = static_cast<ICorDebugAppDomain *> (pAppDomain);
             pAppDomain->ExternalAddRef();
         }
@@ -1832,7 +1832,7 @@ HRESULT CordbThread::GetCurrentAppDomain(CordbAppDomain ** ppAppDomain)
     INTERNAL_API_ENTRY(GetProcess());
 
     *ppAppDomain = NULL;
-    
+
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -1908,11 +1908,11 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
 
             if (pThreadCurrentDomain == NULL)
             {
-                // fall back to some domain to avoid crashes in retail - 
+                // fall back to some domain to avoid crashes in retail -
                 // safe enough for getting the name of the thread etc.
                 pThreadCurrentDomain = GetProcess()->GetDefaultAppDomain();
             }
-            
+
             lockHolder.Release();
 
             ICorDebugReferenceValue * pRefValue = NULL;
@@ -1968,7 +1968,7 @@ HRESULT CordbThread::GetActiveFunctions(
     *pcFunctions = 0;
 
     // @dbgtodo  synchronization - The ATT macro may slip the thread to a sychronized state.  The
-    // synchronization feature crew needs to figure out what to do here.  Then we can use the 
+    // synchronization feature crew needs to figure out what to do here.  Then we can use the
     // PUBLIC_API_BEGIN macro in this function.
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
@@ -2015,7 +2015,7 @@ HRESULT CordbThread::GetActiveFunctions(
                 cAllFrames   = m_stackFrames.Count();
                 cStackFrames = cAllFrames;
 
-                // In Arrowhead, the stackwalking API doesn't return internal frames, 
+                // In Arrowhead, the stackwalking API doesn't return internal frames,
                 // so the frame counts should be equal.
                 _ASSERTE(cStackFrames == cAllFrames);
             }
@@ -2070,7 +2070,7 @@ HRESULT CordbThread::GetActiveFunctions(
                     pFunction = (static_cast<CordbFrame *>(pNativeFrame))->GetFunction();
                     ASSERT(pFunction != NULL);
 
-                    hr = pFunction->QueryInterface(IID_ICorDebugFunction2, 
+                    hr = pFunction->QueryInterface(IID_ICorDebugFunction2,
                         reinterpret_cast<void **>(&(pFunctions[index].pFunction)));
                     ASSERT(!FAILED(hr));
 
@@ -2095,8 +2095,8 @@ HRESULT CordbThread::GetActiveFunctions(
                     {
                         hr = pJITILFrame->GetIP(&(pFunctions[index].ilOffset), NULL);
                         ASSERT(!FAILED(hr));
-                    } 
-                    else 
+                    }
+                    else
                     {
                         pFunctions[index].ilOffset = (DWORD) NO_MAPPING;
                     }
@@ -2119,7 +2119,7 @@ HRESULT CordbThread::GetActiveFunctions(
 
 //---------------------------------------------------------------------------------------
 //
-// This is the entry point for continuable exceptions.  
+// This is the entry point for continuable exceptions.
 // It implements ICorDebugThread2::InterceptCurrentException.
 //
 // Arguments:
@@ -2129,7 +2129,7 @@ HRESULT CordbThread::GetActiveFunctions(
 //    HRESULT indicating success or failure
 //
 // Notes:
-//    Since we cannot intercept an exception at an internal frame, 
+//    Since we cannot intercept an exception at an internal frame,
 //    pFrame should not be an ICorDebugInternalFrame.
 //
 
@@ -2138,7 +2138,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    
+
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     // Continuable exceptions are not implemented on Unix-like platforms.
     return E_NOTIMPL;
@@ -2166,7 +2166,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
             {
                 ThrowHR(E_INVALIDARG);
             }
-        }        
+        }
 
 
         //
@@ -2252,7 +2252,7 @@ HRESULT CordbThread::HasUnhandledException()
 // managed filter CONTEXT if there is one.  Otherwise it is stopped at the leaf CONTEXT.
 //
 // Arguments:
-//    ppStackWalk - out parameter; return the new stackwalker 
+//    ppStackWalk - out parameter; return the new stackwalker
 //
 // Return Value:
 //    Return S_OK on succcess.
@@ -2298,7 +2298,7 @@ HRESULT CordbThread::CreateStackWalk(ICorDebugStackWalk ** ppStackWalk)
 //
 // Arguments:
 //    pFrameData - contains information about the current internal frame in the enumeration
-//    pUserData  - This is a GetActiveInternalFramesData.  
+//    pUserData  - This is a GetActiveInternalFramesData.
 //                 It contains an array of internl frames to be filled.
 //
 
@@ -2323,9 +2323,9 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
     }
 
     // Create a CordbInternalFrame.
-    CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis, 
-                                                                 pFrameData->fp, 
-                                                                 pAppDomain, 
+    CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
+                                                                 pFrameData->fp,
+                                                                 pAppDomain,
                                                                  pFrameData);
 
     // Store the internal frame in the array and update the index to prepare for the next one.
@@ -2346,7 +2346,7 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
 //
 // Return Value:
 //    S_OK on success.
-//    E_INVALIDARG if 
+//    E_INVALIDARG if
 //      - ppInternalFrames is NULL but cInternalFrames is not 0
 //      - pcInternalFrames is NULL
 //      - cInternalFrames is smaller than the number of internal frames actually on the thread
@@ -2359,7 +2359,7 @@ HRESULT CordbThread::GetActiveInternalFrames(ULONG32 cInternalFrames,
     HRESULT hr = S_OK;
     PUBLIC_REENTRANT_API_BEGIN(this);
     {
-        if ( ((cInternalFrames != 0) && (ppInternalFrames == NULL)) || 
+        if ( ((cInternalFrames != 0) && (ppInternalFrames == NULL)) ||
              (pcInternalFrames == NULL) )
         {
             ThrowHR(E_INVALIDARG);
@@ -2393,7 +2393,7 @@ HRESULT CordbThread::GetActiveInternalFrames(ULONG32 cInternalFrames,
                 // caught above this frame.
                 data.pInternalFrames.EnableAutoClear();
 
-                pDAC->EnumerateInternalFrames(m_vmThreadToken, 
+                pDAC->EnumerateInternalFrames(m_vmThreadToken,
                                               &CordbThread::GetActiveInternalFramesCallback,
                                               &data);
                 _ASSERTE(cActiveInternalFrames == data.pInternalFrames.Length());
@@ -2419,9 +2419,9 @@ HRESULT CordbThread::GetActiveInternalFrames(ULONG32 cInternalFrames,
 // Gets the current custom notification on this thread or NULL if no such object exists
 // Arguments:
 //    output: ppNotificationObject - current CustomNotification object.
-//            if we aren't currently inside a CustomNotification callback, this will 
-//            always return NULL. 
-// return value: 
+//            if we aren't currently inside a CustomNotification callback, this will
+//            always return NULL.
+// return value:
 // S_OK on success
 // S_FALSE if no object exists
 // CORDBG_E_BAD_REFERENCE_VALUE if the reference is bad
@@ -2483,7 +2483,7 @@ HRESULT CordbThread::SetRemapIP(SIZE_T offset)
 {
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-    // This is only set when we're prepared to do a remap 
+    // This is only set when we're prepared to do a remap
     if (! m_EnCRemapFunctionIP)
     {
         return CORDBG_E_NO_REMAP_BREAKPIONT;
@@ -2493,7 +2493,7 @@ HRESULT CordbThread::SetRemapIP(SIZE_T offset)
     HRESULT hr = GetProcess()->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(m_EnCRemapFunctionIP), &offset);
 
     // Prevent SetRemapIP from being called twice for the same RemapOpportunity
-    // If we don't get any calls to RemapFunction, this member will be cleared in 
+    // If we don't get any calls to RemapFunction, this member will be cleared in
     // code:CordbThread::MarkStackFramesDirty when Continue is called
     m_EnCRemapFunctionIP = NULL;
 
@@ -2535,7 +2535,7 @@ HRESULT CordbThread::GetConnectionID(CONNID * pConnectionID)
         }
     }
     EX_CATCH_HRESULT(hr);
-    
+
     return hr;
 }   // CordbThread::GetConnectionID
 
@@ -2634,7 +2634,7 @@ HRESULT CordbThread::GetVolatileOSThreadID(DWORD * pdwTID)
 // Get the thread's volatile OS ID. (this is fiber aware)
 //
 // Returns:
-//      Thread's current OS id. For fibers / "logical threads", This may change as a thread executes. 
+//      Thread's current OS id. For fibers / "logical threads", This may change as a thread executes.
 //      Throws if the managed thread currently is not mapped to an OS thread (ie, not scheduled)
 //
 DWORD CordbThread::GetVolatileOSThreadID()
@@ -2652,9 +2652,9 @@ DWORD CordbThread::GetVolatileOSThreadID()
 // ----------------------------------------------------------------------------
 // CordbThread::ClearStackFrameCache
 //
-// Description: 
+// Description:
 //    Clear the cache of stack frames maintained by the CordbThread.
-//    
+//
 // Notes:
 //    We are doing an InternalRelease() here to match the InternalAddRef() in code:CordbThread::RefreshStack.
 //
@@ -2674,7 +2674,7 @@ void CordbThread::ClearStackFrameCache()
 // ----------------------------------------------------------------------------
 // EnumerateBlockingObjectsCallback
 //
-// Description: 
+// Description:
 //    A small helper used by CordbThread::GetBlockingObjects. This callback adds the enumerated items
 //    to a list
 //
@@ -2691,7 +2691,7 @@ VOID EnumerateBlockingObjectsCallback(DacBlockingObject blockingObject, CALLBACK
 // ----------------------------------------------------------------------------
 // CordbThread::GetBlockingObjects
 //
-// Description: 
+// Description:
 //    Returns a list of objects that a thread is blocking on by using Monitor.Enter and
 //    Monitor.Wait
 //
@@ -2741,11 +2741,11 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
                 RSLockHolder holder(GetProcess()->GetProcessLock());
                 pAppDomain = GetProcess()->LookupOrCreateAppDomain(dacBlockingObjects[dacObjIndex].vmAppDomain);
             }
-            blockingObjs[i].pBlockingObject = CordbValue::CreateHeapValue(pAppDomain, 
+            blockingObjs[i].pBlockingObject = CordbValue::CreateHeapValue(pAppDomain,
                 dacBlockingObjects[dacObjIndex].vmBlockingObject);
         }
 
-        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(GetProcess(), 
+        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(GetProcess(),
                                                                                   blockingObjs,
                                                                                   (DWORD)dacBlockingObjects.Size());
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
@@ -2849,7 +2849,7 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
     HRESULT hr = S_OK;
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-    
+
     // Just simple math on NT with a small tls index.
     // The TLS slots for 0-63 are embedded in the TIB.
 #if defined(DBG_TARGET_X86)
@@ -3072,7 +3072,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
     hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadTLS), pValue);
     if (FAILED(hr))
     {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GTS: failed to read TLS value: computed addr=0x%p index=%d, err=%x\n", 
+        LOG((LF_CORDB, LL_INFO1000, "CUT::GTS: failed to read TLS value: computed addr=0x%p index=%d, err=%x\n",
            pEEThreadTLS, slot, hr));
         return hr;
     }
@@ -3082,22 +3082,22 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
 }
 
 // This does a WriteProcessMemory to write to the debuggee's TLS slot
-// 
+//
 // Notes:
 //   This is very brittle because the OS can lazily allocates storage for TLS slots.
 //   In order to gaurantee the storage is available, it must have been written to by the debuggee.
 //   For managed threads, that's easy because the Thread* is already written to the slot.
 //   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
-//   
+//
 //   The saving grace is that the debuggee's hijack filters will force the TLS to be allocated before it
 //   sends a flare.
-//   
+//
 //   Therefore, this function can only be called:
 //   1) on a managed thread
 //   2) on a native thread after that thread has been hijacked and sent a flare.
-//   
+//
 //   This is brittle reasoning, but so is the rest of interop-debugging.
-//   
+//
 HRESULT CordbUnmanagedThread::SetTlsSlot(DWORD slot, REMOTE_PTR value)
 {
     FAIL_IF_NEUTERED(this);
@@ -3165,7 +3165,7 @@ DWORD_PTR CordbUnmanagedThread::GetEEThreadValue()
     }
 
     // Read the thread's TLS value.
-    REMOTE_PTR EEThreadAddr = (BYTE*)tlsDataAddress + OFFSETOF__TLS__tls_CurrentThread;   
+    REMOTE_PTR EEThreadAddr = (BYTE*)tlsDataAddress + OFFSETOF__TLS__tls_CurrentThread;
     hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(EEThreadAddr), &ret);
     if (FAILED(hr))
     {
@@ -3198,7 +3198,7 @@ HRESULT CordbUnmanagedThread::GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress)
 
     DWORD slot = (DWORD)(GetProcess()->m_runtimeOffsets.m_TLSIndex);
 
-    REMOTE_PTR clrModuleTlsDataAddr; 
+    REMOTE_PTR clrModuleTlsDataAddr;
     hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)tlsArrayAddr + (slot & 0xFFFF) * sizeof(void*)), &clrModuleTlsDataAddr);
     if (FAILED(hr))
     {
@@ -3222,7 +3222,7 @@ REMOTE_PTR CordbUnmanagedThread::GetEETlsDataBlock()
 
     REMOTE_PTR tlsDataAddress;
     HRESULT hr = GetClrModuleTlsDataAddress(&tlsDataAddress);
-    if (FAILED(hr)) 
+    if (FAILED(hr))
     {
         LOG((LF_CORDB, LL_INFO1000, "CUT::GEETDB: GetClrModuleTlsDataAddress FAILED %x for 0x%x\n", hr, m_id));
         return NULL;
@@ -3388,10 +3388,10 @@ bool CordbUnmanagedThread::GetEEThreadCantStopHelper()
 // handle it.
 bool CordbUnmanagedThread::IsCantStop()
 {
-    CONTRACTL 
-    { 
-        NOTHROW; 
-    } 
+    CONTRACTL
+    {
+        NOTHROW;
+    }
     CONTRACTL_END;
 
     // Definition of a can't stop region:
@@ -3602,7 +3602,7 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // to get clear of a bp.
     //
     // If not hijacked call the normal Win32 function.
-    
+
     HRESULT hr = S_OK;
 
     LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: thread=0x%p, flags=0x%x.\n", this, pContext->ContextFlags));
@@ -3854,7 +3854,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 
 
 
-    // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a 
+    // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a
     // debug event. We still get the debug event, and then may try to hijack. Resume the thread so that
     // it can run to the hijack.
     if (this->IsSuspended())
@@ -3891,7 +3891,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
     _ASSERTE(!IsSSFlagHidden());
     _ASSERTE(!IsSSFlagNeeded());
 
-    // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a 
+    // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a
     // debug event. We still get the debug event, and then may try to hijack. Resume the thread so that
     // it can run to the hijack.
     if (this->IsSuspended())
@@ -3974,8 +3974,8 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
 
     // On X86 Debugger::GenericHijackFunc() ensures the stack is walkable
     // by simply using the EBP chain, therefore we can execute the hijack
-    // by setting the thread's context EIP to point to this function. 
-    // On X64, however, we first attempt to set up a "proper" hijack, with 
+    // by setting the thread's context EIP to point to this function.
+    // On X64, however, we first attempt to set up a "proper" hijack, with
     // a function that allows the OS to unwind the stack (ExceptionHijack).
     // If this fails we'll use the same method as on X86, even though the
     // stack will become un-walkable
@@ -3990,16 +3990,16 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
         HRESULT hr = S_OK;
         EX_TRY
         {
-            // Note that the data-target is not atomic, and we have no rollback mechanism. 
-            // We have to do several writes. If the data-target fails the writes half-way through the 
+            // Note that the data-target is not atomic, and we have no rollback mechanism.
+            // We have to do several writes. If the data-target fails the writes half-way through the
             // target will be inconsistent.
             GetProcess()->GetDAC()->Hijack(
                     pThread->m_vmThreadToken,
                     dwThreadId,
-                    pRecord, 
+                    pRecord,
                     (T_CONTEXT*) GetHijackCtx(),
                     sizeof(T_CONTEXT),
-                    EHijackReason::kGenericHijack, 
+                    EHijackReason::kGenericHijack,
                     NULL,
                     NULL);
         }
@@ -4037,7 +4037,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     BOOL isSSFlagOn = IsSSFlagEnabled(GetHijackCtx());
     if(isSSFlagOn)
     {
-        UnsetSSFlag(GetHijackCtx()); 
+        UnsetSSFlag(GetHijackCtx());
     }
 
     succ = DbiSetThreadContext(m_handle, GetHijackCtx());
@@ -4258,7 +4258,7 @@ BOOL CordbUnmanagedThread::GetStackRange(CORDB_ADDRESS *pBase, CORDB_ADDRESS *pL
         MEMORY_BASIC_INFORMATION mbi;
 
         tempContext.ContextFlags = DT_CONTEXT_FULL;
-        if (SUCCEEDED(GetProcess()->GetHandle(&hProc)) && 
+        if (SUCCEEDED(GetProcess()->GetHandle(&hProc)) &&
             SUCCEEDED(GetThreadContext(&tempContext)) &&
             ::VirtualQueryEx(hProc, (LPCVOID)GetSP(&tempContext), &mbi, sizeof(mbi)) != 0)
         {
@@ -4352,7 +4352,7 @@ void CordbUnmanagedThread::RestoreFromRaiseExceptionHijack()
     restoreContext.ContextFlags = DT_CONTEXT_FULL;
     HRESULT hr = GetThreadContext(&restoreContext);
     _ASSERTE(SUCCEEDED(hr));
-    
+
     ClearState(CUTS_IsRaiseExceptionHijacked);
     hr = SetThreadContext(&restoreContext);
     _ASSERTE(SUCCEEDED(hr));
@@ -4546,7 +4546,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
     {
         return hr;
     }
-    
+
     *pOpcode = (PRD_TYPE) opcode;
     ApplyRemotePatch(pProcess, pRemoteAddress);
     return S_OK;
@@ -4570,7 +4570,7 @@ HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, 
 
     pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode2);
 
-    // This may fail because the module has been unloaded.  In which case, the patch is also 
+    // This may fail because the module has been unloaded.  In which case, the patch is also
     // gone so it makes sense to return success.
     return S_OK;
 }
@@ -4615,7 +4615,7 @@ HRESULT CordbContext::QueryInterface(REFIID id, void **pInterface)
  * ------------------------------------------------------------------------- */
 
 
-// This is just used as a proxy object to pass a FramePointer around. 
+// This is just used as a proxy object to pass a FramePointer around.
 CordbFrame::CordbFrame(CordbProcess * pProcess, FramePointer fp)
  : CordbBase(pProcess, 0, enumCordbFrame),
  m_fp(fp)
@@ -4626,7 +4626,7 @@ CordbFrame::CordbFrame(CordbProcess * pProcess, FramePointer fp)
 
 CordbFrame::CordbFrame(CordbThread *    pThread,
                        FramePointer     fp,
-                       SIZE_T           ip, 
+                       SIZE_T           ip,
                        CordbAppDomain * pCurrentAppDomain)
   : CordbBase(pThread->GetProcess(), 0, enumCordbFrame),
     m_ip(ip),
@@ -4643,7 +4643,7 @@ CordbFrame::CordbFrame(CordbThread *    pThread,
     EX_TRY
     {
         m_pThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
@@ -4680,8 +4680,8 @@ HRESULT CordbFrame::QueryInterface(REFIID id, void **pInterface)
 // ----------------------------------------------------------------------------
 // CordbFrame::GetChain
 //
-// Description: 
-//    Return the owning chain.  Since chains have been  deprecated in Arrowhead, 
+// Description:
+//    Return the owning chain.  Since chains have been  deprecated in Arrowhead,
 //    this function returns E_NOTIMPL unless there is a shim.
 //
 // Arguments:
@@ -4727,7 +4727,7 @@ HRESULT CordbFrame::GetChain(ICorDebugChain **ppChain)
 // Note that this is not implemented in the base CordbFrame class.
 // Instead, this is implemented by the derived classes.
 // The start of the stack range is the leafmost boundary, and the end is the rootmost boundary.
-// 
+//
 // Notes: see code:#GetStackRange
 HRESULT CordbFrame::GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd)
 {
@@ -4760,7 +4760,7 @@ HRESULT CordbFrame::GetFunction(ICorDebugFunction **ppFunction)
         }
 
         // @dbgtodo  LCG methods, IL stubs, dynamic language debugging
-        // Don't return an ICDFunction if we are dealing with a dynamic method.  
+        // Don't return an ICDFunction if we are dealing with a dynamic method.
         // The dynamic debugging feature crew needs to decide exactly what to hand out for dynamic methods.
         if (pFunc->GetMetadataToken() == mdMethodDefNil)
         {
@@ -4800,7 +4800,7 @@ HRESULT CordbFrame::GetFunctionToken(mdMethodDef *pToken)
 // ----------------------------------------------------------------------------
 // CordbFrame::GetCaller
 //
-// Description: 
+// Description:
 // Return the caller of this frame.  The caller is closer to the root.
 //    This function has been deprecated in Arrowhead, and so it returns E_NOTIMPL unless there is a shim.
 //
@@ -4842,7 +4842,7 @@ HRESULT CordbFrame::GetCaller(ICorDebugFrame **ppFrame)
 // ----------------------------------------------------------------------------
 // CordbFrame::GetCallee
 //
-// Description: 
+// Description:
 // Return the callee of this frame.  The callee is closer to the leaf.
 //    This function has been deprecated in Arrowhead, and so it returns E_NOTIMPL unless there is a shim.
 //
@@ -5082,7 +5082,7 @@ HRESULT CordbValueEnum::Init()
     EX_TRY
     {
         m_frame->m_pThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 
@@ -5096,7 +5096,7 @@ CordbValueEnum::~CordbValueEnum()
 }
 
 void CordbValueEnum::Neuter()
-{    
+{
     m_frame = NULL;
     CordbBase::Neuter();
 }
@@ -5306,7 +5306,7 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
     m_eFrameType = pData->stubFrame.frameType;
     m_funcMetadataToken = pData->stubFrame.funcMetadataToken;
     m_vmMethodDesc = pData->stubFrame.vmMethodDesc;
-    
+
     // Some internal frames may not have a Function associated w/ them.
     if (!IsNilToken(m_funcMetadataToken))
     {
@@ -5316,23 +5316,23 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
         pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainFile);
         _ASSERTE(pModule != NULL);
 
-        // 
+        //
         if( pModule != NULL )
         {
             _ASSERTE( (pModule->GetAppDomain() == pCurrentAppDomain) || (m_eFrameType == STUBFRAME_FUNC_EVAL) );
 
-            
+
 
             mdMethodDef token = pData->stubFrame.funcMetadataToken;
-                       
+
             // @dbgtodo  synchronization - push this up.
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-            // CordbInternalFrame could handle a null function. 
+            // CordbInternalFrame could handle a null function.
             // But if we fail to lookup, things are not in a good state anyways.
-            CordbFunction * pFunction = pModule->LookupOrCreateFunctionLatestVersion(token);            
-            m_function.Assign(pFunction);            
-            
+            CordbFunction * pFunction = pModule->LookupOrCreateFunctionLatestVersion(token);
+            m_function.Assign(pFunction);
+
         }
     }
 }
@@ -5390,7 +5390,7 @@ void CordbInternalFrame::Neuter()
 // ----------------------------------------------------------------------------
 // CordbInternalFrame::GetStackRange
 //
-// Description: 
+// Description:
 // Return the stack range owned by this frame.
 // The start of the stack range is the leafmost boundary, and the end is the rootmost boundary.
 //
@@ -5406,7 +5406,7 @@ void CordbInternalFrame::Neuter()
 // This is a virtual function and so there are multiple implementations for different types of frames.
 // It's very important to note that GetStackRange() can work when even after the frame is neutered.
 // Debuggers may rely on this to map old frames up to new frames across Continue() calls.
-// 
+//
 
 HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
                                         CORDB_ADDRESS *pEnd)
@@ -5415,7 +5415,7 @@ HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
 
     // Callers explicit require GetStackRange() to be callable when neutered so that they
     // can line up ICorDebugFrame objects across continues. We only return stack ranges
-    // here and don't access any special data. 
+    // here and don't access any special data.
     OK_IF_NEUTERED(this);
 
     if (GetProcess()->GetShim() != NULL)
@@ -5447,7 +5447,7 @@ HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
 
 
 // This may return NULL if there's no Method associated w/ this Frame.
-// For FuncEval frames, the function returned might also be in a different AppDomain 
+// For FuncEval frames, the function returned might also be in a different AppDomain
 // than the frame itself.
 CordbFunction * CordbInternalFrame::GetFunction()
 {
@@ -5462,9 +5462,9 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     _ASSERTE(ppInternalFrame2 != NULL);
     *ppInternalFrame2 = NULL;
 
-    // The only internal frame conversion we need to perform is from STUBFRAME_JIT_COMPILATION to 
+    // The only internal frame conversion we need to perform is from STUBFRAME_JIT_COMPILATION to
     // STUBFRAME_LIGTHWEIGHT_FUNCTION.
-    if (m_eFrameType != STUBFRAME_JIT_COMPILATION) 
+    if (m_eFrameType != STUBFRAME_JIT_COMPILATION)
     {
         return FALSE;
     }
@@ -5495,9 +5495,9 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     else if (type == IDacDbiInterface::kLCGMethod)
     {
         // Here we are basically cloning another CordbInternalFrame.
-        RSInitHolder<CordbInternalFrame> pInternalFrame(new CordbInternalFrame(m_pThread, 
-                                                                               m_fp, 
-                                                                               m_currentAppDomain, 
+        RSInitHolder<CordbInternalFrame> pInternalFrame(new CordbInternalFrame(m_pThread,
+                                                                               m_fp,
+                                                                               m_currentAppDomain,
                                                                                STUBFRAME_LIGHTWEIGHT_FUNCTION,
                                                                                m_funcMetadataToken,
                                                                                m_function.GetValue(),
@@ -5557,7 +5557,7 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
         CordbNativeFrame * pCNativeFrame = static_cast<CordbNativeFrame *>(pNativeFrame.GetValue());
 
         // Compare the address of the "this" internal frame to the SP of the stack frame.
-        // We can't compare frame pointers because the frame pointer means different things on 
+        // We can't compare frame pointers because the frame pointer means different things on
         // different platforms.
         CORDB_ADDRESS stackFrameSP = GetSPFromDebuggerREGDISPLAY(&(pCNativeFrame->m_rd));
         return (thisFrameAddr < stackFrameSP);
@@ -5568,7 +5568,7 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
     if (pRUFrame != NULL)
     {
         // The frame to compare is a CordbRuntimeUnwindableFrame.
-        CordbRuntimeUnwindableFrame * pCRUFrame = 
+        CordbRuntimeUnwindableFrame * pCRUFrame =
             static_cast<CordbRuntimeUnwindableFrame *>(pRUFrame.GetValue());
 
         DT_CONTEXT * pResumeContext = const_cast<DT_CONTEXT *>(pCRUFrame->GetContext());
@@ -5581,7 +5581,7 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
     if (pInternalFrame != NULL)
     {
         // The frame to compare is a CordbInternalFrame.
-        CordbInternalFrame * pCInternalFrame = 
+        CordbInternalFrame * pCInternalFrame =
             static_cast<CordbInternalFrame *>(pInternalFrame.GetValue());
 
         CORDB_ADDRESS frameAddr = PTR_TO_CORDB_ADDRESS(pCInternalFrame->GetFramePointer().GetSPValue());
@@ -5708,7 +5708,7 @@ CordbMiscFrame::CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData)
 CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    FramePointer         fp,
                                    CordbNativeCode *    pNativeCode,
-                                   SIZE_T               ip, 
+                                   SIZE_T               ip,
                                    DebuggerREGDISPLAY * pDRD,
                                    TADDR                taAmbientESP,
                                    bool                 fQuicklyUnwound,
@@ -5716,8 +5716,8 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
                                    DT_CONTEXT *         pContext /*= NULL*/)
   : CordbFrame(pThread, fp, ip, pCurrentAppDomain),
-    m_rd(*pDRD), 
-    m_quicklyUnwound(fQuicklyUnwound), 
+    m_rd(*pDRD),
+    m_quicklyUnwound(fQuicklyUnwound),
     m_JITILFrame(NULL),
     m_nativeCode(pNativeCode), // implicit InternalAddRef
     m_taAmbientESP(taAmbientESP)
@@ -6011,7 +6011,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
 // ----------------------------------------------------------------------------
 // CordbNativeFrame::GetStackRange
 //
-// Description: 
+// Description:
 // Return the stack range owned by this native frame.
 // The start of the stack range is the leafmost boundary, and the end is the rootmost boundary.
 //
@@ -6031,7 +6031,7 @@ HRESULT CordbNativeFrame::GetStackRange(CORDB_ADDRESS *pStart,
 
     // Callers explicit require GetStackRange() to be callable when neutered so that they
     // can line up ICorDebugFrame objects across continues. We only return stack ranges
-    // here and don't access any special data. 
+    // here and don't access any special data.
     OK_IF_NEUTERED(this);
 
     if (GetProcess()->GetShim() != NULL)
@@ -6444,7 +6444,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLeftSideAddressOfRegister(CorDebugRegister re
 {
 #if !defined(USE_REMOTE_REGISTER_ADDRESS)
     // Use marker values as the register address.  This is to implement the funceval breaking change.
-    // 
+    //
     if (IsLeafFrame())
     {
         return kLeafFrameRegAddr;
@@ -6591,7 +6591,7 @@ SIZE_T CordbNativeFrame::GetRegisterOrStackValue(const ICorDebugInfo::NativeVarI
     }
     else if (pNativeVarInfo->loc.vlType == ICorDebugInfo::VLT_STK)
     {
-        CORDB_ADDRESS remoteAddr = GetLSStackAddress(pNativeVarInfo->loc.vlStk.vlsBaseReg, 
+        CORDB_ADDRESS remoteAddr = GetLSStackAddress(pNativeVarInfo->loc.vlStk.vlsBaseReg,
                                                      pNativeVarInfo->loc.vlStk.vlsOffset);
 
         HRESULT hr = GetProcess()->SafeReadStruct(remoteAddr, &uResult);
@@ -6873,7 +6873,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
                                       pType,
                                       false,
-                                      EMPTY_BUFFER, 
+                                      EMPTY_BUFFER,
                                       MemoryRange(pLocalValue, REG_SIZE),
                                       pRegHolder,
                                       &pValue);  // throws
@@ -6903,14 +6903,14 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
         EnregisteredValueHomeHolder pRemoteReg(new RegRegValueHome(this, highWordReg, lowWordReg));
         EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
 
-        CordbValue::CreateValueByType(GetCurrentAppDomain(), 
-                                      pType, 
+        CordbValue::CreateValueByType(GetCurrentAppDomain(),
+                                      pType,
                                       false,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
-                                      pRegHolder, 
+                                      pRegHolder,
                                       ppValue);  // throws
-    }  
+    }
     EX_CATCH_HRESULT(hr);
 
 #ifdef _DEBUG
@@ -7001,17 +7001,17 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
     {
         // Provide the register info as we create the value. CreateValueByType will transfer ownership of this to
         // the new instance of CordbValue.
-        EnregisteredValueHomeHolder pRemoteReg(new RegMemValueHome(this, 
-                                                                   highWordReg, 
+        EnregisteredValueHomeHolder pRemoteReg(new RegMemValueHome(this,
+                                                                   highWordReg,
                                                                    lowWordAddress));
         EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
 
-        CordbValue::CreateValueByType(GetCurrentAppDomain(), 
-                                      pType, 
+        CordbValue::CreateValueByType(GetCurrentAppDomain(),
+                                      pType,
                                       false,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
-                                      pRegHolder, 
+                                      pRegHolder,
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -7048,17 +7048,17 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
     {
         // Provide the register info as we create the value. CreateValueByType will transfer ownership of this to
         // the new instance of CordbValue.
-        EnregisteredValueHomeHolder pRemoteReg(new MemRegValueHome(this, 
-                                                                   lowWordRegister, 
+        EnregisteredValueHomeHolder pRemoteReg(new MemRegValueHome(this,
+                                                                   lowWordRegister,
                                                                    highWordAddress));
         EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
 
-        CordbValue::CreateValueByType(GetCurrentAppDomain(), 
-                                      pType, 
+        CordbValue::CreateValueByType(GetCurrentAppDomain(),
+                                      pType,
                                       false,
-                                      EMPTY_BUFFER, 
+                                      EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
-                                      pRegHolder, 
+                                      pRegHolder,
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -7141,7 +7141,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         if (index >= (sizeof(pThread->m_floatValues) /
                       sizeof(pThread->m_floatValues[0])))
             return E_INVALIDARG;
-        
+
 #ifdef DBG_TARGET_X86
         // A workaround (sort of) to get around the difference in format between
         // a float value and a double value.  We can't simply cast a double pointer to
@@ -7184,7 +7184,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
 //    whether we are the leaf frame or not
 //
 
-bool CordbNativeFrame::IsLeafFrame() const 
+bool CordbNativeFrame::IsLeafFrame() const
 {
     CONTRACTL
     {
@@ -7254,8 +7254,8 @@ bool CordbNativeFrame::IsLeafFrame() const
 //    the offset used for inspection purposes
 //
 // Notes:
-//    On WIN64, variables used in funclets are always homed on the stack.  Morever, the variable lifetime 
-//    information only covers the parent method.  The idea is that the variables which are live in a funclet 
+//    On WIN64, variables used in funclets are always homed on the stack.  Morever, the variable lifetime
+//    information only covers the parent method.  The idea is that the variables which are live in a funclet
 //    will be the variables which are live in the parent method at the offset at which the exception occurs.
 //    Thus, to determine if a variable is live in a funclet frame, we need to use the offset of the parent
 //    method frame at which the exception occurs.
@@ -7264,7 +7264,7 @@ bool CordbNativeFrame::IsLeafFrame() const
 SIZE_T CordbNativeFrame::GetInspectionIP()
 {
 #ifdef FEATURE_EH_FUNCLETS
-    // On 64-bit, if this is a funclet, then return the offset of the parent method frame at which 
+    // On 64-bit, if this is a funclet, then return the offset of the parent method frame at which
     // the exception occurs.  Otherwise just return the normal offset.
     return (IsFunclet() ? GetParentIP() : m_ip);
 #else
@@ -7332,7 +7332,7 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     *ppInternalFrame2 = NULL;
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    IDacDbiInterface::DynamicMethodType type = 
+    IDacDbiInterface::DynamicMethodType type =
         pDAC->IsILStubOrLCGMethod(GetNativeCode()->GetVMNativeCodeMethodDescToken());
 
     // Here are the conversion rules:
@@ -7350,9 +7350,9 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     else if (type == IDacDbiInterface::kLCGMethod)
     {
         RSInitHolder<CordbInternalFrame> pInternalFrame(
-            new CordbInternalFrame(m_pThread, 
-                                   m_fp, 
-                                   m_currentAppDomain, 
+            new CordbInternalFrame(m_pThread,
+                                   m_fp,
+                                   m_currentAppDomain,
                                    STUBFRAME_LIGHTWEIGHT_FUNCTION,
                                    GetNativeCode()->GetMetadataToken(),
                                    GetNativeCode()->GetFunction(),
@@ -7377,9 +7377,9 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
                                  DWORD                 dwExactGenericArgsTokenIndex,
                                  bool                  fVarArgFnx,
                                  CordbReJitILCode *    pRejitCode)
-  : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame), 
-    m_nativeFrame(pNativeFrame), 
-    m_ilCode(pCode), 
+  : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame),
+    m_nativeFrame(pNativeFrame),
+    m_ilCode(pCode),
     m_ip(ip),
     m_mapping(mapping),
     m_fVarArgFnx(fVarArgFnx),
@@ -7401,14 +7401,14 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     EX_TRY
     {
         m_nativeFrame->m_pThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
 
 //---------------------------------------------------------------------------------------
 //
-// Initialize a CordbJITILFrame object.  Must be called after allocating the object and before using it. 
+// Initialize a CordbJITILFrame object.  Must be called after allocating the object and before using it.
 // If Init fails, then destroy the object and release the memory.
 //
 // Return Value:
@@ -7449,7 +7449,7 @@ HRESULT CordbJITILFrame::Init()
 
             // Retrieve the target address.
             CORDB_ADDRESS pRemoteValue = pNativeFrame->GetLSStackAddress(
-                                            pNativeVarInfo->loc.vlStk.vlsBaseReg, 
+                                            pNativeVarInfo->loc.vlStk.vlsBaseReg,
                                             pNativeVarInfo->loc.vlStk.vlsOffset);
 
             CORDB_ADDRESS argBase;
@@ -7493,9 +7493,9 @@ HRESULT CordbJITILFrame::Init()
                 }
             }
 
-            // GetVarArgSig gets the address of the beginning of the arguments pushed for this frame. 
-            // We'll need the address of the first argument, which will depend on its size and the 
-            // calling convention, so we'll commpute that now that we have the SigParser.  
+            // GetVarArgSig gets the address of the beginning of the arguments pushed for this frame.
+            // We'll need the address of the first argument, which will depend on its size and the
+            // calling convention, so we'll commpute that now that we have the SigParser.
             CordbType * pArgType;
             IfFailThrow(GetArgumentType(0, &pArgType));
             ULONG32 argSize = 0;
@@ -7509,7 +7509,7 @@ HRESULT CordbJITILFrame::Init()
         }
 
         // The stackwalking code can't always successfully retrieve the generics type token.
-        // For example, on 64-bit, the JIT only encodes the generics type token location if 
+        // For example, on 64-bit, the JIT only encodes the generics type token location if
         // a method has catch clause for a generic exception (e.g. "catch(MyException<string> e)").
         if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == NULL))
         {
@@ -7529,11 +7529,11 @@ HRESULT CordbJITILFrame::Init()
                 HRESULT hrTmp = pNativeFrame->m_nativeCode->ILVariableToNative(m_dwFrameParamsTokenIndex,
                                                                                pNativeFrame->GetInspectionIP(),
                                                                                &pNativeVarInfo);
-                
+
                 // It's not a disaster if we can't find the generics token, so don't throw an exception here.
-                // In fact, it's fairly common in retail code.  Even if we can't find the generics token, 
+                // In fact, it's fairly common in retail code.  Even if we can't find the generics token,
                 // we may still be able to look up the generics type information later by using the MethodDesc,
-                // the "this" object, etc.  If not, we'll at least get the representative type information 
+                // the "this" object, etc.  If not, we'll at least get the representative type information
                 // (e.g. Foo<T> instead of Foo<string>).
                 if (SUCCEEDED(hrTmp))
                 {
@@ -7586,7 +7586,7 @@ void CordbJITILFrame::Neuter()
 
     // Frames include pointers across to other types that specify the
     // representation instantiation - reduce the reference counts on these....
-    for (unsigned int i = 0; i < m_genericArgs.m_cInst; i++) 
+    for (unsigned int i = 0; i < m_genericArgs.m_cInst; i++)
     {
         m_genericArgs.m_ppInst[i]->Release();
     }
@@ -7657,15 +7657,15 @@ void CordbJITILFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    // @dbgtodo  reliability - This holder doesn't actually work in this case because it just deletes 
+    // @dbgtodo  reliability - This holder doesn't actually work in this case because it just deletes
     // each element on error.  The RS classes are all expected to be neutered before the destructor is called.
     NewArrayHolder<CordbType *> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
     {
         // creates a CordbType object for the generic argument
-        HRESULT hr = CordbType::TypeDataToType(GetCurrentAppDomain(), 
-                                               &(rgGenericTypeParams[i]), 
+        HRESULT hr = CordbType::TypeDataToType(GetCurrentAppDomain(),
+                                               &(rgGenericTypeParams[i]),
                                                &ppGenericArgs[i]);
         IfFailThrow(hr);
 
@@ -7815,14 +7815,14 @@ HRESULT CordbJITILFrame::EnumerateTypeParameters(ICorDebugTypeEnum **ppTypeParam
     EX_TRY
     {
 
-        // load the generic arguments, which may be cached        
+        // load the generic arguments, which may be cached
         LoadGenericArgs();
-       
+
         // create the enumerator
         RSInitHolder<CordbTypeEnum> pEnum(
             CordbTypeEnum::Build(GetCurrentAppDomain(), m_nativeFrame->m_pThread->GetRefreshStackNeuterList(), m_genericArgs.m_cInst, m_genericArgs.m_ppInst));
         if ( pEnum == NULL )
-        {            
+        {
             ThrowOutOfMemory();
         }
 
@@ -7836,8 +7836,8 @@ HRESULT CordbJITILFrame::EnumerateTypeParameters(ICorDebugTypeEnum **ppTypeParam
 // ----------------------------------------------------------------------------
 // CordbJITILFrame::GetChain
 //
-// Description: 
-//    Return the owning chain.  Since chains have been  deprecated in Arrowhead, 
+// Description:
+//    Return the owning chain.  Since chains have been  deprecated in Arrowhead,
 //    this function returns E_NOTIMPL unless there is a shim.
 //
 // Arguments:
@@ -7911,7 +7911,7 @@ HRESULT CordbJITILFrame::GetFunctionToken(mdMethodDef *pToken)
 // ----------------------------------------------------------------------------
 // CordJITILFrame::GetStackRange
 //
-// Description: 
+// Description:
 // Get the stack range owned by the associated native frame.
 // IL frames and native frames are 1:1 for normal jitted managed methods.
 // Dynamic methods are an exception.
@@ -7945,7 +7945,7 @@ HRESULT CordbJITILFrame::GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEn
 // ----------------------------------------------------------------------------
 // CordbJITILFrame::GetCaller
 //
-// Description: 
+// Description:
 // Delegate to the associated native frame to return the caller, which is closer to the root.
 //    This function has been deprecated in Arrowhead, and so it returns E_NOTIMPL unless there is a shim.
 //
@@ -7978,7 +7978,7 @@ HRESULT CordbJITILFrame::GetCaller(ICorDebugFrame **ppFrame)
 // ----------------------------------------------------------------------------
 // CordbJITILFrame::GetCallee
 //
-// Description: 
+// Description:
 // Delegate to the associated native frame to return the callee, which is closer to the leaf.
 //    This function has been deprecated in Arrowhead, and so it returns E_NOTIMPL unless there is a shim.
 //
@@ -8129,7 +8129,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
         {
             // We'll initialize everything at once
             ULONG cbArchitectureMin;
-            
+
             // m_FirstArgAddr will already be aligned on platforms that require alignment
             CORDB_ADDRESS rpCur = m_FirstArgAddr;
 
@@ -8173,7 +8173,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             m_ilCode->GetSig(NULL, NULL, &fMethodIsStatic);  // throws
 
             ULONG i;
-            
+
             if (fMethodIsStatic)
             {
                 i = 0;
@@ -8193,19 +8193,19 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
                 LoadGenericArgs();
 
                 IfFailThrow(CordbType::SigToType(GetModule(), &sigParser, &(this->m_genericArgs), &pArgType));
-        
+
                 IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(DBG_TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
                 rpCur -= max(cbType, cbArchitectureMin);
-                m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset = 
+                m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(m_FirstArgAddr - rpCur);
 
                 // Since the JIT adds in the size of this field, we do too to
                 // be consistent.
                 m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset += sizeof(((CORINFO_VarArgInfo*)0)->argBytes);
 #else // STACK_GROWS_UP_ON_ARGS_WALK
-                m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset = 
+                m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(rpCur - m_FirstArgAddr);
                 rpCur += max(cbType, cbArchitectureMin);
                 AlignAddressForType(pArgType, rpCur);
@@ -8241,19 +8241,19 @@ HRESULT CordbJITILFrame::ILVariableToNative(DWORD dwVarNumber,
         // for a local variable, then we want to use the variable
         // index as the function sees it - fixed (but not var)
         // args are added to local var number to get native info
-        // We are really trying to find a variable by it's number, 
+        // We are really trying to find a variable by it's number,
         // but "special" variables have a negative number which we
-        // don't use. We "number" them conceptually between the 
+        // don't use. We "number" them conceptually between the
         // arguments and locals:
         //
         //                  arguments        special         locals
         //                  -----------------------------------------
         // Actual numbers:  1 2 3             . . .          4 5 6 7
-        // Logical numbers: 0 1 2             3 4            5 6 7 8 
-        // 
-        // We have two different counts for the number of arguments: the fixedArgCount 
+        // Logical numbers: 0 1 2             3 4            5 6 7 8
+        //
+        // We have two different counts for the number of arguments: the fixedArgCount
         // gives the actual number of arguments and the allArgsCount is the number of
-        // of fixed arguments plus the number of var args. 
+        // of fixed arguments plus the number of var args.
         //
         // Thus, to get the correct actual number for locals we have to compute it as
         // logicalNumber - allArgsCount + fixedArgCount
@@ -8626,7 +8626,7 @@ HRESULT CordbJITILFrame::GetStackValue(DWORD dwIndex, ICorDebugValue **ppValue)
 
 //---------------------------------------------------------------------------------------
 //
-// Remaps the active frame to the latest EnC version of the function, preserving the 
+// Remaps the active frame to the latest EnC version of the function, preserving the
 // execution state of the method such as the values of locals.
 // Can only be called when the leaf frame is at a remap opportunity.
 //
@@ -8651,7 +8651,7 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
 
         // mark frames as not fresh, because this frame has been updated.
         m_nativeFrame->m_pThread->CleanupStack();
-        
+
         // Since we may have overwritten anything (objects, code, etc), we should mark
         // everything as needing to be re-cached.
         m_nativeFrame->m_pThread->GetProcess()->m_continueCounter++;
@@ -8706,7 +8706,7 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
         typeSig = SigParser(sig, sigCount);
         CorElementType elemType;
         IfFailRet(typeSig.GetElemType(&elemType));
-            
+
         if (elemType != ELEMENT_TYPE_GENERICINST)
             return META_E_BAD_SIGNATURE;
 
@@ -8729,7 +8729,7 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
             IfFailRet(genericSig.GetData(&methodGenerics));
     }
 
-     
+
     // Now build "types" and "inst".
     CordbType *pType = 0;
     types = new CordbType*[methodGenerics+classGenerics];
@@ -8757,7 +8757,7 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
         types[i] = pType;
         genericSig.SkipExactlyOne();
     }
-    
+
     inst = Instantiation(methodGenerics+classGenerics, types, classGenerics);
     return S_OK;
 }
@@ -8782,7 +8782,7 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
 
     NewArrayHolder<ULONG32> offsets(new ULONG32[count]);
     IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, count, &count, offsets));
-    
+
     bool found = false;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();
     for (ULONG32 i = 0; i < count; ++i)
@@ -8796,15 +8796,15 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
 
     if (!found)
         return E_UNEXPECTED;
-    
+
     // Get the signatures and mdToken for the callee.
     SigParser methodSig, genericSig;
     mdToken mdFunction = 0, targetClass = 0;
     IfFailRet(pCode->GetCallSignature(ILoffset, &targetClass, &mdFunction, methodSig, genericSig));
     IfFailRet(CordbNativeCode::SkipToReturn(methodSig));
-    
-    
-    
+
+
+
 
     // Create the Instantiation, type and then return value
     NewArrayHolder<CordbType*> types;
@@ -8829,7 +8829,7 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
 #elif  defined(DBG_TARGET_ARM)
     const CorDebugRegister floatRegister = REGISTER_ARM_D0;
 #endif
-    
+
 #if defined(DBG_TARGET_X86)
     const CorDebugRegister ptrRegister = REGISTER_X86_EAX;
     const CorDebugRegister ptrHighWordRegister = REGISTER_X86_EDX;
@@ -8874,7 +8874,7 @@ HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
 
     EX_TRY
     {
-        RSInitHolder<CordbValueEnum> cdVE(new CordbValueEnum(m_nativeFrame, 
+        RSInitHolder<CordbValueEnum> cdVE(new CordbValueEnum(m_nativeFrame,
             flags == ILCODE_ORIGINAL_IL ? CordbValueEnum::LOCAL_VARS_ORIGINAL_IL : CordbValueEnum::LOCAL_VARS_REJIT_IL));
 
         // Initialize the new enum
@@ -9024,9 +9024,9 @@ CordbEval::CordbEval(CordbThread *pThread)
     // Place ourselves on the processes neuter-list.
     HRESULT hr = S_OK;
     EX_TRY
-    {        
-        GetProcess()->AddToLeftSideResourceCleanupList(this);        
-    } 
+    {
+        GetProcess()->AddToLeftSideResourceCleanupList(this);
+    }
     EX_CATCH_HRESULT(hr);
     SetUnrecoverableIfFailed(GetProcess(), hr);
 }
@@ -9037,8 +9037,8 @@ CordbEval::~CordbEval()
 }
 
 // Free the left-side resources for the eval.
-void CordbEval::NeuterLeftSideResources() 
-{ 
+void CordbEval::NeuterLeftSideResources()
+{
     SendCleanup();
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
@@ -9046,17 +9046,17 @@ void CordbEval::NeuterLeftSideResources()
 }
 
 // Neuter the CordbEval
-// 
+//
 // Assumptions:
 //    By the time we neuter the eval, it's associated left-side resources
 //    are already cleaned up (either explicitly from calling code:CordbEval::SendCleanup
 //    or implicitly from the left-side exiting).
-//    
+//
 // Notes:
 //    We place ourselves on a neuter list. This gets called when the neuterlist sweeps.
 void CordbEval::Neuter()
 {
-    // By now, we should have freed our target-resources (code:CordbEval::NeuterLeftSideResources 
+    // By now, we should have freed our target-resources (code:CordbEval::NeuterLeftSideResources
     // or code:CordbEval::SendCleanup), unless the target is dead (terminated or about to exit).
     BOOL fTargetIsDead = !GetProcess()->IsSafeToSendEvents() || GetProcess()->m_exiting;
     (void)fTargetIsDead; //prevent "unused variable" error from GCC
@@ -9109,7 +9109,7 @@ HRESULT CordbEval::SendCleanup()
     }
 
     // Release the cached HandleValue for the result. This may cleanup resources,
-    // like our object handle to the func-eval result. 
+    // like our object handle to the func-eval result.
     m_pHandleValue.Clear();
 
 
@@ -9245,7 +9245,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         // At the moment the LHS only cares about this data
         // when boxing the "this" pointer.
         {
-            CordbVCObjectValue * pVCObjVal = 
+            CordbVCObjectValue * pVCObjVal =
                 static_cast<CordbVCObjectValue *>(static_cast<ICorDebugObjectValue*> (pValue));
 
             unsigned int fullArgTypeNodeCount = 0;
@@ -9366,7 +9366,7 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
 
             if ((tyargData != NULL) && (tyargDataSize != 0))
             {
-                
+
                 TargetBuffer tb(argdata, tyargDataSize);
                 m_thread->GetProcess()->SafeWriteBuffer(tb, (const BYTE*) tyargData); // throws
 
@@ -9385,7 +9385,7 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
             {
                 TargetBuffer tb(argdata, argData2Size);
                 m_thread->GetProcess()->SafeWriteBuffer(tb, (const BYTE*) argData2); // throws
-                
+
                 argdata += argData2Size;
             }
         }
@@ -9499,11 +9499,11 @@ HRESULT CordbEval::FilterHR(HRESULT hr)
 
     //
     // Most likely is if we're in native code. Check that first.
-    // 
+    //
     // In V2, we do this check by checking if the leaf chain is native.  Since we have no chain in Arrowhead,
     // we can't do this check.  Instead, we check whether the active frame is NULL or not.  If it's NULL,
     // then we are stopped in native code.
-    // 
+    //
     HRESULT hrTemp = S_OK;
     if (GetProcess()->GetShim() != NULL)
     {
@@ -9516,7 +9516,7 @@ HRESULT CordbEval::FilterHR(HRESULT hr)
             return hr;
         }
 
-        // pChain should never be NULL here, since we should have at least one thread start chain even if 
+        // pChain should never be NULL here, since we should have at least one thread start chain even if
         // there is no managed code on the stack, but let's just be extra careful here.
         if (pChain == NULL)
         {
@@ -9639,7 +9639,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         // the same appdomain as the function.  Verify this.
         CordbAppDomain * pMethodAppDomain = (static_cast<CordbFunction *> (pFunction))->GetAppDomain();
 
-        if (!DoAppDomainsMatch(pMethodAppDomain, nTypeArgs, rgpTypeArgs, nArgs, rgpArgs)) 
+        if (!DoAppDomainsMatch(pMethodAppDomain, nTypeArgs, rgpTypeArgs, nArgs, rgpArgs))
         {
             return ErrWrapper(CORDBG_E_APPDOMAIN_MISMATCH);
         }
@@ -9659,7 +9659,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
 
         // Must be locked to get a cookie
         RsPtrHolder<CordbEval> hFuncEval(this);
-        
+
         if (hFuncEval.Ptr().IsNull())
         {
             return E_OUTOFMEMORY;
@@ -9824,7 +9824,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     // the same appdomain as the constructor.  Verify this.
     CordbAppDomain * pConstructorAppDomain = (static_cast<CordbFunction *> (pConstructor))->GetAppDomain();
 
-    if (!DoAppDomainsMatch(pConstructorAppDomain, nTypeArgs, rgpTypeArgs, nArgs, rgpArgs)) 
+    if (!DoAppDomainsMatch(pConstructorAppDomain, nTypeArgs, rgpTypeArgs, nArgs, rgpArgs))
     {
         return ErrWrapper(CORDBG_E_APPDOMAIN_MISMATCH);
     }
@@ -9842,7 +9842,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
     RsPtrHolder<CordbEval> hFuncEval(this);
-    
+
     if (hFuncEval.Ptr().IsNull())
     {
         return E_OUTOFMEMORY;
@@ -9954,7 +9954,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     // the same appdomain as the class.  Verify this.
     CordbAppDomain * pClassAppDomain = (static_cast<CordbClass *> (pClass))->GetAppDomain();
 
-    if (!DoAppDomainsMatch(pClassAppDomain, nTypeArgs, rgpTypeArgs, 0, NULL)) 
+    if (!DoAppDomainsMatch(pClassAppDomain, nTypeArgs, rgpTypeArgs, 0, NULL))
     {
         return ErrWrapper(CORDBG_E_APPDOMAIN_MISMATCH);
     }
@@ -9973,7 +9973,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
     RsPtrHolder<CordbEval> hFuncEval(this);
     lockHolder.Release(); // release to send an IPC event.
-    
+
     if (hFuncEval.Ptr().IsNull())
     {
         return E_OUTOFMEMORY;
@@ -9985,7 +9985,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
 
     // Send over to the left side and get it to setup this eval.
     DebuggerIPCEvent event;
-    
+
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
@@ -10060,7 +10060,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
     RsPtrHolder<CordbEval> hFuncEval(this);
     lockHolder.Release(); // release to send an IPC event.
-    
+
     if (hFuncEval.Ptr().IsNull())
     {
         return E_OUTOFMEMORY;
@@ -10179,7 +10179,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
     RsPtrHolder<CordbEval> hFuncEval(this);
     lockHolder.Release(); // release to send an IPC event.
-    
+
     if (hFuncEval.Ptr().IsNull())
     {
         return E_OUTOFMEMORY;
@@ -10192,7 +10192,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
 
     // Send over to the left side and get it to setup this eval.
     DebuggerIPCEvent event;
-    
+
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
@@ -10210,7 +10210,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
 
     // Prefast overflow sanity check.
     S_UINT32 allocSize = S_UINT32(rank) * S_UINT32(sizeof(SIZE_T));
-    
+
     if (allocSize.IsOverflow())
     {
         return E_INVALIDARG;
@@ -10223,7 +10223,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     {
         rgDimensionsSizeT[i] = rgDimensions[i];
     }
-    
+
     ICorDebugType * rgpGenericArgs[1];
 
     rgpGenericArgs[0] = pElementType;
@@ -10374,7 +10374,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
             // @dbgtodo  funceval - push this up
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-            pAppDomain = m_thread->GetProcess()->LookupOrCreateAppDomain(m_resultAppDomainToken);            
+            pAppDomain = m_thread->GetProcess()->LookupOrCreateAppDomain(m_resultAppDomainToken);
         }
         else
         {
@@ -10412,19 +10412,19 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
                     // Neuter the new object we've been working on. This will
                     // call Dispose(), and that will go back to the left side
                     // and free the handle that we got above.
-                    pHandleValue->NeuterLeftSideResources(); 
+                    pHandleValue->NeuterLeftSideResources();
 
-                    // 
+                    //
 
                     // Do not delete chv here.  The neuter list still has a reference to it, and it will be cleaned up automatically.
                     ThrowHR(hr);
                 }
-                m_pHandleValue.Assign(pHandleValue);                
+                m_pHandleValue.Assign(pHandleValue);
                 pHandleValue.ClearAndMarkDontNeuter();
             }
 
-            // This AddRef is for caller to release            
-            // 
+            // This AddRef is for caller to release
+            //
             *ppResult = m_pHandleValue;
             m_pHandleValue->ExternalAddRef();
         }
@@ -10437,7 +10437,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         {
             TargetBuffer remoteValue(m_resultAddr, CordbValue::GetSizeForType(pType, kBoxed));
             // Now that we have the module, go ahead and create the result.
-            
+
             CordbValue::CreateValueByType(pAppDomain,
                                           pType,
                                           true,
@@ -10466,12 +10466,12 @@ HRESULT CordbEval::GetThread(ICorDebugThread **ppThread)
 
 // Create a RS literal for primitive type funceval result. In case the result is used as an argument for
 // another funceval, we need to make sure that we're not relying on the LS value, which will be freed and
-// thus unavailable. 
+// thus unavailable.
 // Arguments:
 //     input:  pType   - CordbType instance representing the type of the primitive value
 //     output: ppValue - ICorDebugValue representing the result as a literal CordbGenericValue
-// Return Value: 
-//     hr: may fail for OOM, ReadProcessMemory failures    
+// Return Value:
+//     hr: may fail for OOM, ReadProcessMemory failures
 HRESULT CordbEval::CreatePrimitiveLiteral(CordbType *   pType,
                                           ICorDebugValue ** ppValue)
 {
@@ -10494,7 +10494,7 @@ HRESULT CordbEval::CreatePrimitiveLiteral(CordbType *   pType,
         GetProcess()->SafeReadBuffer (remoteValue, localBuffer);
         gv->SetValue(localBuffer);
 
-        // Do not delete gv here even if the initialization fails.  
+        // Do not delete gv here even if the initialization fails.
         // The neuter list still has a reference to it, and it will be cleaned up automatically.
         gv->ExternalAddRef();
         *ppValue = (ICorDebugValue*)(ICorDebugGenericValue*)gv;
@@ -10523,7 +10523,7 @@ HRESULT CordbEval::CreateValue(CorElementType elementType,
 
     // MkUnparameterizedType now works if you give it ELEMENT_TYPE_CLASS and
     // a null pElementClass - it returns the type for ELEMENT_TYPE_OBJECT.
-    
+
     hr = CordbType::MkUnparameterizedType(m_thread->GetAppDomain(), elementType, (CordbClass *) pElementClass, &typ);
 
     if (FAILED(hr))
@@ -10532,11 +10532,11 @@ HRESULT CordbEval::CreateValue(CorElementType elementType,
     return CreateValueForType(typ, ppValue);
 }
 
-// create an ICDValue to represent a value for a funceval 
-// Arguments: 
+// create an ICDValue to represent a value for a funceval
+// Arguments:
 //     input:  pIType  - the type for the new value
 //     output: ppValue - the new ICDValue. If there is a failure of some sort, this will be NULL
-// ReturnValue: S_OK on success (ppValue should contain a non-NULL address) 
+// ReturnValue: S_OK on success (ppValue should contain a non-NULL address)
 //              E_OUTOFMEMORY, if we can't allocate space for the new ICDValue
 // Notes: We can also get read process memory errors or E_INVALIDARG if errors occur during initialization,
 // but in that case, we don't return the hresult. Instead, we just never update ppValue, so it will still be
@@ -10557,7 +10557,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
     CordbType *pType = static_cast<CordbType *> (pIType);
 
     CorElementType elementType = pType->m_elementType;
-    // We don't support IntPtr and UIntPtr types as arguments here, but we do support these types as results 
+    // We don't support IntPtr and UIntPtr types as arguments here, but we do support these types as results
     // (see code:CordbEval::CreatePrimitiveLiteral) and we have changed the LS to support them as well
     if (((elementType < ELEMENT_TYPE_BOOLEAN) ||
          (elementType > ELEMENT_TYPE_R8)) &&
@@ -10574,13 +10574,13 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
 
             if (SUCCEEDED(rv->InitRef(MemoryRange(NULL,0))))
             {
-                // Do not delete rv here even if the initialization fails.  
+                // Do not delete rv here even if the initialization fails.
                 // The neuter list still has a reference to it, and it will be cleaned up automatically.
                 rv->ExternalAddRef();
                 *ppValue = (ICorDebugValue*)(ICorDebugReferenceValue*)rv;
             }
         }
-        EX_CATCH_HRESULT(hr);    
+        EX_CATCH_HRESULT(hr);
     }
     else
     {
@@ -10591,7 +10591,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
             gv = new CordbGenericValue(pType);
 
             gv->Init(MemoryRange(NULL,0));
-            // Do not delete gv here even if the initialization fails.  
+            // Do not delete gv here even if the initialization fails.
             // The neuter list still has a reference to it, and it will be cleaned up automatically.
             gv->ExternalAddRef();
             *ppValue = (ICorDebugValue*)(ICorDebugGenericValue*)gv;

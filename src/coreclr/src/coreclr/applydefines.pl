@@ -113,7 +113,7 @@ sub Usage()
     print "\t-f <file>\t: the file containing #define settings\n";
     print "\t-o <file>\t: the output file\n";
     print "\t-d <name>=<Value>\t: additional define\n";
-    
+
     exit 1;
 }
 

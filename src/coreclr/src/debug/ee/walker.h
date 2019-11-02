@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: walker.h
-// 
+//
 
 //
 // Debugger code stream analysis routines
@@ -41,7 +41,7 @@ struct InstructionAttribute
     bool m_fIsAbsBranch;    // is this an absolute branch (either a call or a jump)?
     bool m_fIsRelBranch;    // is this a relative branch (either a call or a jump)?
     bool m_fIsWrite;        // does the instruction write to an address?
-   
+
 
     DWORD m_cbInstr;        // the size of the instruction
     DWORD m_cbDisp;         // the size of the displacement
@@ -77,10 +77,10 @@ protected:
 public:
 
     virtual void Init(const BYTE *ip, REGDISPLAY *pregisters)
-    { 
+    {
         PREFIX_ASSUME(pregisters != NULL);
         _ASSERTE(GetControlPC(pregisters) == (PCODE)ip);
-        
+
         m_registers = pregisters;
         SetIP(ip);
     }
@@ -127,7 +127,7 @@ class NativeWalker : public Walker
 {
 public:
     void Init(const BYTE *ip, REGDISPLAY *pregisters)
-    { 
+    {
         m_opcode = 0;
         Walker::Init(ip, pregisters);
     }
@@ -157,7 +157,7 @@ class NativeWalker : public Walker
 {
 public:
     void Init(const BYTE *ip, REGDISPLAY *pregisters)
-    { 
+    {
         Walker::Init(ip, pregisters);
     }
 
@@ -174,7 +174,7 @@ class NativeWalker : public Walker
 {
 public:
     void Init(const BYTE *ip, REGDISPLAY *pregisters)
-    { 
+    {
         m_opcode = 0;
         Walker::Init(ip, pregisters);
     }
@@ -222,7 +222,7 @@ class NativeWalker : public Walker
 {
 public:
     void Init(const BYTE *ip, REGDISPLAY *pregisters)
-    { 
+    {
         m_opcode = 0;
         Walker::Init(ip, pregisters);
     }
@@ -238,13 +238,13 @@ public:
     PORTABILITY_ASSERT("NativeWalker not implemented on this platform");
         m_type = WALK_UNKNOWN;
         m_skipIP = m_ip++;
-        m_nextIP = m_ip++;        
+        m_nextIP = m_ip++;
     }
 
     static void DecodeInstructionForPatchSkip(const BYTE *address, InstructionAttribute * pInstrAttrib)
     {
     PORTABILITY_ASSERT("NativeWalker not implemented on this platform");
-        
+
     }
 
 private:

@@ -19,8 +19,8 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 #include <stdlib.h>
 
 #ifdef USE_FORMATMESSAGE_WRAPPER
-// we implement the wrapper for FormatMessageW. 
-// Need access to the original 
+// we implement the wrapper for FormatMessageW.
+// Need access to the original
 #undef WszFormatMessage
 #define WszFormatMessage ::FormatMessageW
 #endif
@@ -63,7 +63,7 @@ static void BuildMUIDirectory(int langid, __out SString* pResult)
         PRECONDITION(CheckPointer(pResult));
     }
     CONTRACTL_END;
-    
+
     pResult->Printf(W("MUI\\%04x\\"), langid);
 }
 
@@ -83,7 +83,7 @@ void GetMUILanguageName(__out SString* pResult)
     int lcid = ::LocaleNameToLCID(langid,0);
     return BuildMUIDirectory(lcid, pResult);
 }
- 
+
 void GetMUIParentLanguageName(SString* pResult)
 {
     WRAPPER_NO_CONTRACT;
@@ -99,7 +99,7 @@ HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pCultureNames));
-    } 
+    }
     CONTRACTL_END;
 
     HRESULT hr=S_OK;
@@ -112,7 +112,7 @@ HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
         {
             pCultureNames->Append(result);
         }
-        
+
         GetMUIParentLanguageName(&result);
 
         _ASSERTE(!result.IsEmpty());
@@ -121,7 +121,7 @@ HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
     }
     EX_CATCH_HRESULT(hr)
     return hr;
-    
+
 }
 #endif // DACCESS_COMPILE
 
@@ -170,9 +170,9 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
     }
     CONTRACTL_END;
 
-    
+
     if (m_pHash == NULL) {
-        m_pHash = new (nothrow)CCulturedHInstance[MAP_STARTSIZE];        
+        m_pHash = new (nothrow)CCulturedHInstance[MAP_STARTSIZE];
         if (m_pHash==NULL)
             return E_OUTOFMEMORY;
         m_nHashSize = MAP_STARTSIZE;
@@ -190,7 +190,7 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
             {
                 m_pHash[i].Set(langId,hInst);
             }
-            
+
             return S_OK;
         }
     }
@@ -240,19 +240,19 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
 
 	// This function is called during Watson process.  We need to make sure
 	// that this function is restartable.
-	// 
+	//
     // Make sure to NEVER null out the function callbacks in the Init
     // function. They get set for the "Default CCompRC" during EEStartup
     // and we want to make sure we don't wipe them out.
 
     m_bUseFallback = bUseFallback;
-    
+
     if (m_pResourceFile == NULL)
     {
         if(pResourceFile)
         {
             NewArrayHolder<WCHAR> pwszResourceFile(NULL);
-    
+
             DWORD lgth = (DWORD) wcslen(pResourceFile) + 1;
             pwszResourceFile = new(nothrow) WCHAR[lgth];
             if (pwszResourceFile)
@@ -268,7 +268,7 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     else
         InterlockedCompareExchangeT(&m_pResourceFile, m_pDefaultResource, NULL);
     }
-    
+
     if (m_pResourceFile == NULL)
     {
         return E_OUTOFMEMORY;
@@ -406,7 +406,7 @@ void CCompRC::Destroy()
 
 //*****************************************************************************
 // Initialization is done lazily, for backwards compatibility "mscorrc.dll"
-// is consider the default location for all strings that use CCompRC. 
+// is consider the default location for all strings that use CCompRC.
 // An instance value for CCompRC can be created to load resources from a different
 // resource dll.
 //*****************************************************************************
@@ -424,7 +424,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 #endif
     }
     CONTRACTL_END;
-    
+
     if (m_dwDefaultInitialized)
         return &m_DefaultResourceDll;
 
@@ -433,7 +433,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
         return NULL;
     }
     m_dwDefaultInitialized = 1;
-    
+
     return &m_DefaultResourceDll;
 }
 
@@ -451,7 +451,7 @@ CCompRC* CCompRC::GetFallbackResourceDll()
 #endif
     }
     CONTRACTL_END;
-    
+
     if (m_dwFallbackInitialized)
         return &m_FallbackResourceDll;
 
@@ -460,7 +460,7 @@ CCompRC* CCompRC::GetFallbackResourceDll()
         return NULL;
     }
     m_dwFallbackInitialized = 1;
-    
+
     return &m_FallbackResourceDll;
 }
 
@@ -484,7 +484,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
 
     HRESULT     hr = E_FAIL;
     HRESOURCEDLL    hInst = 0;
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     HRESOURCEDLL    hLibInst = 0; //Holds early library instance
     BOOL        fLibAlreadyOpen = FALSE; //Determine if we can close the opened library.
 #endif
@@ -503,7 +503,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
         // If primary is missing then the hash will not have anything either
         hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
     }
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     // If this is the first visit, we must set the primary entry
     else
     {
@@ -514,7 +514,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
         {
             return hr;
         }
-        
+
         CRITSEC_Holder csh (m_csMap);
         // As we expected
         if (!m_Primary.IsSet() && !m_Primary.IsMissing())
@@ -529,23 +529,23 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
                 m_Primary.SetMissing(langId);
             }
         }
-        
+
         // Someone got into this critical section before us and set the primary already
         else if (m_Primary.HasID(langId))
         {
             hInst = m_Primary.GetLibraryHandle();
             fLibAlreadyOpen = TRUE;
         }
-        
+
         // If neither case is true, someone got into this critical section before us and
         //  set the primary to other than the language we want...
         else
         {
             fLibAlreadyOpen = TRUE;
         }
-        
+
         IfFailRet(hr);
-        
+
         if (fLibAlreadyOpen)
         {
             FreeLibrary(hLibInst);
@@ -570,9 +570,9 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
             }
         }
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
         // If we didn't find it, we have to load the library and insert it into the hash
-        if (hInst == NULL) 
+        if (hInst == NULL)
         {
             hr = LoadLibrary(&hLibInst);
             // If it's a transient failure, don't cache the failure
@@ -582,7 +582,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
             }
             {
                 CRITSEC_Holder csh (m_csMap);
-                
+
                 // Double check - someone may have entered this section before us
                 BOOL fMissing = FALSE;
                 hInst = LookupNode(langId, fMissing);
@@ -615,11 +615,11 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
         }
 
         // We found the node, so set hr to be a success.
-        else 
+        else
         {
             hr = S_OK;
         }
-#endif // DACCESS_COMPILE    
+#endif // DACCESS_COMPILE
     }
 Exit:
     *phInst = hInst;
@@ -627,7 +627,7 @@ Exit:
 }
 
 //*****************************************************************************
-// Load the string 
+// Load the string
 // We load the localized libraries and cache the handle for future use.
 // Mutliple threads may call this, so the cache structure is thread safe.
 //*****************************************************************************
@@ -636,10 +636,10 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, __out_
     WRAPPER_NO_CONTRACT;
     LocaleIDValue langIdValue;
     LocaleID langId;
-    // Must resolve current thread's langId to a dll.   
+    // Must resolve current thread's langId to a dll.
     if(m_fpGetThreadUICultureId) {
         int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-        
+
         // Callback can't return 0, since that indicates empty.
         // To indicate empty, callback should return UICULTUREID_DONTCARE
         _ASSERTE(ret != 0);
@@ -647,12 +647,12 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, __out_
         if (ret == 0)
             return E_UNEXPECTED;
         langId=langIdValue;
-        
+
     }
     else {
         langId = UICULTUREID_DONTCARE;
     }
-    
+
 
     return LoadString(eCategory, langId, iResourceID, szBuffer, iMax, pcwchUsed);
 }
@@ -682,9 +682,9 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
         _ASSERTE(hInst != NULL);
 
         length = ::WszLoadString(hInst, iResourceID, szBuffer, iMax);
-        if(length > 0) 
+        if(length > 0)
         {
-            if(pcwchUsed) 
+            if(pcwchUsed)
             {
                 *pcwchUsed = length;
             }
@@ -706,7 +706,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
             //should not fall back to itself
             _ASSERTE(pFallback != this);
 
-            // check existence in the fallback Dll 
+            // check existence in the fallback Dll
 
             hr = pFallback->LoadString(Optional, langId, iResourceID,szBuffer, iMax, pcwchUsed);
 
@@ -725,10 +725,10 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
             case Error:
                 // get stub message
                 {
-                    
+
                    if (pFallback)
                    {
-                        
+
                         StackSString ssErrorFormat;
                         if (eCategory == Error)
                         {
@@ -739,16 +739,16 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
                             _ASSERTE(eCategory == Debugging);
                             hr=ssErrorFormat.LoadResourceAndReturnHR(pFallback,  CCompRC::Required, IDS_EE_LINK_FOR_DEBUGGING_MESSAGES);
                         }
-                        
+
                         if (SUCCEEDED(hr))
                         {
                             StackSString sFormattedMessage;
                             int iErrorCode = HR_FOR_URT_MSG(iResourceID);
 
                             hr = S_OK;
-                            
+
                             DWORD_PTR args[] = {(DWORD_PTR)VER_FILEVERSION_STR_L, iResourceID, iErrorCode};
-                            
+
                             length = WszFormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY ,
                                                         (LPCWSTR)ssErrorFormat, 0, 0,
                                                         szBuffer,iMax,(va_list*)args);
@@ -756,7 +756,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
                             if (length == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
                             {
                                 // The buffer wasn't big enough for the message. Tell the caller this.
-                                // 
+                                //
                                 // Clear the buffer, just in case.
                                 if (szBuffer && iMax)
                                     *szBuffer = W('\0');
@@ -765,18 +765,18 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
                                 hr=HRESULT_FROM_GetLastError();
                             }
 
-                            if(length > 0) 
+                            if(length > 0)
                             {
-                                if(pcwchUsed) 
+                                if(pcwchUsed)
                                 {
                                     *pcwchUsed = length;
                                 }
                                 return hr;
                             }
-                            
+
                             // Format mesage failed
                             hr=HRESULT_FROM_GetLastError();
-                                    
+
                         }
                     }
                     else // if (pFallback)
@@ -786,13 +786,13 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
                 }
                 // if we got here then we couldn't get the fallback message
                 // the fallback message is required so just falling through into "Required"
-                
+
             case Required:
 
                 if ( hr != E_OUTOFMEMORY)
                 {
                     // Shouldn't be any reason for this condition but the case where
-                    // the resource dll is missing, code used the wrong ID or developer didn't 
+                    // the resource dll is missing, code used the wrong ID or developer didn't
                     // update the resource DLL.
                     _ASSERTE(!"Missing mscorrc.dll or mscorrc.debug.dll?");
                     hr = HRESULT_FROM_GetLastError();
@@ -823,16 +823,16 @@ HRESULT CCompRC::LoadMUILibrary(HRESOURCEDLL * pHInst)
     _ASSERTE(pHInst != NULL);
     LocaleID langId;
     LocaleIDValue langIdValue;
-    // Must resolve current thread's langId to a dll.   
+    // Must resolve current thread's langId to a dll.
     if(m_fpGetThreadUICultureId) {
         int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-        
+
         // Callback can't return 0, since that indicates empty.
         // To indicate empty, callback should return UICULTUREID_DONTCARE
         _ASSERTE(ret != 0);
         langId=langIdValue;
     }
-    else 
+    else
         langId = UICULTUREID_DONTCARE;
 
     HRESULT hr = GetLibrary(langId, pHInst);
@@ -851,7 +851,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
     if ((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL) {
         return HRESULT_FROM_GetLastError();
     }
-#else // !FEATURE_PAL    
+#else // !FEATURE_PAL
     PORTABILITY_ASSERT("UNIXTODO: Implement resource loading - use peimagedecoder?");
 #endif // !FEATURE_PAL
     return S_OK;
@@ -859,8 +859,8 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 
 //*****************************************************************************
 // Load the library for this thread's current language
-// Called once per language. 
-// Search order is: 
+// Called once per language.
+// Search order is:
 //  1. Dll in localized path (<dir passed>\<lang name (en-US format)>\mscorrc.dll)
 //  2. Dll in localized (parent) path (<dir passed>\<lang name> (en format)\mscorrc.dll)
 //  3. Dll in root path (<dir passed>\mscorrc.dll)
@@ -878,23 +878,23 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 #endif
     }
     CONTRACTL_END;
-    
+
     HRESULT     hr = E_FAIL;
-    
+
 
     _ASSERTE(m_pResourceFile != NULL);
 
     // must initialize before calling SString::Empty()
     SString::Startup();
 
-    // Try and get both the culture fallback sequence         
+    // Try and get both the culture fallback sequence
 
-    StringArrayList cultureNames; 
+    StringArrayList cultureNames;
 
-    if (m_fpGetThreadUICultureNames) 
+    if (m_fpGetThreadUICultureNames)
     {
         hr = (*m_fpGetThreadUICultureNames)(&cultureNames);
-    }        
+    }
     else
     {
         EX_TRY
@@ -911,7 +911,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
         for (DWORD i=0; i< cultureNames.GetCount();i++)
         {
             SString& sLang = cultureNames[i];
-       
+
             PathString rcPathName(rcPath);
 
             if (!rcPathName.EndsWith(W("\\")))
@@ -939,11 +939,11 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
             hr = LoadResourceFile(pHInst, rcPathName);
             if (SUCCEEDED(hr))
                 break;
-            
-        }   
+
+        }
     }
     EX_CATCH_HRESULT(hr);
-    
+
     // Last ditch search effort in current directory
     if (FAILED(hr)) {
         hr = LoadResourceFile(pHInst, m_pResourceFile);
@@ -980,7 +980,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     VALIDATECORECLRCALLBACKS();
 
-    
+
     hr = g_CoreClrCallbacks.m_pfnGetCORSystemDirectory(rcPath);
     if (FAILED(hr))
         return hr;

@@ -15,20 +15,20 @@ public:
     static void SuspendEE(SUSPEND_REASON reason);
     static void RestartEE(bool bFinishedGC); //resume threads.
 
-    // 
+    //
     // The GC roots enumeration callback
     //
     static void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
 
-    // 
+    //
     // Callbacks issues during GC that the execution engine can do its own bookeeping
     //
 
     // start of GC call back - single threaded
-    static void GcStartWork(int condemned, int max_gen); 
+    static void GcStartWork(int condemned, int max_gen);
 
-    //EE can perform post stack scanning action, while the 
-    // user threads are still suspended 
+    //EE can perform post stack scanning action, while the
+    // user threads are still suspended
     static void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc);
 
     // Called before BGC starts sweeping, the heap is walkable

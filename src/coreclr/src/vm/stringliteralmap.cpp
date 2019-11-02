@@ -41,12 +41,12 @@
     and we know the StringLiteralEntry so found 1) can't be destroyed because that table keeps
     an AddRef on it and 2) isn't internally modified once created.
 */
-    
+
 #define GLOBAL_STRING_TABLE_BUCKET_SIZE 128
 #define INIT_NUM_APP_DOMAIN_STRING_BUCKETS 59
 #define INIT_NUM_GLOBAL_STRING_BUCKETS 131
 
-// assumes that memory pools's per block data is same as sizeof (StringLiteralEntry) 
+// assumes that memory pools's per block data is same as sizeof (StringLiteralEntry)
 #define EEHASH_MEMORY_POOL_GROW_COUNT 128
 
 StringLiteralEntryArray *StringLiteralEntry::s_EntryList = NULL;
@@ -97,7 +97,7 @@ StringLiteralMap::~StringLiteralMap()
 
     // We do need to take the globalstringliteralmap lock because we are manipulating
     // StringLiteralEntry objects that belong to it.
-    // Note that we remember the current entry and relaese it only when the 
+    // Note that we remember the current entry and relaese it only when the
     // enumerator has advanced to the next entry so that we don't endup deleteing the
     // current entry itself and killing the enumerator.
 
@@ -124,7 +124,7 @@ StringLiteralMap::~StringLiteralMap()
                 _ASSERTE(pEntry);
                 pEntry->Release();
 
-                // Set the 
+                // Set the
                 pEntry = (StringLiteralEntry*)m_StringToEntryHashTable->IterateGetValue(&Iter);
             }
             // Release the last entry
@@ -164,8 +164,8 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
 
     // TODO: We can be more efficient by checking our local hash table now to see if
     // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-    // (Rather than waiting until after we look the string up in the global map) 
-    
+    // (Rather than waiting until after we look the string up in the global map)
+
     StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound));
 
     _ASSERTE(pEntry || !bAddIfNotFound);
@@ -177,9 +177,9 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         // hashentry in the appdomain specific map.
         // TODO: except that by not inserting into our local table we always take the global map lock
         // and come into this path, when we could succeed at a lock free lookup above.
-        
+
         if (!bAppDomainWontUnload)
-        {                
+        {
             // Make sure some other thread has not already added it.
             if (!m_StringToEntryHashTable->GetValue(pStringData, &Data))
             {
@@ -240,8 +240,8 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
 
         // TODO: We can be more efficient by checking our local hash table now to see if
         // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-        // (Rather than waiting until after we look the string up in the global map) 
-        
+        // (Rather than waiting until after we look the string up in the global map)
+
         // Retrieve the string literal from the global string literal map.
         StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
 
@@ -312,10 +312,10 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    
+
     // if we are deleting the map then either it is shutdown time or else there was a race trying to create
-    // the initial map and this one was the loser 
-    // (i.e. two threads made a map and the InterlockedCompareExchange failed for one of them and 
+    // the initial map and this one was the loser
+    // (i.e. two threads made a map and the InterlockedCompareExchange failed for one of them and
     // now it is deleting the map)
     //
     // if it's not the main map, then the map we are deleting better be empty!
@@ -326,19 +326,19 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
     if (SystemDomain::GetGlobalStringLiteralMapNoCreate() != this)
     {
         // if this isn't the real global table then it must be empty
-        _ASSERTE(m_StringToEntryHashTable->IsEmpty());  
+        _ASSERTE(m_StringToEntryHashTable->IsEmpty());
 
         // Delete the hash table first. The dtor of the hash table would clean up all the entries.
         delete m_StringToEntryHashTable;
         // Delete the pool later, since the dtor above would need it.
-        delete m_MemoryPool;        
+        delete m_MemoryPool;
     }
     else
     {
         // We are shutting down, the OS will reclaim the memory from the StringLiteralEntries,
         // m_MemoryPool and m_StringToEntryHashTable.
         _ASSERTE(g_fProcessDetach);
-    }        
+    }
 }
 
 void GlobalStringLiteralMap::Init()
@@ -349,7 +349,7 @@ void GlobalStringLiteralMap::Init()
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         INJECT_FAULT(ThrowOutOfMemory());
-    } 
+    }
     CONTRACTL_END;
 
     // Allocate the memory pool and set the initial count to quarter as grow count
@@ -371,7 +371,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckPointer(pStringData));
-        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());        
+        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
@@ -405,7 +405,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
         PRECONDITION(CheckPointer(pString));
         PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
-    CONTRACTL_END;  
+    CONTRACTL_END;
 
     EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
 
@@ -450,13 +450,13 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;  
+        MODE_COOPERATIVE;
     }
-    CONTRACTL_END;  
-   
+    CONTRACTL_END;
+
     // Create the COM+ string object.
     DWORD cCount = pStringData->GetCharCount();
-    
+
     STRINGREF strObj = AllocateString(cCount);
 
     GCPROTECT_BEGIN(strObj)
@@ -481,9 +481,9 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(this));
-        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());        
+        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
-    CONTRACTL_END;  
+    CONTRACTL_END;
 
     StringLiteralEntry *pRet;
 
@@ -491,10 +491,10 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     LargeHeapHandleBlockHolder pStrObj(&m_LargeHeapHandleTable,1);
     // Create the COM+ string object.
     STRINGREF strObj = AllocateStringObject(pStringData);
-                
+
     // Allocate a handle for the string.
     SetObjectReference(pStrObj[0], (OBJECTREF) strObj);
-   
+
 
     // Allocate the StringLiteralEntry.
     StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
@@ -514,18 +514,18 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
 StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString)
 {
- 
+
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(this));
-        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());        
+        PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
-    CONTRACTL_END;  
+    CONTRACTL_END;
 
-    EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());    
+    EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
     StringLiteralEntry *pRet;
 
     {
@@ -554,22 +554,22 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pEntry)); 
+        PRECONDITION(CheckPointer(pEntry));
         PRECONDITION(m_HashTableCrstGlobal.OwnedByCurrentThread());
         PRECONDITION(CheckPointer(this));
     }
-    CONTRACTL_END;      
+    CONTRACTL_END;
 
     // Remove the entry from the hash table.
     {
         GCX_COOP();
 
-        EEStringData StringData;    
+        EEStringData StringData;
         pEntry->GetStringData(&StringData);
 
         BOOL bSuccess;
         bSuccess = m_StringToEntryHashTable->DeleteValue(&StringData);
-        // this assert is comented out to accomodate case when StringLiteralEntryHolder 
+        // this assert is comented out to accomodate case when StringLiteralEntryHolder
         // releases this object after failed insertion into hash
         //_ASSERTE(bSuccess);
 
@@ -600,7 +600,7 @@ StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData,
         MODE_COOPERATIVE;
         PRECONDITION(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
-    CONTRACTL_END; 
+    CONTRACTL_END;
 
     // Note: we don't synchronize here because allocateEntry is called when HashCrst is held.
     void *pMem = NULL;
@@ -608,7 +608,7 @@ StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData,
     {
         pMem = s_FreeEntryList;
         s_FreeEntryList = s_FreeEntryList->m_pNext;
-        _ASSERTE (((StringLiteralEntry*)pMem)->m_bDeleted);        
+        _ASSERTE (((StringLiteralEntry*)pMem)->m_bDeleted);
     }
     else
     {
@@ -634,18 +634,18 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
         GC_NOTRIGGER;
         PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
     }
-    CONTRACTL_END; 
+    CONTRACTL_END;
 
     _ASSERTE (VolatileLoad(&pEntry->m_dwRefCount) == 0);
-    
+
 #ifdef _DEBUG
     memset (pEntry, 0xc, sizeof(StringLiteralEntry));
 #endif
 
-#ifdef _DEBUG        
+#ifdef _DEBUG
     pEntry->m_bDeleted = TRUE;
 #endif
-    
+
     // The free list needs protection from the m_HashTableCrstGlobal
     pEntry->m_pNext = s_FreeEntryList;
     s_FreeEntryList = pEntry;

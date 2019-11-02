@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// 
+//
 // Emulate hardware single-step on ARM.
 //
 
@@ -122,7 +122,7 @@ private:
     bool          m_fEmulate;
     bool          m_fBypass;
     bool          m_fSkipIT;                  // We are skipping an instruction due to an IT condition.
-    
+
     // Initializes m_rgCode.  Not thread safe.
     void Init();
 

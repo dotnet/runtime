@@ -46,16 +46,16 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mov     [rdi + CONTEXT_R12], r12
     mov     [rdi + CONTEXT_R13], r13
     mov     [rdi + CONTEXT_R14], r14
-    mov     [rdi + CONTEXT_R15], r15   
+    mov     [rdi + CONTEXT_R15], r15
 LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
     je      LOCAL_LABEL(Done_CONTEXT_CONTROL)
-    
+
     // Return address is @ (RSP + 8)
     mov     rdx, [rsp + 8]
     mov     [rdi + CONTEXT_Rip], rdx
-.att_syntax 
+.att_syntax
     mov     %cs, CONTEXT_SegCs(%rdi)
 .intel_syntax noprefix
     // Get the value of EFlags that was pushed on stack at the beginning of the function
@@ -63,7 +63,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     mov     [rdi + CONTEXT_EFlags], edx
     lea     rdx, [rsp + 16]
     mov     [rdi + CONTEXT_Rsp], rdx
-.att_syntax 
+.att_syntax
     mov     %ss, CONTEXT_SegSs(%rdi)
 .intel_syntax noprefix
 LOCAL_LABEL(Done_CONTEXT_CONTROL):
@@ -133,15 +133,15 @@ LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE):
     // The control registers are restored via the iret instruction
     // so we build the frame for the iret on the stack.
 #ifdef __APPLE__
-.att_syntax 
+.att_syntax
     // On OSX, we cannot read SS via the thread_get_context and RtlRestoreContext
-    // needs to be used on context extracted by thread_get_context. So we 
+    // needs to be used on context extracted by thread_get_context. So we
     // don't change the SS.
     mov     %ss, %ax
 .intel_syntax noprefix
-#else    
+#else
     mov     ax, [rdi + CONTEXT_SegSs]
-#endif    
+#endif
     mov     [rsp + IRETFRAME_SegSs], ax
     mov     rax, [rdi + CONTEXT_Rsp]
     mov     [rsp + IRETFRAME_Rsp], rax
@@ -170,7 +170,7 @@ LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL):
     mov     r12, [rdi + CONTEXT_R12]
     mov     r13, [rdi + CONTEXT_R13]
     mov     r14, [rdi + CONTEXT_R14]
-    mov     r15, [rdi + CONTEXT_R15]   
+    mov     r15, [rdi + CONTEXT_R15]
     mov     rdi, [rdi + CONTEXT_Rdi]
 LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER):
 
@@ -178,9 +178,9 @@ LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER):
     pop_eflags
     je      LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
     // The function was asked to restore the control registers, so
-    // we perform iretq that restores them all. 
+    // we perform iretq that restores them all.
     // We don't return to the caller in this case.
-    iretq 
+    iretq
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
 
     // The function was not asked to restore the control registers

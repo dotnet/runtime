@@ -35,7 +35,7 @@ class Frame;
 //
 // We will make this interface smaller over time to minimize the link
 // between the EE and the Debugger.
-//  
+//
 //
 typedef BOOL (*HashMapEnumCallback)(HashMap* h,
                                     void* pData,
@@ -51,7 +51,7 @@ typedef enum AttachAppDomainEventsEnum
 typedef VPTR(class EEDebugInterface) PTR_EEDebugInterface;
 
 // Used for communicating EH Handler info between the LS and EE (DetermineIfOffsetsInFilterOrHandler)
-struct DebugOffsetToHandlerInfo 
+struct DebugOffsetToHandlerInfo
 {
     // Native offset of interest, or -1 if this entry should be ignored
     SIZE_T offset;
@@ -153,9 +153,9 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
-    virtual void GetMethodRegionInfo(const PCODE    pStart, 
-                                           PCODE  * pCold, 
-                                           size_t * hotSize, 
+    virtual void GetMethodRegionInfo(const PCODE    pStart,
+                                           PCODE  * pCold,
+                                           size_t * hotSize,
                                            size_t * coldSize) = 0;
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -241,8 +241,8 @@ public:
     virtual TypeHandle LoadArrayType(CorElementType et,
                                      TypeHandle elemtype,
                                      unsigned rank) = 0;
-    
-    __checkReturn 
+
+    __checkReturn
     virtual HRESULT GetMethodImplProps(Module *pModule,
                                        mdToken tk,
                                        DWORD *pRVA,

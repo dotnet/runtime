@@ -31,13 +31,13 @@ public:
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
-    STDMETHOD(BindAssemblyByName)( 
+    STDMETHOD(BindAssemblyByName)(
             /* [in] */ IAssemblyName *pIAssemblyName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-        
-    STDMETHOD(GetBinderID)( 
+
+    STDMETHOD(GetBinderID)(
             /* [retval][out] */ UINT_PTR *pBinderId);
-         
+
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
 
@@ -57,31 +57,31 @@ public:
     void ReleaseLoadContext();
 
     CLRPrivBinderAssemblyLoadContext();
-    
+
     inline BINDER_SPACE::ApplicationContext *GetAppContext()
     {
         return &m_appContext;
     }
-    
+
     inline INT_PTR GetManagedAssemblyLoadContext()
     {
         return m_ptrManagedAssemblyLoadContext;
     }
 
-    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
-                              /* in */ BOOL fIsNativeImage, 
+    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
+                              /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-                              
+
     //=========================================================================
     // Internal implementation details
     //-------------------------------------------------------------------------
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
-            
-    BINDER_SPACE::ApplicationContext m_appContext;    
-    
+
+    BINDER_SPACE::ApplicationContext m_appContext;
+
     CLRPrivBinderCoreCLR *m_pTPABinder;
-    
+
     INT_PTR m_ptrManagedAssemblyLoadContext;
 
     LoaderAllocator* m_pAssemblyLoaderAllocator;

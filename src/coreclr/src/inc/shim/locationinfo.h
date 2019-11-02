@@ -5,7 +5,7 @@
 // locationinfo.h
 //
 // Enum describing different types of locations for coreCLR
-// 
+//
 // Note: must be platform independent
 //
 // ======================================================================================
@@ -32,7 +32,7 @@ enum LocationInfo
 // Input:
 // locations to compare
 //
-// Output: 
+// Output:
 // the preferred location
 inline LocationInfo BetterLocation(LocationInfo l1, LocationInfo l2)
 {

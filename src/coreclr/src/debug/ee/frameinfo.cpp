@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: frameinfo.cpp
-// 
+//
 
 //
 // Code to find control info about a stack frame.
@@ -18,7 +18,7 @@
 #endif
 
 // Get a frame pointer from a RegDisplay.
-// This is mostly used for chains and stub frames (i.e. internal frames), where we don't need an exact 
+// This is mostly used for chains and stub frames (i.e. internal frames), where we don't need an exact
 // frame pointer.  This is why it is okay to use the current SP instead of the caller SP on IA64.
 // We should really rename this and possibly roll it into GetFramePointer() when we move the stackwalker
 // to OOP.
@@ -47,7 +47,7 @@ FramePointer GetFramePointer(REGDISPLAY * pRDSrc)
 //    a StackFrame equivalent to the given FramePointer
 //
 // Notes:
-//    We really should consolidate the two abstractions for "stack frame identifiers" 
+//    We really should consolidate the two abstractions for "stack frame identifiers"
 //    (StackFrame and FramePointer) when we move the debugger stackwalker to OOP.
 //
 
@@ -358,20 +358,20 @@ public:
 //---------------------------------------------------------------------------------------
 //
 // On IA64, the offset given by the OS during stackwalking is actually the offset at the call instruction.
-// This is different from x86 and X64, where the offset is immediately after the call instruction.  In order 
+// This is different from x86 and X64, where the offset is immediately after the call instruction.  In order
 // to have a uniform behaviour, we need to do adjust the relative offset on IA64.  This function is a nop on
 // other platforms.
 //
 // Arguments:
 //    pCF       - the CrawlFrame for the current method frame
-//    pInfo     - This is the FrameInfo for the current method frame.  We need to use the fIsLeaf field, 
+//    pInfo     - This is the FrameInfo for the current method frame.  We need to use the fIsLeaf field,
 //                since no adjustment is necessary for leaf frames.
 //
 // Return Value:
-//    returns the adjusted relative offset 
+//    returns the adjusted relative offset
 //
 
-inline ULONG AdjustRelOffset(CrawlFrame *pCF, 
+inline ULONG AdjustRelOffset(CrawlFrame *pCF,
                              FrameInfo  *pInfo)
 {
     CONTRACTL
@@ -393,9 +393,9 @@ inline ULONG AdjustRelOffset(CrawlFrame *pCF,
 
 //---------------------------------------------------------------------------------------
 //
-// Even when there is an exit frame in the explicit frame chain, it does not necessarily mean that we have 
-// actually called out to unmanaged code yet or that we actually have a managed call site.  Given an exit 
-// frame, this function determines if we have a managed call site and have already called out to unmanaged 
+// Even when there is an exit frame in the explicit frame chain, it does not necessarily mean that we have
+// actually called out to unmanaged code yet or that we actually have a managed call site.  Given an exit
+// frame, this function determines if we have a managed call site and have already called out to unmanaged
 // code.  If we have, then we return the caller SP as the potential frame pointer.  Otherwise we return
 // LEAF_MOST_FRAME.
 //
@@ -427,7 +427,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
 
     EX_TRY
     {
-        // This is a real issue. This may be called while holding GC-forbid locks, and so 
+        // This is a real issue. This may be called while holding GC-forbid locks, and so
         // this function can't trigger a GC. However, the only impl we have calls GC-trigger functions.
         CONTRACT_VIOLATION(GCViolation);
         pFrame->GetUnmanagedCallSite(NULL, &returnIP, &returnSP);
@@ -469,7 +469,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         InlinedCallFrame *pInlinedFrame = static_cast<InlinedCallFrame *>(pFrame);
         LPVOID sp = (LPVOID)pInlinedFrame->GetCallSiteSP();
 
-        // The sp returned below is the sp of the caller, which is either an IL stub in the normal case 
+        // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
         // or a normal managed method in the inlined pinvoke case.
         // This sp may be the same as the frame's address, so we need to use the largest
         // possible bsp value to make sure that this frame pointer is closer to the root than
@@ -479,7 +479,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
             *pPotentialFP = FramePointer::MakeFramePointer( (LPVOID)sp );
         }
 
-        return ((pFrame != pData->GetThread()->GetFrame()) || 
+        return ((pFrame != pData->GetThread()->GetFrame()) ||
             InlinedCallFrame::FrameHasActiveCall(pInlinedFrame));
 
     }
@@ -490,7 +490,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         TransitionFrame *pTransFrame = static_cast<TransitionFrame*>(pFrame);
         LPVOID sp = (LPVOID)pTransFrame->GetSP();
 
-        // The sp returned below is the sp of the caller, which is either an IL stub in the normal case 
+        // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
         // or a normal managed method in the inlined pinvoke case.
         // This sp may be the same as the frame's address, so we need to use the largest
         // possible bsp value to make sure that this frame pointer is closer to the root than
@@ -615,13 +615,13 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
         ji = NULL;
     }
     EX_END_CATCH(SwallowAllExceptions);
-    
+
     return ji;
 }
 
 //-----------------------------------------------------------------------------
 // Get the DMI associated w/ this frame. This is a convenience function.
-// DMIs are 1:1 with the (token, module) pair. 
+// DMIs are 1:1 with the (token, module) pair.
 //-----------------------------------------------------------------------------
 DebuggerMethodInfo * FrameInfo::GetMethodInfoFromFrameOrThrow()
 {
@@ -690,9 +690,9 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
 
 //---------------------------------------------------------------------------------------
 //
-// This is just a small helper to initialize the fields which are specific to 64-bit.  Note that you should 
-// only call this function on a scratch FrameInfo.  Never call it on the FrameInfo used by the debugger 
-// stackwalker to store information on the current frame.  
+// This is just a small helper to initialize the fields which are specific to 64-bit.  Note that you should
+// only call this function on a scratch FrameInfo.  Never call it on the FrameInfo used by the debugger
+// stackwalker to store information on the current frame.
 //
 
 void FrameInfo::InitForScratchFrameInfo()
@@ -711,13 +711,13 @@ void FrameInfo::InitForScratchFrameInfo()
 
 //-----------------------------------------------------------------------------
 //
-// Init a FrameInfo for a stub.  Stub frames map to internal frames on the RS.  Stubs which we care about 
-// usually contain an explicit frame which translates to an internal frame on the RS.  Dynamic method is 
-// the sole exception. 
+// Init a FrameInfo for a stub.  Stub frames map to internal frames on the RS.  Stubs which we care about
+// usually contain an explicit frame which translates to an internal frame on the RS.  Dynamic method is
+// the sole exception.
 //
 // Arguments:
 //    pCF       - the CrawlFrame containing the state of the current frame
-//    pMDHint   - some stubs have associated MethodDesc but others don't, 
+//    pMDHint   - some stubs have associated MethodDesc but others don't,
 //                which is why this argument can be NULL
 //    type      - the type of the stub/internal frame
 //
@@ -813,7 +813,7 @@ void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 #ifdef FEATURE_COMINTEROP
     Frame * pFrame = pCF->GetFrame();
     PREFIX_ASSUME(pFrame != NULL);
-    
+
 
     // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
     // be the next frame.
@@ -878,7 +878,7 @@ void FrameInfo::InitForFuncEval(CrawlFrame * pCF)
 //---------------------------------------------------------------------------------------
 //
 // Initialize a FrameInfo for sending the CHAIN_THREAD_START reason.
-// The common case is that the chain is NOT managed, since the lowest (closest to the root) managed method 
+// The common case is that the chain is NOT managed, since the lowest (closest to the root) managed method
 // is usually called from unmanaged code.  In fact, in Whidbey, we should never have a managed chain.
 //
 // Arguments:
@@ -915,12 +915,12 @@ void FrameInfo::InitForThreadStart(Thread * pThread, REGDISPLAY * pRDSrc)
 //---------------------------------------------------------------------------------------
 //
 // Initialize a FrameInfo for sending a CHAIN_ENTER_MANAGED.
-// A Enter-Managed chain is always sent immediately before an UM chain, meaning that the Enter-Managed chain 
+// A Enter-Managed chain is always sent immediately before an UM chain, meaning that the Enter-Managed chain
 // is closer to the leaf than the UM chain.
 //
 // Arguments:
-//    fpRoot    - This is the frame pointer for the Enter-Managed chain.  It is currently arbitrarily set 
-//                to be one stack slot higher (closer to the leaf) than the frame pointer of the beginning 
+//    fpRoot    - This is the frame pointer for the Enter-Managed chain.  It is currently arbitrarily set
+//                to be one stack slot higher (closer to the leaf) than the frame pointer of the beginning
 //                of the upcoming UM chain.
 //
 
@@ -1014,7 +1014,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
         // If we get an Exit frame, we can use that to "prune" the UM chain to a more friendly state.
         // This heuristic is optional, it just eliminates lots of internal mscorwks frames from the callstack.
-        // Note that this heuristic is only useful if we get a callback on the entry frame 
+        // Note that this heuristic is only useful if we get a callback on the entry frame
         // (e.g. UMThkCallFrame) between the callback on the native marker and the callback on the exit frame.
         // Otherwise the REGDISPLAY will be the same.
         if (ft == Frame::TYPE_EXIT)
@@ -1045,9 +1045,9 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
             if (HasExitRuntime(frame, d, &potentialFP))
             {
                 LOG((LF_CORDB, LL_EVERYTHING, "HasExitRuntime. potentialFP=0x%p\n", potentialFP.GetSPValue()));
-                
+
                 // If we have no call site, manufacture a FP using the current frame.
-                // If we do have a call site, then the FP is actually going to be the caller SP, 
+                // If we do have a call site, then the FP is actually going to be the caller SP,
                 // where the caller is the last managed method before calling out to unmanaged code.
                 if (potentialFP == LEAF_MOST_FRAME)
                 {
@@ -1094,7 +1094,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
             // Interceptors may contain calls out to unmanaged code (such as unmanaged dllmain when
             // loading a new dll), so we need to dispatch these.
             // These extra UM chains don't show in Everett, and so everett debuggers on whidbey
-            // may see new chains. 
+            // may see new chains.
             // We need to ensure that whidbey debuggers are updated first.
             fDispatchUMChain = true;
         }
@@ -1126,14 +1126,14 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // --END INCORRECT RATIONALE--
         //
         // This is kind of messed up.  First of all, the assertions on case 2 is not true on 64-bit.
-        // We won't have an explicit frame at (b).  Secondly, case 1 is not always true either.  
-        // Consider the case where we are calling a cctor at prestub time.  This is what the stack may 
+        // We won't have an explicit frame at (b).  Secondly, case 1 is not always true either.
+        // Consider the case where we are calling a cctor at prestub time.  This is what the stack may
         // look like: managed -> PrestubMethodFrame -> GCFrame -> managed (cctor) (leaf).  In this case,
-        // we will actually send the UM chain because we will have dispatched the call for the managed 
-        // method (the cctor) when we get a callback for the GCFrame.  
+        // we will actually send the UM chain because we will have dispatched the call for the managed
+        // method (the cctor) when we get a callback for the GCFrame.
         //
         // --INCORRECT SEE "CORRECTION" BELOW--
-        // Keep in mind that this is just a heuristic to reduce the number of UM chains we are sending 
+        // Keep in mind that this is just a heuristic to reduce the number of UM chains we are sending
         // over to the RS.
         // --END INCORRECT --
         //
@@ -1157,11 +1157,11 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // (ignoreNonmethodFrames is generally false for stepping and true for regular
         // end-user stacktraces.)
         //
-        // This check is probably unnecessary.  The client of the debugger stackwalker should make 
+        // This check is probably unnecessary.  The client of the debugger stackwalker should make
         // the decision themselves as to what to do with the UM chain callbacks.
         //
         // -- INCORRECT SEE SEE "CORRECTION" BELOW --
-        // Currently, both 
+        // Currently, both
         // ControllerStackInfo and InterceptorStackInfo ignore UM chains completely anyway.
         // (For an example, refer to the cctor example in the previous comment.)
         // -- END INCORRECT --
@@ -1197,7 +1197,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
             (frame->GetVTablePtr() == ComPlusMethodFrame::GetMethodFrameVPtr()))
         {
             // This condition is part of the fix for 650903. (See
-            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut 
+            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
             // for the other parts.) Here, we know that the frame we're looking it may be
             // a ComPlusMethodFrameGeneric (this info is not otherwise plubmed down into
             // the walker; even though the walker does get to see "f.frame", that may not
@@ -1241,7 +1241,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 //---------------------------------------------------------------------------------------
 //
-// A frame pointer is a unique identifier for a particular stack location.  This function returns the 
+// A frame pointer is a unique identifier for a particular stack location.  This function returns the
 // frame pointer for the current frame, whether it is a method frame or an explicit frame.
 //
 // Arguments:
@@ -1310,7 +1310,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 #ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
-// This function is called to determine if we should start skipping funclets.  If we should, then we return the 
+// This function is called to determine if we should start skipping funclets.  If we should, then we return the
 // frame pointer for the parent method frame.  Otherwise we return LEAF_MOST_FRAME.  If we are already skipping
 // frames, then we return the current frame pointer for the parent method frame.
 //
@@ -1318,7 +1318,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 // Refer to that function for more information.
 //
 // Arguments:
-//    fpCurrentParentMarker     - This is the current frame pointer of the parent method frame.  It can be 
+//    fpCurrentParentMarker     - This is the current frame pointer of the parent method frame.  It can be
 //                                LEAF_MOST_FRAME if we are not currently skipping funclets.
 //    pCF                       - the CrawlFrame for the current callback from the real stackwalker
 //    fIsNonFilterFuncletFrame  - whether the current frame is a non-filter funclet frame
@@ -1401,8 +1401,8 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
 #endif // FEATURE_EH_FUNCLETS
 
-        // This REGDISPLAY is for the native method immediately following the managed method for which 
-        // we have received the previous callback, i.e. the native caller of the last managed method 
+        // This REGDISPLAY is for the native method immediately following the managed method for which
+        // we have received the previous callback, i.e. the native caller of the last managed method
         // we have encountered.
         REGDISPLAY* pRDSrc = pCF->GetRegisterSet();
         d->BeginTrackingUMChain(GetSP(pRDSrc), pRDSrc);
@@ -1617,7 +1617,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         // Retrieve any interception info
         //
 
-        // Each interception type in the switch statement below is associated with a chain reason.  
+        // Each interception type in the switch statement below is associated with a chain reason.
         // The other chain reasons are:
         // CHAIN_INTERCEPTION      - not used
         // CHAIN_PROCESS_START     - not used
@@ -1630,13 +1630,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         switch (frame->GetInterception())
         {
-        case Frame::INTERCEPTION_CLASS_INIT:        
+        case Frame::INTERCEPTION_CLASS_INIT:
             //
             // Fall through
-            // 
+            //
 
         // V2 assumes that the only thing the prestub intercepts is the class constructor
-        case Frame::INTERCEPTION_PRESTUB:           
+        case Frame::INTERCEPTION_PRESTUB:
             d->info.chainReason = CHAIN_CLASS_INIT;
             break;
 
@@ -1698,20 +1698,20 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         case Frame::TYPE_CALL:
             LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_CALL.\n"));
-            // In V4, StubDispatchFrame is only used on 64-bit (and PPC?) but not on x86.  x86 uses a 
+            // In V4, StubDispatchFrame is only used on 64-bit (and PPC?) but not on x86.  x86 uses a
             // different code path which sets up a HelperMethodFrame instead.  In V4.5, x86 and ARM
-            // both use the 64-bit code path and they set up a StubDispatchFrame as well.  This causes 
-            // a problem in the debugger stackwalker (see Dev11 Issue 13229) since the two frame types 
+            // both use the 64-bit code path and they set up a StubDispatchFrame as well.  This causes
+            // a problem in the debugger stackwalker (see Dev11 Issue 13229) since the two frame types
             // are treated differently.  More specifically, a StubDispatchFrame causes the debugger
-            // stackwalk to make an invalid callback, i.e. a callback which is not for a managed method, 
+            // stackwalk to make an invalid callback, i.e. a callback which is not for a managed method,
             // an explicit frame, or a chain.
             //
             // Ideally we would just change the StubDispatchFrame to behave like a HMF, but it's
-            // too big of a change for an in-place release.  For now I'm just making surgical fixes in 
-            // the debugger stackwalker.  This may introduce behavioural changes in on X64, but the 
-            // chance of that is really small.  StubDispatchFrame is only used in the virtual stub 
-            // disptch code path.  It stays on the stack in a small time window and it's not likely to 
-            // be on the stack while some managed methods closer to the leaf are on the stack.  There is 
+            // too big of a change for an in-place release.  For now I'm just making surgical fixes in
+            // the debugger stackwalker.  This may introduce behavioural changes in on X64, but the
+            // chance of that is really small.  StubDispatchFrame is only used in the virtual stub
+            // disptch code path.  It stays on the stack in a small time window and it's not likely to
+            // be on the stack while some managed methods closer to the leaf are on the stack.  There is
             // only one scenario I know of, and that's the repro for Dev11 13229, but that's for x86 only.
             // The jitted code on X64 behaves differently.
             //
@@ -2155,7 +2155,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
         // Since Debugger StackWalk callbacks are delayed 1 frame from EE stackwalk callbacks, we
         // have to touch up the 1 leftover here.
         //
-        // This is safe only because we use the REGDISPLAY of the native marker callback for any subsequent 
+        // This is safe only because we use the REGDISPLAY of the native marker callback for any subsequent
         // explicit frames which do not update the REGDISPLAY.  It's kind of fragile.  If we can change
         // the x86 real stackwalker to unwind one frame ahead of time, we can get rid of this code.
         if (data.needParentInfo)
@@ -2178,13 +2178,13 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
             pRegDisplay = data.GetUMChainStartRD();
         }
 
-        
+
         // All Thread starts in unmanaged code (at something like kernel32!BaseThreadStart),
         // so all ThreadStart chains must be unmanaged.
         // InvokeCallback will fabricate the EnterManaged chain if we haven't already sent one.
         data.info.InitForThreadStart(thread, pRegDisplay);
         result = data.InvokeCallback(&data.info);
-        
+
     }
     return result;
 }

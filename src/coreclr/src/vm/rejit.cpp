@@ -5,7 +5,7 @@
 // ReJit.cpp
 //
 
-// 
+//
 // This module implements the tracking and execution of rejit requests. In order to avoid
 // any overhead on the non-profiled case we don't intrude on any 'normal' data structures
 // except one member on the AppDomain to hold our main hashtable and crst (the
@@ -13,7 +13,7 @@
 // SharedReJitInfo, and ReJitManager, particularly SharedReJitInfo::InternalFlags which
 // capture the state of a rejit request, and ReJitInfo::InternalFlags which captures the
 // state of a particular MethodDesc from a rejit request.
-// 
+//
 // A ReJIT request (tracked via SharedReJitInfo) is made at the level of a (Module *,
 // methodDef) pair, and thus affects all instantiations of a generic. Each MethodDesc
 // affected by a ReJIT request has its state tracked via a ReJitInfo instance. A
@@ -22,26 +22,26 @@
 // Pre-ReJIT request happens when a profiler specifies a (Module *, methodDef) pair that
 // has not yet been JITted, or that represents a generic function which always has the
 // potential to JIT new instantiations in the future.
-// 
+//
 // Top-level functions in this file of most interest are:
-// 
+//
 // * (static) code:ReJitManager::RequestReJIT:
 // Profiling API just delegates all rejit requests directly to this function. It is
 // responsible for recording the request into the appropriate ReJITManagers and for
 // jump-stamping any already-JITted functions affected by the request (so that future
 // calls hit the prestub)
-// 
+//
 // * code:ReJitManager::DoReJitIfNecessary:
 // MethodDesc::DoPrestub calls this to determine whether it's been invoked to do a rejit.
 // If so, ReJitManager::DoReJitIfNecessary is responsible for (indirectly) gathering the
 // appropriate IL and codegen flags, calling UnsafeJitFunction(), and redirecting the
 // jump-stamp from the prestub to the newly-rejitted code.
-// 
+//
 // * code:ReJitManager::GetCurrentReJitFlags:
 // CEEInfo::canInline() calls this as part of its calculation of whether it may inline a
 // given method. (Profilers may specify on a per-rejit-request basis whether the rejit of
 // a method may inline callees.)
-// 
+//
 //
 // #Invariants:
 //
@@ -53,7 +53,7 @@
 //
 // For a given MethodDesc there is at most 1 ReJitInfo in the kJumpToPrestub or kJumpToRejittedCode
 // state.
-// 
+//
 // The ReJitManager::m_crstTable lock is held whenever reading or writing to that
 // ReJitManager instance's table (including state transitions applied to the ReJitInfo &
 // SharedReJitInfo instances stored in that table).
@@ -129,7 +129,7 @@
 //   Rejit leaks rejitted methods, RejitInfos, and SharedRejitInfos until AppDomain unload
 //   Dump debugging doesn't correctly locate RejitInfos that are keyed by MethodDesc
 //   Metadata update creates large memory increase switching to RW (not specifically a rejit issue)
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -278,7 +278,7 @@ HRESULT ProfilerFunctionControl::SetCodegenFlags(DWORD flags)
 //    HRESULT indicating success or failure.
 //
 // Notes:
-//    Caller owns allocating and freeing pbNewILMethodHeader as expected. 
+//    Caller owns allocating and freeing pbNewILMethodHeader as expected.
 //    SetILFunctionBody copies pbNewILMethodHeader into a separate buffer.
 //
 
@@ -398,7 +398,7 @@ LPBYTE ProfilerFunctionControl::GetIL()
 
 //---------------------------------------------------------------------------------------
 //
-// ReJitManager may use this to access the count of instrumented map entry flags the 
+// ReJitManager may use this to access the count of instrumented map entry flags the
 // profiler had set on this ICorProfilerFunctionControl.
 //
 // Return Value:
@@ -411,7 +411,7 @@ ULONG ProfilerFunctionControl::GetInstrumentedMapEntryCount()
 
 //---------------------------------------------------------------------------------------
 //
-// ReJitManager may use this to access the instrumented map entries the 
+// ReJitManager may use this to access the instrumented map entries the
 // profiler had set on this ICorProfilerFunctionControl.
 //
 // Return Value:
@@ -658,7 +658,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
             }
 
             {
-                // SetActiveILCodeVersions takes the SystemDomain crst, which needs to be acquired before the 
+                // SetActiveILCodeVersions takes the SystemDomain crst, which needs to be acquired before the
                 // ThreadStore crsts
                 SystemDomain::LockHolder lh;
 
@@ -706,7 +706,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
         {
             ReportReJITError(&(errorRecords[i]));
         }
-        
+
     }
 
     // We got through processing everything, but profiler will need to see the individual ReJITError
@@ -811,10 +811,10 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
 
     _ASSERTE(pMgrToCodeActivationBatch != NULL);
     _ASSERTE(pInlinee != NULL);
-    
+
     HRESULT hr = S_OK;
 
-    // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call 
+    // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
     // TODO: is the default domain enough for coreclr?
     AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded));
@@ -898,7 +898,7 @@ HRESULT ReJitManager::UpdateJitInlinerActiveILVersions(
             {
                 EX_TRY
                 {
-                    // InlineSArray can throw if we run out of memory, 
+                    // InlineSArray can throw if we run out of memory,
                     // need to guard against it.
                     inliners.Append(inliner);
                 }
@@ -982,7 +982,7 @@ HRESULT ReJitManager::BindILVersion(
 
         if (fDoCallback)
         {
-            // There could be a case where the method that a profiler requested ReJIT on also ends up in the 
+            // There could be a case where the method that a profiler requested ReJIT on also ends up in the
             // inlining graph from a different method. In that case we should override the previous setting,
             // but we should never override a request to get the callback with a request to suppress it.
             pILCodeVersion->SetEnableReJITCallback(true);
@@ -1141,7 +1141,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateGettingReJITParameters)
             {
                 // Inside the above call to ICorProfilerCallback4::GetReJITParameters, the profiler
-                // will have used the specified pFuncControl to provide its IL and codegen flags. 
+                // will have used the specified pFuncControl to provide its IL and codegen flags.
                 // So now we transfer it out to the SharedReJitInfo.
                 ilCodeVersion.SetJitFlags(pFuncControl->GetCodegenFlags());
                 ilCodeVersion.SetIL((COR_ILMETHOD*)pFuncControl->GetIL());
@@ -1167,7 +1167,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         // Another option would be ManualResetEvents, one for each SharedReJitInfo, but
         // that feels like a lot of memory overhead to handle a case which occurs rarely.
         // A third option would be dynamically creating ManualResetEvents in a side
-        // dictionary on demand, but that feels like a lot of complexity for an event 
+        // dictionary on demand, but that feels like a lot of complexity for an event
         // that occurs rarely.
         //
         // I just ended up with this simple polling loop. Assuming profiler
@@ -1187,7 +1187,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             ClrSleepEx(1, FALSE);
         }
     }
-    
+
     return S_OK;
 }
 
@@ -1196,7 +1196,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
 
 //---------------------------------------------------------------------------------------
 //
-// Used by profiler to get the ReJITID corrseponding to a (MethodDesc *, PCODE) pair. 
+// Used by profiler to get the ReJITID corrseponding to a (MethodDesc *, PCODE) pair.
 // Can also be used to determine whether (MethodDesc *, PCODE) corresponds to a rejit
 // (vs. a regular JIT) for the purposes of deciding whether to notify the debugger about
 // the rejit (and building the debugger JIT info structure).
@@ -1238,13 +1238,13 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
 //---------------------------------------------------------------------------------------
 //
 // See comment above code:ReJitManager::GetReJitId for main details of what this does.
-// 
+//
 // This function is basically the same as GetReJitId, except caller is expected to take
 // the ReJitManager lock directly (via ReJitManager::TableLockHolder). This exists so
 // that ETW can explicitly take the triggering ReJitManager lock up front, and in the
 // proper order, to avoid lock leveling issues, and triggering issues with other locks it
 // takes that are CRST_UNSAFE_ANYMODE
-// 
+//
 
 ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
 {
@@ -1309,7 +1309,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
 
     ILCodeVersionCollection ilCodeVersions = pCodeVersionManager->GetILCodeVersions(pMD);
     for (ILCodeVersionIterator iter = ilCodeVersions.Begin(), end = ilCodeVersions.End();
-        iter != end; 
+        iter != end;
         iter++)
     {
         ILCodeVersion curILVersion = *iter;

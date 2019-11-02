@@ -41,7 +41,7 @@ public:
 
     MethodList			m_MethodList;
     //MethodSortedList    m_MethodSList;
-    FieldDList          m_FieldDList;	
+    FieldDList          m_FieldDList;
     EventDList          m_EventDList;
     PropDList           m_PropDList;
     CustomDescrList     m_CustDList;
@@ -71,7 +71,7 @@ public:
         m_ulPack = 0;
         m_ulSize = 0xFFFFFFFF;
     }
-    
+
     ~Class()
     {
         delete [] m_szFQN;
@@ -102,9 +102,9 @@ public:
         }
         else return -1;
     };
-    int ComparedTo(Class* T) 
-    { 
-        if (m_Hash == T->m_Hash) 
+    int ComparedTo(Class* T)
+    {
+        if (m_Hash == T->m_Hash)
         {
             // Properly handle hash conflict
             return (m_szFQN == T->m_szFQN) ? 0 : strcmp(m_szFQN, T->m_szFQN);

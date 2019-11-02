@@ -71,7 +71,7 @@ PATCH_LABEL JIT_DebugWriteBarrier\rg
 #endif // _DEBUG
 
     // in the !WRITE_BARRIER_CHECK case this will be the move for all
-    // addresses in the GCHeap, addresses outside the GCHeap will get 
+    // addresses in the GCHeap, addresses outside the GCHeap will get
     // taken care of below at WriteBarrier_NotInHeap_&rg
 
 #ifndef WRITE_BARRIER_CHECK

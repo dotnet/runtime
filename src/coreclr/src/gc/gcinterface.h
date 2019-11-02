@@ -98,7 +98,7 @@ struct WriteBarrierParameters
     // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint8_t* highest_address;
 
-    // The new start of the ephemeral generation. 
+    // The new start of the ephemeral generation.
     // Used for WriteBarrierOp::StompEphemeral.
     uint8_t* ephemeral_low;
 
@@ -229,7 +229,7 @@ enum GCEventKeyword
 {
     GCEventKeyword_None                          =       0x0,
     GCEventKeyword_GC                            =       0x1,
-    // Duplicate on purpose, GCPrivate is the same keyword as GC, 
+    // Duplicate on purpose, GCPrivate is the same keyword as GC,
     // with a different provider
     GCEventKeyword_GCPrivate                     =       0x1,
     GCEventKeyword_GCHandle                      =       0x2,
@@ -253,7 +253,7 @@ enum GCEventKeyword
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum collection_mode
 {
@@ -267,7 +267,7 @@ enum collection_mode
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum wait_full_gc_status
 {
@@ -279,7 +279,7 @@ enum wait_full_gc_status
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum start_no_gc_region_status
 {
@@ -297,7 +297,7 @@ enum end_no_gc_region_status
     end_no_gc_alloc_exceeded = 3
 };
 
-typedef enum 
+typedef enum
 {
     /*
      * WEAK HANDLES
@@ -363,7 +363,7 @@ typedef enum
      * are larger than other types of handles, and are scanned a little more often,
      * but are useful when the handle owner needs an efficient way to change the
      * strength of a handle on the fly.
-     * 
+     *
      */
     HNDTYPE_VARIABLE     = 4,
 
@@ -382,8 +382,8 @@ typedef enum
     /*
      * DEPENDENT HANDLES
      *
-     * Dependent handles are two handles that need to have the same lifetime.  One handle refers to a secondary object 
-     * that needs to have the same lifetime as the primary object. The secondary object should not cause the primary 
+     * Dependent handles are two handles that need to have the same lifetime.  One handle refers to a secondary object
+     * that needs to have the same lifetime as the primary object. The secondary object should not cause the primary
      * object to be referenced, but as long as the primary object is alive, so must be the secondary
      *
      * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
@@ -598,7 +598,7 @@ public:
     */
 
     // Gets memory related information -
-    // highMemLoadThreshold - physical memory load (in percentage) when GC will start to 
+    // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     // react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
     // limit set on the container if running in a container.
@@ -708,7 +708,7 @@ public:
     // Gets whether or not the home heap of this alloc context matches the heap
     // associated with this thread.
     virtual bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number) = 0;
-    
+
     // Returns whether or not this object resides in an ephemeral generation.
     virtual bool IsEphemeral(Object* object) = 0;
 
@@ -778,7 +778,7 @@ public:
     // a lock to ensure that the calling thread has unique ownership over this alloc context.
     virtual Object* AllocAlign8(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
-    // This is for the allocator to indicate it's done allocating a large object during a 
+    // This is for the allocator to indicate it's done allocating a large object during a
     // background GC as the BGC threads also need to walk LOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
@@ -806,7 +806,7 @@ public:
 
     // Given an interior pointer, return a pointer to the object
     // containing that pointer. This is safe to call only when the EE is suspended.
-    // When fCollectedGenOnly is true, it only returns the object if it's found in 
+    // When fCollectedGenOnly is true, it only returns the object if it's found in
     // the generation(s) that are being collected.
     virtual Object* GetContainingObject(void* pInteriorPtr, bool fCollectedGenOnly) = 0;
 
@@ -825,7 +825,7 @@ public:
 
     // Walk the heap object by object.
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) = 0;
-    
+
     // Walks the survivors and get the relocation information if objects have moved.
     virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type) = 0;
 
@@ -859,7 +859,7 @@ public:
 
     /*
     ===========================================================================
-    Routines to register read only segments for frozen objects. 
+    Routines to register read only segments for frozen objects.
     Only valid if FEATURE_BASICFREEZE is defined.
     ===========================================================================
     */
@@ -938,7 +938,7 @@ struct ScanContext
     int thread_number;
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
-    bool concurrent; //TRUE: concurrent scanning 
+    bool concurrent; //TRUE: concurrent scanning
     void* _unused1;
     void* pMD;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -946,7 +946,7 @@ struct ScanContext
 #else
     EtwGCRootKind _unused3;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
-    
+
     ScanContext()
     {
         LIMITED_METHOD_CONTRACT;

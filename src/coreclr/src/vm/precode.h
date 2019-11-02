@@ -94,7 +94,7 @@ private:
         DacError(E_UNEXPECTED);
 #else
 #ifdef _PREFIX_
-        // We only use __UNREACHABLE here since otherwise it would be a hint 
+        // We only use __UNREACHABLE here since otherwise it would be a hint
         // for the compiler to fold this case with the other cases in a switch
         // statement. However, we would rather have this case be a separate
         // code path so that we will get a clean crash sooner.
@@ -182,7 +182,7 @@ public:
         SUPPORTS_DAC;
 
 #ifdef CROSSGEN_COMPILE
-        // Crossgen does not create jump stubs on AMD64, so just return always false here to 
+        // Crossgen does not create jump stubs on AMD64, so just return always false here to
         // avoid non-deterministic behavior.
         return FALSE;
 #else // CROSSGEN_COMPILE
@@ -285,7 +285,7 @@ public:
 
     //
     // Precode as temporary entrypoint
-    // 
+    //
 
     static SIZE_T SizeOfTemporaryEntryPoint(PrecodeType t)
     {
@@ -307,7 +307,7 @@ public:
 #ifdef FEATURE_PREJIT
     //
     // NGEN stuff
-    // 
+    //
 
     void Save(DataImage *image);
     void Fixup(DataImage *image, MethodDesc * pMD);
@@ -342,7 +342,7 @@ public:
     static DWORD GetOffset(PrecodeType t, DWORD index, DWORD count)
     {
         assert(t == PRECODE_FIXUP);
-        assert(index < count); 
+        assert(index < count);
         return (DWORD)((count - index - 1)* sizeof(FixupPrecode));
     }
 #endif

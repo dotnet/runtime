@@ -13,8 +13,8 @@
  */
 /* Compiler settings for ctxtcall.idl:
     Oicf (OptLev=i2), W1, Zp8, env=Win32 (32b run), ms_ext, c_ext, robust
-    error checks: allocation ref bounds_check enum stub_data 
-    VC __declspec() decoration level: 
+    error checks: allocation ref bounds_check enum stub_data
+    VC __declspec() decoration level:
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
 */
@@ -41,7 +41,7 @@
 #ifndef __ctxtcall_h__
 #define __ctxtcall_h__
 
-/* Forward Declarations */ 
+/* Forward Declarations */
 
 #ifndef __IContextCallback_FWD_DEFINED__
 #define __IContextCallback_FWD_DEFINED__
@@ -67,13 +67,13 @@ typedef interface IComApartmentState IComApartmentState;
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
+#endif
 
 void __RPC_FAR * __RPC_USER MIDL_user_allocate(size_t);
-void __RPC_USER MIDL_user_free( void __RPC_FAR * ); 
+void __RPC_USER MIDL_user_free( void __RPC_FAR * );
 
 /* interface __MIDL_itf_ctxtcall_0000 */
-/* [local] */ 
+/* [local] */
 
 typedef struct tagComCallData
     {
@@ -91,54 +91,54 @@ extern RPC_IF_HANDLE __MIDL_itf_ctxtcall_0000_v0_0_s_ifspec;
 #define __IContextCallback_INTERFACE_DEFINED__
 
 /* interface IContextCallback */
-/* [unique][uuid][object][local] */ 
+/* [unique][uuid][object][local] */
 
-typedef /* [ref] */ HRESULT ( __stdcall __RPC_FAR *PFNCONTEXTCALL )( 
+typedef /* [ref] */ HRESULT ( __stdcall __RPC_FAR *PFNCONTEXTCALL )(
     ComCallData __RPC_FAR *pParam);
 
 
 EXTERN_C const IID IID_IContextCallback;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("000001da-0000-0000-C000-000000000046")
     IContextCallback : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE ContextCallback( 
+        virtual HRESULT STDMETHODCALLTYPE ContextCallback(
             /* [in] */ PFNCONTEXTCALL pfnCallback,
             /* [in] */ ComCallData __RPC_FAR *pParam,
             /* [in] */ REFIID riid,
             /* [in] */ int iMethod,
             /* [in] */ IUnknown __RPC_FAR *pUnk) = 0;
-        
+
     };
-    
+
 #else 	/* C style interface */
 
     typedef struct IContextCallbackVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )(
             IContextCallback __RPC_FAR * This,
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ void __RPC_FAR *__RPC_FAR *ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )(
             IContextCallback __RPC_FAR * This);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )(
             IContextCallback __RPC_FAR * This);
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *ContextCallback )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *ContextCallback )(
             IContextCallback __RPC_FAR * This,
             /* [in] */ PFNCONTEXTCALL pfnCallback,
             /* [in] */ ComCallData __RPC_FAR *pParam,
             /* [in] */ REFIID riid,
             /* [in] */ int iMethod,
             /* [in] */ IUnknown __RPC_FAR *pUnk);
-        
+
         END_INTERFACE
     } IContextCallbackVtbl;
 
@@ -147,7 +147,7 @@ EXTERN_C const IID IID_IContextCallback;
         CONST_VTBL struct IContextCallbackVtbl __RPC_FAR *lpVtbl;
     };
 
-    
+
 
 #ifdef COBJMACROS
 
@@ -172,7 +172,7 @@ EXTERN_C const IID IID_IContextCallback;
 
 
 
-HRESULT STDMETHODCALLTYPE IContextCallback_ContextCallback_Proxy( 
+HRESULT STDMETHODCALLTYPE IContextCallback_ContextCallback_Proxy(
     IContextCallback __RPC_FAR * This,
     /* [in] */ PFNCONTEXTCALL pfnCallback,
     /* [in] */ ComCallData __RPC_FAR *pParam,
@@ -196,41 +196,41 @@ void __RPC_STUB IContextCallback_ContextCallback_Stub(
 #define __ITeardownNotification_INTERFACE_DEFINED__
 
 /* interface ITeardownNotification */
-/* [unique][object][local][uuid] */ 
+/* [unique][object][local][uuid] */
 
 
 EXTERN_C const IID IID_ITeardownNotification;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("a85e0fb6-8bf4-4614-b164-7b43ef43f5be")
     ITeardownNotification : public IUnknown
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE TeardownHint( void) = 0;
-        
+
     };
-    
+
 #else 	/* C style interface */
 
     typedef struct ITeardownNotificationVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )(
             ITeardownNotification __RPC_FAR * This,
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ void __RPC_FAR *__RPC_FAR *ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )(
             ITeardownNotification __RPC_FAR * This);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )(
             ITeardownNotification __RPC_FAR * This);
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *TeardownHint )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *TeardownHint )(
             ITeardownNotification __RPC_FAR * This);
-        
+
         END_INTERFACE
     } ITeardownNotificationVtbl;
 
@@ -239,7 +239,7 @@ EXTERN_C const IID IID_ITeardownNotification;
         CONST_VTBL struct ITeardownNotificationVtbl __RPC_FAR *lpVtbl;
     };
 
-    
+
 
 #ifdef COBJMACROS
 
@@ -264,7 +264,7 @@ EXTERN_C const IID IID_ITeardownNotification;
 
 
 
-HRESULT STDMETHODCALLTYPE ITeardownNotification_TeardownHint_Proxy( 
+HRESULT STDMETHODCALLTYPE ITeardownNotification_TeardownHint_Proxy(
     ITeardownNotification __RPC_FAR * This);
 
 
@@ -283,54 +283,54 @@ void __RPC_STUB ITeardownNotification_TeardownHint_Stub(
 #define __IComApartmentState_INTERFACE_DEFINED__
 
 /* interface IComApartmentState */
-/* [object][local][uuid] */ 
+/* [object][local][uuid] */
 
 
 EXTERN_C const IID IID_IComApartmentState;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
-    
+
     MIDL_INTERFACE("7e220139-8dde-47ef-b181-08be603efd75")
     IComApartmentState : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE RegisterForTeardownHint( 
+        virtual HRESULT STDMETHODCALLTYPE RegisterForTeardownHint(
             /* [in] */ ITeardownNotification __RPC_FAR *pT,
             /* [in] */ DWORD dwFlags,
             /* [out] */ ULONG_PTR __RPC_FAR *pCookie) = 0;
-        
-        virtual HRESULT STDMETHODCALLTYPE UnregisterForTeardownHint( 
+
+        virtual HRESULT STDMETHODCALLTYPE UnregisterForTeardownHint(
             /* [in] */ ULONG_PTR cookie) = 0;
-        
+
     };
-    
+
 #else 	/* C style interface */
 
     typedef struct IComApartmentStateVtbl
     {
         BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *QueryInterface )(
             IComApartmentState __RPC_FAR * This,
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ void __RPC_FAR *__RPC_FAR *ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *AddRef )(
             IComApartmentState __RPC_FAR * This);
-        
-        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )( 
+
+        ULONG ( STDMETHODCALLTYPE __RPC_FAR *Release )(
             IComApartmentState __RPC_FAR * This);
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *RegisterForTeardownHint )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *RegisterForTeardownHint )(
             IComApartmentState __RPC_FAR * This,
             /* [in] */ ITeardownNotification __RPC_FAR *pT,
             /* [in] */ DWORD dwFlags,
             /* [out] */ ULONG_PTR __RPC_FAR *pCookie);
-        
-        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *UnregisterForTeardownHint )( 
+
+        HRESULT ( STDMETHODCALLTYPE __RPC_FAR *UnregisterForTeardownHint )(
             IComApartmentState __RPC_FAR * This,
             /* [in] */ ULONG_PTR cookie);
-        
+
         END_INTERFACE
     } IComApartmentStateVtbl;
 
@@ -339,7 +339,7 @@ EXTERN_C const IID IID_IComApartmentState;
         CONST_VTBL struct IComApartmentStateVtbl __RPC_FAR *lpVtbl;
     };
 
-    
+
 
 #ifdef COBJMACROS
 
@@ -367,7 +367,7 @@ EXTERN_C const IID IID_IComApartmentState;
 
 
 
-HRESULT STDMETHODCALLTYPE IComApartmentState_RegisterForTeardownHint_Proxy( 
+HRESULT STDMETHODCALLTYPE IComApartmentState_RegisterForTeardownHint_Proxy(
     IComApartmentState __RPC_FAR * This,
     /* [in] */ ITeardownNotification __RPC_FAR *pT,
     /* [in] */ DWORD dwFlags,
@@ -381,7 +381,7 @@ void __RPC_STUB IComApartmentState_RegisterForTeardownHint_Stub(
     DWORD *_pdwStubPhase);
 
 
-HRESULT STDMETHODCALLTYPE IComApartmentState_UnregisterForTeardownHint_Proxy( 
+HRESULT STDMETHODCALLTYPE IComApartmentState_UnregisterForTeardownHint_Proxy(
     IComApartmentState __RPC_FAR * This,
     /* [in] */ ULONG_PTR cookie);
 

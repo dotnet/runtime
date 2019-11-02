@@ -56,9 +56,9 @@ void MakeTestFile(__in __nullterminated char* szFileName)
     }
 }
 
-void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName, 
-                              unsigned uCodePage, 
-                              __out_ecount(MAX_FILENAME_LENGTH) WCHAR* wzProperName, 
+void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
+                              unsigned uCodePage,
+                              __out_ecount(MAX_FILENAME_LENGTH) WCHAR* wzProperName,
                               __out_ecount(MAX_FILENAME_LENGTH*3) char* szProperName)
 {
     wcscpy_s(wzProperName,MAX_FILENAME_LENGTH, wzOrigName);
@@ -145,7 +145,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     if (! wcscmp(argv[1], W("/?")) || ! wcscmp(argv[1],W("-?")))
 #ifdef _PREFAST_
 #pragma warning(pop)
-#endif    
+#endif
     {
         printf("\nMicrosoft (R) .NET Framework IL Assembler version " VER_FILEVERSION_STR);
         printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
@@ -192,7 +192,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/ARM64          Target processor: ARM64 (AArch64) processor");
       printf("\n/32BITPREFERRED Create a 32BitPreferred image (PE32)");
       printf("\n/ENC=<file>     Create Edit-and-Continue deltas from specified source file");
-      
+
       printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters (except ARM/ARM64)\nDefault source file extension is .il\n");
 
       printf("\nTarget defaults:");
@@ -263,7 +263,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                 pAsm->m_dwIncludeDebugInfo = 0x3;
                               else if(0 == _wcsicmp(wzSubOpt,W("IMP")))
                                 pAsm->m_dwIncludeDebugInfo = 0x103;
-                              else 
+                              else
                               {
                                 const WCHAR *pFmt =((*pStr == '0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                                 if(swscanf_s(pStr,pFmt,&(pAsm->m_dwIncludeDebugInfo))!=1)
@@ -315,7 +315,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "X64"))
                     {
-                      pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
+                      pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
                       pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_AMD64;
                     }
                     else if (!_stricmp(szOpt, "ARM"))
@@ -327,12 +327,12 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
                         if (!_stricmp(szOpt2, "ARM"))
                         {
-                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
+                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
                             pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_ARM;
                         }
                         else if (!_stricmp(szOpt2, "ARM64"))
                         {
-                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
+                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
                             pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_ARM64;
                         }
                         else
@@ -465,7 +465,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     pAsm->m_wSSVersionMajor = (WORD)major;
                                 if((minor >= 0)&&(minor < 0xFFFF))
                                     pAsm->m_wSSVersionMinor = (WORD)minor;
-                            } else 
+                            } else
                                 goto InvalidOption;
                         }
                     }
@@ -681,7 +681,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                 pParser->msg(" --> '%s'\n", szOutputFilename);
                             }
                         }
-                            
+
                         pIn = new MappedFileStream(wzInputFilename);
 
                         if ((!pIn) || !(pIn->IsValid()))

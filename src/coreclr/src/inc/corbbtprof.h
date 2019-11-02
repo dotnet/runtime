@@ -47,13 +47,13 @@ typedef mdToken idMethodSpec;           // MethodSpec token in the IBC data
 // File format:
 //
 // CORBBTPROF_FILE_HEADER
-// CORBBTPROF_SECTION_TABLE_HEADER 
+// CORBBTPROF_SECTION_TABLE_HEADER
 // CORBBTPROF_SECTION_TABLE_ENTRY
 // ... (can be multiple entries)
 //
 // Method block counts section:
-// CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER 
-//   CORBBTPROF_METHOD_HEADER 
+// CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER
+//   CORBBTPROF_METHOD_HEADER
 //     CORBBTPROF_BLOCK_DATA
 // ... (can be multiple method header/block data entries)
 //
@@ -211,10 +211,10 @@ enum BlobType
     // For instantiated paramterized types, there may be no corresponding token
     // in the module, if a dependent module caused the type to be instantiated.
     // For such instantiated types, we save a blob/signature to identify the type.
-    // 
+    //
     ParamTypeSpec               = 4,    // Instantiated Type Signature
     ParamMethodSpec             = 5,    // Instantiated Method Signature
-    ExternalNamespaceDef        = 6,    // External Namespace Token Definition 
+    ExternalNamespaceDef        = 6,    // External Namespace Token Definition
     ExternalTypeDef             = 7,    // External Type Token Definition
     ExternalSignatureDef        = 8,    // External Signature Definition
     ExternalMethodDef           = 9,    // External Method Token Definition
@@ -262,7 +262,7 @@ enum SectionFormat
     BlobPoolProfilingData,
     UserStringPoolProfilingData,
 
-    FirstMetadataPoolSection            = StringPoolProfilingData, 
+    FirstMetadataPoolSection            = StringPoolProfilingData,
     LastMetadataPoolSection             = UserStringPoolProfilingData,
     LastTokenFlagSection                = LastMetadataPoolSection,
 
@@ -295,11 +295,11 @@ struct CORBBTPROF_SECTION_TABLE_HEADER
 
 struct CORBBTPROF_SCENARIO_RUN
 {
-    FILETIME  runTime;      // the FILETIME when the scenario was cnt    
+    FILETIME  runTime;      // the FILETIME when the scenario was cnt
     GUID      mvid;         // The GUID of this assembly when the scenario was run (useful for incremental ibcdata)
     DWORD     cCmdLine;     // the count of WCHAR's in the cmdLine for this run of the scenario
-    DWORD     cSystemInfo;  // the count of WCHAR's in the systemInfo string for this run of the scenario  
-    WCHAR     cmdLine[0];   // the command line used, the array is 'cName' in length   
+    DWORD     cSystemInfo;  // the count of WCHAR's in the systemInfo string for this run of the scenario
+    WCHAR     cmdLine[0];   // the command line used, the array is 'cName' in length
 //  WCHAR     systemInfo[]; // the system information, the array is 'cSystemInfo' in length
 
     DWORD sizeofCmdLine()
@@ -328,7 +328,7 @@ struct CORBBTPROF_SCENARIO_INFO
 {
     DWORD     ordinal;      // the id number for this scenario
     DWORD     mask;         // the one-bit mask use to identify this scenario
-    DWORD     priority;     // the priority of this scenario 
+    DWORD     priority;     // the priority of this scenario
     DWORD     numRuns;      // the number of times this scenario was run
     DWORD     cName;        // the count of WCHAR's in name[]
     WCHAR     name[0];      // the name of this scenario, the array is 'cName' in length
@@ -412,12 +412,12 @@ struct CORBBTPROF_BLOCK_DATA    // This struct is also defined by:  ICorJitInfo.
 
 struct CORBBTPROF_METHOD_DETAIL_HEADER
 {
-    DWORD                          size;            // Size to skip to get to the next CORBBTPROF_METHOD_DETAIL_HEADER at this level   
+    DWORD                          size;            // Size to skip to get to the next CORBBTPROF_METHOD_DETAIL_HEADER at this level
     DWORD                          kind;            // Identifier that specifies what kind this CORBBTPROF_METHOD_DETAIL_HEADER actually represents
 
     size_t Size()
     {
-        return size; 
+        return size;
     }
 };
 
@@ -429,16 +429,16 @@ struct CORBBTPROF_METHOD_INFO
     DWORD                          token;             // token for this method
     DWORD                          ILSize;            // IL size for this method
     DWORD                          cBlock;            // count for block[]
-    CORBBTPROF_BLOCK_DATA          block[0];          // actually 'cBlock' in length 
+    CORBBTPROF_BLOCK_DATA          block[0];          // actually 'cBlock' in length
 
     size_t Size()
-    { 
-        return sizeof(CORBBTPROF_METHOD_INFO) + sizeofBlock(); 
+    {
+        return sizeof(CORBBTPROF_METHOD_INFO) + sizeofBlock();
     }
 
-    size_t sizeofBlock() 
+    size_t sizeofBlock()
     {
-        return cBlock * sizeof(CORBBTPROF_BLOCK_DATA); 
+        return cBlock * sizeof(CORBBTPROF_BLOCK_DATA);
     }
 };
 
@@ -458,7 +458,7 @@ struct CORBBTPROF_METHOD_HEADER
 
     size_t Size()
     {
-        return sizeof(CORBBTPROF_METHOD_HEADER) + method.sizeofBlock(); 
+        return sizeof(CORBBTPROF_METHOD_HEADER) + method.sizeofBlock();
     }
 };
 
@@ -485,7 +485,7 @@ struct CORBBTPROF_TOKEN_INFO                   // Was CORBBTPROF_TOKEN_LIST_ENTR
         , flags(0)
         , scenarios(0)
     {}
-    
+
     CORBBTPROF_TOKEN_INFO( mdToken t, DWORD f = 0, DWORD s = 0)
        : token(t)
         , flags(f)

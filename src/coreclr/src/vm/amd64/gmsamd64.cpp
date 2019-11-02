@@ -15,7 +15,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     int funCallDepth /* = 1 */,
                                     HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
 {
-    CONTRACTL 
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -28,7 +28,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     ctx.Rip = baseState->m_CaptureRip;
     ctx.Rsp = baseState->m_CaptureRsp + 8; // +8 for return addr pushed before calling LazyMachStateCaptureState
-    
+
 #define CALLEE_SAVED_REGISTER(regname) ctx.regname = unwoundState->m_Capture.regname = baseState->m_Capture.regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -46,14 +46,14 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p)\n", baseState->m_CaptureRip, baseState->m_CaptureRsp));
 
     PCODE pvControlPc;
-    
-    do 
+
+    do
     {
 
 #ifndef FEATURE_PAL
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
 #else // !FEATURE_PAL
-        
+
 #if defined(DACCESS_COMPILE)
         HRESULT hr = DacVirtualUnwind(threadId, &ctx, &nonVolRegPtrs);
         if (FAILED(hr))
@@ -67,7 +67,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             _ASSERTE(!"unwindLazyState: Unwinding failed");
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
         }
-#endif  // DACCESS_COMPILE    
+#endif  // DACCESS_COMPILE
 
         pvControlPc = GetIP(&ctx);
 #endif // !FEATURE_PAL
@@ -80,32 +80,32 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
         else
         {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
             BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);            
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
             if (fFailedReaderLock)
             {
                 // We don't know if we would have been able to find a JIT
                 // manager, because we couldn't enter the reader lock without
                 // yielding (and our caller doesn't want us to yield).  So abort
                 // now.
-                
+
                 // Invalidate the lazyState we're returning, so the caller knows
                 // we aborted before we could fully unwind
-                unwoundState->_pRetAddr = NULL;                
+                unwoundState->_pRetAddr = NULL;
                 return;
             }
 
             if (fIsManagedCode)
                 break;
-        }    
+        }
     }
     while(TRUE);
 
     //
     // Update unwoundState so that HelperMethodFrameRestoreState knows which
-    // registers have been potentially modified.  
+    // registers have been potentially modified.
     //
 
     unwoundState->m_Rip = ctx.Rip;
@@ -139,5 +139,5 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#endif // DACCESS_COMPILE 
+#endif // DACCESS_COMPILE
 }

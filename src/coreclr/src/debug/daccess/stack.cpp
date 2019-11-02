@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: stack.cpp
-// 
+//
 
 //
 // CLRData stack walking.
@@ -77,7 +77,7 @@ ClrDataStackWalk::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::GetContext( 
+ClrDataStackWalk::GetContext(
     /* [in] */ ULONG32 contextFlags,
     /* [in] */ ULONG32 contextBufSize,
     /* [out] */ ULONG32 *contextSize,
@@ -89,14 +89,14 @@ ClrDataStackWalk::GetContext(
     {
         *contextSize = ContextSizeForFlags(contextFlags);
     }
-    
+
     if (!CheckContextSizeForFlags(contextBufSize, contextFlags))
     {
         return E_INVALIDARG;
     }
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_frameIter.IsValid())
@@ -124,7 +124,7 @@ ClrDataStackWalk::GetContext(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::SetContext( 
+ClrDataStackWalk::SetContext(
     /* [in] */ ULONG32 contextSize,
     /* [size_is][in] */ BYTE context[  ])
 {
@@ -135,7 +135,7 @@ ClrDataStackWalk::SetContext(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::SetContext2( 
+ClrDataStackWalk::SetContext2(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 contextSize,
     /* [size_is][in] */ BYTE context[  ])
@@ -148,9 +148,9 @@ ClrDataStackWalk::SetContext2(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // Copy the context to local state so
@@ -251,15 +251,15 @@ ClrDataStackWalk::Next(void)
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::GetStackSizeSkipped( 
+ClrDataStackWalk::GetStackSizeSkipped(
     /* [out] */ ULONG64 *stackSizeSkipped)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_stackPrev)
@@ -287,14 +287,14 @@ ClrDataStackWalk::GetStackSizeSkipped(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::GetFrameType( 
+ClrDataStackWalk::GetFrameType(
     /* [out] */ CLRDataSimpleFrameType *simpleType,
     /* [out] */ CLRDataDetailedFrameType *detailedType)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_frameIter.IsValid())
@@ -321,13 +321,13 @@ ClrDataStackWalk::GetFrameType(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::GetFrame( 
+ClrDataStackWalk::GetFrame(
     /* [out] */ IXCLRDataFrame **frame)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ClrDataFrame* dataFrame = NULL;
@@ -336,7 +336,7 @@ ClrDataStackWalk::GetFrame(
             status = E_INVALIDARG;
             goto Exit;
         }
-        
+
         CLRDataSimpleFrameType simpleType;
         CLRDataDetailedFrameType detailedType;
 
@@ -350,7 +350,7 @@ ClrDataStackWalk::GetFrame(
             status = E_OUTOFMEMORY;
             goto Exit;
         }
-        
+
         dataFrame->m_context = m_context;
         UpdateContextFromRegDisp(&m_regDisp, &dataFrame->m_context);
         m_thread->FillRegDisplay(&dataFrame->m_regDisp,
@@ -358,7 +358,7 @@ ClrDataStackWalk::GetFrame(
 
         *frame = static_cast<IXCLRDataFrame*>(dataFrame);
         status = S_OK;
-        
+
     Exit: ;
     }
     EX_CATCH
@@ -373,9 +373,9 @@ ClrDataStackWalk::GetFrame(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataStackWalk::Request( 
+ClrDataStackWalk::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -385,7 +385,7 @@ ClrDataStackWalk::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -416,7 +416,7 @@ ClrDataStackWalk::Request(
             m_frameIter.SetIsFirstFrame(*(ULONG32 UNALIGNED *)inBuffer != 0);
             status = S_OK;
             break;
-            
+
         case DACSTACKPRIV_REQUEST_FRAME_DATA:
             if ((inBufferSize != 0) ||
                 (inBuffer != NULL) ||
@@ -430,7 +430,7 @@ ClrDataStackWalk::Request(
                 status = E_INVALIDARG;
                 break;
             }
-            
+
             DacpFrameData* frameData;
 
             frameData = (DacpFrameData*)outBuffer;
@@ -438,7 +438,7 @@ ClrDataStackWalk::Request(
                 TO_CDADDR(PTR_HOST_TO_TADDR(m_frameIter.m_crawl.GetFrame()));
             status = S_OK;
             break;
-            
+
         default:
             status = E_INVALIDARG;
             break;
@@ -486,7 +486,7 @@ ClrDataStackWalk::Init(void)
     {
         iterFlags |= FUNCTIONSONLY;
     }
-    
+
     m_frameIter.Init(m_thread, NULL, &m_regDisp, iterFlags);
     if (m_frameIter.GetFrameState() == StackFrameIterator::SFITER_UNINITIALIZED)
     {
@@ -639,7 +639,7 @@ ClrDataFrame::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetContext( 
+ClrDataFrame::GetContext(
     /* [in] */ ULONG32 contextFlags,
     /* [in] */ ULONG32 contextBufSize,
     /* [out] */ ULONG32 *contextSize,
@@ -651,14 +651,14 @@ ClrDataFrame::GetContext(
     {
         *contextSize = ContextSizeForFlags(contextFlags);
     }
-    
+
     if (!CheckContextSizeForFlags(contextBufSize, contextFlags))
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *(PT_CONTEXT)contextBuf = m_context;
@@ -676,16 +676,16 @@ ClrDataFrame::GetContext(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetFrameType( 
+ClrDataFrame::GetFrameType(
     /* [out] */ CLRDataSimpleFrameType *simpleType,
     /* [out] */ CLRDataDetailedFrameType *detailedType)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *simpleType = m_simpleType;
@@ -704,15 +704,15 @@ ClrDataFrame::GetFrameType(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetAppDomain( 
+ClrDataFrame::GetAppDomain(
     /* [out] */ IXCLRDataAppDomain **appDomain)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_appDomain)
@@ -747,15 +747,15 @@ ClrDataFrame::GetAppDomain(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetNumArguments( 
+ClrDataFrame::GetNumArguments(
     /* [out] */ ULONG32 *numArgs)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_methodDesc)
@@ -781,9 +781,9 @@ ClrDataFrame::GetNumArguments(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetArgumentByIndex( 
+ClrDataFrame::GetArgumentByIndex(
     /* [in] */ ULONG32 index,
     /* [out] */ IXCLRDataValue **arg,
     /* [in] */ ULONG32 bufLen,
@@ -793,14 +793,14 @@ ClrDataFrame::GetArgumentByIndex(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (nameLen)
         {
             *nameLen = 0;
         }
-        
+
         if (!m_methodDesc)
         {
             status = E_NOINTERFACE;
@@ -852,17 +852,17 @@ ClrDataFrame::GetArgumentByIndex(
                     {
                         mdIndex--;
                     }
-                    
+
                     status = mdImport->FindParamOfMethod(
-                        m_methodDesc->GetMemberDef(), 
-                        mdIndex, 
+                        m_methodDesc->GetMemberDef(),
+                        mdIndex,
                         &paramToken);
                     if (status == S_OK)
                     {
                         status = mdImport->GetParamDefProps(
-                            paramToken, 
-                            &seq, 
-                            &attr, 
+                            paramToken,
+                            &seq,
+                            &attr,
                             &paramName);
                         if ((status == S_OK) && (paramName != NULL))
                         {
@@ -880,12 +880,12 @@ ClrDataFrame::GetArgumentByIndex(
                     {
                         *nameLen = 1;
                     }
-                    
+
                     name[0] = 0;
                 }
             }
         }
-        
+
         status = ValueFromDebugInfo(sig, true, index, index, arg);
 
     Exit: ;
@@ -902,15 +902,15 @@ ClrDataFrame::GetArgumentByIndex(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetNumLocalVariables( 
+ClrDataFrame::GetNumLocalVariables(
     /* [out] */ ULONG32 *numLocals)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_methodDesc)
@@ -936,9 +936,9 @@ ClrDataFrame::GetNumLocalVariables(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetLocalVariableByIndex( 
+ClrDataFrame::GetLocalVariableByIndex(
     /* [in] */ ULONG32 index,
     /* [out] */ IXCLRDataValue **localVariable,
     /* [in] */ ULONG32 bufLen,
@@ -948,7 +948,7 @@ ClrDataFrame::GetLocalVariableByIndex(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_methodDesc)
@@ -959,7 +959,7 @@ ClrDataFrame::GetLocalVariableByIndex(
 
         MetaSig* sig;
         ULONG32 numLocals;
-        
+
         if (FAILED(status = GetLocalSig(&sig, &numLocals)))
         {
             goto Exit;
@@ -973,7 +973,7 @@ ClrDataFrame::GetLocalVariableByIndex(
 
         MetaSig* argSig;
         ULONG32 numArgs;
-        
+
         if (FAILED(status = GetMethodSig(&argSig, &numArgs)))
         {
             goto Exit;
@@ -1009,15 +1009,15 @@ ClrDataFrame::GetLocalVariableByIndex(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetNumTypeArguments( 
+ClrDataFrame::GetNumTypeArguments(
     /* [out] */ ULONG32 *numTypeArgs)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1035,16 +1035,16 @@ ClrDataFrame::GetNumTypeArguments(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetTypeArgumentByIndex( 
+ClrDataFrame::GetTypeArgumentByIndex(
     /* [in] */ ULONG32 index,
     /* [out] */ IXCLRDataTypeInstance **typeArg)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1062,7 +1062,7 @@ ClrDataFrame::GetTypeArgumentByIndex(
     DAC_LEAVE();
     return status;
 }
-        
+
 
 HRESULT STDMETHODCALLTYPE
 ClrDataFrame::GetExactGenericArgsToken(
@@ -1071,7 +1071,7 @@ ClrDataFrame::GetExactGenericArgsToken(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_methodDesc)
@@ -1082,12 +1082,12 @@ ClrDataFrame::GetExactGenericArgsToken(
 
         MetaSig* sig;
         ULONG32 numLocals;
-        
+
         if (FAILED(status = GetLocalSig(&sig, &numLocals)))
         {
             goto Exit;
         }
-        
+
         // The locals are indexed immediately following the arguments
         // in the NativeVarInfos.
         status = ValueFromDebugInfo(sig, false, 1, (DWORD)ICorDebugInfo::TYPECTXT_ILNUM,
@@ -1108,7 +1108,7 @@ ClrDataFrame::GetExactGenericArgsToken(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetCodeName( 
+ClrDataFrame::GetCodeName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
@@ -1117,7 +1117,7 @@ ClrDataFrame::GetCodeName(
     HRESULT status = E_FAIL;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         TADDR pcAddr = PCODEToPINSTR(GetControlPC(&m_regDisp));
@@ -1139,15 +1139,15 @@ ClrDataFrame::GetCodeName(
 
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::GetMethodInstance( 
+ClrDataFrame::GetMethodInstance(
     /* [out] */ IXCLRDataMethodInstance **method)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_methodDesc)
@@ -1178,7 +1178,7 @@ ClrDataFrame::GetMethodInstance(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataFrame::Request( 
+ClrDataFrame::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -1188,7 +1188,7 @@ ClrDataFrame::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -1210,7 +1210,7 @@ ClrDataFrame::Request(
         default:
             status = E_INVALIDARG;
             break;
-        }        
+        }
     }
     EX_CATCH
     {
@@ -1251,7 +1251,7 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
     HRESULT hr;
     if (!m_localSig)
     {
-        // It turns out we cannot really get rid of this check.  Dynamic methods 
+        // It turns out we cannot really get rid of this check.  Dynamic methods
         // (including IL stubs) do not have their local sig's available after JIT time.
         if (!m_methodDesc->IsIL())
         {
@@ -1273,10 +1273,10 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
         ULONG tokenSigLen;
         PCCOR_SIGNATURE tokenSig;
         IfFailRet(m_methodDesc->GetModule()->GetMDImport()->GetSigFromToken(
-            localSig, 
-            &tokenSigLen, 
+            localSig,
+            &tokenSigLen,
             &tokenSig));
-        
+
         SigTypeContext typeContext(m_methodDesc, TypeHandle());
         m_localSig = new (nothrow)
             MetaSig(tokenSig,

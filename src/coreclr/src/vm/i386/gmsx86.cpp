@@ -40,17 +40,17 @@
 #endif
 
 /***************************************************************/
-/* the 'zeroFtn and 'recursiveFtn' are only here to determine 
+/* the 'zeroFtn and 'recursiveFtn' are only here to determine
    if if mscorwks itself has been instrumented by a profiler
-   that intercepts calls or epilogs of functions. (the 
+   that intercepts calls or epilogs of functions. (the
    callsInstrumented and epilogInstrumented functions).  */
-   
+
 #if !defined(DACCESS_COMPILE)
 
 #ifdef _MSC_VER
 #pragma optimize("gsy", on )        // optimize to insure that code generation does not have junk in it
 #endif // _MSC_VER
-#pragma warning(disable:4717) 
+#pragma warning(disable:4717)
 
 static int __stdcall zeroFtn() {
     return 0;
@@ -82,7 +82,7 @@ static bool callsInstrumented() {
     return (ptr[0] == 0x68 && ptr[5] == 0xe8);    // PUSH XXXX, call <helper>
 }
 
-/* Has mscorwks been instrumented so function prolog and epilogs are replaced with 
+/* Has mscorwks been instrumented so function prolog and epilogs are replaced with
    jmp [XXXX] */
 
 static bool epilogInstrumented() {
@@ -95,7 +95,7 @@ static bool epilogInstrumented() {
     return (ptr[0] == 0xeb || ptr[0] == 0xe9);        // jmp <XXXX>
 }
 
-#else 
+#else
 
     // Note that we have the callsInstrumeted and epilogInstrumented
     // functions so that the looser heuristics used for instrumented code
@@ -143,10 +143,10 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 
                 // For office profiler.  They morph tail calls into push TARGET; jmp helper
                 // so if you see
-                // 
+                //
                 // push XXXX
                 // jmp xxxx
-                // 
+                //
                 // and we notice that coreclr has been instrumented and
                 // xxxx starts with a JMP [] then do what you would do for jmp XXXX
                 if (*ip == 0xE9 && callsInstrumented()) {        // jmp helper
@@ -171,17 +171,17 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 pushes++;
                 ip++;
                 break;
-                
+
             case 0xE8:              // call <disp32>
                 ip += 5;
-                pushes = 0;         // This assumes that all of the previous pushes are arguments to this call 
+                pushes = 0;         // This assumes that all of the previous pushes are arguments to this call
                 break;
 
-            case 0xFF:        
+            case 0xFF:
                 if (ip[1] != 0x15)  // call [XXXX] is OK (prolog of epilog helper is intrumented)
-                    return false;   // but everything else is not OK. 
+                    return false;   // but everything else is not OK.
                 ip += 6;
-                pushes = 0;         // This assumes that all of the previous pushes are arguments to this call 
+                pushes = 0;         // This assumes that all of the previous pushes are arguments to this call
                 break;
 
             case 0x9C:              // pushfd
@@ -248,7 +248,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 mod = (ip[1] & 0xC0) >> 6;
                 if (mod != 3) {
                     rm  = (ip[1] & 0x07);
-                    if (mod == 0) {         // (mod == 0) 
+                    if (mod == 0) {         // (mod == 0)
                         if      (rm == 5)
                             ip += 4;            // disp32
                         else if (rm == 4)
@@ -256,13 +256,13 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                                                 // otherwise [reg]
 
                     }
-                    else if (mod == 1) {    // (mod == 1) 
+                    else if (mod == 1) {    // (mod == 1)
                         ip += 1;                // for disp8
                         if (rm == 4)
                             ip += 1;            // [reg*K+reg+disp8]
                                                 // otherwise [reg+disp8]
                     }
-                    else {                  // (mod == 2) 
+                    else {                  // (mod == 2)
                         ip += 4;                // for disp32
                         if (rm == 4)
                             ip += 1;            // [reg*K+reg+disp32]
@@ -283,7 +283,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 break;
 
             case 0xE9:              // jmp <disp32>
-                ip += (__int32)*PTR_DWORD(PTR_TO_TADDR(ip) + 1) + 5; 
+                ip += (__int32)*PTR_DWORD(PTR_TO_TADDR(ip) + 1) + 5;
                 break;
 
             case 0xF7:               // test r/m32, imm32
@@ -353,7 +353,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 // current location to the return and 'watch' where the registers got restored from. This is what
 // unwindLazyState does (determine what the registers would be IF you had never executed and unmanaged C++
 // code).
-// 
+//
 // By design, this code does not handle all X86 instructions, but only those instructions needed in an
 // epilog.  If you get a failure because of a missing instruction, it MAY simply be because the compiler
 // changed and now emits a new instruction in the epilog, but it MAY also be because the unwinder is
@@ -515,7 +515,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 {
                     PTR_BYTE target = ip + (__int32)*PTR_DWORD(PTR_TO_TADDR(ip) - 4);    // calculate target
 
-                    if (shouldEnterCall(target)) 
+                    if (shouldEnterCall(target))
                     {
                         epilogCallRet = ip;             // remember our return address
                         --ESP;                          // simulate pushing the return address
@@ -610,22 +610,22 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
             case 0x68:              // push 0xXXXXXXXX
                 if ((ip[5] == 0xFF) && (ip[6] == 0x15)) {
-                    ip += 11; // 
+                    ip += 11; //
                 }
                 else {
                     ip += 5;
 
                     // For office profiler.  They morph calls into push TARGET; call helper
                     // so if you see
-                    // 
+                    //
                     // push XXXX
                     // call xxxx
-                    // 
+                    //
                     // and we notice that mscorwks has been instrumented and
                     // xxxx starts with a JMP [] then do what you would do for call XXXX
                     if ((*ip & 0xFE) == 0xE8 && callsInstrumented()) {       // It is a call or a jump (E8 or E9)
                         PTR_BYTE tmpIp = ip + 5;
-                        PTR_BYTE target = tmpIp + (__int32)*PTR_DWORD(PTR_TO_TADDR(tmpIp) - 4); 
+                        PTR_BYTE target = tmpIp + (__int32)*PTR_DWORD(PTR_TO_TADDR(tmpIp) - 4);
                         if (target[0] == 0xFF && target[1] == 0x25) {                // jmp [xxxx] (to external dll)
                             target = PTR_BYTE(*PTR_TADDR(PTR_TO_TADDR(ip) - 4));
                             if (*ip == 0xE9) {                                       // Do logic for jmp
@@ -651,7 +651,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
             case 0x75:              // jnz <target>
                 // Except the first jump, we always follow forward jump to avoid possible looping.
-                // 
+                //
                 if (bFirstCondJmp) {
                     bFirstCondJmp = FALSE;
                     ip += (signed __int8) ip[1] + 2;   // follow the non-zero path
@@ -778,7 +778,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     datasize = 0;
                     goto decodeRM;
                 }
-                else if ( (ip[1] & 0x38) == 0x10) 
+                else if ( (ip[1] & 0x38) == 0x10)
                 {
                     // added to handle gcc 3.3 generated code
                     // This is a call *(%eax) generated by gcc for destructor calls.
@@ -854,12 +854,12 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                         else if (rm == 4)       //   has SIB byte?
                             ip += 1;            //     [reg*K+reg]
                     }
-                    else if (mod == 1) {        // (mod == 1) 
+                    else if (mod == 1) {        // (mod == 1)
                         if (rm == 4)            //   has SIB byte?
                             ip += 1;            //     [reg*K+reg+disp8]
                         ip += 1;                //   for disp8
                     }
-                    else {                      // (mod == 2) 
+                    else {                      // (mod == 2)
                         if (rm == 4)            //   has SIB byte?
                             ip += 1;            //     [reg*K+reg+disp32]
                         ip += 4;                //   for disp32
@@ -937,7 +937,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 {
                     if ( ip[1] == 0x1C ) {  // MOV EBX, [ESP]
                       lazyState->_pEbx = ESP;
-                      lazyState->_ebx =  *lazyState->_pEbx;                
+                      lazyState->_ebx =  *lazyState->_pEbx;
                     }
                     else if ( ip[1] == 0x34 ) {  // MOV ESI, [ESP]
                       lazyState->_pEsi = ESP;
@@ -1088,7 +1088,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 }
                 else
                 {
-                    // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+                    // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
                     // Use it now to see if we've unwound to managed code yet.
                     BOOL fFailedReaderLock = FALSE;
                     BOOL fIsManagedCode = ExecutionManager::IsManagedCode(*lazyState->pRetAddr(), hostCallPreference, &fFailedReaderLock);
@@ -1139,7 +1139,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 *((volatile int*) 0) = 1; // If you get at this error, it is because yout
                                         // set a breakpoint in a helpermethod frame epilog
                                         // you can't do that unfortunately.  Just move it
-                                        // into the interior of the method to fix it  
+                                        // into the interior of the method to fix it
 #endif // !_PREFIX_
                 goto done;
 #endif //!DACCESS_COMPILE
@@ -1254,7 +1254,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 #ifndef DACCESS_COMPILE
 #ifndef _PREFIX_
                 *((volatile PTR_BYTE*) 0) = ip;  // cause an access violation (Free Build assert)
-#endif // !_PREFIX_                            
+#endif // !_PREFIX_
 #else
                 DacNotImpl();
 #endif
@@ -1334,20 +1334,20 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
         else
         {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
             BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);            
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
             if (fFailedReaderLock)
             {
                 // We don't know if we would have been able to find a JIT
                 // manager, because we couldn't enter the reader lock without
                 // yielding (and our caller doesn't want us to yield).  So abort
                 // now.
-                
+
                 // Invalidate the lazyState we're returning, so the caller knows
                 // we aborted before we could fully unwind
-                lazyState->_pRetAddr = NULL;                
+                lazyState->_pRetAddr = NULL;
                 return;
             }
 
@@ -1355,7 +1355,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 break;
         }
     }
-    while(TRUE);    
+    while(TRUE);
 
     lazyState->_esp = ctx.Esp;
     lazyState->_pRetAddr = PTR_TADDR(lazyState->_esp - 4);
@@ -1364,7 +1364,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     lazyState->_esi = ctx.Esi;
     lazyState->_ebx = ctx.Ebx;
     lazyState->_ebp = ctx.Ebp;
-   
+
 #ifdef DACCESS_COMPILE
     lazyState->_pEdi = NULL;
     lazyState->_pEsi = NULL;

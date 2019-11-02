@@ -10,9 +10,9 @@
 
 //
 // This file contains definitions of classes needed to mainain per-appdomain
-// thread pool work requests. This is needed as unmanaged and managed work 
+// thread pool work requests. This is needed as unmanaged and managed work
 // requests are allocted, managed and dispatched in drastically different ways.
-// However, the scheduler need be aware of these differences, and it should 
+// However, the scheduler need be aware of these differences, and it should
 // simply talk to a common interface for managing work request counts.
 //
 //=========================================================================
@@ -26,26 +26,26 @@
 #define UNUSED_THREADPOOL_INDEX (DWORD)-1
 
 //--------------------------------------------------------------------------
-//IPerAppDomainTPCount is an interface for implementing per-appdomain thread 
+//IPerAppDomainTPCount is an interface for implementing per-appdomain thread
 //pool state. It's implementation should include logic to maintain work-counts,
-//notify thread pool class when work arrives or no work is left. Finally 
+//notify thread pool class when work arrives or no work is left. Finally
 //there is logic to dipatch work items correctly in the right domain.
 //
 //Notes:
 //This class was designed to support both the managed and unmanaged uses
-//of thread pool. The unmananged part may directly be used through com 
-//interfaces. The differences between the actual management of counts and 
-//dispatching of work is quite different between the two. This interface 
+//of thread pool. The unmananged part may directly be used through com
+//interfaces. The differences between the actual management of counts and
+//dispatching of work is quite different between the two. This interface
 //hides these differences to the thread scheduler implemented by the thread pool
 //class.
 //
 
-class IPerAppDomainTPCount{  
+class IPerAppDomainTPCount{
 public:
     virtual void ResetState() = 0;
     virtual BOOL IsRequestPending() = 0;
 
-	//This functions marks the begining of requests queued for the domain. 
+	//This functions marks the begining of requests queued for the domain.
     //It needs to notify the scheduler of work-arrival among other things.
     virtual void SetAppDomainRequestsActive() = 0;
 
@@ -59,7 +59,7 @@ public:
     virtual void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled) = 0;
     virtual void SetTPIndexUnused() = 0;
     virtual BOOL IsTPIndexUnused() = 0;
-    virtual void SetTPIndex(TPIndex index) = 0; 
+    virtual void SetTPIndex(TPIndex index) = 0;
 };
 
 typedef DPTR(IPerAppDomainTPCount) PTR_IPerAppDomainTPCount;
@@ -70,14 +70,14 @@ typedef DPTR(IPerAppDomainTPCount) PTR_IPerAppDomainTPCount;
 #endif
 
 //--------------------------------------------------------------------------
-//ManagedPerAppDomainTPCount maintains per-appdomain thread pool state. 
+//ManagedPerAppDomainTPCount maintains per-appdomain thread pool state.
 //This class maintains the count of per-appdomain work-items queued by
 //ThreadPool.QueueUserWorkItem. It also dispatches threads in the appdomain
 //correctly by setting up the right exception handling frames etc.
 //
 //Note: The counts are not accurate, and neither do they need to be. The
 //actual work queue is in managed (implemented in threadpool.cs). This class
-//just provides heuristics to the thread pool scheduler, along with 
+//just provides heuristics to the thread pool scheduler, along with
 //synchronization to indicate start/end of requests to the scheduler.
 class ManagedPerAppDomainTPCount : public IPerAppDomainTPCount {
 public:
@@ -89,7 +89,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         VolatileStore(&m_numRequestsPending, (LONG)0);
     }
-    
+
     inline BOOL IsRequestPending()
     {
         LIMITED_METHOD_CONTRACT;
@@ -102,7 +102,7 @@ public:
     void ClearAppDomainRequestsActive();
     bool TakeActiveRequest();
 
-    inline void SetTPIndex(TPIndex index) 
+    inline void SetTPIndex(TPIndex index)
     {
         LIMITED_METHOD_CONTRACT;
         //This function should be called during appdomain creation when no managed code
@@ -113,7 +113,7 @@ public:
 
         m_index = index;
     }
-    
+
     inline BOOL IsTPIndexUnused()
     {
         LIMITED_METHOD_CONTRACT;
@@ -144,14 +144,14 @@ private:
 };
 
 //--------------------------------------------------------------------------
-//UnManagedPerAppDomainTPCount maintains the thread pool state/counts for 
-//unmanaged work requests. From thread pool point of view we treat unmanaged 
+//UnManagedPerAppDomainTPCount maintains the thread pool state/counts for
+//unmanaged work requests. From thread pool point of view we treat unmanaged
 //requests as a special "appdomain". This helps in scheduling policies, and
 //follow same fairness policies as requests in other appdomains.
 class UnManagedPerAppDomainTPCount : public IPerAppDomainTPCount {
 public:
 
-    UnManagedPerAppDomainTPCount() 
+    UnManagedPerAppDomainTPCount()
     {
         LIMITED_METHOD_CONTRACT;
         ResetState();
@@ -168,11 +168,11 @@ public:
         }
         CONTRACTL_END;
 
-    }    
+    }
 
     inline void CleanupResources()
     {
-    }    
+    }
 
     inline void ResetState()
     {
@@ -188,7 +188,7 @@ public:
     }
 
     void SetAppDomainRequestsActive();
-    
+
     inline void ClearAppDomainRequestsActive()
     {
         LIMITED_METHOD_CONTRACT;
@@ -203,7 +203,7 @@ public:
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
     inline void SetTPIndexUnused()
-    {        
+    {
         WRAPPER_NO_CONTRACT;
 	_ASSERT(FALSE);
     }
@@ -212,14 +212,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 	_ASSERT(FALSE);
-        return FALSE; 
+        return FALSE;
     }
 
-    inline void SetTPIndex(TPIndex index) 
+    inline void SetTPIndex(TPIndex index)
     {
         WRAPPER_NO_CONTRACT;
-	_ASSERT(FALSE); 
-    }   
+	_ASSERT(FALSE);
+    }
 
     inline ULONG GetNumRequests()
     {
@@ -243,21 +243,21 @@ private:
 #endif
 
 //--------------------------------------------------------------------------
-//PerAppDomainTPCountList maintains the collection of per-appdomain thread 
+//PerAppDomainTPCountList maintains the collection of per-appdomain thread
 //pool states. Per appdomain counts are added to the list during appdomain
 //creation inside the sdomain lock. The counts are reset during appdomain
-//unload after all the threads have  
+//unload after all the threads have
 //This class maintains the count of per-appdomain work-items queued by
 //ThreadPool.QueueUserWorkItem. It also dispatches threads in the appdomain
 //correctly by setting up the right exception handling frames etc.
 //
 //Note: The counts are not accurate, and neither do they need to be. The
 //actual work queue is in managed (implemented in threadpool.cs). This class
-//just provides heuristics to the thread pool scheduler, along with 
+//just provides heuristics to the thread pool scheduler, along with
 //synchronization to indicate start/end of requests to the scheduler.
 class PerAppDomainTPCountList{
 public:
-    static void InitAppDomainIndexList();    
+    static void InitAppDomainIndexList();
     static void ResetAppDomainIndex(TPIndex index);
     static bool AreRequestsPendingInAnyAppDomains();
     static LONG GetAppDomainIndexForThreadpoolDispatch();

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
-// 
+//
 
 //
 // Runtime support for Ready to Run
@@ -103,7 +103,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
-        // Name-based lookups (ex: Type.GetType()). 
+        // Name-based lookups (ex: Type.GetType()).
 
         pszName = pName->GetName();
         pszNameSpace = "";
@@ -227,9 +227,9 @@ BOOL ReadyToRunInfo::GetTypeNameFromToken(IMDInternalImport * pImport, mdToken m
 
     switch (TypeFromToken(mdType))
     {
-    case mdtTypeDef: 
+    case mdtTypeDef:
         return SUCCEEDED(pImport->GetNameOfTypeDef(mdType, ppszName, ppszNameSpace));
-    case mdtTypeRef: 
+    case mdtTypeRef:
         return SUCCEEDED(pImport->GetNameOfTypeRef(mdType, ppszNameSpace, ppszName));
     case mdtExportedType:
         return SUCCEEDED(pImport->GetExportedTypeProps(mdType, ppszNameSpace, ppszName, NULL, NULL, NULL));
@@ -590,7 +590,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    // For format version 2.1 and later, there is an optional inlining table 
+    // For format version 2.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(2, 1))
     {
         IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = FindSection(READYTORUN_SECTION_INLINING_INFO);
@@ -611,7 +611,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
             CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
             pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)GetImage()->GetDirectoryData(pProfileDataInfoDir);
 
-            pModule->SetMethodProfileList(pMethodProfileList);  
+            pModule->SetMethodProfileList(pMethodProfileList);
         }
     }
 
@@ -848,7 +848,7 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
     {
         return;
     }
-    
+
     if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
     {
         DWORD numGenericArgs;
@@ -857,7 +857,7 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
         {
             return;
         }
-    
+
         for (DWORD i = 0; i < numGenericArgs; i++)
         {
             hr = sig.SkipExactlyOne();
@@ -923,7 +923,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc()
         _ASSERTE(m_genericCurrentOffset > 0 && m_genericCurrentSig != NULL);
         return ZapSig::DecodeMethod(m_pInfo->m_pModule, m_pInfo->m_pModule, m_genericCurrentSig);
     }
-    
+
 }
 
 MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
@@ -1037,7 +1037,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
         hash = CombineTwoValuesIntoHash(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
-    
+
     return m_attributesPresence.MayExist(hash, fingerprint);
 }
 

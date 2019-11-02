@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: x86walker.cpp
-// 
+//
 
 //
 // x86 instruction decoding/stepping logic
@@ -36,7 +36,7 @@ void NativeWalker::Decode()
     //
     // Skip instruction prefixes
     //
-    do 
+    do
     {
         switch (*ip)
         {
@@ -44,7 +44,7 @@ void NativeWalker::Decode()
         case 0x26: // ES
         case 0x2E: // CS
         case 0x36: // SS
-        case 0x3E: // DS 
+        case 0x3E: // DS
         case 0x64: // FS
         case 0x65: // GS
 
@@ -58,7 +58,7 @@ void NativeWalker::Decode()
         // String REP prefixes
         case 0xf1:
         case 0xf2: // REPNE/REPNZ
-        case 0xf3: 
+        case 0xf3:
             LOG((LF_CORDB, LL_INFO10000, "NW:Decode: prefix:%0.2x ", *ip));
             ip++;
             continue;
@@ -108,9 +108,9 @@ void NativeWalker::Decode()
             case 0:
             case 1:
             case 2:
-                
+
                 if (rm == 4) {
-                    
+
                     //
                     // Get values from the SIB byte
                     //
@@ -205,7 +205,7 @@ void NativeWalker::Decode()
                 // In practice, this shouldn't happen unless the jit emits bad opcodes.
                 if (result != NULL)
                 {
-                    result = (BYTE *)(*((unsigned int *)result)); 
+                    result = (BYTE *)(*((unsigned int *)result));
                 }
 
                 break;
@@ -219,7 +219,7 @@ void NativeWalker::Decode()
 
             }
         } // have registers
-        
+
         if ((reg == 2) || (reg == 3)) {
             m_type = WALK_CALL;
         } else if ((reg == 4) || (reg == 5)) {
@@ -232,11 +232,11 @@ void NativeWalker::Decode()
         {
             m_nextIP = result;
             m_skipIP = m_ip + displace;
-        }            
-        
-        break; 
+        }
+
+        break;
         }  // end of 0xFF case
-    
+
     case 0xe8:
         {
         m_type = WALK_CALL;
@@ -318,7 +318,7 @@ DWORD NativeWalker::GetRegisterValue(int registerNumber)
     default:
         _ASSERTE(!"Invalid register number!");
     }
-    
+
     return 0;
 }
 
@@ -378,7 +378,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
     pInstrAttrib->Reset();
 
-    // Note that we only care about m_cbInstr, m_cbDisp, and m_dwOffsetToDisp for relative branches 
+    // Note that we only care about m_cbInstr, m_cbDisp, and m_dwOffsetToDisp for relative branches
     // (either call or jump instructions).
 
     switch (*address)

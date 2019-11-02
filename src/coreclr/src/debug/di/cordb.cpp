@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CorDB.cpp
-// 
+//
 
 //
 // Dll* routines for entry points, and support for COM framework.  The class
@@ -85,7 +85,7 @@ HINSTANCE       g_hInst;                // Instance handle to this piece of code
 // architecture to get an ICorDebugProcess directly (IClrDebugging::OpenVirtualProcess).
 //
 // This was used by the Mix07 release of Silverlight, but it didn't properly support versioning
-// and we no longer support it's debugger protocol so we require callers to use 
+// and we no longer support it's debugger protocol so we require callers to use
 // code:CoreCLRCreateCordbObject instead.
 //*****************************************************************************
 STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
@@ -114,15 +114,15 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 }
 
 //
-// Public API.  
-// Telesto Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.  
+// Public API.
+// Telesto Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.
 // This supercedes code:CoreCLRCreateCordbObject
-// 
+//
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
 //    pid - pid of debuggee that we're attaching to.
 //    lpApplicationGroupId - A string representing the application group ID of a sandboxed
-//                           process running in Mac. Pass NULL if the process is not 
+//                           process running in Mac. Pass NULL if the process is not
 //                           running in a sandbox and other platforms.
 //    hmodTargetCLR - module handle to clr in target pid that we're attaching to.
 //    ppCordb - (out) the resulting ICorDebug object.
@@ -144,7 +144,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
 
     //
     // Create the ICorDebug object
-    // 
+    //
     RSExtSmartPtr<ICorDebug> pCordb;
     Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, pid, lpApplicationGroupId, IID_ICorDebug, (void **) &pCordb);
 
@@ -159,7 +159,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
 
     //
     // Assign to out parameter.
-    // 
+    //
     hr = pCordb->QueryInterface(IID_IUnknown, (void**) ppCordb);
 
     // Implicit release of pUnk, pCordb
@@ -167,10 +167,10 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
 }
 
 //
-// Public API.  
-// Telesto Creation path - only way to debug multi-instance.  
+// Public API.
+// Telesto Creation path - only way to debug multi-instance.
 // This supercedes code:CreateCordbObject
-// 
+//
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
 //    pid - pid of debuggee that we're attaching to.
@@ -452,21 +452,21 @@ HINSTANCE GetModuleInst()
 
 //-----------------------------------------------------------------------------
 // Substitute for mscoree
-// 
+//
 // Notes:
-//    Mscordbi does not link with mscoree, provide a stub implementation. 
+//    Mscordbi does not link with mscoree, provide a stub implementation.
 //    Callers are in dead-code paths, but we still need to provide a stub. Ideally, we'd factor
 //    out the callers too and then we wouldn't need an E_NOTIMPL stub.
-STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe, 
-                               LPCWSTR pwszVersion, 
-                               LPCWSTR pConfigurationFile, 
-                               DWORD startupFlags, 
-                               DWORD runtimeInfoFlags, 
-                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory, 
-                               DWORD dwDirectory, 
-                               DWORD *dwDirectoryLength, 
-                               __out_ecount_opt(cchBuffer)   LPWSTR pVersion, 
-                               DWORD cchBuffer, 
+STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
+                               LPCWSTR pwszVersion,
+                               LPCWSTR pConfigurationFile,
+                               DWORD startupFlags,
+                               DWORD runtimeInfoFlags,
+                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
+                               DWORD dwDirectory,
+                               DWORD *dwDirectoryLength,
+                               __out_ecount_opt(cchBuffer)   LPWSTR pVersion,
+                               DWORD cchBuffer,
                                DWORD* dwlength)
 {
     _ASSERTE(!"GetRequestedRuntimeInfo not impl");
@@ -476,22 +476,22 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
 //-----------------------------------------------------------------------------
 // Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
 // Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-// 
+//
 // Notes:
 //   Mscordbi does not statically link to mscoree.dll.
 //   This is used in EnC for IMetadataEmit2::GetSaveSize to computer size of header.
 //   see code:TiggerStorage::GetDefaultVersion.
-//   
+//
 //   Implemented by returning the version we're built for.  Mscordbi.dll has a tight coupling with
-//   the CLR version, so this will match exactly the build version we're debugging.  
+//   the CLR version, so this will match exactly the build version we're debugging.
 //   One potential caveat is that the build version doesn't necessarily match the install string
 //   (eg. we may install as "v4.0.x86chk" but that's not captured in the build version).  But this should
 //   be internal scenarios only, and shouldn't actually matter here.  If it did, we could instead get
 //   the last components of the directory name the current mscordbi.dll is located in.
-//     
-HRESULT 
+//
+HRESULT
 CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_part(*pcchBuffer, *pcchBuffer) LPWSTR wszBuffer, 
+    __out_ecount_part(*pcchBuffer, *pcchBuffer) LPWSTR wszBuffer,
     DWORD *pcchBuffer)
 {
     // Construct the cannoncial version string we're built as - eg. "v4.0.1234"
@@ -543,7 +543,7 @@ DbiGetThreadContext(HANDLE hThread,
     {
         res = ::GetThreadContext(hThread, (CONTEXT*)lpContext);
     }
-    
+
     return res;
 #endif
 }
@@ -565,7 +565,7 @@ DbiSetThreadContext(HANDLE hThread,
             *ctx = *(CONTEXT*)lpContext;
             res = ::SetThreadContext(hThread, ctx);
             _aligned_free(ctx);
-        }   
+        }
         else
         {
             // malloc does not set the last error, but the caller of SetThreadContext
@@ -577,7 +577,7 @@ DbiSetThreadContext(HANDLE hThread,
     {
         res = ::SetThreadContext(hThread, (CONTEXT*)lpContext);
     }
-    
+
     return res;
 #endif
 }

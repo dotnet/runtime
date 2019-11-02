@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: ComInterfaceMarshaler.h
 //
 
-// 
+//
 
 
 #ifndef _H_COMInterfaceMarshaler_
@@ -20,14 +20,14 @@ class ICOMInterfaceMarshalerCallback
 public :
     // Callback to be called when we created a RCW and that RCW is inserted to cache
     virtual void OnRCWCreated(RCW *pRCW) = 0;
-    
+
     // Callback to be called when we got back a RCW from the cache
-    virtual void OnRCWCacheHit(RCW *pRCW) = 0;    
+    virtual void OnRCWCacheHit(RCW *pRCW) = 0;
 
     // Callback to be called to determine whether we should use this RCW
     // Return true if ComInterfaceMarshaler should use this RCW
     // Return false if ComInterfaceMarshaler should just skip this RCW and proceed
-    // to create a duplicate one instead    
+    // to create a duplicate one instead
     virtual bool ShouldUseThisRCW(RCW *pRCW) = 0;
 };
 
@@ -39,11 +39,11 @@ class COMInterfaceMarshaler
 public:
     COMInterfaceMarshaler();
     virtual ~COMInterfaceMarshaler();
-    
+
     VOID Init(IUnknown* pUnk, MethodTable* pClassMT, Thread *pThread, DWORD flags = 0); // see RCW::CreationFlags
-        
+
     // Sets a ICOMInterfaceMarshalerCallback pointer to be called when RCW is created or got back from cache
-    // Note that caller owns the lifetime of this callback object, and needs to make sure this callback is 
+    // Note that caller owns the lifetime of this callback object, and needs to make sure this callback is
     // alive until the last time you call any function on COMInterfaceMarshaler
     VOID SetCallback(ICOMInterfaceMarshalerCallback *pCallback)
     {
@@ -88,7 +88,7 @@ private:
     bool                    m_fNonRCWType;      // Is this redirected to a non-RCW CLR type
 
     DWORD                   m_flags;
-    
+
     ICOMInterfaceMarshalerCallback  *m_pCallback;        // Callback to call when we created a RCW or got back RCW from cache
 };
 

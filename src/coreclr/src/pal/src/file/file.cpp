@@ -132,7 +132,7 @@ FileCleanupRoutine(
     IDataLock *pLocalDataLock = NULL;
 
     palError = pObjectToCleanup->GetProcessLocalData(
-        pThread, 
+        pThread,
         ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
@@ -154,10 +154,10 @@ FileCleanupRoutine(
 
 typedef enum
 {
-  PIID_STDIN_HANDLE, 
+  PIID_STDIN_HANDLE,
   PIID_STDOUT_HANDLE,
   PIID_STDERR_HANDLE
-} PROCINFO_ID; 
+} PROCINFO_ID;
 
 #define PAL_LEGAL_FLAGS_ATTRIBS (FILE_ATTRIBUTE_NORMAL| \
                                  FILE_FLAG_SEQUENTIAL_SCAN| \
@@ -167,16 +167,16 @@ typedef enum
                                  FILE_FLAG_BACKUP_SEMANTICS)
 
 /* Static global. The init function must be called
-before any other functions and if it is not successful, 
+before any other functions and if it is not successful,
 no other functions should be done. */
 static HANDLE pStdIn = INVALID_HANDLE_VALUE;
 static HANDLE pStdOut = INVALID_HANDLE_VALUE;
 static HANDLE pStdErr = INVALID_HANDLE_VALUE;
 
 /*++
-Function : 
+Function :
     FILEGetProperNotFoundError
-    
+
 Returns the proper error code, based on the
 Windows behavior.
 
@@ -209,12 +209,12 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
     if ( lpLastPathSeparator != NULL )
     {
         *lpLastPathSeparator = '\0';
-        
+
         /* If the last path component is a directory,
            we return file not found. If it's a file or
            doesn't exist, we return path not found. */
-        if ( '\0' == *lpDupedPath || 
-             ( stat( lpDupedPath, &stat_data ) == 0 && 
+        if ( '\0' == *lpDupedPath ||
+             ( stat( lpDupedPath, &stat_data ) == 0 &&
              ( stat_data.st_mode & S_IFMT ) == S_IFDIR ) )
         {
             TRACE( "ERROR_FILE_NOT_FOUND\n" );
@@ -231,7 +231,7 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
         TRACE( "ERROR_FILE_NOT_FOUND\n" );
         *lpErrorCode = ERROR_FILE_NOT_FOUND;
     }
-    
+
     free(lpDupedPath);
     lpDupedPath = NULL;
     TRACE( "FILEGetProperNotFoundError returning TRUE\n" );
@@ -239,9 +239,9 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
 }
 
 /*++
-Function : 
+Function :
     FILEGetLastErrorFromErrnoAndFilename
-    
+
 Returns the proper error code for errno, or, if errno is ENOENT,
 based on the Windows behavior for nonexistent filenames.
 
@@ -261,7 +261,7 @@ PAL_ERROR FILEGetLastErrorFromErrnoAndFilename(LPCSTR lpPath)
     return palError;
 }
 
-BOOL 
+BOOL
 CorUnix::RealPathHelper(LPCSTR lpUnixPath, PathCharString& lpBuffer)
 {
     StringHolder lpRealPath;
@@ -272,13 +272,13 @@ CorUnix::RealPathHelper(LPCSTR lpUnixPath, PathCharString& lpBuffer)
     }
 
     lpBuffer.Set(lpRealPath, strlen(lpRealPath));
-    return TRUE; 
+    return TRUE;
 }
 /*++
 InternalCanonicalizeRealPath
     Wraps realpath() to hide platform differences. See the man page for
     realpath(3) for details of how realpath() works.
-    
+
     On systems on which realpath() allows the last path component to not
     exist, this is a straight thunk through to realpath(). On other
     systems, we remove the last path component, then call realpath().
@@ -296,8 +296,8 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     DWORD cchBuffer = 0;
     DWORD cchFilename = 0;
 #endif // !REALPATH_SUPPORTS_NONEXISTENT_FILES
- 
-    if (lpUnixPath == NULL) 
+
+    if (lpUnixPath == NULL)
     {
         ERROR ("Invalid argument to InternalCanonicalizeRealPath\n");
         palError = ERROR_INVALID_PARAMETER;
@@ -355,7 +355,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
                  }
             }
 #endif // defined(_AMD64_)
-            
+
             goto LExit;
         }
         lpFilename = lpExistingPath;
@@ -388,7 +388,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         else
 #endif // defined(_AMD64_)
             *pchSeparator = '\0';
-            
+
         if (!RealPathHelper(lpExistingPath, lpBuffer))
         {
             WARN("realpath() failed with error %d\n", errno);
@@ -533,8 +533,8 @@ CorUnix::InternalCreateFile(
     switch( dwDesiredAccess )
     {
     case 0:
-        /* Device Query Access was requested. let's use open() with 
-           no flags, it's basically the equivalent of O_RDONLY, since 
+        /* Device Query Access was requested. let's use open() with
+           no flags, it's basically the equivalent of O_RDONLY, since
            O_RDONLY is defined as 0x0000 */
         break;
     case( GENERIC_READ ):
@@ -553,7 +553,7 @@ CorUnix::InternalCreateFile(
     }
 
     TRACE("open flags are 0x%lx\n", open_flags);
-    
+
     if ( lpSecurityAttributes )
     {
         if ( lpSecurityAttributes->nLength != sizeof( SECURITY_ATTRIBUTES ) ||
@@ -573,7 +573,7 @@ CorUnix::InternalCreateFile(
         ASSERT("Bad dwFlagsAndAttributes\n");
         palError = ERROR_INVALID_PARAMETER;
         goto done;
-    } 
+    }
     else if (dwFlagsAndAttributes & FILE_FLAG_BACKUP_SEMANTICS)
     {
         /* Override the open flags, and always open as readonly.  This
@@ -607,7 +607,7 @@ CorUnix::InternalCreateFile(
     */
     switch( dwCreationDisposition )
     {
-    case( CREATE_ALWAYS ):        
+    case( CREATE_ALWAYS ):
         // check whether the file exists
         if ( access( lpUnixPath, F_OK ) == 0 )
         {
@@ -684,7 +684,7 @@ CorUnix::InternalCreateFile(
 #endif
     }
 #endif
-    
+
     /* make file descriptor close-on-exec; inheritable handles will get
       "uncloseonexeced" in CreateProcess if they are actually being inherited*/
     if(-1 == fcntl(filed,F_SETFD, FD_CLOEXEC))
@@ -743,7 +743,7 @@ CorUnix::InternalCreateFile(
     palError = g_pObjectManager->RegisterObject(
         pThread,
         pFileObject,
-        &aotFile, 
+        &aotFile,
         phFile,
         &pRegisteredFile
         );
@@ -791,7 +791,7 @@ done:
     {
         pRegisteredFile->ReleaseReference(pThread);
     }
-    
+
     if (NO_ERROR == palError && fFileExists)
     {
         palError = ERROR_ALREADY_EXISTS;
@@ -829,9 +829,9 @@ CreateFileA(
 
     PERF_ENTRY(CreateFileA);
     ENTRY("CreateFileA(lpFileName=%p (%s), dwAccess=%#x, dwShareMode=%#x, "
-          "lpSecurityAttr=%p, dwDisposition=%#x, dwFlags=%#x, " 
-          "hTemplateFile=%p )\n",lpFileName?lpFileName:"NULL",lpFileName?lpFileName:"NULL", dwDesiredAccess, 
-          dwShareMode, lpSecurityAttributes, dwCreationDisposition, 
+          "lpSecurityAttr=%p, dwDisposition=%#x, dwFlags=%#x, "
+          "hTemplateFile=%p )\n",lpFileName?lpFileName:"NULL",lpFileName?lpFileName:"NULL", dwDesiredAccess,
+          dwShareMode, lpSecurityAttributes, dwCreationDisposition,
           dwFlagsAndAttributes, hTemplateFile);
 
     pThread = InternalGetCurrentThread();
@@ -907,27 +907,27 @@ CreateFileW(
     {
         length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     name = namePathString.OpenStringBuffer(length);
     if (NULL == name)
     {
         palError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
+
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
 
     if( size == 0 )
     {
-        namePathString.CloseBuffer(0);    
+        namePathString.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
         ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
         palError = ERROR_INTERNAL_ERROR;
         goto done;
     }
-    
-    namePathString.CloseBuffer(size - 1);    
+
+    namePathString.CloseBuffer(size - 1);
 
     palError = InternalCreateFile(
         pThread,
@@ -994,7 +994,7 @@ CopyFileW(
     {
         length = (PAL_wcslen(lpExistingFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     source = sourcePathString.OpenStringBuffer(length);
     if (NULL == source)
     {
@@ -1004,7 +1004,7 @@ CopyFileW(
 
     src_size = WideCharToMultiByte( CP_ACP, 0, lpExistingFileName, -1, source, length,
                                 NULL, NULL );
-    
+
     if( src_size == 0 )
     {
         sourcePathString.CloseBuffer(0);
@@ -1013,7 +1013,7 @@ CopyFileW(
         pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
-    
+
     sourcePathString.CloseBuffer(src_size - 1);
     length = 0;
 
@@ -1021,7 +1021,7 @@ CopyFileW(
     {
         length = (PAL_wcslen(lpNewFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     dest = destPathString.OpenStringBuffer(length);
     if (NULL == dest)
     {
@@ -1030,7 +1030,7 @@ CopyFileW(
     }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
-    
+
     if( dest_size == 0 )
     {
         destPathString.CloseBuffer(0);
@@ -1079,9 +1079,9 @@ DeleteFileA(
         palError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
+
     FILEDosToUnixPathA( lpunixFileName );
-    
+
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(lpunixFileName, lpFullunixFileName);
@@ -1141,12 +1141,12 @@ DeleteFileW(
       lpFileName?lpFileName:W16_NULLSTRING);
 
     pThread = InternalGetCurrentThread();
-    
+
     if (lpFileName != NULL)
     {
         length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     name = namePS.OpenStringBuffer(length);
     if (NULL == name)
     {
@@ -1156,7 +1156,7 @@ DeleteFileW(
 
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    
+
     if( size == 0 )
     {
         namePS.CloseBuffer(0);
@@ -1214,13 +1214,13 @@ MoveFileExA(
         goto done;
     }
 
-    
+
     if( !source.Set(lpExistingFileName, strlen(lpExistingFileName)))
     {
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
+
     FILEDosToUnixPathA( source );
 
     if( !dest.Set(lpNewFileName, strlen(lpNewFileName)))
@@ -1254,33 +1254,33 @@ MoveFileExA(
         ((errno == ENOTDIR) || (errno == EEXIST)))
     {
         bRet = DeleteFileA( lpNewFileName );
-        
-        if ( bRet ) 
+
+        if ( bRet )
         {
             result = rename( source, dest );
         }
         else
-        { 
+        {
             dwLastError = GetLastError();
         }
-    } 
+    }
 
     if ( result < 0 )
     {
         switch( errno )
         {
         case EXDEV: /* we tried to link across devices */
-        
+
             if ( dwFlags & MOVEFILE_COPY_ALLOWED )
             {
                 BOOL bFailIfExists = !(dwFlags & MOVEFILE_REPLACE_EXISTING);
-            
+
                 /* if CopyFile fails here, so should MoveFailEx */
                 bRet = CopyFileA( lpExistingFileName,
                           lpNewFileName,
                           bFailIfExists );
                 /* CopyFile should set the appropriate error */
-                if ( !bRet ) 
+                if ( !bRet )
                 {
                     dwLastError = GetLastError();
                 }
@@ -1290,8 +1290,8 @@ MoveFileExA(
                     {
                         ERROR("Failed to delete the source file\n");
                         dwLastError = GetLastError();
-                    
-                        /* Delete the destination file if we're unable to delete 
+
+                        /* Delete the destination file if we're unable to delete
                            the source file */
                         if (!DeleteFileA(lpNewFileName))
                         {
@@ -1369,12 +1369,12 @@ MoveFileExW(
           lpNewFileName?lpNewFileName:W16_NULLSTRING, dwFlags);
 
     pThread = InternalGetCurrentThread();
-    
+
     if (lpExistingFileName != NULL)
     {
         length = (PAL_wcslen(lpExistingFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     source = sourcePS.OpenStringBuffer(length);
     if (NULL == source)
     {
@@ -1398,7 +1398,7 @@ MoveFileExW(
     {
         length = (PAL_wcslen(lpNewFileName)+1) * MaxWCharToAcpLengthFactor;
     }
-    
+
     dest = destPS.OpenStringBuffer(length);
     if (NULL == dest)
     {
@@ -1407,7 +1407,7 @@ MoveFileExW(
     }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
-    
+
     if( dest_size == 0 )
     {
         destPS.CloseBuffer(0);
@@ -1472,13 +1472,13 @@ GetFileAttributesA(
         goto done;
     }
 
-    
+
     if( !unixFileName.Set(lpFileName, strlen(lpFileName)))
     {
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    
+
     FILEDosToUnixPathA( unixFileName );
 
     if ( stat(unixFileName, &stat_data) != 0 )
@@ -1493,7 +1493,7 @@ GetFileAttributesA(
     }
     else if ( (stat_data.st_mode & S_IFMT) != S_IFREG )
     {
-        ERROR("Not a regular file or directory, S_IFMT is %#x\n", 
+        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
               stat_data.st_mode & S_IFMT);
         dwLastError = ERROR_ACCESS_DENIED;
         goto done;
@@ -1552,12 +1552,12 @@ GetFileAttributesW(
           lpFileName?lpFileName:W16_NULLSTRING);
 
     pThread = InternalGetCurrentThread();
-    if (lpFileName == NULL) 
+    if (lpFileName == NULL)
     {
         pThread->SetLastError(ERROR_PATH_NOT_FOUND);
         goto done;
     }
-    
+
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     filename = filenamePS.OpenStringBuffer(length);
     if (NULL == filename)
@@ -1567,7 +1567,7 @@ GetFileAttributesW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, filename, length,
                                 NULL, NULL );
-    
+
     if( size == 0 )
     {
         filenamePS.CloseBuffer(0);
@@ -1576,7 +1576,7 @@ GetFileAttributesW(
         pThread->SetLastError(ERROR_INTERNAL_ERROR);
     }
     else
-    { 
+    {
         filenamePS.CloseBuffer(size - 1);
         dwRet = GetFileAttributesA( filename );
     }
@@ -1633,12 +1633,12 @@ GetFileAttributesExW(
         goto done;
     }
 
-    if (lpFileName == NULL) 
+    if (lpFileName == NULL)
     {
         dwLastError = ERROR_PATH_NOT_FOUND;
         goto done;
     }
-    
+
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     name = namePS.OpenStringBuffer(length);
     if (NULL == name)
@@ -1648,7 +1648,7 @@ GetFileAttributesExW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    
+
     if( size == 0 )
     {
         namePS.CloseBuffer(0);
@@ -1750,14 +1750,14 @@ SetFileAttributesW(
     ENTRY("SetFileAttributesW(lpFileName=%p (%S), dwFileAttributes=%#x)\n",
         lpFileName?lpFileName:W16_NULLSTRING,
         lpFileName?lpFileName:W16_NULLSTRING, dwFileAttributes);
-    
+
     pThread = InternalGetCurrentThread();
-    if (lpFileName == NULL) 
+    if (lpFileName == NULL)
     {
         dwLastError = ERROR_PATH_NOT_FOUND;
         goto done;
     }
-    
+
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     name = namePS.OpenStringBuffer(length);
     if (NULL == name)
@@ -1767,7 +1767,7 @@ SetFileAttributesW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    
+
     if( size == 0 )
     {
         namePS.CloseBuffer(0);
@@ -1846,10 +1846,10 @@ CorUnix::InternalWriteFile(
     {
         goto done;
     }
-    
+
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -1886,7 +1886,7 @@ CorUnix::InternalWriteFile(
     }
 #endif
 
-    res = write( ifd, lpBuffer, nNumberOfBytesToWrite );  
+    res = write( ifd, lpBuffer, nNumberOfBytesToWrite );
     TRACE("write() returns %d\n", res);
 
     if ( res >= 0 )
@@ -1897,9 +1897,9 @@ CorUnix::InternalWriteFile(
     {
         palError = FILEGetLastErrorFromErrno();
     }
-    
+
 done:
-    
+
     if (NULL != pLocalDataLock)
     {
         pLocalDataLock->ReleaseLock(pThread, FALSE);
@@ -1934,10 +1934,10 @@ WriteFile(
 {
     PAL_ERROR palError;
     CPalThread *pThread;
-    
+
     PERF_ENTRY(WriteFile);
     ENTRY("WriteFile(hFile=%p, lpBuffer=%p, nToWrite=%u, lpWritten=%p, "
-          "lpOverlapped=%p)\n", hFile, lpBuffer, nNumberOfBytesToWrite, 
+          "lpOverlapped=%p)\n", hFile, lpBuffer, nNumberOfBytesToWrite,
           lpNumberOfBytesWritten, lpOverlapped);
 
     pThread = InternalGetCurrentThread();
@@ -1976,7 +1976,7 @@ CorUnix::InternalReadFile(
     CFileProcessLocalData *pLocalData = NULL;
     IDataLock *pLocalDataLock = NULL;
     int ifd;
-    
+
     LONG readOffsetStartLow = 0, readOffsetStartHigh = 0;
     int res;
 
@@ -1987,7 +1987,7 @@ CorUnix::InternalReadFile(
         // place, per MSDN
         //
 
-        *lpNumberOfBytesRead = 0;        
+        *lpNumberOfBytesRead = 0;
     }
     else
     {
@@ -2029,7 +2029,7 @@ CorUnix::InternalReadFile(
 
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -2075,7 +2075,7 @@ Read:
     {
         palError = FILEGetLastErrorFromErrno();
     }
-    
+
 done:
 
     if (NULL != pLocalDataLock)
@@ -2111,11 +2111,11 @@ ReadFile(
 {
     PAL_ERROR palError;
     CPalThread *pThread;
-    
+
     PERF_ENTRY(ReadFile);
     ENTRY("ReadFile(hFile=%p, lpBuffer=%p, nToRead=%u, "
           "lpRead=%p, lpOverlapped=%p)\n",
-          hFile, lpBuffer, nNumberOfBytesToRead, 
+          hFile, lpBuffer, nNumberOfBytesToRead,
           lpNumberOfBytesRead, lpOverlapped);
 
     pThread = InternalGetCurrentThread();
@@ -2167,7 +2167,7 @@ GetStdHandle(
         hRet = pStdOut;
         break;
     case STD_ERROR_HANDLE:
-        hRet = pStdErr; 
+        hRet = pStdErr;
         break;
     default:
         ERROR("nStdHandle is invalid\n");
@@ -2214,7 +2214,7 @@ CorUnix::InternalSetEndOfFile(
 
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -2230,7 +2230,7 @@ CorUnix::InternalSetEndOfFile(
         palError = ERROR_ACCESS_DENIED;
         goto InternalSetEndOfFileExit;
     }
-    
+
     curr = lseek(pLocalData->unix_fd, 0, SEEK_CUR);
 
     TRACE("current file pointer offset is %u\n", curr);
@@ -2260,7 +2260,7 @@ CorUnix::InternalSetEndOfFile(
     // Perform an additional check to make sure that there's likely to be enough free space to satisfy the
     // request. Do this because it's been observed on Mac OSX that ftruncate can return failure but still
     // extend the file to consume the remainder of free space.
-    // 
+    //
     struct statfs sFileSystemStats;
     off_t cbFreeSpace;
     if (fstatfs(pLocalData->unix_fd, &sFileSystemStats) != 0)
@@ -2268,7 +2268,7 @@ CorUnix::InternalSetEndOfFile(
         ERROR("fstatfs failed\n");
         palError = FILEGetLastErrorFromErrno();
         goto InternalSetEndOfFileExit;
-    } 
+    }
 
     // Free space is free blocks times the size of each block in bytes.
     cbFreeSpace = (off_t)sFileSystemStats.f_bavail * (off_t)sFileSystemStats.f_bsize;
@@ -2381,13 +2381,13 @@ InternalSetFilePointerForUnixFd(
     switch( dwMoveMethod )
     {
     case FILE_BEGIN:
-        seek_whence = SEEK_SET; 
+        seek_whence = SEEK_SET;
         break;
     case FILE_CURRENT:
-        seek_whence = SEEK_CUR; 
+        seek_whence = SEEK_CUR;
         break;
     case FILE_END:
-        seek_whence = SEEK_END; 
+        seek_whence = SEEK_END;
         break;
     default:
         ERROR("dwMoveMethod = %d is invalid\n", dwMoveMethod);
@@ -2396,16 +2396,16 @@ InternalSetFilePointerForUnixFd(
     }
 
     //
-    // According to MSDN, if lpDistanceToMoveHigh is not null, 
-    // lDistanceToMove is treated as unsigned; 
+    // According to MSDN, if lpDistanceToMoveHigh is not null,
+    // lDistanceToMove is treated as unsigned;
     // it is treated as signed otherwise
     //
-    
+
     if ( lpDistanceToMoveHigh )
     {
         /* set the high 32 bits of the offset */
         seek_offset = ((__int64)*lpDistanceToMoveHigh << 32);
-        
+
         /* set the low 32 bits */
         /* cast to unsigned long to avoid sign extension */
         seek_offset |= (ULONG) lDistanceToMove;
@@ -2420,12 +2420,12 @@ InternalSetFilePointerForUnixFd(
     old_offset = lseek(iUnixFd, 0, SEEK_CUR);
     if (old_offset == -1)
     {
-        ERROR("lseek(fd,0,SEEK_CUR) failed errno:%d (%s)\n", 
+        ERROR("lseek(fd,0,SEEK_CUR) failed errno:%d (%s)\n",
               errno, strerror(errno));
         palError = ERROR_ACCESS_DENIED;
         goto done;
     }
-    
+
     // Check to see if we're going to seek to a negative offset.
     // If we're seeking from the beginning or the current mark,
     // this is simple.
@@ -2443,7 +2443,7 @@ InternalSetFilePointerForUnixFd(
         // do that.
         struct stat fileData;
         int result;
-        
+
         result = fstat(iUnixFd, &fileData);
         if (result == -1)
         {
@@ -2479,7 +2479,7 @@ InternalSetFilePointerForUnixFd(
         /* store high-order DWORD */
         if ( lpDistanceToMoveHigh )
             *lpDistanceToMoveHigh = (DWORD)(seek_res >> 32);
-    
+
         /* return low-order DWORD of seek result */
         *lpNewFilePointerLow = (DWORD)seek_res;
     }
@@ -2525,7 +2525,7 @@ CorUnix::InternalSetFilePointer(
 
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -2542,7 +2542,7 @@ CorUnix::InternalSetFilePointer(
         dwMoveMethod,
         lpNewFilePointerLow
         );
-    
+
 InternalSetFilePointerExit:
 
     if (NULL != pLocalDataLock)
@@ -2597,20 +2597,20 @@ SetFilePointer(
         lNewFilePointerLow = INVALID_SET_FILE_POINTER;
     }
 
-    /* This function must always call SetLastError - even if successful. 
+    /* This function must always call SetLastError - even if successful.
        If we seek to a value greater than 2^32 - 1, we will effectively be
        returning a negative value from this function. Now, let's say that
-       returned value is -1. Furthermore, assume that win32error has been 
-       set before even entering this function. Then, when this function 
-       returns to SetFilePointer in win32native.cs, it will have returned 
+       returned value is -1. Furthermore, assume that win32error has been
+       set before even entering this function. Then, when this function
+       returns to SetFilePointer in win32native.cs, it will have returned
        -1 and win32error will have been set, which will cause an error to be
-       returned. Since -1 may not be an error in this case and since we 
-       can't assume that the win32error is related to SetFilePointer, 
-       we need to always call SetLastError here. That way, if this function 
-       succeeds, SetFilePointer in win32native won't mistakenly determine 
+       returned. Since -1 may not be an error in this case and since we
+       can't assume that the win32error is related to SetFilePointer,
+       we need to always call SetLastError here. That way, if this function
+       succeeds, SetFilePointer in win32native won't mistakenly determine
        that it failed. */
     pThread->SetLastError(palError);
-    
+
     LOGEXIT("SetFilePointer returns DWORD %#x\n", lNewFilePointerLow);
     PERF_EXIT(SetFilePointer);
     return lNewFilePointerLow;
@@ -2636,8 +2636,8 @@ SetFilePointerEx(
 
     PERF_ENTRY(SetFilePointerEx);
     ENTRY("SetFilePointerEx(hFile=%p, liDistanceToMove=0x%llx, "
-           "lpNewFilePointer=%p (0x%llx), dwMoveMethod=0x%x)\n", hFile, 
-           liDistanceToMove.QuadPart, lpNewFilePointer, 
+           "lpNewFilePointer=%p (0x%llx), dwMoveMethod=0x%x)\n", hFile,
+           liDistanceToMove.QuadPart, lpNewFilePointer,
            (lpNewFilePointer) ? (*lpNewFilePointer).QuadPart : 0, dwMoveMethod);
 
     LONG lDistanceToMove;
@@ -2671,7 +2671,7 @@ SetFilePointerEx(
         }
         Ret = TRUE;
     }
-    
+
     LOGEXIT("SetFilePointerEx returns BOOL %d\n", Ret);
     PERF_EXIT(SetFilePointerEx);
     return Ret;
@@ -2713,7 +2713,7 @@ CorUnix::InternalGetFileSize(
 
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -2731,7 +2731,7 @@ CorUnix::InternalGetFileSize(
     }
 
     *pdwFileSizeLow = (DWORD)stat_data.st_size;
-    
+
     if (NULL != pdwFileSizeHigh)
     {
 #if SIZEOF_OFF_T > 4
@@ -2779,7 +2779,7 @@ GetFileSize(
 
     palError = InternalGetFileSize(
         pThread,
-        hFile, 
+        hFile,
         &dwFileSizeLow,
         lpFileSizeHigh
         );
@@ -2875,10 +2875,10 @@ CorUnix::InternalFlushFileBuffers(
     {
         goto InternalFlushFileBuffersExit;
     }
-    
+
     palError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -2906,26 +2906,26 @@ CorUnix::InternalFlushFileBuffers(
         if (fsync(pLocalData->unix_fd) == 0)
             break;
 #endif // __APPLE__
-            
+
         switch (errno)
         {
         case EINTR:
             // Execution was interrupted by a signal, so restart.
             TRACE("fsync(%d) was interrupted. Restarting\n", pLocalData->unix_fd);
             break;
-            
+
         default:
             palError = FILEGetLastErrorFromErrno();
             WARN("fsync(%d) failed with error %d\n", pLocalData->unix_fd, errno);
             break;
         }
-    } while (NO_ERROR == palError);    
+    } while (NO_ERROR == palError);
 #else // HAVE_FSYNC
     /* flush all buffers out to disk - there is no way to flush
        an individual file descriptor's buffers out. */
     sync();
 #endif // HAVE_FSYNC else
-    
+
 
 InternalFlushFileBuffersExit:
 
@@ -2990,7 +2990,7 @@ FlushFileBuffers(
 uUnique is always 0.
  --*/
 const int MAX_PREFIX        = 3;
-const int MAX_SEEDSIZE      = 8; /* length of "unique portion of 
+const int MAX_SEEDSIZE      = 8; /* length of "unique portion of
                                    the string, plus extension(FFFF.TMP). */
 static USHORT uUniqueSeed   = 0;
 static BOOL IsInitialized   = FALSE;
@@ -3010,24 +3010,24 @@ GetTempFileNameA(
     CHAR * file_template;
     PathCharString file_templatePS;
     CHAR    chLastPathNameChar;
- 
+
     HANDLE  hTempFile;
     UINT    uRet = 0;
     DWORD   dwError;
     USHORT  uLoopCounter = 0;
 
     PERF_ENTRY(GetTempFileNameA);
-    ENTRY("GetTempFileNameA(lpPathName=%p (%s), lpPrefixString=%p (%s), uUnique=%u, " 
-          "lpTempFileName=%p)\n",  lpPathName?lpPathName:"NULL",  lpPathName?lpPathName:"NULL", 
-        lpPrefixString?lpPrefixString:"NULL", 
-        lpPrefixString?lpPrefixString:"NULL", uUnique, 
+    ENTRY("GetTempFileNameA(lpPathName=%p (%s), lpPrefixString=%p (%s), uUnique=%u, "
+          "lpTempFileName=%p)\n",  lpPathName?lpPathName:"NULL",  lpPathName?lpPathName:"NULL",
+        lpPrefixString?lpPrefixString:"NULL",
+        lpPrefixString?lpPrefixString:"NULL", uUnique,
         lpTempFileName?lpTempFileName:"NULL");
 
     pThread = InternalGetCurrentThread();
     if ( !IsInitialized )
     {
         uUniqueSeed = (USHORT)( time( NULL ) );
-    
+
         /* On the off chance 0 is returned.
         0 being the error return code.  */
         ENSURE_UNIQUE_NOT_ZERO
@@ -3040,14 +3040,14 @@ GetTempFileNameA(
        goto done;
     }
 
-    if ( NULL == lpTempFileName )  
+    if ( NULL == lpTempFileName )
     {
         ERROR( "lpTempFileName cannot be NULL\n" );
         pThread->SetLastError( ERROR_INVALID_PARAMETER );
         goto done;
     }
 
-    if ( strlen( lpPathName ) + MAX_SEEDSIZE + MAX_PREFIX >= MAX_LONGPATH ) 
+    if ( strlen( lpPathName ) + MAX_SEEDSIZE + MAX_PREFIX >= MAX_LONGPATH )
     {
         WARN( "File names larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH );
         pThread->SetLastError( ERROR_FILENAME_EXCED_RANGE );
@@ -3070,7 +3070,7 @@ GetTempFileNameA(
     {
         strcat_s( file_template, file_templatePS.GetSizeOf(), "\\" );
     }
-    
+
     if ( lpPrefixString )
     {
         strncat_s( file_template, file_templatePS.GetSizeOf(), lpPrefixString, MAX_PREFIX );
@@ -3091,18 +3091,18 @@ GetTempFileNameA(
     }
     sprintf_s( full_name, full_namePS.GetSizeOf(), file_template, (0 == uUnique) ? uUniqueSeed : uUnique);
     full_namePS.CloseBuffer(length);
-    
-    hTempFile = CreateFileA( full_name, GENERIC_WRITE, 
+
+    hTempFile = CreateFileA( full_name, GENERIC_WRITE,
                              FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL );
-    
+
     if (uUnique == 0)
     {
         /* The USHORT will overflow back to 0 if we go past
         65536 files, so break the loop after 65536 iterations.
-        If the CreateFile call was not successful within that 
+        If the CreateFile call was not successful within that
         number of iterations, then there are no temp file names
         left for that directory. */
-        while ( ERROR_PATH_NOT_FOUND != GetLastError() && 
+        while ( ERROR_PATH_NOT_FOUND != GetLastError() &&
                 INVALID_HANDLE_VALUE == hTempFile && uLoopCounter < 0xFFFF )
         {
             uUniqueSeed++;
@@ -3110,10 +3110,10 @@ GetTempFileNameA(
 
             pThread->SetLastError( NOERROR );
             sprintf_s( full_name, full_namePS.GetSizeOf(), file_template, uUniqueSeed );
-            hTempFile = CreateFileA( full_name, GENERIC_WRITE, 
+            hTempFile = CreateFileA( full_name, GENERIC_WRITE,
                                     FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL );
             uLoopCounter++;
-        
+
         }
     }
 
@@ -3137,7 +3137,7 @@ GetTempFileNameA(
         {
             uRet = uUnique;
         }
-        
+
         if ( CloseHandle( hTempFile ) )
         {
             if (strcpy_s( lpTempFileName, MAX_LONGPATH, full_name ) != SAFECRT_SUCCESS)
@@ -3148,7 +3148,7 @@ GetTempFileNameA(
                 uRet = 0;
             }
         }
-        else  
+        else
         {
             ASSERT( "Unable to close the handle %p\n", hTempFile );
             pThread->SetLastError( ERROR_INTERNAL_ERROR );
@@ -3160,10 +3160,10 @@ GetTempFileNameA(
     {
         ERROR( "Unable to create temp file. \n" );
         uRet = 0;
-        
+
         if ( ERROR_PATH_NOT_FOUND == GetLastError() )
         {
-            /* CreateFile failed because it could not 
+            /* CreateFile failed because it could not
             find the path. */
             pThread->SetLastError( ERROR_DIRECTORY );
         } /* else use the lasterror value from CreateFileA */
@@ -3179,9 +3179,9 @@ done:
     LOGEXIT("GetTempFileNameA returns UINT %u\n", uRet);
     PERF_EXIT(GetTempFileNameA);
     return uRet;
-       
+
 }
-        
+
 /*++
 Function:
   GetTempFileNameW
@@ -3231,7 +3231,7 @@ GetTempFileNameW(
     }
     path_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, full_name,
                                      length, NULL, NULL );
-                                     
+
     if( path_size == 0 )
     {
         full_namePS.CloseBuffer(0);
@@ -3241,10 +3241,10 @@ GetTempFileNameW(
         uRet = 0;
         goto done;
     }
-    
+
     full_namePS.CloseBuffer(path_size - 1);
-    
-    if (lpPrefixString != NULL) 
+
+    if (lpPrefixString != NULL)
     {
         length = (PAL_wcslen(lpPrefixString)+1) * MaxWCharToAcpLengthFactor;
         prefix_string = prefix_stringPS.OpenStringBuffer(length);
@@ -3254,11 +3254,11 @@ GetTempFileNameW(
             uRet = 0;
             goto done;
         }
-        prefix_size = WideCharToMultiByte( CP_ACP, 0, lpPrefixString, -1, 
+        prefix_size = WideCharToMultiByte( CP_ACP, 0, lpPrefixString, -1,
                                            prefix_string,
-                                           MAX_LONGPATH - path_size - MAX_SEEDSIZE, 
+                                           MAX_LONGPATH - path_size - MAX_SEEDSIZE,
                                            NULL, NULL );
-        
+
         if( prefix_size == 0 )
         {
             prefix_stringPS.CloseBuffer(0);
@@ -3270,7 +3270,7 @@ GetTempFileNameW(
         }
         prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
-    
+
     tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
@@ -3278,13 +3278,13 @@ GetTempFileNameW(
         uRet = 0;
         goto done;
     }
-    
-    uRet = GetTempFileNameA(full_name, 
+
+    uRet = GetTempFileNameA(full_name,
                             (lpPrefixString == NULL) ? NULL : prefix_string,
                             0, tempfile_name);
     if (uRet)
-    {                    
-        path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1, 
+    {
+        path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1,
                                            lpTempFileName, MAX_LONGPATH );
 
         free(tempfile_name);
@@ -3299,7 +3299,7 @@ GetTempFileNameW(
             }
             else
             {
-                ASSERT("MultiByteToWideChar failure! error is %d", dwLastError);     
+                ASSERT("MultiByteToWideChar failure! error is %d", dwLastError);
                 dwLastError = ERROR_INTERNAL_ERROR;
             }
             pThread->SetLastError(dwLastError);
@@ -3326,34 +3326,34 @@ DWORD FILEGetLastErrorFromErrno( void )
     switch(errno)
     {
     case 0:
-        dwRet = ERROR_SUCCESS; 
+        dwRet = ERROR_SUCCESS;
         break;
     case ENAMETOOLONG:
         dwRet = ERROR_FILENAME_EXCED_RANGE;
         break;
     case ENOTDIR:
-        dwRet = ERROR_PATH_NOT_FOUND; 
+        dwRet = ERROR_PATH_NOT_FOUND;
         break;
     case ENOENT:
-        dwRet = ERROR_FILE_NOT_FOUND; 
+        dwRet = ERROR_FILE_NOT_FOUND;
         break;
     case EACCES:
     case EPERM:
     case EROFS:
     case EISDIR:
-        dwRet = ERROR_ACCESS_DENIED; 
+        dwRet = ERROR_ACCESS_DENIED;
         break;
     case EEXIST:
-        dwRet = ERROR_ALREADY_EXISTS; 
+        dwRet = ERROR_ALREADY_EXISTS;
         break;
     case ENOTEMPTY:
-        dwRet = ERROR_DIR_NOT_EMPTY; 
+        dwRet = ERROR_DIR_NOT_EMPTY;
         break;
     case EBADF:
-        dwRet = ERROR_INVALID_HANDLE; 
+        dwRet = ERROR_INVALID_HANDLE;
         break;
     case ENOMEM:
-        dwRet = ERROR_NOT_ENOUGH_MEMORY; 
+        dwRet = ERROR_NOT_ENOUGH_MEMORY;
         break;
     case EBUSY:
         dwRet = ERROR_BUSY;
@@ -3425,7 +3425,7 @@ CopyFileA(
     BOOL         bGood = FALSE;
     DWORD        dwSrcFileAttributes;
     struct stat  SrcFileStats;
-    
+
     LPSTR lpUnixPath = NULL;
     const int    buffer_size = 16*1024;
     char        *buffer = (char*)alloca(buffer_size);
@@ -3450,7 +3450,7 @@ CopyFileA(
     {
         dwDestCreationMode = CREATE_ALWAYS;
     }
-    
+
     hSource = CreateFileA( lpExistingFileName,
                GENERIC_READ,
                FILE_SHARE_READ,
@@ -3499,7 +3499,7 @@ CopyFileA(
 
     if ( hDest == INVALID_HANDLE_VALUE )
     {
-        ERROR("CreateFileA failed for %s\n", lpNewFileName);    
+        ERROR("CreateFileA failed for %s\n", lpNewFileName);
         goto done;
     }
 
@@ -3512,8 +3512,8 @@ CopyFileA(
         goto done;
     }
     FILEDosToUnixPathA( lpUnixPath );
-    
- 
+
+
     // We don't set file attributes in CreateFile. The only attribute
     // that is reflected on disk in Unix is read-only, and we set that
     // here.
@@ -3553,10 +3553,10 @@ CopyFileA(
 
         goto done;
     }
-    
+
 done:
 
-    if ( hSource != INVALID_HANDLE_VALUE ) 
+    if ( hSource != INVALID_HANDLE_VALUE )
     {
         CloseHandle( hSource );
     }
@@ -3564,7 +3564,7 @@ done:
     {
         CloseHandle( hDest );
     }
-    if (lpUnixPath) 
+    if (lpUnixPath)
     {
         free(lpUnixPath);
     }
@@ -3605,8 +3605,8 @@ SetFileAttributesA(
     pThread = InternalGetCurrentThread();
 
     /* Windows behavior for SetFileAttributes is that any valid attributes
-    are set on a file and any invalid attributes are ignored. SetFileAttributes 
-    returns success and does not set an error even if some or all of the 
+    are set on a file and any invalid attributes are ignored. SetFileAttributes
+    returns success and does not set an error even if some or all of the
     attributes are invalid. If all the attributes are invalid, SetFileAttributes
     sets a file's attribute to NORMAL. */
 
@@ -3618,7 +3618,7 @@ SetFileAttributesA(
         WARN("dwFileAttributes(%#x) contains attributes that are either not supported "
             "or cannot be set via SetFileAttributes.\n");
     }
-     
+
     if ( (dwFileAttributes & FILE_ATTRIBUTE_NORMAL) &&
          (dwFileAttributes != FILE_ATTRIBUTE_NORMAL) )
     {
@@ -3641,7 +3641,7 @@ SetFileAttributesA(
     FILEDosToUnixPathA( unixFileName );
     if ( stat(unixFileName, &stat_data) != 0 )
     {
-        TRACE("stat failed on %s; errno is %d (%s)\n", 
+        TRACE("stat failed on %s; errno is %d (%s)\n",
              unixFileName, errno, strerror(errno));
         dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
         goto done;
@@ -3656,7 +3656,7 @@ SetFileAttributesA(
         ERROR("Not a regular file or directory, S_IFMT is %#x\n",
               new_mode & S_IFMT);
         dwLastError = ERROR_ACCESS_DENIED;
-        goto done;    
+        goto done;
     }
 
     /* set or unset the "read-only" attribute */
@@ -3692,7 +3692,7 @@ done:
     {
         pThread->SetLastError(dwLastError);
     }
-    
+
     free(unixFileName);
 
     LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
@@ -3717,7 +3717,7 @@ CorUnix::InternalCreatePipe(
     IDataLock *pDataLock = NULL;
     CFileProcessLocalData *pLocalData = NULL;
     CObjectAttributes oaFile(NULL, lpPipeAttributes);
-        
+
     int readWritePipeDes[2] = {-1, -1};
 
     if ((phReadPipe == NULL) || (phWritePipe == NULL))
@@ -3727,7 +3727,7 @@ CorUnix::InternalCreatePipe(
         goto InternalCreatePipeExit;
     }
 
-    if ((lpPipeAttributes == NULL) || 
+    if ((lpPipeAttributes == NULL) ||
         (lpPipeAttributes->bInheritHandle == FALSE) ||
         (lpPipeAttributes->lpSecurityDescriptor != NULL))
     {
@@ -3886,7 +3886,7 @@ CorUnix::InternalCreatePipe(
     //
 
     pWriteFileObject = NULL;
-    
+
 InternalCreatePipeExit:
 
     if (NO_ERROR != palError)
@@ -3970,7 +3970,7 @@ CreatePipe(
 /*++
 init_std_handle [static]
 
-utility function for FILEInitStdHandles. do the work that is common to all 
+utility function for FILEInitStdHandles. do the work that is common to all
 three standard handles
 
 Parameters:
@@ -4041,7 +4041,7 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
     palError = g_pObjectManager->RegisterObject(
         pThread,
         pFileObject,
-        &aotFile, 
+        &aotFile,
         &hFile,
         &pRegisteredFile
         );
@@ -4220,10 +4220,10 @@ GetFileInformationByHandle(
     {
         goto done;
     }
-    
+
     dwLastError = pFileObject->GetProcessLocalData(
         pThread,
-        ReadLock, 
+        ReadLock,
         &pLocalDataLock,
         reinterpret_cast<void**>(&pLocalData)
         );
@@ -4249,7 +4249,7 @@ GetFileInformationByHandle(
     }
     else if ( (stat_data.st_mode & S_IFMT) != S_IFREG )
     {
-        ERROR("Not a regular file or directory, S_IFMT is %#x\n", 
+        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
               stat_data.st_mode & S_IFMT);
         dwLastError = ERROR_ACCESS_DENIED;
         goto done;

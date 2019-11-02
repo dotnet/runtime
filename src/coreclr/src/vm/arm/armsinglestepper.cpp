@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// 
+//
 // Emulate hardware single-step on ARM.
 //
 
@@ -141,7 +141,7 @@ void ArmSingleStepper::Enable()
     }
 
     LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::Enable\n"));
-    
+
     m_fBypass = false;
     m_opcodes[0] = 0;
     m_opcodes[1] = 0;
@@ -165,7 +165,7 @@ void ArmSingleStepper::Bypass(DWORD ip, WORD opcode1, WORD opcode2)
             return;
         }
     }
-    
+
 
     LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::Bypass(pc=%x, opcode=%x %x)\n", (DWORD)ip, (DWORD)opcode1, (DWORD)opcode2));
 
@@ -196,13 +196,13 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
         if (Is32BitInstruction( m_opcodes[0]))
             m_opcodes[1] = *(WORD*)(pc+2);
     }
-    
+
     WORD opcode1 = m_opcodes[0];
     WORD opcode2 = m_opcodes[1];
 
     LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::Apply(pc=%x, opcode=%x %x)\n",
                                   (DWORD)pCtx->Pc, (DWORD)opcode1, (DWORD)opcode2));
-    
+
 #ifdef _DEBUG
     // Make sure that we aren't trying to step through our own buffer.  If this asserts, something is horribly
     // wrong with the debugging layer.  Likely GetManagedStoppedCtx is retrieving a Pc that points to our
@@ -336,7 +336,7 @@ void ArmSingleStepper::Apply(T_CONTEXT *pCtx)
     // Always terminate the redirection buffer with a breakpoint.
     m_rgCode[idxNextInstruction++] = kBreakpointOp;
     _ASSERTE(idxNextInstruction <= kMaxCodeBuffer);
-    
+
     // Set the thread up so it will redirect to our buffer when execution resumes.
     pCtx->Pc = ((DWORD)(DWORD_PTR)m_rgCode) | THUMB_CODE;
 
@@ -424,7 +424,7 @@ bool ArmSingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
                     // debugger patch skipping code will move past this breakpoint.
                     LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::Fixup emulated breakpoint\n"));
                     pCtx->Pc = m_originalPc;
-                
+
                     _ASSERTE(pCtx->Pc & THUMB_CODE);
                     return false;
                 }
@@ -450,10 +450,10 @@ bool ArmSingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         _ASSERTE(m_fEmulate == false);
         pCtx->Pc = m_originalPc;
         m_originalITState.Set(pCtx);
-        
+
         LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::Fixup hit exception pc = %x ex = %x\n", pCtx->Pc, dwExceptionCode));
     }
-    
+
     _ASSERTE(pCtx->Pc & THUMB_CODE);
     return true;
 }
@@ -557,14 +557,14 @@ bool ArmSingleStepper::GetMem(DWORD *pdwResult, DWORD_PTR pAddress, DWORD cbSize
         DWORD cbSize;
         bool fSignExtend;
         bool bReturnValue;
-    } param;    
-    
+    } param;
+
     param.pdwResult = pdwResult;
     param.pAddress = pAddress;
     param.cbSize = cbSize;
     param.fSignExtend = fSignExtend;
     param.bReturnValue = true;
-    
+
     PAL_TRY(Param *, pParam, &param)
     {
         switch (pParam->cbSize)
@@ -1077,7 +1077,7 @@ bool ArmSingleStepper::TryEmulate(T_CONTEXT *pCtx, WORD opcode1, WORD opcode2, b
             if (execute)
             {
                 _ASSERTE(ConditionHolds(pCtx, cond));
-                
+
                 DWORD imm8 = BitExtract(opcode1, 7, 0);
                 DWORD disp = (imm8 << 1) | ((imm8 & 0x80) ? 0xffffff00 : 0);
 
@@ -1228,7 +1228,7 @@ bool ArmSingleStepper::TryEmulate(T_CONTEXT *pCtx, WORD opcode1, WORD opcode2, b
         if (execute && fEmulated && !m_fRedirectedPc)
             SetReg(pCtx, 15, GetReg(pCtx, 15) - 2);
     }
-    
+
     LOG((LF_CORDB, LL_INFO100000, "ArmSingleStepper::TryEmulate(opcode=%x %x) emulated=%s redirectedPc=%s\n",
         (DWORD)opcode1, (DWORD)opcode2, fEmulated ? "true" : "false", m_fRedirectedPc ? "true" : "false"));
     return fEmulated;

@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: controller.inl
-// 
+//
 
 //
 // Inline definitions for the Left-Side of the CLR debugging services
-// This is logically part of the header file. 
+// This is logically part of the header file.
 //
 //*****************************************************************************
 
@@ -19,9 +19,9 @@ inline BOOL DebuggerControllerPatch::IsBreakpointPatch()
     return (controller->GetDCType() == DEBUGGER_CONTROLLER_BREAKPOINT);
 }
 
-inline BOOL DebuggerControllerPatch::IsStepperPatch() 
-{ 
-    return (controller->IsStepperDCType()); 
+inline BOOL DebuggerControllerPatch::IsStepperPatch()
+{
+    return (controller->IsStepperDCType());
 }
 
 inline DebuggerPatchKind DebuggerControllerPatch::GetKind()

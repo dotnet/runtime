@@ -8,7 +8,7 @@
 //
 // ZapNode that points into middle of other ZapNode. It is used to create
 // pointers into datastructures that are not convenient to split into smaller zap nodes.
-// 
+//
 // ======================================================================================
 
 #ifndef __ZAPINNERPTR_H__
@@ -99,16 +99,16 @@ class ZapInnerPtrTable
         typedef const InnerPtrKey key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return InnerPtrKey(e->GetBase(), e->GetOffset());
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1.m_pBase == k2.m_pBase) && (k1.m_offset == k2.m_offset);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k.m_pBase ^ (count_t)k.m_offset;

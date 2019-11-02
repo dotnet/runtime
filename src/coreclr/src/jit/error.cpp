@@ -386,19 +386,19 @@ int logf(const char* fmt, ...)
         static ConfigDWORD fJitBreakOnDumpToken;
         DWORD breakOnDumpToken = fJitBreakOnDumpToken.val(CLRConfig::INTERNAL_BreakOnDumpToken);
         static DWORD forbidEntry = 0;
-        
-        if ((breakOnDumpToken != 0xffffffff) && (forbidEntry == 0)) 
+
+        if ((breakOnDumpToken != 0xffffffff) && (forbidEntry == 0))
         {
             forbidEntry = 1;
-            
+
             // Use value of 0 to get the dump
             static DWORD currentLine = 1;
-            
-            if (currentLine == breakOnDumpToken) 
+
+            if (currentLine == breakOnDumpToken)
             {
                 assert(!"Dump token reached");
             }
-            
+
             printf("(Token=0x%x) ", currentLine++);
             forbidEntry = 0;
         }
@@ -447,19 +447,19 @@ void gcDump_logf(const char* fmt, ...)
         static ConfigDWORD fJitBreakOnDumpToken;
         DWORD breakOnDumpToken = fJitBreakOnDumpToken.val(CLRConfig::INTERNAL_BreakOnDumpToken);
         static DWORD forbidEntry = 0;
-        
-        if ((breakOnDumpToken != 0xffffffff) && (forbidEntry == 0)) 
+
+        if ((breakOnDumpToken != 0xffffffff) && (forbidEntry == 0))
         {
             forbidEntry = 1;
-            
+
             // Use value of 0 to get the dump
             static DWORD currentLine = 1;
-            
-            if (currentLine == breakOnDumpToken) 
+
+            if (currentLine == breakOnDumpToken)
             {
                 assert(!"Dump token reached");
             }
-            
+
             printf("(Token=0x%x) ", currentLine++);
             forbidEntry = 0;
         }

@@ -50,7 +50,7 @@ REGDEF(FP,     29, 0x20000000, "fp" , "w29"  )
 REGDEF(LR,     30, 0x40000000, "lr" , "w30"  )
 REGDEF(ZR,     31, 0x80000000, "xzr", "wzr"  )
 
-// Allow us to call IP0,IP1,PR,FP,LR by their register number names 
+// Allow us to call IP0,IP1,PR,FP,LR by their register number names
 REGALIAS(R16, IP0)
 REGALIAS(R17, IP1)
 REGALIAS(R18, PR)

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEELOAD.INL
-// 
+//
 
-// 
+//
 // CEELOAD.INL has inline methods from CEELOAD.H.
 // ===========================================================================
 
@@ -29,7 +29,7 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
 #ifndef DACCESS_COMPILE
 
 template<typename TYPE>
-inline 
+inline
 void LookupMap<TYPE>::SetValueAt(PTR_TADDR pValue, TYPE value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
@@ -58,7 +58,7 @@ SIZE_T LookupMap<SIZE_T>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supp
 }
 
 template<>
-inline 
+inline
 void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
@@ -69,7 +69,7 @@ void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 //
 // Specialization of GetValueAt methods for tables with cross-module references
 //
-template<> 
+template<>
 inline
 PTR_TypeRef LookupMap<PTR_TypeRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
 {
@@ -89,7 +89,7 @@ PTR_TypeRef LookupMap<PTR_TypeRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, 
     return dac_cast<PTR_TypeRef>(value);
 }
 
-template<> 
+template<>
 inline
 PTR_Module LookupMap<PTR_Module>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
 {
@@ -109,7 +109,7 @@ PTR_Module LookupMap<PTR_Module>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TA
     return dac_cast<PTR_Module>(value);
 }
 
-template<> 
+template<>
 inline
 PTR_MemberRef LookupMap<PTR_MemberRef>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags)
 {
@@ -186,7 +186,7 @@ void LookupMap<TYPE>::SetElement(DWORD rid, TYPE value, TADDR flags)
 }
 
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 // Try to store an association in a map. Will never throw or fail.
 template<typename TYPE>
@@ -252,7 +252,7 @@ void LookupMap<TYPE>::AddElement(Module * pModule, DWORD rid, TYPE value, TADDR 
 
 // Ensures that the map has space for this element
 template<typename TYPE>
-inline 
+inline
 void LookupMap<TYPE>::EnsureElementCanBeStored(Module * pModule, DWORD rid)
 {
     CONTRACTL
@@ -321,7 +321,7 @@ LookupMap<TYPE>::Iterator::Iterator(LookupMap* map)
         m_tableStream = BitStreamReader(dac_cast<PTR_CBYTE>(map->pTable));
 #endif // FEATURE_PREJIT
 }
-        
+
 template<typename TYPE>
 inline BOOL
 LookupMap<TYPE>::Iterator::Next()
@@ -385,7 +385,7 @@ inline PTR_Assembly Module::GetAssembly() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    
+
     return m_pAssembly;
 }
 
@@ -399,7 +399,7 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
         SUPPORTS_DAC;
     }
     CONTRACTL_END
-    
+
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
 
@@ -409,7 +409,7 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     _ASSERTE(TypeFromToken(token) == mdtMemberRef);
     g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
     BOOL flags = FALSE;
@@ -421,7 +421,7 @@ inline Assembly *Module::LookupAssemblyRef(mdAssemblyRef token)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    
+
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
     PTR_Module module= m_ManifestModuleReferencesMap.GetElement(RidFromToken(token));
     return module?module->GetAssembly():NULL;
@@ -454,13 +454,13 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #endif //DACCESS_COMPILE
 
-inline BOOL Module::IsEditAndContinueCapable() 
-{ 
-    WRAPPER_NO_CONTRACT; 
+inline BOOL Module::IsEditAndContinueCapable()
+{
+    WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
     BOOL isEnCCapable = IsEditAndContinueCapable(m_pAssembly, m_file);
-    
+
     // for now, Module::IsReflection is equivalent to m_file->IsDynamic,
     // which is checked by IsEditAndContinueCapable(m_pAssembly, m_file)
     _ASSERTE(!isEnCCapable || (!this->IsReflection()));
@@ -508,7 +508,7 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     // ==============
     //
     // The fixup list is sorted in tables. Within each table, the fixups are a
-    // sorted list of INDEXes. The first INDEX in each table is encoded entirely, 
+    // sorted list of INDEXes. The first INDEX in each table is encoded entirely,
     // but the remaining INDEXes store only the delta increment from the previous INDEX.
     // The encoding/compression is done by ZapperModule::CompressFixupList().
     //
@@ -518,13 +518,13 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     // The first entry stores the m_pFixupBlob table index.
     //
     // The next entry stores the INDEX into the particular table.
-    // An "entry" can be one or more nibbles. 3 bits of a nibble are used 
-    // to store the value, and the top bit indicates if  the following nibble 
+    // An "entry" can be one or more nibbles. 3 bits of a nibble are used
+    // to store the value, and the top bit indicates if  the following nibble
     // contains rest of the value. If the top bit is not set, then this
     // nibble is the last part of the value.
     //
     // If the next entry is non-0, it is another (delta-encoded relative to the
-    // previous INDEX) INDEX belonging  to the same table. If the next entry is 0, 
+    // previous INDEX) INDEX belonging  to the same table. If the next entry is 0,
     // it indicates that all INDEXes in this table are done.
     //
     // When the fixups for the previous table is done, there is entry to

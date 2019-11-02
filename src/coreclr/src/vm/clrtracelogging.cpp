@@ -24,7 +24,7 @@ static CLRTraceLog::Provider g_clrTraceProvider(g_hClrProvider);
 void CLRTraceLog::Logger::LogTargetFrameworkAttribute(LPCWSTR targetFrameworkAttribute, const char * assemblyName)
 {
 	STANDARD_VM_CONTRACT;
-	
+
 	EX_TRY
 	{
 		TraceLoggingWrite(g_hClrProvider,"CLR.AssemblyInfo",
@@ -34,7 +34,7 @@ void CLRTraceLog::Logger::LogTargetFrameworkAttribute(LPCWSTR targetFrameworkAtt
 	}
 	EX_CATCH{}
 	EX_END_CATCH(SwallowAllExceptions)
-	
+
 }
-//--- CLRTraceLog 
+//--- CLRTraceLog
 

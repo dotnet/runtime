@@ -11,7 +11,7 @@
 **          and its inner classes
 **
 
-** 
+**
 ===========================================================*/
 #ifndef DELEGATE_INFO
 #define DELEGATE_INFO
@@ -36,7 +36,7 @@ struct DelegateInfo
             // Remove this comment once that work is done
             NOTHROW;
             GC_TRIGGERS;
-            MODE_COOPERATIVE; 
+            MODE_COOPERATIVE;
             FORBID_FAULT;
         }
         CONTRACTL_END;

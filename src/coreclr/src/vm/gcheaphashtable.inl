@@ -159,7 +159,7 @@ template <class PtrTypeKey, bool supports_remove>
     LIMITED_METHOD_CONTRACT;
 
     UPTRARRAYREF value = (UPTRARRAYREF)arr->GetAt(index);
-    
+
     return (INT32)*value->GetDirectConstPointerToNonObjectElements();
 }
 
@@ -188,7 +188,7 @@ void GCHeapHash<TRAITS>::Insert(TKey *pKey, const TValueSetter &valueSetter)
 
     count_t hash = CallHash(pKey);
     count_t tableSize = m_gcHeapHash->GetCapacity();
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     while (TRUE)
@@ -212,10 +212,10 @@ void GCHeapHash<TRAITS>::Insert(TKey *pKey, const TValueSetter &valueSetter)
             m_gcHeapHash->IncrementCount(isDeleted);
             return;
         }
-    
+
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
-    
+            increment = (hash % (tableSize-1)) + 1;
+
         index += increment;
         if (index >= tableSize)
             index -= tableSize;
@@ -296,7 +296,7 @@ bool GCHeapHash<TRAITS>::IsPrime(count_t number)
     }
     CONTRACTL_END;
 
-    // This is a very low-tech check for primality, which doesn't scale very well.  
+    // This is a very low-tech check for primality, which doesn't scale very well.
     // There are more efficient tests if this proves to be burdensome for larger
     // tables.
 
@@ -370,7 +370,7 @@ void GCHeapHash<TRAITS>::ReplaceTable(THashArrayType newTable)
             {
                 count_t hash = CallHash(arr, index);
                 count_t tableSize = (count_t)newTable->GetNumComponents();
-                count_t newIndex = hash % tableSize; 
+                count_t newIndex = hash % tableSize;
                 count_t increment = 0; // delay computation
 
                 // Value to copy is in index
@@ -382,10 +382,10 @@ void GCHeapHash<TRAITS>::ReplaceTable(THashArrayType newTable)
                         TRAITS::CopyValue(arr, index, newTable, newIndex);
                         break;
                     }
-                
+
                     if (increment == 0)
-                        increment = (hash % (tableSize-1)) + 1; 
-                
+                        increment = (hash % (tableSize-1)) + 1;
+
                     newIndex += increment;
                     if (newIndex >= tableSize)
                         newIndex -= tableSize;
@@ -394,10 +394,10 @@ void GCHeapHash<TRAITS>::ReplaceTable(THashArrayType newTable)
         }
 
         m_gcHeapHash->SetTable((BASEARRAYREF)newTable);
-        
+
         // We've just copied the table to a new table. There are no deleted items as
         // we skipped them all, so reset the deleted count to zero
-        m_gcHeapHash->SetDeletedCountToZero(); 
+        m_gcHeapHash->SetDeletedCountToZero();
     }
     GCPROTECT_END();
 }
@@ -459,7 +459,7 @@ INT32 GCHeapHash<TRAITS>::GetValueIndex(TKey *pKey)
     if (m_gcHeapHash->GetCount() == 0)
         return -1;
 
-    count_t index = hash % tableSize; 
+    count_t index = hash % tableSize;
     count_t increment = 0; // delay computation
 
     THashArrayType arr((THashArrayType)(m_gcHeapHash)->GetData());
@@ -475,9 +475,9 @@ INT32 GCHeapHash<TRAITS>::GetValueIndex(TKey *pKey)
         {
             return index;
         }
-    
+
         if (increment == 0)
-            increment = (hash % (tableSize-1)) + 1; 
+            increment = (hash % (tableSize-1)) + 1;
 
         index += increment;
         if (index >= tableSize)
@@ -496,7 +496,7 @@ void GCHeapHash<TRAITS>::GetElement(INT32 index, TElement& foundElement)
     TRAITS::GetElement(&m_gcHeapHash, index, foundElement);
 }
 
-    // Use this to update an value within the hashtable directly. 
+    // Use this to update an value within the hashtable directly.
     // It is ONLY safe to do if the index already points at an element
     // which already exists and has the same key as the newElementValue
 template <class TRAITS>

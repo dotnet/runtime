@@ -163,28 +163,28 @@ Gets the locale currency English or native name and convert the result to UChars
 static UErrorCode GetLocaleCurrencyName(const char* locale, UBool nativeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    
+
     UChar currencyThreeLettersName[4]; // 3 letters currency iso name + NULL
     ucurr_forLocale(locale, currencyThreeLettersName, 4, &status);
     if (!U_SUCCESS(status))
     {
         return status;
     }
-    
+
     int32_t len;
     UBool formatChoice;
     const UChar *pCurrencyLongName = ucurr_getName(
-                                        currencyThreeLettersName, 
-                                        nativeName ? locale : ULOC_US, 
-                                        UCURR_LONG_NAME, 
-                                        &formatChoice, 
-                                        &len, 
+                                        currencyThreeLettersName,
+                                        nativeName ? locale : ULOC_US,
+                                        UCURR_LONG_NAME,
+                                        &formatChoice,
+                                        &len,
                                         &status);
     if (!U_SUCCESS(status))
     {
         return status;
     }
-    
+
     if (len >= valueLength) // we need to have room for NULL too
     {
         return U_BUFFER_OVERFLOW_ERROR;

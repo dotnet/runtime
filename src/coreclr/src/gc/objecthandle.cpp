@@ -99,7 +99,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
             callback(&pObj, (ScanContext *)lp1, 0);
         }
     }
-    
+
     // Assert this object wasn't relocated since we are passing a temporary object's address.
     _ASSERTE(pOldObj == pObj);
 }
@@ -151,10 +151,10 @@ void CALLBACK UpdateDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
 
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
-  
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ", 
+
+    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ",
             pPrimaryRef, "to ", *pPrimaryRef)));
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT(" and ", 
+    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT(" and ",
             pSecondaryRef, "to ", *pSecondaryRef)));
 
 #ifdef _DEBUG
@@ -169,16 +169,16 @@ void CALLBACK UpdateDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
 
 #ifdef _DEBUG
     if (pOldPrimary != *pPrimaryRef)
-        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n", 
+        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
              DBG_ADDR(pPrimaryRef), DBG_ADDR(pOldPrimary), DBG_ADDR(*pPrimaryRef)));
     else
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n", 
+        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
              DBG_ADDR(pPrimaryRef), DBG_ADDR(*pPrimaryRef)));
     if (pOldSecondary != *pSecondaryRef)
-        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n", 
+        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
              DBG_ADDR(pSecondaryRef), DBG_ADDR(pOldSecondary), DBG_ADDR(*pSecondaryRef)));
     else
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n", 
+        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
              DBG_ADDR(pSecondaryRef), DBG_ADDR(*pSecondaryRef)));
 #endif
 }
@@ -187,7 +187,7 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pExtraInfo);
-    
+
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
     LOG((LF_GC|LF_ENC, LL_INFO1000, "Checking promotion of DependentHandle"));
@@ -220,7 +220,7 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
         pDhContext->m_fUnpromotedPrimaries = true;
     }
 }
-    
+
 void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
     LIMITED_METHOD_CONTRACT;
@@ -340,7 +340,7 @@ void CALLBACK CalculateSizedRefSize(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(pExtraInfo);
-    
+
     Object **ppSizedRef = (Object **)pObjRef;
     size_t* pSize = (size_t *)pExtraInfo;
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Getting size of referent of SizedRef-", pObjRef, "to ", *pObjRef)));
@@ -379,10 +379,10 @@ void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
 
 #ifdef _DEBUG
     if (pOldLocation != *pObjRef)
-        LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n", 
+        LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
              DBG_ADDR(pObjRef), DBG_ADDR(pOldLocation), DBG_ADDR(*pObjRef)));
     else
-        LOG((LF_GC, LL_INFO100000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n", 
+        LOG((LF_GC, LL_INFO100000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
              DBG_ADDR(pObjRef), DBG_ADDR(*pObjRef)));
 #endif
 }
@@ -501,7 +501,7 @@ void CALLBACK UpdatePointerPinned(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExt
     _ASSERTE(lp2);
     promote_func* callback = (promote_func*) lp2;
     callback(ppRef, (ScanContext *)lp1, GC_CALL_PINNED);
-    
+
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT("Updating ", pObjRef, "to pinned ", *pObjRef)));
 }
 
@@ -766,7 +766,7 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
         ZeroMemory(newMap->pBuckets,
                 INITIAL_HANDLE_TABLE_ARRAY_SIZE * sizeof (HandleTableBucket *));
 
-        if (Interlocked::CompareExchangePointer(&last->pNext, newMap, NULL) != NULL) 
+        if (Interlocked::CompareExchangePointer(&last->pNext, newMap, NULL) != NULL)
         {
             // This thread loses.
             delete [] newMap->pBuckets;
@@ -786,9 +786,9 @@ void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
     HandleTableMap* walk    = &g_HandleTableMap;
     size_t          offset  = 0;
 
-    while (walk) 
+    while (walk)
     {
-        if ((index < walk->dwMaxIndex) && (index >= offset)) 
+        if ((index < walk->dwMaxIndex) && (index >= offset))
         {
             // During AppDomain unloading, we first remove a handle table and then destroy
             // the table.  As soon as the table is removed, the slot can be reused.
@@ -802,7 +802,7 @@ void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
         walk   = walk->pNext;
     }
 
-    // Didn't find it.  This will happen typically from Ref_DestroyHandleTableBucket if 
+    // Didn't find it.  This will happen typically from Ref_DestroyHandleTableBucket if
     // we explicitly call Ref_RemoveHandleTableBucket first.
 }
 
@@ -846,11 +846,11 @@ void Ref_EndSynchronousGC(uint32_t condemned, uint32_t maxgen)
         }
         walk = walk->pNext;
     }
-*/    
+*/
 }
 
 void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
-{ 
+{
     CONTRACTL
     {
         NOTHROW;
@@ -1167,12 +1167,12 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 // strong handle to refer to the secondary as this could case a cycle in the graph if the secondary somehow
 // pointed back to the primary. Can't use weak handle because that would not keep the secondary object alive.
 //
-// The result is that a dependentHandle has the EFFECT of 
+// The result is that a dependentHandle has the EFFECT of
 //    * long weak handles in both the primary and secondary objects
 //    * a strong reference from the primary object to the secondary one
 //
 // Dependent handles are currently used for
-// 
+//
 //    * managing fields added to EnC classes, where the handle itself holds the this pointer and the
 //        secondary object represents the new field that was added.
 //    * it is exposed to managed code (as System.Runtime.CompilerServices.DependentHandle) and is used in the
@@ -1221,7 +1221,7 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
         pDhContext->m_fPromoted = false;
 
         HandleTableMap *walk = &g_HandleTableMap;
-        while (walk) 
+        while (walk)
         {
             for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             {
@@ -1262,7 +1262,7 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
     flags |= HNDGCF_EXTRAINFO;
 
     HandleTableMap *walk = &g_HandleTableMap;
-    while (walk) 
+    while (walk)
     {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
         {
@@ -1288,7 +1288,7 @@ void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, 
     flags |= HNDGCF_EXTRAINFO;
 
     HandleTableMap *walk = &g_HandleTableMap;
-    while (walk) 
+    while (walk)
     {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
         {
@@ -1342,7 +1342,7 @@ void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc
     uint32_t type = HNDTYPE_SIZEDREF;
     int uCPUindex = getSlotNumber(sc);
 
-    while (walk) 
+    while (walk)
     {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
         {
@@ -1417,14 +1417,14 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
     // @TODO cwb: wait for compelling performance measurements.</REVISIT_TODO>
     BOOL bDo = TRUE;
 
-    if (IsServerHeap()) 
+    if (IsServerHeap())
     {
         bDo = (Interlocked::Increment(&uCount) == 1);
         Interlocked::CompareExchange (&uCount, 0, g_theGCHeap->GetNumberOfHeaps());
         _ASSERTE (uCount <= g_theGCHeap->GetNumberOfHeaps());
     }
 
-    if (bDo)   
+    if (bDo)
         GCToEEInterface::SyncBlockCacheWeakPtrScan(&UpdatePointer, uintptr_t(sc), uintptr_t(fn));
 
     LOG((LF_GC, LL_INFO10000, "Updating pointers to referents of non-pinning handles in generation %u\n", condemned));
@@ -1561,8 +1561,8 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
     uint32_t flags = HNDGCF_NORMAL;
 
     // perform a multi-type scan that enumerates pointers
-    for (HandleTableMap * walk = &g_HandleTableMap; 
-         walk != nullptr; 
+    for (HandleTableMap * walk = &g_HandleTableMap;
+         walk != nullptr;
          walk = walk->pNext)
     {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
@@ -1601,7 +1601,7 @@ void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* 
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags); 
+                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
             }
         walk = walk->pNext;
     }
@@ -1756,11 +1756,11 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
     {
         return FALSE;
     }
-    
+
     HHANDLETABLE hTable = HndGetHandleTable(handle);
     for (int uCPUindex=0; uCPUindex < g_theGCHeap->GetNumberOfHeaps(); uCPUindex++)
     {
-        if (hTable == this->pTable[uCPUindex]) 
+        if (hTable == this->pTable[uCPUindex])
         {
             return TRUE;
         }
@@ -1772,7 +1772,7 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
 
 GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle)
-{ 
+{
     WRAPPER_NO_CONTRACT;
 
     return UNCHECKED_OBJECTREF_TO_OBJECTREF((_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle));

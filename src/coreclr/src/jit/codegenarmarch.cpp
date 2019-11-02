@@ -2597,7 +2597,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
 
 #if 0 && defined(_TARGET_ARM64_)
-        // Use this path if you want to load an absolute call target using 
+        // Use this path if you want to load an absolute call target using
         //  a sequence of movs followed by an indirect call (blr instruction)
         // If this path is enabled, we need to ensure that REG_IP0 is assigned during Lowering.
 
@@ -2606,7 +2606,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         // indirect call to constant address in IP0
         genEmitCall(emitter::EC_INDIR_R,
-                    methHnd, 
+                    methHnd,
                     INDEBUG_LDISASM_COMMA(sigInfo)
                     nullptr, //addr
                     retSize,

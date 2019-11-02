@@ -71,24 +71,24 @@ namespace clr
             {
                 STATIC_CONTRACT_LIMITED_METHOD;
                 HRESULT hr = S_OK;
-                
+
                 if (nullptr == str)
                 {   // HSTRING functions promote null string pointers to the empty string, so we should too.
                     str = L"";
                 }
-                
+
                 size_t length = 0;
                 if (SUCCEEDED(hr))
                 {
                     hr = StringCchLengthW(str, STRSAFE_MAX_CCH, &length);
                 }
-                
+
                 HSTRING local = nullptr;
                 if (SUCCEEDED(hr))
                 {
                     hr = WindowsCreateString(str, static_cast<UINT32>(length), &local);
                 }
-                
+
                 return FreeAndAssignOnSuccess(hr, local, &_hstring);
             }
 
@@ -158,14 +158,14 @@ namespace clr
                 STATIC_CONTRACT_LIMITED_METHOD;
                 return _hstring;
             }
-            
+
             // Retrieve the address of the held hstring
             HSTRING* Address()
             {
                 STATIC_CONTRACT_LIMITED_METHOD;
                 return &_hstring;
             }
-            
+
             // Return the address of the internal HSTRING so that the caller can overwrite it,
             // trusting that the caller will not leak the previously held value
             HSTRING* GetAddressOf()
@@ -427,7 +427,7 @@ namespace clr
             {
                 STATIC_CONTRACT_LIMITED_METHOD;
                 HRESULT hr = WindowsCreateStringReference(stringRef, length, &_header, &_hstring);
-                
+
                 // Failfast if internal developers try to create a reference to a non-NUL terminated string
                 if (FAILED(hr))
                 {
@@ -486,7 +486,7 @@ namespace clr
                 STATIC_CONTRACT_LIMITED_METHOD;
                 return _hstring;
             }
-            
+
             // CompareOrdinal
             INT32 CompareOrdinal(const String& other) const throw()
             {
@@ -600,7 +600,7 @@ namespace clr
                 STATIC_CONTRACT_LIMITED_METHOD;
                 return reinterpret_cast<const String&>(_hstring);
             }
-            
+
             HSTRING             _hstring;
             HSTRING_HEADER      _header;
         };
@@ -686,12 +686,12 @@ HRESULT StringCchLength(
     {
         if (pcch == nullptr)
             return E_INVALIDARG;
-    
+
         size_t cch;
         HRESULT hr = StringCchLength(wz, &cch);
         if (FAILED(hr))
             return hr;
-    
+
         return SizeTToUInt32(cch, pcch);
     }
 #endif // BIT64
@@ -705,7 +705,7 @@ HRESULT StringCchLength(
         CoTaskMemHSTRINGArrayHolder()
         {
             LIMITED_METHOD_CONTRACT;
-        
+
             m_cValues = 0;
             m_rgValues = nullptr;
         }
@@ -714,39 +714,39 @@ HRESULT StringCchLength(
             LIMITED_METHOD_CONTRACT;
             Destroy();
         }
-        
+
         // Destroys current array and holds new array rgValues of size cValues.
         void Init(HSTRING * rgValues, DWORD cValues)
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             Destroy();
             _ASSERTE(m_cValues == 0);
-            
-            _ASSERTE(((cValues == 0) && (rgValues == nullptr)) || 
+
+            _ASSERTE(((cValues == 0) && (rgValues == nullptr)) ||
                      ((cValues > 0) && (rgValues != nullptr)));
-            
+
             m_rgValues = rgValues;
             m_cValues = cValues;
         }
-        
+
         HSTRING GetAt(DWORD index) const
         {
             LIMITED_METHOD_CONTRACT;
             return m_rgValues[index];
         }
-        
+
         DWORD GetCount()
         {
             LIMITED_METHOD_CONTRACT;
             return m_cValues;
         }
-        
+
     private:
         void Destroy()
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             for (DWORD i = 0; i < m_cValues; i++)
             {
                 if (m_rgValues[i] != nullptr)
@@ -755,14 +755,14 @@ HRESULT StringCchLength(
                 }
             }
             m_cValues = 0;
-            
+
             if (m_rgValues != nullptr)
             {
                 CoTaskMemFree(m_rgValues);
                 m_rgValues = nullptr;
             }
         }
-        
+
     private:
         DWORD     m_cValues;
         HSTRING * m_rgValues;

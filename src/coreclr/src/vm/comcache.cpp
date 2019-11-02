@@ -34,7 +34,7 @@ VOID IUnkEntry::CheckValidIUnkEntry()
         MODE_ANY;
     }
     CONTRACTL_END;
-        
+
     if (IsDisconnected())
     {
         COMPlusThrow(kInvalidComObjectException, IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER);
@@ -51,12 +51,12 @@ HRESULT IUnkEntry::HRCheckValidIUnkEntry()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     if (IsDisconnected())
     {
         return COR_E_INVALIDCOMOBJECT;
     }
-    
+
     return S_OK;
 }
 
@@ -121,7 +121,7 @@ static void CheckForFuncEvalAbort(HRESULT hr)
 //
 //  Function: STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf))
 //  Create a stream in the memory
-// 
+//
 STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
 {
     CONTRACT(LPSTREAM)
@@ -137,7 +137,7 @@ STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
     CONTRACT_END;
 
     LPSTREAM        pstm = NULL;
-    
+
     BYTE* pMem = new(nothrow) BYTE[cb];
     if (pMem)
     {
@@ -170,7 +170,7 @@ HRESULT wCoMarshalInterThreadInterfaceInStream(REFIID riid,
         PRECONDITION(CheckPointer(ppStm));
     }
     CONTRACTL_END;
-   
+
     HRESULT hr;
     LPSTREAM pStm = NULL;
 
@@ -240,7 +240,7 @@ CtxEntryCache::CtxEntryCache()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     m_Lock.Init(LOCK_COMCTXENTRYCACHE);
     LockOwner lock = {&m_Lock, IsOwnerOfSpinLock};
 }
@@ -355,7 +355,7 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
         POSTCONDITION(pSTAThread == pCtxEntry->GetSTAThread());
     }
     CONTRACT_END;
- 
+
     // Find our STA (if any)
     if (pThread->GetApartment() == Thread::AS_InSTA)
     {
@@ -395,7 +395,7 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     if (!bFound)
     {
         pCtxEntry = CreateCtxEntry(pCtxCookie, pSTAThread);
-    } 
+    }
 
     // Returned the found or allocated entry.
     RETURN pCtxEntry;
@@ -423,14 +423,14 @@ void CtxEntryCache::TryDeleteCtxEntry(LPVOID pCtxCookie)
         pCtxEntry = m_CtxEntryHash.Lookup(pCtxCookie);
         if (pCtxEntry)
         {
-            // If the ref count of the context entry is still 0, then we can 
+            // If the ref count of the context entry is still 0, then we can
             // remove the ctx entry and delete it.
             if (pCtxEntry->m_dwRefCount == 0)
             {
                 // First remove the context entry from the list.
                 m_CtxEntryHash.Remove(pCtxCookie);
 
-                // We need to unlock the context entry cache before we delete the 
+                // We need to unlock the context entry cache before we delete the
                 // context entry since this can cause release to be called on
                 // an IP which can cause us to re-enter the runtime thus causing a
                 // deadlock.
@@ -478,7 +478,7 @@ void IUnkEntry::Init(
     // Make sure this IUnkEntry is part of a RCW so that we can get back to the RCW through offset
     // if we have to
     _ASSERTE(((LPBYTE)pRCW) + offsetof(RCW, m_UnkEntry) == (LPBYTE) this);
-        
+
     // Find our context cookie
     LPVOID pCtxCookie = GetCurrentCtxCookie();
     _ASSERTE(pCtxCookie);
@@ -488,7 +488,7 @@ void IUnkEntry::Init(
         m_pCtxEntry = NULL;
     else
         m_pCtxEntry = CtxEntryCache::GetCtxEntryCache()->FindCtxEntry(pCtxCookie, pThread);
-    
+
     m_pUnknown = pUnk;
     m_pCtxCookie = pCtxCookie;
     m_pStream = NULL;
@@ -526,7 +526,7 @@ VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
 
         // mark the entry as dead
         m_pUnknown = (IUnknown *)0xBADF00D;
-    }        
+    }
 }
 
 //================================================================
@@ -543,7 +543,7 @@ VOID IUnkEntry::Free()
     CONTRACTL_END;
 
     // Log the de-allocation of the IUnknown entry.
-    LOG((LF_INTEROP, LL_INFO10000, "IUnkEntry::Free called for context 0x%08X, to release entry with m_pUnknown %p, on thread %p\n", m_pCtxCookie, m_pUnknown, GetThread())); 
+    LOG((LF_INTEROP, LL_INFO10000, "IUnkEntry::Free called for context 0x%08X, to release entry with m_pUnknown %p, on thread %p\n", m_pCtxCookie, m_pUnknown, GetThread()));
 
     if (g_fProcessDetach)
     {
@@ -583,13 +583,13 @@ IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
         POSTCONDITION(CheckPointer(RETVAL, (fNoAddRef ? NULL_OK : NULL_NOT_OK)));
     }
     CONTRACT_END;
-    
+
     IUnknown* pUnk = NULL;
     LPVOID pCtxCookie = GetCurrentCtxCookie();
     _ASSERTE(pCtxCookie);
 
     CheckValidIUnkEntry();
-   
+
     if (m_pCtxCookie == pCtxCookie || IsFreeThreaded())
     {
         pUnk = GetRawIUnknown_NoAddRef();
@@ -621,7 +621,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-    
+
     HRESULT     hrCDH               = S_OK;
     IUnknown*   pUnk                = NULL;
     BOOL        fRetry              = TRUE;
@@ -632,17 +632,17 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
 
     _ASSERTE(GetCtxEntry() != NULL);
 
-    
+
     if(IsMarshalingInhibited() && (m_pCtxCookie != GetCurrentCtxCookie()))
     {
         // We want to use an interface in a different context but it can't be marshalled.
-        LOG((LF_INTEROP, LL_INFO100, "IUnkEntry::GetIUnknownForCurrContext failed as the COM object has inhibited marshaling")); 
+        LOG((LF_INTEROP, LL_INFO100, "IUnkEntry::GetIUnknownForCurrContext failed as the COM object has inhibited marshaling"));
         COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST_NOMARSHAL);
     }
 
     // Make sure we are in preemptive GC mode before we call out to COM.
     GCX_PREEMP();
-    
+
     // Need to synchronize
     while (fRetry)
     {
@@ -655,16 +655,16 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
             CheckForFuncEvalAbort(hrCDH);
         }
 
-        if (TryUpdateEntry())                
+        if (TryUpdateEntry())
         {
-            // If the interface is not marshalable or if we failed to 
-            // enter the context, then we don't have any choice but to 
+            // If the interface is not marshalable or if we failed to
+            // enter the context, then we don't have any choice but to
             // use the raw IP.
             if (m_pStream == NULL)
             {
                 // We retrieved an IP so stop retrying.
                 fRetry = FALSE;
-                    
+
                 // Give out this IUnknown we are holding
                 pUnk = GetRawIUnknown_NoAddRef();
 
@@ -676,11 +676,11 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
             else
             {
                 // we got control for this entry
-                // GetInterface for the current context 
+                // GetInterface for the current context
                 HRESULT hr;
                 hr = CoUnmarshalInterface(m_pStream, IID_IUnknown, (void **)&pUnk);
 
-                // If the objref in the stream times out, we need to go an marshal into the 
+                // If the objref in the stream times out, we need to go an marshal into the
                 // stream once again.
                 if (FAILED(hr))
                 {
@@ -689,7 +689,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                     CheckForFuncEvalAbort(hr);
 
                     // This should release the stream, object in the stream and the memory on which the stream was created
-                    SafeReleaseStream(m_pStream);                        
+                    SafeReleaseStream(m_pStream);
                     m_pStream = NULL;
 
                     // If unmarshal failed twice, then bail out.
@@ -706,7 +706,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                     fUnmarshalFailed = TRUE;
                 }
                 else
-                {   
+                {
                     // Reset the stream to the begining
                     LARGE_INTEGER li;
                     LISet32(li, 0);
@@ -714,7 +714,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                     m_pStream->Seek(li, STREAM_SEEK_SET, &li2);
 
                     // Marshal the interface into the stream with appropriate flags
-                    hr = CoMarshalInterface(m_pStream, 
+                    hr = CoMarshalInterface(m_pStream,
                         IID_IUnknown, pUnk, MSHCTX_INPROC, NULL, MSHLFLAGS_NORMAL);
 
                     if (FAILED(hr))
@@ -722,7 +722,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                         CheckForFuncEvalAbort(hr);
 
                         // The proxy is no longer valid. This sometimes manifests itself by
-                        // a failure during re-marshaling it to the stream. When this happens, 
+                        // a failure during re-marshaling it to the stream. When this happens,
                         // we need to release the the pUnk we extracted and the stream and try to
                         // re-create the stream. We don't want to release the stream data since
                         // we already extracted the proxy from the stream and released it.
@@ -743,7 +743,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                     }
                 }
             }
-        
+
             // Done with the entry.
             EndUpdateEntry();
         }
@@ -779,7 +779,7 @@ void IUnkEntry::ReleaseStream()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     // This should release the stream, object in the stream and the memory on which the stream was created
     if (m_pStream)
     {
@@ -812,11 +812,11 @@ static HRESULT MarshalIUnknownToStreamHelper(IUnknown * pUnknown, IStream ** ppS
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     IStream *pStream = NULL;
 
     GCX_PREEMP();
-    
+
     // ensure we register this cookie
     HRESULT hr = wCoMarshalInterThreadInterfaceInStream(IID_IUnknown, pUnknown, &pStream);
 
@@ -859,7 +859,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback2(LPVOID pData)
     StreamMarshalData *psmd = reinterpret_cast<StreamMarshalData *>(pData);
 
     // This should never be called during process detach.
-    
+
     hr = psmd->m_pUnkEntry->HRCheckValidIUnkEntry();
     if (hr != S_OK)
     {
@@ -867,19 +867,19 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback2(LPVOID pData)
         // We'll know marshaling failed because m_pStream == NULL
         return S_OK;
     }
-    
+
     LPVOID pCurrentCtxCookie = GetCurrentCtxCookie();
     _ASSERTE(pCurrentCtxCookie);
 
     if (pCurrentCtxCookie == psmd->m_pUnkEntry->m_pCtxCookie)
     {
-        // We are in the right context marshal the IUnknown to the 
+        // We are in the right context marshal the IUnknown to the
         // stream directly.
         hr = MarshalIUnknownToStreamHelper(psmd->m_pUnkEntry->m_pUnknown, &psmd->m_pStream);
     }
     else
     {
-        // Transition into the context to marshal the IUnknown to 
+        // Transition into the context to marshal the IUnknown to
         // the stream.
         _ASSERTE(psmd->m_pUnkEntry->GetCtxEntry() != NULL);
         hr = psmd->m_pUnkEntry->GetCtxEntry()->EnterContext(MarshalIUnknownToStreamCallback2, psmd);
@@ -901,7 +901,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-    
+
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
     SafeComHolder<IStream> spStream;
@@ -910,7 +910,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     // Make sure we are in preemptive GC mode before we call out to COM.
     GCX_PREEMP();
-    
+
     // Marshal the interface to the stream. Any call to this function
     // would be from another apartment so marshalling is needed.
     StreamMarshalData smd = {this, NULL};
@@ -918,29 +918,29 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
     // If context transition failed, we'll return a failure HRESULT
     // Otherwise, we return S_OK but m_pStream will stay being NULL
     hrCDH = MarshalIUnknownToStreamCallback2(&smd);
-    
+
     spStream = smd.m_pStream;
     smd.m_pStream = NULL;
 
     CheckForFuncEvalAbort(hrCDH);
 
-    // If the interface is not marshalable or if we failed to 
-    // enter the context, then we don't have any choice but to 
+    // If the interface is not marshalable or if we failed to
+    // enter the context, then we don't have any choice but to
     // use the raw IP.
     if (spStream == NULL)
     {
         // Give out this IUnknown we are holding
         pUnk = GetRawIUnknown_NoAddRef();
-    
+
         RCW_VTABLEPTR(GetRCW());
         ULONG cbRef = SafeAddRefPreemp(pUnk);
-        
+
         LogInteropAddRef(pUnk, cbRef, "UnmarshalIUnknownForCurrContext handing out raw IUnknown");
     }
     else
     {
         // we got control for this entry
-        // GetInterface for the current context 
+        // GetInterface for the current context
         HRESULT hr;
         hr = CoUnmarshalInterface(spStream, IID_IUnknown, reinterpret_cast<void**>(&pUnk));
         spStream.Release();
@@ -954,7 +954,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
             RCW_VTABLEPTR(GetRCW());
             ULONG cbRef = SafeAddRefPreemp(pUnk);
-            
+
             LogInteropAddRef(pUnk, cbRef, "UnmarshalIUnknownForCurrContext handing out raw IUnknown");
         }
     }
@@ -988,21 +988,21 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback(LPVOID pData)
         // We'll know marshaling failed because m_pStream == NULL
         return S_OK;
     }
-    
+
     LPVOID pCurrentCtxCookie = GetCurrentCtxCookie();
     _ASSERTE(pCurrentCtxCookie);
 
     if (pCurrentCtxCookie == pUnkEntry->m_pCtxCookie)
     {
-        // We are in the right context marshal the IUnknown to the 
+        // We are in the right context marshal the IUnknown to the
         // stream directly.
         hr = pUnkEntry->MarshalIUnknownToStream();
     }
     else
     {
         _ASSERTE(pUnkEntry->GetCtxEntry() != NULL);
-        
-        // Transition into the context to marshal the IUnknown to 
+
+        // Transition into the context to marshal the IUnknown to
         // the stream.
         hr = pUnkEntry->GetCtxEntry()->EnterContext(MarshalIUnknownToStreamCallback, pUnkEntry);
     }
@@ -1011,7 +1011,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback(LPVOID pData)
 }
 
 //================================================================
-// Helper function to determine if a COM component aggregates the 
+// Helper function to determine if a COM component aggregates the
 // FTM.
 bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
 {
@@ -1044,12 +1044,12 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
         {
             CLSID clsid;
 
-            // The COM component implements IMarshal so we now check to see if the un-marshal class 
+            // The COM component implements IMarshal so we now check to see if the un-marshal class
             // for this IMarshal is the FTM's un-marshaler.
             hr = pMarshal->GetUnmarshalClass(IID_IUnknown, NULL, MSHCTX_INPROC, NULL, MSHLFLAGS_NORMAL, &clsid);
             if (SUCCEEDED(hr) && clsid == CLSID_InProcFreeMarshaler)
             {
-                // The un-marshaler is indeed the unmarshaler for the FTM so this object 
+                // The un-marshaler is indeed the unmarshaler for the FTM so this object
                 // is free threaded.
                 return true;
             }
@@ -1068,16 +1068,16 @@ HRESULT IUnkEntry::MarshalIUnknownToStream()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        
+
         // This must always be called in the right context.
         PRECONDITION(m_pCtxCookie == GetCurrentCtxCookie());
     }
     CONTRACTL_END;
-    
+
     IStream *pStream = NULL;
 
     GCX_PREEMP();
-    
+
     HRESULT hr = S_OK;
 
     // ensure we register this cookie
@@ -1129,9 +1129,9 @@ bool IUnkEntry::TryUpdateEntry()
 VOID IUnkEntry::EndUpdateEntry()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     CtxEntry *pOldEntry = m_pCtxEntry;
-    
+
     // we should hold the lock
     _ASSERTE(((DWORD_PTR)pOldEntry & 1) == 1);
 
@@ -1225,7 +1225,7 @@ VOID CtxEntry::Init()
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        
+
         // Make sure COM has been started
         PRECONDITION(g_fComStarted == TRUE);
     }
@@ -1251,7 +1251,7 @@ DWORD CtxEntry::AddRef()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
+
     ULONG cbRef = FastInterlockIncrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Addref %8.8x with %d\n", this, cbRef));
     return cbRef;
@@ -1270,9 +1270,9 @@ DWORD CtxEntry::Release()
         PRECONDITION(m_dwRefCount > 0);
     }
     CONTRACTL_END;
-    
+
     LPVOID pCtxCookie = m_pCtxCookie;
-    
+
     LONG cbRef = FastInterlockDecrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Release %8.8x with %d\n", this, cbRef));
 
@@ -1291,7 +1291,7 @@ DWORD CtxEntry::Release()
 // Method to transition into the context and call the callback
 // from within the context.
 HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
-{  
+{
     CONTRACTL
     {
         NOTHROW;
@@ -1311,13 +1311,13 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     // since we don't know if OLE32 is still loaded.
     if (g_fProcessDetach)
     {
-        LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08%x has failed since we are in process detach\n", m_pCtxCookie)); 
+        LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08%x has failed since we are in process detach\n", m_pCtxCookie));
         return RPC_E_DISCONNECTED;
     }
 
     // Make sure we are in preemptive GC mode before we call out to COM.
     GCX_PREEMP();
-    
+
     // Prepare the information struct passed into the callback.
     CtxEntryEnterContextCallbackData CallbackInfo;
     CallbackInfo.m_pUserCallbackFunc = pCallbackFunc;
@@ -1332,7 +1332,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     _ASSERTE(SUCCEEDED(hr) && pCallback);
 
     // Setup the callback data structure with the callback Args
-    ComCallData callBackData;  
+    ComCallData callBackData;
     callBackData.dwDispid = 0;
     callBackData.dwReserved = 0;
     callBackData.pUserDefined = &CallbackInfo;
@@ -1354,15 +1354,15 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
         SafeComHolder<IErrorInfo> pErrorInfo = CheckForFuncEvalAbortNoThrow(hr);
         if (pErrorInfo != NULL)
         {
-            LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie)); 
+            LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie));
 
-            // put the IErrorInfo back 
+            // put the IErrorInfo back
             SetErrorInfo(0, pErrorInfo);
         }
         else
         {
             // The context is disconnected so we cannot transition into it.
-            LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the context has disconnected\n", m_pCtxCookie)); 
+            LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the context has disconnected\n", m_pCtxCookie));
         }
     }
 
@@ -1388,7 +1388,7 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
 
 
     Thread *pThread = GetThread();
-    
+
     // Make sure the thread has been set before we call the user callback function.
     if (!pThread)
     {
@@ -1409,7 +1409,7 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
                 return hr;
         }
     }
-    
+
     // at this point we should be in the right context on NT4,
     // if not then it is possible that the actual apartment state for this
     // thread has changed and we have stale info in our thread or the CtxEntry
@@ -1417,11 +1417,11 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
     _ASSERTE(pCtxCookie);
     if (pData->m_pCtxCookie != pCtxCookie)
         return RPC_E_DISCONNECTED;
-    
-    // Call the user callback function and store the return value the 
+
+    // Call the user callback function and store the return value the
     // callback data.
     pData->m_UserCallbackHR = pData->m_pUserCallbackFunc(pData->m_pUserData);
-    
+
     // Return S_OK to indicate the context transition was successfull.
     return S_OK;
 }

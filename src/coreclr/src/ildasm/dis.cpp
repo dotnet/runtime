@@ -129,7 +129,7 @@ char* UnicodeToUtf(__in __nullterminated const WCHAR* wz)
     return sz;
 }
 char* AnsiToUtf(__in __nullterminated const char* sz) { return UnicodeToUtf(AnsiToUnicode(sz));}
-    
+
 static void UnicodeToConsoleOrMsgBox(__in __nullterminated const WCHAR* wz)
 {
     {
@@ -217,9 +217,9 @@ void printLineW(void* GUICookie, __in __nullterminated const WCHAR* string)
     ToGUIOrFile(sz,GUICookie);
 }
 
-char * DumpQString(void* GUICookie, 
-                   __in __nullterminated const char* szToDump, 
-                   __in __nullterminated const char* szPrefix, 
+char * DumpQString(void* GUICookie,
+                   __in __nullterminated const char* szToDump,
+                   __in __nullterminated const char* szPrefix,
                    unsigned uMaxLen)
 {
     unsigned Lwt = (unsigned)strlen(szString);
@@ -275,7 +275,7 @@ char * DumpQString(void* GUICookie,
     return szptr;
 }
 struct DasmExceptionInfoClause : COR_ILMETHOD_SECT_EH_CLAUSE_FAT {
-public: 
+public:
     bool ClauseIsFat;
 };
 DasmExceptionInfoClause* g_ehInfo = NULL;
@@ -379,7 +379,7 @@ BOOL enumEHInfo(const COR_ILMETHOD_SECT_EH* eh, IMDInternalImport *pImport, DWOR
 
 // This dumps the hex bytes for the given EHINFO clause
 void DumpHexEHInfo(DasmExceptionInfoClause *ehInfo, void *GUICookie)
-{    
+{
     char *szptr = &szString[0];
     _ASSERTE(g_fShowBytes);
     COR_ILMETHOD_SECT_EH_CLAUSE_SMALL eh; // Temporary holder if we should dump the small version
@@ -408,8 +408,8 @@ void DumpHexEHInfo(DasmExceptionInfoClause *ehInfo, void *GUICookie)
         // A couple of sanity checks to make sure things the hex bites recreated are alright
         _ASSERTE(sizeof(eh.FilterOffset) == sizeof(eh.ClassToken));
         _ASSERTE(offsetof(COR_ILMETHOD_SECT_EH_CLAUSE_SMALL, FilterOffset) == offsetof(COR_ILMETHOD_SECT_EH_CLAUSE_SMALL, ClassToken));
-        eh.FilterOffset = ehInfo->FilterOffset;            
-            
+        eh.FilterOffset = ehInfo->FilterOffset;
+
         pb = (BYTE *)&eh;
         sizeToDump = sizeof(COR_ILMETHOD_SECT_EH_CLAUSE_SMALL);
     }
@@ -426,7 +426,7 @@ void dumpOneEHInfo(DasmExceptionInfoClause* ehInfo, IMDInternalImport *pImport, 
     char*   szptr = &szString[0];
     if(!ehInfo) return;
     DWORD dwFlags = ehInfo->GetFlags();
-    if(dwFlags & PUT_INTO_CODE) 
+    if(dwFlags & PUT_INTO_CODE)
         return; // by the time dumpEHInfo is called, this ehInfo is done
     if(dwFlags & NEW_TRY_BLOCK)
     {
@@ -453,7 +453,7 @@ void dumpOneEHInfo(DasmExceptionInfoClause* ehInfo, IMDInternalImport *pImport, 
         szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " %s IL_%04x",KEYWORD("to"),ehInfo->GetHandlerOffset()+ehInfo->GetHandlerLength());
 
     printLine(GUICookie, szString);
-    
+
     if(g_fShowBytes)
         DumpHexEHInfo(ehInfo, GUICookie);
     /*
@@ -571,9 +571,9 @@ void DumpLocals(IMDInternalImport *pImport,COR_ILMETHOD_DECODER *pMethod, __in _
             printLine(GUICookie, "Invalid record");
             return;
         }
-        
+
         _ASSERTE(*pComSig == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
-        
+
         appendStr(&qbMemberSig, g_szAsmCodeIndent);
         appendStr(&qbMemberSig, KEYWORD(".locals "));
         if(g_fDumpTokens)
@@ -728,7 +728,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         __in_ecount(cbString) WCHAR* pszString,
-                        ULONG cbString, 
+                        ULONG cbString,
                         bool SwapString )
 {
     unsigned     i,L;
@@ -738,7 +738,7 @@ char* DumpUnicodeString(void* GUICookie,
     // Make a copy if the string is unaligned or we have to modify it
     if (cbString > 0)
     {
-#if !BIGENDIAN 
+#if !BIGENDIAN
         if((size_t)pszString & (sizeof(WCHAR)-1))
 #endif
         {
@@ -1195,7 +1195,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     DWORD theTryEnd = g_ehInfo[i].GetTryOffset()+g_ehInfo[i].GetTryLength();
                     if(theTryEnd > theEnd) theEnd = theTryEnd; // try block after the handler
-                    if(PC == theEnd) // If we've already found the first, don't skip to the next one 
+                    if(PC == theEnd) // If we've already found the first, don't skip to the next one
                         ehInfoToPutNext = &g_ehInfo[i];
                 }
             }
@@ -1795,9 +1795,9 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                                 ULONG       cComSig;
 
                                 if (FAILED(pImport->GetNameAndSigOfMemberRef(
-                                    tk, 
-                                    &typePtr, 
-                                    &cComSig, 
+                                    tk,
+                                    &typePtr,
+                                    &cComSig,
                                     &pszMemberName)))
                                 {
                                     szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "ERROR ");
@@ -1843,7 +1843,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                         sprintf_s(szString, SZSTRING_SIZE, COMMENT("// ERROR: Invalid %08X record"), tk);
                         break;
                     }
-                    
+
                     qbMemberSig.Shrink(0);
                     const char* pszTailSig = PrettyPrintSig(pComSig, cbSigLen, "", &qbMemberSig, pImport,NULL);
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, pszTailSig);
@@ -1857,7 +1857,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 break;
             }
         }
-        
+
         printLine(GUICookie, szString);
     } // end     while (PC < method.CodeSize)
 
@@ -1954,10 +1954,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 #pragma warning(pop)
 #endif
 
-void SplitSignatureByCommas(__inout __nullterminated char* szString, 
-                            __inout __nullterminated char* pszTailSig, 
-                            mdToken tk, 
-                            size_t indent, 
+void SplitSignatureByCommas(__inout __nullterminated char* szString,
+                            __inout __nullterminated char* pszTailSig,
+                            mdToken tk,
+                            size_t indent,
                             void* GUICookie)
 {
     char chAfterComma;
@@ -2071,7 +2071,7 @@ void TokenSigDelete()
 }
 
 // Returns S_OK as TRUE or S_FALSE as FALSE or error code
-HRESULT 
+HRESULT
 IsGenericInst(mdToken tk, IMDInternalImport *pImport)
 {
     HRESULT hr;
@@ -2082,7 +2082,7 @@ IsGenericInst(mdToken tk, IMDInternalImport *pImport)
             ULONG cSig;
             PCCOR_SIGNATURE sig;
             IfFailRet(pImport->GetSigFromToken(tk, &cSig, &sig));
-            
+
             PCCOR_SIGNATURE sigEnd = sig + cSig;
             while (sig < sigEnd)
             {
@@ -2133,9 +2133,9 @@ char* PrettyPrintMemberRef(__inout __nullterminated char* szString, mdToken tk, 
     L = strlen(szString);
 
     if (FAILED(pImport->GetNameAndSigOfMemberRef(
-        tk, 
-        &pComSig, 
-        &cComSig, 
+        tk,
+        &pComSig,
+        &cComSig,
         &pszMemberName)))
     {
         pComSig = NULL;
@@ -2169,7 +2169,7 @@ char* PrettyPrintMemberRef(__inout __nullterminated char* szString, mdToken tk, 
         const char* pszClass = PrettyPrintClass(pqbMemberSig,cr,pImport);
         sprintf_s(curPos,SZSTRING_REMAINING_SIZE(curPos),"%s::",pszClass);
         pqbMemberSig->Shrink(0);
-        
+
         hr = IsGenericInst(cr,pImport);
         if (FAILED(hr))
         {
@@ -2199,7 +2199,7 @@ char* PrettyPrintMemberRef(__inout __nullterminated char* szString, mdToken tk, 
             strcpy_s(curPos1,SZSTRING_REMAINING_SIZE(curPos1),ProperName(curPos1));
         }
     }
-    
+
     appendStr(pqbMemberSig, szString);
     if (pInstSig != NULL)
     {
@@ -2231,7 +2231,7 @@ char* PrettyPrintMethodDef(__inout __nullterminated char* szString, mdToken tk, 
     ULONG       cComSig;
     size_t L, indent;
     mdToken tkVarOwner = g_tkVarOwner;
-    
+
     L = strlen(szString);
     if (FAILED(pImport->GetNameOfMethodDef(tk, &pszMemberName)))
     {
@@ -2243,7 +2243,7 @@ char* PrettyPrintMethodDef(__inout __nullterminated char* szString, mdToken tk, 
         sprintf_s(szString, SZSTRING_SIZE, "Invalid MethodDef %08X record", tk);
         return szString;
     }
-    
+
     if (FAILED(pImport->GetSigOfMethodDef(tk, &cComSig, &pComSig)))
     {
         cComSig = 0;
@@ -2268,7 +2268,7 @@ char* PrettyPrintMethodDef(__inout __nullterminated char* szString, mdToken tk, 
         const char* pszClass = PrettyPrintClass(pqbMemberSig,cr,pImport);
         sprintf_s(curPos,SZSTRING_REMAINING_SIZE(curPos),"%s::",pszClass);
         pqbMemberSig->Shrink(0);
-        
+
         hr = IsGenericInst(cr,pImport);
         if (FAILED(hr))
         {
@@ -2360,7 +2360,7 @@ void PrettyPrintTokenWithSplit(__inout __nullterminated char* szString, mdToken 
             default:
                 return;
         }
-        
+
 #ifdef TOKEN_SIG
         SigToken[RidFromToken(tk)].str = new char[strlen(pszTailSig+L)+1];
         if(SigToken[RidFromToken(tk)].str)
@@ -2421,7 +2421,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
 #endif
     CQuickBytes out;
     char*   pszForTokenSig = NULL;
-    
+
     switch (tkType)
     {
         default:
@@ -2465,7 +2465,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
             REGISTER_REF(FuncToken,meth);
             break;
         }
-        
+
         case mdtFieldDef:
         {
             mdTypeRef       cr=0;
@@ -2475,7 +2475,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
 
             PCCOR_SIGNATURE pComSig;
             ULONG       cComSig;
-            
+
             REGISTER_REF(FuncToken,tk);
             if (FAILED(pImport->GetNameOfFieldDef(tk, &pszMemberName)))
             {
@@ -2488,14 +2488,14 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
                 sprintf_s(szString, SZSTRING_SIZE, "Invalid FieldDef %08X record", tk);
                 break;
             }
-            
-            if (FAILED(pImport->GetSigOfFieldDef(tk, &cComSig, &pComSig)) || 
+
+            if (FAILED(pImport->GetSigOfFieldDef(tk, &cComSig, &pComSig)) ||
                 FAILED(pImport->GetParentToken(tk, &cr)))
             {
                 sprintf_s(szString, SZSTRING_SIZE, "Invalid FieldDef %08X record", tk);
                 break;
             }
-            
+
             // use the tail as a buffer
             char* curPos = &szString[strlen(szString)+1];
             *curPos = 0;
@@ -2623,10 +2623,10 @@ bool IsNameToQuote(const char *name)
         indx = new Indx();
 
     if((name==NULL)||(*name==0)) return TRUE;
-    
+
     if(g_fQuoteAllNames)
         return ((strcmp(name,COR_CTOR_METHOD_NAME)!=0) && (strcmp(name,COR_CCTOR_METHOD_NAME)!=0));
-    
+
     if(KywdNotSorted)
     {
         int j;

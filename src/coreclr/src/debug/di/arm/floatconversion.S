@@ -11,5 +11,5 @@
 LEAF_ENTRY FPFillR8, .TEXT
         .thumb
         vldr  D0, [R0]
-        bx   lr  
+        bx   lr
 LEAF_END FPFillR8, .TEXT

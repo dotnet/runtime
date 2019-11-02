@@ -35,7 +35,7 @@
     <!-- Leaf Project Items -->
     <ItemGroup>
         <CppCompile Include="..\alloc.cpp" />
-        <CppCompile Include="..\earlyprop.cpp" />        
+        <CppCompile Include="..\earlyprop.cpp" />
         <CppCompile Include="..\bitset.cpp" />
         <CppCompile Include="..\block.cpp" />
         <CppCompile Include="..\Compiler.cpp" />

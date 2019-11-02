@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: DllImportCallback.h
 //
 
@@ -215,7 +215,7 @@ public:
 #endif // _TARGET_X86_ && FEATURE_STUBS_AS_IL
 
 private:
-    PCODE             m_pILStub;            // IL stub for marshaling 
+    PCODE             m_pILStub;            // IL stub for marshaling
                                             // On x86, NULL for no-marshal signatures
                                             // On non-x86, the managed entrypoint for no-delegate no-marshal signatures
     UINT32            m_cbActualArgSize;    // caches m_pSig.SizeOfFrameArgumentArray()
@@ -371,7 +371,7 @@ public:
             DELEGATEREF orDelegate = (DELEGATEREF)ObjectFromHandle(hndDelegate);
             _ASSERTE(orDelegate != NULL);
             _ASSERTE(m_pMD->IsEEImpl());
-                
+
             // We have optimizations that skip the Invoke method and call directly the
             // delegate's target method. We need to return the target in that case,
             // otherwise debugger would fail to step in.
@@ -402,7 +402,7 @@ public:
             // before we set the m_state we can have
             // m_state == 0 and m_pObjectHandle == NULL
             PRECONDITION(m_state == kRunTimeInited  ||
-                         m_state == kLoadTimeInited || 
+                         m_state == kLoadTimeInited ||
                          m_pObjectHandle == NULL);
         }
         CONTRACT_END;
@@ -422,10 +422,10 @@ public:
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-    
+
         RETURN m_pUMThunkMarshInfo;
     }
-    
+
 
     const BYTE* GetCode() const
     {

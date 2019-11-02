@@ -152,7 +152,7 @@ struct _FILE
                               fle is opened in text/binary mode*/
 #if UNGETC_NOT_RETURN_EOF
    BOOL     bWriteOnlyMode;/* Boolean variable to denote that the
-                              fle is opened in write-only mode*/ 
+                              fle is opened in write-only mode*/
 #endif //UNGETC_NOT_RETURN_EOF
 };
 
@@ -164,7 +164,7 @@ enum CRT_ERROR_CODES
 
 /* Global variables storing the std streams. Defined in cruntime/file.c. */
 extern PAL_FILE PAL_Stdout;
-extern PAL_FILE PAL_Stdin; 
+extern PAL_FILE PAL_Stdin;
 extern PAL_FILE PAL_Stderr;
 
 /*++
@@ -172,7 +172,7 @@ extern PAL_FILE PAL_Stderr;
 Functio:
 
     CRTInitStdStreams.
-    
+
     Initilizes the standard streams.
     Returns TRUE on success, FALSE otherwise.
 --*/

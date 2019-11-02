@@ -22,7 +22,7 @@ class BaseAssemblySpec
 {
 protected:
     AssemblyMetaDataInternal    m_context;
-    LPCSTR                      m_pAssemblyName; 
+    LPCSTR                      m_pAssemblyName;
     PBYTE                       m_pbPublicKeyOrToken;
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
@@ -33,7 +33,7 @@ protected:
     ICLRPrivBinder             *m_pBindingContext;
 
 public:
-    enum 
+    enum
     {
         NAME_OWNED                  = 0x01,
         PUBLIC_KEY_OR_TOKEN_OWNED   = 0x02,
@@ -51,7 +51,7 @@ public:
     ~BaseAssemblySpec();
 
     HRESULT Init(LPCSTR pAssemblyName,
-                 const AssemblyMetaDataInternal* pContext, 
+                 const AssemblyMetaDataInternal* pContext,
                  const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
                  DWORD dwFlags);
 
@@ -71,25 +71,25 @@ public:
     inline void SetBindingContext(ICLRPrivBinder *pBindingContext)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         m_pBindingContext = pBindingContext;
     }
-    
+
     inline ICLRPrivBinder* GetBindingContext()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_pBindingContext;
     }
-    
+
     BOOL IsAssemblySpecForMscorlib();
-    
+
     HRESULT ParseName();
     DWORD Hash();
 
     LPCSTR GetName() const;
     inline void GetName(SString & ssName) const { WRAPPER_NO_CONTRACT; ssName.SetUTF8(GetName()); }
-    
+
     void SetName(LPCSTR szName);
     void SetName(SString const & ssName);
 
@@ -105,7 +105,7 @@ public:
 
     inline AssemblyMetaDataInternal *GetContext() { LIMITED_METHOD_CONTRACT; return &m_context; }
     inline AssemblyMetaDataInternal const *GetContext() const { LIMITED_METHOD_CONTRACT; return &m_context; }
-    
+
     BOOL IsStrongNamed() const;
     BOOL HasPublicKey() const;
     BOOL HasPublicKeyToken() const;
@@ -151,7 +151,7 @@ public:
     }
 
     void GetEncodedName(SString & ssEncodedName) const;
-    
+
     // Returns true if this object uniquely identifies a single assembly;
     // false otherwise. This will return false for Windows Runtime assemblies,
     // as WinRT assembly names do not represent an identity. This method
@@ -162,7 +162,7 @@ public:
         STATIC_CONTRACT_LIMITED_METHOD;
         return !IsContentType_WindowsRuntime();
     }
-    
+
     enum CompareExFlags
     {
         ASC_Default                 = 0x00, // Default comparison policy.
@@ -172,7 +172,7 @@ public:
     BOOL CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompareFlags = ASC_Default);
     static int CompareStrings(LPCUTF8 string1, LPCUTF8 string2);
     static BOOL RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAssemblySpec* pDef);
-    static BOOL VerifyBindingString(LPCWSTR pwStr); 
+    static BOOL VerifyBindingString(LPCWSTR pwStr);
 
     void GetFileOrDisplayName(DWORD flags, SString &result) const;
 

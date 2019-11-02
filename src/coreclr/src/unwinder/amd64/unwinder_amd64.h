@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 #ifndef __unwinder_amd64_h__
 #define __unwinder_amd64_h__
@@ -18,7 +18,7 @@
 class OOPStackUnwinderAMD64 : public OOPStackUnwinder
 {
 public:
-    // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.  
+    // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.
     static BOOL Unwind(CONTEXT * pContext);
 
     //

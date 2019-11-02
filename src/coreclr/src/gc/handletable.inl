@@ -50,7 +50,7 @@ inline void* HndInterlockedCompareExchangeHandle(OBJECTHANDLE handle, OBJECTREF 
         HndWriteBarrier(handle, objref);
 
     // store the pointer
-    
+
     void* ret = Interlocked::CompareExchangePointer(reinterpret_cast<_UNCHECKED_OBJECTREF volatile*>(handle), value, oldValue);
 
     if (ret == oldValue)

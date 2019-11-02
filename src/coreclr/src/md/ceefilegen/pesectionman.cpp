@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // PESectionMan implementation
-// 
+//
 
 
 #include "stdafx.h"
@@ -32,7 +32,7 @@ HRESULT PESectionMan::Cleanup()
 
 /*****************************************************************/
 // <REVISIT_TODO>this class is located in it's own DLL (MsCorXvt.dll)
-// Since DLL allocates, The DLL must delete; we can't simply delete from 
+// Since DLL allocates, The DLL must delete; we can't simply delete from
 // the client (This is a bug in VC, see knowledge base Q122675)</REVISIT_TODO>
 void PESectionMan::sectionDestroy(PESection **section)
 {
@@ -41,7 +41,7 @@ void PESectionMan::sectionDestroy(PESection **section)
     {
         if(ptr != section)
         {
-            for(PESectionReloc* cur = (*ptr)->m_relocStart; cur < (*ptr)->m_relocCur; cur++) 
+            for(PESectionReloc* cur = (*ptr)->m_relocStart; cur < (*ptr)->m_relocCur; cur++)
             {
                 if(cur->section == *section) // here it is! Delete the reference
                 {
@@ -62,7 +62,7 @@ void PESectionMan::sectionDestroy(PESection **section)
 
 /******************************************************************/
 // Apply the relocs for all the sections
-// Called by: ClassConverter after loading up during an in-memory conversion, 
+// Called by: ClassConverter after loading up during an in-memory conversion,
 
 HRESULT PESectionMan::applyRelocs(CeeGenTokenMapper *pTokenMapper)
 {
@@ -81,10 +81,10 @@ PESection* PESectionMan::getSection(const char* name)
 {
     int     len = (int)strlen(name);
 
-    // the section name can be at most 8 characters including the null. 
+    // the section name can be at most 8 characters including the null.
     if (len < 8)
         len++;
-    else 
+    else
         len = 8;
 
     // dbPrintf(("looking for section %s\n", name));
@@ -99,7 +99,7 @@ PESection* PESectionMan::getSection(const char* name)
 }
 
 /******************************************************************/
-HRESULT PESectionMan::getSectionCreate(const char* name, unsigned flags, 
+HRESULT PESectionMan::getSectionCreate(const char* name, unsigned flags,
                                        PESection **section)
 {
     PESection* ret = getSection(name);
@@ -137,7 +137,7 @@ HRESULT PESectionMan::getSectionCreate(const char* name, unsigned flags,
 }
 
 /******************************************************************/
-HRESULT PESectionMan::newSection(const char* name, PESection **section, 
+HRESULT PESectionMan::newSection(const char* name, PESection **section,
                                  unsigned flags, unsigned estSize, unsigned estRelocs)
 {
     PESection * ret = new (nothrow) PESection(name, flags, estSize, estRelocs);
@@ -175,13 +175,13 @@ HRESULT PESectionMan::cloneInstance(PESectionMan *destination) {
             // cannot find a section in the destination with matching name
             // so create one!
             IfFailRet( destination->getSectionCreate((*ptr)->m_name,
-                                                     (*ptr)->flags(), 
+                                                     (*ptr)->flags(),
                                                      &pSection) );
         }
         if (pSection)
             IfFailRet( (*ptr)->cloneInstance(pSection) );
     }
-    
+
     //destination->sectEnd=destination->sectStart + (sectEnd-sectStart);
     return S_OK;
 }
@@ -190,13 +190,13 @@ HRESULT PESectionMan::cloneInstance(PESectionMan *destination) {
 //*****************************************************************************
 // Implementation for PESection
 //*****************************************************************************
-PESection::PESection(const char *name, unsigned flags, 
-                     unsigned estSize, unsigned estRelocs) 
+PESection::PESection(const char *name, unsigned flags,
+                     unsigned estSize, unsigned estRelocs)
 {
     dirEntry = -1;
-    
+
     // No init needed for CBlobFectcher m_pIndex
-    
+
     m_relocStart = new (nothrow) PESectionReloc[estRelocs];
     if (m_relocStart == NULL)
     {
@@ -212,7 +212,7 @@ PESection::PESection(const char *name, unsigned flags,
     m_filePos = 0;
     m_filePad = 0;
     m_flags = flags;
-    
+
     _ASSERTE(strlen(name)<sizeof(m_name));
     strncpy_s(m_name, sizeof(m_name), name, strlen(name));
 }
@@ -225,7 +225,7 @@ PESection::~PESection() {
 
 
 /******************************************************************/
-void PESection::writeSectReloc(unsigned val, CeeSection& relativeTo, CeeSectionRelocType reloc, CeeSectionRelocExtra *extra) 
+void PESection::writeSectReloc(unsigned val, CeeSection& relativeTo, CeeSectionRelocType reloc, CeeSectionRelocExtra *extra)
 {
     addSectReloc(dataLen(), relativeTo, reloc, extra);
     unsigned* ptr = (unsigned*) getBlock(4);
@@ -234,20 +234,20 @@ void PESection::writeSectReloc(unsigned val, CeeSection& relativeTo, CeeSectionR
 
 /******************************************************************/
 HRESULT PESection::addSectReloc(unsigned offset, CeeSection& relativeToIn,
-                                CeeSectionRelocType reloc, CeeSectionRelocExtra *extra) 
+                                CeeSectionRelocType reloc, CeeSectionRelocExtra *extra)
 {
-    return addSectReloc(offset, 
-                        (PESection *)&relativeToIn.getImpl(), reloc, extra); 
+    return addSectReloc(offset,
+                        (PESection *)&relativeToIn.getImpl(), reloc, extra);
 }
 
 /******************************************************************/
 HRESULT PESection::addSectReloc(unsigned offset, PESection *relativeTo,
-                                CeeSectionRelocType reloc, CeeSectionRelocExtra *extra) 
+                                CeeSectionRelocType reloc, CeeSectionRelocExtra *extra)
 {
     /* dbPrintf(("******** GOT a section reloc for section %s offset 0x%x to section %x offset 0x%x\n",
        header->m_name, offset, relativeTo->m_name, *((unsigned*) dataStart + offset))); */
     _ASSERTE(offset < dataLen());
-    
+
     if (m_relocCur >= m_relocEnd)  {
         unsigned curLen = (unsigned)(m_relocCur-m_relocStart);
         unsigned newLen = curLen * 2 + 1;
@@ -256,14 +256,14 @@ HRESULT PESection::addSectReloc(unsigned offset, PESection *relativeTo,
         {
             return E_OUTOFMEMORY;
         }
-        
+
         memcpy(relocNew, m_relocStart, sizeof(PESectionReloc)*curLen);
         delete m_relocStart;
         m_relocStart = relocNew;
         m_relocCur = &m_relocStart[curLen];
         m_relocEnd = &m_relocStart[newLen];
     }
-    
+
     m_relocCur->type = reloc;
     m_relocCur->offset = offset;
     m_relocCur->section = relativeTo;
@@ -324,7 +324,7 @@ HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
         break;
 #endif
 
-    default:        
+    default:
         _ASSERTE(!"unhandled reloc in PESection::addBaseReloc");
         break;
     }
@@ -346,7 +346,7 @@ unsigned PESection::dataLen()
 
 // Apply all the relocs for in memory conversion
 
-// <REVISIT_TODO>@FUTURE: Currently, our VM is rather inefficient in dealing with in-memory RVA. 
+// <REVISIT_TODO>@FUTURE: Currently, our VM is rather inefficient in dealing with in-memory RVA.
 // @FUTURE: VM is given an index to memory pool and a helper will return the memory pointer given the index.
 // @FUTURE: We will consider having the coverter resolve RVAs into addresses.</REVISIT_TODO>
 
@@ -355,7 +355,7 @@ HRESULT PESection::applyRelocs(CeeGenTokenMapper *pTokenMapper)
     // For each section, go through each of its relocs
     for(PESectionReloc* pCurReloc = m_relocStart; pCurReloc < m_relocCur; pCurReloc++) {
         if (pCurReloc->type == srRelocMapToken) {
-            unsigned * pos = (unsigned*) 
+            unsigned * pos = (unsigned*)
                 m_blobFetcher.ComputePointer(pCurReloc->offset);
             mdToken newToken;
             PREFIX_ASSUME(pos != NULL);
@@ -364,19 +364,19 @@ HRESULT PESection::applyRelocs(CeeGenTokenMapper *pTokenMapper)
                 *pos = newToken;
             }
         }
-        
+
 #if 0
         _ASSERTE(pCurReloc->offset + 4 <= CurSection.m_blobFetcher.GetDataLen());
-        unsigned * pAddr = (unsigned *) 
+        unsigned * pAddr = (unsigned *)
             CurSection.m_blobFetcher.ComputePointer(pCurReloc->offset);
         _ASSERTE(pCurReloc->type == srRelocAbsolute);
-        
+
         // Current contents contain an offset into pCurReloc->section
         // computePointer() is like pCurReloc-section + *pAddr, but for non-linear section
         // This will resolve *pAddr to be a complete address
         *pAddr = (unsigned) pCurReloc->section->computePointer(*pAddr);
 #endif
-        
+
     } // End relocs
     return S_OK;
 }
@@ -390,7 +390,7 @@ HRESULT PESection::cloneInstance(PESection *destination) {
 
     destination->dirEntry = dirEntry;
 
-    //Merge the information currently in the BlobFetcher into 
+    //Merge the information currently in the BlobFetcher into
     //out current blob fetcher
     m_blobFetcher.Merge(&(destination->m_blobFetcher));
 
@@ -400,7 +400,7 @@ HRESULT PESection::cloneInstance(PESection *destination) {
     //Clone the relocs
     //If the arrays aren't the same size, reallocate as necessary.
     //<REVISIT_TODO>@FUTURE:  Make this a ref-counted structure and don't copy it.</REVISIT_TODO>
-    
+
     newSize = (INT32)(m_relocCur-m_relocStart);
 
     if (newSize>(destination->m_relocEnd - destination->m_relocStart)) {

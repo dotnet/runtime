@@ -8,8 +8,8 @@
 // ThreadPoolRequest.cpp
 //
 
-// 
-// 
+//
+//
 //=========================================================================
 
 #include "common.h"
@@ -44,13 +44,13 @@ void PerAppDomainTPCountList::InitAppDomainIndexList()
 
 
 //---------------------------------------------------------------------------
-//AddNewTPIndex adds and returns a per-appdomain TP entry whenever a new appdomain 
-//is created. Our list count should be equal to the max number of appdomains created 
+//AddNewTPIndex adds and returns a per-appdomain TP entry whenever a new appdomain
+//is created. Our list count should be equal to the max number of appdomains created
 //in the system.
 //
 //Assumptions:
-//This function needs to be called under the SystemDomain lock. 
-//The ArrayListStatic data dtructure allows traversing of the counts without a 
+//This function needs to be called under the SystemDomain lock.
+//The ArrayListStatic data dtructure allows traversing of the counts without a
 //lock, but addition to the list requires synchronization.
 //
 TPIndex PerAppDomainTPCountList::AddNewTPIndex()
@@ -59,12 +59,12 @@ TPIndex PerAppDomainTPCountList::AddNewTPIndex()
 
     DWORD count = s_appDomainIndexList.GetCount();
     DWORD i = FindFirstFreeTpEntry();
-    
+
     if (i == UNUSED_THREADPOOL_INDEX)
         i = count;
 
     TPIndex index(i+1);
-    if(count > i) 
+    if(count > i)
     {
 
         IPerAppDomainTPCount * pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(i));
@@ -102,35 +102,35 @@ DWORD PerAppDomainTPCountList::FindFirstFreeTpEntry()
     IPerAppDomainTPCount * pAdCount;
     DWORD DwfreeIndex = UNUSED_THREADPOOL_INDEX;
 
-    for (Dwi=0;Dwi < DwnumADs;Dwi++) 
+    for (Dwi=0;Dwi < DwnumADs;Dwi++)
     {
         pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(Dwi));
         _ASSERTE(pAdCount);
-        
-        if(pAdCount->IsTPIndexUnused()) 
+
+        if(pAdCount->IsTPIndexUnused())
         {
-            DwfreeIndex = Dwi;  
+            DwfreeIndex = Dwi;
             STRESS_LOG1(LF_THREADPOOL, LL_INFO1000, "FindFirstFreeTpEntry: reusing index %d\n", DwfreeIndex + 1);
             break;
-        }    
+        }
     }
 
     return DwfreeIndex;
 }
 
 //---------------------------------------------------------------------------
-//ResetAppDomainIndex: Resets the  AppDomain ID  and the  per-appdomain 
+//ResetAppDomainIndex: Resets the  AppDomain ID  and the  per-appdomain
 //                     thread pool counts
 //
 //Arguments:
-//index - The index into the s_appDomainIndexList for the AppDomain we're 
+//index - The index into the s_appDomainIndexList for the AppDomain we're
 //        trying to clear (the AD being unloaded)
 //
 //Assumptions:
 //This function needs to be called from the AD unload thread after all domain
-//bound objects have been finalized when it's safe to recycle  the TPIndex. 
-//ClearAppDomainRequestsActive can be called from this function because no 
-// managed code is running (If managed code is running, this function needs 
+//bound objects have been finalized when it's safe to recycle  the TPIndex.
+//ClearAppDomainRequestsActive can be called from this function because no
+// managed code is running (If managed code is running, this function needs
 //to be called under a managed per-appdomain lock).
 //
 void PerAppDomainTPCountList::ResetAppDomainIndex(TPIndex index)
@@ -146,7 +146,7 @@ void PerAppDomainTPCountList::ResetAppDomainIndex(TPIndex index)
     IPerAppDomainTPCount * pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(index.m_dwIndex-1));
     _ASSERTE(pAdCount);
 
-    STRESS_LOG2(LF_THREADPOOL, LL_INFO1000, "ResetAppDomainIndex: index %d pAdCount %p\n", index.m_dwIndex, pAdCount);    
+    STRESS_LOG2(LF_THREADPOOL, LL_INFO1000, "ResetAppDomainIndex: index %d pAdCount %p\n", index.m_dwIndex, pAdCount);
 
     pAdCount->ResetState();
     pAdCount->SetTPIndexUnused();
@@ -154,10 +154,10 @@ void PerAppDomainTPCountList::ResetAppDomainIndex(TPIndex index)
 
 //---------------------------------------------------------------------------
 //AreRequestsPendingInAnyAppDomains checks to see if there any requests pending
-//in other appdomains. It also checks for pending unmanaged work requests. 
+//in other appdomains. It also checks for pending unmanaged work requests.
 //This function is called at end of thread quantum to see if the thread needs to
 //transition into a different appdomain. This function may also be called by
-//the scheduler to check for any unscheduled work. 
+//the scheduler to check for any unscheduled work.
 //
 bool PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains()
 {
@@ -174,20 +174,20 @@ bool PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains()
     IPerAppDomainTPCount * pAdCount;
     bool fRequestsPending = false;
 
-    for (Dwi=0;Dwi < DwnumADs;Dwi++) 
+    for (Dwi=0;Dwi < DwnumADs;Dwi++)
     {
 
         pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(Dwi));
         _ASSERTE(pAdCount);
-        
-        if(pAdCount->IsRequestPending()) 
+
+        if(pAdCount->IsRequestPending())
         {
             fRequestsPending = true;
             break;
-        }    
-    }   
+        }
+    }
 
-    if(s_unmanagedTPCount.IsRequestPending()) 
+    if(s_unmanagedTPCount.IsRequestPending())
     {
         fRequestsPending = true;
     }
@@ -197,11 +197,11 @@ bool PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains()
 
 
 //---------------------------------------------------------------------------
-//GetAppDomainIndexForThreadpoolDispatch is essentailly the 
+//GetAppDomainIndexForThreadpoolDispatch is essentailly the
 //"AppDomain Scheduler". This function makes fairness/policy decisions as to
 //which appdomain the thread needs to enter to. This function needs to guarantee
 //that all appdomain work requests are processed fairly. At this time all
-//appdomain requests and the unmanaged work requests are treated with the same 
+//appdomain requests and the unmanaged work requests are treated with the same
 //priority.
 //
 //Return Value:
@@ -223,12 +223,12 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
     IPerAppDomainTPCount * pAdCount;
     DWORD Dwi;
 
-     
-    if (hint != -1) 
+
+    if (hint != -1)
     {
         pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(hint));
-    } 
-    else 
+    }
+    else
     {
         pAdCount = &s_unmanagedTPCount;
     }
@@ -246,9 +246,9 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
 
     for (Dwi=0;Dwi<count;Dwi++)
     {
-        if (temphint == -1) 
+        if (temphint == -1)
         {
-            temphint = 0; 
+            temphint = 0;
         }
 
         pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(temphint));
@@ -264,9 +264,9 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
 
         if(temphint == (LONG)count)
         {
-            temphint = 0; 
+            temphint = 0;
         }
-    }   
+    }
 
     if (hint == -1 && !s_unmanagedTPCount.TakeActiveRequest())
     {
@@ -279,17 +279,17 @@ HintDone:
     if((hint+1) < (LONG)count)
     {
          s_ADHint = hint+1;
-    } 
-    else 
+    }
+    else
     {
         s_ADHint = -1;
     }
-    
-    if (hint == -1) 
+
+    if (hint == -1)
     {
         return hint;
-    } 
-    else 
+    }
+    else
     {
         return (hint+1);
     }
@@ -339,17 +339,17 @@ void UnManagedPerAppDomainTPCount::QueueUnmanagedWorkRequest(LPTHREAD_START_ROUT
 {
     CONTRACTL
     {
-        THROWS;     
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;;
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     WorkRequestHolder pWorkRequest;
 
     //Note, ideally we would want to use our own queues instead of those in
-    //the thread pool class. However, the queus in thread pool class have 
+    //the thread pool class. However, the queus in thread pool class have
     //caching support, that shares memory with other commonly used structures
     //in the VM thread pool implementation. So, we decided to leverage those.
 
@@ -359,12 +359,12 @@ void UnManagedPerAppDomainTPCount::QueueUnmanagedWorkRequest(LPTHREAD_START_ROUT
     _ASSERTE(pWorkRequest != NULL);
     PREFIX_ASSUME(pWorkRequest != NULL);
 
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolEnqueue) && 
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolEnqueue) &&
         !ThreadpoolMgr::AreEtwQueueEventsSpeciallyHandled(function))
         FireEtwThreadPoolEnqueue(pWorkRequest, GetClrInstanceId());
 
     m_lock.Init(LOCK_TYPE_DEFAULT);
-    
+
     {
         SpinLock::Holder slh(&m_lock);
 
@@ -381,7 +381,7 @@ PVOID UnManagedPerAppDomainTPCount::DeQueueUnManagedWorkRequest(bool* lastOne)
 {
     CONTRACTL
     {
-        NOTHROW;     
+        NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -391,11 +391,11 @@ PVOID UnManagedPerAppDomainTPCount::DeQueueUnManagedWorkRequest(bool* lastOne)
 
     WorkRequest * pWorkRequest = ThreadpoolMgr::DequeueWorkRequest();
 
-    if (pWorkRequest) 
+    if (pWorkRequest)
     {
         m_NumRequests--;
 
-        if(m_NumRequests > 0) 
+        if(m_NumRequests > 0)
             *lastOne = false;
     }
 
@@ -404,7 +404,7 @@ PVOID UnManagedPerAppDomainTPCount::DeQueueUnManagedWorkRequest(bool* lastOne)
 
 //---------------------------------------------------------------------------
 //DispatchWorkItem manages dispatching of unmanaged work requests. It keeps
-//processing unmanaged requests for the "Quanta". Essentially this function is 
+//processing unmanaged requests for the "Quanta". Essentially this function is
 //a tight loop of dequeueing unmanaged work requests and dispatching them.
 //
 void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotRecalled)
@@ -417,11 +417,11 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
 
     DWORD startTime;
     DWORD endTime;
-    
+
     startTime = GetTickCount();
 
     //For all practical puposes, the unmanaged part of thread pool is treated
-    //as a special appdomain for thread pool purposes. The same logic as the 
+    //as a special appdomain for thread pool purposes. The same logic as the
     //one in managed code for dispatching thread pool requests is repeated here.
     //Namely we continue to process requests until eithere there are none, or
     //the "Quanta has expired". See threadpool.cs for the managed counterpart.
@@ -433,7 +433,7 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
     bool firstIteration = true;
     bool lastOne = false;
 
-    while (*wasNotRecalled) 
+    while (*wasNotRecalled)
     {
         m_lock.Init(LOCK_TYPE_DEFAULT);
         {
@@ -458,7 +458,7 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         }
 
         PREFIX_ASSUME(pWorkRequest != NULL);
-        _ASSERTE(pWorkRequest); 
+        _ASSERTE(pWorkRequest);
 
         wrFunction = pWorkRequest->Function;
         wrContext  = pWorkRequest->Context;
@@ -496,9 +496,9 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         *wasNotRecalled = ThreadpoolMgr::ShouldWorkerKeepRunning();
 
         Thread *pThread = GetThread();
-        if (pThread) 
+        if (pThread)
         {
-            if (pThread->IsAbortRequested()) 
+            if (pThread->IsAbortRequested())
             {
                 pThread->EEResetAbort(Thread::TAR_ALL);
             }
@@ -587,7 +587,7 @@ bool ManagedPerAppDomainTPCount::TakeActiveRequest()
 #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------
-//DispatchWorkItem makes sure the right exception handling frames are setup, 
+//DispatchWorkItem makes sure the right exception handling frames are setup,
 //the thread is transitioned into the correct appdomain, and the right managed
 //callback is called.
 //
@@ -602,7 +602,7 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
         pThread = SetupThreadNoThrow(&hr);
-        if (pThread == NULL) 
+        if (pThread == NULL)
         {
             return;
         }
@@ -620,11 +620,11 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
         GCX_COOP();
 
         //
-        // NOTE: there is a potential race between the time we retrieve the app 
+        // NOTE: there is a potential race between the time we retrieve the app
         // domain pointer, and the time which this thread enters the domain.
         //
-        // To solve the race, we rely on the fact that there is a thread sync (via 
-        // GC) between releasing an app domain's handle, and destroying the 
+        // To solve the race, we rely on the fact that there is a thread sync (via
+        // GC) between releasing an app domain's handle, and destroying the
         // app domain.  Thus it is important that we not go into preemptive gc mode
         // in that window.
         //

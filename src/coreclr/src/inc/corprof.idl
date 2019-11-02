@@ -164,14 +164,14 @@ typedef union {FunctionID functionID; UINT_PTR clientID;} FunctionIDOrClientID;
  * for the same functionId.  The profiler should be certain to return
  * the same values from this callback when it is called multiple times
  * with the same functionId.
- * 
+ *
  */
 typedef UINT_PTR __stdcall FunctionIDMapper(
-                FunctionID funcId, 
+                FunctionID funcId,
                 BOOL *pbHookFunction);
 
 typedef UINT_PTR __stdcall FunctionIDMapper2(
-                FunctionID funcId, 
+                FunctionID funcId,
                 void *clientData,
                 BOOL *pbHookFunction);
 
@@ -307,10 +307,10 @@ typedef struct _COR_PRF_METHOD
  */
 typedef void STDMETHODCALLTYPE FunctionEnter(
                 FunctionID funcID);
-                
+
 typedef void STDMETHODCALLTYPE FunctionLeave(
                 FunctionID funcID);
-                
+
 typedef void STDMETHODCALLTYPE FunctionTailcall(
                 FunctionID funcID);
 
@@ -323,20 +323,20 @@ typedef void STDMETHODCALLTYPE FunctionTailcall(
  */
 
 typedef void STDMETHODCALLTYPE FunctionEnter2(
-                FunctionID funcId, 
-                UINT_PTR clientData, 
-                COR_PRF_FRAME_INFO func, 
+                FunctionID funcId,
+                UINT_PTR clientData,
+                COR_PRF_FRAME_INFO func,
                 COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
-                
+
 typedef void STDMETHODCALLTYPE FunctionLeave2(
-                FunctionID funcId, 
-                UINT_PTR clientData, 
-                COR_PRF_FRAME_INFO func, 
+                FunctionID funcId,
+                UINT_PTR clientData,
+                COR_PRF_FRAME_INFO func,
                 COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
-                
+
 typedef void STDMETHODCALLTYPE FunctionTailcall2(
-                FunctionID funcId, 
-                UINT_PTR clientData, 
+                FunctionID funcId,
+                UINT_PTR clientData,
                 COR_PRF_FRAME_INFO func);
 
 /*
@@ -352,10 +352,10 @@ typedef void STDMETHODCALLTYPE FunctionTailcall2(
 
 typedef void STDMETHODCALLTYPE FunctionEnter3(
                 FunctionIDOrClientID functionIDOrClientID);
- 
+
 typedef void STDMETHODCALLTYPE FunctionLeave3(
                 FunctionIDOrClientID functionIDOrClientID);
- 
+
 typedef void STDMETHODCALLTYPE FunctionTailcall3(
                 FunctionIDOrClientID functionIDOrClientID);
 
@@ -369,18 +369,18 @@ typedef void STDMETHODCALLTYPE FunctionTailcall3(
  * FunctionIDMapper[2], then this is that remapped value; else it is the
  * true FunctionID of the function.
  *
- * eltInfo is an opaque handle that represents information about a given stack frame. 
+ * eltInfo is an opaque handle that represents information about a given stack frame.
  * It is only valid during the callback to which it is passed.
  */
 
 typedef void STDMETHODCALLTYPE FunctionEnter3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
- 
+
 typedef void STDMETHODCALLTYPE FunctionLeave3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
- 
+
 typedef void STDMETHODCALLTYPE FunctionTailcall3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
@@ -405,9 +405,9 @@ typedef void STDMETHODCALLTYPE FunctionTailcall3WithInfo(
  *
  * clientData is a void* passed straight through from DoStackSnapshot
  *
- * NOTE: One must limit the complexity of work done in StackSnapshotCallback. 
- * For example, particularly when using DoStackSnapshot in an asynchronous manner, 
- * the target thread may be holding locks. Executing code within StackSnapshotCallback 
+ * NOTE: One must limit the complexity of work done in StackSnapshotCallback.
+ * For example, particularly when using DoStackSnapshot in an asynchronous manner,
+ * the target thread may be holding locks. Executing code within StackSnapshotCallback
  * that requires the same locks could lead to deadlock.
  */
 typedef HRESULT __stdcall StackSnapshotCallback(
@@ -436,7 +436,7 @@ typedef enum
     // behavior changes in V2.
     COR_PRF_MONITOR_CLASS_LOADS         = 0x00000002,
 
-    // MONITOR_MODULE_LOADS controls the 
+    // MONITOR_MODULE_LOADS controls the
     // ModuleLoad*, ModuleUnload*, and ModuleAttachedToAssembly
     // callbacks.
     COR_PRF_MONITOR_MODULE_LOADS        = 0x00000004,
@@ -450,7 +450,7 @@ typedef enum
     COR_PRF_MONITOR_APPDOMAIN_LOADS     = 0x00000010,
 
     // MONITOR_JIT_COMPILATION controls the
-    // JITCompilation*, JITFunctionPitched, and JITInlining 
+    // JITCompilation*, JITFunctionPitched, and JITInlining
     // callbacks.
     COR_PRF_MONITOR_JIT_COMPILATION     = 0x00000020,
 
@@ -472,7 +472,7 @@ typedef enum
     COR_PRF_MONITOR_OBJECT_ALLOCATED    = 0x00000100,
 
     // MONITOR_THREADS controls the ThreadCreated,
-    // ThreadDestroyed, ThreadAssignedToOSThread, 
+    // ThreadDestroyed, ThreadAssignedToOSThread,
     // and ThreadNameChanged callbacks.
     COR_PRF_MONITOR_THREADS             = 0x00000200,
 
@@ -481,11 +481,11 @@ typedef enum
     COR_PRF_MONITOR_REMOTING            = 0x00000400,
 
     // MONITOR_CODE_TRANSITIONS controls the
-    // UnmanagedToManagedTransition and 
+    // UnmanagedToManagedTransition and
     // ManagedToUnmanagedTransition callbacks.
     COR_PRF_MONITOR_CODE_TRANSITIONS    = 0x00000800,
 
-    // MONITOR_ENTERLEAVE controls the 
+    // MONITOR_ENTERLEAVE controls the
     // FunctionEnter*/Leave*/Tailcall* callbacks
     COR_PRF_MONITOR_ENTERLEAVE          = 0x00001000,
 
@@ -502,7 +502,7 @@ typedef enum
     COR_PRF_MONITOR_REMOTING_ASYNC      = 0x00008000 | COR_PRF_MONITOR_REMOTING,
 
     // MONITOR_SUSPENDS controls the RuntimeSuspend*,
-    // RuntimeResume*, RuntimeThreadSuspended, and 
+    // RuntimeResume*, RuntimeThreadSuspended, and
     // RuntimeThreadResumed callbacks.
     COR_PRF_MONITOR_SUSPENDS            = 0x00010000,
 
@@ -579,8 +579,8 @@ typedef enum
 
     // COR_PRF_REQUIRE_PROFILE_IMAGE represents all flags that require profiler-enhanced
     // images.
-    COR_PRF_REQUIRE_PROFILE_IMAGE       = COR_PRF_USE_PROFILE_IMAGES | 
-                                          COR_PRF_MONITOR_CODE_TRANSITIONS | 
+    COR_PRF_REQUIRE_PROFILE_IMAGE       = COR_PRF_USE_PROFILE_IMAGES |
+                                          COR_PRF_MONITOR_CODE_TRANSITIONS |
                                           COR_PRF_MONITOR_ENTERLEAVE,
 
     COR_PRF_ALLOWABLE_AFTER_ATTACH      = COR_PRF_MONITOR_THREADS |
@@ -640,8 +640,8 @@ typedef enum
     // Enables the large object allocation monitoring according to the LOH threshold.
     COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED      = 0x00000040,
 
-    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | 
-                                                      COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS | 
+    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
+                                                      COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
                                                       COR_PRF_HIGH_BASIC_GC |
                                                       COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
                                                       COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED,
@@ -930,9 +930,9 @@ interface ICorProfilerCallback : IUnknown
      * this module may start coming afterwards however internal safeguards
      * protecting the runtime from recursive loading are still present and so it is
      * a bad time to begin inquiries on this module.  The notification is informational
-     * only.  
+     * only.
      *
-     * Note: ModuleLoadFinished is a reasonable time to interrogate MetaData via API's 
+     * Note: ModuleLoadFinished is a reasonable time to interrogate MetaData via API's
      * like GetModuleMetadata, however APIs that create (e.g. ClassID's and FunctionID's)
      * are not safe to use here.  Profiler writers are advised to stay in the universe of
      * tokens.
@@ -997,7 +997,7 @@ interface ICorProfilerCallback : IUnknown
      * this class may start coming afterwards however internal safeguards
      * protecting the runtime from recursive loading are still present and so it is
      * a bad time to begin inquiries on this class.  The notification is informational
-     * only.  
+     * only.
      *
      */
     HRESULT ClassLoadStarted(
@@ -1097,7 +1097,7 @@ interface ICorProfilerCallback : IUnknown
      * The JITCachedFunctionSearchStarted/Finished callbacks
      * will now occur only for some functions in regular NGEN images;
      * only profiler-optimized NGEN images will generate callbacks for
-     * all functions in the image. Profilers which do not use these callbacks 
+     * all functions in the image. Profilers which do not use these callbacks
      * to force a function to be JIT-compiled should move to using a lazy
      * strategy for gathering function information.
      *
@@ -1136,7 +1136,7 @@ interface ICorProfilerCallback : IUnknown
      * The JITCachedFunctionSearchStarted/Finished callbacks
      * will now occur only for some functions in regular NGEN images;
      * only profiler-optimized NGEN images will generate callbacks for
-     * all functions in the image. Profilers which do not use these callbacks 
+     * all functions in the image. Profilers which do not use these callbacks
      * to force a function to be JIT-compiled should move to using a lazy
      * strategy for gathering function information.
      *
@@ -1483,7 +1483,7 @@ interface ICorProfilerCallback : IUnknown
 
     /*
      * The CLR calls RuntimeThreadSuspended to notify the code profiler
-     * that a particular thread has been suspended. 
+     * that a particular thread has been suspended.
      *
      * This notification may occur any time between the RuntimeSuspendStarted
      * and the associated RuntimeResumeStarted. Notifications that occur
@@ -1546,7 +1546,7 @@ interface ICorProfilerCallback : IUnknown
      *
      * NOTE: None of the objectIDs returned by MovedReferences are valid during the callback
      * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
-     * should not attempt to inspect objects during a MovedReferences call. At 
+     * should not attempt to inspect objects during a MovedReferences call. At
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      *
@@ -1605,7 +1605,7 @@ interface ICorProfilerCallback : IUnknown
      *
      * NOTE: None of the objectIDs returned by ObjectReferences are valid during the callback
      * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
-     * should not attempt to inspect objects during an ObjectReferences call. At 
+     * should not attempt to inspect objects during an ObjectReferences call. At
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      */
@@ -1627,7 +1627,7 @@ interface ICorProfilerCallback : IUnknown
      *
      * NOTE: None of the objectIDs returned by RootReferences are valid during the callback
      * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
-     * should not attempt to inspect objects during a RootReferences call. At 
+     * should not attempt to inspect objects during a RootReferences call. At
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      */
@@ -1877,7 +1877,7 @@ typedef enum
  */
 
 typedef enum
-{  
+{
     COR_PRF_GC_ROOT_PINNING = 0x1,    // Prevents GC from moving the object
     COR_PRF_GC_ROOT_WEAKREF = 0x2,    // Does not prevent collection
     COR_PRF_GC_ROOT_INTERIOR = 0x4,   // Refers to a field of the object rather than the object itself
@@ -1885,7 +1885,7 @@ typedef enum
                                       // COR_PRF_GC_ROOT_WEAKREF will be set also
 }   COR_PRF_GC_ROOT_FLAGS;
 
- 
+
 /*
  * COR_PRF_FINALIZER_FLAGS is used by FinalizableObjectQueued to describe
  * the finalizer for the object.
@@ -1896,7 +1896,7 @@ typedef enum
     COR_PRF_FINALIZER_CRITICAL = 0x1    // Critical finalizer
 }   COR_PRF_FINALIZER_FLAGS;
 
- 
+
 /*
  * COR_PRF_GC_GENERATION contains the numbers used to represent each GC generation
  * in the GetGenerationBounds and GetObjectGeneration functions.
@@ -1933,19 +1933,19 @@ typedef struct COR_PRF_GC_GENERATION_RANGE
 typedef enum
 {
     COR_PRF_CLAUSE_NONE = 0,  // not a real clause (only used in error cases)
-    COR_PRF_CLAUSE_FILTER = 1,  
-    COR_PRF_CLAUSE_CATCH = 2,  
-    COR_PRF_CLAUSE_FINALLY = 3, 
+    COR_PRF_CLAUSE_FILTER = 1,
+    COR_PRF_CLAUSE_CATCH = 2,
+    COR_PRF_CLAUSE_FINALLY = 3,
 }   COR_PRF_CLAUSE_TYPE;
 
 /*
- * COR_PRF_EX_CLAUSE_INFO identifies a specific exception clause instance and its associated frame. 
- * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used to get the 
- * native address and frame information for the exception clause (catch/finally/filter) that is 
- * about to be run (ExceptionCatchEnter, ExceptionUnwindFinallyEnter, ExceptionFilterEnter) or has just 
- * been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).  
+ * COR_PRF_EX_CLAUSE_INFO identifies a specific exception clause instance and its associated frame.
+ * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used to get the
+ * native address and frame information for the exception clause (catch/finally/filter) that is
+ * about to be run (ExceptionCatchEnter, ExceptionUnwindFinallyEnter, ExceptionFilterEnter) or has just
+ * been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).
  */
-typedef struct COR_PRF_EX_CLAUSE_INFO 
+typedef struct COR_PRF_EX_CLAUSE_INFO
 {
     COR_PRF_CLAUSE_TYPE  clauseType; // the type of clause we just entered or left
     UINT_PTR  programCounter;   // the native entry point of the clause handler (e.g. EIP)
@@ -1966,25 +1966,25 @@ typedef enum
  * Bits from COR_PRF_MODULE_FLAGS are returned to the profiler in GetModuleInfo2's
  * pdwModuleFlags output parameter. Some combinations of 2 or more flags are possible,
  * though not all combinations are possible.
- */ 
+ */
 typedef enum
 {
     // The module was loaded from disk
     COR_PRF_MODULE_DISK             = 0x00000001,
-    
+
     // The module had been generated via NGEN
     COR_PRF_MODULE_NGEN             = 0x00000002,
-    
+
     // The module was created via methods in the Reflection.Emit namespace
     COR_PRF_MODULE_DYNAMIC          = 0x00000004,
-    
+
     // The module's lifetime is managed by the garbage collector.
     COR_PRF_MODULE_COLLECTIBLE      = 0x00000008,
-    
+
     // The module contains no metadata and is used strictly as a resource.  The managed
     // equivalent of this bit is the System.Reflection.Module.IsResource() method.
     COR_PRF_MODULE_RESOURCE         = 0x00000010,
-    
+
     // The module's layout in memory is flat, as opposed to mapped. For modules that have
     // this bit set, profilers that directly read information out of the PE header will
     // need to be careful when interpreting RVAs present in the PE header.
@@ -2038,11 +2038,11 @@ interface ICorProfilerCallback2 : ICorProfilerCallback
      */
 
     /*
-     * The CLR calls GarbageCollectionStarted before beginning a 
+     * The CLR calls GarbageCollectionStarted before beginning a
      * garbage collection. All GC callbacks pertaining to this
      * collection will occur between the GarbageCollectionStarted
      * callback and the corresponding GarbageCollectionFinished
-     * callback. Corresponding GarbageCollectionStarted and 
+     * callback. Corresponding GarbageCollectionStarted and
      * GarbageCollectionFinished callbacks need not occur on the same thread.
      *
      *          cGenerations indicates the total number of entries in
@@ -2055,7 +2055,7 @@ interface ICorProfilerCallback2 : ICorProfilerCallback
      *
      * NOTE: It is safe to inspect objects in their original locations
      * during this callback. The GC will begin moving objects after
-     * the profiler returns from this callback. Therefore, after 
+     * the profiler returns from this callback. Therefore, after
      * returning, the profiler should consider all ObjectIDs to be invalid
      * until it receives a GarbageCollectionFinished callback.
      */
@@ -2155,7 +2155,7 @@ interface ICorProfilerCallback2 : ICorProfilerCallback
      *
      * NOTE: None of the objectIDs returned by RootReferences2 are valid during the callback
      * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
-     * should not attempt to inspect objects during a RootReferences2 call. At 
+     * should not attempt to inspect objects during a RootReferences2 call. At
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      */
@@ -2240,7 +2240,7 @@ interface ICorProfilerCallback4 : ICorProfilerCallback3
 
     /*
      * This is called to report an error encountered while processing a ReJIT request.
-     * This may either be called from within the RequestReJIT call itself, or called after 
+     * This may either be called from within the RequestReJIT call itself, or called after
      * RequestReJIT returns, if the error was encountered later on.
      */
     HRESULT ReJITError(
@@ -2271,13 +2271,13 @@ interface ICorProfilerCallback4 : ICorProfilerCallback3
      *
      * NOTE: None of the objectIDs returned by MovedReferences are valid during the callback
      * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
-     * should not attempt to inspect objects during a MovedReferences call. At 
+     * should not attempt to inspect objects during a MovedReferences call. At
      * GarbageCollectionFinished, all objects have been moved to their new locations, and
      * inspection may be done.
      *
-     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::MovedReferences2 
-     * is called first and ICorProfilerCallback::MovedReferences is called second but only if 
-     * ICorProfilerCallback4::MovedReferences2 returned success. Profilers can return failure 
+     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::MovedReferences2
+     * is called first and ICorProfilerCallback::MovedReferences is called second but only if
+     * ICorProfilerCallback4::MovedReferences2 returned success. Profilers can return failure
      * from ICorProfilerCallback4::MovedReferences2 to save some chattiness.
      */
     HRESULT MovedReferences2(
@@ -2315,9 +2315,9 @@ interface ICorProfilerCallback4 : ICorProfilerCallback3
      *      objectIDRangeStart[i] <= ObjectID < objectIDRangeStart[i] + cObjectIDRangeLength[i]
      * for 0 <= i < cMovedObjectIDRanges, then the ObjectID has survived the collection
      *
-     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::SurvivingReferences2 
-     * is called first and ICorProfilerCallback2::SurvivingReferences is called second but only if 
-     * ICorProfilerCallback4::SurvivingReferences2 returned success. Profilers can return failure 
+     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::SurvivingReferences2
+     * is called first and ICorProfilerCallback2::SurvivingReferences is called second but only if
+     * ICorProfilerCallback4::SurvivingReferences2 returned success. Profilers can return failure
      * from ICorProfilerCallback4::SurvivingReferences2 to save some chattiness.
      */
     HRESULT SurvivingReferences2(
@@ -2337,17 +2337,17 @@ interface ICorProfilerCallback4 : ICorProfilerCallback3
 interface ICorProfilerCallback5 : ICorProfilerCallback4
 {
     /*
-     * The CLR calls ConditionalWeakTableElementReferences with information 
+     * The CLR calls ConditionalWeakTableElementReferences with information
      * about dependent handles after a garbage collection has occurred.
      *
-     * For each root ID in rootIds, keyRefIds will contain the ObjectID for 
+     * For each root ID in rootIds, keyRefIds will contain the ObjectID for
      * the primary element in the dependent handle pair, and valueRefIds will
-     * contain the ObjectID for the secondary element (keyRefIds[i] keeps 
+     * contain the ObjectID for the secondary element (keyRefIds[i] keeps
      * valueRefIds[i] alive).
      *
      * NOTE: None of the objectIDs returned by ConditionalWeakTableElementReferences
-     * are valid during the callback itself, as the GC may be in the middle 
-     * of moving objects from old to new. Thus profilers should not attempt 
+     * are valid during the callback itself, as the GC may be in the middle
+     * of moving objects from old to new. Thus profilers should not attempt
      * to inspect objects during a ConditionalWeakTableElementReferences call.
      * At GarbageCollectionFinished, all objects have been moved to their new
      * locations, and inspection may be done.
@@ -2380,11 +2380,11 @@ interface ICorProfilerCallback6 : ICorProfilerCallback5
     //
     // The profiler uses the ICorProfilerAssemblyReferenceProvider provided to add assembly references
     // to the CLR assembly reference closure walker.  The ICorProfilerAssemblyReferenceProvider
-    // should only be used from within this callback. The profiler will still need to explicitly add assembly 
+    // should only be used from within this callback. The profiler will still need to explicitly add assembly
     // references via IMetaDataAssemblyEmit, from within the ModuleLoadFinished callback for the referencing assembly,
     // even though the profiler implements this GetAssemblyReferences callback.  This callback does not result in
     // modified metadata; only in a modified assembly reference closure walk.
-    // 
+    //
     // The profiler should be prepared to receive duplicate calls to this callback for the same assembly,
     // and should respond identically for each such duplicate call (by making the same set of
     // ICorProfilerAssemblyReferenceProvider::AddAssemblyReference calls).
@@ -2697,7 +2697,7 @@ interface ICorProfilerInfo : IUnknown
      * Retrieve information about a given module.
      *
      * When the module is loaded from disk, the name returned will be the filename;
-     * otherwise, the name will be the name from the metadata Module table (i.e., 
+     * otherwise, the name will be the name from the metadata Module table (i.e.,
      * the same as the managed System.Reflection.Module.ScopeName).
      *
      * NOTE: While this function may be called as soon as the moduleId is alive,
@@ -2942,7 +2942,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
      * will return CORPROF_E_STACKSNAPSHOT_UNMANAGED_CTX.  Contexts are
      * only provided by profilers that hijack threads to force them to walk their
      * own stacks; profilers should not attempt to provide a context when walking
-     * another thread's stack. If context is NULL, the stack walk will begin at the 
+     * another thread's stack. If context is NULL, the stack walk will begin at the
      * last available managed frame for the target thread.
      *
      * See the definition of StackSnapshotCallback for more information.
@@ -2979,14 +2979,14 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
     /*
      * GetFunctionInfo2 returns the parent class of a function, plus the
      * function's metadata token and the ClassIDs of its type arguments
-     * (if any). 
+     * (if any).
      *
      * When a COR_PRF_FRAME_INFO obtained from a FunctionEnter2
      * callback is passed, the ClassID and all type arguments will be exact.
      *
-     * When a COR_PRF_FRAME_INFO from any other source is passed, or 
-     * when 0 is passed as the frameInfo argument, exact ClassID and type 
-     * arguments cannot always be determined.  The value returned in pClassId 
+     * When a COR_PRF_FRAME_INFO from any other source is passed, or
+     * when 0 is passed as the frameInfo argument, exact ClassID and type
+     * arguments cannot always be determined.  The value returned in pClassId
      * may be NULL and some type args will come back as System.Object.
      *
      */
@@ -3075,7 +3075,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
      * Calling this function with a TypeRef token can have unpredictable results; callers
      * should resolve the TypeRef to a TypeDef and use that.
      *
-     * If the type is not already loaded, calling this function will cause it to be. 
+     * If the type is not already loaded, calling this function will cause it to be.
      * Loading is a dangerous operation in many contexts. For example, calling
      * this function during loading of modules or other types could lead to an infinite
      * loop as the runtime attempts to circularly load things.
@@ -3101,7 +3101,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
      * Calling this function with a MethodRef token can have unpredictable results; callers
      * should resolve the MethodRef to a MethodDef and use that.
      *
-     * If the function is not already loaded, calling this function will cause it to be. 
+     * If the function is not already loaded, calling this function will cause it to be.
      * Loading is a dangerous operation in many contexts. For example, calling
      * this function during loading of modules or types could lead to an infinite
      * loop as the runtime attempts to circularly load things.
@@ -3167,7 +3167,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
 
     /*
      * GetRVAStaticAddress gets the address of the home for the given
-     * RVA static. It must be called from a managed thread.  Otherwise, 
+     * RVA static. It must be called from a managed thread.  Otherwise,
      * it will return CORPROF_E_NOT_MANAGED_THREAD.
      */
     HRESULT GetRVAStaticAddress(
@@ -3204,11 +3204,11 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
 
     /*
      * GetContextStaticAddress gets the address of the home for the given
-     * Context static in the given context.  It must be called from a managed 
+     * Context static in the given context.  It must be called from a managed
      * thread.  Otherwise, it will return CORPROF_E_NOT_MANAGED_THREAD.
      *
      * This function may return CORPROF_E_DATAINCOMPLETE if the given static
-     * has not been assigned a home in the given Context.  
+     * has not been assigned a home in the given Context.
      */
     HRESULT GetContextStaticAddress(
                     [in] ClassID classId,
@@ -3262,7 +3262,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
                     [in] ULONG cObjectRanges,
                     [out] ULONG *pcObjectRanges,
                     [out, size_is(cObjectRanges), length_is(*pcObjectRanges)] COR_PRF_GC_GENERATION_RANGE ranges[]);
- 
+
     /*
      * GetObjectGeneration returns which generation the given object is currently in, along
      * with the start and length of the segment containing the object. It may be called
@@ -3275,24 +3275,24 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
 
 
    /*
-     * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used 
+     * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used
      * to get the native address and frame information for the exception clause (catch/finally/filter)
      * that is about to be run (ExceptionCatchEnter, ExceptionUnwindFinallyEnter, ExceptionFilterEnter)
-     * or has just been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).  
+     * or has just been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).
      *
      * This call may be made at any time after one of the Enter calls above until either the matching
      * Leave call is received or until a nested exception throws out of the current clause in which case
-     * there will be no Leave notification for that clause.  Note it is not possible for a throw to escape 
+     * there will be no Leave notification for that clause.  Note it is not possible for a throw to escape
      * a Filter so there is always a Leave in that case.
      *
      * Return values:
      *   S_OK indicates success
-     *   S_FALSE indicates that no exception clause is active   
-     *   CORPROF_E_NOT_MANAGED_THREAD indicates an unmanaged thread.    
+     *   S_FALSE indicates that no exception clause is active
+     *   CORPROF_E_NOT_MANAGED_THREAD indicates an unmanaged thread.
      */
 
     HRESULT GetNotifiedExceptionClauseInfo(
-                    [out] COR_PRF_EX_CLAUSE_INFO *pinfo);                 
+                    [out] COR_PRF_EX_CLAUSE_INFO *pinfo);
 }
 
 /*
@@ -3319,7 +3319,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
     local
 ]
 interface ICorProfilerInfo3 : ICorProfilerInfo2
-{  
+{
     /*
      * Returns an enumerator for all previously jitted functions. May overlap with
      * functions previously reported via CompilationStarted callbacks.
@@ -3352,8 +3352,8 @@ interface ICorProfilerInfo3 : ICorProfilerInfo2
 
     /*
      * The code profiler calls SetFunctionHooks3 to specify handlers
-     * for FunctionEnter3, FunctionLeave3, and FunctionTailcall3, and calls 
-     * SetFunctionHooks3WithInfo to specify handlers for FunctionEnter3WithInfo, 
+     * for FunctionEnter3, FunctionLeave3, and FunctionTailcall3, and calls
+     * SetFunctionHooks3WithInfo to specify handlers for FunctionEnter3WithInfo,
      * FunctionLeave3WithInfo, and FunctionTailcall3WithInfo.
      *
      * Note that only one set of callbacks may be active at a time. Thus,
@@ -3379,34 +3379,34 @@ interface ICorProfilerInfo3 : ICorProfilerInfo2
                 [in] FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
 
     /*
-     * The profiler can call GetFunctionEnter3Info to gather frame info and argument info 
-     * in FunctionEnter3WithInfo callback. The profiler needs to allocate sufficient space 
-     * for COR_PRF_FUNCTION_ARGUMENT_INFO of the function it's inspecting and indicate the 
+     * The profiler can call GetFunctionEnter3Info to gather frame info and argument info
+     * in FunctionEnter3WithInfo callback. The profiler needs to allocate sufficient space
+     * for COR_PRF_FUNCTION_ARGUMENT_INFO of the function it's inspecting and indicate the
      * size in a ULONG pointed by pcbArgumentInfo.
      */
-    HRESULT GetFunctionEnter3Info( 
-                [in]  FunctionID functionId, 
+    HRESULT GetFunctionEnter3Info(
+                [in]  FunctionID functionId,
                 [in]  COR_PRF_ELT_INFO eltInfo,
                 [out] COR_PRF_FRAME_INFO *pFrameInfo,
                 [in, out] ULONG *pcbArgumentInfo,
                 [out, size_is(*pcbArgumentInfo)] COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
-                
+
     /*
-     * The profiler can call GetFunctionLeave3Info to gather frame info and return value 
-     * in FunctionLeave3WithInfo callback. 
+     * The profiler can call GetFunctionLeave3Info to gather frame info and return value
+     * in FunctionLeave3WithInfo callback.
      */
-    HRESULT GetFunctionLeave3Info( 
-                [in]  FunctionID functionId, 
+    HRESULT GetFunctionLeave3Info(
+                [in]  FunctionID functionId,
                 [in]  COR_PRF_ELT_INFO eltInfo,
                 [out] COR_PRF_FRAME_INFO *pFrameInfo,
                 [out] COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
-               
+
     /*
-     * The profiler can call GetFunctionTailcall3Info to gather frame info in 
-     * FunctionTailcall3WithInfo callback. 
+     * The profiler can call GetFunctionTailcall3Info to gather frame info in
+     * FunctionTailcall3WithInfo callback.
      */
-    HRESULT GetFunctionTailcall3Info( 
-                [in]  FunctionID functionId, 
+    HRESULT GetFunctionTailcall3Info(
+                [in]  FunctionID functionId,
                 [in]  COR_PRF_ELT_INFO eltInfo,
                 [out] COR_PRF_FRAME_INFO *pFrameInfo);
 
@@ -3414,7 +3414,7 @@ interface ICorProfilerInfo3 : ICorProfilerInfo2
 
     /*
      * The profiler can call GetRuntimeInformation to query CLR version information.
-     * Passing NULL to any parameter is acceptable except pcchVersionString cannot 
+     * Passing NULL to any parameter is acceptable except pcchVersionString cannot
      * be NULL if szVersionString is not NULL.
      */
     HRESULT GetRuntimeInformation([out] USHORT *pClrInstanceId,
@@ -3457,12 +3457,12 @@ interface ICorProfilerInfo3 : ICorProfilerInfo2
      * Retrieve information about a given module.
      *
      * When the module is loaded from disk, the name returned will be the filename;
-     * otherwise, the name will be the name from the metadata Module table (i.e., 
+     * otherwise, the name will be the name from the metadata Module table (i.e.,
      * the same as the managed System.Reflection.Module.ScopeName).
-     * 
+     *
      * *pdwModuleFlags will be filled in with a bitmask of values from COR_PRF_MODULE_FLAGS
      * that specify some properties of the module.
-     * 
+     *
      * NOTE: While this function may be called as soon as the moduleId is alive,
      * the AssemblyID of the containing assembly will not be available until the
      * ModuleAttachedToAssembly callback.
@@ -3496,12 +3496,12 @@ interface ICorProfilerObjectEnum : IUnknown
 {
     HRESULT Skip(
                 [in] ULONG celt);
-        
+
     HRESULT Reset();
-    
+
     HRESULT Clone(
                     [out] ICorProfilerObjectEnum **ppEnum);
-                    
+
     HRESULT GetCount(
                     [out] ULONG *pcelt);
 
@@ -3525,11 +3525,11 @@ interface ICorProfilerObjectEnum : IUnknown
 interface ICorProfilerFunctionEnum : IUnknown
 {
     HRESULT Skip([in] ULONG celt);
-        
+
     HRESULT Reset();
-    
+
     HRESULT Clone([out] ICorProfilerFunctionEnum **ppEnum);
-                    
+
     HRESULT GetCount([out] ULONG *pcelt);
 
     HRESULT Next([in]  ULONG            celt,
@@ -3551,11 +3551,11 @@ interface ICorProfilerFunctionEnum : IUnknown
 interface ICorProfilerModuleEnum : IUnknown
 {
     HRESULT Skip([in] ULONG celt);
-        
+
     HRESULT Reset();
-    
+
     HRESULT Clone([out] ICorProfilerModuleEnum **ppEnum);
-                    
+
     HRESULT GetCount([out] ULONG *pcelt);
 
     HRESULT Next([in]  ULONG            celt,
@@ -3591,7 +3591,7 @@ interface IMethodMalloc : IUnknown
 
 /*
  * The CLR implements the ICorProfilerFunctionControl interface. This interface
- * is used by a code profiler to communicate with the CLR to control how the 
+ * is used by a code profiler to communicate with the CLR to control how the
  * JIT should generate code when rejitting a specific method.
  *
  * The ICorProfilerFunctionControl interface implemented by the CLR uses the
@@ -3653,7 +3653,7 @@ interface ICorProfilerFunctionControl : IUnknown
     local
 ]
 interface ICorProfilerInfo4 : ICorProfilerInfo3
-{  
+{
     HRESULT EnumThreads([out] ICorProfilerThreadEnum **ppEnum);
     HRESULT InitializeCurrentThread();
 
@@ -3719,7 +3719,7 @@ interface ICorProfilerInfo4 : ICorProfilerInfo3
                 [in]  FunctionID          functionId,
                 [in]  ULONG               cReJitIds,
                 [out] ULONG *             pcReJitIds,
-                [out, size_is(cReJitIds), length_is(*pcReJitIds)] 
+                [out, size_is(cReJitIds), length_is(*pcReJitIds)]
                       ReJITID             reJitIds[]);
 
     /*
@@ -3737,7 +3737,7 @@ interface ICorProfilerInfo4 : ICorProfilerInfo3
     /*
      * Returns an enumerator for all previously jitted functions. May overlap with
      * functions previously reported via CompilationStarted callbacks.  The returned
-     * enumeration will include values for the COR_PRF_FUNCTION::reJitId field 
+     * enumeration will include values for the COR_PRF_FUNCTION::reJitId field
      */
     HRESULT EnumJITedFunctions2([out] ICorProfilerFunctionEnum** ppEnum);
 
@@ -3792,12 +3792,12 @@ interface ICorProfilerInfo5 : ICorProfilerInfo4
 interface ICorProfilerInfo6 : ICorProfilerInfo5
 {
     /*
-    * Returns an enumerator for all methods that 
-    * - belong to a given NGen or R2R module (inlinersModuleId) and 
-    * - inlined a body of a given method (inlineeModuleId / inlineeMethodId). 
+    * Returns an enumerator for all methods that
+    * - belong to a given NGen or R2R module (inlinersModuleId) and
+    * - inlined a body of a given method (inlineeModuleId / inlineeMethodId).
     *
-    * If incompleteData is set to TRUE after function is called, it means that the methods enumerator 
-    * doesn't contain all methods inlining a given method. 
+    * If incompleteData is set to TRUE after function is called, it means that the methods enumerator
+    * doesn't contain all methods inlining a given method.
     * It can happen when one or more direct or indirect dependencies of inliners module haven't been loaded yet.
     * If profiler needs accurate data it should retry later when more modules are loaded (preferably on each module load).
     *
@@ -3806,7 +3806,7 @@ interface ICorProfilerInfo6 : ICorProfilerInfo5
     * NOTE: If the inlinee method is decorated with the System.Runtime.Versioning.NonVersionable attribute then
     * then some inliners may not ever be reported. If you need to get a full accounting you can avoid the issue
     * by disabling the use of all native images.
-    * 
+    *
     */
     HRESULT EnumNgenModuleMethodsInliningThisMethod(
         [in] ModuleID    inlinersModuleId,
@@ -3844,8 +3844,8 @@ interface ICorProfilerInfo7 : ICorProfilerInfo6
     *
     * Returns S_OK if the length could be determined (even if it is 0)
     *
-    * Note: The current implementation does not support reflection.emit. 
-    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case. 
+    * Note: The current implementation does not support reflection.emit.
+    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case.
     */
     HRESULT GetInMemorySymbolsLength(
         [in] ModuleID moduleId,
@@ -3853,7 +3853,7 @@ interface ICorProfilerInfo7 : ICorProfilerInfo6
 
     /* Reads bytes from an in-memory symbol stream
     *
-    * This function attempts to read countSymbolBytes of data starting at offset 
+    * This function attempts to read countSymbolBytes of data starting at offset
     * symbolsReadOffset within the in-memory stream. The data will be copied into
     * pSymbolBytes which is expected to have countSymbolBytes of space available.
     * pCountSymbolsBytesRead contains the actual number of bytes read which
@@ -3882,7 +3882,7 @@ interface ICorProfilerInfo7 : ICorProfilerInfo6
 interface ICorProfilerInfo8 : ICorProfilerInfo7
 {
     /*
-    * Determines if a function has associated metadata 
+    * Determines if a function has associated metadata
     *
     * Certain methods like IL Stubs or LCG Methods do not have
     * associated metadata that can be retrieved using the IMetaDataImport APIs.
@@ -3964,7 +3964,7 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
     /*
      * This method will ReJIT the methods requested, as well as any inliners
      * of the methods requested.
-     * 
+     *
      * RequestReJIT does not do any tracking of inlined methods. The profiler
      * was expected to track inlining and call RequestReJIT for all inliners
      * to make sure every instance of an inlined method was ReJITted.
@@ -4058,11 +4058,11 @@ interface ICorProfilerMethodEnum : IUnknown
 interface ICorProfilerThreadEnum : IUnknown
 {
     HRESULT Skip([in] ULONG celt);
-        
+
     HRESULT Reset();
-    
+
     HRESULT Clone([out] ICorProfilerThreadEnum **ppEnum);
-                    
+
     HRESULT GetCount([out] ULONG *pcelt);
 
     HRESULT Next([in]  ULONG            celt,

@@ -130,7 +130,7 @@ NESTED_END VarargPInvokeGenILStub, _TEXT
 
 //
 // IN:
-// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                          before actual InlinedCallFrame data)
 //
 //
@@ -182,7 +182,7 @@ NESTED_END JIT_PInvokeBegin, _TEXT
 
 //
 // IN:
-// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (rdi) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                          before actual InlinedCallFrame data)
 //
 //

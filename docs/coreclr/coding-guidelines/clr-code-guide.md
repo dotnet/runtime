@@ -1,5 +1,5 @@
 What Every CLR Developer Must Know Before Writing Code
-=== 
+===
 
 Written in 2006, by:
 

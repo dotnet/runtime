@@ -25,7 +25,7 @@ typedef DWORD StringRef;
 
  This is a description of the current implementation of these types for generating
  CLR modules.
- 
+
   ICeeGen - interface to generate in-memory CLR module.
 
   CCeeGen - implementation of ICeeGen. Currently it uses both CeeSections
@@ -98,16 +98,16 @@ class CeeSectionImpl {
   public:
     virtual unsigned dataLen() = 0;
     virtual char * getBlock(
-        unsigned len, 
+        unsigned len,
         unsigned align = 1) = 0;
     virtual HRESULT addSectReloc(
-        unsigned               offset, 
-        CeeSection &           relativeTo, 
-        CeeSectionRelocType    reloc = srRelocAbsolute, 
+        unsigned               offset,
+        CeeSection &           relativeTo,
+        CeeSectionRelocType    reloc = srRelocAbsolute,
         CeeSectionRelocExtra * extra = NULL) = 0;
     virtual HRESULT addBaseReloc(
-        unsigned               offset, 
-        CeeSectionRelocType    reloc = srRelocHighLow, 
+        unsigned               offset,
+        CeeSectionRelocType    reloc = srRelocHighLow,
         CeeSectionRelocExtra * extra = NULL) = 0;
     virtual HRESULT directoryEntry(unsigned num) = 0;
     virtual unsigned char * name() = 0;

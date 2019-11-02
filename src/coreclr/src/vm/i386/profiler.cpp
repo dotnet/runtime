@@ -5,9 +5,9 @@
 // FILE: profiler.cpp
 //
 
-// 
+//
 
-// 
+//
 // ======================================================================================
 
 #include "common.h"
@@ -57,7 +57,7 @@ UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void *handle)
 /*
  * ProfileSetFunctionIDInPlatformSpecificHandle
  *
- * This routine takes the platformSpecificHandle and functionID, and assign 
+ * This routine takes the platformSpecificHandle and functionID, and assign
  * functionID to functionID field of platformSpecificHandle.
  *
  * Parameters:
@@ -75,7 +75,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void * pPlatformSpecificHandle
     _ASSERTE(functionID != NULL);
 
     PROFILE_PLATFORM_SPECIFIC_DATA * pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA *>(pPlatformSpecificHandle);
-    pData->functionId = functionID;   
+    pData->functionId = functionID;
 }
 
 /*
@@ -212,7 +212,7 @@ LPVOID ProfileArgIterator::GetHiddenArgValue(void)
 
     //
     // The ArgIterator::GetParamTypeOffset() can only be called after calling GetNextOffset until the
-    // entire signature has been walked, but *before* GetNextOffset returns TransitionBlock::InvalidOffset 
+    // entire signature has been walked, but *before* GetNextOffset returns TransitionBlock::InvalidOffset
     // - indicating the end.
     //
 

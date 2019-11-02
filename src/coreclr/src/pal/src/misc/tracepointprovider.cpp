@@ -25,7 +25,7 @@ Revision History:
 #include "pal/stackstring.hpp"
 
 #include <errno.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <pthread.h>
 #include <dlfcn.h>
 
@@ -97,10 +97,10 @@ PAL_InitializeTracing(void)
     {
         return;
     }
-    
+
     SIZE_T tpLibNameLen = strlen(tpLibName);
 
-    if( !tpProvPath.Reserve(tpLibNameLen + lastTrailingSlashLen) ||  
+    if( !tpProvPath.Reserve(tpLibNameLen + lastTrailingSlashLen) ||
     // Copy the path without the shared object name.
         !tpProvPath.Append(info.dli_fname, lastTrailingSlashLen) ||
     // Append the shared object name for the tracepoint provider.
@@ -108,8 +108,8 @@ PAL_InitializeTracing(void)
     {
         return;
     }
-    
-    
+
+
     if (fShouldLoad)
     {
         // Load the tracepoint provider.

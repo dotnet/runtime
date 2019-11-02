@@ -21,7 +21,7 @@
 #define CORECLR_HOSTING_API(function, ...) \
     extern "C" int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
-    
+
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
@@ -32,7 +32,7 @@
 //  propertyKeys            - Keys of properties of the app domain
 //  propertyValues          - Values of properties of the app domain
 //  hostHandle              - Output parameter, handle of the created host
-//  domainId                - Output parameter, id of the created app domain 
+//  domainId                - Output parameter, id of the created app domain
 //
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
@@ -81,7 +81,7 @@ CORECLR_HOSTING_API(coreclr_shutdown_2,
 //
 // Parameters:
 //  hostHandle              - Handle of the host
-//  domainId                - Id of the domain 
+//  domainId                - Id of the domain
 //  entryPointAssemblyName  - Name of the assembly which holds the custom entry point
 //  entryPointTypeName      - Name of the type which holds the custom entry point
 //  entryPointMethodName    - Name of the method which is the custom entry point
@@ -103,7 +103,7 @@ CORECLR_HOSTING_API(coreclr_create_delegate,
 //
 // Parameters:
 //  hostHandle              - Handle of the host
-//  domainId                - Id of the domain 
+//  domainId                - Id of the domain
 //  argc                    - Number of arguments passed to the executed assembly
 //  argv                    - Array of arguments passed to the executed assembly
 //  managedAssemblyPath     - Path of the managed assembly to execute (or NULL if using a custom entrypoint).
@@ -121,5 +121,5 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
             unsigned int* exitCode);
 
 #undef CORECLR_HOSTING_API
-                      
+
 #endif // __CORECLR_HOST_H__

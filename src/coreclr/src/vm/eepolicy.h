@@ -67,7 +67,7 @@ public:
     void NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action);
 
     HRESULT SetTimeoutAndAction(EClrOperation operation, DWORD timeout, EPolicyAction action);
-    
+
     HRESULT SetDefaultAction(EClrOperation operation, EPolicyAction action);
     EPolicyAction GetDefaultAction(EClrOperation operation, Thread *pThread)
     {
@@ -134,7 +134,7 @@ private:
     EPolicyAction m_DefaultAction[MaxClrOperation];
     EPolicyAction m_ActionOnFailure[MaxClrFailure];
     EClrUnhandledException m_unhandledExceptionPolicy;
-    
+
     // TODO: Support multiple methods to set policy: hosting, config, managed api.
 
     // Return BOOL if action is acceptable for operation.

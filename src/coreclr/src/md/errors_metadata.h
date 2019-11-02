@@ -14,7 +14,7 @@
     //  * VLDTR_E_STRING_INVALID
     //  * VLDTR_E_RID_OUTOFRANGE
 
-// Internal error, it's a runtime assert check to avoid security errors. If this is returned, then there's 
+// Internal error, it's a runtime assert check to avoid security errors. If this is returned, then there's
 // something wrong with MetaData code.
 #define METADATA_E_INTERNAL_ERROR       CLDB_E_INTERNALERROR
     // Options:
@@ -50,7 +50,7 @@
     //  * CLDB_E_FILE_CORRUPT
     //  * COR_E_BADIMAGEFORMAT
 
-// 
+//
 // Other used error codes:
 //  * COR_E_OUTOFMEMORY ... defined as E_OUTOFMEMORY
 //      Alternatives:
@@ -58,4 +58,4 @@
 //  * COR_E_OVERFLOW
 //      Alternatives:
 //          * COR_E_ARITHMETIC
-// 
+//

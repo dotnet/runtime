@@ -7,4 +7,3 @@ TARGETTYPE=NOTARGET
 CLR_TARGETTYPE=DLL
 MSBuildProjectFile=protononjit.nativeproj
 SOURCES=
-    

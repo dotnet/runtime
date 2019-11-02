@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------
 //
 
-// 
+//
 // Stack unwinding implementation for x64.
 //
 
@@ -26,7 +26,7 @@
 
 //
 // Lookup table providing the number of slots used by each unwind code.
-// 
+//
 
 UCHAR
 DbsX64StackUnwinder::s_UnwindOpSlotTable[] =
@@ -145,14 +145,14 @@ Arguments:
 
     m_Services->Status(1, "  Unwind info has 0x%X codes\n",
                        UnwindInfo->CountOfCodes);
-    
+
     while (Index < UnwindInfo->CountOfCodes) {
 
         m_Services->Status(1, "  %02X: Code %X offs %03X, RSP %I64X\n",
              Index, UnwindInfo->UnwindCode[Index].UnwindOp,
              UnwindInfo->UnwindCode[Index].CodeOffset,
              ContextRecord->Rsp);
-        
+
         //
         // If the prologue offset is greater than the next unwind code offset,
         // then simulate the effect of the unwind code.
@@ -164,7 +164,7 @@ Arguments:
                  UnwindOp, Index);
             goto Fail;
         }
-        
+
         OpInfo = UnwindInfo->UnwindCode[Index].OpInfo;
         if (PrologOffset >= UnwindInfo->UnwindCode[Index].CodeOffset) {
             switch (UnwindOp) {
@@ -420,7 +420,7 @@ Arguments:
             }
 
             Index += 1;
-        
+
         } else {
 
             //
@@ -433,7 +433,7 @@ Arguments:
             //
             // Special case any unwind operations that can consume a variable
             // number of slots.
-            // 
+            //
 
             switch (UnwindOp) {
 
@@ -469,7 +469,7 @@ Arguments:
     if ((UnwindInfo->Flags & AMD64_UNW_FLAG_CHAININFO) != 0) {
 
         _PIMAGE_RUNTIME_FUNCTION_ENTRY ChainEntry;
-        
+
         Index = UnwindInfo->CountOfCodes;
         if ((Index & 1) != 0) {
             Index += 1;
@@ -481,11 +481,11 @@ Arguments:
         ChainEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
             &UnwindInfo->UnwindCode[Index];
 
-        m_Services->Status(1, "  Chain with entry at %I64X\n", 
+        m_Services->Status(1, "  Chain with entry at %I64X\n",
              FunctionEntry->UnwindInfoAddress + ImageBase +
              (ULONG64)((PUCHAR)&UnwindInfo->UnwindCode[Index] -
                        (PUCHAR)UnwindInfo));
-        
+
         Status = UnwindPrologue(ImageBase,
                                 ControlPc,
                                 FrameBase,
@@ -507,7 +507,7 @@ Arguments:
             }
             ContextRecord->Rsp += 8;
         }
-        
+
         m_Services->Status(1, "Prol: Returning with RIP %I64X, RSP %I64X\n",
                            ContextRecord->Rip, ContextRecord->Rsp);
         return S_OK;
@@ -676,7 +676,7 @@ Arguments:
     // epilogue, then emulate the execution of the epilogue forward and
     // return no exception handler.
     //
-    
+
     IntegerRegister = &ContextRecord->Rax;
     NextByte = InstrBuffer;
     Bytes = InstrBytes;
@@ -697,97 +697,97 @@ Arguments:
         (NextByte[0] == SIZE64_PREFIX) &&
         (NextByte[1] == ADD_IMM8_OP) &&
         (NextByte[2] == 0xc4)) {
-            
+
         //
         // add rsp, imm8.
         //
-            
+
         NextByte += 4;
         Bytes -= 4;
-            
+
     } else if (Bytes >= 7 &&
                (NextByte[0] == SIZE64_PREFIX) &&
                (NextByte[1] == ADD_IMM32_OP) &&
                (NextByte[2] == 0xc4)) {
-            
+
         //
         // add rsp, imm32.
         //
-            
+
         NextByte += 7;
         Bytes -= 7;
-            
+
     } else if (Bytes >= 4 &&
                ((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
                (NextByte[1] == LEA_OP)) {
-            
+
         FrameRegister = ((NextByte[0] & 0x7) << 3) | (NextByte[2] & 0x7);
         if ((FrameRegister != 0) &&
             (FrameRegister == UnwindFrameReg)) {
             if ((NextByte[2] & 0xf8) == 0x60) {
-                    
+
                 //
                 // lea rsp, disp8[fp].
                 //
-                    
+
                 NextByte += 4;
                 Bytes -= 4;
-                    
+
             } else if (Bytes >= 7 &&
                        (NextByte[2] &0xf8) == 0xa0) {
-                    
+
                 //
                 // lea rsp, disp32[fp].
                 //
-                    
+
                 NextByte += 7;
                 Bytes -= 7;
             }
         }
     }
-        
+
     //
     // Check for any number of:
     //
     //   pop nonvolatile-integer-register[0..15].
     //
-        
+
     while (TRUE) {
         if (Bytes >= 1 &&
             (NextByte[0] & 0xf8) == POP_OP) {
             NextByte += 1;
             Bytes -= 1;
-                
+
         } else if (Bytes >= 2 &&
                    IS_REX_PREFIX(NextByte[0]) &&
                    ((NextByte[1] & 0xf8) == POP_OP)) {
-                
+
             NextByte += 2;
             Bytes -= 2;
-                
+
         } else {
             break;
         }
     }
-        
+
     //
     // If the next instruction is a return or an appropriate jump, then
     // control is currently in an epilogue and execution of the epilogue
     // should be emulated. Otherwise, execution is not in an epilogue and
     // the prologue should be unwound.
     //
-        
+
     InEpilogue = FALSE;
     if ((Bytes >= 1 &&
          ((NextByte[0] == RET_OP) ||
           (NextByte[0] == RET_OP_2))) ||
         (Bytes >= 2 &&
          ((NextByte[0] == REP_PREFIX) && (NextByte[1] == RET_OP)))) {
-            
+
         //
         // A return is an unambiguous indication of an epilogue.
         //
-            
+
         InEpilogue = TRUE;
 
     } else if ((Bytes >= 2 && NextByte[0] == JMP_IMM8_OP) ||
@@ -796,7 +796,7 @@ Arguments:
         //
         // An unconditional branch to a target that is equal to the start of
         // or outside of this routine is logically a call to another function.
-        // 
+        //
 
         BranchTarget = (ULONG64)(NextByte - InstrBuffer) + ControlPc - ImageBase;
         if (NextByte[0] == JMP_IMM8_OP) {
@@ -804,7 +804,7 @@ Arguments:
         } else {
             BranchTarget += 5 + *((LONG UNALIGNED *)&NextByte[1]);
         }
-            
+
         //
         // Determine whether the branch target refers to code within this
         // function. If not, then it is an epilogue indicator.
@@ -812,12 +812,12 @@ Arguments:
         // A branch to the start of self implies a recursive call, so
         // is treated as an epilogue.
         //
-            
+
         if (BranchTarget < FunctionEntry->BeginAddress ||
             BranchTarget >= FunctionEntry->EndAddress) {
 
             _IMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntryBuffer;
-            
+
             //
             // The branch target is outside of the region described by
             // this function entry.  See whether it is contained within
@@ -842,20 +842,20 @@ Arguments:
 
         } else if ((BranchTarget == FunctionEntry->BeginAddress) &&
                    ((UnwindInfo->Flags & AMD64_UNW_FLAG_CHAININFO) == 0)) {
-            
+
             InEpilogue = TRUE;
         }
-            
+
     } else if (Bytes >= 2 &&
                (NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25)) {
-            
+
         //
         // An unconditional jump indirect.
         //
         // This is a jmp outside of the function, probably a tail call
         // to an import function.
         //
-            
+
         InEpilogue = TRUE;
 
     } else if (Bytes >= 3 &&
@@ -874,7 +874,7 @@ Arguments:
 
         InEpilogue = TRUE;
     }
-        
+
     if (InEpilogue != FALSE) {
         NextByte = InstrBuffer;
         Bytes = InstrBytes;
@@ -890,54 +890,54 @@ Arguments:
         //       or
         //   lea rsp, disp32[frame-register]
         //
-            
+
         if (Bytes >= 1 &&
             (NextByte[0] & 0xf8) == SIZE64_PREFIX) {
-        
+
             if (Bytes >= 4 &&
                 NextByte[1] == ADD_IMM8_OP) {
-                
+
                 //
                 // add rsp, imm8.
                 //
-                    
+
                 ContextRecord->Rsp += (CHAR)NextByte[3];
                 NextByte += 4;
                 Bytes -= 4;
-                    
+
             } else if (Bytes >= 7 &&
                        NextByte[1] == ADD_IMM32_OP) {
-                    
+
                 //
                 // add rsp, imm32.
                 //
-                    
+
                 Displacement = NextByte[3] | (NextByte[4] << 8);
                 Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
                 ContextRecord->Rsp += Displacement;
                 NextByte += 7;
                 Bytes -= 7;
-                    
+
             } else if (Bytes >= 4 &&
                        NextByte[1] == LEA_OP) {
                 if ((NextByte[2] & 0xf8) == 0x60) {
-                        
+
                     //
                     // lea rsp, disp8[frame-register].
                     //
-                        
+
                     ContextRecord->Rsp = IntegerRegister[FrameRegister];
                     ContextRecord->Rsp += (CHAR)NextByte[3];
                     NextByte += 4;
                     Bytes -= 4;
-                        
+
                 } else if (Bytes >= 7 &&
                            (NextByte[2] & 0xf8) == 0xa0) {
-                        
+
                     //
                     // lea rsp, disp32[frame-register].
                     //
-                        
+
                     Displacement = NextByte[3] | (NextByte[4] << 8);
                     Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
                     ContextRecord->Rsp = IntegerRegister[FrameRegister];
@@ -947,21 +947,21 @@ Arguments:
                 }
             }
         }
-            
+
         //
         // Emulate any number of (if any):
         //
         //   pop nonvolatile-integer-register.
         //
-            
+
         while (TRUE) {
             if (Bytes >= 1 &&
                 (NextByte[0] & 0xf8) == POP_OP) {
-                    
+
                 //
                 // pop nonvolatile-integer-register[0..7]
                 //
-                    
+
                 RegisterNumber = NextByte[0] & 0x7;
                 if ((Status = m_Services->
                     ReadAllMemory(ContextRecord->Rsp,
@@ -974,15 +974,15 @@ Arguments:
                 ContextRecord->Rsp += 8;
                 NextByte += 1;
                 Bytes -= 1;
-                    
+
             } else if (Bytes >= 2 &&
                        IS_REX_PREFIX(NextByte[0]) &&
                        (NextByte[1] & 0xf8) == POP_OP) {
-                    
+
                 //
                 // pop nonvolatile-integer-register[8..15]
                 //
-                    
+
                 RegisterNumber = ((NextByte[0] & 1) << 3) | (NextByte[1] & 0x7);
                 if ((Status = m_Services->
                      ReadAllMemory(ContextRecord->Rsp,
@@ -995,7 +995,7 @@ Arguments:
                 ContextRecord->Rsp += 8;
                 NextByte += 2;
                 Bytes -= 2;
-                    
+
             } else {
                 break;
             }
@@ -1007,7 +1007,7 @@ Arguments:
         // Note: this instruction might in fact be a jmp, however
         //       we want to emulate a return regardless.
         //
-            
+
         if ((Status = m_Services->
             ReadAllMemory(ContextRecord->Rsp,
                           &ContextRecord->Rip,
@@ -1107,7 +1107,7 @@ Return Value:
         *PrimaryEntry = *FunctionEntry;
 
         FreeUnwindInfo(UnwindInfo, UnwindInfoBuffer);
-        
+
     } while (TRUE);
 
     return UnwindAbs;
@@ -1158,7 +1158,7 @@ Return Value:
     //
     // Find the unwind information referenced by the primary function entry
     // associated with the specified function entry.
-    // 
+    //
 
     UnwindInfo1 = LookupPrimaryUnwindInfo(FunctionEntry, ImageBase,
                                           FunctionReturnBuffer);
@@ -1174,7 +1174,7 @@ Return Value:
                                      sizeof(TargetFunctionEntry)) != S_OK) {
         return NULL;
     }
-    
+
     UnwindInfo2 = LookupPrimaryUnwindInfo(&TargetFunctionEntry,
                                           TargetImageBase,
                                           FunctionReturnBuffer);
@@ -1229,7 +1229,7 @@ DbsX64StackUnwinder::Unwind(void)
     HRESULT Status;
 
     ClearUnwindDerived();
-    
+
     if (SUCCEEDED(Status = BaseUnwind()))
     {
         return Status;
@@ -1269,10 +1269,10 @@ DbsX64StackUnwinder::
 GetFullUnwindInfoSize(__in PVOID InfoHeader)
 {
     PAMD64_UNWIND_INFO UnwindInfo = (PAMD64_UNWIND_INFO)InfoHeader;
-    
+
     DWORD UnwindInfoSize = FIELD_OFFSET(AMD64_UNWIND_INFO, UnwindCode) +
         UnwindInfo->CountOfCodes * sizeof(AMD64_UNWIND_CODE);
-    
+
     // An extra alignment code and function entry may be added on to handle
     // the chained info case where the chain function entry is just
     // beyond the end of the normal code array.
@@ -1358,7 +1358,7 @@ DbhContinue(__inout LPSTACKFRAME64 StackFrame,
     {
         return Status;
     }
-    
+
     if (DBHX64_GET_IS_RESTART(StackFrame))
     {
         m_RestartFrame = true;
@@ -1379,17 +1379,17 @@ DbsX64StackUnwinder::DbhUpdatePreUnwind(__inout LPSTACKFRAME64 StackFrame)
     {
         return Status;
     }
-    
+
     DBHX64_SET_IS_RESTART(StackFrame, m_RestartFrame);
     return S_OK;
 }
-    
+
 HRESULT
 DbsX64StackUnwinder::DbhUpdatePostUnwind(__inout LPSTACKFRAME64 StackFrame,
                                          __in HRESULT UnwindStatus)
 {
     HRESULT Status;
-    
+
     if ((Status = DbsStackUnwinder::DbhUpdatePostUnwind(StackFrame,
                                                         UnwindStatus)) != S_OK)
     {
@@ -1447,7 +1447,7 @@ DbsX64StackUnwinder::BaseUnwind(void)
         }
 
         DWORD64 OldIp = m_InstructionPointer;
-        
+
         UpdateAbstractPointers();
         UpdateCallPointer();
         m_FramePointer = m_StackPointer - 2 * sizeof(DWORD64);

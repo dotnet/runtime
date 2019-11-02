@@ -13,23 +13,23 @@
 #include "daccess.h"
 
 // MemoryRange is a descriptor of a memory range. This groups (pointer + size).
-// 
+//
 // Some key qualities:
 // - simple!
 // - Not mutable
 // - blitabble descriptor which can be useful for out-of-process tools like the debugger.
-// - no ownership semantics. 
-// - no manipulation, growing semantics. 
+// - no ownership semantics.
+// - no manipulation, growing semantics.
 // - no memory marshalling, allocation, copying. etc.
-// - can be efficiently passed / copied / returned by value 
-// 
+// - can be efficiently passed / copied / returned by value
+//
 // This class has general value as an abstraction to group pointer and size together. It also has significant
 // value to the debugger. An expected design pattern is that other mutable complex data structures (eg,
 // code:SBuffer, code:CGrowableStream) will provide an accessor to expose their underlying storage as a
-// MemoryRange to debugger. This mirrors the Debugger's code:TargetBuffer data structure, but as a 
-// general-purpose VM utility versus a debugger right-side data structure.  
+// MemoryRange to debugger. This mirrors the Debugger's code:TargetBuffer data structure, but as a
+// general-purpose VM utility versus a debugger right-side data structure.
 
-// 
+//
 class MemoryRange
 {
 public:
@@ -37,18 +37,18 @@ public:
     MemoryRange() :
         m_pStartAddress(NULL),
         m_cbBytes(0)
-    { 
+    {
         SUPPORTS_DAC;
     }
 
-    MemoryRange(PTR_VOID pStartAddress, SIZE_T cbBytes) : 
+    MemoryRange(PTR_VOID pStartAddress, SIZE_T cbBytes) :
         m_pStartAddress(pStartAddress),
         m_cbBytes(cbBytes)
-    { 
+    {
         SUPPORTS_DAC;
     }
 
-    // Note: use compiler-default copy ctor and assignment operator 
+    // Note: use compiler-default copy ctor and assignment operator
 
 
 
@@ -82,7 +82,7 @@ public:
         return m_cbBytes;
     }
 
-private:    
+private:
     // The start of the memory range.
     PTR_VOID const m_pStartAddress;
 

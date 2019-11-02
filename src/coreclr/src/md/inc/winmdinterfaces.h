@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 // =======================================================================================================
 // Defines the surface area between md\WinMD and md\everything-else.
 //
@@ -28,8 +28,8 @@ EXTERN_GUID(IID_IMDCommon, 0x4f8ee8a3, 0x24f8, 0x4241, 0xbc, 0x75, 0xc8, 0xca, 0
 #define INTERFACE IID_IMDCommon
 DECLARE_INTERFACE_(IMDCommon, IUnknown)
 {
-    STDMETHOD_(IMetaModelCommon*, GetMetaModelCommon)() PURE;       
-    STDMETHOD_(IMetaModelCommonRO*, GetMetaModelCommonRO)() PURE;       
+    STDMETHOD_(IMetaModelCommon*, GetMetaModelCommon)() PURE;
+    STDMETHOD_(IMetaModelCommonRO*, GetMetaModelCommonRO)() PURE;
     STDMETHOD(GetVersionString)(LPCSTR *pszVersionString) PURE;
 };
 
@@ -88,7 +88,7 @@ HRESULT CreateWinMDInternalImportRO(IMDCommon * pRawMDCommon, REFIID riid, /*[ou
 #endif // FEATURE_METADATA_INTERNAL_APIS
 //-----------------------------------------------------------------------------------------------------
 // S_OK if pUnknown is really a WinMD wrapper. This is just a polite way of asking "is it bad to
-//   to static cast pUnknown to RegMeta/MDInternalRO." 
+//   to static cast pUnknown to RegMeta/MDInternalRO."
 //-----------------------------------------------------------------------------------------------------
 HRESULT CheckIfImportingWinMD(IUnknown *pUnknown);
 
@@ -109,4 +109,4 @@ HRESULT VerifyNotWinMDHelper(IUnknown *pUnknown
 #endif //__WINMDINTERFACES_H__
 
 
- 
+

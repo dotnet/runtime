@@ -192,7 +192,7 @@ struct EHContext {
 
     void Setup(PCODE resumePC, PREGDISPLAY regs);
     void UpdateFrame(PREGDISPLAY regs);
-    
+
     inline TADDR GetSP() {
         LIMITED_METHOD_CONTRACT;
         return (TADDR)Esp;
@@ -292,7 +292,7 @@ inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
 
     pBuffer[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
     *((LPVOID*)(1+pBuffer)) = (LPVOID) (((LPBYTE)target) - (pBuffer+5));
-    
+
     _ASSERTE(IS_ALIGNED(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
         *((SSIZE_T*)(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethod));
 }
@@ -400,7 +400,7 @@ inline void emitJumpInd(LPBYTE pBuffer, LPVOID target)
     *((WORD*)pBuffer) = X86_INSTR_JMP_IND; // 0x25FF  jmp dword ptr[addr32]
     *((LPVOID*)(2+pBuffer)) = target;
 }
- 
+
 //------------------------------------------------------------------------
 inline PCODE isJump(PCODE pCode)
 {
@@ -454,12 +454,12 @@ EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
 
 // SEH info forward declarations
 
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype) 
+inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
 {
     LIMITED_METHOD_CONTRACT;
 
 #ifndef UNIX_X86_ABI
-    // odd-sized small structures are not 
+    // odd-sized small structures are not
     //  enregistered e.g. struct { char a,b,c; }
     return (sizeofvaluetype > 8) ||
         (sizeofvaluetype & (sizeofvaluetype - 1)); // check that the size is power of two
@@ -521,8 +521,8 @@ struct HijackArgs
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
 // On IA64 ClrFlushInstructionCache calls the Kernel FlushInstructionCache function
-// to flush the instruction cache. 
-// We call ClrFlushInstructionCache whenever we create or modify code in the heap. 
+// to flush the instruction cache.
+// We call ClrFlushInstructionCache whenever we create or modify code in the heap.
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 

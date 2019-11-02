@@ -46,13 +46,13 @@
        Uses one machine word if vector fits in machine word (minus a bit)
 
        Some caveates:
-           You should use mutator operators  &=, |= ... instead of the 
+           You should use mutator operators  &=, |= ... instead of the
            non-mutators whenever possible to avoid creating a temps
 
            Specifically did NOT supply automatic coersions to
            and from short types so that the programmer is aware of
            when code was being injected on his behalf.  The upshot of this
-           is that you have to use the  BitVector() toUnsigned() to convert 
+           is that you have to use the  BitVector() toUnsigned() to convert
 */
 
 /***************************************************************************/
@@ -60,7 +60,7 @@
 class BitVector {
     // Set this to be unsigned char to do testing, should be UINT_PTR for real life
 
-    typedef UINT_PTR ChunkType;  // The size of integer type that the machine can operate on directly  
+    typedef UINT_PTR ChunkType;  // The size of integer type that the machine can operate on directly
 //  typedef BYTE ChunkType;      // Use for testing
 
     // Maximum number of bits in our bitvector
@@ -76,7 +76,7 @@ class BitVector {
 
 public:
     BitVector()
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
@@ -111,7 +111,7 @@ public:
         {
             doBigInit(arg);
         }
-        else 
+        else
         {
             m_val = ChunkType(arg << 1);
         }
@@ -149,7 +149,7 @@ public:
             m_val = arg.m_val;
         }
     }
-    
+
     void operator <<=(unsigned shift)
     {
         WRAPPER_NO_CONTRACT;
@@ -162,7 +162,7 @@ public:
         {
             doBigLeftShiftAssign(shift);
         }
-        else 
+        else
         {
             m_val <<= shift;
         }
@@ -183,7 +183,7 @@ public:
             m_val &= ~IS_BIG;  // clear the isBig bit if it got set
         }
     }
-    
+
     void operator |=(const BitVector& arg)
     {
         WRAPPER_NO_CONTRACT;
@@ -252,7 +252,7 @@ public:
             return ((arg1.m_val & arg2.m_val) != 0);
         }
     }
-    
+
     BOOL operator ==(const BitVector& arg) const
     {
         WRAPPER_NO_CONTRACT;
@@ -277,7 +277,7 @@ public:
     }
 
     friend ChunkType toUnsigned(const BitVector& arg)
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
 
@@ -285,7 +285,7 @@ public:
         {
             return arg.m_vals.m_chunks[0];   // Note truncation
         }
-        else 
+        else
         {
             return arg.smallBits();
         }
@@ -318,11 +318,11 @@ private:
 
     static const ChunkType MaxVal = ((ChunkType)1 << SMALL_BITS) - 1;    // Maximum value that can be stored in m_val
 
-    // This is the structure that we use when the bit vector overflows.  
-    // It is a simple vector.  
+    // This is the structure that we use when the bit vector overflows.
+    // It is a simple vector.
     struct Vals {
         unsigned m_encodedLength;         // An encoding of the current length of the 'm_chunks' array
-        ChunkType m_chunks[VALS_COUNT]; 
+        ChunkType m_chunks[VALS_COUNT];
 
         BOOL isBig() const
         {
@@ -336,7 +336,7 @@ private:
         {
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
-            
+
             if (isBig())
             {
                 unsigned length = (m_encodedLength >> 1);

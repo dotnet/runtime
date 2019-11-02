@@ -3,13 +3,13 @@
 ; See the LICENSE file in the project root for more information.
 
 ; ==++==
-; 
+;
 
-; 
+;
 ; ==--==
 ;
 ;  *** NOTE:  If you make changes to this file, propagate the changes to
-;             gmsasm.s in this directory                            
+;             gmsasm.s in this directory
 
 	.586
 	.model	flat
@@ -23,7 +23,7 @@ include asmconstants.inc
 @LazyMachStateCaptureState@4 proc public
         mov [ecx+MachState__pRetAddr], 0 ; marks that this is not yet valid
         mov [ecx+MachState__edi], edi    ; remember register values
-	mov [ecx+MachState__esi], esi 
+	mov [ecx+MachState__esi], esi
         mov [ecx+MachState__ebx], ebx
 	mov [ecx+LazyMachState_captureEbp], ebp
 	mov [ecx+LazyMachState_captureEsp], esp

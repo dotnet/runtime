@@ -67,7 +67,7 @@ struct ResourceNode
             ResHdr.dwTypeID = (0xFFFF |((tid & 0xFFFF)<<16));
             wzType = NULL;
         }
-        
+
         if(nid & 0x80000000)
         {
             ResHdr.dwNameID = 0;
@@ -82,7 +82,7 @@ struct ResourceNode
             ResHdr.dwNameID = (0xFFFF |((nid & 0xFFFF)<<16));
             wzName = NULL;
         }
-        
+
         //ResHdr.dwTypeID = (tid & 0x80000000) ? tid : (0xFFFF |((tid & 0xFFFF)<<16));
         //ResHdr.dwNameID = (nid & 0x80000000) ? nid : (0xFFFF |((nid & 0xFFFF)<<16));
         ResHdr.wLangID = (WORD)lid;

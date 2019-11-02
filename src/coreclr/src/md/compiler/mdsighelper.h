@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // MDSigHelp.h
 //
 // contains utility code for signature parsing and comparisons.

@@ -121,7 +121,7 @@ void ECall::PopulateManagedStringConstructors()
     {
         MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
-    
+
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
 
         ECall::DynamicallyAssignFCallImpl(pDest, ECallCtor_First + i);
@@ -133,7 +133,7 @@ void ECall::PopulateManagedStringConstructors()
     {
         MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__UTF8STRING__CTORF_FIRST + i));
         _ASSERTE(pMD != NULL);
-    
+
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
 
         ECall::DynamicallyAssignFCallImpl(pDest, ECallUtf8String_Ctor_First + i);
@@ -340,11 +340,11 @@ static ECFunc* FindECFuncForMethod(MethodDesc* pMD)
     if (id == 0)
     {
         id = ECall::GetIDForMethod(pMD);
-        
+
         CONSISTENCY_CHECK_MSGF(0 != id,
                     ("No method entry found for %s::%s.\n",
                     pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-            
+
         // Cache the id
         ((FCallMethodDesc *)pMD)->SetECallID(id);
     }
@@ -389,7 +389,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     }
 
     // COM imported classes have special constructors
-    if (pMT->IsComObjectType() 
+    if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
         && pMT != g_pBaseCOMObject && pMT != g_pBaseRuntimeClass
 #endif // FEATURE_COMINTEROP
@@ -631,25 +631,25 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
     ECFunc * cur = FindECFuncForID(id);
 
 #ifdef _DEBUG
-    CONSISTENCY_CHECK_MSGF(cur != NULL, 
+    CONSISTENCY_CHECK_MSGF(cur != NULL,
         ("%s::%s is not registered in ecall.cpp",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-    CONSISTENCY_CHECK_MSGF(cur->IsQCall(), 
+    CONSISTENCY_CHECK_MSGF(cur->IsQCall(),
         ("%s::%s is not registered using QCFuncElement macro in ecall.cpp",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
     DWORD dwAttrs = pMD->GetAttrs();
     BOOL fPublicOrProtected = IsMdPublic(dwAttrs) || IsMdFamily(dwAttrs) || IsMdFamORAssem(dwAttrs);
 
-    // SuppressUnmanagedCodeSecurityAttribute on QCalls suppresses a full demand, but there's still a link demand 
-    // for unmanaged code permission. All QCalls should be private or internal and wrapped in a managed method 
+    // SuppressUnmanagedCodeSecurityAttribute on QCalls suppresses a full demand, but there's still a link demand
+    // for unmanaged code permission. All QCalls should be private or internal and wrapped in a managed method
     // to suppress this link demand.
     CONSISTENCY_CHECK_MSGF(!fPublicOrProtected,
         ("%s::%s has to be private or internal.",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
- 
+
     return cur->m_pImplementation;
 }
 
@@ -779,7 +779,7 @@ void FCallAssert(void*& cache, void* target)
         for (ECFunc* ptr = (ECFunc*)c_rgECClasses[i].m_pECFunc; !ptr->IsEndOfArray(); ptr = ptr->NextInArray())
         {
             if (ptr->m_pImplementation  == target)
-            {                
+            {
                 cache = target;
                 return;
             }
@@ -827,9 +827,9 @@ void ECall::EnumFCallMethods()
     gLowestFCall.EnumMem();
     gHighestFCall.EnumMem();
     gFCallMethods.EnumMem();
-    
+
     // save all ECFunc for stackwalks.
-    // TODO: we could be smarter and only save buckets referenced during stackwalks. But we 
+    // TODO: we could be smarter and only save buckets referenced during stackwalks. But we
     // need that entire bucket so that traversals such as MethodDesc* ECall::MapTargetBackToMethod will work.
     for (UINT i=0;i<FCALL_HASH_SIZE;i++)
     {

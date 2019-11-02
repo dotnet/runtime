@@ -43,7 +43,7 @@ namespace BINDER_SPACE
         {
             SAFE_RELEASE(m_pIUnknownAssembly);
         }
-        
+
         BOOL GetIsInGAC()
         {
             return ((m_dwResultFlags & RESULT_FLAG_IS_IN_GAC) != 0);

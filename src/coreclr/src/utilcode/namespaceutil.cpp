@@ -9,7 +9,7 @@
 // Helpers for converting namespace separators.
 //
 //*****************************************************************************
-#include "stdafx.h" 
+#include "stdafx.h"
 #include "corhdr.h"
 #include "corhlpr.h"
 #include "sstring.h"
@@ -212,19 +212,19 @@ int ns::SplitPath(                      // true ok, false trunction.
     int brtn = true;
     if (szNameSpace && cchNameSpace)
     {
-        _ASSERTE(cchNameSpace > 1);    
+        _ASSERTE(cchNameSpace > 1);
         iCopyMax = cchNameSpace - 1;
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szNameSpace, cchNameSpace, szPath, iCopyMax);
         szNameSpace[iCopyMax] = 0;
-        
+
         if (iLen >= (size_t)cchNameSpace)
             brtn = false;
     }
 
     if (szName && cchName)
     {
-        _ASSERTE(cchName > 1);    
+        _ASSERTE(cchName > 1);
         iCopyMax = cchName - 1;
         if (ptr)
             ++ptr;
@@ -234,7 +234,7 @@ int ns::SplitPath(                      // true ok, false trunction.
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;
-    
+
         if (iLen >= (size_t)cchName)
             brtn = false;
     }
@@ -259,19 +259,19 @@ int ns::SplitPath(                      // true ok, false trunction.
     int brtn = true;
     if (szNameSpace && cchNameSpace)
     {
-        _ASSERTE(cchNameSpace > 1);    
+        _ASSERTE(cchNameSpace > 1);
         iCopyMax = cchNameSpace-1;
         iCopyMax = min(iCopyMax, iLen);
         strncpy_s(szNameSpace, cchNameSpace, szPath, iCopyMax);
         szNameSpace[iCopyMax] = 0;
-        
+
         if (iLen >= (size_t)cchNameSpace)
             brtn = false;
     }
 
     if (szName && cchName)
     {
-        _ASSERTE(cchName > 1);    
+        _ASSERTE(cchName > 1);
         iCopyMax = cchName-1;
         if (ptr)
             ++ptr;
@@ -281,7 +281,7 @@ int ns::SplitPath(                      // true ok, false trunction.
         iCopyMax = min(iCopyMax, iLen);
         strncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;
-    
+
         if (iLen >= (size_t)cchName)
             brtn = false;
     }
@@ -310,7 +310,7 @@ int ns::MakePath(                       // true ok, false truncation.
         *szOut = 0;
     else
         return false;
-        
+
     if (szNameSpace && *szNameSpace != W('\0'))
     {
         if (wcsncpy_s(szOut, cchChars, szNameSpace, _TRUNCATE) == STRUNCATE)
@@ -325,13 +325,13 @@ int ns::MakePath(                       // true ok, false truncation.
             }
         }
     }
-    
+
     if (szName && *szName)
     {
         if (wcsncat_s(szOut, cchChars, szName, _TRUNCATE) == STRUNCATE)
             return false;
     }
-    
+
     return true;
 }   // int ns::MakePath()
 
@@ -352,7 +352,7 @@ int ns::MakePath(                       // true ok, false truncation.
         *szOut = 0;
     else
         return false;
-        
+
     if (szNameSpace && *szNameSpace != W('\0'))
     {
         if (strncpy_s(szOut, cchChars, szNameSpace, _TRUNCATE) == STRUNCATE)
@@ -367,13 +367,13 @@ int ns::MakePath(                       // true ok, false truncation.
             }
         }
     }
-    
+
     if (szName && *szName)
     {
         if (strncat_s(szOut, cchChars, szName, _TRUNCATE) == STRUNCATE)
             return false;
     }
-    
+
     return true;
 
 }   // int ns::MakePath()
@@ -395,7 +395,7 @@ int ns::MakePath(                       // true ok, false truncation.
         *szOut = 0;
     else
         return false;
-    
+
     if (szNamespace != NULL && *szNamespace != '\0')
     {
         if (cchChars < 2)
@@ -410,14 +410,14 @@ int ns::MakePath(                       // true ok, false truncation.
 
         // buffer access is bounded: WszMultiByteToWideChar returns 0 if access doesn't fit in range
 #ifdef _PREFAST_
-        #pragma warning( suppress: 26015 ) 
-#endif  
+        #pragma warning( suppress: 26015 )
+#endif
         szOut[count-1] = NAMESPACE_SEPARATOR_WCHAR;
         szOut += count;
         cchChars -= count;
     }
 
-    if (((cchChars == 0) && (szName != NULL) && (*szName != '\0')) || 
+    if (((cchChars == 0) && (szName != NULL) && (*szName != '\0')) ||
         (WszMultiByteToWideChar(CP_UTF8, 0, szName, -1, szOut, cchChars) == 0))
         return false; // supply a bigger buffer!
     return true;
@@ -531,7 +531,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
     int iCopyMax = 0;
     _ASSERTE(pBuffer);
     *pBuffer = NULL;
-    
+
     if (szTypeName && *szTypeName != W('\0'))
     {
         _ASSERTE(dwTypeName > 0);
@@ -539,18 +539,18 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
         wcsncpy_s(pBuffer, dwBuffer, szTypeName, iCopyMax);
         dwBuffer -= iCopyMax;
     }
-    
+
     if (szAssemblyName && *szAssemblyName != W('\0'))
     {
-        
-        if(dwBuffer < ASSEMBLY_SEPARATOR_LEN) 
+
+        if(dwBuffer < ASSEMBLY_SEPARATOR_LEN)
             return false;
 
         for(DWORD i = 0; i < ASSEMBLY_SEPARATOR_LEN; i++)
             pBuffer[iCopyMax+i] = ASSEMBLY_SEPARATOR_WSTR[i];
 
         dwBuffer -= ASSEMBLY_SEPARATOR_LEN;
-        if(dwBuffer == 0) 
+        if(dwBuffer == 0)
             return false;
 
         int iCur = iCopyMax + ASSEMBLY_SEPARATOR_LEN;
@@ -558,7 +558,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
         iCopyMax = min(dwBuffer-1, dwAssemblyName);
         wcsncpy_s(pBuffer + iCur, dwBuffer, szAssemblyName, iCopyMax);
         pBuffer[iCur + iCopyMax] = W('\0');
-        
+
         if (iCopyMax < dwAssemblyName)
             return false;
     }
@@ -571,7 +571,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
         else
             pBuffer[iCopyMax] = W('\0');
     }
-    
+
     return true;
 }   // int ns::MakePath()
 
@@ -600,7 +600,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
     ret = ns::MakeAssemblyQualifiedName(szOut, iLen, szTypeName, iTypeName, szAssemblyName, iAssemblyName);
     _ASSERTE(ret);
     return true;
-}   
+}
 
 int ns::MakeNestedTypeName(             // true ok, false out of memory
     CQuickBytes &qb,                    // Where to put results.
@@ -637,28 +637,28 @@ int ns::MakeNestedTypeName(             // true ok, false truncation.
     int iCopyMax = 0, iLen;
     int brtn = true;
     *szOut = 0;
-    
+
     iLen = (int)strlen(szEnclosingName);
     iCopyMax = min(cchChars-1, iLen);
     strncpy_s(szOut, cchChars, szEnclosingName, iCopyMax);
-    
+
     if (iLen >= cchChars)
         brtn =  false;
 
     szOut[iCopyMax] = NESTED_SEPARATOR_CHAR;
     int iCur = iCopyMax+1; // iCopyMax characters + nested_separator_char
     cchChars -= iCur;
-    if(cchChars == 0) 
+    if(cchChars == 0)
         return false;
 
     iLen = (int)strlen(szNestedName);
     iCopyMax = min(cchChars-1, iLen);
     strncpy_s(&szOut[iCur], cchChars, szNestedName, iCopyMax);
     szOut[iCur + iCopyMax] = 0;
-    
+
     if (iLen >= cchChars)
         brtn = false;
-    
+
     return brtn;
 }   // int ns::MakeNestedTypeName()
 

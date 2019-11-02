@@ -16,7 +16,7 @@
 // The following change requires a bump to the minor version number:
 //   1. Adding additional DAC variables.
 //
-// Minor version mismatches are tolerated by the DAC, at the risk of a possibly 
+// Minor version mismatches are tolerated by the DAC, at the risk of a possibly
 // degraded debugging experience.
 // Major version mismatches are not tolerated by the DAC and will be rejected upon load.
 

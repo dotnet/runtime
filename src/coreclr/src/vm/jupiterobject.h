@@ -11,7 +11,7 @@
 **
 **
 ** Purpose: Defines headers used in RCW walk
-** 
+**
 ==============================================================*/
 
 #ifndef _H_JUPITER_OBJECT_

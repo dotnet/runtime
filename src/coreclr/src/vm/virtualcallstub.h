@@ -12,7 +12,7 @@
 //
 // ============================================================================
 
-#ifndef _VIRTUAL_CALL_STUB_H 
+#ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 
 #ifndef CROSSGEN_COMPILE
@@ -45,9 +45,9 @@ struct VTableCallHolder;
 extern "C" void InContextTPQuickDispatchAsmStub();
 
 #ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock, 
+extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
                                                  TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex, 
+                                                 DWORD sectionIndex,
                                                  Module * pModule);
 #endif
 
@@ -56,7 +56,7 @@ extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            size_t token
 #ifndef _TARGET_X86_
                                            , UINT_PTR flags
-#endif                               
+#endif
                                            );
 
 
@@ -81,7 +81,7 @@ struct ResolveCacheElem
     ResolveCacheElem *Next()
     { LIMITED_METHOD_CONTRACT; return VolatileLoad(&pNext); }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     UINT16 debug_hash;
     UINT16 debug_index;
 #endif // _DEBUG
@@ -133,7 +133,7 @@ private:
 
 public:
 
-#if defined(_TARGET_X86_) 
+#if defined(_TARGET_X86_)
     StubCallSite(TADDR siteAddrForRegisterIndirect, PCODE returnAddr);
 
     PCODE           GetCallerAddress();
@@ -165,7 +165,7 @@ extern "C" void StubDispatchFixupStub();              // for lazy fixup of ngen 
 extern "C" void ResolveWorkerAsmStub();               // resolve a token and transfer control to that method
 extern "C" void ResolveWorkerChainLookupAsmStub();    // for chaining of entries in the cache
 
-#ifdef _TARGET_X86_ 
+#ifdef _TARGET_X86_
 extern "C" void BackPatchWorkerAsmStub();             // backpatch a call site to point to a different stub
 #ifdef FEATURE_PAL
 extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
@@ -176,14 +176,14 @@ extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForReg
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 
 // VirtualCallStubManager is the heart of the stub dispatch logic. See the book of the runtime entry
-// 
+//
 // file:../../doc/BookOfTheRuntime/ClassLoader/VirtualStubDispatchDesign.doc
-// 
+//
 // The basic idea is that a call to an interface (it could also be used for virtual calls in general, but we
 // do not do this), is simply the code
-// 
+//
 //     call [DispatchCell]
-// 
+//
 // Where we make sure 'DispatchCell' points at stubs that will do the right thing. DispatchCell is writable
 // so we can udpate the code over time. There are three basic types of stubs that the dispatch cell can point
 // to.
@@ -211,13 +211,13 @@ typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 //     * After code:STUB_MISS_COUNT_VALUE misses, we update the call site's cell to point directly at the
 //         resolve stub (thus avoiding the overhead of the quick check that always seems to be failing and
 //         the miss count update).
-//         
+//
 // QUESTION: What is the lifetimes of the various stubs and hash table entries?
-// 
+//
 // QUESTION: There does not seem to be any logic that will change a call site's cell once it becomes a
 // Resolve stub. Thus once a particular call site becomes a Resolve stub we live with the Resolve stub's
 // (in)efficiency forever.
-// 
+//
 // see code:#StubDispatchNotes for more
 class VirtualCallStubManager : public StubManager
 {
@@ -230,7 +230,7 @@ class VirtualCallStubManager : public StubManager
 public:
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "VirtualCallStubManager"; }
-#endif    
+#endif
 
     // The reason for our existence, return a callstub for type id and slot number
     // where type id = 0 for the class contract (i.e. a virtual call), and type id > 0 for an
@@ -271,7 +271,7 @@ public:
     static void ReclaimAll();
     void Reclaim();
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     VirtualCallStubManager()
         : StubManager(),
           lookup_rangeList(),
@@ -310,13 +310,13 @@ public:
 #endif // !DACCESS_COMPILE
 
 
-    enum StubKind { 
-        SK_UNKNOWN, 
+    enum StubKind {
+        SK_UNKNOWN,
         SK_LOOKUP,      // Lookup Stubs are SLOW stubs that simply call into the runtime to do all work.
         SK_DISPATCH,    // Dispatch Stubs have a fast check for one type otherwise jumps to runtime.  Works for monomorphic sites
         SK_RESOLVE,     // Resolve Stubs do a hash lookup before fallling back to the runtime.  Works for polymorphic sites.
         SK_VTABLECALL,  // Stub that jumps to a target method using vtable-based indirections. Works for non-interface calls.
-        SK_BREAKPOINT 
+        SK_BREAKPOINT
     };
 
     // peek at the assembly code and predict which kind of a stub we have
@@ -455,28 +455,28 @@ public:
     LockedRangeList vtable_rangeList;
 
     // Get dac-ized pointers to rangelist.
-    RangeList* GetLookupRangeList() 
+    RangeList* GetLookupRangeList()
     {
         SUPPORTS_DAC;
 
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, lookup_rangeList);
         return PTR_RangeList(addr);
     }
-    RangeList* GetResolveRangeList() 
+    RangeList* GetResolveRangeList()
     {
         SUPPORTS_DAC;
 
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, resolve_rangeList);
         return PTR_RangeList(addr);
     }
-    RangeList* GetDispatchRangeList() 
+    RangeList* GetDispatchRangeList()
     {
         SUPPORTS_DAC;
 
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, dispatch_rangeList);
         return PTR_RangeList(addr);
     }
-    RangeList* GetCacheEntryRangeList() 
+    RangeList* GetCacheEntryRangeList()
     {
         SUPPORTS_DAC;
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, cache_entry_rangeList);
@@ -576,7 +576,7 @@ private:
     // Given a dispatch token, return true if the token represents a slot on the target.
     static BOOL IsClassToken(DispatchToken token);
 
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     static ResolveCacheElem* __fastcall PromoteChainEntry(ResolveCacheElem *pElem);
 #endif
 
@@ -592,7 +592,7 @@ private:
                                    size_t token
 #ifndef _TARGET_X86_
                                    , UINT_PTR flags
-#endif                            
+#endif
                                    );
 
 #if defined(_TARGET_X86_) && defined(FEATURE_PAL)
@@ -654,14 +654,14 @@ private:
     CrstExplicitInit m_indCellLock;
 
     // List of free indirection cells. The cells were directly allocated from the loader heap
-    // (code:VirtualCallStubManager::GenerateStubIndirection) 
+    // (code:VirtualCallStubManager::GenerateStubIndirection)
     BYTE * m_FreeIndCellList;
 
     // List of recycled indirection cells. The cells were recycled from finalized dynamic methods
     // (code:LCGMethodResolver::RecycleIndCells).
     BYTE * m_RecycledIndCellList;
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     // This methods returns the a free cell from m_FreeIndCellList. It returns NULL if the list is empty.
     BYTE * GetOneFreeIndCell()
     {
@@ -686,7 +686,7 @@ private:
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(ppList));
-            PRECONDITION(m_indCellLock.OwnedByCurrentThread());        
+            PRECONDITION(m_indCellLock.OwnedByCurrentThread());
         } CONTRACT_END;
 
         BYTE * temp = *ppList;
@@ -718,7 +718,7 @@ private:
             PRECONDITION(CheckPointer(ppList));
             PRECONDITION(CheckPointer(head));
             PRECONDITION(CheckPointer(tail));
-            PRECONDITION(m_indCellLock.OwnedByCurrentThread());        
+            PRECONDITION(m_indCellLock.OwnedByCurrentThread());
         } CONTRACTL_END;
 
         BYTE * temphead = *ppList;
@@ -819,7 +819,7 @@ public:
 
     void LogStats();
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
 protected:
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual LPCWSTR GetStubManagerName(PCODE addr)
@@ -882,7 +882,7 @@ class VirtualCallStubManagerManager : public StubManager
     // Ctor. This is only used by StaticInit.
     VirtualCallStubManagerManager();
 #endif
-    
+
     // A cache element to quickly check the last matched manager.
     Volatile<VirtualCallStubManager*> m_pCacheElem;
 
@@ -997,7 +997,7 @@ sync point, we know that nobody is inside our stuctures and we can safely rearra
 ********************************************************************************************************/
 
 //initial and increment value for fail stub counters
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
 extern UINT32 STUB_MISS_COUNT_VALUE;
 extern UINT32 STUB_COLLIDE_WRITE_PCT;
 extern UINT32 STUB_COLLIDE_MONO_PCT;
@@ -1064,7 +1064,7 @@ public:
 
 #include <virtualcallstubcpu.hpp>
 
-#if USES_LOOKUP_STUBS 
+#if USES_LOOKUP_STUBS
 /**********************************************************************************************
 LookupEntry wraps LookupStubs and provide the concrete implementation of the abstract class Entry.
 Virtual and interface call sites when they are first jitted point to LookupStubs.  The hash table
@@ -1309,7 +1309,7 @@ public:
     enum InsertKind {IK_NONE, IK_DISPATCH, IK_RESOLVE, IK_SHARED, IK_EXTERNAL};
 
     BOOL Insert(ResolveCacheElem* elem, InsertKind insertKind);
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     void PromoteChainEntry(ResolveCacheElem* elem);
 #endif
 
@@ -1340,10 +1340,10 @@ public:
     inline void SetCacheEntry(size_t idx, ResolveCacheElem *elem)
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
           cacheData[idx].numWrites++;
 #endif
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
         CONSISTENCY_CHECK(m_writeLock.OwnedByCurrentThread());
 #endif
           cache[idx] = elem;
@@ -1352,7 +1352,7 @@ public:
     inline void ClearCacheEntry(size_t idx)
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
           cacheData[idx].numClears++;
 #endif
           cache[idx] = empty;
@@ -1401,7 +1401,7 @@ public:
     };
 
 private:
-#ifdef CHAIN_LOOKUP 
+#ifdef CHAIN_LOOKUP
     Crst m_writeLock;
 #endif
 
@@ -1423,7 +1423,7 @@ private:
 
     ResolveCacheElem* cache[CALL_STUB_CACHE_SIZE]; //must be first
     ResolveCacheElem* empty;                    //empty entry, initialized to fail all comparisons
-#ifdef STUB_LOGGING 
+#ifdef STUB_LOGGING
 public:
     struct CacheEntryData {
         UINT32 numWrites;
@@ -1525,7 +1525,7 @@ actually in the FastTable.  Note that the count may be inaccurate and there may 
 attention must be paid to eliminate the need for interlocked or serialized or locked operations in face
 of concurrency.
 */
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4200)     // disable zero-sized array warning
 #endif // _MSC_VER
@@ -1598,7 +1598,7 @@ private:
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
     size_t contents[0];
 };
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 

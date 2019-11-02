@@ -216,7 +216,7 @@ jump stubs, as described later.
 
 ### Failure mitigation
 
-There are several possible alternative mitigations for JIT failure to 
+There are several possible alternative mitigations for JIT failure to
 allocate jump stubs.
 1. When we get into "rel32 overflow" mode, the JIT could always generate
 large calls, and never generate rel32 offsets. This is obviously

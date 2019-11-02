@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModelColumnDefs.h -- Table definitions for MetaData.
-// 
+//
 
 //
 //*****************************************************************************
 
-#if METAMODEL_MAJOR_VER != 2 
+#if METAMODEL_MAJOR_VER != 2
 #if METAMODEL_MAJOR_VER != 1
 #error "METAMODEL_MAJOR_VER other than 1 or 2 is not implemented"
 #endif
@@ -229,10 +229,10 @@
     //-------------------------------------------------------------------------
     //ModuleRef
     SCHEMA_TABLE_START(ModuleRef)
-    SCHEMA_ITEM_NOFIXED() 
+    SCHEMA_ITEM_NOFIXED()
     SCHEMA_ITEM_STRING(ModuleRef, Name)
     SCHEMA_TABLE_END(ModuleRef)
-    
+
     //-------------------------------------------------------------------------
     // TypeSpec
     SCHEMA_TABLE_START(TypeSpec)
@@ -397,5 +397,5 @@
     SCHEMA_ITEM_RID(GenericParamConstraint, Owner, GenericParam)
     SCHEMA_ITEM_CDTKN(GenericParamConstraint, Constraint, TypeDefOrRef)
     SCHEMA_TABLE_END(GenericParamConstraint)
-    
+
 // eof ------------------------------------------------------------------------

@@ -131,7 +131,7 @@ for the instruction is 16 bytes.
 stp fp,lr,[sp,-#framesz]!       // pre-indexed, save <fp,lr> at bottom of frame
 mov fp,sp                       // fp points to bottom of stack
 stp r19,r20,[sp,#framesz - 96]  // save INT pair
-stp d8,d9,[sp,#framesz - 80]    // save FP pair 
+stp d8,d9,[sp,#framesz - 80]    // save FP pair
 stp r0,r1,[sp,#framesz - 64]    // home params (optional)
 stp r2,r3,[sp,#framesz - 48]
 stp r4,r5,[sp,#framesz - 32]
@@ -171,10 +171,10 @@ mov fp,sp                       // fp points to bottom of stack
 
 ```
 sub sp,sp,#framesz
-stp fp,lr,[sp,#outsz]           // pre-indexed, save <fp,lr> 
+stp fp,lr,[sp,#outsz]           // pre-indexed, save <fp,lr>
 add fp,sp,#outsz                // fp points to bottom of local area
 stp r19,r20,[sp,#framez - 96]   // save INT pair
-stp d8,d9,[sp,#framesz - 80]    // save FP pair 
+stp d8,d9,[sp,#framesz - 80]    // save FP pair
 stp r0,r1,[sp,#framesz - 64]    // home params (optional)
 stp r2,r3,[sp,#framesz - 48]
 stp r4,r5,[sp,#framesz - 32]
@@ -201,7 +201,7 @@ Different from #2, as `#framesz` is too big. Might be useful for `#framesz >
 stp fp,lr,[sp,-(#localsz + 96)]!    // pre-indexed, save <fp,lr> above outgoing argument space
 mov fp,sp                           // fp points to bottom of stack
 stp r19,r20,[sp,#localsz + 80]      // save INT pair
-stp d8,d9,[sp,#localsz + 64]        // save FP pair 
+stp d8,d9,[sp,#localsz + 64]        // save FP pair
 stp r0,r1,[sp,#localsz + 48]        // home params (optional)
 stp r2,r3,[sp,#localsz + 32]
 stp r4,r5,[sp,#localsz + 16]
@@ -215,14 +215,14 @@ via SP or FP.
 We will not use this.
 
 ## 4. chained, `#localsz <= 512`
- 
+
 ```
 stp r19,r20,[sp,#-96]!      // pre-indexed, save incoming 1st FP/INT pair
 stp d8,d9,[sp,#16]          // save incoming floating-point regs (optional)
 stp r0,r1,[sp,#32]          // home params (optional)
 stp r2,r3,[sp,#48]
 stp r4,r5,[sp,#64]
-stp r6,r7,[sp,#80] 
+stp r6,r7,[sp,#80]
 stp fp,lr,[sp,-#localsz]!   // save <fp,lr> at bottom of local area
 mov fp,sp                   // fp points to bottom of local area
 sub sp,sp,#outsz            // if #outsz != 0
@@ -245,8 +245,8 @@ stp d8,d9,[sp,#16]          // save in FP regs (optional)
 stp r0,r1,[sp,#32]          // home params (optional)
 stp r2,r3,[sp,#48]
 stp r4,r5,[sp,#64]
-stp r6,r7,[sp,#80] 
-sub sp,sp,#localsz+#outsz   // allocate remaining frame 
+stp r6,r7,[sp,#80]
+sub sp,sp,#localsz+#outsz   // allocate remaining frame
 stp fp,lr,[sp,#outsz]       // save <fp,lr> at bottom of local area
 add fp,sp,#outsz            // fp points to the bottom of local area
 ```
@@ -261,7 +261,7 @@ need to insert alignment bytes higher in the stack. E.g.:
 
 ```
 str r19,[sp,#-16]!          // pre-indexed, save incoming 1st INT reg
-sub sp,sp,#localsz + #outsz // allocate remaining frame 
+sub sp,sp,#localsz + #outsz // allocate remaining frame
 stp fp,lr,[sp,#outsz]       // save <fp,lr> at bottom of local area
 add fp,sp,#outsz            // fp points to the bottom of local area
 ```
@@ -290,7 +290,7 @@ stp d8,d9,[sp,#16]          // save in FP regs (optional)
 stp r0,r1,[sp,#32]          // home params (optional)
 stp r2,r3,[sp,#48]
 stp r4,r5,[sp,#64]
-stp r6,r7,[sp,#80] 
+stp r6,r7,[sp,#80]
 sub sp,sp,#localsz          // allocate locals space
 stp fp,lr,[sp]              // save <fp,lr> at bottom of local area
 mov fp,sp                   // fp points to the bottom of local area
@@ -305,15 +305,15 @@ We will use this.
 ## 7. chained, any size frame, but no alloca.
 
 ```
-stp fp,lr,[sp,#-112]!       // pre-indexed, save <fp,lr> 
+stp fp,lr,[sp,#-112]!       // pre-indexed, save <fp,lr>
 mov fp,sp                   // fp points to top of local area
 stp r19,r20,[sp,#16]        // save INT pair
-stp d8,d9,[sp,#32]          // save FP pair 
+stp d8,d9,[sp,#32]          // save FP pair
 stp r0,r1,[sp,#48]          // home params (optional)
 stp r2,r3,[sp,#64]
 stp r4,r5,[sp,#80]
 stp r6,r7,[sp,#96]
-sub sp,sp,#framesz - 112    // allocate the remaining local area 
+sub sp,sp,#framesz - 112    // allocate the remaining local area
 ```
 
 9 instructions. There are 2 SP adjustments. The frame pointer FP points to the
@@ -338,7 +338,7 @@ locals.
 
 stp r19,r20,[sp,-80]!       // pre-indexed, save in 1st FP/INT reg-pair
 stp r21,r22,[sp,16]         // ...
-str lr,[sp, 32]             // save lr  
+str lr,[sp, 32]             // save lr
 stp d8,d9,[sp, 40]          // save FP reg-pair (optional)
 stp d10,d11,[sp,56]         // ...
 sub sp,#framesz - 80        // allocate the remaining local area

@@ -130,12 +130,12 @@ static DWORD Hash(TypeHandle declaringType, mdMethodDef token, Instantiation ins
     return dwHash;
 }
 
-MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType, 
-                                                mdMethodDef token, 
-                                                BOOL unboxingStub, 
+MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
+                                                mdMethodDef token,
+                                                BOOL unboxingStub,
                                                 Instantiation inst,
                                                 BOOL getSharedNotStub)
-{ 
+{
     CONTRACTL
     {
         NOTHROW;
@@ -149,7 +149,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
         // because the pMD that we search through may not be restored
         // and ComputePreferredZapModule will assert on finding an
         // encode fixup pointer
-        // 
+        //
         IBCLoggingDisabler disableIbcLogging;
 
     MethodDesc *pMDResult = NULL;
@@ -164,7 +164,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
     {
 #ifdef FEATURE_PREJIT
         // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-        ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare); 
+        ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 #endif
 
         MethodDesc *pMD = pSearch->GetMethod();
@@ -184,7 +184,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
             continue;
 
 #ifdef FEATURE_PREJIT
-        // Note pMD->GetMethodTable() might not be restored at this point. 
+        // Note pMD->GetMethodTable() might not be restored at this point.
 
         RelativeFixupPointer<PTR_MethodTable> * ppMT = pMD->GetMethodTablePtr();
         TADDR pMT = ppMT->GetValueMaybeTagged((TADDR)ppMT);
@@ -196,7 +196,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
         {
             continue;  // Next iteration of the for loop
         }
-          
+
         if (!inst.IsEmpty())
         {
             Instantiation candidateInst = pMD->GetMethodInstantiation();
@@ -209,10 +209,10 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
 #ifdef FEATURE_PREJIT
-                // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation 
+                // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation
                 // asserts on encoded fixups.
                 TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
-                    
+
                 if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
 #else
                 if (candidateInst[i] != inst[i])
@@ -281,9 +281,9 @@ void InstMethodHashTable::Iterator::Init()
 
 InstMethodHashTable::Iterator::Iterator()
 {
-    WRAPPER_NO_CONTRACT; 
+    WRAPPER_NO_CONTRACT;
     m_pTable = NULL;
-    Init(); 
+    Init();
 }
 
 InstMethodHashTable::Iterator::Iterator(InstMethodHashTable * pTable)
@@ -336,12 +336,12 @@ void InstMethodHashTable::InsertMethodDesc(MethodDesc *pMD)
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsUnsealed());          // If we are sealed then we should not be adding to this hashtable
         PRECONDITION(CheckPointer(pMD));
-        
+
         // Generic method definitions (e.g. D.m<U> or C<int>.m<U>) belong in method tables, not here
         PRECONDITION(!pMD->IsGenericMethodDefinition());
     }
     CONTRACTL_END
- 
+
     InstMethodHashEntry_t * pNewEntry = (InstMethodHashEntry_t*)BaseAllocateEntry(NULL);
 
     DWORD dwKeyFlags = 0;
@@ -434,7 +434,7 @@ void
 InstMethodHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
-    
+
     BaseEnumMemoryRegions(flags);
 }
 

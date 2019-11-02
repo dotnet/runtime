@@ -36,7 +36,7 @@ SigFormat::SigFormat(MethodDesc* pMeth, TypeHandle owner, BOOL fIgnoreMethodName
     }
     CONTRACTL_END
 
-    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can succesfully format 
+    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can succesfully format
     // non-typical generic method definitions.
     MetaSig sig(pMeth, pMeth->GetExactClassInstantiation(owner), pMeth->LoadMethodInstantiation());
 
@@ -316,7 +316,7 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
         {
             DWORD callConv;
             IfFailThrow(sig.GetData(&callConv));
-        
+
             ULONG cArgs;
             IfFailThrow(sig.GetData(&cArgs));
 
@@ -568,7 +568,7 @@ void SigFormat::AddType(TypeHandle th)
             th.GetName(name);
 
             AddString(name.GetANSI(scratch));
-            
+
             break;
         }
 

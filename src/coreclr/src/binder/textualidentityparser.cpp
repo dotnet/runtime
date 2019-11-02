@@ -89,10 +89,10 @@ namespace BINDER_SPACE
                 UINT v;
 
                 v = pSrc[x]>>4;
-                pDst[y++] = (WCHAR)TOHEX(v);  
-                v = pSrc[x] & 0x0f;                 
-                pDst[y++] = (WCHAR)TOHEX(v); 
-            }                                    
+                pDst[y++] = (WCHAR)TOHEX(v);
+                v = pSrc[x] & 0x0f;
+                pDst[y++] = (WCHAR)TOHEX(v);
+            }
         }
 
         inline BOOL EqualsCaseInsensitive(SString &a, LPCWSTR wzB)
@@ -145,7 +145,7 @@ namespace BINDER_SPACE
             LPCWSTR strValue;
             PEKIND enumValue;
         } wszKnownArchitectures[] = { { W("x86"), peI386 },
-                                      { W("IA64"), peIA64 }, 
+                                      { W("IA64"), peIA64 },
                                       { W("AMD64"), peAMD64 },
                                       { W("ARM"), peARM },
                                       { W("MSIL"), peMSIL } };
@@ -183,7 +183,7 @@ namespace BINDER_SPACE
         LPCWSTR ContentTypeToString(AssemblyContentType kContentType)
         {
             _ASSERTE(kContentType != AssemblyContentType_Default);
-            
+
             if (kContentType == AssemblyContentType_WindowsRuntime)
             {
                 return W("WindowsRuntime");
@@ -353,7 +353,7 @@ namespace BINDER_SPACE
             }
         }
         EX_CATCH_HRESULT(hr);
-        
+
     Exit:
         return hr;
     }
@@ -418,7 +418,7 @@ namespace BINDER_SPACE
                         dwCurrentNumber = 0;
                     }
                     dwCurrentNumber = (dwCurrentNumber * 10) + (wcCurrentChar - W('0'));
-                    
+
                     if (dwCurrentNumber > static_cast<DWORD>(iVersionMax))
                     {
                         goto Exit;
@@ -506,7 +506,7 @@ namespace BINDER_SPACE
         m_pAssemblyIdentity->m_simpleName.Set(currentString);
         m_pAssemblyIdentity->m_simpleName.Normalize();
         m_pAssemblyIdentity->SetHave(AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
-            
+
         for (;;)
         {
             SmallStackSString attributeString;

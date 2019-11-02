@@ -40,7 +40,7 @@ void COMException::GetMessage(SString &string)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    
+
     if (m_pErrorInfo != NULL)
     {
         BSTRHolder message(NULL);

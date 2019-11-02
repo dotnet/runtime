@@ -16,8 +16,8 @@
 
 //----------------------------------------------------------------------------
 // RelativePointer is pointer encoded as relative offset. It is used to reduce size of
-// relocation section in NGen images. Conversion from/to RelativePointer needs 
-// address of the pointer ("this") converted to TADDR passed in from outside. 
+// relocation section in NGen images. Conversion from/to RelativePointer needs
+// address of the pointer ("this") converted to TADDR passed in from outside.
 // Converting "this" to TADDR is not possible in the DAC transparently because
 // DAC is based on exact pointers, not ranges.
 // There are several flavors of conversions from/to RelativePointer:
@@ -186,7 +186,7 @@ private:
 
 //----------------------------------------------------------------------------
 // FixupPointer is pointer with optional indirection. It is used to reduce number
-// of private pages in NGen images - cross-module pointers that written to at runtime 
+// of private pages in NGen images - cross-module pointers that written to at runtime
 // are packed together and accessed via indirection.
 //
 // The direct flavor (lowest bit of m_addr is cleared) is user for intra-module pointers
@@ -483,7 +483,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
+    // Returns value of the encoded pointer. Assumes that the pointer is not NULL.
     // Allows the value to be tagged.
     FORCEINLINE TADDR GetValueMaybeTagged(TADDR base) const
     {
@@ -657,7 +657,7 @@ public:
         return m_ptr;
     }
 
-    // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
+    // Returns value of the encoded pointer. Assumes that the pointer is not NULL.
     // Allows the value to be tagged.
     FORCEINLINE TADDR GetValueMaybeTagged(TADDR base) const
     {
@@ -776,7 +776,7 @@ private:
 
 //----------------------------------------------------------------------------
 // RelativePointer32 is pointer encoded as relative 32-bit offset. It is used
-// to reduce both the size of the pointer itself as well as size of relocation 
+// to reduce both the size of the pointer itself as well as size of relocation
 // section for pointers that live exlusively in NGen images.
 template<typename PTR_TYPE>
 class RelativePointer32

@@ -29,7 +29,7 @@ def was_compiled_with_pgo(filename):
     # When running on Python 3, check_output returns a bytes object, which we need to
     # decode to a string object.
     headers = subprocess.check_output(["link", "/dump", "/headers", filename]).decode('utf-8')
-    
+
     match = pgo_pattern.search(headers)
 
     result = False

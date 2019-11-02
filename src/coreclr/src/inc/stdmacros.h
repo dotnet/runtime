@@ -29,14 +29,14 @@
 #define     DEBUG_ARG(x)  , x
 #define     DEBUG_ARG1(x)  x
 #else
-#define     DEBUG_ARG(x) 
+#define     DEBUG_ARG(x)
 #define     DEBUG_ARG1(x)
 #endif
 
 #ifdef DACCESS_COMPILE
 #define     DAC_ARG(x)  , x
 #else
-#define     DAC_ARG(x) 
+#define     DAC_ARG(x)
 #endif
 
 
@@ -73,13 +73,13 @@
 #endif
 
 #ifdef BIT64
-#define BIT64_ARG(x)  , x 
-#define BIT64_ONLY(x) x 
+#define BIT64_ARG(x)  , x
+#define BIT64_ONLY(x) x
 #define NOT_BIT64(x)
 #define NOT_BIT64_ARG(x)
 #else
 #define BIT64_ARG(x)
-#define BIT64_ONLY(x) 
+#define BIT64_ONLY(x)
 #define NOT_BIT64(x)    x
 #define NOT_BIT64_ARG(x)    , x
 #endif // BIT64
@@ -145,7 +145,7 @@
 inline void *GetTopMemoryAddress(void)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     static void *result; // = NULL;
     if( NULL == result )
     {
@@ -158,7 +158,7 @@ inline void *GetTopMemoryAddress(void)
 inline void *GetBotMemoryAddress(void)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     static void *result; // = NULL;
     if( NULL == result )
     {
@@ -179,9 +179,9 @@ inline void *GetBotMemoryAddress(void)
 inline size_t ALIGN_UP( size_t val, size_t alignment )
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
-    _ASSERTE( 0 == (alignment & (alignment - 1)) ); 
+    _ASSERTE( 0 == (alignment & (alignment - 1)) );
     size_t result = (val + (alignment - 1)) & ~(alignment - 1);
     _ASSERTE( result >= val );      // check for overflow
     return result;
@@ -189,20 +189,20 @@ inline size_t ALIGN_UP( size_t val, size_t alignment )
 inline void* ALIGN_UP( void* val, size_t alignment )
 {
     WRAPPER_NO_CONTRACT;
-    
+
     return (void*) ALIGN_UP( (size_t)val, alignment );
 }
 inline uint8_t* ALIGN_UP( uint8_t* val, size_t alignment )
 {
     WRAPPER_NO_CONTRACT;
-    
+
     return (uint8_t*) ALIGN_UP( (size_t)val, alignment );
 }
 
 inline size_t ALIGN_DOWN( size_t val, size_t alignment )
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
     _ASSERTE( 0 == (alignment & (alignment - 1)) );
     size_t result = val & ~(alignment - 1);
@@ -223,9 +223,9 @@ inline BOOL IS_ALIGNED( size_t val, size_t alignment )
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    
+
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
-    _ASSERTE( 0 == (alignment & (alignment - 1)) ); 
+    _ASSERTE( 0 == (alignment & (alignment - 1)) );
     return 0 == (val & (alignment - 1));
 }
 inline BOOL IS_ALIGNED( const void* val, size_t alignment )
@@ -235,7 +235,7 @@ inline BOOL IS_ALIGNED( const void* val, size_t alignment )
 }
 
 // Rounds a ULONG up to the nearest power of two number.
-inline ULONG RoundUpToPower2(ULONG x) 
+inline ULONG RoundUpToPower2(ULONG x)
 {
     if (x == 0) return 1;
 
@@ -284,13 +284,13 @@ inline ULONG RoundUpToPower2(ULONG x)
         (((pMT) == NULL)  ? NULL : (pMT)->GetClass()->GetDebugClassName())
 
 #define DBG_CLASS_NAME_MT(pMT)         \
-        (DBG_GET_CLASS_NAME(pMT) == NULL) ? "<null-class>" : DBG_GET_CLASS_NAME(pMT) 
+        (DBG_GET_CLASS_NAME(pMT) == NULL) ? "<null-class>" : DBG_GET_CLASS_NAME(pMT)
 
 #define DBG_GET_MT_FROM_OBJ(obj)       \
-        (MethodTable*)((size_t)((Object*) (obj))->GetGCSafeMethodTable()) 
+        (MethodTable*)((size_t)((Object*) (obj))->GetGCSafeMethodTable())
 
 #define DBG_CLASS_NAME_OBJ(obj)        \
-        ((obj) == NULL)  ? "null" : DBG_CLASS_NAME_MT(DBG_GET_MT_FROM_OBJ(obj)) 
+        ((obj) == NULL)  ? "null" : DBG_CLASS_NAME_MT(DBG_GET_MT_FROM_OBJ(obj))
 
 #define DBG_CLASS_NAME_IPTR2(obj,iptr) \
         ((iptr) != 0)    ? ""     : DBG_CLASS_NAME_MT(DBG_GET_MT_FROM_OBJ(obj))
@@ -344,7 +344,7 @@ inline ULONG RoundUpToPower2(ULONG x)
 #endif
 
 
-// This is temporary.  LKG should provide these macros and we should then 
+// This is temporary.  LKG should provide these macros and we should then
 // remove STRUNCATE and _TRUNCATE from here.
 
 /* error codes */

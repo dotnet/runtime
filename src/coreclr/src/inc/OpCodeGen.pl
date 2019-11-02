@@ -49,7 +49,7 @@ $endHeaderComment .= "==========================================================
 $usingAndRefEmitNmsp = "namespace System.Reflection.Emit\n{\n\n";
 $obsoleteAttr = "        [Obsolete(\"This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202\")]\n";
 
-# Open source file and target files 
+# Open source file and target files
 
 open (OPCODE, "opcode.def") or die "Couldn't open opcode.def: $!\n";
 open (OUTPUT, ">OpCodes.cs") or die "Couldn't open OpCodes.cs: $!\n";
@@ -116,7 +116,7 @@ while (<OPCODE>)
 	s/^OPDEF\(\s*//;    # Strip off "OP("
 	s/,\s*/,/g;         # Remove whitespace
 	s/\).*$//;          # Strip off ")" and everything behind it at end
-	
+
 	# Split the line up into its basic parts
 	($enumname, $stringname, $pop, $push, $operand, $type, $size, $s1, $s2, $ctrl) = split(/,/);
 	$s1 =~ s/0x//;
@@ -252,7 +252,7 @@ while (<OPCODE>)
     my $opcodeName = $enumname;
 
 	# Tailcall OpCode enum name does not comply with convention
-	# that all enum names are exactly the same as names in opcode.def 
+	# that all enum names are exactly the same as names in opcode.def
 	# file less leading CEE_ and changed casing convention
 	$enumname = substr $enumname, 0, 4 unless $enumname !~ m/Tailcall$/;
 
@@ -266,12 +266,12 @@ while (<OPCODE>)
 	}
 
     my $lineEnum;
-	if ($size == 1) 
+	if ($size == 1)
 	{
 	    $lineEnum = sprintf("        %s = 0x%.2x,\n", $enumname, $s2);
 		$opcodeEnum{$s2} = $lineEnum;
 	}
-	elsif ($size == 2) 
+	elsif ($size == 2)
 	{
 		$lineEnum = sprintf("        %s = 0x%.4x,\n", $enumname, $s2 + 256 * $s1);
 		$opcodeEnum{$s2 + 256 * $s1} = $lineEnum;
@@ -314,7 +314,7 @@ while (<OPCODE>)
 
 	$line .= sprintf("            (%s << OpCode.SizeShift) |\n", $size);
 	if ($ctrl =~ m/Return/ || $ctrl =~ m/^Branch/ || $ctrl =~ m/^Throw/ || $enumname =~ m/Jmp/){
-		$line .= sprintf("            OpCode.EndsUncondJmpBlkFlag |\n", $size);	
+		$line .= sprintf("            OpCode.EndsUncondJmpBlkFlag |\n", $size);
 	}
 	$line .= sprintf("            (%d << OpCode.StackChangeShift)\n", $popstate);
 	$line .= sprintf("        );\n\n");
@@ -363,7 +363,7 @@ foreach $key (sort {$a cmp $b} keys (%controlFlow))
 	    print FCOUTPUT $obsoleteAttr;
 		print FCOUTPUT "        Phi";
 		print FCOUTPUT " = $ctrlflowcount,\n";
-		$ctrlflowcount++;	
+		$ctrlflowcount++;
 	}
 }
 #end the flowcontrol enum
@@ -390,7 +390,7 @@ foreach $key (sort {$a cmp $b} keys (%opcodetype))
 	if ($ctrlflowcount == 0){
 	    print OCOUTPUT $obsoleteAttr;
 		print OCOUTPUT "        Annotation = 0,\n";
-		$ctrlflowcount++;	
+		$ctrlflowcount++;
 	}
 	print OCOUTPUT "        $key";
 	print OCOUTPUT " = $ctrlflowcount,\n";
@@ -409,7 +409,7 @@ foreach $key (sort {$a cmp $b} keys (%operandtype))
 	if ($key =~ m/InlineNone/){
 	    print OPOUTPUT $obsoleteAttr;
 		print OPOUTPUT "        InlinePhi = 6,\n";
-		$ctrlflowcount++;	
+		$ctrlflowcount++;
 	}
 	if ($key =~ m/^InlineR$/){
 		$ctrlflowcount++;

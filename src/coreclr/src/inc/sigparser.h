@@ -33,10 +33,10 @@
 // Encapsulates how compressed integers and typeref tokens are encoded into
 // a bytestream.
 //
-// As you use this class please understand the implicit normalizations 
+// As you use this class please understand the implicit normalizations
 // on the CorElementType's returned by the various methods, especially
 // for variable types (e.g. !0 in generic signatures), string types
-// (i.e. E_T_STRING), object types (E_T_OBJECT), constructed types 
+// (i.e. E_T_STRING), object types (E_T_OBJECT), constructed types
 // (e.g. List<int>) and enums.
 //------------------------------------------------------------------------
 class SigParser
@@ -72,7 +72,7 @@ class SigParser
         SigParser(const SigParser &sig);
 
         //------------------------------------------------------------------------
-        // Initialize 
+        // Initialize
         //------------------------------------------------------------------------
         FORCEINLINE SigParser(PCCOR_SIGNATURE ptr)
         {
@@ -94,7 +94,7 @@ class SigParser
         inline void SetSig(PCCOR_SIGNATURE ptr)
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             m_ptr = ptr;
             // We don't know the size of the signature, so we'll say it's "big enough"
             m_dwLen = 0xffffffff;
@@ -103,7 +103,7 @@ class SigParser
         inline void SetSig(PCCOR_SIGNATURE ptr, DWORD len)
         {
             LIMITED_METHOD_CONTRACT;
-            
+
             m_ptr = ptr;
             m_dwLen = len;
         }
@@ -117,9 +117,9 @@ class SigParser
         }
 
         // Returns represented signature as pointer and size.
-        void 
+        void
         GetSignature(
-            PCCOR_SIGNATURE * pSig, 
+            PCCOR_SIGNATURE * pSig,
             DWORD           * pcbSigSize)
         {
             *pSig = m_ptr;
@@ -132,7 +132,7 @@ class SigParser
     // apart from custom modifiers which for historical reasons tend to get eaten.
     //
     // DO NOT USE THESE METHODS UNLESS YOU'RE TOTALLY SURE YOU WANT
-    // THE RAW signature.  You nearly always want GetElemTypeClosed() or 
+    // THE RAW signature.  You nearly always want GetElemTypeClosed() or
     // PeekElemTypeClosed() or one of the MetaSig functions.  See the notes above.
     // These functions will return E_T_INTERNAL, E_T_VAR, E_T_MVAR and such
     // so the caller must be able to deal with those
@@ -142,7 +142,7 @@ class SigParser
         // Remove one compressed integer (using CorSigUncompressData) from
         // the head of the stream and return it.
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         FORCEINLINE HRESULT GetData(ULONG* data)
         {
             WRAPPER_NO_CONTRACT;
@@ -153,14 +153,14 @@ class SigParser
 
             if (data == NULL)
                 data = &tempData;
-            
+
             HRESULT hr = CorSigUncompressData(m_ptr, m_dwLen, data, &sizeOfData);
 
             if (SUCCEEDED(hr))
             {
                 SkipBytes(sizeOfData);
             }
-            
+
             return hr;
         }
 
@@ -168,7 +168,7 @@ class SigParser
         //-------------------------------------------------------------------------
         // Remove one byte and return it.
         //-------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         FORCEINLINE HRESULT GetByte(BYTE *data)
         {
             LIMITED_METHOD_CONTRACT;
@@ -179,7 +179,7 @@ class SigParser
                     *data = *m_ptr;
 
                 SkipBytes(1);
-                
+
                 return S_OK;
             }
 
@@ -191,7 +191,7 @@ class SigParser
         //-------------------------------------------------------------------------
         // Peek at value of one byte and return it.
         //-------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         FORCEINLINE HRESULT PeekByte(BYTE *data)
         {
             LIMITED_METHOD_CONTRACT;
@@ -213,7 +213,7 @@ class SigParser
         // The element type as defined in CorElementType. No normalization for
         // generics (E_T_VAR, E_T_MVAR,..) or dynamic methods (E_T_INTERNAL occurs)
         //-------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT GetElemTypeSlow(CorElementType * etype)
         {
             WRAPPER_NO_CONTRACT;
@@ -233,21 +233,21 @@ class SigParser
                 BYTE bElemType = 0;
                 hr = sigTemp.GetByte(&bElemType);
                 *etype = (CorElementType)bElemType;
-                
+
                 if (SUCCEEDED(hr))
                 {
                     *this = sigTemp;
                     return S_OK;
                 }
             }
-            
+
             *etype = ELEMENT_TYPE_END;
-            
+
             return META_E_BAD_SIGNATURE;
         }
 
         // Inlined version
-        __checkReturn 
+        __checkReturn
         FORCEINLINE HRESULT GetElemType(CorElementType * etype)
         {
             WRAPPER_NO_CONTRACT;
@@ -275,8 +275,8 @@ class SigParser
         }
 
         // Note: Calling convention is always one byte, not four bytes
-        __checkReturn 
-        HRESULT GetCallingConvInfo(ULONG * data) 
+        __checkReturn
+        HRESULT GetCallingConvInfo(ULONG * data)
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
@@ -285,7 +285,7 @@ class SigParser
 
             if (data == NULL)
                 data = &tmpData;
-            
+
             HRESULT hr = CorSigUncompressCallingConv(m_ptr, m_dwLen, data);
             if (SUCCEEDED(hr))
             {
@@ -293,11 +293,11 @@ class SigParser
             }
 
             return hr;
-        }   
+        }
 
-        __checkReturn 
+        __checkReturn
         HRESULT GetCallingConv(ULONG* data)  // @REVISIT_TODO: Calling convention is one byte, not four.
-        {   
+        {
             WRAPPER_NO_CONTRACT;
             ULONG info;
             HRESULT hr = GetCallingConvInfo(&info);
@@ -307,13 +307,13 @@ class SigParser
                 *data = IMAGE_CEE_CS_CALLCONV_MASK & info;
             }
 
-            return hr; 
-        }   
+            return hr;
+        }
 
         //------------------------------------------------------------------------
         // Non-destructive read of compressed integer.
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT PeekData(ULONG *data) const
         {
             WRAPPER_NO_CONTRACT;
@@ -332,10 +332,10 @@ class SigParser
         // rather than the ELEMENT_TYPE_STRING. This is partially to avoid
         // rewriting client code which depended on this behavior previously.
         // But it also seems like the right thing to do generally.
-        // No normalization for generics (E_T_VAR, E_T_MVAR,..) or 
+        // No normalization for generics (E_T_VAR, E_T_MVAR,..) or
         // dynamic methods (E_T_INTERNAL occurs)
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT PeekElemTypeSlow(CorElementType *etype) const
         {
             WRAPPER_NO_CONTRACT;
@@ -352,7 +352,7 @@ class SigParser
         }
 
         // inline version
-        __checkReturn 
+        __checkReturn
         FORCEINLINE HRESULT PeekElemType(CorElementType *etype) const
         {
             WRAPPER_NO_CONTRACT;
@@ -386,14 +386,14 @@ class SigParser
         // Returns the raw size of the type next in the signature, or returns
         // E_INVALIDARG for base types that have variables sizes.
         //-------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT PeekElemTypeSize(ULONG *pSize)
         {
             WRAPPER_NO_CONTRACT;
             HRESULT hr = S_OK;
 
             DWORD dwSize = 0;
-            
+
             if (pSize == NULL)
             {
                 pSize = &dwSize;
@@ -506,8 +506,8 @@ class SigParser
         //          broken in that case. Make sure you call this function if
         //          you are absolutely sure E_T_INTERNAL was not in the sig
         //------------------------------------------------------------------------
-        __checkReturn 
-        FORCEINLINE 
+        __checkReturn
+        FORCEINLINE
         HRESULT GetToken(mdToken * token)
         {
             WRAPPER_NO_CONTRACT;
@@ -516,7 +516,7 @@ class SigParser
 
             if (token == NULL)
                 token = &tempToken;
-            
+
             HRESULT hr = CorSigUncompressToken(m_ptr, m_dwLen, token, &dwLen);
 
             if (SUCCEEDED(hr))
@@ -529,8 +529,8 @@ class SigParser
 
         //------------------------------------------------------------------------
         // Removes a pointer value and returns it. Used for ELEMENT_TYPE_INTERNAL.
-        __checkReturn 
-        FORCEINLINE 
+        __checkReturn
+        FORCEINLINE
         HRESULT GetPointer(void ** pPtr)
         {
             WRAPPER_NO_CONTRACT;
@@ -562,7 +562,7 @@ class SigParser
             return m_ptr == sp.m_ptr;
         }
 
-        __checkReturn 
+        __checkReturn
         HRESULT SkipCustomModifiers()
         {
             WRAPPER_NO_CONTRACT;
@@ -585,7 +585,7 @@ class SigParser
             if (FAILED(hr))
                 return hr;
 
-            while ((ELEMENT_TYPE_CMOD_REQD == bElementType) || 
+            while ((ELEMENT_TYPE_CMOD_REQD == bElementType) ||
                    (ELEMENT_TYPE_CMOD_OPT == bElementType))
             {
                 sigTemp.SkipBytes(1);
@@ -624,7 +624,7 @@ class SigParser
             return hr;
         }// SkipCustomModifiers
 
-        __checkReturn 
+        __checkReturn
         HRESULT SkipFunkyAndCustomModifiers()
         {
             WRAPPER_NO_CONTRACT;
@@ -645,7 +645,7 @@ class SigParser
             if (FAILED(hr))
                 return hr;
 
-            while (ELEMENT_TYPE_CMOD_REQD == bElementType || 
+            while (ELEMENT_TYPE_CMOD_REQD == bElementType ||
                    ELEMENT_TYPE_CMOD_OPT == bElementType ||
                    ELEMENT_TYPE_MODIFIER == bElementType ||
                    ELEMENT_TYPE_PINNED == bElementType)
@@ -686,7 +686,7 @@ class SigParser
         }// SkipFunkyAndCustomModifiers
 
 
-        __checkReturn 
+        __checkReturn
         HRESULT SkipAnyVASentinel()
         {
             WRAPPER_NO_CONTRACT;
@@ -709,22 +709,22 @@ class SigParser
         //------------------------------------------------------------------------
         // Assumes that the SigParser points to the start of an element type
         // (i.e. function parameter, function return type or field type.)
-        // Advances the pointer to the first data after the element type.  
+        // Advances the pointer to the first data after the element type.
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT SkipExactlyOne();
 
         //------------------------------------------------------------------------
-        // Skip only the method header of the signature, not the signature of 
+        // Skip only the method header of the signature, not the signature of
         // the arguments.
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT SkipMethodHeaderSignature(ULONG *pcArgs);
 
         //------------------------------------------------------------------------
         // Skip a sub signature (as immediately follows an ELEMENT_TYPE_FNPTR).
         //------------------------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         HRESULT SkipSignature();
 
 public:
@@ -732,15 +732,15 @@ public:
         //------------------------------------------------------------------------
         // Return pointer
         // PLEASE DON'T USE THIS.
-        // 
+        //
         // Return the internal pointer.  It's hard to resist, but please try
         // not to use this.  Certainly don't use it if there's any chance of the
         // signature containing generic type variables.
-        // 
-        // It's currently only used for working on the 
+        //
+        // It's currently only used for working on the
         // signatures stored in TypeSpec tokens (we should add a new abstraction,
         // i.e. on MetaSig for this) and a couple of places to do with COM
-        // and native interop signature parsing.   
+        // and native interop signature parsing.
         // <REVISIT_TODO>We should try to get rid of these uses as well. </REVISIT_TODO>
         //------------------------------------------------------------------------
         PCCOR_SIGNATURE GetPtr() const
@@ -752,7 +752,7 @@ public:
 };  // class SigParser
 
 //------------------------------------------------------------------------
-FORCEINLINE 
+FORCEINLINE
 SigParser::SigParser(
     const SigParser &sig)
     : m_ptr(sig.m_ptr), m_dwLen(sig.m_dwLen)
@@ -781,7 +781,7 @@ protected:
         unsigned       isGenVar     : 1;
         // 1 more byte here to use for 32-bit
     };
-    
+
 protected:
     FORCEINLINE static const CorTypeInfoEntry &GetTypeInfo(CorElementType type)
     {
@@ -795,7 +795,7 @@ protected:
 #endif
         }
         CONTRACTL_END;
-        
+
         if (type >= (CorElementType)_countof(info))
         {
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -805,143 +805,143 @@ protected:
     FORCEINLINE static const CorTypeInfoEntry &GetTypeInfo_NoThrow(CorElementType type)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        
+
         if (type >= (CorElementType)_countof(info))
         {
             return info[ELEMENT_TYPE_END];
         }
         return info[type];
     }
-    
+
 public:
-    
+
     FORCEINLINE static LPCUTF8 GetName(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).className;
     }
-    
+
     FORCEINLINE static LPCUTF8 GetNamespace(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).nameSpace;
     }
-    
+
     static void CheckConsistency()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         for (int i = 0; i < (int)_countof(info); i++)
         {
             _ASSERTE(info[i].type == i);
         }
     }
-    
+
     FORCEINLINE static CorInfoGCType GetGCType(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).gcType;
     }
     FORCEINLINE static CorInfoGCType GetGCType_NoThrow(CorElementType type)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).gcType;
     }
-    
+
     static BOOL IsObjRef(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        
+
         return (GetGCType(type) == TYPE_GC_REF);
     }
     static BOOL IsObjRef_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        
+
         return (GetGCType_NoThrow(type) == TYPE_GC_REF);
     }
-    
+
     FORCEINLINE static BOOL IsGenericVariable(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).isGenVar;
     }
     FORCEINLINE static BOOL IsGenericVariable_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).isGenVar;
     }
-    
+
     FORCEINLINE static BOOL IsArray(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).isArray;
     }
     FORCEINLINE static BOOL IsArray_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).isArray;
     }
-    
+
     FORCEINLINE static BOOL IsFloat(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).isFloat;
     }
     FORCEINLINE static BOOL IsFloat_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).isFloat;
     }
-    
+
     FORCEINLINE static BOOL IsModifier(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).isModifier;
     }
     FORCEINLINE static BOOL IsModifier_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).isModifier;
     }
-    
+
     FORCEINLINE static BOOL IsPrimitiveType(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).isPrim;
     }
     FORCEINLINE static BOOL IsPrimitiveType_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).isPrim;
     }
-    
+
     FORCEINLINE static unsigned Size(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo(type).size;
     }
     FORCEINLINE static unsigned Size_NoThrow(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
-        
+
         return GetTypeInfo_NoThrow(type).size;
     }
 
@@ -949,7 +949,7 @@ public:
 
 protected:
     static const CorTypeInfoEntry info[ELEMENT_TYPE_MAX];
-    
+
 };  // class CorTypeInfo
 
 

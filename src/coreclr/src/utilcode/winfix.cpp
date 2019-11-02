@@ -38,7 +38,7 @@
 //     WINWRAPPER_NO_CONTRACT(xxx);
 //
 // For everything else, use STATIC_CONTRACT.
-//     
+//
 #undef CONTRACT
 #define CONTRACT $$$$$$$$READ_COMMENT_IN_WINFIX_CPP$$$$$$$$$$
 
@@ -57,7 +57,7 @@ class WinWrapperContract
             CANNOT_HAVE_CONTRACT;
 
             m_pClrDebugState = NULL;
-            
+
             if (gWinWrapperContractRecursionBreak)
             {
                 return;
@@ -84,7 +84,7 @@ class WinWrapperContract
                                 );
             }
 
-            
+
         };
 
         ~WinWrapperContract()
@@ -116,17 +116,17 @@ class WinWrapperContract
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;  \
     WinWrapperContract __wcontract(__FUNCTION__, __FILE__, __LINE__); \
     if (0) {stmt}  \
-        
+
 #define STATIC_WINWRAPPER_NO_CONTRACT(stmt) \
     STATIC_CONTRACT_NOTHROW;      \
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;  \
     STATIC_CONTRACT_FAULT;        \
     if (0) {stmt}  \
-        
-        
+
+
 #else
 #define WINWRAPPER_NO_CONTRACT(stmt)
-#define STATIC_WINWRAPPER_NO_CONTRACT(stmt) 
+#define STATIC_WINWRAPPER_NO_CONTRACT(stmt)
 #endif
 
 ULONG g_dwMaxDBCSCharByteSize = 0;
@@ -160,9 +160,9 @@ WszCreateProcess(
             SetLastError(ERROR_OUTOFMEMORY);
             return 0;
         }
-            
+
         memcpy(nonConstCommandLine, lpCommandLine, commandLineLength * sizeof(WCHAR));
-            
+
         fResult = CreateProcessW(lpApplicationName,
                                    nonConstCommandLine,
                                    lpProcessAttributes,
@@ -265,7 +265,7 @@ HRESULT WINAPI InitializeSetThreadDescription(HANDLE hThread, PCWSTR lpThreadDes
 {
     HMODULE hKernel32 = WszLoadLibrary(W("kernel32.dll"));
 
-    pfnSetThreadDescription pLocal = NULL; 
+    pfnSetThreadDescription pLocal = NULL;
     if (hKernel32 != NULL)
     {
         // store to thread local variable to prevent data race

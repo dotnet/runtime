@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: RsMda.cpp
-// 
+//
 
 // Manage Debug Assistant support in the Right-Side
 //
@@ -45,17 +45,17 @@ CordbMDA::~CordbMDA()
 //-----------------------------------------------------------------------------
 // Neuter the CordbMDA object.
 //-----------------------------------------------------------------------------
-void CordbMDA::Neuter() 
-{ 
-    // Release buffers. Once we're neutered, these can no longer be accessed anyways, 
+void CordbMDA::Neuter()
+{
+    // Release buffers. Once we're neutered, these can no longer be accessed anyways,
     // so may as well free them now.
     // This is being done under the process-lock, and our accessors are also done
     // under that lock, so we don't have to worry about any races here. :)
     m_szName.Clear();
     m_szDescription.Clear();
     m_szXml.Clear();
-    
-    CordbBase::Neuter();    
+
+    CordbBase::Neuter();
 };
 
 //-----------------------------------------------------------------------------
@@ -80,21 +80,21 @@ HRESULT CordbMDA::QueryInterface(REFIID riid, void **ppInterface)
 //-----------------------------------------------------------------------------
 // Helper to marshal a string object out through the ICorDebug interfaces
 //  *GetName() functions using the common triple design pattern.
-// 
+//
 // parameters:
 //   pInputString - the string that we want to marshal out via the triple
-//   cchName, pcchName, szName - triple used to marshal out a string. 
+//   cchName, pcchName, szName - triple used to marshal out a string.
 //        Same usage as CordbModule::GetName and other string getters on the API.
-//       
+//
 // *pcchName is always set to the length of pInputString (including NULL). This lets
 //   callers know the full size of buffer they'd need to allocate to get the full string.
 //
 // if (cchName == 0) then we're in "query" mode:
-//     szName must be null. pcchName must be non-null and this function will just set 
+//     szName must be null. pcchName must be non-null and this function will just set
 //     *pcchName to let the caller know how large of a buffer to allocate.
 
 // if (cchName != 0) then we copy as much as can fit into szName. We will always
-//     null terminate szName. 
+//     null terminate szName.
 //     pcchName can be null. If it's non-null, we set it.
 //
 //
@@ -107,7 +107,7 @@ HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName,
 {
     _ASSERTE(pInputString != NULL);
     ULONG32 len = (ULONG32) wcslen(pInputString) + 1;
-    
+
     if (cchName == 0)
     {
         // Query length
@@ -116,7 +116,7 @@ HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName,
             return E_INVALIDARG;
         }
         *pcchName = len;
-        return S_OK;        
+        return S_OK;
     }
     else
     {
@@ -129,12 +129,12 @@ HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName,
         // Just copy whatever we can fit into the buffer. If we truncate, that's ok.
         // This will also guarantee that we null terminate.
         wcsncpy_s(szName, cchName, pInputString, _TRUNCATE);
-    
+
         if (pcchName != 0)
         {
             *pcchName = len;
         }
-        
+
         return S_OK;
     }
 }
@@ -149,7 +149,7 @@ HRESULT CordbMDA::GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
-    {    
+    {
         hr = E_NOTIMPL;
     }
     PUBLIC_API_END(hr);
@@ -164,7 +164,7 @@ HRESULT CordbMDA::GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecou
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
-    {        
+    {
         hr = E_NOTIMPL;
     }
     PUBLIC_API_END(hr);
@@ -174,14 +174,14 @@ HRESULT CordbMDA::GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecou
 //-----------------------------------------------------------------------------
 // Get the full associated XML for the MDA. This may be empty.
 // This could be a potentially expensive operation if the xml stream is large.
-// See the MDA documentation for the schema for this XML stream. 
+// See the MDA documentation for the schema for this XML stream.
 // See CopyOutString for parameter details.
 //-----------------------------------------------------------------------------
 HRESULT CordbMDA::GetXML(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
-    {        
+    {
         hr = E_NOTIMPL;
     }
     PUBLIC_API_END(hr);
@@ -195,7 +195,7 @@ HRESULT CordbMDA::GetFlags(CorDebugMDAFlags * pFlags)
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
-    {        
+    {
         hr = E_NOTIMPL;
     }
     PUBLIC_API_END(hr);
@@ -203,7 +203,7 @@ HRESULT CordbMDA::GetFlags(CorDebugMDAFlags * pFlags)
 }
 
 //-----------------------------------------------------------------------------
-// Thread that the MDA is fired on. We use the os tid instead of an ICDThread in case an MDA is fired on a 
+// Thread that the MDA is fired on. We use the os tid instead of an ICDThread in case an MDA is fired on a
 // native thread (or a managed thread that hasn't yet entered managed code and so we don't have a ICDThread
 // object for it yet)
 //-----------------------------------------------------------------------------
@@ -211,7 +211,7 @@ HRESULT CordbMDA::GetOSThreadId(DWORD * pOsTid)
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
-    {        
+    {
         hr = E_NOTIMPL;
     }
     PUBLIC_API_END(hr);

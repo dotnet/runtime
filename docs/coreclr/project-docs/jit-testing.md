@@ -1,10 +1,10 @@
 # JIT Testing
 
-We would like to ensure that the CoreCLR contains sufficient test collateral 
+We would like to ensure that the CoreCLR contains sufficient test collateral
 and tooling to enable high-quality contributions to RyuJit or LLILC's JIT.
 
-JIT testing is somewhat specialized and can't rely solely on the general 
-framework tests or end to end application tests. 
+JIT testing is somewhat specialized and can't rely solely on the general
+framework tests or end to end application tests.
 
 This document describes some of the work needed to bring JIT existing tests and
 technology into the CoreCLR, and touches on some areas as that open for
@@ -12,7 +12,7 @@ innovation.
 
 We expect to evolve this document into a road map for the overall JIT testing
 effort, and to spawn a set of issues in the CoreCLR and LLILC repos for
-implementing the needed capabilities. 
+implementing the needed capabilities.
 
 ## Requirements and Assumptions
 
@@ -26,7 +26,7 @@ TBD).
 5. Tests in CI can be run on private changes (currently tied to PRs; this may
 be sufficient).
 6. Test strategy harmonious with other .NET repo test strategies.
-7. Test harness behaves reasonably on test failure. Easy to get at repro steps 
+7. Test harness behaves reasonably on test failure. Easy to get at repro steps
 for subsequent debugging.
 8. Tests must allow fine-grained inspection of JIT outputs, for instance
 comparing the generated code versus a baseline JIT.
@@ -41,7 +41,7 @@ spent in the JIT, memory used by the JIT, etc.
 Below are some broad task areas that we should consider as part of this plan.
 It seems sensible for Microsoft to focus on opening up the JIT self-host
 (aka JITSH) tests first. A few other tasks are also Microsoft specific and are
-marked with (MS) below. 
+marked with (MS) below.
 
 Other than that the priority, task list, and possibly assignments are open to
 discussion.
@@ -69,20 +69,20 @@ moving these.
 
 We need to ensure that the CoreCLR repo contains a suitably
 hookable test script. Core testing is driven by xunit but there's typically a
-wrapper around this (runtest.cmd today) to facilitate test execution. 
+wrapper around this (runtest.cmd today) to facilitate test execution.
 
 The proposal is to implement platform-neutral variant of runtest.cmd that
 contains all the existing functionality plus some additional capabilities for
 JIT testing. Initially this will mean:
 
-1. Ability to execute tests with a JIT specified by the user (either as alt 
+1. Ability to execute tests with a JIT specified by the user (either as alt
 JIT or as the only JIT)
 2. Ability to pass options through to the JIT (eg for dumping assembly or IR)
 or to the CoreCLR (eg to disable use of ngen images).
 
 ### Cache prebuilt test assets
 
-In general we want JIT tests to be built from sources. But given the volume 
+In general we want JIT tests to be built from sources. But given the volume
 of tests it can take a significant amount of time to compile those sources into
 assemblies. This in turn slows down the ability to test the JIT.
 
@@ -113,10 +113,10 @@ Not yet clear what porting this entails.
 
 We should be able to directly leverage tests provided in peer repo suites, once
 they can run on top of CoreCLR. In particular CoreFx and Roslyn test cases
-could be good initial targets. 
+could be good initial targets.
 
 Note LLILC is currently working through the remaining issues that prevent it
-from being able to compile all of Roslyn. See the "needed for Roslyn" tags 
+from being able to compile all of Roslyn. See the "needed for Roslyn" tags
 on the open LLILC issues.
 
 ### Look for other CoreCLR hosted projects.
@@ -126,7 +126,7 @@ potentially use their tests for JIT testing.
 
 ### Porting of existing suites/tools over to our repos.
 
-Tools developed to test JVM Jits might be interesting to port over to .Net. 
+Tools developed to test JVM Jits might be interesting to port over to .Net.
 Suggestions for best practices or effective techniques are welcome.
 
 ### Bring up quantitative measurements.
@@ -149,8 +149,8 @@ For LLILC, implementing support for crossgen would provide the ability to drive
 lots of IL through the JIT. There is enough similarity between the JIT and
 crossgen paths that this would likely surface issues in both.
 
-Alternatively one can imagine simple test drivers that load up assemblies and 
-use reflection to enumerate methods and asks for method bodies to force the JIT 
+Alternatively one can imagine simple test drivers that load up assemblies and
+use reflection to enumerate methods and asks for method bodies to force the JIT
 to generate code for all the methods.
 
 ### Bring up stress testing

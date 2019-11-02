@@ -6,7 +6,7 @@
 //
 
 //
-// This file contains wrapper functions for Win32 API's that take SStrings 
+// This file contains wrapper functions for Win32 API's that take SStrings
 // and use CLR-safe holders.
 //*****************************************************************************
 
@@ -18,11 +18,11 @@ consistency's sake.
 
 - THROWING: Throw on oom, but return all other failure codes.
     The rationale here is that SString operations already throw, so to make these APIs
-    non-throwing would require an extra EX_TRY/EX_CATCH. Most callees will want to throw 
-    on OOM anyways. So making these APIs non-throwing would mean an extra try/catch in 
+    non-throwing would require an extra EX_TRY/EX_CATCH. Most callees will want to throw
+    on OOM anyways. So making these APIs non-throwing would mean an extra try/catch in
     the caller + an extra check at the callee. We can eliminate that overhead and just make
     it throwing.
-    
+
     Return non-oom failure codes because callees actually freqeuntly expect an API to fail.
     For example, the callee will have special handling for file-not-found.
 
@@ -32,11 +32,11 @@ consistency's sake.
 
 - NAMING: Prefix the name with 'Clr', just like we do for win32 APIs going through hosting.
 
-- DON'T FORGET CONTRACTS: Most of these APIs will likely be Throws/GC_Notrigger. 
+- DON'T FORGET CONTRACTS: Most of these APIs will likely be Throws/GC_Notrigger.
     Also use PRECONDITIONs + POSTCONDITIONS when possible.
-    
+
 - SIGNATURES: Keep the method signture as close the the original win32 API as possible.
-    - Preserve the return type + value. (except allow it to throw on oom). If the return value 
+    - Preserve the return type + value. (except allow it to throw on oom). If the return value
         should be a holder, then use that as an out-parameter at the end of the argument list.
         We don't want to return holders because that will cause the dtors to be called.
     - For input strings use 'const SString &' instead of 'LPCWSTR'.
@@ -49,10 +49,10 @@ consistency's sake.
     This will also simplify callsites from having to figure out the length of the output string.
 
 - USE YOUR BEST JUDGEMENT: The primary goal of these API wrappers is to embrace 'security-safe' practices.
-    Certainly take any additional steps to that goal. For example, it may make sense to eliminate 
-    corner case inputs for a given API or to break a single confusing API up into several discrete and 
+    Certainly take any additional steps to that goal. For example, it may make sense to eliminate
+    corner case inputs for a given API or to break a single confusing API up into several discrete and
     move obvious APIs.
-    
+
 */
 #ifndef _safewrap_h_
 #define _safewrap_h_
@@ -102,7 +102,7 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value);
 /* --------------------------------------------------------------------------- *
  * Simple wrapper around RegisterEventSource/ReportEvent/DeregisterEventSource
  * --------------------------------------------------------------------------- */
-// Returns ERROR_SUCCESS if succeessful in reporting to event log, or 
+// Returns ERROR_SUCCESS if succeessful in reporting to event log, or
 // Windows error code to indicate the specific error.
 DWORD ClrReportEvent(
     LPCWSTR     pEventSource,
@@ -128,7 +128,7 @@ DWORD ClrReportEvent(
 // if the file is >4g and pdwHigh is NULL. Other than that, it acts like
 // the genuine GetFileSize().
 //
-// 
+//
 //*****************************************************************************
 DWORD inline SafeGetFileSize(HANDLE hFile, DWORD *pdwHigh)
 {
@@ -157,7 +157,7 @@ DWORD inline SafeGetFileSize(HANDLE hFile, DWORD *pdwHigh)
             // note that a success return of (hi=0,lo=0xffffffff) will be
             // treated as an error by the caller. Again, that's part of the
             // price of being a slacker and not handling the high dword.
-            // We'll set a lasterror for him to pick up. 
+            // We'll set a lasterror for him to pick up.
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         }
 

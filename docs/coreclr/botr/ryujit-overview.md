@@ -74,25 +74,25 @@ A stripped-down dump of the `GenTree` nodes just after they are imported looks l
 STMT  (IL 0x000...0x026)
    ▌  ASG       double
    ├──▌  IND       double
-   │  └──▌  LCL_VAR   byref  V03 arg3         
+   │  └──▌  LCL_VAR   byref  V03 arg3
    └──▌  DIV       double
       ├──▌  ADD       double
       │  ├──▌  NEG       double
-      │  │  └──▌  LCL_VAR   double V01 arg1         
+      │  │  └──▌  LCL_VAR   double V01 arg1
       │  └──▌  INTRINSIC double sqrt
       │     └──▌  SUB       double
       │        ├──▌  MUL       double
-      │        │  ├──▌  LCL_VAR   double V01 arg1         
-      │        │  └──▌  LCL_VAR   double V01 arg1         
+      │        │  ├──▌  LCL_VAR   double V01 arg1
+      │        │  └──▌  LCL_VAR   double V01 arg1
       │        └──▌  MUL       double
       │           ├──▌  MUL       double
-      │           │  ├──▌  LCL_VAR   double V00 arg0         
+      │           │  ├──▌  LCL_VAR   double V00 arg0
       │           │  └──▌  CNS_DBL   double 4.0000000000000000
-      │           └──▌  LCL_VAR   double V02 arg2         
+      │           └──▌  LCL_VAR   double V02 arg2
       └──▌  MUL       double
-         ├──▌  LCL_VAR   double V00 arg0         
+         ├──▌  LCL_VAR   double V00 arg0
          └──▌  CNS_DBL   double 2.0000000000000000
-```         
+```
 
 ## Types
 
@@ -290,49 +290,49 @@ After rationalization, the nodes are presented in execution order, and the `GT_C
          IL_OFFSET void   IL offset: 0x0
  t3 =    LCL_VAR   double V01 arg1         u:1 $81
  t4 =    LCL_VAR   double V01 arg1         u:1 $81
-     ┌──▌  t3     double 
-     ├──▌  t4     double 
+     ┌──▌  t3     double
+     ├──▌  t4     double
  t5 = ▌  MUL       double $140
  t7 =    LCL_VAR   double V00 arg0         u:1 $80
  t6 =    CNS_DBL   double 4.0000000000000000 $180
-     ┌──▌  t7     double 
-     ├──▌  t6     double 
+     ┌──▌  t7     double
+     ├──▌  t6     double
  t8 = ▌  MUL       double $141
  t9 =    LCL_VAR   double V02 arg2         u:1 $82
-     ┌──▌  t8     double 
-     ├──▌  t9     double 
+     ┌──▌  t8     double
+     ├──▌  t9     double
 t10 = ▌  MUL       double $142
-     ┌──▌  t5     double 
-     ├──▌  t10    double 
+     ┌──▌  t5     double
+     ├──▌  t10    double
 t11 = ▌  SUB       double $143
-     ┌──▌  t11    double 
+     ┌──▌  t11    double
 t12 = ▌  INTRINSIC double sqrt $83
-     ┌──▌  t12    double 
-      ▌  STORE_LCL_VAR double V06 cse0         
+     ┌──▌  t12    double
+      ▌  STORE_LCL_VAR double V06 cse0
 t46 =    LCL_VAR   double V06 cse0          $83
  t1 =    LCL_VAR   double V01 arg1         u:1 $81
-     ┌──▌  t1     double 
+     ┌──▌  t1     double
  t2 = ▌  NEG       double $84
-     ┌──▌  t2     double 
-      ▌  STORE_LCL_VAR double V08 cse2         
+     ┌──▌  t2     double
+      ▌  STORE_LCL_VAR double V08 cse2
 t56 =    LCL_VAR   double V08 cse2          $84
-     ┌──▌  t46    double 
-     ├──▌  t56    double 
+     ┌──▌  t46    double
+     ├──▌  t56    double
 t13 = ▌  ADD       double $144
 t15 =    LCL_VAR   double V00 arg0         u:1 $80
 t14 =    CNS_DBL   double 2.0000000000000000 $181
-     ┌──▌  t15    double 
-     ├──▌  t14    double 
+     ┌──▌  t15    double
+     ├──▌  t14    double
 t16 = ▌  MUL       double $145
-     ┌──▌  t16    double 
-      ▌  STORE_LCL_VAR double V07 cse1         
+     ┌──▌  t16    double
+      ▌  STORE_LCL_VAR double V07 cse1
 t51 =    LCL_VAR   double V07 cse1          $145
-     ┌──▌  t13    double 
-     ├──▌  t51    double 
+     ┌──▌  t13    double
+     ├──▌  t51    double
 t17 = ▌  DIV       double $146
  t0 =    LCL_VAR   byref  V03 arg3         u:1 (last use) $c0
-     ┌──▌  t0     byref  
-     ├──▌  t17    double 
+     ┌──▌  t0     byref
+     ├──▌  t17    double
       ▌  STOREIND  double
 ```
 
@@ -352,20 +352,20 @@ For example, this:
 ```
 t47 =    LCL_VAR   ref    V00 arg0
 t48 =    LCL_VAR   int    V01 arg1
-     ┌──▌  t48    int    
+     ┌──▌  t48    int
 t51 = ▌  CAST      long <- int
 t52 =    CNS_INT   long   2
-     ┌──▌  t51    long   
-     ├──▌  t52    long   
+     ┌──▌  t51    long
+     ├──▌  t52    long
 t53 = ▌  LSH       long
 t54 =    CNS_INT   long   16 Fseq[#FirstElem]
-     ┌──▌  t53    long   
-     ├──▌  t54    long   
+     ┌──▌  t53    long
+     ├──▌  t54    long
 t55 = ▌  ADD       long
-     ┌──▌  t47    ref    
-     ├──▌  t55    long   
+     ┌──▌  t47    ref
+     ├──▌  t55    long
 t56 = ▌  ADD       byref
-     ┌──▌  t56    byref  
+     ┌──▌  t56    byref
 t44 = ▌  IND       int
 ```
 
@@ -373,12 +373,12 @@ Is transformed into this, in which the addressing mode is explicit:
 ```
 t47 =    LCL_VAR   ref    V00 arg0
 t48 =    LCL_VAR   int    V01 arg1
-     ┌──▌  t48    int    
+     ┌──▌  t48    int
 t51 = ▌  CAST      long <- int
-     ┌──▌  t47    ref    
-     ├──▌  t51    long   
-t79 = ▌  LEA(b+(i*4)+16) byref 
-     ┌──▌  t79    byref  
+     ┌──▌  t47    ref
+     ├──▌  t51    long
+t79 = ▌  LEA(b+(i*4)+16) byref
+     ┌──▌  t79    byref
 t44 = ▌  IND       int
 ```
 After all nodes are lowered, liveness is run in preparation for register allocation.
@@ -393,17 +393,17 @@ The RyuJIT register allocator uses a Linear Scan algorithm, with an approach sim
 `LinearScan::buildIntervals()` traverses the entire method building RefPositions and Intervals as required. For example, for the `STORE_BLK` node in this snippet:
 ```
 t67 =    CNS_INT(h) long   0x2b5acef2c50 static Fseq[s1]
-     ┌──▌  t67    long   
+     ┌──▌  t67    long
  t0 = ▌  IND       ref
  t1 =    CNS_INT   long   8 Fseq[#FirstElem]
-     ┌──▌  t0     ref    
-     ├──▌  t1     long   
+     ┌──▌  t0     ref
+     ├──▌  t1     long
  t2 = ▌  ADD       byref
-     ┌──▌  t2     byref  
+     ┌──▌  t2     byref
  t3 = ▌  IND       struct
 t31 =    LCL_VAR_ADDR byref  V08 tmp1
-     ┌──▌  t31    byref  
-     ├──▌  t3     struct 
+     ┌──▌  t31    byref
+     ├──▌  t3     struct
       ▌  STORE_BLK(40) struct (copy) (Unroll)
 ```
 the following RefPositions are generated:

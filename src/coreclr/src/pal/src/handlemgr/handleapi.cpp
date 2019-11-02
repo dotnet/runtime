@@ -64,7 +64,7 @@ DuplicateHandle(
 {
     PAL_ERROR palError;
     CPalThread *pThread;
-    
+
     PERF_ENTRY(DuplicateHandle);
     ENTRY("DuplicateHandle( hSrcProcHandle=%p, hSrcHandle=%p, "
           "hTargetProcHandle=%p, lpTargetHandle=%p, dwAccess=%#x, "
@@ -107,7 +107,7 @@ CorUnix::InternalDuplicateHandle(
 {
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjSource = NULL;
-    
+
     DWORD source_process_id;
     DWORD target_process_id;
     DWORD cur_process_id;
@@ -152,7 +152,7 @@ CorUnix::InternalDuplicateHandle(
         palError = ERROR_INVALID_PARAMETER;
         goto InternalDuplicateHandleExit;
     }
-    
+
     if (0 == (dwOptions & DUPLICATE_SAME_ACCESS))
     {
         ASSERT(
@@ -203,7 +203,7 @@ CorUnix::InternalDuplicateHandle(
         {
             ERROR("Unable to get object for source handle %p (%i)\n", hSource, palError);
             goto InternalDuplicateHandleExit;
-        }            
+        }
     }
     else if (hPseudoCurrentProcess == hSource)
     {
@@ -246,7 +246,7 @@ InternalDuplicateHandleExit:
         // MUST be closed, even if an error occurred during the duplication
         // process
         //
-        
+
         TRACE("DuplicateHandle closing source handle %p\n", hSource);
         InternalCloseHandle(pThread, hSource);
     }

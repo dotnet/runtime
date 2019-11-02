@@ -27,18 +27,18 @@
 // implementor of a candidate Key class K understands this convention,
 // these static methods can be implemented by K, so that K can be used
 // as the actual arguments for the both Key and KeyTrait classes.
-// 
+//
 // The "Behavior" argument provides the following static members:
 //
 // s_growth_factor_numerator
-// s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).  
+// s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
 //                                              Typically inherited from default traits (3/2)
 //
-// s_density_factor_numerator                   
-// s_density_factor_denominator                 Maxium occupied density of table before growth 
+// s_density_factor_numerator
+// s_density_factor_denominator                 Maxium occupied density of table before growth
 //                                              occurs (num/denom).  Typically inherited (3/4).
 //
-// s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is 
+// s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is
 //                                              probably preferable to call Reallocate on initialization rather
 //                                              than override his from the default traits. (7)
 //
@@ -118,12 +118,12 @@ public:
     // Remove all mappings in the table.
     void RemoveAll();
 
-    // Begin and End pointers for iteration over entire table. 
+    // Begin and End pointers for iteration over entire table.
     KeyIterator Begin() const;
     KeyIterator End() const;
 
     // Return the number of elements currently stored in the table
-    unsigned GetCount() const; 
+    unsigned GetCount() const;
 
 private:
     // Forward declaration of the linked-list node class.
@@ -145,7 +145,7 @@ private:
 
 public:
     // Reallocates a hash table to a specific size.  The size must be big enough
-    // to hold all elements in the table appropriately.  
+    // to hold all elements in the table appropriately.
     //
     // Note that the actual table size must always be a prime number; the number
     // passed in will be upward adjusted if necessary.
@@ -250,8 +250,8 @@ public:
         }
 
         bool Equal(const KeyIterator &i) const
-        { 
-            return i.m_node == m_node; 
+        {
+            return i.m_node == m_node;
         }
 
         void operator++() {
@@ -270,9 +270,9 @@ public:
     {
     public:
         // this is really the getter for the array.
-        operator Value() 
+        operator Value()
         {
-            
+
             Value result;
             table->Lookup(key, &result);
             return result;
@@ -286,8 +286,8 @@ public:
         friend class SimplerHashTable;
 
     protected:
-        HashTableRef(SimplerHashTable *t, Key k) 
-        { 
+        HashTableRef(SimplerHashTable *t, Key k)
+        {
             table = t;
             key = k;
         }
@@ -304,7 +304,7 @@ public:
     }
 
   private:
-    // Find the next prime number >= the given value.  
+    // Find the next prime number >= the given value.
     static PrimeInfo NextPrime(unsigned number);
 
     // Instance members
@@ -380,7 +380,7 @@ struct LargePrimitiveKeyFuncs: public KeyFuncsDefEquals<T>
         // So we cast the address of val to a pointer to an equivalent sized unsigned int
         // This allows us to read the actual bit representation of a float type
         //
-        // We can't read beyond the end of val, so we use sizeof(T) to determine 
+        // We can't read beyond the end of val, so we use sizeof(T) to determine
         // exactly how many bytes to read
         //
         if (sizeof(T) == 8)
@@ -401,7 +401,7 @@ struct LargePrimitiveKeyFuncs: public KeyFuncsDefEquals<T>
             // cast &val to (UINT32 *) then deref to get the bits
             UINT32 asUINT32 = *(reinterpret_cast<const UINT32 *>(&val));
 
-            // Just return the 32-bit value 
+            // Just return the 32-bit value
             return static_cast<unsigned>(asUINT32);
         }
         else if ((sizeof(T) == 2) || (sizeof(T) == 1))
@@ -412,7 +412,7 @@ struct LargePrimitiveKeyFuncs: public KeyFuncsDefEquals<T>
             return static_cast<unsigned>(val);
         }
         else
-        { 
+        {
             // Only support Hashing for types that are 8,4,2 or 1 bytes in size
             assert(!"Unsupported size");
             return static_cast<unsigned>(val);  // compile-time error here when we have a illegal size

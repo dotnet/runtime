@@ -143,7 +143,7 @@ namespace ReadyToRun.SuperIlc
                 var arguments = new CrossgenArguments();
 
                 string[] tokenizedArguments = TokenizeArguments(responseFile);
-                
+
                 for (int i = 0; i < tokenizedArguments.Length; i++)
                 {
                     string arg = tokenizedArguments[i];
@@ -240,7 +240,7 @@ namespace ReadyToRun.SuperIlc
                             }
                         }
                     }
-                    
+
                     // Flush everything after the last white space
                     arguments.Add(sb.ToString());
                 }
@@ -248,5 +248,5 @@ namespace ReadyToRun.SuperIlc
                 return arguments.ToArray();
             }
         }
-    }    
+    }
 }

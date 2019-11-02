@@ -38,7 +38,7 @@ Revision History:
 #ifndef FEATURE_PAL
 #ifndef DACCESS_COMPILE
 
-// APIs that must be accessed through dynamic linking. 
+// APIs that must be accessed through dynamic linking.
 typedef int (WINAPI *NtQueryInformationThreadProc) (
     HANDLE ThreadHandle,
     THREADINFOCLASS ThreadInformationClass,
@@ -47,7 +47,7 @@ typedef int (WINAPI *NtQueryInformationThreadProc) (
     PULONG ReturnLength);
 NtQueryInformationThreadProc g_pufnNtQueryInformationThread = NULL;
 
-typedef int (WINAPI *NtQuerySystemInformationProc) ( 
+typedef int (WINAPI *NtQuerySystemInformationProc) (
     SYSTEM_INFORMATION_CLASS SystemInformationClass,
     PVOID SystemInformation,
     ULONG SystemInformationLength,
@@ -80,7 +80,7 @@ HANDLE ThreadpoolMgr::GlobalCompletionPort;                 // used for binding 
 SVAL_IMPL(ThreadpoolMgr::ThreadCounter,ThreadpoolMgr,CPThreadCounter);
 
 SVAL_IMPL_INIT(LONG,ThreadpoolMgr,MaxLimitTotalCPThreads,1000);   // = MaxLimitCPThreadsPerCPU * number of CPUS
-SVAL_IMPL(LONG,ThreadpoolMgr,MinLimitTotalCPThreads);             
+SVAL_IMPL(LONG,ThreadpoolMgr,MinLimitTotalCPThreads);
 SVAL_IMPL(LONG,ThreadpoolMgr,MaxFreeCPThreads);                   // = MaxFreeCPThreadsPerCPU * Number of CPUS
 
 Volatile<LONG> ThreadpoolMgr::NumCPInfrastructureThreads = 0;      // number of threads currently busy handling draining cycle
@@ -362,7 +362,7 @@ BOOL ThreadpoolMgr::Initialize()
         WorkerThreadSpinLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit);
         IsHillClimbingDisabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_Disable) != 0;
         ThreadAdjustmentInterval = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_SampleIntervalLow);
-        
+
         pADTPCount->InitResources();
         WorkerCriticalSection.Init(CrstThreadpoolWorker);
         WaitThreadsCriticalSection.Init(CrstThreadpoolWaitThreads);
@@ -450,14 +450,14 @@ BOOL ThreadpoolMgr::Initialize()
     counts.MaxWorking = MinLimitTotalCPThreads;
     CPThreadCounter.counts.AsLongLong = counts.AsLongLong;
 
-#ifndef FEATURE_PAL    
+#ifndef FEATURE_PAL
     {
         GlobalCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE,
                                                       NULL,
                                                       0,        /*ignored for invalid handle value*/
                                                       NumberOfProcessors);
     }
-#endif // !FEATURE_PAL    
+#endif // !FEATURE_PAL
 
     HillClimbingInstance.Initialize();
 
@@ -470,13 +470,13 @@ void ThreadpoolMgr::InitPlatformVariables()
 {
     CONTRACTL
     {
-        NOTHROW;         
+        NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL   
+#ifndef FEATURE_PAL
     HINSTANCE  hNtDll;
     HINSTANCE  hCoreSynch;
     {
@@ -500,7 +500,7 @@ void ThreadpoolMgr::InitPlatformVariables()
     // These APIs are only supported on newer Windows versions
     g_pufnCreateWaitableTimerEx = (CreateWaitableTimerExProc)GetProcAddress(hCoreSynch, "CreateWaitableTimerExW");
     g_pufnSetWaitableTimerEx = (SetWaitableTimerExProc)GetProcAddress(hCoreSynch, "SetWaitableTimerEx");
-#endif    
+#endif
 }
 
 BOOL ThreadpoolMgr::SetMaxThreadsHelper(DWORD MaxWorkerThreads,
@@ -807,7 +807,7 @@ int TakeMaxWorkingThreadCount()
         if (currentCounts.asLong == InterlockedCompareExchange(&g_workingThreadCounts.asLong, newCounts.asLong, currentCounts.asLong))
         {
             // If we haven't updated the counts since the last call to TakeMaxWorkingThreadCount, then we never updated maxWorking.
-            // In that case, the number of working threads for the whole period since the last TakeMaxWorkingThreadCount is the 
+            // In that case, the number of working threads for the whole period since the last TakeMaxWorkingThreadCount is the
             // current number of working threads.
             return currentCounts.maxWorking == 0 ? currentCounts.currentWorking : currentCounts.maxWorking;
         }
@@ -848,10 +848,10 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
 
     }
 
-    if (UnmanagedTPRequest) 
+    if (UnmanagedTPRequest)
     {
         UnManagedPerAppDomainTPCount* pADTPCount;
-        pADTPCount = PerAppDomainTPCountList::GetUnmanagedTPCount(); 
+        pADTPCount = PerAppDomainTPCountList::GetUnmanagedTPCount();
         pADTPCount->QueueUnmanagedWorkRequest(Function, Context);
     }
     else
@@ -937,7 +937,7 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     double elapsed = (double)(endTime.QuadPart - startTime.QuadPart) / freq.QuadPart;
 
     //
-    // It's possible for the current sample to be reset while we're holding 
+    // It's possible for the current sample to be reset while we're holding
     // ThreadAdjustmentLock.  This will result in a very short sample, possibly
     // with completely bogus counts.  We'll try to detect this by checking the sample
     // interval; if it's very short, then we try again later.
@@ -947,8 +947,8 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
         ThreadCounter::Counts currentCounts = WorkerCounter.GetCleanCounts();
 
         int newMax = HillClimbingInstance.Update(
-            currentCounts.MaxWorking, 
-            elapsed, 
+            currentCounts.MaxWorking,
+            elapsed,
             numCompletions,
             &ThreadAdjustmentInterval);
 
@@ -1105,12 +1105,12 @@ BOOL ThreadpoolMgr::PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
 
     GrowCompletionPortThreadpoolIfNeeded();
 
-    // In order to allow external ETW listeners to correlate activities that use our IO completion port 
+    // In order to allow external ETW listeners to correlate activities that use our IO completion port
     // as a dispatch mechanism, we have to ensure the runtime's calls to ::PostQueuedCompletionStatus
-    // and ::GetQueuedCompletionStatus are "annotated" with ETW events representing to operations 
+    // and ::GetQueuedCompletionStatus are "annotated" with ETW events representing to operations
     // performed.
     // There are currently 4 codepaths that post to the GlobalCompletionPort:
-    // 1. and 2. - the Overlapped drainage events. Those are uninteresting to ETW listeners and 
+    // 1. and 2. - the Overlapped drainage events. Those are uninteresting to ETW listeners and
     //    currently call the global ::PostQueuedCompletionStatus directly.
     // 3. the managed API ThreadPool.UnsafeQueueNativeOverlapped(), calling CorPostQueuedCompletionStatus()
     //    which already fires the ETW event as needed
@@ -1120,7 +1120,7 @@ BOOL ThreadpoolMgr::PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
     // If additional codepaths appear they need to either fire the ETW event before calling this or ensure
     // we do not fire an unmatched "dequeue" event in ThreadpoolMgr::CompletionPortThreadStart
     // The current possible values for Function:
-    //  - CallbackForInitiateDrainageOfCompletionPortQueue and 
+    //  - CallbackForInitiateDrainageOfCompletionPortQueue and
     //    CallbackForContinueDrainageOfCompletionPortQueue for Drainage
     //  - BindIoCompletionCallbackStub for ThreadPool.UnsafeQueueNativeOverlapped
     //  - WaitIOCompletionCallback for ThreadPool.RegisterWaitForSingleObject
@@ -1129,7 +1129,7 @@ BOOL ThreadpoolMgr::PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
                                         0,
                                         (ULONG_PTR) Function,
                                         lpOverlapped);
-#else  
+#else
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
 #endif // !FEATURE_PAL
@@ -1205,7 +1205,7 @@ VOID ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue(
             __SwitchToThread(100, CALLER_LIMITS_SPINNING);
         }
     }
-#endif // !FEATURE_PAL    
+#endif // !FEATURE_PAL
 }
 
 
@@ -1390,7 +1390,7 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
             //
             if (FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_NOT_RUNNING) == GATE_THREAD_STATUS_NOT_RUNNING)
             {
-                if (!CreateGateThread()) 
+                if (!CreateGateThread())
                 {
                     //
                     // If we failed to create the gate thread, someone else will need to try again later.
@@ -1433,7 +1433,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
         // This implies that whenever we decrement NumFreeCPThreads to 0, we need to call EnsureGateThreadRunning().
         //
         ThreadCounter::Counts counts = CPThreadCounter.GetCleanCounts();
-        bool needGateThreadForCompletionPort = 
+        bool needGateThreadForCompletionPort =
             InitCompletionPortThreadpool &&
             (counts.NumActive - counts.NumWorking) <= 0;
 
@@ -1450,10 +1450,10 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
         // We don't have to do anything special with EnsureGateThreadRunning() here, because this is only needed
         // once work has been added to the queue for the first time (which is covered above).
         //
-        bool needGateThreadForWorkerTracking = 
+        bool needGateThreadForWorkerTracking =
             0 != CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking);
 
-        if (!(needGateThreadForCompletionPort || 
+        if (!(needGateThreadForCompletionPort ||
               needGateThreadForWorkerThreads ||
               needGateThreadForWorkerTracking))
         {
@@ -1542,11 +1542,11 @@ void ThreadpoolMgr::ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled)
         return;
     }
 
-    if (index == -1) 
+    if (index == -1)
     {
-        pAdCount = PerAppDomainTPCountList::GetUnmanagedTPCount(); 
-    } 
-    else 
+        pAdCount = PerAppDomainTPCountList::GetUnmanagedTPCount();
+    }
+    else
     {
 
         pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(TPIndex((DWORD)index));
@@ -1558,14 +1558,14 @@ void ThreadpoolMgr::ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled)
 
 //--------------------------------------------------------------------------
 //This function informs the thread scheduler that the first requests has been
-//queued on an appdomain, or it's the first unmanaged TP request. 
+//queued on an appdomain, or it's the first unmanaged TP request.
 //Arguments:
-//         UnmanagedTP: Indicates that the request arises from the unmanaged 
+//         UnmanagedTP: Indicates that the request arises from the unmanaged
 //part of Thread Pool.
 //Assumptions:
-//         This function must be called under a per-appdomain lock or the 
+//         This function must be called under a per-appdomain lock or the
 //correct lock under unmanaged TP queue.
-// 
+//
 BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
 {
     CONTRACTL
@@ -1586,14 +1586,14 @@ BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
         _ASSERTE(pAdCount);
     }
     else
-    {       
+    {
         Thread* pCurThread = GetThread();
         _ASSERTE( pCurThread);
 
         AppDomain* pAppDomain = pCurThread->GetDomain();
         _ASSERTE(pAppDomain);
-        
-        TPIndex tpindex = pAppDomain->GetTPIndex();        
+
+        TPIndex tpindex = pAppDomain->GetTPIndex();
         pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(tpindex);
 
         _ASSERTE(pAdCount);
@@ -1607,17 +1607,17 @@ BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
 void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
 //--------------------------------------------------------------------------
 //This function informs the thread scheduler that the kast request has been
-//dequeued on an appdomain, or it's the last unmanaged TP request. 
+//dequeued on an appdomain, or it's the last unmanaged TP request.
 //Arguments:
-//         UnmanagedTP: Indicates that the request arises from the unmanaged 
+//         UnmanagedTP: Indicates that the request arises from the unmanaged
 //part of Thread Pool.
-//         id: Indicates the id of the appdomain. The id is needed as this 
+//         id: Indicates the id of the appdomain. The id is needed as this
 //function can be called (indirectly) from the appdomain unload thread from
-//unmanaged code to clear per-appdomain state during rude unload. 
+//unmanaged code to clear per-appdomain state during rude unload.
 //Assumptions:
-//         This function must be called under a per-appdomain lock or the 
+//         This function must be called under a per-appdomain lock or the
 //correct lock under unmanaged TP queue.
-// 
+//
 {
     CONTRACTL
     {
@@ -1629,11 +1629,11 @@ void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
 
     IPerAppDomainTPCount* pAdCount;
 
-    if(UnmanagedTP) 
+    if(UnmanagedTP)
     {
         pAdCount = PerAppDomainTPCountList::GetUnmanagedTPCount();
         _ASSERTE(pAdCount);
-    } 
+    }
     else
     {
        Thread* pCurThread = GetThread();
@@ -1641,7 +1641,7 @@ void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
 
        AppDomain* pAppDomain = pCurThread->GetDomain();
        _ASSERTE(pAppDomain);
-    
+
        TPIndex tpindex = pAppDomain->GetTPIndex();
 
        pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(tpindex);
@@ -1812,7 +1812,7 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
         bOK = RevertIfImpersonated(&bReverted, &token);
         if (bOK != TRUE)
             return NULL;
-#endif // !FEATURE_PAL 
+#endif // !FEATURE_PAL
         NewHolder<intermediateThreadParam> lpThreadArgs(new (nothrow) intermediateThreadParam);
         if (lpThreadArgs != NULL)
         {
@@ -1832,7 +1832,7 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
         }
 #ifndef FEATURE_PAL
         UndoRevert(bReverted, token);
-#endif // !FEATURE_PAL 
+#endif // !FEATURE_PAL
     }
 
     if (*pIsCLRThread && !bOK)
@@ -1927,7 +1927,7 @@ Work:
             }
 
             // converted to CLRThread and added to ThreadStore, pick an group affinity for this thread
-            pThread->ChooseThreadCPUGroupAffinity(); 
+            pThread->ChooseThreadCPUGroupAffinity();
 
             #ifdef FEATURE_COMINTEROP
             if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
@@ -2016,7 +2016,7 @@ Work:
         if (pThread == NULL)
             pThread = GetThread();
 
-        if (pThread) 
+        if (pThread)
         {
             if (pThread->IsAbortRequested())
                 pThread->EEResetAbort(Thread::TAR_ALL);
@@ -2032,9 +2032,9 @@ Retire:
     counts = WorkerCounter.GetCleanCounts();
     FireEtwThreadPoolWorkerThreadRetirementStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
-    // It's possible that some work came in just before we decremented the active thread count, in which 
+    // It's possible that some work came in just before we decremented the active thread count, in which
     // case whoever queued that work may be expecting us to pick it up - so they would not have signalled
-    // the worker semaphore.  If there are other threads waiting, they will never be woken up, because 
+    // the worker semaphore.  If there are other threads waiting, they will never be woken up, because
     // whoever queued the work expects that it's already been picked up.  The solution is to signal the semaphore
     // if there's any work available.
     if (PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains())
@@ -2075,7 +2075,7 @@ RetryRetire:
             // we will simply not commit the decrement, swallow the signal that was sent, and proceed as if we
             // got WAIT_OBJECT_0 in the wait above.
             //
-            // If we don't hit zero while decrementing NumRetired, we still may have encountered this race.  But 
+            // If we don't hit zero while decrementing NumRetired, we still may have encountered this race.  But
             // if we don't hit zero, then there's another retired thread that will pick up this signal.  So it's ok
             // to exit.
             //
@@ -2106,7 +2106,7 @@ RetryRetire:
 
 WaitForWork:
 
-    // It's possible that we decided we had no work just before some work came in, 
+    // It's possible that we decided we had no work just before some work came in,
     // but reduced the worker count *after* the work came in.  In this case, we might
     // miss the notification of available work.  So we make a sweep through the ADs here,
     // and wake up a thread (maybe this one!) if there is work to do.
@@ -2136,7 +2136,7 @@ RetryWaitForWork:
         // 2) Signal WorkerSemaphore
         //
         // The solution is much like retirement; when we're decrementing NumActive, we need to make
-        // sure it doesn't drop below NumWorking.  If it would, then we need to go back and wait 
+        // sure it doesn't drop below NumWorking.  If it would, then we need to go back and wait
         // again.
         //
 
@@ -2314,7 +2314,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
         // This event correlates with ThreadPoolIODequeue in ThreadpoolMgr::AsyncCallbackCompletion
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIOEnqueue))
             FireEtwThreadPoolIOEnqueue((LPOVERLAPPED)waitInfo, reinterpret_cast<void*>(Callback), (dwFlag & WAIT_SINGLE_EXECUTION) == 0, GetClrInstanceId());
-    
+
         BOOL status = QueueUserAPC((PAPCFUNC)InsertNewWaitForSelf, threadCB->threadHandle, (size_t) waitInfo);
 
         if (status == FALSE)
@@ -2625,14 +2625,14 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
                 //and APC to deregiter the wait never fires. That scenario leads to an infinite loop. This check would
                 //allow the thread to enter alertable wait and thus cause the APC to fire.
 
-                ResetWaitThreadAPCPending(); 
+                ResetWaitThreadAPCPending();
 
                 //We use SleepEx instead of CLRSLeepEx because CLRSleepEx calls into SQL(or other hosts) in hosted
                 //scenarios. SQL does not deliver APC's, and the waithread wait insertion/deletion logic depends on
                 //APC's being delivered.
 
                 #undef SleepEx
-                status = SleepEx(0,TRUE);    
+                status = SleepEx(0,TRUE);
                 #define SleepEx(a,b) Dont_Use_SleepEx(a,b)
 
                 continue;
@@ -3172,7 +3172,7 @@ BOOL ThreadpoolMgr::BindIoCompletionCallback(HANDLE FileHandle,
     CONTRACTL_END;
 
 #ifndef FEATURE_PAL
-    
+
     errCode = S_OK;
 
     EnsureInitialized();
@@ -3278,7 +3278,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
         }
 
         // converted to CLRThread and added to ThreadStore, pick an group affinity for this thread
-        pThread->ChooseThreadCPUGroupAffinity(); 
+        pThread->ChooseThreadCPUGroupAffinity();
 
         fThreadInit = TRUE;
     }
@@ -3317,7 +3317,7 @@ Top:
                 }
 
                 // converted to CLRThread and added to ThreadStore, pick an group affinity for this thread
-                pThread->ChooseThreadCPUGroupAffinity(); 
+                pThread->ChooseThreadCPUGroupAffinity();
 
 #ifdef FEATURE_COMINTEROP
                 if (pThread->SetApartment(Thread::AS_InMTA, TRUE) != Thread::AS_InMTA)
@@ -3371,24 +3371,24 @@ Top:
 
             context = NULL;
             fIsCompletionContext = FALSE;
-        
-            if (pThread == NULL) 
-            {    
+
+            if (pThread == NULL)
+            {
                 pThread = GetThread();
             }
 
-            if (pThread) 
+            if (pThread)
             {
- 
+
                 context = (PIOCompletionContext) pThread->GetIOCompletionContext();
-            
-                if (context->lpOverlapped != NULL) 
+
+                if (context->lpOverlapped != NULL)
                 {
                     errorCode = context->ErrorCode;
                     numBytes = context->numBytesTransferred;
                     pOverlapped = context->lpOverlapped;
                     key = context->key;
-                    
+
                     context->lpOverlapped = NULL;
                     fIsCompletionContext = TRUE;
                 }
@@ -3422,7 +3422,7 @@ Top:
         }
 
         // We fire IODequeue events whether the IO completion was retrieved in the above call to
-        // GetQueuedCompletionStatus or during an earlier call (e.g. in GateThreadStart, and passed here in lpArgs, 
+        // GetQueuedCompletionStatus or during an earlier call (e.g. in GateThreadStart, and passed here in lpArgs,
         // or in CompletionPortDispatchWorkWithinAppDomain, and passed here through StoreOverlappedInfoInThread)
 
         // For the purposes of activity correlation we only fire ETW events here, if needed OR if not fired at a higher
@@ -3441,7 +3441,7 @@ Top:
         while (true)
         {
             //
-            // When we reach this point, this thread is "active" but not "working."  Depending on the result of the call to GetQueuedCompletionStatus, 
+            // When we reach this point, this thread is "active" but not "working."  Depending on the result of the call to GetQueuedCompletionStatus,
             // and the state of the rest of the IOCP threads, we need to figure out whether to de-activate (exit) this thread, retire this thread,
             // or transition to "working."
             //
@@ -3460,7 +3460,7 @@ Top:
 
                 //
                 // We need at least one free thread, or we have no way of knowing if completions are being queued.
-                // 
+                //
                 if (newCounts.NumWorking == newCounts.NumActive)
                 {
                     newCounts = oldCounts;
@@ -3679,15 +3679,15 @@ Exit:
 
 LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     Thread* pThread,
-    DWORD* pErrorCode, 
+    DWORD* pErrorCode,
     DWORD* pNumBytes,
     size_t* pKey)
 //
 //This function is called just after dispatching the previous BindIO callback
-//to Managed code. This is a perf optimization to do a quick call to 
+//to Managed code. This is a perf optimization to do a quick call to
 //GetQueuedCompletionStatus with a timeout of 0 ms. If there is work in the
 //same appdomain, dispatch it back immediately. If not stick it in a well known
-//place, and reenter the target domain. The timeout of zero is chosen so as to 
+//place, and reenter the target domain. The timeout of zero is chosen so as to
 //not delay appdomain unloads.
 //
 {
@@ -3707,10 +3707,10 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     //Very Very Important!
     //Do not change the timeout for GetQueuedCompletionStatus to a non-zero value.
     //Selecting a non-zero value can cause the thread to block, and lead to expensive context switches.
-    //In real life scenarios, we have noticed a packet to be not availabe immediately, but very shortly 
+    //In real life scenarios, we have noticed a packet to be not availabe immediately, but very shortly
     //(after few 100's of instructions), and falling back to the VM is good in that case as compared to
     //taking a context switch. Changing the timeout to non-zero can lead to perf degrades, that are very
-    //hard to diagnose.     
+    //hard to diagnose.
 
     status = ::GetQueuedCompletionStatus(
                  GlobalCompletionPort,
@@ -3721,52 +3721,52 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
 
     DWORD lastError = GetLastError();
 
-    if (status == 0) 
-    {          
-        if (lpOverlapped != NULL) 
+    if (status == 0)
+    {
+        if (lpOverlapped != NULL)
         {
             *pErrorCode = lastError;
-        } 
-        else 
+        }
+        else
         {
             return NULL;
         }
-    } 
+    }
 
     if (((LPOVERLAPPED_COMPLETION_ROUTINE) *pKey) != BindIoCompletionCallbackStub)
     {
         //_ASSERTE(FALSE);
-    } 
-    else 
+    }
+    else
     {
         ManagedCallback = TRUE;
         overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
-    }  
+    }
 
-    if (ManagedCallback) 
-    {           
+    if (ManagedCallback)
+    {
         _ASSERTE(*pKey != 0);  // should be a valid function address
-        
-        if (*pKey ==0) 
+
+        if (*pKey ==0)
         {
             //Application Bug.
             return NULL;
         }
-    } 
-    else 
+    }
+    else
     {
         //Just retruned back from managed code, a Thread structure should exist.
         _ASSERTE (pThread);
-        
+
         //Oops, this is an overlapped fom a different appdomain. STick it in
         //the thread. We will process it later.
 
         StoreOverlappedInfoInThread(pThread, *pErrorCode, *pNumBytes, *pKey, lpOverlapped);
 
-        lpOverlapped = NULL;        
+        lpOverlapped = NULL;
     }
 
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     return lpOverlapped;
 #endif
 }
@@ -3799,9 +3799,9 @@ BOOL ThreadpoolMgr::ShouldGrowCompletionPortThreadpool(ThreadCounter::Counts cou
         NOTHROW;
         MODE_ANY;
     }
-    CONTRACTL_END;     
+    CONTRACTL_END;
 
-    if (counts.NumWorking >= counts.NumActive 
+    if (counts.NumWorking >= counts.NumActive
         && NumCPInfrastructureThreads == 0
         && (counts.NumActive == 0 ||  !GCHeapUtilities::IsGCInProgress(TRUE))
         )
@@ -3819,7 +3819,7 @@ BOOL ThreadpoolMgr::ShouldGrowCompletionPortThreadpool(ThreadCounter::Counts cou
                     SufficientDelaySinceLastSample(LastCPThreadCreation,counts.NumActive))
                 {
                     return TRUE;
-                }                 
+                }
             }
         }
 
@@ -3837,14 +3837,14 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
         NOTHROW;
         MODE_ANY;
     }
-    CONTRACTL_END;    
+    CONTRACTL_END;
 
     ThreadCounter::Counts oldCounts, newCounts;
     while (true)
     {
         oldCounts = CPThreadCounter.GetCleanCounts();
         newCounts = oldCounts;
-        
+
         if(!ShouldGrowCompletionPortThreadpool(oldCounts))
         {
             break;
@@ -3852,12 +3852,12 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
         else
         {
             if (oldCounts.NumRetired > 0)
-            {        
+            {
                 // wakeup retired thread instead
                 RetiredCPWakeupEvent->Set();
                 return;
             }
-            else 
+            else
             {
                 // create a new thread.  New IOCP threads start as "active" and "working"
                 newCounts.NumActive++;
@@ -3880,8 +3880,8 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
                     }
                     return;
                 }
-            }    
-        } 
+            }
+        }
     }
 }
 #endif // !FEATURE_PAL
@@ -3891,7 +3891,7 @@ BOOL ThreadpoolMgr::IsIoPending()
 {
     CONTRACTL
     {
-        NOTHROW;         
+        NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
     }
@@ -3954,7 +3954,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
     }
     else
     {
-        (*g_pufnNtQuerySystemInformation)(SystemProcessorPerformanceInformation, 
+        (*g_pufnNtQuerySystemInformation)(SystemProcessorPerformanceInformation,
                         pOldInfo->usageBuffer,
                         pOldInfo->usageBufferSize,
                         NULL);
@@ -3981,7 +3981,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
 
     cpuTotalTime  = (newUsage.userTime.QuadPart   - pOldInfo->userTime.QuadPart) +
                     (newUsage.kernelTime.QuadPart - pOldInfo->kernelTime.QuadPart);
-    cpuBusyTime   = cpuTotalTime - 
+    cpuBusyTime   = cpuTotalTime -
                     (newUsage.idleTime.QuadPart   - pOldInfo->idleTime.QuadPart);
 
     // Preserve reading
@@ -4008,7 +4008,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PAL_IOCP_CPU_INFORMATION* pOldInfo)
 #endif // !FEATURE_PAL
 
 //
-// A timer that ticks every GATE_THREAD_DELAY milliseconds.  
+// A timer that ticks every GATE_THREAD_DELAY milliseconds.
 // On platforms that support it, we use a coalescable waitable timer object.
 // For other platforms, we use Sleep, via __SwitchToThread.
 //
@@ -4140,7 +4140,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
      * 2. GCCpuGroups=1 && Thread_UseAllCpuGroups = 1, the mask is not used
      */
     prevCPUInfo.affinityMask = GetCurrentProcessCpuMask();
-    if (prevCPUInfo.affinityMask == 0) 
+    if (prevCPUInfo.affinityMask == 0)
     {   // create a mask that has g_SystemInfo.dwNumberOfProcessors;
         DWORD_PTR mask = 0, maskpos = 1;
         for (unsigned int i=0; i < g_SystemInfo.dwNumberOfProcessors; i++)
@@ -4157,7 +4157,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     // CPU usage statistics
     int elementsNeeded = NumberOfProcessors > g_SystemInfo.dwNumberOfProcessors ?
                                                   NumberOfProcessors : g_SystemInfo.dwNumberOfProcessors;
-    if (!ClrSafeInt<int>::multiply(elementsNeeded, sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION), 
+    if (!ClrSafeInt<int>::multiply(elementsNeeded, sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION),
                                                   prevCPUInfo.usageBufferSize))
         return 0;
 
@@ -4172,7 +4172,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     PAL_IOCP_CPU_INFORMATION prevCPUInfo;
     GetCPUBusyTime_NT(&prevCPUInfo);                  // ignore return value the first time
 #endif // !FEATURE_PAL
-    
+
     BOOL IgnoreNextSample = FALSE;
 
     do
@@ -4256,7 +4256,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
                 {
                     // if we picked up a "Continue Drainage" notification DO NOT create a new CP thread
                 }
-                else 
+                else
                 if (errorCode != WAIT_TIMEOUT)
                 {
                     QueuedStatus *CompletionStatus = NULL;
@@ -4302,7 +4302,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
             {
                 // this could be an indication that threads might be getting blocked or there is no work
                 if (oldCounts.NumWorking == oldCounts.NumActive &&                // don't bump the limit if there are already free threads
-                    oldCounts.NumRetired > 0) 
+                    oldCounts.NumRetired > 0)
                 {
                     RetiredCPWakeupEvent->Set();
                 }
@@ -4397,7 +4397,7 @@ BOOL ThreadpoolMgr::SufficientDelaySinceLastDequeue()
     {
         tooLong = GATE_THREAD_DELAY;
     }
-    else       
+    else
     {
         ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
         unsigned numThreads = counts.MaxWorking;
@@ -4691,8 +4691,8 @@ DWORD ThreadpoolMgr::FireTimers()
     DWORD currentTime = GetTickCount();
     DWORD nextFiringInterval = (DWORD) -1;
     TimerInfo* timerInfo = NULL;
-    
-    EX_TRY 
+
+    EX_TRY
     {
         for (LIST_ENTRY* node = (LIST_ENTRY*) TimerQueue.Flink;
              node != &TimerQueue;
@@ -4742,8 +4742,8 @@ DWORD ThreadpoolMgr::FireTimers()
                     nextFiringInterval = firingInterval;
             }
         }
-    } 
-    EX_CATCH 
+    }
+    EX_CATCH
     {
         // If QueueUserWorkItem throws OOM, swallow the exception and retry on
         // the next call to FireTimers(), otherwise retrhow.
@@ -4869,7 +4869,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
 
     // ExternalCompletionEvent comes from Host, ExternalEventSafeHandle from managed code.
     // They are mutually exclusive.
-    _ASSERTE(!(timerInfo->ExternalCompletionEvent != INVALID_HANDLE && 
+    _ASSERTE(!(timerInfo->ExternalCompletionEvent != INVALID_HANDLE &&
                         timerInfo->ExternalEventSafeHandle != NULL));
 
     if (timerInfo->ExternalCompletionEvent != INVALID_HANDLE)
@@ -4881,7 +4881,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
     // We cannot block the timer thread, so some cleanup is deferred to other threads.
     if (GetThread() == pTimerThread)
     {
-        // Notify the ExternalEventSafeHandle with an user work item 
+        // Notify the ExternalEventSafeHandle with an user work item
         if (timerInfo->ExternalEventSafeHandle != NULL)
         {
             BOOL success = FALSE;
@@ -4904,8 +4904,8 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
             if (success == FALSE)
             {
                 QueueTimerInfoForRelease(timerInfo);
-            }    
-            
+            }
+
             return;
         }
 
@@ -4919,7 +4919,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
     }
 
     // To get here we are either not the Timer thread or there is no blocking work to be done
-    
+
     if (timerInfo->Context != NULL)
     {
         GCX_COOP();
@@ -4932,7 +4932,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
     }
 
     delete timerInfo;
-    
+
 }
 
 // We add TimerInfos from deleted timers into a linked list.

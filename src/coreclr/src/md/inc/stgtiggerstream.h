@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgTiggerStream.h
-// 
+//
 
 //
 // TiggerStream is the companion to the TiggerStorage CoClass.  It handles the
@@ -26,7 +26,7 @@ enum
 class TiggerStorage;
 
 
-class TiggerStream : 
+class TiggerStream :
 	public IStream
 {
 public:
@@ -50,50 +50,50 @@ public:
 	}
 
 // IStream
-    virtual HRESULT STDMETHODCALLTYPE Read( 
+    virtual HRESULT STDMETHODCALLTYPE Read(
         void		*pv,
         ULONG		cb,
         ULONG		*pcbRead);
-    
-    virtual HRESULT STDMETHODCALLTYPE Write( 
+
+    virtual HRESULT STDMETHODCALLTYPE Write(
         const void	*pv,
         ULONG		cb,
         ULONG		*pcbWritten);
 
-    virtual HRESULT STDMETHODCALLTYPE Seek( 
+    virtual HRESULT STDMETHODCALLTYPE Seek(
         LARGE_INTEGER dlibMove,
         DWORD		dwOrigin,
         ULARGE_INTEGER *plibNewPosition);
-    
-    virtual HRESULT STDMETHODCALLTYPE SetSize( 
+
+    virtual HRESULT STDMETHODCALLTYPE SetSize(
         ULARGE_INTEGER libNewSize);
-    
-    virtual HRESULT STDMETHODCALLTYPE CopyTo( 
+
+    virtual HRESULT STDMETHODCALLTYPE CopyTo(
         IStream		*pstm,
         ULARGE_INTEGER cb,
         ULARGE_INTEGER *pcbRead,
         ULARGE_INTEGER *pcbWritten);
-    
-    virtual HRESULT STDMETHODCALLTYPE Commit( 
+
+    virtual HRESULT STDMETHODCALLTYPE Commit(
         DWORD		grfCommitFlags);
-    
+
     virtual HRESULT STDMETHODCALLTYPE Revert( void);
-    
-    virtual HRESULT STDMETHODCALLTYPE LockRegion( 
+
+    virtual HRESULT STDMETHODCALLTYPE LockRegion(
         ULARGE_INTEGER libOffset,
         ULARGE_INTEGER cb,
         DWORD		dwLockType);
-    
-    virtual HRESULT STDMETHODCALLTYPE UnlockRegion( 
+
+    virtual HRESULT STDMETHODCALLTYPE UnlockRegion(
         ULARGE_INTEGER libOffset,
         ULARGE_INTEGER cb,
         DWORD		dwLockType);
-    
-    virtual HRESULT STDMETHODCALLTYPE Stat( 
+
+    virtual HRESULT STDMETHODCALLTYPE Stat(
         STATSTG		*pstatstg,
         DWORD		grfStatFlag);
-    
-    virtual HRESULT STDMETHODCALLTYPE Clone( 
+
+    virtual HRESULT STDMETHODCALLTYPE Clone(
         IStream		**ppstm);
 
 

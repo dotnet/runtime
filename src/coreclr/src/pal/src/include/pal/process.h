@@ -31,9 +31,9 @@ extern "C"
 {
 #endif // __cplusplus
 
-/* thread ID of thread that has initiated an ExitProcess (or TerminateProcess). 
-   this is to make sure only one thread cleans up the PAL, and also to prevent 
-   calls to CreateThread from succeeding once shutdown has started 
+/* thread ID of thread that has initiated an ExitProcess (or TerminateProcess).
+   this is to make sure only one thread cleans up the PAL, and also to prevent
+   calls to CreateThread from succeeding once shutdown has started
    [defined in process.c]
 */
 extern Volatile<LONG> terminator;
@@ -131,15 +131,15 @@ VOID PROCProcessUnlock(VOID);
 /*++
 Function
   PROCAbortInitialize()
-  
+
 Abstract
   Initialize the process abort crash dump program file path and
   name. Doing all of this ahead of time so nothing is allocated
   or copied in PROCAbort/signal handler.
-  
+
 Return
   TRUE - succeeds, FALSE - fails
-  
+
 --*/
 BOOL PROCAbortInitialize();
 
@@ -149,16 +149,16 @@ Function:
 
   Aborts the process after calling the shutdown cleanup handler. This function
   should be called instead of calling abort() directly.
-  
+
   Does not return
 --*/
-PAL_NORETURN 
+PAL_NORETURN
 VOID PROCAbort();
 
 /*++
 Function:
   PROCNotifyProcessShutdown
-  
+
   Calls the abort handler to do any shutdown cleanup. Call be
   called from the unhandled native exception handler.
 

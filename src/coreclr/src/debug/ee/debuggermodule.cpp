@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: DebuggerModule.cpp
-// 
+//
 
 //
 // Stuff for tracking DebuggerModules.
@@ -244,7 +244,7 @@ void DebuggerModuleTable::RemoveModule(Module* module, AppDomain *pAppDomain)
     // Note: we have to make sure to lookup the module with the app domain parameter if the module lives in a shared
     // assembly or the system assembly. <BUGNUM>Bugs 65943 & 81728.</BUGNUM>
     _ASSERTE( FALSE );
-        
+
 }
 
 
@@ -261,7 +261,7 @@ DebuggerModule *DebuggerModuleTable::GetModule(Module* module)
 
     _ASSERTE(module != NULL);
     _ASSERTE(ThreadHoldsLock());
-    
+
     DebuggerModuleEntry *entry
       = (DebuggerModuleEntry *) Find(HASH(module), KEY(module));
     if (entry == NULL)

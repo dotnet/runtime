@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Implementation of the sempahore synchroniztion object as described in 
+    Implementation of the sempahore synchroniztion object as described in
     the WIN32 API
 
 Revision History:
@@ -119,7 +119,7 @@ CreateSemaphoreA(
           lpSemaphoreAttributes, lInitialCount, lMaximumCount, lpName, lpName?lpName:"NULL");
 
     pthr = InternalGetCurrentThread();
-    
+
     if (lpName != nullptr)
     {
         ASSERT("lpName: Cross-process named objects are not supported in PAL");
@@ -145,7 +145,7 @@ CreateSemaphoreA(
     //
 
     pthr->SetLastError(palError);
-    
+
     LOGEXIT("CreateSemaphoreA returns HANDLE %p\n", hSemaphore);
     PERF_EXIT(CreateSemaphoreA);
     return hSemaphore;
@@ -211,14 +211,14 @@ CreateSemaphoreW(
     PERF_ENTRY(CreateSemaphoreW);
     ENTRY("CreateSemaphoreW(lpSemaphoreAttributes=%p, lInitialCount=%d, "
           "lMaximumCount=%d, lpName=%p (%S))\n",
-          lpSemaphoreAttributes, lInitialCount, lMaximumCount, 
+          lpSemaphoreAttributes, lInitialCount, lMaximumCount,
           lpName, lpName?lpName:W16_NULLSTRING);
 
     pthr = InternalGetCurrentThread();
 
     palError = InternalCreateSemaphore(
         pthr,
-        lpSemaphoreAttributes, 
+        lpSemaphoreAttributes,
         lInitialCount,
         lMaximumCount,
         lpName,
@@ -251,7 +251,7 @@ Note:
 Parameters
   pthr -- thread data for calling thread
   phEvent -- on success, receives the allocated semaphore handle
-  
+
   See MSDN docs on CreateSemaphore for all other parameters.
 --*/
 
@@ -352,7 +352,7 @@ CorUnix::InternalCreateSemaphore(
     palError = g_pObjectManager->RegisterObject(
         pthr,
         pobjSemaphore,
-        &aotSempahore, 
+        &aotSempahore,
         phSemaphore,
         &pobjRegisteredSemaphore
         );
@@ -362,7 +362,7 @@ CorUnix::InternalCreateSemaphore(
     // out here to ensure that we don't try to release a reference on
     // it down the line.
     //
-    
+
     pobjSemaphore = NULL;
 
 InternalCreateSemaphoreExit:
@@ -407,7 +407,7 @@ ReleaseSemaphore(
           hSemaphore, lReleaseCount, lpPreviousCount);
 
     pthr = InternalGetCurrentThread();
-    
+
     palError = InternalReleaseSemaphore(
         pthr,
         hSemaphore,
@@ -431,7 +431,7 @@ Function:
 
 Parameters:
   pthr -- thread data for calling thread
-  
+
   See MSDN docs on ReleaseSemaphore for all other parameters
 --*/
 
@@ -479,7 +479,7 @@ CorUnix::InternalReleaseSemaphore(
     }
 
     palError = pobjSemaphore->GetImmutableData(reinterpret_cast<void**>(&pSemaphoreData));
-    
+
     if (NO_ERROR != palError)
     {
         ASSERT("Error %d obtaining object data\n", palError);
@@ -513,7 +513,7 @@ CorUnix::InternalReleaseSemaphore(
     }
 
     palError = pssc->IncrementSignalCount(lReleaseCount);
-    
+
     if (NO_ERROR != palError)
     {
         ASSERT("Error %d incrementing signal count\n", palError);
@@ -568,7 +568,7 @@ OpenSemaphoreW(
     CPalThread *pthr = NULL;
 
     PERF_ENTRY(OpenSemaphoreW);
-    ENTRY("OpenSemaphoreW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n", 
+    ENTRY("OpenSemaphoreW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n",
           dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:W16_NULLSTRING);
 
     pthr = InternalGetCurrentThread();

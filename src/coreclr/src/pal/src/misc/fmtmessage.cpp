@@ -43,9 +43,9 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 /*++
 Function:
-    
+
     FMTMSG_GetMessageString
-    
+
 Returns the message as a wide string.
 --*/
 static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
@@ -59,7 +59,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
     {
         allocChars = PAL_wcslen(lpErrorString) + 1;
     }
-    else 
+    else
     {
         allocChars = MAX_ERROR_STRING_LENGTH + 1;
     }
@@ -72,7 +72,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         {
             PAL_wcscpy(lpRetVal, lpErrorString);
         }
-        else 
+        else
         {
             swprintf_s(lpRetVal, MAX_ERROR_STRING_LENGTH, W("Error %u"), dwErrCode);
         }
@@ -90,21 +90,21 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
 Function :
 
     FMTMSG__watoi
-    
-    Converts a wide string repersentation of an integer number 
+
+    Converts a wide string repersentation of an integer number
     into a interger number.
 
     Returns a integer number, or 0 on failure. 0 is not a valid number
     for FormatMessage inserts.
-    
+
 --*/
 static INT FMTMSG__watoi( LPWSTR str )
 {
     CONST UINT MAX_NUMBER_LENGTH = 3;
     CHAR buf[ MAX_NUMBER_LENGTH ];
     INT nRetVal = 0;
-    
-    nRetVal = WideCharToMultiByte( CP_ACP, 0, str, -1, buf, 
+
+    nRetVal = WideCharToMultiByte( CP_ACP, 0, str, -1, buf,
                                    MAX_NUMBER_LENGTH, NULL, 0 );
 
     if ( nRetVal != 0 )
@@ -117,7 +117,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         return 0;
     }
 }
-            
+
 /* Adds the character to the working string. */
 #define _ADD_TO_STRING( c ) \
 {\
@@ -179,13 +179,13 @@ of _ADD_TO_STRING, as we will resize the buffer if necessary. */
 Function :
 
     FMTMSG_ProcessPrintf
-    
+
     Processes the printf formatters based on the format.
-        
+
     Returns the LPWSTR string, or NULL on failure.
 */
-    
-static LPWSTR FMTMSG_ProcessPrintf( WCHAR c , 
+
+static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
                                  LPWSTR lpPrintfString,
                                  LPWSTR lpInsertString)
 {
@@ -214,7 +214,7 @@ static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
         /* Fall through */
     case 'g' :
         /* Fall through */
-    case 'G' : 
+    case 'G' :
         ERROR( "%%%c is not supported by FormatMessage.\n", c );
         SetLastError( ERROR_INVALID_PARAMETER );
         return NULL;
@@ -231,11 +231,11 @@ static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
     /* Create the format string. */
     memset( lpFormat, 0, nFormatLength * sizeof(WCHAR) );
     *lpFormat = '%';
-    
+
     PAL_wcscat( lpFormat, lpPrintfString );
- 
+
     lpBuffer = (LPWSTR) PAL_malloc(tmpSize*sizeof(WCHAR));
-        
+
     /* try until the buffer is big enough */
     while (TRUE)
     {
@@ -246,7 +246,7 @@ static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
             PAL_free(lpFormat);
             return NULL;
         }
-        nBufferLength = _snwprintf_s( lpBuffer, tmpSize,  tmpSize, 
+        nBufferLength = _snwprintf_s( lpBuffer, tmpSize,  tmpSize,
                                     lpFormat, lpInsertString);
 
         if ((nBufferLength >= 0) && (nBufferLength != tmpSize))
@@ -293,18 +293,18 @@ FormatMessageW(
     LPWSTR lpSourceString = NULL;
     UINT nCount = 0;
     LPWSTR lpReturnString = NULL;
-    LPWSTR lpWorkingString = NULL; 
-    
+    LPWSTR lpWorkingString = NULL;
+
     PERF_ENTRY(FormatMessageW);
     ENTRY( "FormatMessageW(dwFlags=%#x, lpSource=%p, dwMessageId=%#x, "
-           "dwLanguageId=%#x, lpBuffer=%p, nSize=%u, va_list=%p)\n", 
+           "dwLanguageId=%#x, lpBuffer=%p, nSize=%u, va_list=%p)\n",
            dwFlags, lpSource, dwMessageId, dwLanguageId, lpBuffer, nSize,
            Arguments);
-    
+
     /* Sanity checks. */
     if ( dwFlags & FORMAT_MESSAGE_FROM_STRING && !lpSource )
     {
-        /* This behavior is different then in Windows.  
+        /* This behavior is different then in Windows.
            Windows would just crash.*/
         ERROR( "lpSource cannot be NULL.\n" );
         SetLastError( ERROR_INVALID_PARAMETER );
@@ -313,15 +313,15 @@ FormatMessageW(
 
     if ( !(dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER ) && !lpBuffer )
     {
-        /* This behavior is different then in Windows.  
+        /* This behavior is different then in Windows.
            Windows would just crash.*/
         ERROR( "lpBuffer cannot be NULL, if "
                " FORMAT_MESSAGE_ALLOCATE_BUFFER is not specified.\n" );
         SetLastError( ERROR_INVALID_PARAMETER );
         goto exit;
     }
-    
-    if ( ( dwFlags & FORMAT_MESSAGE_FROM_STRING ) && 
+
+    if ( ( dwFlags & FORMAT_MESSAGE_FROM_STRING ) &&
          ( dwFlags & FORMAT_MESSAGE_FROM_SYSTEM ) )
     {
         ERROR( "These flags cannot co-exist. You can either "
@@ -330,8 +330,8 @@ FormatMessageW(
         SetLastError( ERROR_INVALID_PARAMETER );
         goto exit;
     }
-    
-    if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) && 
+
+    if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) &&
          ( dwLanguageId != 0) )
     {
         ERROR( "Invalid language indentifier.\n" );
@@ -346,7 +346,7 @@ FormatMessageW(
                "free the memory when done.\n", nSize );
         bIsLocalAlloced = TRUE;
     }
-    
+
     if ( dwFlags & FORMAT_MESSAGE_IGNORE_INSERTS )
     {
         bIgnoreInserts = TRUE;
@@ -365,12 +365,12 @@ FormatMessageW(
             bIsVaList = FALSE;
         }
     }
-    
+
     if ( dwFlags & FORMAT_MESSAGE_FROM_STRING )
     {
         lpSourceString = (LPWSTR)lpSource;
     }
-    else if ( dwFlags & FORMAT_MESSAGE_FROM_SYSTEM ) 
+    else if ( dwFlags & FORMAT_MESSAGE_FROM_SYSTEM )
     {
         if ((dwMessageId & 0xFFFF0000) == 0x80070000)
         {
@@ -378,9 +378,9 @@ FormatMessageW(
             dwMessageId &= 0xFFFF;
         }
 
-        lpWorkingString = lpReturnString = 
+        lpWorkingString = lpReturnString =
             FMTMSG_GetMessageString( dwMessageId );
-        
+
         if ( !lpWorkingString )
         {
             ERROR( "Unable to find the message %d.\n", dwMessageId );
@@ -390,7 +390,7 @@ FormatMessageW(
         }
 
         nCount = PAL_wcslen( lpWorkingString );
-        
+
         if ( !bIsLocalAlloced && nCount > nSize )
         {
             ERROR( "Insufficient buffer.\n" );
@@ -450,7 +450,7 @@ FormatMessageW(
 
                 Number[ 0 ] = *lpSourceString;
                 lpSourceString++;
-                
+
                 if ( iswdigit( *lpSourceString ) )
                 {
                     Number[ 1 ] = *lpSourceString;
@@ -489,7 +489,7 @@ FormatMessageW(
                     else
                     {
                         va_list TheArgs;
-                        
+
                         va_copy(TheArgs, *Arguments);
                         UINT i = 0;
                         for ( ; i < Index; i++ )
@@ -512,10 +512,10 @@ FormatMessageW(
                             nPrintfLength = p - lpSourceString;
                         }
                     }
-                                        
-                    lpPrintfString = 
+
+                    lpPrintfString =
                         (LPWSTR)PAL_malloc( ( nPrintfLength + 1 ) * sizeof( WCHAR ) );
-                    
+
                     if ( !lpPrintfString )
                     {
                         ERROR( "Unable to allocate memory.\n" );
@@ -524,13 +524,13 @@ FormatMessageW(
                         nCount = 0;
                         goto exit;
                     }
-                    
+
                     PAL_wcsncpy( lpPrintfString, lpSourceString, nPrintfLength );
                     *( lpPrintfString + nPrintfLength ) = '\0';
 
-                    lpStartOfFormattedString = lpFormattedString = 
-                           FMTMSG_ProcessPrintf( *lpPrintfString, 
-                                                 lpPrintfString, 
+                    lpStartOfFormattedString = lpFormattedString =
+                           FMTMSG_ProcessPrintf( *lpPrintfString,
+                                                 lpPrintfString,
                                                  lpInsertString);
 
                     if ( !lpFormattedString )
@@ -541,17 +541,17 @@ FormatMessageW(
                         lpWorkingString = NULL;
                         goto exit;
                     }
-                     
+
 
                     nFormattedLength = PAL_wcslen( lpFormattedString );
-                    
+
                     /* Append the processed printf string into the working string */
                     while ( *lpFormattedString )
                     {
                         _CHECKED_ADD_TO_STRING( *lpFormattedString );
                         lpFormattedString++;
                     }
-                    
+
                     lpSourceString += nPrintfLength + 1;
                     PAL_free( lpPrintfString );
                     PAL_free( lpStartOfFormattedString );
@@ -625,7 +625,7 @@ FormatMessageW(
             /* In Windows if FormatMessage is called with ignore inserts,
             then FormatMessage strips %1!s! down to %1, since string is the
             default. */
-            if ( bIgnoreInserts && *lpSourceString == '!' && 
+            if ( bIgnoreInserts && *lpSourceString == '!' &&
                  *( lpSourceString + 1 ) == 's' )
             {
                 LPWSTR lpLastBang = PAL_wcschr( lpSourceString + 1, '!' );
@@ -651,7 +651,7 @@ FormatMessageW(
             }
         }
     }
-    
+
     /* Terminate the message. */
     _CHECKED_ADD_TO_STRING( '\0' );
     /* NULL does not count. */

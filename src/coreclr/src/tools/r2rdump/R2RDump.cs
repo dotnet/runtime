@@ -259,7 +259,7 @@ namespace R2RDump
         }
 
         // <summary>
-        /// For each query in the list of queries, dump a runtime function by id. 
+        /// For each query in the list of queries, dump a runtime function by id.
         /// The method containing the runtime function gets outputted, along with the single runtime function that was searched
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>

@@ -29,7 +29,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 
         .macro GenerateRedirectedStubWithFrame STUB, TARGET
 
-        // 
+        //
         // This is the primary function to which execution will be redirected to.
         //
         NESTED_ENTRY \STUB, _TEXT, NoHandler
@@ -45,7 +45,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // triggered in the prolog or epilog of the managed method. For such a case, we must
         // align the stack before calling into the VM.
         //
-        // Runtime check for 8-byte alignment. 
+        // Runtime check for 8-byte alignment.
         PROLOG_STACK_SAVE r7
         // We lose stack unwindability here by configuring fp(r7) incorrectely
         // here.
@@ -61,10 +61,10 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         str r1, [r4, #FaultingExceptionFrame__m_fFilterExecuted]            // Initialize BOOL for personality routine
 
         mov r0, r4                      // move the ptr to FEF in R0
-        
+
         // stack must be 8 byte aligned
-        CHECK_STACK_ALIGNMENT       
-        
+        CHECK_STACK_ALIGNMENT
+
         bl            C_FUNC(\TARGET)
 
         // Target should not return.
@@ -85,7 +85,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 
         // On entry:
         //
-        // R0 = throwable        
+        // R0 = throwable
         // R1 = PC to invoke
         // R2 = address of R4 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
         // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
@@ -104,7 +104,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 
         NESTED_END CallEHFunclet, _TEXT
 
-        // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the 
+        // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
         // frame pointer for accessing the locals in the parent method.
         NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
@@ -113,7 +113,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 
         // On entry:
         //
-        // R0 = throwable        
+        // R0 = throwable
         // R1 = SP of the caller of the method/funclet containing the filter
         // R2 = PC to invoke
         // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.

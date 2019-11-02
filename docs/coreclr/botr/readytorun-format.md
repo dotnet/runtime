@@ -11,7 +11,7 @@ This document describes ReadyToRun format implemented in CoreCLR as of June 2019
 
 # PE Headers and CLI Headers
 
-ReadyToRun images conform to CLI file format as described in ECMA-335, with the following 
+ReadyToRun images conform to CLI file format as described in ECMA-335, with the following
 customizations:
 
 - The PE file is always platform specific
@@ -29,8 +29,8 @@ The limitations of the current format are:
   assumes fixed field layout algorithm. A new section with compact type layout description
   optimized for runtime type loading is needed to address it. (Similar concept as CTL.)
 
-- **Debug info size**: The debug information is unnecessarily bloating the image. This solution was 
-  chosen for compatibility with the current desktop/CoreCLR debugging pipeline. Ideally, the 
+- **Debug info size**: The debug information is unnecessarily bloating the image. This solution was
+  chosen for compatibility with the current desktop/CoreCLR debugging pipeline. Ideally, the
   debug information should be stored in separate file.
 
 # Structures
@@ -63,16 +63,16 @@ struct READYTORUN_SECTION
 
 ### READYTORUN_HEADER::Signature
 
-Always set to 0x00525452 (ASCII encoding for RTR). The signature can be used to distinguish 
+Always set to 0x00525452 (ASCII encoding for RTR). The signature can be used to distinguish
 ReadyToRun images from other CLI images with ManagedNativeHeader (e.g. NGen images).
 
 ### READYTORUN_HEADER::MajorVersion/MinorVersion
 
-The current format version is 3.1. MajorVersion increments are meant for file format breaking changes. 
-MinorVersion increments are meant to compatible file format changes.  
- 
-**Example**: Assume the highest version supported by the runtime is 2.3. The runtime should be able to 
-successfully execute native code from images of version 2.9. The runtime should refuse to execute 
+The current format version is 3.1. MajorVersion increments are meant for file format breaking changes.
+MinorVersion increments are meant to compatible file format changes.
+
+**Example**: Assume the highest version supported by the runtime is 2.3. The runtime should be able to
+successfully execute native code from images of version 2.9. The runtime should refuse to execute
 native code from image of version 3.0.
 
 ### READYTORUN_HEADER::Flags
@@ -90,14 +90,14 @@ struct READYTORUN_SECTION
     IMAGE_DATA_DIRECTORY    Section;
 };
 ```
- 
-This section contains array of `READYTORUN_SECTION` records immediately follows 
-`READYTORUN_HEADER`. Number of elements in the array is `READYTORUN_HEADER::NumberOfSections`. 
-Each record contains section type and its location within the binary. The array is sorted by section type 
+
+This section contains array of `READYTORUN_SECTION` records immediately follows
+`READYTORUN_HEADER`. Number of elements in the array is `READYTORUN_HEADER::NumberOfSections`.
+Each record contains section type and its location within the binary. The array is sorted by section type
 to allow binary searching.
 
-This setup allows adding new or optional section types, and obsoleting existing section types, without 
-file format breaking changes. The runtime is not required to understand all section types in order to load 
+This setup allows adding new or optional section types, and obsoleting existing section types, without
+file format breaking changes. The runtime is not required to understand all section types in order to load
 and execute the ready to run file.
 
 The following section types are defined and described later in this document:
@@ -124,15 +124,15 @@ enum ReadyToRunSectionType
 
 ## READYTORUN_SECTION_COMPILER_IDENTIFIER
 
-This section contains zero terminated ASCII string that identifies the compiler used to produce the 
+This section contains zero terminated ASCII string that identifies the compiler used to produce the
 image.
 
 **Example**: `CoreCLR 4.6.22727.0 PROJECTK`
 
 ## READYTORUN_SECTION_IMPORT_SECTIONS
 
-This section contains array of READYTORUN_IMPORT_SECTION structures. Each entry describes range of 
-slots that had to be filled with the value from outside the module (typically lazily). The initial values of 
+This section contains array of READYTORUN_IMPORT_SECTION structures. Each entry describes range of
+slots that had to be filled with the value from outside the module (typically lazily). The initial values of
 slots in each range are either zero or pointers to lazy initialization helper.
 
 ```C++
@@ -159,15 +159,15 @@ struct READYTORUN_IMPORT_SECTION
 |:---------------------------------------|-------:|:-----------
 | READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN | 0      | The type of slots in this section is unspecified.
 
-*Future*: The section type can be used to group slots of the same type together. For example, all virtual 
-stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their 
-initial state. 
+*Future*: The section type can be used to group slots of the same type together. For example, all virtual
+stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
+initial state.
 
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 
-This field points to array of RVAs that is parallel with the array of slots. Each RVA points to fixup 
-signature that contains the information required to fill the corresponding slot. The signature encoding 
-builds upon the encoding used for signatures in ECMA-335. The first element of the signature describes the 
+This field points to array of RVAs that is parallel with the array of slots. Each RVA points to fixup
+signature that contains the information required to fill the corresponding slot. The signature encoding
+builds upon the encoding used for signatures in ECMA-335. The first element of the signature describes the
 fixup kind, the rest of the signature varies based on the fixup kind.
 
 | ReadyToRunFixupKind                      | Value | Description
@@ -211,8 +211,8 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 
 #### Method Signatures
 
-MethodSpec signatures defined by ECMA-335 are not rich enough to describe method flavors 
-referenced by native code. The first element of the method signature are flags. It is followed by method 
+MethodSpec signatures defined by ECMA-335 are not rich enough to describe method flavors
+referenced by native code. The first element of the method signature are flags. It is followed by method
 token, and additional data determined by the flags.
 
 | ReadyToRunMethodSigFlags                  | Value | Description
@@ -227,8 +227,8 @@ token, and additional data determined by the flags.
 
 #### Field Signatures
 
-ECMA-335 does not define field signatures that are rich enough to describe method flavors referenced 
-by native code. The first element of the field signature are flags. It is followed by field token, and 
+ECMA-335 does not define field signatures that are rich enough to describe method flavors referenced
+by native code. The first element of the field signature are flags. It is followed by field token, and
 additional data determined by the flags.
 
 | ReadyToRunFieldSigFlags                  | Value | Description
@@ -239,7 +239,7 @@ additional data determined by the flags.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
-For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are 
+For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
 compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/coreclr/blob/6b9a3d3a87825b1a34bd8f114c9b181ce75b3b2e/src/inc/gcrefmap.h#L157) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
 The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
@@ -252,7 +252,7 @@ The auxiliary data table contains the exact same number of GC ref map records as
 |                          ... |      |
 | 4 * (MethodCount / 1024 + 1) |  ... | Serialized GC ref map info
 
-The GCRef map is used to encode GC type of arguments for callsites. Logically, it is a sequence `<pos, token>` where `pos` is 
+The GCRef map is used to encode GC type of arguments for callsites. Logically, it is a sequence `<pos, token>` where `pos` is
 position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/coreclr/blob/6b9a3d3a87825b1a34bd8f114c9b181ce75b3b2e/src/inc/corcompile.h#L633) values):
 
 | CORCOMPILE_GCREFMAP_TOKENS | Value | Stack frame entry interpretation
@@ -266,11 +266,11 @@ position of the reference in the stack frame and `token` is type of GC reference
 
 The position values are calculated in `size_t` aka `IntPtr` units (4 bytes for 32-bit architectures vs. 8 bytes for 64-bit architectures) starting at the first position in the transition frame that may contain GC references. For all architectures except for **arm64** this is the beginning of the array of spilled argument registers. On arm64 it is the offset of the `X8` register used to pass the location to be filled in with the return value by the called method.
 
-* The encoding always starts at the byte boundary. The high order bit of each byte is used to signal end of the encoding stream. The last byte has the high order bit zero. It means that there are 7 useful bits in each byte. 
+* The encoding always starts at the byte boundary. The high order bit of each byte is used to signal end of the encoding stream. The last byte has the high order bit zero. It means that there are 7 useful bits in each byte.
 
 * "pos" is always encoded as delta from previous pos.
 
-* The basic encoding unit is two bits. Values 0, 1 and 2 are the common constructs (skip single slot, GC reference, interior pointer). Value 3 means that extended encoding follows. 
+* The basic encoding unit is two bits. Values 0, 1 and 2 are the common constructs (skip single slot, GC reference, interior pointer). Value 3 means that extended encoding follows.
 
 * The extended information is integer encoded in one or more four bit blocks. The high order bit of the four bit block is used to signal the end.
 
@@ -279,7 +279,7 @@ basic encoding, with extended encoding for large values).
 
 ## READYTORUN_SECTION_RUNTIME_FUNCTIONS
 
-This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all functions in the 
+This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all functions in the
 image with pointers to their unwind info. The standard Windows xdata/pdata format is used.
 ARM format is used for x86 to compensate for lack of x86 unwind info standard.
 The unwind info blob is immediately followed by GC info blob. The encoding slightly differs for amd64 which encodes an extra 4-byte representing the end RVA of the unwind info blob.
@@ -301,50 +301,50 @@ The unwind info blob is immediately followed by GC info blob. The encoding sligh
 
 ## READYTORUN_SECTION_METHODDEF_ENTRYPOINTS
 
-This section contains in native format sparse array (see 4 Native Format) that maps methoddef row to 
-method entrypoint. Methoddef is used as index into the array. The element of the array is index of the 
-method in `READYTORUN_SECTION_RUNTIME_FUNCTIONS`, followed by list of slots that needs to be 
+This section contains in native format sparse array (see 4 Native Format) that maps methoddef row to
+method entrypoint. Methoddef is used as index into the array. The element of the array is index of the
+method in `READYTORUN_SECTION_RUNTIME_FUNCTIONS`, followed by list of slots that needs to be
 filled before method can be executed executing.
 
-The index of the method is shift left by 1 bit, with the low bit indicating whether the list of slots to fixup 
+The index of the method is shift left by 1 bit, with the low bit indicating whether the list of slots to fixup
 follows. The list of slots is encoded as follows (same encoding as used by NGen):
 
 ``
 READYTORUN_IMPORT_SECTIONS absolute index
-    absolute slot index 
-    slot index delta 
+    absolute slot index
+    slot index delta
     _
-    slot index delta 
+    slot index delta
     0
 READYTORUN_IMPORT_SECTIONS index delta
-    absolute slot index 
-    slot index delta 
-    _ 
-    slot delta 
+    absolute slot index
+    slot index delta
+    _
+    slot delta
     0
 READYTORUN_IMPORT_SECTIONS index delta
-    absolute slot index 
-    slot index delta 
-    _ 
-    slot delta 
+    absolute slot index
+    slot index delta
+    _
+    slot delta
     0
 0
 ``
 
-The fixup list is a stream of integers encoded as nibbles (1 nibble = 4 bits). 3 bits of a nibble are used to 
-store 3 bits of the value, and the top bit indicates if the following nibble contains rest of the value. If the 
+The fixup list is a stream of integers encoded as nibbles (1 nibble = 4 bits). 3 bits of a nibble are used to
+store 3 bits of the value, and the top bit indicates if the following nibble contains rest of the value. If the
 top bit in the nibble is set, then the value continues in the next nibble.
 
-The section and slot indices are delta-encoded offsets from that initial absolute index.  Delta-encoded 
+The section and slot indices are delta-encoded offsets from that initial absolute index.  Delta-encoded
 means that the i-th value is the sum of values [1..i].
 
 The list is terminated by a 0 (0 is not meaningful as valid delta).
 
 ## READYTORUN_SECTION_EXCEPTION_INFO
 
-Exception handling information. This section contains array of 
-`READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY` sorted by `MethodStart` RVA. `ExceptionInfo` is RVA of 
-`READYTORUN_EXCEPTION_CLAUSE` array that described the exception handling information for given 
+Exception handling information. This section contains array of
+`READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY` sorted by `MethodStart` RVA. `ExceptionInfo` is RVA of
+`READYTORUN_EXCEPTION_CLAUSE` array that described the exception handling information for given
 method.
 
 ```C++
@@ -356,15 +356,15 @@ struct READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY
 
 struct READYTORUN_EXCEPTION_CLAUSE
 {
-    CorExceptionFlag    Flags;  
-    DWORD               TryStartPC;    
+    CorExceptionFlag    Flags;
+    DWORD               TryStartPC;
     DWORD               TryEndPC;
-    DWORD               HandlerStartPC;  
-    DWORD               HandlerEndPC;  
+    DWORD               HandlerStartPC;
+    DWORD               HandlerEndPC;
     union {
         mdToken         ClassToken;
         DWORD           FilterOffset;
-    };  
+    };
 };
 ```
 
@@ -372,15 +372,15 @@ Same encoding is as used by NGen.
 
 ## READYTORUN_SECTION_DEBUG_INFO
 
-This section contains information to support debugging: native offset and local variable maps. 
+This section contains information to support debugging: native offset and local variable maps.
 
-**TODO**: Document the debug info encoding. It is the same encoding as used by NGen. It should not be 
+**TODO**: Document the debug info encoding. It is the same encoding as used by NGen. It should not be
 required when debuggers are able to handle debug info stored separately.
 
 ## READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS
 
-This section marks region that contains thunks for `READYTORUN_HELPER_DelayLoad_MethodCall` 
-helper. It is used by debugger for step-in into lazily resolved calls. It should not be required when 
+This section marks region that contains thunks for `READYTORUN_HELPER_DelayLoad_MethodCall`
+helper. It is used by debugger for step-in into lazily resolved calls. It should not be required when
 debuggers are able to handle debug info stored separately.
 
 ## READYTORUN_SECTION_AVAILABLE_TYPES
@@ -430,24 +430,24 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 
 # Native Format
 
-Native format is set of encoding patterns that allow persisting type system data in a binary format that is 
-efficient for runtime access - both in working set and CPU cycles. (Originally designed for and extensively 
+Native format is set of encoding patterns that allow persisting type system data in a binary format that is
+efficient for runtime access - both in working set and CPU cycles. (Originally designed for and extensively
 used by .NET Native.)
 
 ## Integer encoding
 
-Native format uses a variable length encoding scheme for signed and unsigned numbers. The low bits of 
+Native format uses a variable length encoding scheme for signed and unsigned numbers. The low bits of
 the first byte of the encoding specify the number of following bytes as follows:
 
-* `xxxxxxx0` (i.e. the least significant bit is 0): no more bytes follow. Shift the byte one bit right, and 
+* `xxxxxxx0` (i.e. the least significant bit is 0): no more bytes follow. Shift the byte one bit right, and
   sign or zero extend for signed and unsigned number, respectively.
-* `xxxxxx01`: one more byte follows. Build a 16-bit number from the two bytes read (little-endian 
+* `xxxxxx01`: one more byte follows. Build a 16-bit number from the two bytes read (little-endian
   order), shift it right by 2 bits, then sign or zero extend.
-* `xxxxx011`: two more bytes follow. Build a 24-bit number from the three bytes read (little-endian 
+* `xxxxx011`: two more bytes follow. Build a 24-bit number from the three bytes read (little-endian
   order), shift it right by 3 bits, then sign or zero extend.
-* `xxxx0111`: three more bytes follow. Build a 32-bit number from the four bytes read, then sign or 
+* `xxxx0111`: three more bytes follow. Build a 32-bit number from the four bytes read, then sign or
   zero extend
-* `xxxx1111`: four more bytes follow. Discard the first byte, build the signed or unsigned number 
+* `xxxx1111`: four more bytes follow. Discard the first byte, build the signed or unsigned number
   from the following four bytes (again little-endian order).
 
 **Examples**:
@@ -456,7 +456,7 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Sparse Array
 
-**TODO**: Document native format sparse array 
+**TODO**: Document native format sparse array
 
 ## Hashtable
 
@@ -468,14 +468,14 @@ Each bucket is a sequence of entries. An entry has a hash code and an offset to 
 
 Physically, the header is a single byte. The most significant six bits is used to store the number of buckets in its base-2 logarithm. The remaining two bits are used for storing the entry size, as explained below:
 
-Because the offsets to the bucket lists are often small numbers, the table cells are variable sized. 
+Because the offsets to the bucket lists are often small numbers, the table cells are variable sized.
 It could be either 1 byte, 2 bytes or 4 bytes. The three cases are described with two bits. `00` means it is one byte, `01` means it is two bytes and `10` means it is four bytes.
 
 The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table.
 
 To perform a lookup, one starts with reading the header, computing the hash code, using the number of buckets to determine the number of bits to mask away from the hash code, look it up in the table using the right pointer size, find the bucket list, find the next bucket list (or the end of the table) so that we know where to stop, search the entries in that list and then we will find the object if we have a hit, or we have a miss.
 
-To enumerate all the values, simply walk from the first entry and go all the way to the end of the hash table. 
+To enumerate all the values, simply walk from the first entry and go all the way to the end of the hash table.
 
 To see this in action, we can take a look at the following example, with these objects placed in the native hash table.
 

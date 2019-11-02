@@ -6,8 +6,8 @@
 //
 // ===========================================================================
 // File: palrt.h
-// 
-// =========================================================================== 
+//
+// ===========================================================================
 
 /*++
 
@@ -20,7 +20,7 @@ Abstract:
 
 Author:
 
-     
+
 
 Revision History:
 
@@ -294,7 +294,7 @@ typedef union _ULARGE_INTEGER {
         DWORD LowPart;
         DWORD HighPart;
 #endif
-    } 
+    }
 #ifndef PAL_STDCPP_COMPAT
     u
 #endif // PAL_STDCPP_COMPAT
@@ -485,7 +485,7 @@ enum VARENUM {
     VT_LPWSTR   = 31,
     VT_RECORD   = 36,
     VT_INT_PTR	= 37,
-    VT_UINT_PTR	= 38,  
+    VT_UINT_PTR	= 38,
 
     VT_FILETIME        = 64,
     VT_BLOB            = 65,
@@ -668,7 +668,7 @@ STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface ISt
 #define STGM_NOSNAPSHOT         0x00200000L
 
 STDAPI IIDFromString(LPOLESTR lpsz, IID* lpiid);
-STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lpsz, int cchMax); 
+STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lpsz, int cchMax);
 
 /******************* CRYPT **************************************/
 
@@ -805,7 +805,7 @@ inline errno_t __cdecl _wcslwr_unsafe(WCHAR *str, size_t sz)
     _wcslwr(copy);
     wcscpy_s(str, sz, copy);
     free(copy);
-	
+
     return 0;
 }
 
@@ -899,7 +899,7 @@ STDAPI_(void) PathStripPathW (LPWSTR pszPath);
 /******************* misc ***************************************/
 
 #ifdef __cplusplus
-namespace std 
+namespace std
 {
     typedef decltype(nullptr) nullptr_t;
 }
@@ -966,7 +966,7 @@ typedef VOID (NTAPI *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 // errors. Once they fix all the places that need attention for portability,
 // they can define PORTABILITY_ASSERT and PORTABILITY_WARNING to cause
 // compile-time errors to make sure that they haven't missed anything.
-// 
+//
 // If it is reasonably possible all codepaths containing PORTABILITY_ASSERT
 // should be compilable (e.g. functions should return NULL or something if
 // they are expected to return a value).
@@ -1110,7 +1110,7 @@ interface ITypeInfo;
 interface ITypeLib;
 interface IMoniker;
 
-typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)( 
+typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)(
     DWORD dwErrorCode,
     DWORD dwNumberOfBytesTransfered,
     LPOVERLAPPED lpOverlapped);
@@ -1214,7 +1214,7 @@ GET_RUNTIME_FUNCTION_CALLBACK (
 typedef GET_RUNTIME_FUNCTION_CALLBACK *PGET_RUNTIME_FUNCTION_CALLBACK;
 
 typedef
-DWORD   
+DWORD
 OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK (
     HANDLE Process,
     PVOID TableAddress,
@@ -1409,7 +1409,7 @@ EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
                              REFIID     riid,
                              void     **ppv);
 
-// So we can have CoCreateInstance in most of the code base, 
+// So we can have CoCreateInstance in most of the code base,
 // instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
 #define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
 

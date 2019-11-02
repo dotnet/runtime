@@ -144,7 +144,7 @@ public sealed class ParallelRunner
                     processList,
                     degreeOfParallelism,
                     measurePerf);
-                
+
                 for (int processIndex = batchStartIndex; processIndex < batchEndIndex; processIndex++)
                 {
                     if (!processList[processIndex].Succeeded)

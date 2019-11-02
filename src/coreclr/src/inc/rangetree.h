@@ -10,8 +10,8 @@
 #include "memorypool.h"
 
 //
-// A RangeTree is a self-balancing binary tree of non-overlapping 
-// ranges [start-end), which provides log N operation time for 
+// A RangeTree is a self-balancing binary tree of non-overlapping
+// ranges [start-end), which provides log N operation time for
 // lookup, insertion, and deletion of nodes.
 //
 // The tree is always balanced in the sense that the left and right
@@ -24,10 +24,10 @@
 // the overall range covered, the tree provides optimal lookup
 // structure.
 //
-// Another interesting property is that the same set of 
+// Another interesting property is that the same set of
 // ranges always produces the same tree layout, regardless of
 // the order the nodes are added in.
-// 
+//
 // Each node represents a range of the address space (in binary)
 // from m0...0 to m1...1, where m is any number of 31 bits or
 // less.
@@ -50,7 +50,7 @@
 // see why this must be, it helps to realize that the node
 // represents the transition from m01...1 to m10...0, which any
 // range represented by this node must contain.)
-// 
+//
 // All range nodes represented by the form m0...  are contained in
 // the 0-child subtree, and all nodes represented by the form
 // m1... are contained in the 1-child subtree.  Either child can
@@ -71,7 +71,7 @@ class RangeTree
         friend class RangeTree;
 
     private:
-        // start & end (exclusive) of range 
+        // start & end (exclusive) of range
         SIZE_T          start;
         SIZE_T          end;
         // mask of high-order bits which are the same in start & end
@@ -85,7 +85,7 @@ class RangeTree
 
         Node            *children[2];
 
-        void   Init (SIZE_T  rangeStart, SIZE_T  rangeEnd 
+        void   Init (SIZE_T  rangeStart, SIZE_T  rangeEnd
                      DEBUGARG(DWORD ord));
 
         Node** Child(SIZE_T address)

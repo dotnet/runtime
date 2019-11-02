@@ -11,7 +11,7 @@
 //
 #ifdef _PREFAST_
 
-// Use prefast to detect gotos out of no-return blocks. The gotos out of no-return blocks 
+// Use prefast to detect gotos out of no-return blocks. The gotos out of no-return blocks
 // should be reported as memory leaks by prefast.  The (nothrow) is because PREfix sees the
 // throw from the new statement, and doesn't like these macros used in a destructor (and
 // the NULL returned by failure works just fine in delete[])

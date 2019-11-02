@@ -47,7 +47,7 @@ HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
         iSize = iItems;
         return NOERROR;
     }
-    
+
 #ifdef _BLD_CLR
 #ifndef DACCESS_COMPILE
     // not allowed to do allocation if current thread suspends EE
@@ -259,7 +259,7 @@ HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
     {
         return E_INVALIDARG;
     }
-    
+
     cbCur += cbArgsNumber;
 
     // how many bytes to represent the return type

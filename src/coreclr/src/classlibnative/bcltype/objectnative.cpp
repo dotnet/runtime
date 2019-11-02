@@ -28,7 +28,7 @@
    they are immutable), for other value class, it means returning
    a boxed copy.  */
 
-FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj) 
+FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
 {
     CONTRACTL
     {
@@ -51,11 +51,11 @@ FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
     Object* retVal = NULL;
     OBJECTREF objRef(obj);
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);    // Set up a frame
-    
+
     // Technically we could return boxed DateTimes and Decimals without
     // copying them here, but VB realized that this would be a breaking change
-    // for their customers.  So copy them. 
-    // 
+    // for their customers.  So copy them.
+    //
     // MethodTable::Box is a cleaner way to copy value class, but it is slower than following code.
     //
     retVal = OBJECTREFToObject(AllocateObject(pMT));
@@ -73,7 +73,7 @@ NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 
     FC_INNER_PROLOG(ObjectNative::GetHashCode);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);   
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
 
     idx = objRef->GetHashCodeEx();
 
@@ -85,7 +85,7 @@ NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 // Note that we obtain a sync block index without actually building a sync block.
 // That's because a lot of objects are hashed, without requiring support for
 FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
-    
+
     CONTRACTL
     {
         FCALL_CHECK;
@@ -94,7 +94,7 @@ FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
     CONTRACTL_END;
 
     VALIDATEOBJECT(obj);
-        
+
     if (obj == 0)
         return 0;
 
@@ -131,7 +131,7 @@ FCIMPLEND
 
 //
 // Compare by ref for normal classes, by value for value types.
-//  
+//
 // <TODO>@todo: it would be nice to customize this method based on the
 // defining class rather than doing a runtime check whether it is
 // a value type.</TODO>
@@ -145,8 +145,8 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::Equals, Object *pThisRef, Object *pCompareRef
         INJECT_FAULT(FCThrow(kOutOfMemoryException););
     }
     CONTRACTL_END;
-    
-    if (pThisRef == pCompareRef)    
+
+    if (pThisRef == pCompareRef)
         FC_RETURN_BOOL(TRUE);
 
     // Since we are in FCALL, we must handle NULL specially.
@@ -168,8 +168,8 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::Equals, Object *pThisRef, Object *pCompareRef
     if(pThisRef->GetMethodTable() == g_pStringClass)
         dwBaseSize -= sizeof(WCHAR);
     BOOL ret = memcmp(
-        (void *) (pThisRef+1), 
-        (void *) (pCompareRef+1), 
+        (void *) (pThisRef+1),
+        (void *) (pCompareRef+1),
         dwBaseSize - sizeof(Object) - sizeof(int)) == 0;
 
     FC_GC_POLL_RET();
@@ -194,7 +194,7 @@ NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
     return OBJECTREFToObject(refType);
 }
 
-// This routine is called by the Object.GetType() routine.   It is a major way to get the Sytem.Type 
+// This routine is called by the Object.GetType() routine.   It is a major way to get the Sytem.Type
 FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 {
     CONTRACTL
@@ -204,8 +204,8 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
     }
     CONTRACTL_END;
 
-    OBJECTREF objRef = ObjectToOBJECTREF(pThis);  
-    if (objRef != NULL) 
+    OBJECTREF objRef = ObjectToOBJECTREF(pThis);
+    if (objRef != NULL)
     {
         MethodTable* pMT = objRef->GetMethodTable();
         OBJECTREF typePtr = pMT->GetManagedClassObjectIfExists();
@@ -214,7 +214,7 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
             return OBJECTREFToObject(typePtr);
         }
     }
-    else 
+    else
         FCThrow(kNullReferenceException);
 
     FC_INNER_RETURN(Object*, GetClassHelper(objRef));
@@ -236,7 +236,7 @@ FCIMPL1(Object*, ObjectNative::Clone, Object* pThisUNSAFE)
     // ObjectNative::Clone() ensures that the source and destination are always in
     // the same context.
 
-    MethodTable* pMT = refThis->GetMethodTable();    
+    MethodTable* pMT = refThis->GetMethodTable();
 
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
@@ -265,7 +265,7 @@ FCIMPL1(Object*, ObjectNative::Clone, Object* pThisUNSAFE)
     }
 
     HELPER_METHOD_FRAME_END();
-        
+
     return OBJECTREFToObject(refClone);
 }
 FCIMPLEND

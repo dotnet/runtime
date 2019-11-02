@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: DacDbiImpl.cpp
-// 
+//
 
 //
 // Implement DAC/DBI interface
@@ -34,8 +34,8 @@
 #include "request_common.h"
 
 //-----------------------------------------------------------------------------
-// Have standard enter and leave macros at the DacDbi boundary to enforce 
-// standard behavior. 
+// Have standard enter and leave macros at the DacDbi boundary to enforce
+// standard behavior.
 // 1. catch exceptions and convert them at the boundary.
 // 2. provide a space to hook logging and transitions.
 // 3. provide a hook to verify return values.
@@ -45,7 +45,7 @@
 // - it's ok to Return from the middle.
 //
 // Expected usage is:
-//  Foo() 
+//  Foo()
 //  {
 //      DD_ENTER_MAY_THROW
 //      ...
@@ -67,16 +67,16 @@ IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 // Extra sugar for wrapping IAllocator under friendly New/Delete operators.
 //
 // Sample usage:
-//     void Foo(TestClass ** ppOut) 
+//     void Foo(TestClass ** ppOut)
 //     {
 //        *ppOut = NULL;
 //        TestClass * p = new (forDbi) TestClass();
 //        ...
-//        if (ok) 
-//        { 
-//            *ppOut = p; 
+//        if (ok)
+//        {
+//            *ppOut = p;
 //            return; // DBI will then free this memory.
-//        } 
+//        }
 //        ...
 //        DeleteDbiMemory(p);
 //     }
@@ -95,7 +95,7 @@ void * operator new(size_t lenBytes, const forDbiWorker &)
 {
     _ASSERTE(g_pAllocator != NULL);
     void *result = g_pAllocator->Alloc(lenBytes);
-    if (result == NULL) 
+    if (result == NULL)
     {
         ThrowOutOfMemory();
     }
@@ -106,7 +106,7 @@ void * operator new[](size_t lenBytes, const forDbiWorker &)
 {
     _ASSERTE(g_pAllocator != NULL);
     void *result = g_pAllocator->Alloc(lenBytes);
-    if (result == NULL) 
+    if (result == NULL)
     {
         ThrowOutOfMemory();
     }
@@ -121,7 +121,7 @@ void operator delete(void *p, const forDbiWorker &)
     {
         return;
     }
-    
+
     _ASSERTE(g_pAllocator != NULL);
     g_pAllocator->Free((BYTE*) p);
 
@@ -135,23 +135,23 @@ void operator delete[](void *p, const forDbiWorker &)
     {
         return;
     }
-    
+
     _ASSERTE(g_pAllocator != NULL);
     g_pAllocator->Free((BYTE*) p);
 }
 
-// @dbgtodo  dac support: determine how to handle an array of class instances to ensure the dtors get 
+// @dbgtodo  dac support: determine how to handle an array of class instances to ensure the dtors get
 // called correctly or document that they won't
 // Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new'
 template<class T> void DeleteDbiMemory(T *p)
-{    
+{
     if (p == NULL)
     {
         return;
     }
     p->~T();
 
-    _ASSERTE(g_pAllocator != NULL);    
+    _ASSERTE(g_pAllocator != NULL);
     g_pAllocator->Free((BYTE*) p);
 }
 
@@ -161,14 +161,14 @@ template<class T> void DeleteDbiMemory(T *p)
 //
 // Arguments:
 //    pTarget     - pointer to a Data-Target
-//    baseAddress - non-zero base address of mscorwks in target to debug. 
+//    baseAddress - non-zero base address of mscorwks in target to debug.
 //    pAllocator  - pointer to client allocator object. This lets DD allocate objects and
 //                  pass them out back to the client, which can then delete them.
-//                  DD takes a weak ref to this, so client must keep it alive until it 
+//                  DD takes a weak ref to this, so client must keep it alive until it
 //                  calls Destroy.
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
-//    ppInterface - mandatory out-parameter 
+//    ppInterface - mandatory out-parameter
 //
 // Return Value:
 //    S_OK on success.
@@ -193,11 +193,11 @@ DacDbiInterfaceInstance(
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
     IDacDbiInterface ** ppInterface)
 {
-    // No marshalling is done by the instantiationf function - we just need to setup the infrastructure.  
-    // We don't want to warn if this involves creating and accessing undacized data structures, 
+    // No marshalling is done by the instantiationf function - we just need to setup the infrastructure.
+    // We don't want to warn if this involves creating and accessing undacized data structures,
     // because it's for the infrastructure, not DACized code itself.
-    SUPPORTS_DAC_HOST_ONLY;     
-     
+    SUPPORTS_DAC_HOST_ONLY;
+
     // Since this is public, verify it.
     if ((ppInterface == NULL) || (pTarget == NULL) || (baseAddress == 0))
     {
@@ -214,9 +214,9 @@ DacDbiInterfaceInstance(
     {
         return E_OUTOFMEMORY;
     }
-        
+
     HRESULT hrStatus = pDac->Initialize();
-    
+
     if (SUCCEEDED(hrStatus))
     {
         *ppInterface = pDac;
@@ -234,19 +234,19 @@ DacDbiInterfaceInstance(
 //
 // Arguments:
 //    pTarget     - pointer to a Data-Target
-//    baseAddress - non-zero base address of mscorwks in target to debug. 
+//    baseAddress - non-zero base address of mscorwks in target to debug.
 //    pAllocator  - pointer to client allocator object. This lets DD allocate objects and
 //                  pass them out back to the client, which can then delete them.
-//                  DD takes a weak ref to this, so client must keep it alive until it 
+//                  DD takes a weak ref to this, so client must keep it alive until it
 //                  calls Destroy.
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
 //
 // Notes:
-//    pAllocator is a weak reference. 
+//    pAllocator is a weak reference.
 //---------------------------------------------------------------------------------------
 DacDbiInterfaceImpl::DacDbiInterfaceImpl(
-    ICorDebugDataTarget* pTarget, 
+    ICorDebugDataTarget* pTarget,
     CORDB_ADDRESS baseAddress,
     IAllocator * pAllocator,
     IMetaDataLookup * pMetaDataLookup
@@ -297,8 +297,8 @@ DacDbiInterfaceImpl::~DacDbiInterfaceImpl()
 //    May throw in exceptional circumstances (eg, corrupt debuggee).
 //
 // Assumptions:
-//    This is called from DAC-ized code within the VM, which 
-//    was in turn called from some DD primitive. The returned importer will 
+//    This is called from DAC-ized code within the VM, which
+//    was in turn called from some DD primitive. The returned importer will
 //    be used by the DAC-ized code in the callstack, but it won't be cached.
 //
 // Notes:
@@ -336,7 +336,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     {
         return m_pCachedImporter;
     }
-    
+
     // Go to DBI to find the metadata.
     IMDInternalImport * pInternal = NULL;
     bool isILMetaDataForNI = false;
@@ -368,7 +368,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
 
     if (pInternal == NULL)
     {
-        SIMPLIFYING_ASSUMPTION(!"MD lookup failed"); 
+        SIMPLIFYING_ASSUMPTION(!"MD lookup failed");
         if (fThrowEx)
         {
             ThrowHR(E_FAIL);
@@ -390,7 +390,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
 // See DacDbiInterface.h for full descriptions of all of these functions
 //-----------------------------------------------------------------------------
 
-// Destroy the connection, freeing up any resources.  
+// Destroy the connection, freeing up any resources.
 void DacDbiInterfaceImpl::Destroy()
 {
     m_pAllocator = NULL;
@@ -409,7 +409,7 @@ HRESULT DacDbiInterfaceImpl::CheckDbiVersion(const DbiVersion * pVersion)
     {
         return CORDBG_E_INCOMPATIBLE_PROTOCOL;
     }
-    
+
     if ((pVersion->m_dwProtocolBreakingChangeCounter != kCurrentDacDbiProtocolBreakingChangeCounter) ||
         (pVersion->m_dwReservedMustBeZero1 != 0))
     {
@@ -424,7 +424,7 @@ HRESULT DacDbiInterfaceImpl::FlushCache()
 {
     // Non-reentrant. We don't want to flush cached instances from a callback.
     // That would remove host DAC instances while they're being used.
-    DD_NON_REENTRANT_MAY_THROW; 
+    DD_NON_REENTRANT_MAY_THROW;
 
     m_pCachedPEFile = VMPTR_PEFile::NullPtr();
     m_pCachedImporter = NULL;
@@ -444,7 +444,7 @@ void DacDbiInterfaceImpl::DacSetTargetConsistencyChecks(bool fEnableAsserts)
     ClrDataAccess::SetTargetConsistencyChecks(fEnableAsserts);
 }
 
-// Query if Left-side is started up?  
+// Query if Left-side is started up?
 BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
 {
     DD_ENTER_MAY_THROW;
@@ -460,7 +460,7 @@ BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
         // 5) later, LS initialization code will assign g_pDebugger->m_fLeftSideInitialized = TRUE.
         //
         // The memory write in #5 is atomic.  There is no window where we're reading unitialized data.
-        
+
         return (g_pDebugger->m_fLeftSideInitialized != 0);
     }
 
@@ -473,16 +473,16 @@ BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
 {
     DD_ENTER_MAY_THROW;
 
-    BOOL fIsStub = FALSE;     
+    BOOL fIsStub = FALSE;
 
 #if defined(FEATURE_PAL)
     // Currently IsIPInModule() is not implemented in the PAL.  Rather than skipping the check, we should
     // either E_NOTIMPL this API or implement IsIPInModule() in the PAL.  Since ICDProcess::IsTransitionStub()
-    // is only called by VS in mixed-mode debugging scenarios, and mixed-mode debugging is not supported on 
+    // is only called by VS in mixed-mode debugging scenarios, and mixed-mode debugging is not supported on
     // POSIX systems, there is really no incentive to implement this API at this point.
     ThrowHR(E_NOTIMPL);
 
-#else // !FEATURE_PAL    
+#else // !FEATURE_PAL
 
     TADDR ip = (TADDR)address;
 
@@ -529,20 +529,20 @@ IDacDbiInterface::AddressType DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS 
 }
 
 
-// Get a VM appdomain pointer that matches the appdomain ID 
+// Get a VM appdomain pointer that matches the appdomain ID
 VMPTR_AppDomain DacDbiInterfaceImpl::GetAppDomainFromId(ULONG appdomainId)
 {
     DD_ENTER_MAY_THROW;
 
     VMPTR_AppDomain vmAppDomain;
 
-    // @dbgtodo   dac support - We would like to wean ourselves off the IXClrData interfaces. 
+    // @dbgtodo   dac support - We would like to wean ourselves off the IXClrData interfaces.
     IXCLRDataProcess *   pDAC = this;
     ReleaseHolder<IXCLRDataAppDomain> pDacAppDomain;
-    
-    HRESULT hrStatus = pDAC->GetAppDomainByUniqueID(appdomainId, &pDacAppDomain);    
+
+    HRESULT hrStatus = pDAC->GetAppDomainByUniqueID(appdomainId, &pDacAppDomain);
     IfFailThrow(hrStatus);
-    
+
     IXCLRDataAppDomain * pIAppDomain = pDacAppDomain;
     AppDomain * pAppDomain = (static_cast<ClrDataAppDomain *> (pIAppDomain))->GetAppDomain();
     SIMPLIFYING_ASSUMPTION(pAppDomain != NULL);
@@ -550,7 +550,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetAppDomainFromId(ULONG appdomainId)
     {
         ThrowHR(E_FAIL); // corrupted left-side?
     }
-        
+
     TADDR addrAppDomain = PTR_HOST_TO_TADDR(pAppDomain);
     vmAppDomain.SetDacTargetPtr(addrAppDomain);
 
@@ -589,7 +589,7 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmApp
 
 // Determine if the specified AppDomain is the default domain
 BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
-{   
+{
     DD_ENTER_MAY_THROW;
 
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
@@ -601,12 +601,12 @@ BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
 
 // Get the full AD friendly name for the given EE AppDomain.
 void DacDbiInterfaceImpl::GetAppDomainFullName(
-    VMPTR_AppDomain   vmAppDomain, 
+    VMPTR_AppDomain   vmAppDomain,
     IStringHolder *   pStrName )
 {
     DD_ENTER_MAY_THROW;
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    
+
     // Get the AppDomain name from the VM without changing anything
     // We might be able to simplify this, eg. by returning an SString.
     bool fIsUtf8;
@@ -630,7 +630,7 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
             NewArrayHolder<WCHAR> pwszName(new WCHAR[dwNameLen]);
             hrStatus = ConvertUtf8((LPCUTF8)pRawName, dwNameLen, &dwNameLen, pwszName );
             IfFailThrow(hrStatus);
-            
+
             hrStatus =  pStrName->AssignCopy(pwszName);
         }
     }
@@ -638,15 +638,15 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     {
         hrStatus =  pStrName->AssignCopy(static_cast<PCWSTR>(pRawName));
     }
-    
-    // Very important that this either sets pStrName or Throws. 
+
+    // Very important that this either sets pStrName or Throws.
     // Don't set it and then then throw.
     IfFailThrow(hrStatus);
 }
 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // JIT Compiler Flags
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Get the values of the JIT Optimization and EnC flags.
 void DacDbiInterfaceImpl::GetCompilerFlags (
@@ -674,11 +674,11 @@ void DacDbiInterfaceImpl::GetCompilerFlags (
 
 //-----------------------------------------------------------------------------
 // Helper function for SetCompilerFlags to set EnC status.
-// Arguments: 
+// Arguments:
 //     Input:
 //         pModule - The runtime module for which flags are being set.
 //
-// Return value: 
+// Return value:
 //   true if the Enc bits can be set on this module
 //-----------------------------------------------------------------------------
 
@@ -701,10 +701,10 @@ bool DacDbiInterfaceImpl::CanSetEnCBits(Module * pModule)
     bool fAllowEnc = false;
 #endif
 
-    return fAllowEnc;    
+    return fAllowEnc;
 } // DacDbiInterfaceImpl::SetEnCBits
 
-// Set the values of the JIT optimization and EnC flags. 
+// Set the values of the JIT optimization and EnC flags.
 HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
                                            BOOL             fAllowJitOpts,
                                            BOOL             fEnableEnC)
@@ -724,7 +724,7 @@ HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
     }
 #endif
     _ASSERTE(pModule != NULL);
-    
+
     // Initialize dwBits.
     dwBits = (pModule->GetDebuggerInfoBits() & ~(DACF_ALLOW_JIT_OPTS | DACF_ENC_ENABLED));
     dwBits &= DACF_CONTROL_FLAGS_MASK;
@@ -749,7 +749,7 @@ HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
 
     // set flags. This will write back to the target
     pModule->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dwBits);
-    
+
 
     LOG((LF_CORDB, LL_INFO100, "D::HIPCE, Changed Jit-Debug-Info: fOpt=%d, fEnableEnC=%d, new bits=0x%08x\n",
            (dwBits & DACF_ALLOW_JIT_OPTS) != 0,
@@ -762,14 +762,14 @@ HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
 } // DacDbiInterfaceImpl::SetCompilerFlags
 
 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // sequence points and var info
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Initialize the native/IL sequence points and native var info for a function.
 void DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc  vmMethodDesc,
                                                                 CORDB_ADDRESS     startAddr,
-                                                                BOOL              fCodeAvailable, 
+                                                                BOOL              fCodeAvailable,
                                                                 NativeVarData *   pNativeVarData,
                                                                 SequencePoints *  pSequencePoints)
 {
@@ -793,15 +793,15 @@ void DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc
 // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
 // This does not include other implicit arguments or varargs. This is used to compute a variable ID
 // (see comment in CordbJITILFrame::ILVariableToNative for more detail)
-// Arguments: 
+// Arguments:
 //    input:  pMD    pointer to the method desc for the function
 //    output: none
 // Return value:
 //    the number of fixed arguments to the function
 //-----------------------------------------------------------------------------
-SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD) 
+SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
 {
-   
+
     // Create a MetaSig for the given method's sig. (Easier than
     // picking the sig apart ourselves.)
     PCCOR_SIGNATURE pCallSig;
@@ -814,7 +814,7 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
         // Sig should only be null if the image is corrupted. (Even for lightweight-codegen)
         // We expect the jit+verifier to catch this, so that we never land here.
         // But just in case ...
-        CONSISTENCY_CHECK_MSGF(false, ("Corrupted image, null sig.(%s::%s)", 
+        CONSISTENCY_CHECK_MSGF(false, ("Corrupted image, null sig.(%s::%s)",
                                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
         return 0;
     }
@@ -852,12 +852,12 @@ BYTE* InfoStoreNew(void * pData, size_t cBytes)
 // Get locations and code offsets for local variables and arguments in a function
 // This information is used to find the location of a value at a given IP.
 // Arguments:
-//    input: 
+//    input:
 //        pMethodDesc   pointer to the method desc for the function
 //        startAddr     starting address of the function--used to differentiate
 //                      EnC versions
 //        fixedArgCount number of fixed arguments to the function
-//    output: 
+//    output:
 //        pVarInfo      data structure containing a list of variable and
 //                      argument locations by range of IP offsets
 // Note: this function may throw
@@ -867,7 +867,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
                                            SIZE_T          fixedArgCount,
                                            NativeVarData * pVarInfo)
 {
-    // make sure we haven't done this already 
+    // make sure we haven't done this already
     if (pVarInfo->IsInitialized())
     {
         return;
@@ -907,7 +907,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount)
 {
     // Translate the IL offset if the profiler has provided us with a mapping.
-    // The ICD public API should always expose the original IL offsets, but GetBoundaries() 
+    // The ICD public API should always expose the original IL offsets, but GetBoundaries()
     // directly accesses the debug info, which stores the instrumented IL offsets.
 
     ULONG32 entryCount = *pEntryCount;
@@ -968,10 +968,10 @@ void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pPr
 //-----------------------------------------------------------------------------
 // Get the native/IL sequence points for a function
 // Arguments:
-//    input: 
+//    input:
 //        pMethodDesc   pointer to the method desc for the function
 //        startAddr     starting address of the function--used to differentiate
-//    output: 
+//    output:
 //        pNativeMap    data structure containing a list of sequence points
 // Note: this function may throw
 //-----------------------------------------------------------------------------
@@ -980,7 +980,7 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
                                             SequencePoints * pSeqPoints)
 {
 
-    // make sure we haven't done this already 
+    // make sure we haven't done this already
     if (pSeqPoints->IsInitialized())
     {
         return;
@@ -1041,7 +1041,7 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // ----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal
 //
-// Description: 
+// Description:
 //    Helper function to convert an instrumented IL offset to the corresponding original IL offset.
 //
 // Arguments:
@@ -1052,7 +1052,7 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 //    Return the translated offset.
 //
 
-ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset, 
+ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
                                                                    const InstrumentedILOffsetMapping * pMapping)
 {
     SIZE_T               cMap  = pMapping->GetCount();
@@ -1060,7 +1060,7 @@ ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG        
 
     _ASSERTE((cMap == 0) == (rgMap == NULL));
 
-    // Early out if there is no mapping, or if we are dealing with a special IL offset such as 
+    // Early out if there is no mapping, or if we are dealing with a special IL offset such as
     // prolog, epilog, etc.
     if ((cMap == 0) || ((int)ilOffset < 0))
     {
@@ -1078,18 +1078,18 @@ ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG        
     return rgMap[i - 1].oldOffset;
 }
 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function Data
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
 // one exists or from metadata.
 //
-void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile, 
+void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
                                           mdToken          functionToken,
-                                          TargetBuffer *   pCodeInfo, 
+                                          TargetBuffer *   pCodeInfo,
                                           mdToken *        pLocalSigToken)
 {
     DD_ENTER_MAY_THROW;
@@ -1098,7 +1098,7 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
     Module *     pModule     = pDomainFile->GetCurrentModule();
     RVA          methodRVA   = 0;
     DWORD        implFlags;
-    
+
     // preinitialize out params
     pCodeInfo->Clear();
     *pLocalSigToken = mdSignatureNil;
@@ -1151,8 +1151,8 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
 
 //---------------------------------------------------------------------------------------
 //
-// This is just a worker function for GetILCodeAndSig.  It returns the function's ILCode and SigToken 
-// given a module, a token, and the RVA.  If a MethodDesc is provided, it has to be consistent with 
+// This is just a worker function for GetILCodeAndSig.  It returns the function's ILCode and SigToken
+// given a module, a token, and the RVA.  If a MethodDesc is provided, it has to be consistent with
 // the token and the RVA.
 //
 // Arguments:
@@ -1204,15 +1204,15 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     }
     else
     {
-        // Now we have the target address of the IL blob, we need to bring it over to the host. 
+        // Now we have the target address of the IL blob, we need to bring it over to the host.
         // DacGetILMethod will copy the COR_ILMETHOD information that we need
         COR_ILMETHOD * pHostIL = DacGetIlMethod(pTargetIL);     // host address of start of IL blob
         COR_ILMETHOD_DECODER header(pHostIL);                   // host address of header
 
 
         // Get the IL code info. We need the address of the IL itself, which will be beyond the header
-        // at the beginning of the blob. We ultimately need the target address. To get this, we take 
-        // target address of the target IL blob and add the offset from the beginning of the host IL blob 
+        // at the beginning of the blob. We ultimately need the target address. To get this, we take
+        // target address of the target IL blob and add the offset from the beginning of the host IL blob
         // (the header) to the beginning of the IL itself (we get this information from the header).
         pIL->pAddress = pTargetIL + ((SIZE_T)(header.Code) - (SIZE_T)pHostIL);
         pIL->cbSize = header.GetCodeSize();
@@ -1298,11 +1298,11 @@ bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
 
 // Get start addresses and sizes for hot and cold regions for a native code blob.
 // Arguments:
-//    Input: 
+//    Input:
 //        pMethodDesc - method desc for the function we are inspecting
 //    Output (required):
 //        pCodeInfo   - initializes the m_rgCodeRegions field of this structure
-//                      if the native code is available. Otherwise, 
+//                      if the native code is available. Otherwise,
 //                      pCodeInfo->IsValid() is false.
 
 void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDesc,
@@ -1331,7 +1331,7 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
 
         // now get the rest of the region information
         pCodeInfo->m_rgCodeRegions[kHot].cbSize = (ULONG)methodRegionInfo.hotSize;
-        pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress), 
+        pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress),
                                                (ULONG)methodRegionInfo.coldSize);
         _ASSERTE(pCodeInfo->IsValid());
     }
@@ -1342,61 +1342,61 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
 } // GetMethodRegionInfo
 
 
-// Gets the following information about a native code blob: 
+// Gets the following information about a native code blob:
 //    - its method desc
 //    - whether it's an instantiated generic
-//    - its EnC version number 
+//    - its EnC version number
 //    - hot and cold region information.
-// If the hot region start address is NULL at the end, it means the native code 
+// If the hot region start address is NULL at the end, it means the native code
 // isn't currently available. In this case, all values in pCodeInfo will be
-// cleared. 
+// cleared.
 
-void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile, 
+void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile,
                                             mdToken                  functionToken,
                                             NativeCodeFunctionData * pCodeInfo)
 {
     DD_ENTER_MAY_THROW;
-    
-    _ASSERTE(pCodeInfo != NULL); 
+
+    _ASSERTE(pCodeInfo != NULL);
 
     // pre-initialize:
     pCodeInfo->Clear();
 
     DomainFile * pDomainFile = vmDomainFile.GetDacPtr();
     Module *     pModule     = pDomainFile->GetCurrentModule();
-    
+
     MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
     pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
-   
-    // if we are loading a module and trying to bind a previously set breakpoint, we may not have 
+
+    // if we are loading a module and trying to bind a previously set breakpoint, we may not have
     // a method desc yet, so check for that situation
-    if(pMethodDesc != NULL) 
+    if(pMethodDesc != NULL)
     {
         GetMethodRegionInfo(pMethodDesc, pCodeInfo);
         if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != NULL)
         {
             pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
-            LookupEnCVersions(pModule, 
-                              pCodeInfo->vmNativeCodeMethodDescToken, 
-                              functionToken, 
-                              pCodeInfo->m_rgCodeRegions[kHot].pAddress, 
+            LookupEnCVersions(pModule,
+                              pCodeInfo->vmNativeCodeMethodDescToken,
+                              functionToken,
+                              pCodeInfo->m_rgCodeRegions[kHot].pAddress,
                               &(pCodeInfo->encVersion));
         }
     }
 } // GetNativeCodeInfo
 
-// Gets the following information about a native code blob: 
+// Gets the following information about a native code blob:
 //    - its method desc
 //    - whether it's an instantiated generic
-//    - its EnC version number 
+//    - its EnC version number
 //    - hot and cold region information.
 void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
                                                    CORDB_ADDRESS            hotCodeStartAddr,
                                                    NativeCodeFunctionData * pCodeInfo)
 {
     DD_ENTER_MAY_THROW;
-    
-    _ASSERTE(pCodeInfo != NULL); 
+
+    _ASSERTE(pCodeInfo != NULL);
 
     if (hotCodeStartAddr == NULL)
     {
@@ -1404,10 +1404,10 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
         _ASSERTE(!pCodeInfo->IsValid());
         return;
     }
-    
+
     IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
     TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
-    
+
 #ifdef _TARGET_ARM_
     // TADDR should not have the thumb code bit set.
     _ASSERTE((codeAddr & THUMB_CODE) == 0);
@@ -1433,7 +1433,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     // now get the rest of the region information
     pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
                                           (ULONG)methodRegionInfo.hotSize);
-    pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress), 
+    pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress),
                                                (ULONG)methodRegionInfo.coldSize);
     _ASSERTE(pCodeInfo->IsValid());
 
@@ -1445,25 +1445,25 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     Module * pModule = pMethodDesc->GetModule();
     _ASSERTE(pModule != NULL);
     LookupEnCVersions(pModule,
-                      vmMethodDesc, 
-                      pMethodDesc->GetMemberDef(), 
-                      codeAddr, 
+                      vmMethodDesc,
+                      pMethodDesc->GetMemberDef(),
+                      codeAddr,
                       &unusedLatestEncVersion, //unused by caller
                       &(pCodeInfo->encVersion));
 
 } // GetNativeCodeInfo
 
 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
 // Functions to get Type and Class information
-// 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //-----------------------------------------------------------------------------
 //DacDbiInterfaceImpl::GetTypeHandles
 // Get the approximate and exact type handles for a type
 // Arguments:
-//     input: 
+//     input:
 //         vmThExact            - VMPTR of the exact type handle. If this method is called
 //                                to get information for a new generic instantiation, this will already
 //                                be initialized. If it's called to get type information for an arbitrary
@@ -1473,10 +1473,10 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
 //                                be initialized. If it's called to get type information for an arbitrary
 //                                type (i.e., called to initialize an instance of CordbClass), it will be NULL
 //     output:
-//         pThExact             - handle for exact type information for a generic instantiation 
-//         pThApprox            - handle for type information 
-// Notes: 
-//    pThExact and pTHApprox must be pointers to existing memory.  
+//         pThExact             - handle for exact type information for a generic instantiation
+//         pThApprox            - handle for type information
+// Notes:
+//    pThExact and pTHApprox must be pointers to existing memory.
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
                                          VMPTR_TypeHandle  vmThApprox,
@@ -1485,7 +1485,7 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
  {
      _ASSERTE((pThExact != NULL) && (pThApprox != NULL));
 
-     *pThExact = TypeHandle::FromPtr(vmThExact.GetDacPtr()); 
+     *pThExact = TypeHandle::FromPtr(vmThExact.GetDacPtr());
      *pThApprox = TypeHandle::FromPtr(vmThApprox.GetDacPtr());
 
     // If we can't find the class, return the proper HR to the right side. Note: if the class is not a value class and
@@ -1502,10 +1502,10 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
         *pThExact = TypeHandle();
     }
  }  // DacDbiInterfaceImpl::GetTypeHandles
-    
+
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::GetTotalFieldCount
-// Gets the total number of fields for a type. 
+// Gets the total number of fields for a type.
 // Input Argument: thApprox - type handle used to determine the number of fields
 // Return Value:   count of the total fields of the type.
 //-----------------------------------------------------------------------------
@@ -1524,7 +1524,7 @@ unsigned int DacDbiInterfaceImpl::GetTotalFieldCount(TypeHandle thApprox)
     // Stats above don't include EnC fields. So add them now.
     if (pModule->IsEditAndContinueEnabled())
     {
-        PTR_EnCEEClassData pEncData = 
+        PTR_EnCEEClassData pEncData =
             (dac_cast<PTR_EditAndContinueModule>(pModule))->GetEnCEEClassData(pMT, TRUE);
 
         if (pEncData != NULL)
@@ -1537,7 +1537,7 @@ unsigned int DacDbiInterfaceImpl::GetTotalFieldCount(TypeHandle thApprox)
         }
     }
 #endif
-    return IFCount + SFCount; 
+    return IFCount + SFCount;
 } // DacDbiInterfaceImpl::GetTotalFieldCount
 
 //-----------------------------------------------------------------------------
@@ -1545,12 +1545,12 @@ unsigned int DacDbiInterfaceImpl::GetTotalFieldCount(TypeHandle thApprox)
 // initializes various values of the ClassInfo data structure, including the
 // field count, generic args count, size and value class flag
 // Arguments:
-//     input:  thApprox            - used to get access to all the necessary values 
+//     input:  thApprox            - used to get access to all the necessary values
 //             fIsInstantiatedType - used to determine how to compute the size
-//     output: pData               - contains fields to be initialized  
+//     output: pData               - contains fields to be initialized
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::InitClassData(TypeHandle  thApprox, 
-                                        BOOL        fIsInstantiatedType, 
+void DacDbiInterfaceImpl::InitClassData(TypeHandle  thApprox,
+                                        BOOL        fIsInstantiatedType,
                                         ClassInfo * pData)
 {
     pData->m_fieldList.Alloc(GetTotalFieldCount(thApprox));
@@ -1579,7 +1579,7 @@ void DacDbiInterfaceImpl::InitClassData(TypeHandle  thApprox,
 // If the typeHandle represents a generic type constructor (i.e. an uninstantiated generic class), then
 // the static bases will be null (since statics are per-instantiation).
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact, 
+void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          AppDomain * pAppDomain,
                                          PTR_BYTE *  ppGCStaticsBase,
                                          PTR_BYTE *  ppNonGCStaticsBase)
@@ -1604,7 +1604,7 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
 //     input:  pFD               - FieldDesc used to get necessary information
 //             pGCStaticsBase    - base table address for GC statics
 //             pNonGCStaticsBase - base table address for non-GC statics
-//     output: pCurrentFieldData - contains fields to be initialized 
+//     output: pCurrentFieldData - contains fields to be initialized
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
                                            PTR_BYTE    pGCStaticsBase,
@@ -1619,7 +1619,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
     // that it isn't yet available.
     if (pFD->IsEnCNew())
     {
-        // @dbgtodo Microsoft inspection: eliminate the debugger token when ICDClass and ICDType are 
+        // @dbgtodo Microsoft inspection: eliminate the debugger token when ICDClass and ICDType are
         // completely DACized
         pCurrentFieldData->m_vmFieldDesc.SetHostPtr(pFD);
         pCurrentFieldData->m_fFldStorageAvailable = FALSE;
@@ -1632,7 +1632,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
     {
         // Otherwise, we'll compute the info & send it back.
         pCurrentFieldData->m_fFldStorageAvailable = TRUE;
-        // @dbgtodo Microsoft inspection: eliminate the debugger token when ICDClass and ICDType are 
+        // @dbgtodo Microsoft inspection: eliminate the debugger token when ICDClass and ICDType are
         // completely DACized
         pCurrentFieldData->m_vmFieldDesc.SetHostPtr(pFD);
         pCurrentFieldData->m_fFldIsTLS = (pFD->IsThreadStatic() == TRUE);
@@ -1654,7 +1654,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));
                 }
             }
-            else if (pFD->IsThreadStatic() || 
+            else if (pFD->IsThreadStatic() ||
                 pCurrentFieldData->m_fFldIsCollectibleStatic)
             {
                 // this is a special type of static that must be queried using DB_IPCE_GET_SPECIAL_STATIC
@@ -1668,7 +1668,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
                     // static var not available.  This may be an open generic class (not an instantiated type),
                     // or we might only have approximate type information because the type hasn't been
                     // initialized yet.
-                    
+
                     if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                     {
                         pCurrentFieldData->SetStaticAddress(NULL);
@@ -1698,21 +1698,21 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::CollectFields
-// Gets information for all the fields for a given type 
+// Gets information for all the fields for a given type
 // Arguments:
 //     input:  thExact         - used to determine whether we need to get statics base tables
 //             thApprox        - used to get the field desc iterator
 //             pAppDomain      - used to get statics base tables
-//     output: 
-//             pFieldList      - contains fields to be initialized 
-// Note: the caller must ensure that *ppFields is NULL (i.e., any previously allocated memory 
-// must have been deallocated.            
+//     output:
+//             pFieldList      - contains fields to be initialized
+// Note: the caller must ensure that *ppFields is NULL (i.e., any previously allocated memory
+// must have been deallocated.
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact, 
-                                        TypeHandle                   thApprox, 
+void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
+                                        TypeHandle                   thApprox,
                                         AppDomain *                  pAppDomain,
                                         DacDbiArrayList<FieldData> * pFieldList)
-{ 
+{
     PTR_BYTE pGCStaticsBase = NULL;
     PTR_BYTE pNonGCStaticsBase = NULL;
     if (!thExact.IsNull() && !thExact.GetMethodTable()->Collectible())
@@ -1723,9 +1723,9 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
 
     unsigned int fieldCount = 0;
 
-    // <TODO> we are losing exact type information for static fields in generic types. We have 
-    // field desc iterators only for approximate types, but statics are per instantiation, so we 
-    // need an exact type to be able to handle these correctly. We need to use 
+    // <TODO> we are losing exact type information for static fields in generic types. We have
+    // field desc iterators only for approximate types, but statics are per instantiation, so we
+    // need an exact type to be able to handle these correctly. We need to use
     // FieldDesc::GetExactDeclaringType to get at the correct field. This requires the exact
     // TypeHandle. </TODO>
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
@@ -1753,7 +1753,7 @@ BOOL DacDbiInterfaceImpl::IsValueType (VMPTR_TypeHandle vmTypeHandle)
 {
     DD_ENTER_MAY_THROW;
 
-    TypeHandle th = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr()); 
+    TypeHandle th = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
     return th.IsValueType();
 }
 
@@ -1762,7 +1762,7 @@ BOOL DacDbiInterfaceImpl::HasTypeParams (VMPTR_TypeHandle vmTypeHandle)
 {
     DD_ENTER_MAY_THROW;
 
-    TypeHandle th = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr()); 
+    TypeHandle th = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
     return th.ContainsGenericVariables();
 }
 
@@ -1820,7 +1820,7 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainFile           
 // TypeDataWalk constructor--initialize the buffer and number of remaining items from input data
 // Arguments: pData - pointer to a list of records containing information about type parameters for an
 //                    instantiated type
-//            nData - number of entries in pData        
+//            nData - number of entries in pData
 //-----------------------------------------------------------------------------
 DacDbiInterfaceImpl::TypeDataWalk::TypeDataWalk(DebuggerIPCE_TypeArgData * pData, unsigned int nData)
 {
@@ -1834,17 +1834,17 @@ DacDbiInterfaceImpl::TypeDataWalk::TypeDataWalk(DebuggerIPCE_TypeArgData * pData
 // Arguments: none (uses internal state)
 // Return value: information about the next type parameter in m_pCurrentData
 //-----------------------------------------------------------------------------
-DebuggerIPCE_TypeArgData * DacDbiInterfaceImpl::TypeDataWalk::ReadOne() 
-{ 
-    LIMITED_METHOD_CONTRACT; 
-    if (m_nRemaining) 
-    { 
-        m_nRemaining--; 
-        return m_pCurrentData++; 
-    } 
-    else 
+DebuggerIPCE_TypeArgData * DacDbiInterfaceImpl::TypeDataWalk::ReadOne()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (m_nRemaining)
     {
-        return NULL; 
+        m_nRemaining--;
+        return m_pCurrentData++;
+    }
+    else
+    {
+        return NULL;
     }
 } // DacDbiInterfaceImpl::TypeDataWalk::ReadOne
 
@@ -1876,10 +1876,10 @@ void DacDbiInterfaceImpl::TypeDataWalk::Skip()
 // code generic types.  That is, if generics code sharing is enabled then return "Object"
 // for all reference types, and canonicalize underneath value types, e.g. V<string> --> V<object>.
 // Return TypeHandle() if any of the type handles are not loaded.
-// 
-// Arguments: retrieveWhich - indicates whether to retrieve a canonical representation or 
+//
+// Arguments: retrieveWhich - indicates whether to retrieve a canonical representation or
 //                            an exact representation
-// Return value: the type handle for the type parameter                            
+// Return value: the type handle for the type parameter
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadType retrieveWhich)
 {
@@ -1916,19 +1916,19 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
     // unfortunately we have to include the exact specification of compatibility at
     // this point.
     CorElementType elementType = pData->data.elementType;
-    
+
     switch (elementType)
     {
         case ELEMENT_TYPE_PTR:
             _ASSERTE(pData->numTypeArgs == 1);
             return PtrOrByRefTypeArg(pData, retrieveWhich);
             break;
-            
+
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VALUETYPE:
             return ClassTypeArg(pData, retrieveWhich);
             break;
-            
+
         case ELEMENT_TYPE_FNPTR:
             return FnPtrTypeArg(pData, retrieveWhich);
             break;
@@ -1944,18 +1944,18 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandles
 // Iterate through the type argument data, creating type handles as we go.
-// 
-// Arguments: 
+//
+// Arguments:
 //     input:  retrieveWhich - indicates whether we can return a canonical type handle
 //                             or we must return an exact type handle
 //             nTypeArgs     - number of type arguments to be read
-//     output: ppResults     - pointer to a list of TypeHandles that will hold the type handles 
-//                             for each type parameter 
-//                             
+//     output: ppResults     - pointer to a list of TypeHandles that will hold the type handles
+//                             for each type parameter
+//
 // Return Value: FALSE iff any of the type handles are not loaded.
 //-----------------------------------------------------------------------------
-BOOL DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandles(TypeHandleReadType retrieveWhich, 
-                                                              unsigned int       nTypeArgs, 
+BOOL DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandles(TypeHandleReadType retrieveWhich,
+                                                              unsigned int       nTypeArgs,
                                                               TypeHandle *       ppResults)
 {
     WRAPPER_NO_CONTRACT;
@@ -1972,18 +1972,18 @@ BOOL DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandles(TypeHandleReadType
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation
 // Read an instantiation of a generic type if it has already been created.
-// 
+//
 // Arguments:
 //     input:  retrieveWhich - indicates whether we can return a canonical type handle
 //                             or we must return an exact type handle
 //             pModule       - module in which the instantiated type is loaded
 //             mdToken       - metadata token for the type
-//             nTypeArgs     - number of type arguments to be read 
+//             nTypeArgs     - number of type arguments to be read
 // Return value: the type handle for the instantiated type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandleReadType retrieveWhich, 
-                                                                      Module *           pModule, 
-                                                                      mdTypeDef          mdToken, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandleReadType retrieveWhich,
+                                                                      Module *           pModule,
+                                                                      mdTypeDef          mdToken,
                                                                       unsigned int       nTypeArgs)
 {
     WRAPPER_NO_CONTRACT;
@@ -1996,7 +1996,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandle
         return TypeHandle();
     }
 
-    // get the type handle for the particular instantiation that corresponds to 
+    // get the type handle for the particular instantiation that corresponds to
     // the given type parameters
     return FindLoadedInstantiation(pModule, mdToken, nTypeArgs, pInst);
 
@@ -2005,27 +2005,27 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandle
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle
-// 
-// Compute the type handle for a given type. 
+//
+// Compute the type handle for a given type.
 // This is the top-level function that will return the type handle  for an
 // arbitrary type. It uses mutual recursion with ReadLoadedTypeArg to get
-// the type handle for a (possibly parameterized) type. Note that the referent of 
+// the type handle for a (possibly parameterized) type. Note that the referent of
 // address types or the element type of an array type are viewed as type parameters.
-// 
+//
 // For example, assume that we are retrieving only exact types, and we have as our
 // top level type an array defined as int [][].
 // We start by noting that the type is an array type, so we call ReadLoadedTypeArg to
 // get the element type. We find that the element type is also an array:int [].
-// ReadLoadedTypeArg will call ReadLoadedTypeHandle with this type information. 
-// Again, we determine that the top-level type is an array, so we call ReadLoadedTypeArg 
+// ReadLoadedTypeArg will call ReadLoadedTypeHandle with this type information.
+// Again, we determine that the top-level type is an array, so we call ReadLoadedTypeArg
 // to get the element type, int. ReadLoadedTypeArg will again call ReadLoadedTypeHandle
 // which will find that this time, the top-level type is a primitive type. It will request
-// the loaded type handle from the loader and return it. On return, we get the type handle 
+// the loaded type handle from the loader and return it. On return, we get the type handle
 // for an array of int from the loader. We return again and request the type handle for an
-// array of arrays of int. This is the type handle we will return. 
-// 
+// array of arrays of int. This is the type handle we will return.
+//
 // Arguments:
-//      input: retrieveWhich - determines whether we can return the type handle for 
+//      input: retrieveWhich - determines whether we can return the type handle for
 //                             a canonical type or only for an exact type
 //             we use the list of type data stored in the TypeDataWalk data members
 //             for other input information
@@ -2062,9 +2062,9 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
         case ELEMENT_TYPE_VALUETYPE:
             {
                 Module *     pModule = pData->data.ClassTypeData.vmModule.GetDacPtr();
-                typeHandle = ReadLoadedInstantiation(retrieveWhich, 
-                                                     pModule, 
-                                                     pData->data.ClassTypeData.metadataToken, 
+                typeHandle = ReadLoadedInstantiation(retrieveWhich,
+                                                     pModule,
+                                                     pData->data.ClassTypeData.metadataToken,
                                                      pData->numTypeArgs);
             }
             break;
@@ -2085,38 +2085,38 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg
 // get a loaded type handle for an array type (E_T_ARRAY or E_T_SZARRAY)
-// 
+//
 // Arguments:
 //     input: pArrayTypeInfo - type information for an array type
-//                             Although this is in fact a pointer (in)to a list, we treat it here 
+//                             Although this is in fact a pointer (in)to a list, we treat it here
 //                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
-//                             which holds type information for an array. 
-//                             This is the most recent type node (for an array type) retrieved 
+//                             which holds type information for an array.
+//                             This is the most recent type node (for an array type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeArg will
 //                             result in call(s) to ReadOne to retrieve one or more type nodes
 //                             that are needed to compute the type handle for the
-//                             element type of the array. When we return from that call, we pass 
+//                             element type of the array. When we return from that call, we pass
 //                             pArrayTypeInfo along with arrayElementTypeArg to FindLoadedArrayType
 //                             to get the type handle for this particular array type.
 //                             Note:
 //                             On entry, we know that pArrayTypeInfo is the same as m_pCurrentData - 1,
 //                             but by the time we need to use it, this is no longer true. Because
-//                             we can't predict how many nodes will be consumed by the call to 
+//                             we can't predict how many nodes will be consumed by the call to
 //                             ReadLoadedTypeArg, we can't compute this value from the member fields
-//                             of TypeDataWalk and therefore pass it as a parameter.                   
-//            retrieveWhich -  determines whether we can return the type handle for 
+//                             of TypeDataWalk and therefore pass it as a parameter.
+//            retrieveWhich -  determines whether we can return the type handle for
 //                             a canonical type or only for an exact type
 // Return value: the type handle corresponding to the array type
 //-----------------------------------------------------------------------------
 
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgData * pArrayTypeInfo, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgData * pArrayTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     TypeHandle arrayElementTypeArg = ReadLoadedTypeArg(retrieveWhich);
     if (!arrayElementTypeArg.IsNull())
     {
-        return FindLoadedArrayType(pArrayTypeInfo->data.elementType, 
-                                   arrayElementTypeArg, 
+        return FindLoadedArrayType(pArrayTypeInfo->data.elementType,
+                                   arrayElementTypeArg,
                                    pArrayTypeInfo->data.ArrayTypeData.arrayRank);
     }
     return TypeHandle();
@@ -2126,30 +2126,30 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgD
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg
 // get a loaded type handle for an address type (E_T_PTR or E_T_BYREF)
-// 
+//
 // Arguments:
 //     input: pPtrOrByRefTypeInfo - type information for a pointer or byref type
-//                             Although this is in fact a pointer (in)to a list, we treat it here 
+//                             Although this is in fact a pointer (in)to a list, we treat it here
 //                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
-//                             which holds type information for a pointer or byref type. 
-//                             This is the most recent type node (for a pointer or byref type) retrieved 
+//                             which holds type information for a pointer or byref type.
+//                             This is the most recent type node (for a pointer or byref type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeArg will
 //                             result in call(s) to ReadOne to retrieve one or more type nodes
 //                             that are needed to compute the type handle for the
-//                             referent type of the pointer. When we return from that call, we pass 
+//                             referent type of the pointer. When we return from that call, we pass
 //                             pPtrOrByRefTypeInfo along with referentTypeArg to FindLoadedPointerOrByrefType
 //                             to get the type handle for this particular pointer or byref type.
 //                             Note:
 //                             On entry, we know that pPtrOrByRefTypeInfo is the same as m_pCurrentData - 1,
 //                             but by the time we need to use it, this is no longer true. Because
-//                             we can't predict how many nodes will be consumed by the call to 
+//                             we can't predict how many nodes will be consumed by the call to
 //                             ReadLoadedTypeArg, we can't compute this value from the member fields
-//                             of TypeDataWalk and therefore pass it as a parameter.                   
-//            retrieveWhich - determines whether we can return the type handle for 
+//                             of TypeDataWalk and therefore pass it as a parameter.
+//            retrieveWhich - determines whether we can return the type handle for
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the address type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData * pPtrOrByRefTypeInfo, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData * pPtrOrByRefTypeInfo,
                                                                 TypeHandleReadType         retrieveWhich)
 {
     TypeHandle referentTypeArg = ReadLoadedTypeArg(retrieveWhich);
@@ -2159,45 +2159,45 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_Typ
     }
 
     return TypeHandle();
-    
+
 } // DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg
 // get a loaded type handle for a class type (E_T_CLASS or E_T_VALUETYPE)
-// 
+//
 // Arguments:
 //     input: pClassTypeInfo - type information for a class type
-//                             Although this is in fact a pointer (in)to a list, we treat it here 
+//                             Although this is in fact a pointer (in)to a list, we treat it here
 //                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
-//                             which holds type information for a pointer or byref type. 
-//                             This is the most recent type node (for a pointer or byref type) retrieved 
+//                             which holds type information for a pointer or byref type.
+//                             This is the most recent type node (for a pointer or byref type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedInstantiation will
 //                             result in call(s) to ReadOne to retrieve one or more type nodes
 //                             that are needed to compute the type handle for the type parameters
-//                             for the class. If we can't find an exact loaded type for the class, we will 
-//                             instead return a canonical method table. In this case, we need to skip 
-//                             the type parameter information for each actual parameter to the class. 
+//                             for the class. If we can't find an exact loaded type for the class, we will
+//                             instead return a canonical method table. In this case, we need to skip
+//                             the type parameter information for each actual parameter to the class.
 //                             This is necessary because we may be getting a type handle for a class which is
 //                             in turn an argument to a parent type. If the parent type has more arguments, we
-//                             need to be at the right place in the list when we return. We use 
+//                             need to be at the right place in the list when we return. We use
 //                             pClassTypeInfo to get the number of type arguments that we need to skip.
-//            retrieveWhich - determines whether we can return the type handle for 
+//            retrieveWhich - determines whether we can return the type handle for
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the class type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgData * pClassTypeInfo, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgData * pClassTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     Module *     pModule = pClassTypeInfo->data.ClassTypeData.vmModule.GetDacPtr();
-    TypeHandle   typeDef = ClassLoader::LookupTypeDefOrRefInModule(pModule, 
+    TypeHandle   typeDef = ClassLoader::LookupTypeDefOrRefInModule(pModule,
                                                                    pClassTypeInfo->data.ClassTypeData.metadataToken);
-    
+
     if ((!typeDef.IsNull() && typeDef.IsValueType()) || (pClassTypeInfo->data.elementType == ELEMENT_TYPE_VALUETYPE))
     {
         return ReadLoadedInstantiation(retrieveWhich,
-                                       pModule, 
-                                       pClassTypeInfo->data.ClassTypeData.metadataToken, 
+                                       pModule,
+                                       pClassTypeInfo->data.ClassTypeData.metadataToken,
                                        pClassTypeInfo->numTypeArgs);
     }
     else
@@ -2215,57 +2215,57 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgD
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg
 // get a loaded type handle for a function pointer type (E_T_FNPTR)
-// 
+//
 // Arguments:
 //     input: pFnPtrTypeInfo - type information for a pointer or byref type
-//                             Although this is in fact a pointer (in)to a list, we treat it here 
+//                             Although this is in fact a pointer (in)to a list, we treat it here
 //                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
-//                             which holds type information for a function pointer type. 
-//                             This is the most recent type node (for a function pointer type) retrieved 
+//                             which holds type information for a function pointer type.
+//                             This is the most recent type node (for a function pointer type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeHandles will
 //                             result in call(s) to ReadOne to retrieve one or more type nodes
-//                             that are needed to compute the type handle for the return type and 
-//                             parameter types of the function. When we return from that call, we pass 
+//                             that are needed to compute the type handle for the return type and
+//                             parameter types of the function. When we return from that call, we pass
 //                             pFnPtrTypeInfo along with pInst to FindLoadedFnptrType
 //                             to get the type handle for this particular function pointer type.
-//            retrieveWhich - determines whether we can return the type handle for 
+//            retrieveWhich - determines whether we can return the type handle for
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the function pointer type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgData * pFnPtrTypeInfo, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgData * pFnPtrTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     // allocate space to store a list of type handles, one for the return type and one for each
-    // of the parameter types of the function to which the FnPtr type refers. 
+    // of the parameter types of the function to which the FnPtr type refers.
     NewArrayHolder<TypeHandle> pInst(new TypeHandle[sizeof(TypeHandle) * pFnPtrTypeInfo->numTypeArgs]);
-    
+
     if (ReadLoadedTypeHandles(retrieveWhich, pFnPtrTypeInfo->numTypeArgs, pInst))
     {
         return FindLoadedFnptrType(pFnPtrTypeInfo->numTypeArgs, pInst);
     }
 
     return TypeHandle();
-    
+
 } // DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg
 // get a loaded type handle for a primitive type or ObjRef
-// 
+//
 // Arguments:
 //     input: pArgInfo      - type information for an objref or primitive type.
 //                            This is called only when the objref or primitive type
 //                            is a type argument for a parent type. In this case,
-//                            we treat all objrefs the same, that is, we don't care 
+//                            we treat all objrefs the same, that is, we don't care
 //                            about type parameters for the referent. Instead, we will
-//                            simply return the canonical object type handle as the type 
-//                            of the referent. <@dbgtodo Microsoft: why is this?> 
-//                            If this is a primitive type, we'll simply get the 
-//                            type handle for that type.  
+//                            simply return the canonical object type handle as the type
+//                            of the referent. <@dbgtodo Microsoft: why is this?>
+//                            If this is a primitive type, we'll simply get the
+//                            type handle for that type.
 //            elementType   - type of the argument
 // Return value: the type handle corresponding to the elementType
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData * pArgInfo, 
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData * pArgInfo,
                                                                        CorElementType             elementType)
 {
     // If there are any type args (e.g. for arrays) they can be skipped.  The thing
@@ -2274,7 +2274,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerI
     {
         Skip();
     }
-     
+
     // for an ObjRef, just return the CLASS____CANON type handle
     if (CorTypeInfo::IsObjRef_NoThrow(elementType))
     {
@@ -2295,21 +2295,21 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerI
 // ------------------------------------------------------------------------
 
 // Note, in these functions, the use of ClassLoader::DontLoadTypes was chosen
-// instead of FailIfNotLoaded because, although we may want to debug unrestored 
+// instead of FailIfNotLoaded because, although we may want to debug unrestored
 // VCs, we can't do it because the debug API is not set up to handle them.
-// 
+//
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindLoadedArrayType
 // Use ClassLoader to find a loaded type handle for an array type (E_T_ARRAY or E_T_SZARRAY)
-// Arguments: 
-//     input: arrayType - type of the array 
+// Arguments:
+//     input: arrayType - type of the array
 //            TypeArg   - type handle for the base type
 //            rank      - array rank
 // Return Value: type handle for the array type
 //-----------------------------------------------------------------------------
 // static
-TypeHandle DacDbiInterfaceImpl::FindLoadedArrayType(CorElementType arrayType, 
-                                                    TypeHandle     typeArg, 
+TypeHandle DacDbiInterfaceImpl::FindLoadedArrayType(CorElementType arrayType,
+                                                    TypeHandle     typeArg,
                                                     unsigned       rank)
 {
     // Lookup operations run the class loader in non-load mode.
@@ -2321,9 +2321,9 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedArrayType(CorElementType arrayType,
     }
     else
     {
-        return ClassLoader::LoadArrayTypeThrowing(typeArg, 
-                                                  arrayType, 
-                                                  rank,                                                  
+        return ClassLoader::LoadArrayTypeThrowing(typeArg,
+                                                  arrayType,
+                                                  rank,
                                                   ClassLoader::DontLoadTypes );
     }
 } // DacDbiInterfaceImpl::FindLoadedArrayType;
@@ -2331,8 +2331,8 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedArrayType(CorElementType arrayType,
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindLoadedPointerOrByrefType
 // Use ClassLoader to find a loaded type handle for an address type (E_T_PTR or E_T_BYREF)
-// Arguments: 
-//     input: addressType - type of the address type 
+// Arguments:
+//     input: addressType - type of the address type
 //            TypeArg     - type handle for the base type
 // Return Value: type handle for the address type
 //-----------------------------------------------------------------------------
@@ -2342,16 +2342,16 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedPointerOrByrefType(CorElementType addr
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    return ClassLoader::LoadPointerOrByrefTypeThrowing(addressType, 
-                                                       typeArg, 
+    return ClassLoader::LoadPointerOrByrefTypeThrowing(addressType,
+                                                       typeArg,
                                                        ClassLoader::DontLoadTypes);
 } // DacDbiInterfaceImpl::FindLoadedPointerOrByrefType
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindLoadedFnptrType
 // Use ClassLoader to find a loaded type handle for a function pointer type (E_T_FNPTR)
-// Arguments: 
-//     input: pInst       - type handles of the function's return value and arguments 
+// Arguments:
+//     input: pInst       - type handles of the function's return value and arguments
 //            numTypeArgs - number of type handles in pInst
 // Return Value: type handle for the function pointer type
 //-----------------------------------------------------------------------------
@@ -2372,41 +2372,41 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedFnptrType(DWORD numTypeArgs, TypeHandl
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindLoadedInstantiation
-// Use ClassLoader to find a loaded type handle for a particular instantiation of a 
+// Use ClassLoader to find a loaded type handle for a particular instantiation of a
 // class type (E_T_CLASS or E_T_VALUECLASS)
-// 
+//
 // Arguments:
 //     input: pModule   - module in which the type is loaded
 //            mdToken   - metadata token for the type
 //            nTypeArgs - number of type arguments in pInst
 //            pInst     - list of type handles for the type parameters
-// Return value: type handle for the instantiated class type           
+// Return value: type handle for the instantiated class type
 //-----------------------------------------------------------------------------
 // static
-TypeHandle DacDbiInterfaceImpl::FindLoadedInstantiation(Module *     pModule, 
-                                                        mdTypeDef    mdToken, 
-                                                        DWORD        nTypeArgs, 
+TypeHandle DacDbiInterfaceImpl::FindLoadedInstantiation(Module *     pModule,
+                                                        mdTypeDef    mdToken,
+                                                        DWORD        nTypeArgs,
                                                         TypeHandle * pInst)
 {
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    return ClassLoader::LoadGenericInstantiationThrowing(pModule, 
-                                                         mdToken, 
+    return ClassLoader::LoadGenericInstantiationThrowing(pModule,
+                                                         mdToken,
                                                          Instantiation(pInst,nTypeArgs),
                                                          ClassLoader::DontLoadTypes);
 
 } // DacDbiInterfaceImpl::FindLoadedInstantiation
 
 //-----------------------------------------------------------------------------
-// DacDbiInterfaceImpl::FindLoadedElementType 
+// DacDbiInterfaceImpl::FindLoadedElementType
 // Get the type handle for a primitive type
 // Arguments:
 //     input: elementType - type of the primitive type
 // Return Value: Type handle for the primitive type
 //-----------------------------------------------------------------------------
 // static
-TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType) 
+TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType)
 {
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
@@ -2421,12 +2421,12 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
 // DacDbiInterfaceImpl::GetArrayTypeInfo
 // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_ARRAY.
 // Specifically, we get the rank and the type of the array elements
-// 
-// Arguments: 
+//
+// Arguments:
 //     input:  typeHandle - type handle for the array type
 //             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the array rank and element type
-//     
+//
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeHandle,
                                            DebuggerIPCE_ExpandedTypeData * pTypeInfo,
@@ -2434,7 +2434,7 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
 {
     _ASSERTE(typeHandle.IsArray());
     pTypeInfo->ArrayTypeData.arrayRank = typeHandle.AsArray()->GetRank();
-    TypeHandleToBasicTypeInfo(typeHandle.AsArray()->GetArrayElementTypeHandle(), 
+    TypeHandleToBasicTypeInfo(typeHandle.AsArray()->GetArrayElementTypeHandle(),
                               &(pTypeInfo->ArrayTypeData.arrayTypeArg),
                               pAppDomain);
 } // DacDbiInterfaceImpl::GetArrayTypeInfo
@@ -2443,17 +2443,17 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
 // DacDbiInterfaceImpl::GetPtrTypeInfo
 // Gets additional information to convert a type handle to an instance of CordbType if the type is
 // E_T_PTR or E_T_BYREF. Specifically, we get the type for the referent of the address type
-// 
-// Arguments: 
-//     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for 
+//
+// Arguments:
+//     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for
 //                          more specific information)
 //             typeHandle - type handle for the address type
 //             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
-//     
+//
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed, 
-                                         TypeHandle                      typeHandle, 
+void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
+                                         TypeHandle                      typeHandle,
                                          DebuggerIPCE_ExpandedTypeData * pTypeInfo,
                                          AppDomain *                     pAppDomain)
 {
@@ -2464,7 +2464,7 @@ void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
     else
     {
         _ASSERTE(typeHandle.IsTypeDesc());
-        TypeHandleToBasicTypeInfo(typeHandle.AsTypeDesc()->GetTypeParam(), 
+        TypeHandleToBasicTypeInfo(typeHandle.AsTypeDesc()->GetTypeParam(),
                                   &(pTypeInfo->UnaryTypeData.unaryTypeArg),
                                   pAppDomain);
     }
@@ -2473,19 +2473,19 @@ void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::GetFnPtrTypeInfo
 // Gets additional information to convert a type handle to an instance of CordbType if the type is
-// E_T_FNPTR, specifically the typehandle for the referent. 
-// 
+// E_T_FNPTR, specifically the typehandle for the referent.
+//
 // Arguments
-//     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for 
+//     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for
 //                          more specific information)
 //             typeHandle - type handle for the address type
 //             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
-//  
+//
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed,
                                            TypeHandle                      typeHandle,
-                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo, 
+                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo,
                                            AppDomain *                     pAppDomain)
 {
     if (boxed == AllBoxed)
@@ -2503,12 +2503,12 @@ void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed
 // DacDbiInterfaceImpl::GetClassTypeInfo
 // Gets additional information to convert a type handle to an instance of CordbType if the type is
 // E_T_CLASS or E_T_VALUETYPE
-// 
+//
 // Arguments
 //     input:  typeHandle - type handle for the address type
 //             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
-//  
+//
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeHandle,
                                            DebuggerIPCE_ExpandedTypeData * pTypeInfo,
@@ -2526,7 +2526,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     }
 
     pTypeInfo->ClassTypeData.metadataToken = typeHandle.GetCl();
-    
+
     _ASSERTE(pModule);
     pTypeInfo->ClassTypeData.vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
     if (pAppDomain)
@@ -2542,7 +2542,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::GetElementType
 // Gets the correct CorElementType value from a type handle
-// 
+//
 // Arguments
 //     input:  typeHandle - type handle for the address type
 // Return Value: the CorElementType enum value for the type handle
@@ -2571,16 +2571,16 @@ CorElementType DacDbiInterfaceImpl::GetElementType (TypeHandle typeHandle)
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo
-// Gets additional information to convert a type handle to an instance of CordbType for the referent of an 
+// Gets additional information to convert a type handle to an instance of CordbType for the referent of an
 // E_T_BYREF or E_T_PTR or for the element type of an E_T_ARRAY or E_T_SZARRAY
-// 
-// Arguments: 
+//
+// Arguments:
 //     input:  typeHandle - type handle for the address type
 //             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
-//  
+//
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle, 
+void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle,
                                                     DebuggerIPCE_BasicTypeData * pTypeInfo,
                                                     AppDomain *                  pAppDomain)
 {
@@ -2605,17 +2605,17 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
 
             if (typeHandle.HasInstantiation())   // only set if instantiated
             {
-                pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr()); 
+                pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
             }
             else
             {
-                pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr(); 
+                pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
             }
-                                                                             
+
             pTypeInfo->metadataToken = typeHandle.GetCl();
             _ASSERTE(pModule);
-            
-            pTypeInfo->vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule)); 
+
+            pTypeInfo->vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
             if (pAppDomain)
             {
                 pTypeInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainFile()));
@@ -2643,9 +2643,9 @@ void DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed box
                                        DebuggerIPCE_ExpandedTypeData *pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
-    
+
     PTR_MethodTable pMT(TO_TADDR(id.token1));
-    
+
     if (pMT->IsArray())
     {
         // ArrayBase::GetTypeHandle() may return a NULL handle in corner case scenarios.  This check prevents
@@ -2670,7 +2670,7 @@ void DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed,
                                        DebuggerIPCE_ExpandedTypeData *pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
-    
+
     PTR_Object obj(TO_TADDR(addr));
     TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, obj->GetGCSafeTypeHandle(), pTypeInfo);
 }
@@ -2682,8 +2682,8 @@ void DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed       
                                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
-    
-    
+
+
     TypeHandle typeHandle = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
     TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, typeHandle, pTypeInfo);
 }
@@ -2779,8 +2779,8 @@ VMPTR_TypeHandle DacDbiInterfaceImpl::GetApproxTypeHandle(TypeInfoList * pTypeDa
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
     }
 
-    LOG((LF_CORDB, LL_INFO10000, 
-        "D::GATH: sending result, result = 0x%0x8\n", 
+    LOG((LF_CORDB, LL_INFO10000,
+        "D::GATH: sending result, result = 0x%0x8\n",
         typeHandle));
     return vmTypeHandle;
 } // DacDbiInterfaceImpl::GetApproxTypeHandle
@@ -2810,7 +2810,7 @@ HRESULT DacDbiInterfaceImpl::GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * 
     return hr;
 } // DacDbiInterfaceImpl::GetExactTypeHandle
 
-// Retrieve the generic type params for a given MethodDesc.  This function is specifically 
+// Retrieve the generic type params for a given MethodDesc.  This function is specifically
 // for stackwalking because it requires the generic type token on the stack.
 void DacDbiInterfaceImpl::GetMethodDescParams(
     VMPTR_AppDomain     vmAppDomain,
@@ -2830,7 +2830,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
 
     MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
-    // Retrieve the number of type parameters for the class and 
+    // Retrieve the number of type parameters for the class and
     // the number of type parameters for the method itself.
     // For example, the method Foo<T, U>::Bar<V>() has 2 class type parameters and 1 method type parameters.
     UINT32 cGenericClassTypeParams  = pMD->GetNumGenericClassArgs();
@@ -2844,7 +2844,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
     MethodDesc * pSpecificMethod;
 
     // Try to retrieve a more specific MethodDesc and TypeHandle via the generics type token.
-    // The generics token is not always guaranteed to be available.  
+    // The generics token is not always guaranteed to be available.
     // For example, it may be unavailable in prologs and epilogs.
     // In dumps, not available can also mean a thrown exception for missing memory.
     BOOL fExact = FALSE;
@@ -2856,7 +2856,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
             &pSpecificMethod);
             );
     if (!fExact ||
-        !thSpecificClass.GetMethodTable()->SanityCheck() || 
+        !thSpecificClass.GetMethodTable()->SanityCheck() ||
         !pSpecificMethod->GetMethodTable()->SanityCheck())
     {
         // Use the canonical MethodTable and MethodDesc if the exact generics token is not available.
@@ -2918,7 +2918,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
 // DacDbiInterfaceImpl::GetClassOrValueTypeHandle
 // get a typehandle for a class or valuetype from basic type data (metadata token
 // and domain file).
-// Arguments: 
+// Arguments:
 //     input: pData - contains the metadata token and domain file
 // Return value: the type handle for the corresponding type
 //-----------------------------------------------------------------------------
@@ -2936,7 +2936,7 @@ TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(DebuggerIPCE_BasicType
     {
         DomainFile * pDomainFile = pData->vmDomainFile.GetDacPtr();
         Module *     pModule = pDomainFile->GetModule();
-        
+
         typeHandle = ClassLoader::LookupTypeDefOrRefInModule(pModule, pData->metadataToken);
         if (typeHandle.IsNull())
         {
@@ -2960,7 +2960,7 @@ TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(DebuggerIPCE_BasicType
 //                 m_genericArgsCount  - number of generic parameters for the element type--this should be 1
 //                 m_pGenericArgs      - pointer to the generic parameter for the element type--this is
 //                                       effectively a one-element list. These are the actual parameters
-// Return Value: the exact type handle for the type           
+// Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
                                                         ArgInfoList *                   pArgInfo)
@@ -2973,8 +2973,8 @@ TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(DebuggerIPCE_ExpandedTyp
     typeArg = BasicTypeInfoToTypeHandle(&((*pArgInfo)[0]));
 
     // get the exact type handle for the array type
-    return FindLoadedArrayType(pTopLevelTypeData->elementType, 
-                               typeArg, 
+    return FindLoadedArrayType(pTopLevelTypeData->elementType,
+                               typeArg,
                                pTopLevelTypeData->ArrayTypeData.arrayRank);
 
 } // DacDbiInterfaceImpl::GetExactArrayTypeHandle
@@ -2988,7 +2988,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(DebuggerIPCE_ExpandedTyp
 //                 m_genericArgsCount  - number of generic parameters for the element type--this should be 1
 //                 m_pGenericArgs      - pointer to the generic parameter for the element type--this is
 //                                       effectively a one-element list. These are the actual parameters
-// Return Value: the exact type handle for the type           
+// Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::GetExactPtrOrByRefTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
                                                              ArgInfoList *                   pArgInfo)
@@ -3013,7 +3013,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactPtrOrByRefTypeHandle(DebuggerIPCE_Expand
 //                 m_genericArgsCount  - number of generic parameters for the class
 //                 m_pGenericArgs      - list of generic parameters for the class--these
 //                                       are the actual parameters
-// Return Value: the exact type handle for the type           
+// Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
                                                         ArgInfoList *                   pArgInfo)
@@ -3043,8 +3043,8 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
     // of parameters we received
     if ((unsigned int)argCount != typeConstructor.GetNumGenericArgs())
     {
-        LOG((LF_CORDB, LL_INFO10000, 
-            "D::ETITTH: wrong number of type parameters, %d given, %d expected\n", 
+        LOG((LF_CORDB, LL_INFO10000,
+            "D::ETITTH: wrong number of type parameters, %d given, %d expected\n",
             argCount, typeConstructor.GetNumGenericArgs()));
         _ASSERTE((unsigned int)argCount == typeConstructor.GetNumGenericArgs());
         ThrowHR(E_FAIL);
@@ -3067,9 +3067,9 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
     }
 
     // Finally, we find the type handle corresponding to this particular instantiation
-    return FindLoadedInstantiation(typeConstructor.GetModule(), 
-                                   typeConstructor.GetCl(), 
-                                   argCount, 
+    return FindLoadedInstantiation(typeConstructor.GetModule(),
+                                   typeConstructor.GetCl(),
+                                   argCount,
                                    pInst);
 
 } // DacDbiInterfaceImpl::GetExactClassTypeHandle
@@ -3082,7 +3082,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
 //                 m_genericArgsCount  - number of generic parameters for the referent
 //                 m_pGenericArgs      - list of generic parameters for the referent--these
 //                                       are the actual parameters for the function signature
-// Return Value: the exact type handle for the type           
+// Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::GetExactFnPtrTypeHandle(ArgInfoList * pArgInfo)
 {
@@ -3110,18 +3110,18 @@ TypeHandle DacDbiInterfaceImpl::GetExactFnPtrTypeHandle(ArgInfoList * pArgInfo)
 // Convert basic type info for a type parameter that came from a top-level type to
 // the corresponding type handle. If the type parameter is an array or pointer
 // type, we simply extract the LS type handle from the VMPTR_TypeHandle that is
-// part of the type information. If the type parameter is a class or value type, 
-// we use the metadata token and domain file in the type info to look up the 
-// appropriate type handle. If the type parameter is any other types, we get the 
-// type handle by having the loader look up the type handle for the element type. 
-// Arguments: 
+// part of the type information. If the type parameter is a class or value type,
+// we use the metadata token and domain file in the type info to look up the
+// appropriate type handle. If the type parameter is any other types, we get the
+// type handle by having the loader look up the type handle for the element type.
+// Arguments:
 //     input: pArgTypeData - basic type information for the type.
 // Return Value: the type handle for the type.
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData * pArgTypeData)
 {
-    LOG((LF_CORDB, LL_INFO10000, 
-        "D::BTITTH: expanding basic right-side type to left-side type, ELEMENT_TYPE: %d.\n", 
+    LOG((LF_CORDB, LL_INFO10000,
+        "D::BTITTH: expanding basic right-side type to left-side type, ELEMENT_TYPE: %d.\n",
         pArgTypeData->elementType));
     TypeHandle typeHandle = TypeHandle();
 
@@ -3140,7 +3140,7 @@ TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicType
         case ELEMENT_TYPE_VALUETYPE:
             typeHandle = GetClassOrValueTypeHandle(pArgTypeData);
             break;
-        
+
         default:
             typeHandle = FindLoadedElementType(pArgTypeData->elementType);
             break;
@@ -3159,21 +3159,21 @@ TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicType
 // information includes information about the element type if the top-level type is
 // an array type, the referent if the top-level type is a pointer type, or actual
 // parameters if the top-level type is a generic class or value type.
-// Arguments: 
+// Arguments:
 //     input: pTopLevelTypeData - type information for the top-level type
 //            pArgInfo           - contains the following information:
-//                 m_genericArtsCount  - number of parameters 
+//                 m_genericArtsCount  - number of parameters
 //                 m_pGenericArgs      - list of actual parameters
-// Return Value: the exact type handle corresponding to the type represented by 
+// Return Value: the exact type handle corresponding to the type represented by
 //            pTopLevelTypeData
 //-----------------------------------------------------------------------------
 TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
-                                                             ArgInfoList *                   pArgInfo) 
+                                                             ArgInfoList *                   pArgInfo)
 {
     WRAPPER_NO_CONTRACT;
 
-    LOG((LF_CORDB, LL_INFO10000, 
-        "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n", 
+    LOG((LF_CORDB, LL_INFO10000,
+        "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n",
         pData->elementType));
 
     TypeHandle typeHandle = TypeHandle();
@@ -3204,11 +3204,11 @@ TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(DebuggerIPCE_Expand
 
     if (typeHandle.IsNull())
     {
-        // This may fail because there are cases when a type can be used (and so visible to the 
-        // debugger), but not yet loaded to the point of being available in the EETypeHashTable.  
-        // For example, generic value types (without explicit constructors) may not need their 
-        // exact instantiation type to be loaded in order to be used as a field of an object 
-        // created on the heap 
+        // This may fail because there are cases when a type can be used (and so visible to the
+        // debugger), but not yet loaded to the point of being available in the EETypeHashTable.
+        // For example, generic value types (without explicit constructors) may not need their
+        // exact instantiation type to be loaded in order to be used as a field of an object
+        // created on the heap
         LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: type isn't loaded.\n"));
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
     }
@@ -3218,10 +3218,10 @@ TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(DebuggerIPCE_Expand
 // ----------------------------------------------------------------------------
 // DacDbi API: GetThreadStaticAddress
 // Get the target field address of a thread local static.
-// 
-// Notes: 
+//
+// Notes:
 // The address is constant and could be cached.
-// 
+//
 // This can commonly fail, in which case, it will return NULL.
 // ----------------------------------------------------------------------------
 CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmField,
@@ -3250,7 +3250,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmFiel
 
 } // DacDbiInterfaceImpl::GetThreadStaticAddress
 
-    // Get the target field address of a collectible types static. 
+    // Get the target field address of a collectible types static.
 CORDB_ADDRESS DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField,
                                                                    VMPTR_AppDomain vmAppDomain)
 {
@@ -3274,7 +3274,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDe
     //
     /* TODO: Ideally we should be checking if the class is allocated first, however
              we don't appear to be doing this even for non-collectible statics and
-             we have never seen an issue. 
+             we have never seen an issue.
     */
 
     //
@@ -3294,11 +3294,11 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDe
 
 } // DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress
 
-// DacDbi API: GetTypeHandleParams 
+// DacDbi API: GetTypeHandleParams
 // - gets the necessary data for a type handle, i.e. its type parameters, e.g. "String" and "List<int>" from the type handle
 //   for "Dict<String,List<int>>", and sends it back to the right side.
 // - pParams is allocated and initialized by this function
-// - This should not fail except for OOM 
+// - This should not fail except for OOM
 void DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain  vmAppDomain,
                                               VMPTR_TypeHandle vmTypeHandle,
                                               TypeParamsList * pParams)
@@ -3313,15 +3313,15 @@ void DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain  vmAppDomain,
     // Find the class given its type handle.
     _ASSERTE(pParams->IsEmpty());
     pParams->Alloc(typeHandle.GetNumGenericArgs());
-    
+
     // collect type information for each type parameter
     for (unsigned int i = 0; i < pParams->Count(); ++i)
     {
         VMPTR_TypeHandle thInst = VMPTR_TypeHandle::NullPtr();
         thInst.SetDacTargetPtr(typeHandle.GetInstantiation()[i].AsTAddr());
 
-        TypeHandleToExpandedTypeInfo(NoValueTypeBoxing, 
-                                     vmAppDomain, 
+        TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
+                                     vmAppDomain,
                                      thInst,
                                      &((*pParams)[i]));
     }
@@ -3333,8 +3333,8 @@ void DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain  vmAppDomain,
 // DacDbi API: GetSimpleType
 // gets the metadata token and domain file corresponding to a simple type
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain, 
-                                        CorElementType     simpleType, 
+void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
+                                        CorElementType     simpleType,
                                         mdTypeDef         *pMetadataToken,
                                         VMPTR_Module      *pVmModule,
                                         VMPTR_DomainFile  *pVmDomainFile)
@@ -3344,10 +3344,10 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
     AppDomain *pAppDomain = vmAppDomain.GetDacPtr();
 
     // if we fail to get either a valid type handle or module, we will want to send back
-    // a NULL domain file too, so we'll to preinitialize this here. 
+    // a NULL domain file too, so we'll to preinitialize this here.
     _ASSERTE(pVmDomainFile != NULL);
     *pVmDomainFile = VMPTR_DomainFile::NullPtr();
-    // FindLoadedElementType will return NULL if the type hasn't been loaded yet. 
+    // FindLoadedElementType will return NULL if the type hasn't been loaded yet.
     TypeHandle typeHandle =  FindLoadedElementType(simpleType);
 
     if (typeHandle.IsNull())
@@ -3362,9 +3362,9 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
         Module * pModule = typeHandle.GetModule();
         if (pModule == NULL)
             ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-        
+
         pVmModule->SetHostPtr(pModule);
- 
+
         if (pAppDomain)
         {
             pVmDomainFile->SetHostPtr(pModule->GetDomainFile());
@@ -3462,7 +3462,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
     // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
     // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
     // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
-    // - coreclr!COMDelegate::DelegateConstruct and the delegate type table in 
+    // - coreclr!COMDelegate::DelegateConstruct and the delegate type table in
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
     *delegateType = DelegateType::kUnknownDelegateType;
@@ -3692,8 +3692,8 @@ BOOL DacDbiInterfaceImpl::IsRcw(VMPTR_Object vmObject)
 }
 
 void DacDbiInterfaceImpl::GetRcwCachedInterfaceTypes(
-                        VMPTR_Object vmObject, 
-                        VMPTR_AppDomain vmAppDomain, 
+                        VMPTR_Object vmObject,
+                        VMPTR_AppDomain vmAppDomain,
                         BOOL bIInspectableOnly,
                         DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pDacInterfaces)
 {
@@ -3745,7 +3745,7 @@ void DacDbiInterfaceImpl::GetRcwCachedInterfaceTypes(
 }
 
 void DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(
-                    VMPTR_Object vmObject, 
+                    VMPTR_Object vmObject,
                     BOOL bIInspectableOnly,
                     DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs)
 {
@@ -3778,7 +3778,7 @@ void DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(
 }
 
 void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
-                    VMPTR_AppDomain vmAppDomain, 
+                    VMPTR_AppDomain vmAppDomain,
 					DacDbiArrayList<GUID> & iids,
     				OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
@@ -3824,7 +3824,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
 }
 
 void DacDbiInterfaceImpl::GetCachedWinRTTypes(
-                    VMPTR_AppDomain vmAppDomain, 
+                    VMPTR_AppDomain vmAppDomain,
                     OUT DacDbiArrayList<GUID> * pGuids,
                     OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
@@ -3882,7 +3882,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
 // Arguments:
 //     input: thApprox - type handle for the type to which the field belongs
 //            fldToken - metadata token for the field
-// Return Value: FieldDesc containing information for the field if found or NULL otherwise    
+// Return Value: FieldDesc containing information for the field if found or NULL otherwise
 //-----------------------------------------------------------------------------
 PTR_FieldDesc  DacDbiInterfaceImpl::FindField(TypeHandle thApprox, mdFieldDef fldToken)
 {
@@ -3908,7 +3908,7 @@ PTR_FieldDesc  DacDbiInterfaceImpl::FindField(TypeHandle thApprox, mdFieldDef fl
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::GetEnCFieldDesc
 // Get the FieldDesc corresponding to a particular EnC field token
-// Arguments: 
+// Arguments:
 //     input:  pEnCFieldInfo
 // Return Value: pointer to the FieldDesc that corresponds to the EnC field
 // Note: this function may throw
@@ -3920,8 +3920,8 @@ FieldDesc * DacDbiInterfaceImpl::GetEnCFieldDesc(const EnCHangingFieldInfo * pEn
         DomainFile * pDomainFile = pEnCFieldInfo->GetObjectTypeData().vmDomainFile.GetDacPtr();
         Module     * pModule     = pDomainFile->GetModule();
 
-        // get the type handle for the object 
-        TypeHandle typeHandle = ClassLoader::LookupTypeDefOrRefInModule(pModule, 
+        // get the type handle for the object
+        TypeHandle typeHandle = ClassLoader::LookupTypeDefOrRefInModule(pModule,
                                              pEnCFieldInfo->GetObjectTypeData().metadataToken);
         if (typeHandle == NULL)
         {
@@ -3977,8 +3977,8 @@ PTR_CBYTE DacDbiInterfaceImpl::GetPtrToEnCField(FieldDesc * pFD, const EnCHangin
     PTR_CBYTE pORField = NULL;
 
     PTR_Object pObject = pEnCFieldInfo->GetVmObject().GetDacPtr();
-    pORField = pEnCModule->ResolveField(ObjectToOBJECTREF(pObject), 
-                                        pEnCFieldDesc);   
+    pORField = pEnCModule->ResolveField(ObjectToOBJECTREF(pObject),
+                                        pEnCFieldDesc);
 
     // The field could be absent because the code hasn't accessed it yet. If so, we're not going to add it
     // since we can't allocate anyway.
@@ -3992,18 +3992,18 @@ PTR_CBYTE DacDbiInterfaceImpl::GetPtrToEnCField(FieldDesc * pFD, const EnCHangin
 
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::InitFieldData
-// Initialize information about a field added with EnC 
+// Initialize information about a field added with EnC
 // Arguments :
-//     input:  
+//     input:
 //             pFD           - provides information about whether the field is static,
 //                             the metadata token, etc.
 //             pORField      - provides the field address or offset
 //             pEnCFieldData - provides the offset to the fields of the object
 //     output: pFieldData    - initialized in accordance with the input information
 //-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::InitFieldData(const FieldDesc *           pFD, 
-                                        const PTR_CBYTE             pORField, 
-                                        const EnCHangingFieldInfo * pEnCFieldData, 
+void DacDbiInterfaceImpl::InitFieldData(const FieldDesc *           pFD,
+                                        const PTR_CBYTE             pORField,
+                                        const EnCHangingFieldInfo * pEnCFieldData,
                                         FieldData *           pFieldData)
 {
 
@@ -4031,8 +4031,8 @@ void DacDbiInterfaceImpl::InitFieldData(const FieldDesc *           pFD,
         // fldInstanceOffset is computed to work correctly with GetFieldValue
         // which computes:
         // addr of pORField = object + pEnCFieldInfo->m_offsetToVars + offsetToFld
-        pFieldData->SetInstanceOffset(PTR_TO_TADDR(pORField) - 
-                                      (PTR_TO_TADDR(pEnCFieldData->GetVmObject().GetDacPtr()) + 
+        pFieldData->SetInstanceOffset(PTR_TO_TADDR(pORField) -
+                                      (PTR_TO_TADDR(pEnCFieldData->GetVmObject().GetDacPtr()) +
                                                    pEnCFieldData->GetOffsetToVars()));
     }
 } // DacDbiInterfaceImpl::InitFieldData
@@ -4074,13 +4074,13 @@ void DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEn
 
 } // DacDbiInterfaceImpl::GetEnCHangingFieldInfo
 
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 void DacDbiInterfaceImpl::GetAssemblyFromDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, VMPTR_Assembly *vmAssembly)
 {
     DD_ENTER_MAY_THROW;
-    
+
     _ASSERTE(vmAssembly != NULL);
 
     DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
@@ -4097,9 +4097,9 @@ BOOL DacDbiInterfaceImpl::IsAssemblyFullyTrusted(VMPTR_DomainAssembly vmDomainAs
 
 // Get the full path and file name to the assembly's manifest module.
 BOOL DacDbiInterfaceImpl::GetAssemblyPath(
-    VMPTR_Assembly  vmAssembly, 
+    VMPTR_Assembly  vmAssembly,
     IStringHolder * pStrFilename)
-{    
+{
     DD_ENTER_MAY_THROW;
 
     // Get the manifest module for this assembly
@@ -4111,7 +4111,7 @@ BOOL DacDbiInterfaceImpl::GetAssemblyPath(
     const WCHAR * szPath = pManifestModule->GetPath().DacGetRawUnicode();
     HRESULT hrStatus = pStrFilename->AssignCopy(szPath);
     IfFailThrow(hrStatus);
-     
+
     if(szPath == NULL || *szPath=='\0')
     {
         // The asembly has no (and will never have a) file name, but we didn't really fail
@@ -4122,11 +4122,11 @@ BOOL DacDbiInterfaceImpl::GetAssemblyPath(
 }
 
 // DAC/DBI API
-// Get a resolved type def from a type ref. The type ref may come from a module other than the 
-// referencing module. 
+// Get a resolved type def from a type ref. The type ref may come from a module other than the
+// referencing module.
 void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
                                                TypeRefData *       pTargetRefInfo)
-{   
+{
     DD_ENTER_MAY_THROW;
     DomainFile * pDomainFile        = pTypeRefInfo->vmDomainFile.GetDacPtr();
     Module *     pReferencingModule = pDomainFile->GetCurrentModule();
@@ -4135,7 +4135,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
     // Resolve the type ref
     // g_pEEInterface->FindLoadedClass is almost what we want, but it isn't guaranteed to work if
     // the typeRef was originally loaded from a different assembly.  Also, we need to ensure that
-    // we can resolve even unloaded types in fully loaded assemblies, so APIs such as 
+    // we can resolve even unloaded types in fully loaded assemblies, so APIs such as
     // LoadTypeDefOrRefThrowing aren't acceptable.
 
     Module * pTargetModule = NULL;
@@ -4162,14 +4162,14 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
     }
     else
     {
-        // failed - presumably because the target assembly isn't loaded                        
+        // failed - presumably because the target assembly isn't loaded
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
     }
 } // DacDbiInterfaceImpl::ResolveTypeReference
 
 
 // Get the full path and file name to the module (if any).
-BOOL DacDbiInterfaceImpl::GetModulePath(VMPTR_Module vmModule, 
+BOOL DacDbiInterfaceImpl::GetModulePath(VMPTR_Module vmModule,
                                         IStringHolder *  pStrFilename)
 {
     DD_ENTER_MAY_THROW;
@@ -4202,7 +4202,7 @@ NoFileName:
 }
 
 // Get the full path and file name to the ngen image for the module (if any).
-BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule, 
+BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
                                             IStringHolder *  pStrFilename)
 {
     DD_ENTER_MAY_THROW;
@@ -4243,7 +4243,7 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(pStrFilename != NULL);
-    
+
     Module * pModule = vmModule.GetDacPtr();
     LPCUTF8 szNameUtf8 = pModule->GetSimpleName();
 
@@ -4252,15 +4252,15 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
 }
 
 // Helper to intialize a TargetBuffer from a MemoryRange
-// 
+//
 // Arguments:
 //    memoryRange - memory range.
 //    pTargetBuffer - required out parameter  to be initialized to value of memory range.
-//    
+//
 // Notes:
 //    MemoryRange and TargetBuffer both conceptually describe a single contiguous buffer of memory in the
-//    target. MemoryRange is a VM structure, which can't bleed across the DacDbi boundary. TargetBuffer is 
-//    a DacDbi structure, which can cross the DacDbi boundary. 
+//    target. MemoryRange is a VM structure, which can't bleed across the DacDbi boundary. TargetBuffer is
+//    a DacDbi structure, which can cross the DacDbi boundary.
 void InitTargetBufferFromMemoryRange(const MemoryRange memoryRange, TargetBuffer * pTargetBuffer)
 {
     SUPPORTS_DAC;
@@ -4274,18 +4274,18 @@ void InitTargetBufferFromMemoryRange(const MemoryRange memoryRange, TargetBuffer
 }
 
 // Helper to intialize a TargetBuffer (host representation of target) from an SBuffer  (target)
-// 
+//
 // Arguments:
 //   pBuffer - target pointer to a SBuffer structure. If pBuffer is NULL, then target buffer will be empty.
 //   pTargetBuffer - required out pointer to hold buffer description.
-//   
+//
 // Notes:
 //   PTR_SBuffer and TargetBuffer are both semantically equivalent structures. They both are a pointer and length
 //   describing a buffer in the target address space. (SBufer also has ownership semantics, but for DAC's
 //   read-only nature, that doesn't matter).
-//   Neither of these will actually copy the target buffer into the host without explicit action.  
-//   The important difference is that TargetBuffer is a host datastructure and so easier to manipulate. 
-//   
+//   Neither of these will actually copy the target buffer into the host without explicit action.
+//   The important difference is that TargetBuffer is a host datastructure and so easier to manipulate.
+//
 void InitTargetBufferFromTargetSBuffer(PTR_SBuffer pBuffer, TargetBuffer * pTargetBuffer)
 {
     SUPPORTS_DAC;
@@ -4327,7 +4327,7 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
     {
         PEFile * pFile = pModule->GetFile();
 
-        // For non-dynamic modules, metadata is in the pe-image.            
+        // For non-dynamic modules, metadata is in the pe-image.
         COUNT_T size;
         CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pFile->GetLoadedMetadata(&size)));
 
@@ -4339,7 +4339,7 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
         // We never expect this to happen in a well-behaved scenario. But just in case.
         ThrowHR(CORDBG_E_MISSING_METADATA);
     }
-    
+
 }
 
 // Implementation of IDacDbiInterface::GetSymbolsBuffer
@@ -4349,7 +4349,7 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
 
     pTargetBuffer->Clear();
     *pSymbolFormat = kSymbolFormatNone;
-    
+
     Module * pModule = vmModule.GetDacPtr();
 
     // Target should only be asking about modules that are visible to debugger.
@@ -4391,13 +4391,13 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
 }
 
 
-    
+
 void DacDbiInterfaceImpl::GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule)
 {
     DD_ENTER_MAY_THROW;
-    
+
     _ASSERTE(pModule != NULL);
-    
+
     DomainFile * pDomainFile = vmDomainFile.GetDacPtr();
     pModule->SetHostPtr(pDomainFile->GetModule());
 }
@@ -4414,10 +4414,10 @@ void DacDbiInterfaceImpl::GetDomainFileData(VMPTR_DomainFile vmDomainFile, Domai
 
     DomainFile * pDomainFile  = vmDomainFile.GetDacPtr();
     AppDomain  * pAppDomain   = pDomainFile->GetAppDomain();
-    
+
     // @dbgtodo - is this efficient DAC usage (perhaps a dac-cop rule)? Are we round-tripping the pointer?
     // Should we have a GetDomainAssembly() that returns a PTR_DomainAssembly?
-    pData->vmDomainAssembly.SetHostPtr(pDomainFile->GetDomainAssembly()); 
+    pData->vmDomainAssembly.SetHostPtr(pDomainFile->GetDomainAssembly());
     pData->vmAppDomain.SetHostPtr(pAppDomain);
 }
 
@@ -4429,7 +4429,7 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     _ASSERTE(pData != NULL);
 
     ZeroMemory(pData, sizeof(*pData));
-    
+
     Module     * pModule      = vmModule.GetDacPtr();
     PEFile     * pFile        = pModule->GetFile();
 
@@ -4439,20 +4439,20 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     // Is it dynamic?
     BOOL fIsDynamic = pModule->IsReflection();
     pData->fIsDynamic = fIsDynamic;
-   
+
     // Get PE BaseAddress and Size
-    // For dynamic modules, these are 0. Else, 
+    // For dynamic modules, these are 0. Else,
     pData->pPEBaseAddress = NULL;
     pData->nPESize = 0;
-    
+
     if (!fIsDynamic)
     {
         COUNT_T size = 0;
-        pData->pPEBaseAddress = PTR_TO_TADDR(pFile->GetDebuggerContents(&size));    
+        pData->pPEBaseAddress = PTR_TO_TADDR(pFile->GetDebuggerContents(&size));
         pData->nPESize = (ULONG) size;
     }
-   
-    // In-memory is determined by whether the module has a filename.    
+
+    // In-memory is determined by whether the module has a filename.
     pData->fInMemory = FALSE;
     if (pFile != NULL)
     {
@@ -4463,25 +4463,25 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
 
 // Enumerate all AppDomains in the process.
 void DacDbiInterfaceImpl::EnumerateAppDomains(
-    FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, 
+    FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback,
     void * pUserData)
 {
     DD_ENTER_MAY_THROW;
-    
+
     _ASSERTE(fpCallback != NULL);
 
-    // Only include active appdomains in the enumeration. 
-    // This includes appdomains sent before the AD load event, 
+    // Only include active appdomains in the enumeration.
+    // This includes appdomains sent before the AD load event,
     // and does not include appdomains that are in shutdown after the AD exit event.
     const BOOL bOnlyActive = TRUE;
-    AppDomainIterator iterator(bOnlyActive); 
+    AppDomainIterator iterator(bOnlyActive);
 
     while(iterator.Next())
     {
         // It's critical that we don't yield appdomains after the unload event has been sent.
         // See code:IDacDbiInterface#Enumeration for details.
-        AppDomain * pAppDomain = iterator.GetDomain(); 
-        
+        AppDomain * pAppDomain = iterator.GetDomain();
+
         VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
         vmAppDomain.SetHostPtr(pAppDomain);
 
@@ -4489,7 +4489,7 @@ void DacDbiInterfaceImpl::EnumerateAppDomains(
     }
 }
 
-// Enumerate all Assemblies in an appdomain. 
+// Enumerate all Assemblies in an appdomain.
 void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     VMPTR_AppDomain vmAppDomain,
     FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback,
@@ -4497,9 +4497,9 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 )
 {
     DD_ENTER_MAY_THROW;
-    
+
     _ASSERTE(fpCallback != NULL);
-    
+
     // Iterate through all Assemblies (including shared) in the appdomain.
     AppDomain::AssemblyIterator iterator;
 
@@ -4511,7 +4511,7 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    
+
     while (iterator.Next(pDomainAssembly.This()))
     {
         if (!pDomainAssembly->IsVisibleToDebugger())
@@ -4540,9 +4540,9 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     DomainAssembly * pDomainAssembly = vmAssembly.GetDacPtr();
 
     // If the domain is not yet fully-loaded, don't advertise it yet.
-    // It's not ready to be inspected. 
+    // It's not ready to be inspected.
     DomainModuleIterator iterator =  pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-    
+
     while (iterator.Next())
     {
         DomainFile * pDomainFile = iterator.GetDomainFile();
@@ -4553,8 +4553,8 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
             continue;
         }
 
-        _ASSERTE(pDomainFile->IsLoaded());        
-        
+        _ASSERTE(pDomainFile->IsLoaded());
+
         VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
         vmDomainFile.SetHostPtr(pDomainFile);
 
@@ -4565,7 +4565,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
 // Implementation of IDacDbiInterface::ResolveAssembly
 // Returns NULL if not found.
 VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
-    VMPTR_DomainFile vmScope, 
+    VMPTR_DomainFile vmScope,
     mdToken tkAssemblyRef)
 {
     DD_ENTER_MAY_THROW;
@@ -4586,21 +4586,21 @@ VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
     return vmDomainAssembly;
 }
 
-// When stopped at an event, request a synchronization. 
+// When stopped at an event, request a synchronization.
 // See DacDbiInterface.h for full comments
 void DacDbiInterfaceImpl::RequestSyncAtEvent()
 {
     DD_ENTER_MAY_THROW;
 
-    // To request a sync, we just need to set g_pDebugger->m_RSRequestedSync high. 
+    // To request a sync, we just need to set g_pDebugger->m_RSRequestedSync high.
     if (g_pDebugger != NULL)
-    {        
+    {
         TADDR addr = PTR_HOST_MEMBER_TADDR(Debugger, g_pDebugger, m_RSRequestedSync);
-        
+
         BOOL fTrue = TRUE;
         SafeWriteStructOrThrow<BOOL>(addr, &fTrue);
 
-    }    
+    }
 }
 
 HRESULT DacDbiInterfaceImpl::SetSendExceptionsOutsideOfJMC(BOOL sendExceptionsOutsideOfJMC)
@@ -4658,7 +4658,7 @@ void DacDbiInterfaceImpl::MarkDebuggerAttached(BOOL fAttached)
         // To detach (if !fAttached), we need to do the opposite.
 
         DWORD flags = g_CORDebuggerControlFlags;
-        if (fAttached) 
+        if (fAttached)
         {
             flags |= DBCF_ATTACHED;
         }
@@ -4683,18 +4683,18 @@ void DacDbiInterfaceImpl::MarkDebuggerAttached(BOOL fAttached)
 
 
 
-// Enumerate all threads in the process. 
+// Enumerate all threads in the process.
 void DacDbiInterfaceImpl::EnumerateThreads(FP_THREAD_ENUMERATION_CALLBACK fpCallback, void * pUserData)
 {
     DD_ENTER_MAY_THROW;
-    
+
     if (ThreadStore::s_pThreadStore == NULL)
     {
         return;
     }
 
     Thread *pThread = ThreadStore::GetThreadList(NULL);
-    
+
     while (pThread != NULL)
     {
 
@@ -4709,7 +4709,7 @@ void DacDbiInterfaceImpl::EnumerateThreads(FP_THREAD_ENUMERATION_CALLBACK fpCall
         }
 
         pThread = ThreadStore::GetThreadList(pThread);
-    }    
+    }
 }
 
 // public implementation of IsThreadMarkedDead
@@ -4721,13 +4721,13 @@ bool DacDbiInterfaceImpl::IsThreadMarkedDead(VMPTR_Thread vmThread)
 }
 
 // Private worker for IsThreadMarkedDead
-// 
+//
 // Arguments:
 //    pThread - valid thread to check if dead
-//    
-// Returns: 
+//
+// Returns:
 //    true iff thread is marked as dead.
-//    
+//
 // Notes:
 //    This is an internal method that skips public validation.
 //    See code:IDacDbiInterface::#IsThreadMarkedDead for purpose.
@@ -4950,9 +4950,9 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetObjectForCCW(CORDB_ADDRESS ccwPtr)
 // Arguments:
 //     input: vmThread - the thread on which the notification occurred
 // Return value: object handle for the current notification (if any) on the thread. This will return non-null
-// if and only if we are currently inside a CustomNotification Callback (or a dump was generated while in this 
+// if and only if we are currently inside a CustomNotification Callback (or a dump was generated while in this
 // callback)
-// 
+//
 VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentCustomDebuggerNotification(VMPTR_Thread vmThread)
 {
     DD_ENTER_MAY_THROW;
@@ -5001,7 +5001,7 @@ CLR_DEBUGGING_PROCESS_FLAGS DacDbiInterfaceImpl::GetAttachStateFlags()
     {
         // When launching the process under a managed debugger we
         // request these flags when CLR is loaded (before g_pDebugger
-        // had a chance to be initialized). In these cases simply 
+        // had a chance to be initialized). In these cases simply
         // return 0
     }
     return res;
@@ -5014,7 +5014,7 @@ CLR_DEBUGGING_PROCESS_FLAGS DacDbiInterfaceImpl::GetAttachStateFlags()
 //     Non-null Target Address of hijack function.
 TADDR DacDbiInterfaceImpl::GetHijackAddress()
 {
-    TADDR addr = NULL; 
+    TADDR addr = NULL;
     if (g_pDebugger != NULL)
     {
         // Get the start address of the redirect function for unhandled exceptions.
@@ -5039,7 +5039,7 @@ TADDR DacDbiInterfaceImpl::GetHijackAddress()
 // Notes:
 //    Currently this function only recognizes the ExceptionHijack() stub,
 //    which is used for unhandled exceptions.
-//   
+//
 
 bool DacDbiInterfaceImpl::IsRuntimeUnwindableStub(PCODE targetControlPC)
 {
@@ -5054,7 +5054,7 @@ bool DacDbiInterfaceImpl::IsRuntimeUnwindableStub(PCODE targetControlPC)
         Debugger* pDebugger = g_pDebugger;
         if ((pDebugger == NULL) || (pDebugger->m_rgHijackFunction == NULL))
         {
-            // The in-process debugging infrastructure hasn't been fully initialized, which means that we could 
+            // The in-process debugging infrastructure hasn't been fully initialized, which means that we could
             // NOT have hijacked anything yet.
             return false;
         }
@@ -5085,9 +5085,9 @@ bool DacDbiInterfaceImpl::IsRuntimeUnwindableStub(PCODE targetControlPC)
 
 //---------------------------------------------------------------------------------------
 // Align a stack pointer for the given architecture
-// 
+//
 // Arguments:
-//    pEsp - in/out: pointer to stack pointer. 
+//    pEsp - in/out: pointer to stack pointer.
 //
 void DacDbiInterfaceImpl::AlignStackPointer(CORDB_ADDRESS * pEsp)
 {
@@ -5095,7 +5095,7 @@ void DacDbiInterfaceImpl::AlignStackPointer(CORDB_ADDRESS * pEsp)
 
     // Nop on x86.
 #if defined(BIT64)
-    // on 64-bit, stack pointer must be 16-byte aligned. 
+    // on 64-bit, stack pointer must be 16-byte aligned.
     // Stacks grown down, so round down to nearest 0xF bits.
     *pEsp &= ~((CORDB_ADDRESS) 0xF);
 #endif
@@ -5103,22 +5103,22 @@ void DacDbiInterfaceImpl::AlignStackPointer(CORDB_ADDRESS * pEsp)
 
 //---------------------------------------------------------------------------------------
 // Emulate pushing something on a thread's stack.
-// 
+//
 // Arguments:
-//     pEsp - in/out: pointer to stack pointer to push object at. On output, 
-//            updated stack pointer. 
+//     pEsp - in/out: pointer to stack pointer to push object at. On output,
+//            updated stack pointer.
 //     pData  - object to push on the stack.
 //     fAlignStack - whether to align the stack pointer before and after the push.
-//                   Callers which specify FALSE must be very careful and know exactly 
+//                   Callers which specify FALSE must be very careful and know exactly
 //                   what they are doing.
 //
 // Return:
 //     address of pushed object. Throws on error.
 template <class T>
-CORDB_ADDRESS DacDbiInterfaceImpl::PushHelper(CORDB_ADDRESS * pEsp, 
-                                              const T * pData, 
+CORDB_ADDRESS DacDbiInterfaceImpl::PushHelper(CORDB_ADDRESS * pEsp,
+                                              const T * pData,
                                               BOOL fAlignStack)
-{    
+{
     SUPPORTS_DAC;
 
     if (fAlignStack == TRUE)
@@ -5135,14 +5135,14 @@ CORDB_ADDRESS DacDbiInterfaceImpl::PushHelper(CORDB_ADDRESS * pEsp,
 }
 
 //---------------------------------------------------------------------------------------
-// Write an EXCEPTION_RECORD structure to the remote target at the specified address while taking 
-// into account the number of exception parameters.  On 64-bit OS and on the WOW64, the OS always 
+// Write an EXCEPTION_RECORD structure to the remote target at the specified address while taking
+// into account the number of exception parameters.  On 64-bit OS and on the WOW64, the OS always
 // pushes the entire EXCEPTION_RECORD onto the stack.  However, on native x86 OS, the OS only pushes
 // enough of the EXCEPTION_RECORD to cover the specified number of exception parameters.  Thus we
 // need to be extra careful when we overwrite an EXCEPTION_RECORD on the stack.
 //
 // Arguments:
-//    pRemotePtr   - address of the EXCEPTION_RECORD in the remote target 
+//    pRemotePtr   - address of the EXCEPTION_RECORD in the remote target
 //    pExcepRecord - EXCEPTION_RECORD to be written
 //
 // Notes:
@@ -5150,17 +5150,17 @@ CORDB_ADDRESS DacDbiInterfaceImpl::PushHelper(CORDB_ADDRESS * pEsp,
 //    It only works when we are actually debugging a live process, not a dump.
 //
 
-void DacDbiInterfaceImpl::WriteExceptionRecordHelper(CORDB_ADDRESS pRemotePtr, 
+void DacDbiInterfaceImpl::WriteExceptionRecordHelper(CORDB_ADDRESS pRemotePtr,
                                                      const EXCEPTION_RECORD * pExcepRecord)
 {
     // Calculate the correct size to push onto the stack.
     ULONG32 cbSize = offsetof(EXCEPTION_RECORD, ExceptionInformation);
     cbSize += pExcepRecord->NumberParameters * sizeof(pExcepRecord->ExceptionInformation[0]);
 
-    // Use the data target to write to the remote target.  Here we are assuming that we are debugging a 
+    // Use the data target to write to the remote target.  Here we are assuming that we are debugging a
     // live process, since this function is only called by the hijacking code for unhandled exceptions.
-    HRESULT hr = m_pMutableTarget->WriteVirtual(pRemotePtr, 
-                                                reinterpret_cast<const BYTE *>(pExcepRecord), 
+    HRESULT hr = m_pMutableTarget->WriteVirtual(pRemotePtr,
+                                                reinterpret_cast<const BYTE *>(pExcepRecord),
                                                 cbSize);
 
     if (FAILED(hr))
@@ -5173,10 +5173,10 @@ void DacDbiInterfaceImpl::WriteExceptionRecordHelper(CORDB_ADDRESS pRemotePtr,
 void DacDbiInterfaceImpl::Hijack(
     VMPTR_Thread                 vmThread,
     ULONG32                      dwThreadId,
-    const EXCEPTION_RECORD *     pRecord,  
-    T_CONTEXT *                  pOriginalContext, 
+    const EXCEPTION_RECORD *     pRecord,
+    T_CONTEXT *                  pOriginalContext,
     ULONG32                      cbSizeContext,
-    EHijackReason::EHijackReason reason, 
+    EHijackReason::EHijackReason reason,
     void *                       pUserData,
     CORDB_ADDRESS *              pRemoteContextAddr)
 {
@@ -5212,12 +5212,12 @@ void DacDbiInterfaceImpl::Hijack(
 
     //
     // Setup context for hijack
-    // 
+    //
     T_CONTEXT ctx;
     HRESULT hr = m_pTarget->GetThreadContext(
-        dwThreadId, 
-        CONTEXT_FULL, 
-        sizeof(ctx), 
+        dwThreadId,
+        CONTEXT_FULL,
+        sizeof(ctx),
         (BYTE*) &ctx);
     IfFailThrow(hr);
 
@@ -5239,9 +5239,9 @@ void DacDbiInterfaceImpl::Hijack(
     // when you turn the trace flag on in-process and go, if there is a fault, the fault is reported and the trace flag
     // is automatically turned off.
     //
-    // The debugger could always re-enable the single-step flag if it wants to.    
+    // The debugger could always re-enable the single-step flag if it wants to.
 #ifndef FEATURE_EMULATE_SINGLESTEP
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(&ctx)); 
+    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(&ctx));
 #endif
 
     // Push pointers
@@ -5251,14 +5251,14 @@ void DacDbiInterfaceImpl::Hijack(
 
     // @dbgtodo  cross-plat - this is not cross plat
     CORDB_ADDRESS esp = GetSP(&ctx);
-    
+
     //
     // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo and
     // ExceptionTracker have pointers to these data structures, but when we get the unhandled exception
     // notification, the OS exception dispatcher is no longer on the stack, so these pointers are no longer
     // valid.  We need to either update these pointers in the ExInfo/ExcepionTracker, or reuse the stack
     // space used by the OS exception dispatcher.  We are using the latter approach here.
-    // 
+    //
 
     CORDB_ADDRESS espOSContext = NULL;
     CORDB_ADDRESS espOSRecord  = NULL;
@@ -5267,8 +5267,8 @@ void DacDbiInterfaceImpl::Hijack(
         espOSContext = (CORDB_ADDRESS)PTR_TO_TADDR(pThread->GetExceptionState()->GetContextRecord());
         espOSRecord  = (CORDB_ADDRESS)PTR_TO_TADDR(pThread->GetExceptionState()->GetExceptionRecord());
 
-        // The managed exception may not be related to the unhandled exception for which we are trying to 
-        // hijack.  An example would be when a thread hits a managed exception, VS tries to do func eval on 
+        // The managed exception may not be related to the unhandled exception for which we are trying to
+        // hijack.  An example would be when a thread hits a managed exception, VS tries to do func eval on
         // the thread, but the func eval causes an unhandled exception (e.g. AV in mscorwks.dll).  In this
         // case, the pointers stored on the ExInfo/ExceptionTracker are closer to the root than the current
         // SP of the thread.  The check below makes sure we don't reuse the pointers in this case.
@@ -5278,8 +5278,8 @@ void DacDbiInterfaceImpl::Hijack(
             espContext = CORDB_ADDRESS_TO_PTR(espOSContext);
 
             // We should have an EXCEPTION_RECORD if we are hijacked at an exception.
-            // We need to be careful when we overwrite the exception record.  On x86, the OS doesn't 
-            // always push the full record onto the stack, and so we can't blindly use sizeof(EXCEPTION_RECORD).  
+            // We need to be careful when we overwrite the exception record.  On x86, the OS doesn't
+            // always push the full record onto the stack, and so we can't blindly use sizeof(EXCEPTION_RECORD).
             // Instead, we have to look at the number of exception parameters and calculate the size.
             _ASSERTE(pRecord != NULL);
             WriteExceptionRecordHelper(espOSRecord, pRecord);
@@ -5320,16 +5320,16 @@ void DacDbiInterfaceImpl::Hijack(
     // Set up everything so that the hijack stub can just do a "call" instruction.
     //
     // Regarding stack overflow: We could do an explicit check against the thread's stack base limit.
-    // However, we don't need an explicit overflow check because if the stack does overflow, 
+    // However, we don't need an explicit overflow check because if the stack does overflow,
     // the hijack will just hit a regular stack-overflow exception.
-#if defined(_TARGET_X86_)  // TARGET 
+#if defined(_TARGET_X86_)  // TARGET
     // X86 calling convention is to push args on the stack in reverse order.
     // If we fail here, the stack is written, but esp hasn't been committed yet so it shouldn't matter.
     PushHelper(&esp, &pData, TRUE);
     PushHelper(&esp, &reason, TRUE);
     PushHelper(&esp, &espRecord, TRUE);
     PushHelper(&esp, &espContext, TRUE);
-#elif defined (_TARGET_AMD64_) // TARGET 
+#elif defined (_TARGET_AMD64_) // TARGET
     // AMD64 calling convention is to place first 4 parameters in: rcx, rdx, r8 and r9
     ctx.Rcx = (DWORD64) espContext;
     ctx.Rdx = (DWORD64) espRecord;
@@ -5337,7 +5337,7 @@ void DacDbiInterfaceImpl::Hijack(
     ctx.R9  = (DWORD64) pData;
 
     // Caller must allocate stack space to spill for args.
-    // Push the arguments onto the outgoing argument homes.  
+    // Push the arguments onto the outgoing argument homes.
     // Make sure we push pointer-sized values to keep the stack aligned.
     PushHelper(&esp, reinterpret_cast<SIZE_T *>(&(ctx.R9)), FALSE);
     PushHelper(&esp, reinterpret_cast<SIZE_T *>(&(ctx.R8)), FALSE);
@@ -5362,7 +5362,7 @@ void DacDbiInterfaceImpl::Hijack(
     SetIP(&ctx, pfnHijackFunction);
 
     //
-    // Commit the context. 
+    // Commit the context.
     //
     hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(ctx), reinterpret_cast<BYTE*> (&ctx));
     IfFailThrow(hr);
@@ -5427,7 +5427,7 @@ TargetBuffer DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
     *pArgBase = VASigCookieAddr + sizeof(VASigCookie *);
 #endif // !_TARGET_X86_ (STACK_GROWS_UP_ON_ARGS_WALK)
 
-    return TargetBuffer(PTR_TO_CORDB_ADDRESS(pVACookie->signature.GetRawSig()), 
+    return TargetBuffer(PTR_TO_CORDB_ADDRESS(pVACookie->signature.GetRawSig()),
                         pVACookie->signature.GetRawSigLen());
 }
 
@@ -5437,7 +5437,7 @@ BOOL DacDbiInterfaceImpl::RequiresAlign8(VMPTR_TypeHandle thExact)
     DD_ENTER_MAY_THROW;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-    TypeHandle th = TypeHandle::FromPtr(thExact.GetDacPtr()); 
+    TypeHandle th = TypeHandle::FromPtr(thExact.GetDacPtr());
     PTR_MethodTable mt = th.AsMethodTable();
 
     return mt->RequiresAlign8();
@@ -5456,16 +5456,16 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
     if (dwExactGenericArgsTokenIndex == 0)
     {
         // In this case the real generics type token is the MethodTable of the "this" object.
-        // Note that we want the target address here.        
-        
-        // Incoming rawToken is actually a PTR_Object for the 'this' pointer. 
+        // Note that we want the target address here.
+
+        // Incoming rawToken is actually a PTR_Object for the 'this' pointer.
         // Need to do some casting to convert GENERICS_TYPE_TOKEN --> PTR_Object
         TADDR addrObjThis = CORDB_ADDRESS_TO_TADDR(rawToken);
         PTR_Object pObjThis = dac_cast<PTR_Object>(addrObjThis);
 
-        
+
         PTR_MethodTable pMT = pObjThis->GetMethodTable();
-        
+
         // Now package up the PTR_MethodTable back into a GENERICS_TYPE_TOKEN
         TADDR addrMT = dac_cast<TADDR>(pMT);
         GENERICS_TYPE_TOKEN realToken = (GENERICS_TYPE_TOKEN) addrMT;
@@ -5476,7 +5476,7 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
         // rawToken is already initialized correctly.  Nothing to do here.
         return  rawToken;
     }
-    
+
     // The index of the generics type token should not be anything else.
     // This is indeed an error condition, and so we throw here.
     _ASSERTE(!"DDII::REGAT - Unexpected generics type token index.");
@@ -5552,7 +5552,7 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
             }
         }
     }
-              
+
     return fIsGCSafe;
 }
 
@@ -5584,13 +5584,13 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
 
     if (ts & Thread::TS_Unstarted)
     {
-        result |= USER_UNSTARTED;            
+        result |= USER_UNSTARTED;
     }
 
     // Don't report a StopRequested if the thread has actually stopped.
     if (ts & Thread::TS_Dead)
     {
-        result |= USER_STOPPED;           
+        result |= USER_STOPPED;
     }
 
     // The interruptible flag is unreliable (see issue 699245)
@@ -5599,7 +5599,7 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
 
     if (ts & Thread::TS_Interruptible || pThread->HasThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin))
     {
-        result |= USER_WAIT_SLEEP_JOIN;          
+        result |= USER_WAIT_SLEEP_JOIN;
     }
 
     // CoreCLR does not support user-requested thread suspension
@@ -5622,7 +5622,7 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
 //    vmMethodDesc        - the MethodDesc of the managed method
 //    mdMethod            - the MethodDef metadata token of the managed method
 //    pNativeStartAddress - the native start address of the jitted code
-//    pJittedInstanceEnCVersion - out parameter; the version number of the version 
+//    pJittedInstanceEnCVersion - out parameter; the version number of the version
 //                                corresponding to the specified native start address
 //    pLatestEnCVersion         - out parameter; the version number of the latest version
 //
@@ -5635,7 +5635,7 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
 //
 //    Today, there is no way to retrieve the EnC version number from the RS data structures.
 //    This primitive uses DAC to retrieve it from the LS data structures.  This function may
-//    very well be ripped out in the future if we DACize this information, but the current 
+//    very well be ripped out in the future if we DACize this information, but the current
 //    thinking is that some of the RS data structures will remain, most likely in a reduced form.
 //
 
@@ -5680,10 +5680,10 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
     }
     else
     {
-        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info        
+        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info
         // Several cases where we don't have a DMI/DJI:
         // - LCG methods
-        // - method was never "touched" by debugger. (DJIs are created lazily).         
+        // - method was never "touched" by debugger. (DJIs are created lazily).
         if (pJittedInstanceEnCVersion != NULL)
         {
             *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
@@ -5694,7 +5694,7 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
 
 // Get the address of the Debugger control block on the helper thread
 // Arguments: none
-// Return Value: The remote address of the Debugger control block allocated on the helper thread 
+// Return Value: The remote address of the Debugger control block allocated on the helper thread
 //               if it has been successfully allocated or NULL otherwise.
 CORDB_ADDRESS DacDbiInterfaceImpl::GetDebuggerControlBlockAddress()
 {
@@ -5718,7 +5718,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
     Thread *  pThread  = vmThread.GetDacPtr();
 
-    // @dbgtodo  Once the filter context is removed, then we should always 
+    // @dbgtodo  Once the filter context is removed, then we should always
     // start with the leaf CONTEXT.
     DT_CONTEXT * pFilterContext = reinterpret_cast<DT_CONTEXT *>(pThread->GetFilterContext());
 
@@ -5726,20 +5726,20 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
     {
         // If the filter context is NULL, then we use the true context of the thread.
         pContextBuffer->ContextFlags = CONTEXT_ALL;
-        HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(), 
-                                                pContextBuffer->ContextFlags, 
+        HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+                                                pContextBuffer->ContextFlags,
                                                 sizeof(*pContextBuffer),
                                                 reinterpret_cast<BYTE *>(pContextBuffer));
         if (hr == E_NOTIMPL)
         {
             // GetThreadContext is not implemented on this data target.
-            // That's why we have to make do with context we can obtain from Frames explicitly stored in Thread object. 
-            // It suffices for managed debugging stackwalk. 
+            // That's why we have to make do with context we can obtain from Frames explicitly stored in Thread object.
+            // It suffices for managed debugging stackwalk.
             REGDISPLAY tmpRd = {};
             T_CONTEXT tmpContext = {};
             FillRegDisplay(&tmpRd, &tmpContext);
-            
-            // Going through thread Frames and looking for first (deepest one) one that 
+
+            // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
             // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, ComPlusMethodFrame
             Frame *frame = pThread->GetFrame();
@@ -5756,10 +5756,10 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
                 frame = frame->Next();
             }
 
-            // It looks like this thread is not running managed code. 
-            ZeroMemory(pContextBuffer, sizeof(*pContextBuffer));   
+            // It looks like this thread is not running managed code.
+            ZeroMemory(pContextBuffer, sizeof(*pContextBuffer));
         }
-        else 
+        else
         {
             IfFailThrow(hr);
         }
@@ -5768,13 +5768,13 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
     {
         *pContextBuffer = *pFilterContext;
     }
-    
+
 } // DacDbiInterfaceImpl::GetContext
 
 // Create a VMPTR_Object from a target object address
 // @dbgtodo validate the VMPTR_Object is in fact a object, possibly by DACizing
 //          Object::Validate
-VMPTR_Object DacDbiInterfaceImpl::GetObject(CORDB_ADDRESS ptr) 
+VMPTR_Object DacDbiInterfaceImpl::GetObject(CORDB_ADDRESS ptr)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5835,7 +5835,7 @@ typedef DPTR(OBJECTREF) PTR_ObjectRef;
 // Create a VMPTR_Object from an address which points to a reference to an object
 // @dbgtodo validate the VMPTR_Object is in fact a object, possibly by DACizing
 //          Object::Validate
-VMPTR_Object DacDbiInterfaceImpl::GetObjectFromRefPtr(CORDB_ADDRESS ptr) 
+VMPTR_Object DacDbiInterfaceImpl::GetObjectFromRefPtr(CORDB_ADDRESS ptr)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5846,7 +5846,7 @@ VMPTR_Object DacDbiInterfaceImpl::GetObjectFromRefPtr(CORDB_ADDRESS ptr)
     return vmObj;
 }
 
-// Create a VMPTR_OBJECTHANDLE from a handle 
+// Create a VMPTR_OBJECTHANDLE from a handle
 VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetVmObjectHandle(CORDB_ADDRESS handleAddress)
 {
     DD_ENTER_MAY_THROW;
@@ -5924,7 +5924,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetHandleAddressFromVmHandle(VMPTR_OBJECTHAND
 }
 
 // Create a TargetBuffer which describes the location of the object
-TargetBuffer DacDbiInterfaceImpl::GetObjectContents(VMPTR_Object vmObj) 
+TargetBuffer DacDbiInterfaceImpl::GetObjectContents(VMPTR_Object vmObj)
 {
     DD_ENTER_MAY_THROW;
     PTR_Object objPtr = vmObj.GetDacPtr();
@@ -5934,16 +5934,16 @@ TargetBuffer DacDbiInterfaceImpl::GetObjectContents(VMPTR_Object vmObj)
 }
 
 // ============================================================================
-// functions to get information about objects referenced via an instance of CordbReferenceValue or 
+// functions to get information about objects referenced via an instance of CordbReferenceValue or
 // CordbHandleValue
 // ============================================================================
 
 // DacDbiInterfaceImpl::FastSanityCheckObject
-// Helper function for CheckRef. Sanity check an object. 
-// We use a fast and easy check to improve confidence that objPtr points to a valid object. 
+// Helper function for CheckRef. Sanity check an object.
+// We use a fast and easy check to improve confidence that objPtr points to a valid object.
 // We can't tell cheaply if this is really a valid object (that would require walking the GC heap), but at
 // least we can check if we get an EEClass from the supposed method table and then get the method table from
-// the class. If we can, we have improved the probability that the object is valid. 
+// the class. If we can, we have improved the probability that the object is valid.
 // Arguments:
 //     input: objPtr - address of the object we are checking
 // Return Value: E_INVALIDARG or S_OK.
@@ -5980,16 +5980,16 @@ HRESULT DacDbiInterfaceImpl::FastSanityCheckObject(PTR_Object objPtr)
     return hr;
 }   // DacDbiInterfaceImpl::FastSanityCheckObject
 
-// Perform a sanity check on an object address to determine if this _could be_ a valid object. 
+// Perform a sanity check on an object address to determine if this _could be_ a valid object.
 // We can't tell this for certain without walking the GC heap, but we do some fast tests to rule
 // out clearly invalid object addresses. See code:DacDbiInterfaceImpl::FastSanityCheckObject for more
 // details.
-// Arguments: 
+// Arguments:
 //     input:  objPtr    - address of the object we are checking
-// Return Value: 
+// Return Value:
 //             objRefBad - true iff we have determined the address cannot be pointing to a valid object.
 //                         Note that a value of false doesn't necessarily guarantee the object is really
-//                         valid                      
+//                         valid
 bool DacDbiInterfaceImpl::CheckRef(PTR_Object objPtr)
 {
     bool objRefBad = false;
@@ -6018,16 +6018,16 @@ bool DacDbiInterfaceImpl::CheckRef(PTR_Object objPtr)
     return objRefBad;
 } // DacDbiInterfaceImpl::CheckRef
 
-// DacDbiInterfaceImpl::InitObjectData 
+// DacDbiInterfaceImpl::InitObjectData
 // Initialize basic object information: type handle, object size, offset to fields and expanded type
 // information.
 // Arguments:
 //     input:  objPtr      - address of object of interest
 //             vmAppDomain - AppDomain for the type f the object
 //     output: pObjectData - object information
-// Note: It is assumed that pObjectData is non-null. 
-void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr, 
-                                         VMPTR_AppDomain           vmAppDomain, 
+// Note: It is assumed that pObjectData is non-null.
+void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
+                                         VMPTR_AppDomain           vmAppDomain,
                                          DebuggerIPCE_ObjectData * pObjectData)
 {
     _ASSERTE(pObjectData != NULL);
@@ -6054,7 +6054,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
 
 // DAC/DBI API
 
-// Get object information for a TypedByRef object (System.TypedReference). 
+// Get object information for a TypedByRef object (System.TypedReference).
 
 // These are objects that contain a managed pointer to a location and the type of the value at that location.
 // They are most commonly used for varargs but also may be used for parameters and locals. They are
@@ -6075,12 +6075,12 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
 //     System.ArgIterator iter = new System.ArgIterator (__arglist);
 //     int argCount = iter.GetRemainingCount();
 //
-//     for (int i = 0; i < argCount; i++) 
+//     for (int i = 0; i < argCount; i++)
 //     {
 //         System.TypedReference typedRef = iter.GetNextArg();
 //         result += (int)TypedReference.ToObject(typedRef);
 //     }
-// 
+//
 //     return result;
 // }
 //
@@ -6096,7 +6096,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
 // }
 
 // Initializes the objRef and typedByRefType fields of pObjectData (type info for the referent).
-void DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS             pTypedByRef, 
+void DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS             pTypedByRef,
                                             VMPTR_AppDomain           vmAppDomain,
                                             DebuggerIPCE_ObjectData * pObjectData)
 {
@@ -6110,9 +6110,9 @@ void DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS             pTypedByRe
     _ASSERTE(pObjectData != NULL);
 
     // The type of the referent is in the type field of the TypedByRef. We need to initialize the object
-    // data type information. 
-    TypeHandleToBasicTypeInfo(refAddr->type, 
-                              &(pObjectData->typedByrefInfo.typedByrefType), 
+    // data type information.
+    TypeHandleToBasicTypeInfo(refAddr->type,
+                              &(pObjectData->typedByrefInfo.typedByrefType),
                               vmAppDomain.GetDacPtr());
 
     // The reference to the object is in the data field of the TypedByRef.
@@ -6136,13 +6136,13 @@ void DacDbiInterfaceImpl::GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPC
     PTR_Object objPtr = PTR_Object(TADDR(objectAddress));
     LOG((LF_CORDB, LL_INFO10000, "D::GOI: The referent is a string.\n"));
 
-    if (objPtr->GetGCSafeMethodTable() != g_pStringClass) 
+    if (objPtr->GetGCSafeMethodTable() != g_pStringClass)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 
     PTR_StringObject pStrObj = dac_cast<PTR_StringObject>(objPtr);
-    
+
     _ASSERTE(pStrObj != NULL);
     pObjectData->stringInfo.length = pStrObj->GetStringLength();
     pObjectData->stringInfo.offsetToStringBase = (UINT_PTR) pStrObj->GetBufferOffset();
@@ -6172,7 +6172,7 @@ void DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE
         PTR_ArrayBase arrPtr = dac_cast<PTR_ArrayBase>(objPtr);
 
         // this is also returned in the type information for the array - we return both for sanity checking...
-        pObjectData->arrayInfo.rank = arrPtr->GetRank();      
+        pObjectData->arrayInfo.rank = arrPtr->GetRank();
         pObjectData->arrayInfo.componentCount = arrPtr->GetNumComponents();
         pObjectData->arrayInfo.offsetToArrayBase = arrPtr->GetDataPtrOffset(pMT);
 
@@ -6206,9 +6206,9 @@ void DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE
 
 // DAC/DBI API: Get information about an object for which we have a reference, including the object size and
 // type information.
-void DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS             objectAddress, 
-                                             CorElementType            type, 
-                                             VMPTR_AppDomain           vmAppDomain, 
+void DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS             objectAddress,
+                                             CorElementType            type,
+                                             VMPTR_AppDomain           vmAppDomain,
                                              DebuggerIPCE_ObjectData * pObjectData)
 {
     DD_ENTER_MAY_THROW;
@@ -6218,7 +6218,7 @@ void DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS             objectAdd
     if (pObjectData->objRefBad != true)
     {
         // initialize object type, size, offset information. Note: We may have a different element type
-        // after this. For example, we may start with E_T_CLASS but return with something more specific. 
+        // after this. For example, we may start with E_T_CLASS but return with something more specific.
         InitObjectData (objPtr, vmAppDomain, pObjectData);
     }
 } // DacDbiInterfaceImpl::GetBasicObjectInfo
@@ -6240,7 +6240,7 @@ void EnumerateBlockingObjectsCallback(PTR_DebugBlockingItem obj, VOID* pUserData
     // init to an arbitrary value to avoid mac compiler error about unintialized use
     // it will be correctly set in the switch and is never used with only this init here
     dacObj.blockingReason = DacBlockReason_MonitorCriticalSection;
-    
+
     dacObj.vmBlockingObject.SetDacTargetPtr(dac_cast<TADDR>(OBJECTREFToObject(obj->pMonitor->GetOwningObject())));
     dacObj.dwTimeout = obj->dwTimeout;
     dacObj.vmAppDomain.SetDacTargetPtr(dac_cast<TADDR>(obj->pAppDomain));
@@ -6306,7 +6306,7 @@ MonitorLockInfo DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_Object vmO
             return info;
         }
         pThread = ThreadStore::GetThreadList(pThread);
-    } 
+    }
     _ASSERTE(!"A thread should have been found");
     return info;
 }
@@ -6338,7 +6338,7 @@ void DacDbiInterfaceImpl::EnumerateMonitorEventWaitList(VMPTR_Object            
 
     Object* pObj = vmObject.GetDacPtr();
     SyncBlock* psb = pObj->PassiveGetSyncBlock();
-    
+
     // no sync block means no wait list
     if(psb == NULL)
         return;
@@ -6539,15 +6539,15 @@ HRESULT DacHeapWalker::NextSegment()
         }
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
-        
+
         if (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj)
             CheckAllocAndSegmentRange();
-    
+
         if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         {
             return E_FAIL;
         }
-    
+
         if (!GetSize(mCurrMT, mCurrSize))
         {
             return E_FAIL;
@@ -6621,7 +6621,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     // Set up mCurrObj/mCurrMT.
     if (SUCCEEDED(hr))
         hr = Reset(start, end);
-    
+
     // Collect information about GC heaps
     return hr;
 }
@@ -6661,7 +6661,7 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
 
     if (seg == NULL)
         return E_FAIL;
-    
+
     HRESULT hr = Reset(seg->Start, seg->End);
     if (SUCCEEDED(hr))
     {
@@ -6680,7 +6680,7 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
             if (obj >= curr && obj < curr + size)
                 found = true;
         }
-        
+
         if (found)
         {
             if (pPrev)
@@ -6710,7 +6710,7 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
             hr = E_FAIL;
         }
     }
-    
+
     return hr;
 }
 
@@ -6732,7 +6732,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     pHeaps[0].Gen0Start = (CORDB_ADDRESS)gen0.allocation_start;
     pHeaps[0].Gen0End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     pHeaps[0].Gen1Start = (CORDB_ADDRESS)gen1.allocation_start;
-    
+
     // Segments
     int count = GetSegmentCount(loh.start_segment);
     count += GetSegmentCount(gen2.start_segment);
@@ -6741,7 +6741,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     pHeaps[0].Segments = new (nothrow) SegmentData[count];
     if (pHeaps[0].Segments == NULL)
         return E_OUTOFMEMORY;
-    
+
     // Small object heap segments
     DPTR(dac_heap_segment) seg = gen2.start_segment;
     int i = 0;
@@ -6759,7 +6759,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
             pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
             pHeaps[0].Segments[i].Generation = 2;
         }
-        
+
         seg = seg->next;
     }
 
@@ -6770,7 +6770,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         pHeaps[0].Segments[i].Generation = 3;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
-        
+
         seg = seg->next;
     }
 
@@ -6780,7 +6780,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
  HRESULT DacDbiInterfaceImpl::CreateHeapWalk(IDacDbiInterface::HeapWalkHandle *pHandle)
 {
     DD_ENTER_MAY_THROW;
-    
+
     DacHeapWalker *data = new (nothrow) DacHeapWalker;
     if (data == NULL)
         return E_OUTOFMEMORY;
@@ -6797,7 +6797,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 void DacDbiInterfaceImpl::DeleteHeapWalk(HeapWalkHandle handle)
 {
     DD_ENTER_MAY_THROW;
-    
+
     DacHeapWalker *data = reinterpret_cast<DacHeapWalker*>(handle);
     if (data)
         delete data;
@@ -6811,19 +6811,19 @@ HRESULT DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
     DD_ENTER_MAY_THROW;
     if (fetched == NULL)
         return E_INVALIDARG;
-    
+
     DacHeapWalker *walk = reinterpret_cast<DacHeapWalker*>(handle);
     *fetched = 0;
 
     if (!walk->HasMoreObjects())
         return S_FALSE;
-    
+
     CORDB_ADDRESS freeMT = (CORDB_ADDRESS)g_pFreeObjectMethodTable.GetAddr();
 
     HRESULT hr = S_OK;
     CORDB_ADDRESS addr, mt;
     ULONG64 size;
-    
+
     ULONG i = 0;
     while (i < count && walk->HasMoreObjects())
     {
@@ -6844,21 +6844,21 @@ HRESULT DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
 
     if (SUCCEEDED(hr))
         hr = (i < count) ? S_FALSE : S_OK;
-    
+
     *fetched = i;
     return hr;
 }
 
 
-    
+
 HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *pSegments)
 {
     DD_ENTER_MAY_THROW;
-    
-    
+
+
     size_t heapCount = 0;
     HeapData *heaps = 0;
-    
+
 #ifdef FEATURE_SVR_GC
     HRESULT hr = GCHeapUtilities::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);
 #else
@@ -6866,7 +6866,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
 #endif
 
     NewArrayHolder<HeapData> _heapHolder = heaps;
-    
+
     // Count the number of segments to know how much to allocate.
     int total = 0;
     for (size_t i = 0; i < heapCount; ++i)
@@ -6874,7 +6874,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
         // SegmentCount is +1 due to the ephemeral segment containing more than one
         // generation (Gen1 + Gen0, and sometimes part of Gen2).
         total += (int)heaps[i].SegmentCount + 1;
-        
+
         // It's possible that part of Gen2 lives on the ephemeral segment.  If so,
         // we need to add one more to the output.
         const size_t eph = heaps[i].EphemeralSegment;
@@ -6882,9 +6882,9 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
         if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
             total++;
     }
-    
+
     pSegments->Alloc(total);
-    
+
     // Now walk all segments and write them to the array.
     int curr = 0;
     for (size_t i = 0; i < heapCount; ++i)
@@ -6898,7 +6898,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
             seg.type = CorDebug_Gen0;
             seg.heap = (ULONG)i;
         }
-        
+
         for (size_t j = 0; j < heaps[i].SegmentCount; ++j)
         {
             if (heaps[i].Segments[j].Generation == 1)
@@ -6907,7 +6907,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
                 // now write Gen1.
                 _ASSERTE(heaps[i].Segments[j].Start <= heaps[i].Gen1Start);
                 _ASSERTE(heaps[i].Segments[j].End > heaps[i].Gen1Start);
-                
+
                 {
                     _ASSERTE(curr < total);
                     COR_SEGMENT &seg = (*pSegments)[curr++];
@@ -6916,7 +6916,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
                     seg.type = CorDebug_Gen1;
                     seg.heap = (ULONG)i;
                 }
-                
+
                 // It's possible for Gen2 to take up a portion of the ephemeral segment.
                 // We test for that here.
                 if (heaps[i].Segments[j].Start != heaps[i].Gen1Start)
@@ -6936,14 +6936,14 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
                 COR_SEGMENT &seg = (*pSegments)[curr++];
                 seg.start = heaps[i].Segments[j].Start;
                 seg.end = heaps[i].Segments[j].End;
-                
+
                 _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_LOH);
                 seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
                 seg.heap = (ULONG)i;
             }
         }
     }
-    
+
     _ASSERTE(total == curr);
     return hr;
 }
@@ -6951,7 +6951,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
 bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
 {
     DD_ENTER_MAY_THROW;
-    
+
     bool isValid = false;
 
     if (addr != 0 && addr != (CORDB_ADDRESS)-1)
@@ -6982,7 +6982,7 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
                                                 OUT VMPTR_Module *pModule, OUT VMPTR_DomainFile *pDomainFile)
 {
     DD_ENTER_MAY_THROW;
-    
+
     if (addr == 0 || addr == (CORDB_ADDRESS)-1)
     {
         return false;
@@ -7012,12 +7012,12 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
 HRESULT DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask)
 {
     DD_ENTER_MAY_THROW;
-    
+
     DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask);
-    
+
     if (walker == NULL)
         return E_OUTOFMEMORY;
-    
+
     HRESULT hr = walker->Init();
     if (FAILED(hr))
     {
@@ -7027,7 +7027,7 @@ HRESULT DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL wal
     {
         *pHandle = reinterpret_cast<RefWalkHandle>(walker);
     }
-    
+
     return hr;
 }
 
@@ -7035,9 +7035,9 @@ HRESULT DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL wal
 void DacDbiInterfaceImpl::DeleteRefWalk(IN RefWalkHandle handle)
 {
     DD_ENTER_MAY_THROW;
-    
+
     DacRefWalker *walker = reinterpret_cast<DacRefWalker*>(handle);
-    
+
     if (walker)
         delete walker;
 }
@@ -7049,11 +7049,11 @@ HRESULT DacDbiInterfaceImpl::WalkRefs(RefWalkHandle handle, ULONG count, OUT Dac
         return E_POINTER;
 
     DD_ENTER_MAY_THROW;
-    
+
     DacRefWalker *walker = reinterpret_cast<DacRefWalker*>(handle);
     if (!walker)
         return E_INVALIDARG;
-   
+
    return walker->Next(count, objects, pFetched);
 }
 
@@ -7092,21 +7092,21 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
 {
     if (layout == NULL || pceltFetched == NULL)
         return E_POINTER;
-        
+
     if (id.token1 == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
     DD_ENTER_MAY_THROW;
-    
+
     HRESULT hr = S_OK;
-    
+
     TypeHandle typeHandle = TypeHandle::FromPtr(TO_TADDR(id.token1));
 
     if (typeHandle.IsTypeDesc())
         return E_INVALIDARG;
-    
+
     ApproxFieldDescIterator fieldDescIterator(typeHandle.AsMethodTable(), ApproxFieldDescIterator::INSTANCE_FIELDS);
-    
+
     ULONG32 cFields = fieldDescIterator.Count();
 
     // Handle case where user only wanted to know the number of fields.
@@ -7119,14 +7119,14 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
     if (celt < cFields)
     {
         cFields = celt;
-    
+
         // we are returning less than the total
         hr = S_FALSE;
     }
 
     // This must be non-null due to check at beginning of function.
     *pceltFetched = celt;
-    
+
     CorElementType componentType = typeHandle.AsMethodTable()->GetInternalCorElementType();
     BOOL fReferenceType = CorTypeInfo::IsObjRef_NoThrow(componentType);
     for (ULONG32 i = 0; i < cFields; ++i)
@@ -7134,9 +7134,9 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
         FieldDesc *pField = fieldDescIterator.Next();
         layout[i].token = pField->GetMemberDef();
         layout[i].offset = (ULONG32)pField->GetOffset() + (fReferenceType ? Object::GetOffsetOfFirstField() : 0);
-        
+
         TypeHandle fieldHandle = pField->LookupFieldTypeHandle();
-        
+
         if (fieldHandle.IsNull())
         {
             layout[i].id.token1 = 0;
@@ -7148,7 +7148,7 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
             PTR_MethodTable mt = fieldHandle.GetMethodTable();
             layout[i].fieldType = mt->GetInternalCorElementType();
             layout[i].id.token1 = (ULONG64)mt.GetAddr();
-            
+
             if (!mt->IsArray())
             {
                 layout[i].id.token2 = 0;
@@ -7161,7 +7161,7 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
             }
         }
     }
-    
+
     return hr;
 }
 
@@ -7170,7 +7170,7 @@ HRESULT DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayo
 {
     if (pLayout == NULL)
         return E_POINTER;
-        
+
     if (id.token1 == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
@@ -7178,7 +7178,7 @@ HRESULT DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayo
 
     PTR_MethodTable mt = PTR_MethodTable(TO_TADDR(id.token1));
     PTR_MethodTable parentMT = mt->GetParentMethodTable();
-    
+
     COR_TYPEID parent = {parentMT.GetAddr(), 0};
     pLayout->parentID = parent;
 
@@ -7187,12 +7187,12 @@ HRESULT DacDbiInterfaceImpl::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayo
 
     pLayout->objectSize = size;
     pLayout->numFields = fieldDescIterator.Count();
-    
+
     // Get type
     CorElementType componentType = mt->IsString() ? ELEMENT_TYPE_STRING : mt->GetInternalCorElementType();
     pLayout->type = componentType;
     pLayout->boxOffset = CorTypeInfo::IsObjRef_NoThrow(componentType) ? 0 : sizeof(TADDR);
-    
+
     return S_OK;
 }
 
@@ -7200,7 +7200,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
 {
     if (pLayout == NULL)
         return E_POINTER;
-        
+
     if (id.token1 == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
@@ -7210,15 +7210,15 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
 
     if (!mt->IsStringOrArray())
         return E_INVALIDARG;
-    
+
     if (mt->IsString())
     {
         COR_TYPEID token;
         token.token1 = MscorlibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
         token.token2 = 0;
-        
+
         pLayout->componentID = token;
-        
+
         pLayout->rankSize = 4;
         pLayout->numRanks = 1;
         pLayout->rankOffset = sizeof(TADDR);
@@ -7237,8 +7237,8 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
         pLayout->rankOffset = multiDim ? sizeof(TADDR)*2 : sizeof(TADDR);
         pLayout->countOffset = sizeof(TADDR);
         pLayout->firstElementOffset = ArrayBase::GetDataPtrOffset(mt);
-    
- 
+
+
         TypeHandle hnd = mt->GetApproxArrayElementTypeHandle();
         PTR_MethodTable cmt = hnd.GetMethodTable();
 
@@ -7251,7 +7251,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
         token.token2 = 0;
         pLayout->componentID = token;
         pLayout->componentType = componentType;
-            
+
         if (CorTypeInfo::IsObjRef_NoThrow(componentType))
             pLayout->elementSize = sizeof(TADDR);
         else if (CorIsPrimitiveType(componentType))
@@ -7259,7 +7259,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
         else
             pLayout->elementSize = cmt->GetNumInstanceFieldBytes();
     }
-    
+
     return S_OK;
 }
 
@@ -7267,10 +7267,10 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
 void DacDbiInterfaceImpl::GetGCHeapInformation(COR_HEAPINFO * pHeapInfo)
 {
     DD_ENTER_MAY_THROW;
-    
+
     size_t heapCount = 0;
     pHeapInfo->areGCStructuresValid = *g_gcDacGlobals->gc_structures_invalid_cnt == 0;
-    
+
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
     {
@@ -7283,7 +7283,7 @@ void DacDbiInterfaceImpl::GetGCHeapInformation(COR_HEAPINFO * pHeapInfo)
         pHeapInfo->gcType = CorDebugWorkstationGC;
         pHeapInfo->numHeaps = 1;
     }
-    
+
     pHeapInfo->pointerSize = sizeof(TADDR);
     pHeapInfo->concurrent = g_pConfig->GetGCconcurrent() ? TRUE : FALSE;
 }
@@ -7317,7 +7317,7 @@ HRESULT DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModu
     // Be careful, there are two different definitions of 'active' being used here
     // For the CodeVersionManager, the active IL version is whatever one should be used in the next invocation of the method
     // 'rejit active' narrows that to only include rejit IL bodies where the profiler has already provided the definition
-    // for the new IL (ilCodeVersion.GetRejitState()==ILCodeVersion::kStateActive). It is possible that the code version 
+    // for the new IL (ilCodeVersion.GetRejitState()==ILCodeVersion::kStateActive). It is possible that the code version
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
@@ -7382,7 +7382,7 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vm
     {
         pVmILCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(ilCodeVersion.AsNode()));
     }
-    
+
 #else
     _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
     pVmILCodeVersionNode->SetDacTargetPtr(0);
@@ -7475,15 +7475,15 @@ HRESULT DacRefWalker::Init()
     {
         // Will throw on OOM, which is fine.
         mHandleWalker = new DacHandleWalker();
-        
+
         hr = mHandleWalker->Init(GetHandleWalkerMask());
     }
-    
+
     if (mWalkStacks && SUCCEEDED(hr))
     {
         hr = NextThread();
     }
-    
+
     return hr;
 }
 
@@ -7494,7 +7494,7 @@ void DacRefWalker::Clear()
         delete mHandleWalker;
         mHandleWalker = NULL;
     }
-    
+
     if (mStackWalker)
     {
         delete mStackWalker;
@@ -7509,16 +7509,16 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     UINT32 result = 0;
     if (mHandleMask & CorHandleStrong)
         result |= (1 << HNDTYPE_STRONG);
-        
+
     if (mHandleMask & CorHandleStrongPinning)
         result |= (1 << HNDTYPE_PINNED);
 
     if (mHandleMask & CorHandleWeakShort)
         result |= (1 << HNDTYPE_WEAK_SHORT);
-    
+
     if (mHandleMask & CorHandleWeakLong)
         result |= (1 << HNDTYPE_WEAK_LONG);
-    
+
 #ifdef FEATURE_COMINTEROP
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
@@ -7529,55 +7529,55 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
 
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
-        
+
     if (mHandleMask & CorHandleStrongAsyncPinned)
         result |= (1 << HNDTYPE_ASYNCPINNED);
-        
+
     if (mHandleMask & CorHandleStrongSizedByref)
         result |= (1 << HNDTYPE_SIZEDREF);
-    
+
     return result;
 }
 
 
-    
+
 HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
 {
     if (roots == NULL || pceltFetched == NULL)
         return E_POINTER;
-        
+
     ULONG total = 0;
     HRESULT hr = S_OK;
-    
+
     if (mHandleWalker)
     {
         hr = mHandleWalker->Next(celt, roots, &total);
-        
+
         if (hr == S_FALSE || FAILED(hr))
         {
             delete mHandleWalker;
             mHandleWalker = NULL;
-            
+
             if (FAILED(hr))
                 return hr;
         }
     }
-    
+
     if (total < celt)
     {
         while (total < celt && mFQCurr < mFQEnd)
         {
             DacGcReference &ref = roots[total++];
-            
+
             ref.vmDomain = VMPTR_AppDomain::NullPtr();
             ref.objHnd.SetDacTargetPtr(mFQCurr.GetAddr());
             ref.dwType = (DWORD)CorReferenceFinalizer;
             ref.i64ExtraData = 0;
-            
+
             mFQCurr++;
         }
     }
-    
+
     while (total < celt && mStackWalker)
     {
         ULONG fetched = 0;
@@ -7585,20 +7585,20 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
 
         if (FAILED(hr))
             return hr;
-            
+
         if (hr == S_FALSE)
         {
             hr = NextThread();
-            
+
             if (FAILED(hr))
                 return hr;
         }
-        
+
         total += fetched;
     }
-    
+
     *pceltFetched = total;
-    
+
     return total < celt ? S_FALSE : S_OK;
 }
 
@@ -7611,12 +7611,12 @@ HRESULT DacRefWalker::NextThread()
         delete mStackWalker;
         mStackWalker = NULL;
     }
-    
+
     pThread = ThreadStore::GetThreadList(pThread);
-    
+
     if (!pThread)
         return S_FALSE;
-    
+
     mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId());
     return mStackWalker->Init();
 }
@@ -7624,10 +7624,10 @@ HRESULT DacRefWalker::NextThread()
 HRESULT DacHandleWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
 {
     SUPPORTS_DAC;
-    
+
     if (roots == NULL || pceltFetched == NULL)
         return E_POINTER;
-      
+
     return DoHandleWalk<DacGcReference, ULONG, DacHandleWalker::EnumCallbackDac>(celt, roots, pceltFetched);
 }
 
@@ -7635,16 +7635,16 @@ HRESULT DacHandleWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFe
 void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
 {
     SUPPORTS_DAC;
-    
+
     DacHandleWalkerParam *param = (DacHandleWalkerParam *)param1;
     HandleChunkHead *curr = param->Curr;
-    
+
     // If we failed on a previous call (OOM) don't keep trying to allocate, it's not going to work.
     if (FAILED(param->Result))
         return;
-    
+
     // We've moved past the size of the current chunk.  We'll allocate a new chunk
-    // and stuff the handles there.  These are cleaned up by the destructor 
+    // and stuff the handles there.  These are cleaned up by the destructor
     if (curr->Count >= (curr->Size/sizeof(DacGcReference)))
     {
         if (curr->Next == NULL)
@@ -7660,38 +7660,38 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
                 return;
             }
         }
-        
+
         curr = param->Curr = param->Curr->Next;
     }
-    
+
     // Fill the current handle.
     DacGcReference *dataArray = (DacGcReference*)curr->pData;
     DacGcReference &data = dataArray[curr->Count++];
-    
+
     data.objHnd.SetDacTargetPtr(handle.GetAddr());
     data.vmDomain.SetDacTargetPtr(TO_TADDR(param->AppDomain));
-    
+
     data.i64ExtraData = 0;
     unsigned int refCnt = 0;
-    
+
     switch (param->Type)
     {
         case HNDTYPE_STRONG:
             data.dwType = (DWORD)CorHandleStrong;
             break;
-            
+
         case HNDTYPE_PINNED:
             data.dwType = (DWORD)CorHandleStrongPinning;
             break;
-            
+
         case HNDTYPE_WEAK_SHORT:
             data.dwType = (DWORD)CorHandleWeakShort;
             break;
-            
+
         case HNDTYPE_WEAK_LONG:
             data.dwType = (DWORD)CorHandleWeakLong;
             break;
-            
+
 #ifdef FEATURE_COMINTEROP
         case HNDTYPE_REFCOUNTED:
             data.dwType = (DWORD)(data.i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
@@ -7708,11 +7708,11 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.dwType = (DWORD)CorHandleStrongDependent;
             data.i64ExtraData = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
             break;
-            
+
         case HNDTYPE_ASYNCPINNED:
             data.dwType = (DWORD)CorHandleStrongAsyncPinned;
             break;
-            
+
         case HNDTYPE_SIZEDREF:
             data.dwType = (DWORD)CorHandleStrongSizedByref;
             break;
@@ -7724,25 +7724,25 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
-    
+
     CORDB_ADDRESS obj = 0;
-    
+
     if (flags & GC_CALL_INTERIOR)
     {
         if (loc.targetPtr)
             obj = (CORDB_ADDRESS)(*PTR_PTR_Object((TADDR)pObject)).GetAddr();
         else
             obj = (CORDB_ADDRESS)TO_TADDR(pObject);
-        
+
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects(obj, NULL, &obj, NULL);
-        
+
         // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
         // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
         // corruption...which ICorDebug doesn't deal with anyway.
         if (FAILED(hr))
             return;
     }
-    
+
     DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
     if (data != NULL)
     {
@@ -7753,7 +7753,7 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
             data->objHnd.SetDacTargetPtr(TO_TADDR(pObject));
         else
             data->pObject = pObject->GetAddr() | 1;
-        
+
         data->dwType = CorReferenceStack;
         data->i64ExtraData = 0;
     }
@@ -7763,22 +7763,22 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
 void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
 {
     DacScanContext *dsc = (DacScanContext*)sc;
-    
+
     TADDR obj = ppObj.GetAddr();
     if (flags & GC_CALL_INTERIOR)
     {
         CORDB_ADDRESS fixed_addr = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_addr, NULL);
-        
+
         // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
         // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
         // corruption...which ICorDebug doesn't deal with anyway.
         if (FAILED(hr))
             return;
-            
+
         obj = TO_TADDR(fixed_addr);
     }
-    
+
     DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
     if (data != NULL)
     {
@@ -7795,11 +7795,11 @@ HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], U
 {
     if (stackRefs == NULL || pFetched == NULL)
         return E_POINTER;
-    
-    HRESULT hr = DoStackWalk<ULONG, DacGcReference, 
+
+    HRESULT hr = DoStackWalk<ULONG, DacGcReference,
                              DacStackReferenceWalker::GCReportCallbackDac,
                              DacStackReferenceWalker::GCEnumCallbackDac>
                                 (count, stackRefs, pFetched);
-    
+
     return hr;
 }

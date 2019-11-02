@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CLRConfig.cpp
-// 
+//
 
 //
 // Unified method of accessing configuration values from environment variables,
 // registry and config file. See file:../inc/CLRConfigValues.h for details on how to add config values.
-// 
+//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -24,9 +24,9 @@
 //
 CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
 
-// 
+//
 // Creating structs using the macro table in CLRConfigValues.h
-// 
+//
 
 // These macros intialize ConfigDWORDInfo structs.
 #define RETAIL_CONFIG_DWORD_INFO(symbol, name, defaultValue, description) \
@@ -47,9 +47,9 @@ CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
     const LPCWSTR CLRConfig::symbol = name;
 #define RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
     const LPCWSTR CLRConfig::symbol = name;
-// 
+//
 // Debug versions of the macros
-// 
+//
 #ifdef _DEBUG
     #define CONFIG_DWORD_INFO(symbol, name, defaultValue, description) \
         const CLRConfig::ConfigDWORDInfo CLRConfig::symbol = {name, defaultValue, CLRConfig::EEConfig_default};
@@ -71,20 +71,20 @@ CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
     #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description)
     #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description)
 #endif // _DEBUG
-    
+
     // Now that we have defined what what the macros in file:../inc/CLRConfigValues.h mean, include it to generate the code.
     #include "clrconfigvalues.h"
 
 #undef RETAIL_CONFIG_DWORD_INFO
 #undef RETAIL_CONFIG_STRING_INFO
 #undef RETAIL_CONFIG_DWORD_INFO_EX
-#undef RETAIL_CONFIG_STRING_INFO_EX    
+#undef RETAIL_CONFIG_STRING_INFO_EX
 #undef RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS
 #undef RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS
 #undef CONFIG_DWORD_INFO
 #undef CONFIG_STRING_INFO
 #undef CONFIG_DWORD_INFO_EX
-#undef CONFIG_STRING_INFO_EX    
+#undef CONFIG_STRING_INFO_EX
 #undef CONFIG_DWORD_INFO_DIRECT_ACCESS
 #undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
@@ -107,13 +107,13 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
 
     //
     // Set up REGUTIL options.
-    // 
+    //
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
-    
-    // 
+
+    //
     // If we aren't favoring config files, we check REGUTIL here.
-    // 
+    //
     if(CheckLookupOption(info, FavorConfigFile) == FALSE)
     {
         REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
@@ -126,24 +126,24 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
         }
     }
 
-    // 
+    //
     // Check config files through EEConfig.
-    // 
+    //
     if(CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
         s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
-    {        
+    {
         LPCWSTR pvalue;
 
         // EEConfig lookup options.
         BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
         BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-        
+
         if(SUCCEEDED(s_GetConfigValueCallback(info.name, &pvalue, systemOnly, applicationFirst)) && pvalue != NULL)
         {
             WCHAR * end;
             errno = 0;
             result = wcstoul(pvalue, &end, 0);
-            
+
             // errno is ERANGE if the number is out of range, and end is set to pvalue if
             // no valid conversion exists.
             if (errno == ERANGE || end == pvalue)
@@ -151,17 +151,17 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
                 if(pvalue[0]!=0)
                     return TRUE;
 
-                result = info.defaultValue; 
+                result = info.defaultValue;
             }
-            
+
             if(result>0)
                 return TRUE;
         }
     }
 
-    // 
+    //
     // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    // 
+    //
     if(CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
         REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
@@ -180,9 +180,9 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
         return FALSE;
 }
 
-// 
+//
 // Look up a DWORD config value.
-// 
+//
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details.
 //
@@ -196,7 +196,7 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
 //
 // Return value:
 //     * true for success, false otherwise.
-// 
+//
 // static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplicitDefaultFromRegutil, /* [Out] */ bool *isDefault)
 {
@@ -213,13 +213,13 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
 
     //
     // Set up REGUTIL options.
-    // 
+    //
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
-    
-    // 
+
+    //
     // If we aren't favoring config files, we check REGUTIL here.
-    // 
+    //
     if (CheckLookupOption(info, FavorConfigFile) == FALSE)
     {
         DWORD resultMaybe;
@@ -247,9 +247,9 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
         }
     }
 
-    // 
+    //
     // Check config files through EEConfig.
-    // 
+    //
     if (CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
         s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
     {
@@ -282,9 +282,9 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
         }
     }
 
-    // 
+    //
     // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    // 
+    //
     if (CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
         DWORD resultMaybe;
@@ -316,12 +316,12 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
     return info.defaultValue;
 }
 
-// 
+//
 // Look up a DWORD config value.
-// 
+//
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details
-//     
+//
 // static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
 {
@@ -331,16 +331,16 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
     return GetConfigValue(info, false /* acceptExplicitDefaultFromRegutil */, &unused);
 }
 
-// 
+//
 // Look up a String config value.
-// 
+//
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details
-//     
+//
 // Return value:
 //     * Pointer to the string value, if found. You own the string that's returned. Returns NULL if the value
 //         is not found.
-// 
+//
 // static
 LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 {
@@ -351,9 +351,9 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
         FORBID_FAULT;
     }
     CONTRACTL_END;
-    
+
     LPWSTR result = NULL;
-    
+
     // TODO: We swallow OOM exception here. Is this OK?
     FAULT_NOT_FATAL();
 
@@ -363,17 +363,17 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
     return result;
 }
 
-// 
+//
 // Look up a string config value, passing it out through a pointer reference.
-// 
+//
 // Return value:
 //     * Reports out of memory errors (HRESULT E_OUTOFMEMORY).
-//     
+//
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details
 //     * outVal - Set to the result string. You own the string that's returned. Set to NULL if the value is
 //         not found.
-// 
+//
 // static
 HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z LPWSTR * outVal)
 {
@@ -389,21 +389,21 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
 
     //
     // Set up REGUTIL options.
-    // 
+    //
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    // 
+    //
     // If we aren't favoring config files, we check REGUTIL here.
-    // 
+    //
     if(result == NULL && CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {        
+    {
         result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
     }
 
-    // 
+    //
     // Check config files through EEConfig.
-    // 
+    //
     if(result == NULL && // Check that we don't have a value from REGUTIL
         CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
         s_GetConfigValueCallback != NULL) // Check that GetConfigValueCallback function has been registered.
@@ -419,17 +419,17 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
             size_t len = wcslen(pResult) + 1;
             result = new (nothrow) WCHAR[len];
             if (result == NULL)
-            {            
+            {
                 RETURN E_OUTOFMEMORY;
             }
             wcscpy_s(result, len, pResult);
         }
     }
 
-    // 
+    //
     // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    // 
-    if(result==NULL && 
+    //
+    if(result==NULL &&
         CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
         result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
@@ -454,12 +454,12 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     RETURN S_OK;
 }
 
-// 
+//
 // Check whether an option is specified (e.g. explicitly listed) in any location
-// 
+//
 // Arguments:
 //     * name - the name field of the desired ConfigDWORDInfo/ConfigStringInfo
-//     
+//
 // static
 BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
 {
@@ -474,8 +474,8 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
     {
         LPCWSTR result = NULL;
 
-        if (s_GetConfigValueCallback != NULL && 
-            SUCCEEDED(s_GetConfigValueCallback(name, &result, FALSE, FALSE)) && 
+        if (s_GetConfigValueCallback != NULL &&
+            SUCCEEDED(s_GetConfigValueCallback(name, &result, FALSE, FALSE)) &&
             result != NULL)
         {
             return TRUE;
@@ -485,7 +485,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
     // Check REGUTIL, both with and without the COMPlus_ prefix
     {
         LPWSTR result = NULL;
-    
+
         result = REGUTIL::GetConfigString_DontUse_(name, TRUE);
         if (result != NULL)
         {
@@ -510,7 +510,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
 // Given an input string, returns a newly-allocated string equal to the input but with
 // leading and trailing whitespace trimmed off. If input is already trimmed, or if
 // trimming would result in an empty string, this function sets the output string to NULL
-// 
+//
 // Caller must free *pwszTrimmed if non-NULL
 //
 // Arguments:
@@ -543,7 +543,7 @@ HRESULT CLRConfig::TrimWhiteSpace(LPCWSTR wszOrig, __deref_out_z LPWSTR * pwszTr
     DWORD cchAfterTrim = (DWORD) cchOrig;
     LPCWSTR wszAfterTrim = wszOrig;
     ::TrimWhiteSpace(&wszAfterTrim, &cchAfterTrim);
-    
+
     // Is input string already trimmed?  If so, save an allocation and just return.
     if ((wszOrig == wszAfterTrim) && (cchOrig == cchAfterTrim))
     {
@@ -579,19 +579,19 @@ HRESULT CLRConfig::TrimWhiteSpace(LPCWSTR wszOrig, __deref_out_z LPWSTR * pwszTr
 }
 
 
-// 
+//
 // Deallocation function for code:CLRConfig::FreeConfigString
 //
 void CLRConfig::FreeConfigString(__in_z LPWSTR str)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     delete [] str;
 }
 
-// 
+//
 // Register EEConfig's GetConfigValueCallback function so CLRConfig can look in config files.
-// 
+//
 //static
 void CLRConfig::RegisterGetConfigValueCallback(GetConfigValueFunction func)
 {
@@ -599,24 +599,24 @@ void CLRConfig::RegisterGetConfigValueCallback(GetConfigValueFunction func)
     s_GetConfigValueCallback = func;
 }
 
-// 
+//
 // Helper method to translate LookupOptions to REGUTIL::CORConfigLevel.
-// 
-//static 
+//
+//static
 REGUTIL::CORConfigLevel CLRConfig::GetConfigLevel(LookupOptions options)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     REGUTIL::CORConfigLevel level = (REGUTIL::CORConfigLevel) 0;
 
     if(CheckLookupOption(options, IgnoreEnv) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_ENV);
-    
+
     if(CheckLookupOption(options, IgnoreHKCU) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER);
-    
+
     if(CheckLookupOption(options, IgnoreHKLM) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_MACHINE);
-    
+
     return level;
 }

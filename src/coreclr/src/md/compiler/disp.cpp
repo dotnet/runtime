@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // Disp.cpp
-// 
+//
 
 //
 // Implementation for the meta data dispenser code.
@@ -31,7 +31,7 @@ Disp::Disp() : m_cRef(0)
     // <TODO>@future: make this make some sense.</TODO>
     InitializeLogging();
 #endif
-    
+
     m_OptionValue.m_DupCheck = MDDupDefault;
     m_OptionValue.m_RefToDefCheck = MDRefToDefDefault;
     m_OptionValue.m_NotifyRemap = MDNotifyDefault;
@@ -58,8 +58,8 @@ Disp::~Disp()
 // Create a brand new scope.  This is based on the CLSID that was used to get
 // the dispenser.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 Disp::DefineScope(
     REFCLSID   rclsid,          // [in] What version to create.
     DWORD      dwCreateFlags,   // [in] Flags on the create.
@@ -106,7 +106,7 @@ Disp::DefineScope(
     }
     EX_CATCH_HRESULT(hr);
 
-    if (len > 0) 
+    if (len > 0)
     {
         // _ASSERTE(!"ENC override on DefineScope");
 //        m_OptionValue.m_UpdateMode = MDUpdateENC;
@@ -117,7 +117,7 @@ Disp::DefineScope(
         hr = OpenScope(szFileName, ofWrite, IID_IMetaDataEmit, (IUnknown **)&pMetaEmit);
         DWORD cb;
         CQuickBytes pbMetadata;
-        hr = pMetaEmit->GetSaveSize(cssAccurate,&cb);    
+        hr = pMetaEmit->GetSaveSize(cssAccurate,&cb);
         _ASSERTE(SUCCEEDED(hr));
 
         IfFailGo(pbMetadata.ReSizeNoThrow(cb));
@@ -137,7 +137,7 @@ Disp::DefineScope(
         _ASSERTE(SUCCEEDED(hr));
         BOOL fResult = SUCCEEDED(hr);
         // print out a message so people know what's happening
-        printf("Defining scope for EnC using %S %s\n", 
+        printf("Defining scope for EnC using %S %s\n",
                             static_cast<LPCWSTR>(szFileNameSuffix), fResult ? "succeeded" : "failed");
 
         goto ErrExit;
@@ -155,10 +155,10 @@ Disp::DefineScope(
 
     // Get the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
-    
+
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
-    
+
     LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
 
 ErrExit:
@@ -169,7 +169,7 @@ ErrExit:
         *ppIUnk = NULL;
     }
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else //!FEATURE_METADATA_EMIT
     return E_NOTIMPL;
@@ -236,8 +236,8 @@ HRESULT Disp::OpenScope(                // Return code.
 //*****************************************************************************
 // Open a raw view of existing scope.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 Disp::OpenRawScope(
     LPCWSTR    szFileName,      // [in] The scope to open.
     DWORD      dwOpenFlags,     // [in] Open mode flags.
@@ -245,13 +245,13 @@ Disp::OpenRawScope(
     IUnknown **ppIUnk)          // [out] Return interface on success.
 {
     HRESULT hr;
-    
+
     BEGIN_ENTRYPOINT_NOTHROW;
 
     _ASSERTE(szFileName != NULL);
     _ASSERTE(ppIUnk != NULL);
     RegMeta *pMeta = NULL;
-    
+
 #ifdef FEATURE_METADATA_LOAD_TRUSTED_IMAGES
     // Don't assert for code:ofTrustedImage (reserved) flag if the feature is supported
     _ASSERTE(!IsOfReserved(dwOpenFlags & ~ofTrustedImage));
@@ -261,7 +261,7 @@ Disp::OpenRawScope(
 
     {
     }
-    
+
     if (IsOfReadOnly(dwOpenFlags) && IsOfReadWrite(dwOpenFlags))
     {   // Invalid combination of flags - ofReadOnly & ofWrite
         IfFailGo(E_INVALIDARG);
@@ -283,40 +283,40 @@ Disp::OpenRawScope(
                 pMeta->Release(); // Give back refcount from QI
                 LOG((LOGMD, "{%08x} Found in cache '%S'\n", pMeta, MDSTR(szFileName)));
             }
-            
+
             goto ErrExit;
         }
     }
     // Create a new coclass for this guy.
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
-    
+
     IfFailGo(pMeta->SetOption(&m_OptionValue));
-    
-    // Always initialize the RegMeta's stgdb. 
+
+    // Always initialize the RegMeta's stgdb.
     // <TODO>@FUTURE: there are some cleanup for the open code!!</TODO>
     if (memcmp(szFileName, W("file:"), 10) == 0)
     {
         szFileName = &szFileName[5];
     }
-    
+
     // Try to open the MiniMd-style scope.
     IfFailGo(pMeta->OpenExistingMD(szFileName, 0 /* pbData */,0 /* cbData */, dwOpenFlags));
-    
+
     // Obtain the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk) );
-    
+
     // Add the new RegMeta to the cache.  If this is read-only, any future opens will
     //  find this entry.  If, due to another thread concurrently opening the same file,
-    //  there is already another copy in the cache, well, then there will be two 
+    //  there is already another copy in the cache, well, then there will be two
     //  read-only copies in the cache.  This is considered to be somewhat of a corner
     //  case, and the only harm is temporary memory usage.  All requests will be
-    //  satisfied by one or the other (depending on search algorithm), and eventually, 
+    //  satisfied by one or the other (depending on search algorithm), and eventually,
     //  the "other" copy will be released.
     IfFailGo(pMeta->AddToCache());
-    
+
     LOG((LOGMD, "{%08x} Successfully opened '%S'\n", pMeta, MDSTR(szFileName)));
-    
+
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
@@ -333,9 +333,9 @@ ErrExit:
             delete pMeta;
         *ppIUnk = NULL;
     }
-    
+
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 } // Disp::OpenScope
 
@@ -391,10 +391,10 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
     IfFailGo(pMeta->SetOption(&m_OptionValue));
-    
+
 
     PREFIX_ASSUME(pMeta != NULL);
-    // Always initialize the RegMeta's stgdb. 
+    // Always initialize the RegMeta's stgdb.
     IfFailGo(pMeta->OpenExistingMD(0 /* szFileName */, const_cast<void*>(pData), cbData, dwOpenFlags));
 
     LOG((LOGMD, "{%08x} Opened new scope on memory, pData: %08x    cbData: %08x\n", pMeta, pData, cbData));
@@ -404,7 +404,7 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
 
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
-    
+
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
@@ -421,17 +421,17 @@ ErrExit:
     }
 
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 } // Disp::OpenScopeOnMemory
 
 
 //*****************************************************************************
 // Get the directory where the CLR system resides.
-// 
+//
 // Implements public API code:IMetaDataDispenserEx::GetCORSystemDirectory.
 //*****************************************************************************
-HRESULT 
+HRESULT
 Disp::GetCORSystemDirectory(
     __out_ecount (cchBuffer) LPWSTR szBuffer,      // [out] Buffer for the directory name
     DWORD                           cchBuffer,     // [in] Size of the buffer
@@ -440,7 +440,7 @@ Disp::GetCORSystemDirectory(
 
     UNREACHABLE_MSG("Calling IMetaDataDispenser::GetCORSystemDirectory!  This code should not be "
                 "reachable or needs to be reimplemented for CoreCLR!");
-    
+
     return E_NOTIMPL;
 } // Disp::GetCORSystemDirectory
 
@@ -449,7 +449,7 @@ HRESULT Disp::FindAssembly(             // S_OK or error
     LPCWSTR     szPrivateBin,           // [IN] optional - can be NULL
     LPCWSTR     szGlobalBin,            // [IN] optional - can be NULL
     LPCWSTR     szAssemblyName,         // [IN] required - this is the assembly you are requesting
-    LPCWSTR     szName,                 // [OUT] buffer - to hold name 
+    LPCWSTR     szName,                 // [OUT] buffer - to hold name
     ULONG       cchName,                // [IN] the name buffer's size
     ULONG       *pcName)                // [OUT] the number of characters returend in the buffer
 {
@@ -465,7 +465,7 @@ HRESULT Disp::FindAssemblyModule(           // S_OK or error
     LPCWSTR     szGlobalBin,                // [IN] optional - can be NULL
     LPCWSTR     szAssemblyName,             // [IN] The assembly name or code base of the assembly
     LPCWSTR     szModuleName,               // [IN] required - the name of the module
-    __out_ecount (cchName) LPWSTR  szName,  // [OUT] buffer - to hold name 
+    __out_ecount (cchName) LPWSTR  szName,  // [OUT] buffer - to hold name
     ULONG       cchName,                    // [IN]  the name buffer's size
     ULONG       *pcName)                    // [OUT] the number of characters returend in the buffer
 {
@@ -546,7 +546,7 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
 
 
     PREFIX_ASSUME(pMeta != NULL);
-    // Always initialize the RegMeta's stgdb. 
+    // Always initialize the RegMeta's stgdb.
     // TODO
     IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));
 
@@ -622,7 +622,7 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
 // Called by the class factory template to create a new instance of this object.
 //*****************************************************************************
 HRESULT Disp::CreateObject(REFIID riid, void **ppUnk)
-{ 
+{
     HRESULT     hr;
     Disp *pDisp = new (nothrow) Disp();
 
@@ -638,20 +638,20 @@ HRESULT Disp::CreateObject(REFIID riid, void **ppUnk)
 //*****************************************************************************
 // This routine provides the user a way to set certain properties on the
 // Dispenser.
-// 
+//
 // Implements public API code:IMetaDataDispenserEx::SetOption.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 Disp::SetOption(
     REFGUID        optionid,    // [in] GUID for the option to be set.
     const VARIANT *pvalue)      // [in] Value to which the option is to be set.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
-    
+
     LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
-    
+
     if (optionid == MetaDataCheckDuplicatesFor)
     {
         if (V_VT(pvalue) != VT_UI4)
@@ -737,7 +737,7 @@ Disp::SetOption(
         m_OptionValue.m_MergeOptions = (MergeFlags) V_UI4(pvalue);
     }
     else if (optionid == MetaDataGenerateTCEAdapters)
-    {   // Note: This is not used in CLR sources anymore, but we store the value and return it back in 
+    {   // Note: This is not used in CLR sources anymore, but we store the value and return it back in
         // IMetaDataDispenserEx::GetOption (code:RegMeta::GetOption), so we keep it for backward-compat.
         if (V_VT(pvalue) != VT_BOOL)
         {
@@ -802,7 +802,7 @@ Disp::SetOption(
         _ASSERTE(!"Invalid GUID");
         IfFailGo(E_INVALIDARG);
     }
-    
+
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
     return hr;
@@ -811,7 +811,7 @@ ErrExit:
 //*****************************************************************************
 // This routine provides the user a way to set certain properties on the
 // Dispenser.
-// 
+//
 // Implements public API code:IMetaDataDispenserEx::GetOption.
 //*****************************************************************************
 HRESULT Disp::GetOption(                // Return code.
@@ -842,7 +842,7 @@ HRESULT Disp::GetOption(                // Return code.
 // Note: mscordbi had all these options accessible in 3.5/4.0 RTM, let's keep it this way for AppCompat.
 #if defined(FEATURE_METADATA_EMIT_ALL) || defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
     else if (optionid == MetaDataNotificationForTokenMovement)
-    {   // Note: This is not used in CLR sources anymore, but we store the value and return it here, 
+    {   // Note: This is not used in CLR sources anymore, but we store the value and return it here,
         // so we keep it for backward-compat.
         V_VT(pvalue) = VT_UI4;
         V_UI4(pvalue) = m_OptionValue.m_NotifyRemap;
@@ -858,7 +858,7 @@ HRESULT Disp::GetOption(                // Return code.
         V_UI4(pvalue) = m_OptionValue.m_LinkerOption;
     }
     else if (optionid == MetaDataGenerateTCEAdapters)
-    {   // Note: This is not used in CLR sources anymore, but we store the value and return it here,  
+    {   // Note: This is not used in CLR sources anymore, but we store the value and return it here,
         // so we keep it for backward-compat.
         V_VT(pvalue) = VT_BOOL;
         V_BOOL(pvalue) = m_OptionValue.m_GenerateTCEAdapters;
@@ -878,21 +878,21 @@ ErrExit:
 #if defined(FEATURE_METADATA_IN_VM)
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Process detach destruction.
 // Called from DllMain of clr.dll/RoMetadata.dll/MidlrtMd.dll.
-// 
+//
 void DeleteMetaData()
 {
     LOADEDMODULES::DeleteStatics();
 }
 
-#endif //FEATURE_METADATA_IN_VM 
+#endif //FEATURE_METADATA_IN_VM
 
-// 
+//
 // This is the entrypoint for usages of MetaData that need to start with the dispenser (e.g.
 // mscordbi.dll and profiling API).
-// 
+//
 // Notes:
 //    This could be merged with the class factory support.
 HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)

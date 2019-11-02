@@ -121,7 +121,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 void MemberLoader::GetDescFromMemberRef(Module * pModule,
                                         mdToken MemberRef,
                                         MethodDesc ** ppMD,
@@ -208,10 +208,10 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
             // load the class
 
             TypeHandle th = ClassLoader::LoadTypeDefThrowing(
-                pModule, 
-                typeDef, 
-                ClassLoader::ThrowIfNotFound, 
-                strictMetadataChecks ? 
+                pModule,
+                typeDef,
+                ClassLoader::ThrowIfNotFound,
+                strictMetadataChecks ?
                     ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
 
             // the class has been loaded and the method should be in the rid map!
@@ -253,11 +253,11 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
         if (fMissingMethod)
         {
             ThrowMissingMethodException(
-                (pMethodDef != NULL) ? pMethodDef->GetMethodTable() : NULL, 
-                szMember, 
-                pModule, 
-                pSig, 
-                cSig, 
+                (pMethodDef != NULL) ? pMethodDef->GetMethodTable() : NULL,
+                szMember,
+                pModule,
+                pSig,
+                cSig,
                 pTypeContext);
         }
 
@@ -289,12 +289,12 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
 
     case mdtTypeDef:
     case mdtTypeRef:
-        typeHnd = ClassLoader::LoadTypeDefOrRefThrowing(pModule, parent, 
-                                        ClassLoader::ThrowIfNotFound, 
+        typeHnd = ClassLoader::LoadTypeDefOrRefThrowing(pModule, parent,
+                                        ClassLoader::ThrowIfNotFound,
                                         strictMetadataChecks ?
                                             ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
         break;
-        
+
     case mdtTypeSpec:
         {
             IfFailThrow(pInternalImport->GetTypeSpecFromToken(parent, &pTypeSig, &cTypeSig));
@@ -337,9 +337,9 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
     DWORD       cSig;
 
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
-        
+
     BOOL fIsField = isCallConv(
-        MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)), 
+        MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)),
         IMAGE_CEE_CS_CALLCONV_FIELD);
 
     if (fIsField)
@@ -386,27 +386,27 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
         Substitution sigSubst(pModule, SigPointer(), NULL);
 
         if (typeHnd.IsArray())
-        {               
+        {
             _ASSERTE(pTypeSig != NULL && cTypeSig != 0);
 
             SigPointer sigptr = SigPointer(pTypeSig, cTypeSig);
             CorElementType type;
             IfFailThrow(sigptr.GetElemType(&type));
-                
+
             THROW_BAD_FORMAT_MAYBE(
-                ((type == ELEMENT_TYPE_SZARRAY) || (type == ELEMENT_TYPE_ARRAY)), 
-                BFA_NOT_AN_ARRAY, 
+                ((type == ELEMENT_TYPE_SZARRAY) || (type == ELEMENT_TYPE_ARRAY)),
+                BFA_NOT_AN_ARRAY,
                 pModule);
             sigSubst = Substitution(pModule, sigptr, NULL);
         }
-            
+
         // Lookup the method in the class.
         MethodDesc * pMD = MemberLoader::FindMethod(pMT,
-            szMember, 
-            pSig, 
-            cSig, 
-            pModule, 
-            MemberLoader::FM_Default, 
+            szMember,
+            pSig,
+            cSig,
+            pModule,
+            MemberLoader::FM_Default,
             &sigSubst);
         if (pMD == NULL)
         {
@@ -438,9 +438,9 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
-MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule, 
-                                                             mdToken MemberRef, 
+//
+MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
+                                                             mdToken MemberRef,
                                                              MethodTable * pMT)
 {
     CONTRACTL
@@ -471,7 +471,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
     Substitution sigSubst(pModule, SigPointer(), NULL);
 
     if (pMT->IsArray())
-    {   
+    {
         mdTypeRef parent;
         IfFailThrow(pInternalImport->GetParentOfMemberRef(MemberRef, &parent));
 
@@ -488,14 +488,14 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
 
         sigSubst = Substitution(pModule, sigptr, NULL);
     }
-            
+
     // Lookup the method in the class.
     MethodDesc * pMD = MemberLoader::FindMethod(pMT,
-        szMember, 
-        pSig, 
-        cSig, 
-        pModule, 
-        MemberLoader::FM_Default, 
+        szMember,
+        pSig,
+        cSig,
+        pModule,
+        MemberLoader::FM_Default,
         &sigSubst);
     if (pMD == NULL)
     {
@@ -508,9 +508,9 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
-FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule, 
-                                                           mdToken MemberRef, 
+//
+FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
+                                                           mdToken MemberRef,
                                                            MethodTable * pMT)
 {
     CONTRACTL
@@ -560,7 +560,7 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
                                                      mdToken MethodDef,
                                                      BOOL strictMetadataChecks)
@@ -596,9 +596,9 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         IfFailThrow(pModule->GetMDImport()->GetParentToken(MethodDef, &typeDef));
 
         TypeHandle th = ClassLoader::LoadTypeDefThrowing(
-            pModule, 
-            typeDef, 
-            ClassLoader::ThrowIfNotFound, 
+            pModule,
+            typeDef,
+            ClassLoader::ThrowIfNotFound,
             strictMetadataChecks ?
                 ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
 
@@ -613,13 +613,13 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
 
             IfFailThrow(pModule->GetMDImport()->GetSigOfMethodDef(MethodDef, &cSig, &pSig));
             IfFailThrow(pModule->GetMDImport()->GetNameOfMethodDef(MethodDef, &szMember));
-                
+
             ThrowMissingMethodException(
-                th.GetMethodTable(), 
-                szMember, 
-                pModule, 
-                pSig, 
-                cSig, 
+                th.GetMethodTable(),
+                szMember,
+                pModule,
+                pSig,
+                cSig,
                 NULL);
         }
     }
@@ -640,7 +640,7 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
                                                   mdToken FieldDef,
                                                   BOOL strictMetadataChecks)
@@ -665,12 +665,12 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
         // Field defs to generic things resolve to the formal instantiation
         // without taking the type context into account.  They are only valid internally.
         // <TODO> check that we rule out field defs to generic things in IL streams elsewhere</TODO>
-            
+
         TypeHandle th = ClassLoader::LoadTypeDefThrowing(
-            pModule, 
-            typeDef, 
-            ClassLoader::ThrowIfNotFound, 
-            strictMetadataChecks ? 
+            pModule,
+            typeDef,
+            ClassLoader::ThrowIfNotFound,
+            strictMetadataChecks ?
                 ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
 
         pFD = pModule->LookupFieldDef(FieldDef);
@@ -705,14 +705,14 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
-MethodDesc * 
+//
+MethodDesc *
 MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
-    Module *               pModule, 
-    mdMemberRef            MemberRef, 
-    const SigTypeContext * pTypeContext, 
-    BOOL                   strictMetadataChecks, 
-                        // Normally true - the zapper is one exception.  Throw an exception if no generic method args 
+    Module *               pModule,
+    mdMemberRef            MemberRef,
+    const SigTypeContext * pTypeContext,
+    BOOL                   strictMetadataChecks,
+                        // Normally true - the zapper is one exception.  Throw an exception if no generic method args
                         // given for a generic method, otherwise return the 'generic' instantiation
     BOOL                   allowInstParam)
 {
@@ -775,8 +775,8 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
 } // MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec
 
 //---------------------------------------------------------------------------------------
-// 
-MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule, 
+//
+MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
                                                        mdToken MethodSpec,
                                                        const SigTypeContext *pTypeContext,
                                                        BOOL strictMetadataChecks,
@@ -867,7 +867,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
     default:
         // The exception type and message preserved for compatibility
         THROW_BAD_FORMAT(
-            BFA_EXPECTED_METHODDEF_OR_MEMBERREF, 
+            BFA_EXPECTED_METHODDEF_OR_MEMBERREF,
             pModule);
     }
 
@@ -880,14 +880,14 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
 }
 
 //---------------------------------------------------------------------------------------
-// 
-MethodDesc * 
+//
+MethodDesc *
 MemberLoader::GetMethodDescFromMethodDef(
-    Module *      pModule, 
+    Module *      pModule,
     mdMethodDef   MethodDef,    // MethodDef token
     Instantiation classInst,    // Generic arguments for declaring class
     Instantiation methodInst,   // Generic arguments for declaring method
-    BOOL forceRemotable /* = FALSE */) 
+    BOOL forceRemotable /* = FALSE */)
 {
     CONTRACTL
     {
@@ -923,8 +923,8 @@ MemberLoader::GetMethodDescFromMethodDef(
 }
 
 FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
-    Module *pModule, 
-    mdMemberRef MemberDefOrRef, 
+    Module *pModule,
+    mdMemberRef MemberDefOrRef,
     const SigTypeContext *pTypeContext,
     BOOL strictMetadataChecks  // Normally true - reflection is the one exception.  Throw an exception if no generic method args given for a generic field, otherwise return the 'generic' instantiation
     )
@@ -945,7 +945,7 @@ FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
     {
     case mdtFieldDef:
         pFD = GetFieldDescFromFieldDef(pModule, MemberDefOrRef, strictMetadataChecks);
-        break;        
+        break;
 
     case mdtMemberRef:
         GetDescFromMemberRef(
@@ -1004,7 +1004,7 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
 
     // Ensure that this function is kept in sync with FM_PossibleToSkipMethod
     CONSISTENCY_CHECK(FM_PossibleToSkipMethod(flags) || !retVal);
-    
+
     return retVal;
 }
 
@@ -1017,9 +1017,9 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
 // we have a correct set of types to compare with. The idea is that either the current
 // EEClass matches up with the methoddesc, or a parent EEClass will match up.
 BOOL CompareMethodSigWithCorrectSubstitution(
-            PCCOR_SIGNATURE pSignature, 
-            DWORD       cSignature, 
-            Module*     pModule, 
+            PCCOR_SIGNATURE pSignature,
+            DWORD       cSignature,
+            Module*     pModule,
             MethodDesc *pCurDeclMD,
             const Substitution *pDefSubst,
             MethodTable *pCurMT
@@ -1051,7 +1051,7 @@ BOOL CompareMethodSigWithCorrectSubstitution(
         if (pParentMT != NULL)
         {
             Substitution subst2 = pCurMT->GetSubstitutionForParent(pDefSubst);
-            
+
             return CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, &subst2, pParentMT);
         }
         return FALSE;
@@ -1061,7 +1061,7 @@ BOOL CompareMethodSigWithCorrectSubstitution(
 //*******************************************************************************
 // Finds a method by name and signature, where scope is the scope in which the
 // signature is defined.
-MethodDesc * 
+MethodDesc *
 MemberLoader::FindMethod(
     MethodTable * pMT,
     LPCUTF8 pszName,
@@ -1286,7 +1286,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
                     if (pRetMD != NULL)
                     {
                         _ASSERTE(flags & FM_Unique);
-                        
+
                         // Found another method of this name but FM_Unique was given.
                         return NULL;
                     }
@@ -1311,7 +1311,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
         pMT = pMT->GetParentMethodTable();
 
         // There is no need to check virtuals for parent types, since by definition they have the same name.
-        // 
+        //
         // Warning: This is not entirely true as virtuals can be overriden explicitly regardless of their name.
         // We should be fine though as long as we do not use this code to find arbitrary user-defined methods.
         flags = (FM_Flags)(flags | FM_ExcludeVirtual);
@@ -1417,7 +1417,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
     for (it.MoveTo(it.GetNumVirtuals()); it.IsValid(); it.Next())
     {
         _ASSERTE(!it.IsVirtual());
-        
+
         MethodDesc *pCurMethod = it.GetMethodDesc();
         if (pCurMethod == NULL)
         {
@@ -1429,26 +1429,26 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
         {
             continue;
         }
-        
+
         DWORD dwCurMethodAttrs = pCurMethod->GetAttrs();
         if (!IsMdRTSpecialName(dwCurMethodAttrs))
         {
             continue;
         }
-        
+
         // Find only the constructor for for this object
         _ASSERTE(pCurMethod->GetMethodTable() == pMT->GetCanonicalMethodTable());
-        
+
         PCCOR_SIGNATURE pCurMethodSig;
         DWORD cCurMethodSig;
         pCurMethod->GetSig(&pCurMethodSig, &cCurMethodSig);
-        
+
         if (MetaSig::CompareMethodSigs(pSignature, cSignature, pModule, NULL, pCurMethodSig, cCurMethodSig, pCurMethod->GetModule(), NULL))
         {
             return pCurMethod;
         }
     }
-    
+
     return NULL;
 }
 
@@ -1465,26 +1465,26 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
         MODE_ANY;
     }
     CONTRACTL_END
-    
+
     DWORD       i;
     DWORD       dwFieldDescsToScan;
     IMDInternalImport *pInternalImport = pMT->GetMDImport(); // All explicitly declared fields in this class will have the same scope
-    
+
     CONSISTENCY_CHECK(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
-    
+
     // Retrieve the right comparition function to use.
     UTF8StringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp : stricmpUTF8;
 
     // Array classes don't have fields, and don't have metadata
     if (pMT->IsArray())
         return NULL;
-    
+
     SString targetName(SString::Utf8Literal, pszName);
     ULONG targetNameHash = targetName.HashCaseInsensitive();
-    
+
     EEClass * pClass = pMT->GetClass();
     MethodTable *pParentMT = pMT->GetParentMethodTable();
-    
+
     // Scan the FieldDescs of this class
     if (pParentMT != NULL)
         dwFieldDescsToScan = pClass->GetNumInstanceFields() - pParentMT->GetNumInstanceFields() + pClass->GetNumStaticFields();
@@ -1499,29 +1499,29 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
         FieldDesc * pFD = &pFieldDescList[i];
         PREFIX_ASSUME(pFD!=NULL);
         mdFieldDef  mdField = pFD->GetMemberDef();
-        
+
         // Check is valid FieldDesc, and not some random memory
         INDEBUGIMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());
-        
+
         if (!pFD->MightHaveName(targetNameHash))
         {
             continue;
         }
-        
+
         IfFailThrow(pInternalImport->GetNameOfFieldDef(mdField, &szMemberName));
-        
+
         if (StrCompFunc(szMemberName, pszName) != 0)
         {
             continue;
         }
-        
+
         if (pSignature != NULL)
         {
             PCCOR_SIGNATURE pMemberSig;
             DWORD       cMemberSig;
-            
+
             IfFailThrow(pInternalImport->GetSigOfFieldDef(mdField, &cMemberSig, &pMemberSig));
-            
+
             if (!MetaSig::CompareFieldSigs(
                     pMemberSig,
                     cMemberSig,
@@ -1533,9 +1533,9 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
                 continue;
             }
         }
-        
+
         return pFD;
     }
-    
+
     return NULL;
 }

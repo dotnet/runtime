@@ -945,7 +945,7 @@ typedef enum LEAF_ENUM_e {
     LF_UTF8STRING       = 0x801b,
 
     LF_REAL16           = 0x801c,
-    
+
     LF_PAD0             = 0xf0,
     LF_PAD1             = 0xf1,
     LF_PAD2             = 0xf2,
@@ -1001,7 +1001,7 @@ typedef enum CV_ptrtype_e {
 //  To support for l-value and r-value reference, we added CV_PTR_MODE_LVREF
 //  and CV_PTR_MODE_RVREF.  CV_PTR_MODE_REF should be removed at some point.
 //  We keep it now so that old code that uses it won't be broken.
-//  
+//
 
 typedef enum CV_ptrmode_e {
     CV_PTR_MODE_PTR     = 0x00, // "normal" pointer
@@ -1665,14 +1665,14 @@ typedef struct lfFuncId {
     unsigned short  leaf;       // LF_FUNC_ID
     CV_ItemId       scopeId;    // parent scope of the ID, 0 if global
     CV_typ_t        type;       // function type
-    unsigned char   name[CV_ZEROLEN]; 
+    unsigned char   name[CV_ZEROLEN];
 } lfFuncId;
 
 typedef struct lfMFuncId {
     unsigned short  leaf;       // LF_MFUNC_ID
     CV_typ_t        parentType; // type index of parent
     CV_typ_t        type;       // function type
-    unsigned char   name[CV_ZEROLEN]; 
+    unsigned char   name[CV_ZEROLEN];
 } lfMFuncId;
 
 typedef struct lfStringId {
@@ -1693,7 +1693,7 @@ typedef struct lfUdtModSrcLine {
     CV_typ_t       type;        // UDT's type index
     CV_ItemId      src;         // index into string table where source file name is saved
     unsigned long  line;        // line number
-    unsigned short imod;        // module that contributes this UDT definition 
+    unsigned short imod;        // module that contributes this UDT definition
 } lfUdtModSrcLine;
 
 typedef enum CV_BuildInfo_e {
@@ -2955,7 +2955,7 @@ typedef enum SYM_ENUM_e {
     S_DPC_SYM_TAG_MAP = 0x1158, // DPC pointer tag value to symbol record map
 
 #endif // CC_DP_CXX
-    
+
     S_ARMSWITCHTABLE  = 0x1159,
     S_CALLEES = 0x115a,
     S_CALLERS = 0x115b,
@@ -3054,7 +3054,7 @@ typedef struct CV_LVARFLAGS {
     unsigned short fAddrTaken        :1; // address is taken
     unsigned short fCompGenx         :1; // variable is compiler generated
     unsigned short fIsAggregate      :1; // the symbol is splitted in temporaries,
-                                         // which are treated by compiler as 
+                                         // which are treated by compiler as
                                          // independent entities
     unsigned short fIsAggregated     :1; // Counterpart of fIsAggregate - tells
                                          // that it is a part of a fIsAggregate symbol
@@ -3089,7 +3089,7 @@ typedef struct CV_LVAR_ADDR_RANGE {       // defines a range of addresses
     unsigned short  cbRange;
 } CV_LVAR_ADDR_RANGE;
 
-// Represents the holes in overall address range, all address is pre-bbt. 
+// Represents the holes in overall address range, all address is pre-bbt.
 // it is for compress and reduce the amount of relocations need.
 
 typedef struct CV_LVAR_ADDR_GAP {
@@ -4088,9 +4088,9 @@ typedef struct FRAMEPROCSYM {
 } FRAMEPROCSYM;
 
 #ifdef  __cplusplus
-namespace CodeViewInfo 
+namespace CodeViewInfo
 {
-__inline unsigned short ExpandEncodedBasePointerReg(unsigned machineType, unsigned encodedFrameReg) 
+__inline unsigned short ExpandEncodedBasePointerReg(unsigned machineType, unsigned encodedFrameReg)
 {
     static const unsigned short rgFramePointerRegX86[] = {
         CV_REG_NONE, CV_ALLREG_VFRAME, CV_REG_EBP, CV_REG_EBX};
@@ -4174,7 +4174,7 @@ typedef struct INLINESITESYM2 {
 typedef struct LOCALSYM {
     unsigned short  reclen;     // Record length
     unsigned short  rectyp;     // S_LOCAL
-    CV_typ_t        typind;     // type index   
+    CV_typ_t        typind;     // type index
     CV_LVARFLAGS    flags;      // local var flags
 
     unsigned char   name[CV_ZEROLEN];   // Name of this symbol, a null terminated array of UTF8 characters.
@@ -4183,7 +4183,7 @@ typedef struct LOCALSYM {
 typedef struct FILESTATICSYM {
     unsigned short  reclen;     // Record length
     unsigned short  rectyp;     // S_FILESTATIC
-    CV_typ_t        typind;     // type index   
+    CV_typ_t        typind;     // type index
     CV_uoff32_t     modOffset;  // index of mod filename in stringtable
     CV_LVARFLAGS    flags;      // local var flags
 
@@ -4197,7 +4197,7 @@ typedef struct DEFRANGESYM {    // A live range of sub field of variable
     CV_uoff32_t     program;    // DIA program to evaluate the value of the symbol
 
     CV_LVAR_ADDR_RANGE range;   // Range of addresses where this program is valid
-    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps. 
+    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps.
 } DEFRANGESYM;
 
 typedef struct DEFRANGESYMSUBFIELD { // A live range of sub field of variable. like locala.i
@@ -4209,7 +4209,7 @@ typedef struct DEFRANGESYMSUBFIELD { // A live range of sub field of variable. l
     CV_uoff32_t     offParent;  // Offset in parent variable.
 
     CV_LVAR_ADDR_RANGE range;   // Range of addresses where this program is valid
-    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps. 
+    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps.
 } DEFRANGESYMSUBFIELD;
 
 typedef struct CV_RANGEATTR {
@@ -4219,11 +4219,11 @@ typedef struct CV_RANGEATTR {
 
 typedef struct DEFRANGESYMREGISTER {    // A live range of en-registed variable
     unsigned short     reclen;     // Record length
-    unsigned short     rectyp;     // S_DEFRANGE_REGISTER 
+    unsigned short     rectyp;     // S_DEFRANGE_REGISTER
     unsigned short     reg;        // Register to hold the value of the symbol
     CV_RANGEATTR       attr;       // Attribute of the register range.
     CV_LVAR_ADDR_RANGE range;      // Range of addresses where this program is valid
-    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps. 
+    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps.
 } DEFRANGESYMREGISTER;
 
 typedef struct DEFRANGESYMFRAMEPOINTERREL {    // A live range of frame variable
@@ -4233,10 +4233,10 @@ typedef struct DEFRANGESYMFRAMEPOINTERREL {    // A live range of frame variable
     CV_off32_t      offFramePointer;  // offset to frame pointer
 
     CV_LVAR_ADDR_RANGE range;   // Range of addresses where this program is valid
-    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps. 
+    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps.
 } DEFRANGESYMFRAMEPOINTERREL;
 
-typedef struct DEFRANGESYMFRAMEPOINTERREL_FULL_SCOPE { // A frame variable valid in all function scope 
+typedef struct DEFRANGESYMFRAMEPOINTERREL_FULL_SCOPE { // A frame variable valid in all function scope
     unsigned short  reclen;     // Record length
     unsigned short  rectyp;     // S_DEFRANGE_FRAMEPOINTER_REL
 
@@ -4245,17 +4245,17 @@ typedef struct DEFRANGESYMFRAMEPOINTERREL_FULL_SCOPE { // A frame variable valid
 
 #define CV_OFFSET_PARENT_LENGTH_LIMIT 12
 
-// Note DEFRANGESYMREGISTERREL and DEFRANGESYMSUBFIELDREGISTER had same layout. 
+// Note DEFRANGESYMREGISTERREL and DEFRANGESYMSUBFIELDREGISTER had same layout.
 typedef struct DEFRANGESYMSUBFIELDREGISTER { // A live range of sub field of variable. like locala.i
     unsigned short  reclen;     // Record length
-    unsigned short  rectyp;     // S_DEFRANGE_SUBFIELD_REGISTER 
+    unsigned short  rectyp;     // S_DEFRANGE_SUBFIELD_REGISTER
 
     unsigned short     reg;        // Register to hold the value of the symbol
     CV_RANGEATTR       attr;       // Attribute of the register range.
     CV_uoff32_t        offParent : CV_OFFSET_PARENT_LENGTH_LIMIT;  // Offset in parent variable.
     CV_uoff32_t        padding   : 20;  // Padding for future use.
     CV_LVAR_ADDR_RANGE range;   // Range of addresses where this program is valid
-    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps. 
+    CV_LVAR_ADDR_GAP   gaps[CV_ZEROLEN];  // The value is not available in following gaps.
 } DEFRANGESYMSUBFIELDREGISTER;
 
 // Note DEFRANGESYMREGISTERREL and DEFRANGESYMSUBFIELDREGISTER had same layout.
@@ -4284,7 +4284,7 @@ typedef struct DEFRANGESYMHLSL {    // A live range of variable related to a sym
     unsigned short  spilledUdtMember : 1;   // this is a spilled member
     unsigned short  memorySpace      : 4;   // memory space
     unsigned short  padding          : 9;   // for future use
-    
+
     unsigned short  offsetParent;           // Offset in parent variable.
     unsigned short  sizeInParent;           // Size of enregistered portion
 
@@ -4298,7 +4298,7 @@ typedef struct DEFRANGESYMHLSL {    // A live range of variable related to a sym
     (((x)->reclen + sizeof((x)->reclen) - sizeof(DEFRANGESYM)) / sizeof(CV_LVAR_ADDR_GAP))
 
 #define CV_DEFRANGESYMSUBFIELD_GAPS_COUNT(x) \
-    (((x)->reclen + sizeof((x)->reclen) - sizeof(DEFRANGESYMSUBFIELD)) / sizeof(CV_LVAR_ADDR_GAP)) 
+    (((x)->reclen + sizeof((x)->reclen) - sizeof(DEFRANGESYMSUBFIELD)) / sizeof(CV_LVAR_ADDR_GAP))
 
 #define CV_DEFRANGESYMHLSL_GAPS_COUNT(x) \
     (((x)->reclen + sizeof((x)->reclen) - sizeof(DEFRANGESYMHLSL) - (x)->regIndices * sizeof(CV_uoff32_t)) / sizeof(CV_LVAR_ADDR_GAP))
@@ -4313,10 +4313,10 @@ typedef struct DEFRANGESYMHLSL {    // A live range of variable related to a sym
 
 #define CV_DEFRANGESYMHLSL_OFFSET_PTR_BASE(x, t) \
     reinterpret_cast<t>(((CV_LVAR_ADDR_GAP*)(x)->data) + CV_DEFRANGESYMHLSL_GAPS_COUNT(x))
- 
+
 #define CV_DEFRANGESYMHLSL_OFFSET_CONST_PTR(x) \
     CV_DEFRANGESYMHLSL_OFFSET_PTR_BASE(x, const CV_uoff32_t*)
- 
+
 #define CV_DEFRANGESYMHLSL_OFFSET_PTR(x) \
     CV_DEFRANGESYMHLSL_OFFSET_PTR_BASE(x, CV_uoff32_t*)
 
@@ -4326,12 +4326,12 @@ typedef struct DEFRANGESYMHLSL {    // A live range of variable related to a sym
 typedef struct LOCALDPCGROUPSHAREDSYM {
     unsigned short  reclen;     // Record length
     unsigned short  rectyp;     // S_LOCAL_DPC_GROUPSHARED
-    CV_typ_t        typind;     // type index   
+    CV_typ_t        typind;     // type index
     CV_LVARFLAGS    flags;      // local var flags
 
     unsigned short  dataslot;   // Base data (cbuffer, groupshared, etc.) slot
     unsigned short  dataoff;    // Base data byte offset start
-    
+
     unsigned char   name[CV_ZEROLEN];   // Name of this symbol, a null terminated array of UTF8 characters.
 } LOCALDPCGROUPSHAREDSYM;
 
@@ -4494,13 +4494,13 @@ typedef struct HEAPALLOCSITE {
 
 typedef enum CV_cookietype_e
 {
-   CV_COOKIETYPE_COPY = 0, 
-   CV_COOKIETYPE_XOR_SP, 
+   CV_COOKIETYPE_COPY = 0,
+   CV_COOKIETYPE_XOR_SP,
    CV_COOKIETYPE_XOR_BP,
    CV_COOKIETYPE_XOR_R13,
 } CV_cookietype_e;
 
-// Symbol for describing security cookie's position and type 
+// Symbol for describing security cookie's position and type
 // (raw, xor'd with esp, xor'd with ebp).
 
 typedef struct FRAMECOOKIE {
@@ -4578,7 +4578,7 @@ enum DEBUG_S_SUBSECTION_TYPE {
 };
 
 struct CV_DebugSSubsectionHeader_t {
-    enum DEBUG_S_SUBSECTION_TYPE type; 
+    enum DEBUG_S_SUBSECTION_TYPE type;
     CV_off32_t                   cbLen;
 };
 
@@ -4640,14 +4640,14 @@ typedef struct tagXFIXUP_DATA {
    unsigned long rvaTarget;
 } XFIXUP_DATA;
 
-// Those cross scope IDs are private convention, 
-// it used to delay the ID merging for frontend and backend even linker. 
-// It is transparent for DIA client. 
-// Use those ID will let DIA run a litter slower and but 
+// Those cross scope IDs are private convention,
+// it used to delay the ID merging for frontend and backend even linker.
+// It is transparent for DIA client.
+// Use those ID will let DIA run a litter slower and but
 // avoid the copy type tree in some scenarios.
 
 #ifdef  __cplusplus
-namespace CodeViewInfo 
+namespace CodeViewInfo
 {
 
 typedef struct ComboID
@@ -4690,7 +4690,7 @@ typedef struct CrossScopeId
 {
     static const unsigned int LocalIdBitWidth = 20;
     static const unsigned int IdScopeBitWidth = 11;
-    static const unsigned int StartCrossScopeId = 
+    static const unsigned int StartCrossScopeId =
         (unsigned int) (1 << (LocalIdBitWidth + IdScopeBitWidth));
     static const unsigned int LocalIdMask = (1 << LocalIdBitWidth) - 1;
     static const unsigned int ScopeIdMask = StartCrossScopeId - (1 << LocalIdBitWidth);
@@ -4701,8 +4701,8 @@ typedef struct CrossScopeId
     // Compilation unit at most reference to another 2K compilation units.
     static const unsigned int MaxScopeId = (1 << IdScopeBitWidth) - 1;
 
-    CrossScopeId(unsigned short aIdScopeId, unsigned int aLocalId) 
-    {  
+    CrossScopeId(unsigned short aIdScopeId, unsigned int aLocalId)
+    {
         crossScopeId = StartCrossScopeId
                | (aIdScopeId << LocalIdBitWidth)
                | aLocalId;
@@ -4720,12 +4720,12 @@ typedef struct CrossScopeId
         return (crossScopeId & ScopeIdMask) >> LocalIdBitWidth;
     }
 
-    static bool IsCrossScopeId(unsigned int i) 
+    static bool IsCrossScopeId(unsigned int i)
     {
         return (StartCrossScopeId & i) != 0;
     }
 
-    static CrossScopeId Decode(unsigned int i) 
+    static CrossScopeId Decode(unsigned int i)
     {
         CrossScopeId retval;
         retval.crossScopeId = i;
@@ -4738,7 +4738,7 @@ private:
 
     unsigned int crossScopeId;
 
-} CrossScopeId; 
+} CrossScopeId;
 
 // Combined encoding of TI or FuncId, In compiler implementation
 // Id prefixed by 1 if it is function ID.
@@ -4761,12 +4761,12 @@ typedef struct DecoratedItemId
         return decoratedItemId;
     }
 
-    bool IsFuncId() 
+    bool IsFuncId()
     {
         return (decoratedItemId & 0x80000000) == 0x80000000;
     }
 
-    CV_ItemId GetItemId() 
+    CV_ItemId GetItemId()
     {
         return decoratedItemId & 0x7fffffff;
     }
@@ -4781,20 +4781,20 @@ private:
 // Or compile time PDB full path
 
 typedef struct tagPdbIdScope {
-    CV_off32_t  offObjectFilePath; 
+    CV_off32_t  offObjectFilePath;
 } PdbIdScope;
 
 // An array of all imports by import module.
 // List all cross reference for a specific ID scope.
-// Format of DEBUG_S_CROSSSCOPEIMPORTS subsection is 
+// Format of DEBUG_S_CROSSSCOPEIMPORTS subsection is
 typedef struct tagCrossScopeReferences {
     PdbIdScope    externalScope;              // Module of definition Scope.
-    unsigned int  countOfCrossReferences;     // Count of following array. 
+    unsigned int  countOfCrossReferences;     // Count of following array.
     CV_ItemId     referenceIds[CV_ZEROLEN];   // CV_ItemId in another compilation unit.
 } CrossScopeReferences;
 
 // An array of all exports in this module.
-// Format of DEBUG_S_CROSSSCOPEEXPORTS subsection is 
+// Format of DEBUG_S_CROSSSCOPEEXPORTS subsection is
 typedef struct tagLocalIdAndGlobalIdPair {
     CV_ItemId localId;    // local id inside the compile time PDB scope. 0 based
     CV_ItemId globalId;   // global id inside the link time PDB scope, if scope are different.
@@ -4836,11 +4836,11 @@ typedef struct tagInlineeSourceLineEx {
 enum BinaryAnnotationOpcode
 {
     BA_OP_Invalid,               // link time pdb contains PADDINGs
-    BA_OP_CodeOffset,            // param : start offset 
+    BA_OP_CodeOffset,            // param : start offset
     BA_OP_ChangeCodeOffsetBase,  // param : nth separated code chunk (main code chunk == 0)
     BA_OP_ChangeCodeOffset,      // param : delta of offset
     BA_OP_ChangeCodeLength,      // param : length of code, default next start
-    BA_OP_ChangeFile,            // param : fileId 
+    BA_OP_ChangeFile,            // param : fileId
     BA_OP_ChangeLineOffset,      // param : line offset (signed)
     BA_OP_ChangeLineEndDelta,    // param : how many lines, default 1
     BA_OP_ChangeRangeKind,       // param : either 1 (default, for statement)
@@ -4917,14 +4917,14 @@ inline UInt32 CVCompressData(
 //
 // Return value is the uncompressed unsigned integer.  pData is incremented to
 // point to the next piece of uncompressed data.
-// 
+//
 // Returns -1 if what is passed in is incorrectly compressed data, such as
 // (*pBytes & 0xE0) == 0xE0.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 inline UInt32 CVUncompressData(
-    PCompressedAnnotation & pData)    // [IN,OUT] compressed data 
+    PCompressedAnnotation & pData)    // [IN,OUT] compressed data
 {
     UInt32 res = (UInt32)(-1);
 
@@ -4940,7 +4940,7 @@ inline UInt32 CVUncompressData(
         res |= *pData++;
     }
     else if ((*pData & 0xE0) == 0xC0) {
-        // 110? ???? 
+        // 110? ????
 
         res = (*pData++ & 0x1f) << 24;
         res |= *pData++ << 16;
@@ -4948,13 +4948,13 @@ inline UInt32 CVUncompressData(
         res |= *pData++;
     }
 
-    return res; 
+    return res;
 }
 
 // Encode smaller absolute numbers with smaller buffer.
 //
-// General compression only work for input < 0x1FFFFFFF 
-// algorithm will not work on 0x80000000 
+// General compression only work for input < 0x1FFFFFFF
+// algorithm will not work on 0x80000000
 
 inline unsigned __int32 EncodeSignedInt32(__int32 input)
 {

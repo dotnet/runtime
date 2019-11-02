@@ -7,8 +7,8 @@
 #include "asmconstants.h"
 
 //
-// JIT Static access helpers when coreclr host specifies single 
-// appdomain flag 
+// JIT Static access helpers when coreclr host specifies single
+// appdomain flag
 //
 
 LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT

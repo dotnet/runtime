@@ -72,7 +72,7 @@ typedef DPTR(class MethodTable) PTR_MethodTable;
 class CGCDescSeries
 {
 public:
-    union 
+    union
     {
         size_t seriessize;              // adjusted length of series (see above) in bytes
         val_serie_item val_serie[1];    //coded serie for value class array
@@ -80,9 +80,9 @@ public:
 
     size_t startoffset;
 
-    size_t GetSeriesCount () 
-    { 
-        return seriessize/sizeof(JSlot); 
+    size_t GetSeriesCount ()
+    {
+        return seriessize/sizeof(JSlot);
     }
 
     void SetSeriesCount (size_t newcount)
@@ -139,7 +139,7 @@ public:
     static size_t ComputeSize (size_t NumSeries)
     {
         _ASSERTE (ptrdiff_t(NumSeries) > 0);
-        
+
         return sizeof(size_t) + NumSeries*sizeof(CGCDescSeries);
     }
 
@@ -147,7 +147,7 @@ public:
     static size_t ComputeSizeRepeating (size_t NumSeries)
     {
         _ASSERTE (ptrdiff_t(NumSeries) > 0);
-        
+
         return sizeof(size_t) + sizeof(CGCDescSeries) +
                (NumSeries-1)*sizeof(val_serie_item);
     }
@@ -248,7 +248,7 @@ public:
     }
 
 private:
-    
+
     BOOL IsValueClassSeries()
     {
         return ((ptrdiff_t) GetNumSeries()) < 0;

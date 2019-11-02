@@ -1,4 +1,4 @@
-# Perf Score 
+# Perf Score
 
 ## What is it:
 A new JIT feature that estimates the dynamic execution cost of a method.
@@ -11,7 +11,7 @@ Currently JIT developers will generate "Asm Diffs" when making a change to the J
 We have a tool called "jit-diffs" which allows a developer to quickly find methods that generate different assembly code for two different JITs.
 
 The jit-analyze" tool will sort this information and provide a list of methods that have the largest decreases and increases in code size.
-For many methods smaller code size usually means faster execution and larger code size means slower execution.  
+For many methods smaller code size usually means faster execution and larger code size means slower execution.
 But for complex methods that have loops it is not a very good metric for measuring code quality.
 For such methods we want the JIT to improve the code generated for the innermost loop and are willing to pay extra costs outside the loop.
 The total code size for the method does not properly classify regressions or improvements for changes to code inside of loops.
@@ -30,7 +30,7 @@ With modern hardware there can easily be twenty or more instructions executing a
 In order to accurately compute the actual dynamic execution cost a software model of this process would need to be implemented and it would be large and complex.
 
 This current Perf Score feature does **NOT** propose to try to accurately model the actual dynamic execution cost.
-Instead we propose to return an estimate of the dynamic execution cost.  
+Instead we propose to return an estimate of the dynamic execution cost.
 We are willing to make several simplifying assumptions that allow us to more quickly and easily return a reasonable estimate to use as the Perf Score.
 
 ### Modern CPU Hardware documentation:
@@ -43,7 +43,7 @@ They typically provide the following details for instructions:
 For the Perf Score implementation, we will call the method getInsExecutionCharacteristics and it will return the insExecutionCharacteristics for each instruction.
 We will use the information returned along with the BasicBlock weight to calculate the weighted execution cost for each instruction.
 For this implementation we won't try to model the actual def/use latencies and instead will use a simplified model to estimate the instruction latency.
-If in the future, we decide to add an instruction scheduler phase to the JIT we can revisit this area.  
+If in the future, we decide to add an instruction scheduler phase to the JIT we can revisit this area.
 I believe that it will be straightforward to add it at that time.
 
 ### Simplifying Assumptions

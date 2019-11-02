@@ -18,7 +18,7 @@ void DisplayUsage()
         "-c, --clr-path  path to the libcoreclr.so and the managed CLR assemblies\n");
 }
 
-// Parse the command line arguments 
+// Parse the command line arguments
 bool ParseArguments(
         const int argc,
         const char* argv[],

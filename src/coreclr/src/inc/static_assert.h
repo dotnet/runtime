@@ -9,7 +9,7 @@
 
 //--------------------------------------------------------------------------------
 // static_assert represents a check which should be made at compile time.  It
-// can only be done on a constant expression. 
+// can only be done on a constant expression.
 //--------------------------------------------------------------------------------
 
 #ifndef __STATIC_ASSERT_H__

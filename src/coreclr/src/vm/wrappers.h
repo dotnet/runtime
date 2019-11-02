@@ -27,7 +27,7 @@ public:
         CONTRACTL_END;
 
         m_IMDII = IMDII;
-        
+
     }
 
     inline ~MDEnumHolder()
@@ -39,7 +39,7 @@ public:
     inline operator HENUMInternal()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_HEnum;   
+        return m_HEnum;
     }
 
     inline HENUMInternal* operator&()
@@ -64,7 +64,7 @@ class VariantHolder
 {
 public:
     inline VariantHolder()
-    {        
+    {
         LIMITED_METHOD_CONTRACT;
         memset(&m_var, 0, sizeof(VARIANT));
     }
@@ -86,7 +86,7 @@ private:
 };
 
 
-template <typename TYPE> 
+template <typename TYPE>
 inline void SafeComRelease(TYPE *value)
 {
     CONTRACTL {
@@ -97,7 +97,7 @@ inline void SafeComRelease(TYPE *value)
 
     SafeRelease((IUnknown*)value);
 }
-template <typename TYPE> 
+template <typename TYPE>
 inline void SafeComReleasePreemp(TYPE *value)
 {
     CONTRACTL {
@@ -111,7 +111,7 @@ inline void SafeComReleasePreemp(TYPE *value)
 
 NEW_WRAPPER_TEMPLATE1(SafeComHolder, SafeComRelease<_TYPE>);
 
-// Use this holder if you're already in preemptive mode for other reasons, 
+// Use this holder if you're already in preemptive mode for other reasons,
 // use SafeComHolder otherwise.
 NEW_WRAPPER_TEMPLATE1(SafeComHolderPreemp, SafeComReleasePreemp<_TYPE>);
 
@@ -157,7 +157,7 @@ NEW_WRAPPER_TEMPLATE1(SafeComHolderPreemp, SafeComReleasePreemp<_TYPE>);
 //  } // delete foo on out of scope in preemp mode.
 //-----------------------------------------------------------------------------
 
-template <typename TYPE> 
+template <typename TYPE>
 void DeletePreemp(TYPE *value)
 {
     WRAPPER_NO_CONTRACT;
@@ -195,7 +195,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
@@ -270,7 +270,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     FORCEINLINE void operator=(VOID* p)
     {
         WRAPPER_NO_CONTRACT;
@@ -293,7 +293,7 @@ public:
             PRECONDITION(CheckPointer(pTypeInfo, NULL_OK));
         }
         CONTRACTL_END;
-        
+
         m_pTypeInfo = pTypeInfo;
         m_TYPEATTR = NULL;
     }

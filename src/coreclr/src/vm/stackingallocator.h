@@ -26,7 +26,7 @@
         enum { marker1Val = 0xBAD00BAD };
         Sentinal(Sentinal* next) : m_Marker1(marker1Val), m_Next(next) { LIMITED_METHOD_CONTRACT; }
 
-        unsigned  m_Marker1;        // just some data bytes 
+        unsigned  m_Marker1;        // just some data bytes
         Sentinal* m_Next;           // linked list of these
     };
 #endif
@@ -117,7 +117,7 @@ public:
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
 #ifdef _DEBUG
         m_Allocs++;
         m_MaxAlloc = max(Size, m_MaxAlloc);
@@ -162,8 +162,8 @@ public:
 #endif
 
         RETURN ret;
-    }    
-        
+    }
+
     FORCEINLINE void * AllocNoThrow(S_UINT32 size)
     {
         // Safely round size up to ensure alignment.
@@ -173,7 +173,7 @@ public:
     }
 
     FORCEINLINE void * AllocSafeThrow(S_UINT32 size){
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
 
         if(size.IsOverflow()) ThrowOutOfMemory();
 
@@ -192,11 +192,11 @@ public:
 
     void* UnsafeAllocSafeThrow(UINT32 size);
     void* UnsafeAlloc(UINT32 size);
-    
+
 private:
 
     bool AllocNewBlockForBytes(unsigned n);
-    
+
     StackBlock       *m_FirstBlock;       // Pointer to head of allocation block list
     char             *m_FirstFree;        // Pointer to first free byte in head block
     unsigned          m_BytesLeft;        // Number of free bytes left in head block

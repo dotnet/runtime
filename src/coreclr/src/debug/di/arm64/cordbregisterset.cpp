@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: CordbRegisterSet.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -85,7 +85,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
 
 HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
                                        CORDB_REGISTER regBuffer[])
-{ 
+{
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
@@ -93,7 +93,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     UINT iRegister = 0;
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(regBuffer, CORDB_REGISTER, regCount, true, true);
-    
+
     for (int i = REGISTER_ARM64_PC;
          i <= REGISTER_ARM64_V30 && iRegister < regCount;
          i++)
@@ -133,7 +133,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
 
             switch (i)
             {
-            case REGISTER_ARM64_PC: 
+            case REGISTER_ARM64_PC:
                 regBuffer[iRegister++] = m_rd->PC; break;
             case REGISTER_ARM64_SP:
                 regBuffer[iRegister++] = m_rd->SP; break;
@@ -152,12 +152,12 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount, 
+HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
                                                 BYTE    pAvailable[])
 {
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(pAvailable, CORDB_REGISTER, regCount, true, true);
-    
+
     for (int i = 0 ; i < (int)regCount ; ++i)
     {
         if (i * 8 <= REGISTER_ARM64_V31)
@@ -174,7 +174,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG32 regCount,
 }
 
 
-HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[], 
+HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
                                        ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     FAIL_IF_NEUTERED(this);

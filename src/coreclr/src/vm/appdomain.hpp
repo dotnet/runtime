@@ -5,7 +5,7 @@
 /*============================================================
 **
 ** Header:  AppDomain.cpp
-** 
+**
 
 **
 ** Purpose: Implements AppDomain (loader domain) architecture
@@ -77,11 +77,11 @@ class RCWRefCache;
 
 GPTR_DECL(IdDispenser,       g_pModuleIndexDispenser);
 
-// This enum is aligned to System.ExceptionCatcherType. 
+// This enum is aligned to System.ExceptionCatcherType.
 enum ExceptionCatcher {
     ExceptionCatcher_ManagedCode = 0,
     ExceptionCatcher_AppDomainTransition = 1,
-    ExceptionCatcher_COMInterop = 2,    
+    ExceptionCatcher_COMInterop = 2,
 };
 
 // We would like *ALLOCATECLASS_FLAG to AV (in order to catch errors), so don't change it
@@ -164,7 +164,7 @@ struct DomainLocalModule
         PTR_OBJECTREF   m_pGCStatics;
 #ifdef FEATURE_64BIT_ALIGNMENT
         // Padding to make m_pDataBlob aligned at MAX_PRIMITIVE_FIELD_SIZE
-        // code:MethodTableBuilder::PlaceRegularStaticFields assumes that the start of the data blob is aligned 
+        // code:MethodTableBuilder::PlaceRegularStaticFields assumes that the start of the data blob is aligned
         SIZE_T          m_padding;
 #endif
         BYTE            m_pDataBlob[0];
@@ -190,7 +190,7 @@ struct DomainLocalModule
         Volatile<DWORD>             m_dwFlags;
     };
     typedef DPTR(DynamicClassInfo) PTR_DynamicClassInfo;
-    
+
     inline UMEntryThunk * GetADThunkTable()
     {
         LIMITED_METHOD_CONTRACT
@@ -204,7 +204,7 @@ struct DomainLocalModule
     }
 
     // Note the difference between:
-    // 
+    //
     //  GetPrecomputedNonGCStaticsBasePointer() and
     //  GetPrecomputedStaticsClassData()
     //
@@ -242,13 +242,13 @@ struct DomainLocalModule
 
     inline PTR_OBJECTREF  GetPrecomputedGCStaticsBasePointer()
     {
-        LIMITED_METHOD_CONTRACT        
+        LIMITED_METHOD_CONTRACT
         return m_pGCStatics;
     }
 
     inline PTR_OBJECTREF * GetPrecomputedGCStaticsBasePointerAddress()
     {
-        LIMITED_METHOD_CONTRACT        
+        LIMITED_METHOD_CONTRACT
         return &m_pGCStatics;
     }
 
@@ -313,7 +313,7 @@ struct DomainLocalModule
         {
             return NULL;
         }
-        
+
         DynamicClassInfo* pClassInfo = GetDynamicClassInfo(n);
         if (!pClassInfo->m_pDynamicEntry)
         {
@@ -338,12 +338,12 @@ struct DomainLocalModule
         }
         CONTRACTL_END;
 
-        
+
         if (n >= m_aDynamicEntries)
         {
             return NULL;
         }
-        
+
         DynamicClassInfo* pClassInfo = GetDynamicClassInfo(n);
         if (!pClassInfo->m_pDynamicEntry)
         {
@@ -392,7 +392,7 @@ struct DomainLocalModule
     {
         return GetPrecomputedStaticsClassData()[classID] & ClassInitFlags::INITIALIZED_FLAG;
     }
-    
+
     inline BOOL IsClassAllocated(MethodTable* pMT, DWORD iClassIndex = (DWORD)-1)
     {
         WRAPPER_NO_CONTRACT;
@@ -515,11 +515,11 @@ public:
     void ConsumeRemaining()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         m_CurrentPos = m_ArraySize;
     }
 
-    OBJECTREF *TryAllocateEmbeddedFreeHandle();       
+    OBJECTREF *TryAllocateEmbeddedFreeHandle();
 
     // Allocate handles from the bucket.
     OBJECTREF* AllocateHandles(DWORD nRequested);
@@ -553,7 +553,7 @@ public:
     OBJECTREF* AllocateHandles(DWORD nRequested);
 
     // Release object handles allocated using AllocateHandles().
-    void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);    
+    void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);
 
 private:
     // The buckets of object handles.
@@ -567,7 +567,7 @@ private:
 
     // for finding and re-using embedded free items in the list
     LargeHeapHandleBucket *m_pFreeSearchHint;
-    DWORD m_cEmbeddedFree;   
+    DWORD m_cEmbeddedFree;
 
 #ifdef _DEBUG
 
@@ -592,7 +592,7 @@ private:
     CrstBase *m_pCrstDebug;
 
 #endif
-    
+
 };
 
 class LargeHeapHandleBlockHolder;
@@ -748,7 +748,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        
+
         pThis->Enter();
     }
 
@@ -872,7 +872,7 @@ public:
         m_previousLimit=GetThread()->GetLoadLevelLimiter();
         if(m_previousLimit)
             m_currentLevel=m_previousLimit->GetLoadLevel();
-        GetThread()->SetLoadLevelLimiter(this);       
+        GetThread()->SetLoadLevelLimiter(this);
         m_bActive=TRUE;
     }
 
@@ -923,9 +923,9 @@ public:
     __newLimit.SetLoadLevel(newLimit);
 
 // A BaseDomain much basic information in a code:AppDomain including
-// 
+//
 //    * code:#AppdomainHeaps - Heaps for any data structures that will be freed on appdomain unload
-//    
+//
 class BaseDomain
 {
     friend class Assembly;
@@ -990,7 +990,7 @@ public:
 
         return m_pMngStdInterfacesInfo;
     }
-    
+
     PTR_CLRPrivBinderWinRT GetWinRtBinder()
     {
         return m_pWinRtBinder;
@@ -1004,7 +1004,7 @@ public:
         return m_DomainLocalBlockCrst.OwnedByCurrentThread();
     }
 #endif
-   
+
     //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
@@ -1142,7 +1142,7 @@ public:
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
-    
+
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
 
 
@@ -1151,9 +1151,9 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_crstLoaderAllocatorReferences;
     }
-    
+
 protected:
-    
+
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitLargeHeapHandleTable();
@@ -1176,9 +1176,9 @@ protected:
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
     CrstExplicitInit m_WinRTFactoryCacheCrst;   // For WinRT factory cache
-    
+
     //#AssemblyListLock
-    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid 
+    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
     // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
     CrstExplicitInit m_crstAssemblyList;
     BOOL             m_fDisableInterfaceCache;  // RCW COM interface cache
@@ -1204,7 +1204,7 @@ protected:
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
-    
+
     // WinRT binder
     PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
@@ -1299,10 +1299,10 @@ public:
 #endif // DACCESS_COMPILE
 
 private:
-    // I have yet to figure out an efficent way to get the number of handles 
-    // of a particular type that's currently used by the process without 
-    // spending more time looking at the handle table code. We know that 
-    // our only customer (asp.net) in Dev10 is not going to create many of 
+    // I have yet to figure out an efficent way to get the number of handles
+    // of a particular type that's currently used by the process without
+    // spending more time looking at the handle table code. We know that
+    // our only customer (asp.net) in Dev10 is not going to create many of
     // these handles so I am taking a shortcut for now and keep the sizedref
     // handle count on the AD itself.
     DWORD m_dwSizedRefHandles;
@@ -1376,27 +1376,27 @@ enum AssemblyIterationFlags
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
-    
-    kIncludeFailedToLoad  = 0x00000010, // include assemblies that failed to load 
+
+    kIncludeFailedToLoad  = 0x00000010, // include assemblies that failed to load
 
     // Collectible assemblies flags
     kExcludeCollectible   = 0x00000040, // Exclude all collectible assemblies
-    kIncludeCollected     = 0x00000080, 
-        // Include assemblies which were collected and cannot be referenced anymore. Such assemblies are not 
+    kIncludeCollected     = 0x00000080,
+        // Include assemblies which were collected and cannot be referenced anymore. Such assemblies are not
         // AddRef-ed. Any manipulation with them should be protected by code:GetAssemblyListLock.
         // Should be used only by code:LoaderAllocator::GCLoaderAllocators.
 
 };  // enum AssemblyIterationFlags
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Base class for holder code:CollectibleAssemblyHolder (see code:HolderBase).
 // Manages AddRef/Release for collectible assemblies. It is no-op for 'normal' non-collectible assemblies.
-// 
+//
 // Each type of type parameter needs 2 methods implemented:
 //  code:CollectibleAssemblyHolderBase::GetLoaderAllocator
 //  code:CollectibleAssemblyHolderBase::IsCollectible
-// 
+//
 template<typename _Type>
 class CollectibleAssemblyHolderBase
 {
@@ -1417,7 +1417,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        
+
         // We don't need to keep the assembly alive in DAC - see code:#CAH_DAC
 #ifndef DACCESS_COMPILE
         if (this->IsCollectible(m_value))
@@ -1436,7 +1436,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        
+
 #ifndef DACCESS_COMPILE
         if (this->IsCollectible(m_value))
         {
@@ -1445,7 +1445,7 @@ public:
         }
 #endif //!DACCESS_COMPILE
     }
-    
+
 private:
     LoaderAllocator * GetLoaderAllocator(DomainAssembly * pDomainAssembly)
     {
@@ -1470,41 +1470,41 @@ private:
 };  // class CollectibleAssemblyHolderBase<>
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Holder of assembly reference which keeps collectible assembly alive while the holder is valid.
-// 
-// Collectible assembly can be collected at any point when GC happens. Almost instantly all native data 
-// structures of the assembly (e.g. code:DomainAssembly, code:Assembly) could be deallocated. 
-// Therefore any usage of (collectible) assembly data structures from native world, has to prevent the 
+//
+// Collectible assembly can be collected at any point when GC happens. Almost instantly all native data
+// structures of the assembly (e.g. code:DomainAssembly, code:Assembly) could be deallocated.
+// Therefore any usage of (collectible) assembly data structures from native world, has to prevent the
 // deallocation by increasing ref-count on the assembly / associated loader allocator.
-// 
+//
 // #CAH_DAC
-// In DAC we don't AddRef/Release as the assembly doesn't have to be kept alive: The process is stopped when 
+// In DAC we don't AddRef/Release as the assembly doesn't have to be kept alive: The process is stopped when
 // DAC is used and therefore the assembly cannot just disappear.
-// 
+//
 template<typename _Type>
 class CollectibleAssemblyHolder : public BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >
 {
 public:
-    FORCEINLINE 
+    FORCEINLINE
     CollectibleAssemblyHolder(const _Type & value = NULL, BOOL fTake = TRUE)
         : BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >(value, fTake)
     {
         STATIC_CONTRACT_WRAPPER;
     }
-    
-    FORCEINLINE 
-    CollectibleAssemblyHolder & 
+
+    FORCEINLINE
+    CollectibleAssemblyHolder &
     operator=(const _Type & value)
     {
         STATIC_CONTRACT_WRAPPER;
         BaseWrapper<_Type, CollectibleAssemblyHolderBase<_Type> >::operator=(value);
         return *this;
     }
-    
+
     // Operator & is overloaded in parent, therefore we have to get to 'this' pointer explicitly.
-    FORCEINLINE 
-    CollectibleAssemblyHolder<_Type> * 
+    FORCEINLINE
+    CollectibleAssemblyHolder<_Type> *
     This()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1535,7 +1535,7 @@ struct FailedAssembly {
         location.Set(pSpec->GetCodeBase());
         error = ex->GetHR();
 
-        // 
+        //
         // Determine the binding context assembly would have been in.
         // If the parent has been set, use its binding context.
         // If the parent hasn't been set but the code base has, use LoadFrom.
@@ -1574,7 +1574,7 @@ public:
 
     static const NameToTypeMapEntry Null() { NameToTypeMapEntry e; e.m_key.m_wzName = NULL; e.m_key.m_cchName = 0; return e; }
     static bool IsNull(const NameToTypeMapEntry &e) { return e.m_key.m_wzName == NULL; }
-    static const key_t GetKey(const NameToTypeMapEntry &e) 
+    static const key_t GetKey(const NameToTypeMapEntry &e)
     {
         key_t key;
         key.m_wzName = (LPCWSTR)(e.m_key.m_wzName); // this cast brings the string over to the host, in a DAC build
@@ -1583,13 +1583,13 @@ public:
         return key;
     }
     static count_t Hash(const key_t &key) { WRAPPER_NO_CONTRACT; return HashStringN(key.m_wzName, key.m_cchName); }
-    
+
     static BOOL Equals(const key_t &lhs, const key_t &rhs)
     {
         WRAPPER_NO_CONTRACT;
         return (lhs.m_cchName == rhs.m_cchName) && memcmp(lhs.m_wzName, rhs.m_wzName, lhs.m_cchName * sizeof(WCHAR)) == 0;
     }
-    
+
     void OnDestructPerEntryCleanupAction(const NameToTypeMapEntry& e)
     {
         WRAPPER_NO_CONTRACT;
@@ -1607,9 +1607,9 @@ typedef DPTR(NameToTypeMapTable) PTR_NameToTypeMapTable;
 
 struct WinRTFactoryCacheEntry
 {
-    typedef MethodTable *Key;           
+    typedef MethodTable *Key;
     Key          key;                   // Type as KEY
-    
+
     CtxEntry    *m_pCtxEntry;           // Context entry - used to verify whether the cache is a match
     OBJECTHANDLE m_ohFactoryObject;     // Handle to factory object
 };
@@ -1642,13 +1642,13 @@ const DWORD DefaultADID = 1;
 // An Appdomain is the managed equivalent of a process.  It is an isolation unit (conceptually you don't
 // have pointers directly from one appdomain to another, but rather go through remoting proxies).  It is
 // also a unit of unloading.
-// 
+//
 // Threads are always running in the context of a particular AppDomain.  See
-// file:threads.h#RuntimeThreadLocals for more details.  
-// 
+// file:threads.h#RuntimeThreadLocals for more details.
+//
 // see code:BaseDomain for much of the meat of a AppDomain (heaps locks, etc)
 //     * code:AppDomain.m_Assemblies - is a list of code:Assembly in the appdomain
-// 
+//
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
@@ -1675,7 +1675,7 @@ public:
     // Convenience wrapper for ::GetAppDomain to provide better encapsulation.
     static PTR_AppDomain GetCurrentDomain()
     { return m_pTheAppDomain; }
-    
+
     //-----------------------------------------------------------------------------------------------------------------
     // Initializes an AppDomain. (this functions is not called from the SystemDomain)
     void Init();
@@ -1695,9 +1695,9 @@ public:
 
     // final assembly cleanup
     void ShutdownFreeLoaderAllocators();
-    
+
     void ReleaseFiles();
-    
+
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
@@ -1733,7 +1733,7 @@ protected:
                 GC_NOTRIGGER;
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             // This function can be reliably called without taking the lock, because the first assembly
             // added to the arraylist is non-collectible, and the ArrayList itself allows lockless read access
             return (m_array.GetCount() == 0);
@@ -1745,13 +1745,13 @@ protected:
                 WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain == pAppDomain);
-            
+
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             m_array.Clear();
         }
-        
+
         DWORD GetCount(AppDomain * pAppDomain)
         {
             CONTRACTL {
@@ -1759,9 +1759,9 @@ protected:
                 WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain == pAppDomain);
-            
+
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             return GetCount_Unlocked();
         }
@@ -1772,14 +1772,14 @@ protected:
                 GC_NOTRIGGER;
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
 #ifndef DACCESS_COMPILE
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
 #endif
             // code:Append_Unlock guarantees that we do not have more than MAXDWORD items
             return m_array.GetCount();
         }
-        
+
         void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<DomainAssembly *> * pAssemblyHolder)
         {
             CONTRACTL {
@@ -1787,9 +1787,9 @@ protected:
                 WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain == pAppDomain);
-            
+
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             Get_Unlocked(index, pAssemblyHolder);
         }
@@ -1800,7 +1800,7 @@ protected:
                 GC_NOTRIGGER;
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             *pAssemblyHolder = dac_cast<PTR_DomainAssembly>(m_array.Get(index));
         }
@@ -1814,13 +1814,13 @@ protected:
                 MODE_ANY;
                 SUPPORTS_DAC;
             } CONTRACTL_END;
-            
+
 #ifndef DACCESS_COMPILE
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
 #endif
             return dac_cast<PTR_DomainAssembly>(m_array.Get(index));
         }
-        
+
 #ifndef DACCESS_COMPILE
         void Set(AppDomain * pAppDomain, DWORD index, DomainAssembly * pAssembly)
         {
@@ -1829,9 +1829,9 @@ protected:
                 WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain == pAppDomain);
-            
+
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             return Set_Unlocked(index, pAssembly);
         }
@@ -1842,11 +1842,11 @@ protected:
                 GC_NOTRIGGER;
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             m_array.Set(index, pAssembly);
         }
-        
+
         HRESULT Append_Unlocked(DomainAssembly * pAssembly)
         {
             CONTRACTL {
@@ -1854,30 +1854,30 @@ protected:
                 GC_NOTRIGGER;
                 MODE_ANY;
             } CONTRACTL_END;
-            
+
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             return m_array.Append(pAssembly);
         }
 #else //DACCESS_COMPILE
-        void 
+        void
         EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             SUPPORTS_DAC;
-            
+
             m_array.EnumMemoryRegions(flags);
         }
 #endif // DACCESS_COMPILE
-        
+
         // Should be used only by code:AssemblyIterator::Create
         ArrayList::Iterator GetArrayListIterator()
         {
             return m_array.Iterate();
         }
     };  // class DomainAssemblyList
-    
+
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
     DomainAssemblyList m_Assemblies;
-    
+
 public:
     // Note that this lock switches thread into GC_NOTRIGGER region as GC can take it too.
     CrstExplicitInit * GetAssemblyListLock()
@@ -1885,7 +1885,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_crstAssemblyList;
     }
-    
+
 public:
     class AssemblyIterator
     {
@@ -2014,10 +2014,10 @@ public:
                            FileLoadLevel targetLevel);
 
     // this function does not provide caching, you must use LoadDomainAssembly
-    // unless the call is guaranteed to succeed or you don't need the caching 
+    // unless the call is guaranteed to succeed or you don't need the caching
     // (e.g. if you will FailFast or tear down the AppDomain anyway)
-    // The main point that you should not bypass caching if you might try to load the same file again, 
-    // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image 
+    // The main point that you should not bypass caching if you might try to load the same file again,
+    // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
     DomainAssembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
                                                 PEAssembly *pFile,
@@ -2100,15 +2100,15 @@ public:
         BOOL fThrowOnFileNotFound) DAC_EMPTY_RET(NULL);
 
     HRESULT BindAssemblySpecForHostedBinder(
-        AssemblySpec *   pSpec, 
-        IAssemblyName *  pAssemblyName, 
-        ICLRPrivBinder * pBinder, 
+        AssemblySpec *   pSpec,
+        IAssemblyName *  pAssemblyName,
+        ICLRPrivBinder * pBinder,
         PEAssembly **    ppAssembly) DAC_EMPTY_RET(E_FAIL);
-    
+
     HRESULT BindHostedPrivAssembly(
         PEAssembly *       pParentPEAssembly,
-        ICLRPrivAssembly * pPrivAssembly, 
-        IAssemblyName *    pAssemblyName, 
+        ICLRPrivAssembly * pPrivAssembly,
+        IAssemblyName *    pAssemblyName,
         PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
 
 
@@ -2125,7 +2125,7 @@ public:
     void OnAssemblyLoad(Assembly *assem);
     void OnAssemblyLoadUnlocked(Assembly *assem);
     static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
-    
+
 #endif
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
@@ -2174,7 +2174,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     inline BOOL CanCacheWinRTTypeByGuid(TypeHandle typeHandle)
-    { 
+    {
         CONTRACTL
         {
             THROWS;
@@ -2182,8 +2182,8 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        
-        // Only allow caching guid/types maps for types loaded during 
+
+        // Only allow caching guid/types maps for types loaded during
         // "normal" domain operation
         if (IsCompilationDomain() || (m_Stage < STAGE_OPEN))
             return FALSE;
@@ -2240,7 +2240,7 @@ public:
     RCWCache *GetRCWCache()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pRCWCache) 
+        if (m_pRCWCache)
             return m_pRCWCache;
 
         // By separating the cache creation from the common lookup, we
@@ -2326,7 +2326,7 @@ public:
         pDomain->Release();
     }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 
     BOOL IsHeldByIterator()
     {
@@ -2347,14 +2347,14 @@ public:
         FastInterlockDecrement(&m_dwIterHolders);
     }
 
-      
+
     void IteratorAcquire()
     {
         LIMITED_METHOD_CONTRACT;
         FastInterlockIncrement(&m_dwIterHolders);
     }
-    
-#endif    
+
+#endif
     BOOL IsActive()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2513,8 +2513,8 @@ private:
         STAGE_ACTIVE,
         STAGE_OPEN,
         // Don't delete the following *_DONOTUSE members and in case a new member needs to be added,
-        // add it at the end. The reason is that debugger stuff has its own copy of this enum and 
-        // it can use the members that are marked as *_DONOTUSE here when debugging older version 
+        // add it at the end. The reason is that debugger stuff has its own copy of this enum and
+        // it can use the members that are marked as *_DONOTUSE here when debugging older version
         // of the runtime.
         STAGE_UNLOAD_REQUESTED_DONOTUSE,
         STAGE_EXITING_DONOTUSE,
@@ -2537,18 +2537,18 @@ private:
         CONTRACTL_END;
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
         Stage lastStage=m_Stage;
-        while (lastStage !=stage) 
+        while (lastStage !=stage)
             lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
     LoaderAllocator * m_pDelayedLoaderAllocatorUnloadList;
-    
+
 public:
-    
+
     // Register the loader allocator for deletion in code:ShutdownFreeLoaderAllocators.
     void RegisterLoaderAllocatorForDeletion(LoaderAllocator * pLoaderAllocator);
-    
+
 public:
     void SetGCRefPoint(int gccounter)
     {
@@ -2633,7 +2633,7 @@ private:
     class FailedAssemblyIterator
     {
         ArrayList::Iterator m_i;
-        
+
       public:
         BOOL Next()
         {
@@ -2780,26 +2780,26 @@ private:
     {
     public:
         typedef PTR_ICLRPrivAssembly key_t;
-        
+
         static key_t GetKey(element_t const & elem)
         {
             STATIC_CONTRACT_WRAPPER;
             return elem->GetFile()->GetHostAssembly();
         }
-        
-        static BOOL Equals(key_t key1, key_t key2) 
+
+        static BOOL Equals(key_t key1, key_t key2)
         {
             LIMITED_METHOD_CONTRACT;
             return dac_cast<TADDR>(key1) == dac_cast<TADDR>(key2);
         }
-        
+
         static count_t Hash(key_t key)
         {
             STATIC_CONTRACT_LIMITED_METHOD;
             //return reinterpret_cast<count_t>(dac_cast<TADDR>(key));
             return (count_t)(dac_cast<TADDR>(key));
         }
-        
+
         static element_t Null() { return NULL; }
         static element_t Deleted() { return (element_t)(TADDR)-1; }
         static bool IsNull(const element_t & e) { return e == NULL; }
@@ -2815,7 +2815,7 @@ private:
             return elem->GetOriginalFile()->GetHostAssembly();
         }
     };
-    
+
     typedef SHash<HostAssemblyHashTraits> HostAssemblyMap;
     typedef SHash<OriginalFileHostAssemblyHashTraits> OriginalFileHostAssemblyMap;
     HostAssemblyMap   m_hostAssemblyMap;
@@ -2827,7 +2827,7 @@ private:
 public:
     // Returns DomainAssembly.
     PTR_DomainAssembly FindAssembly(PTR_ICLRPrivAssembly pHostAssembly);
-    
+
 #ifndef DACCESS_COMPILE
 private:
     friend void DomainAssembly::Allocate();
@@ -2879,7 +2879,7 @@ class SystemDomain : public BaseDomain
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
     VPTR_UNIQUE(VPTR_UNIQUE_SystemDomain)
 
-public:  
+public:
     static PTR_LoaderAllocator GetGlobalLoaderAllocator();
 
     //****************************************************************************************
@@ -3071,7 +3071,7 @@ public:
     }
 
     void ProcessDelayedUnloadLoaderAllocators();
-    
+
     static void EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 #endif // DACCESS_COMPILE
@@ -3144,7 +3144,7 @@ private:
 
 #ifndef DACCESS_COMPILE
     // This class is not to be created through normal allocation.
-    SystemDomain() 
+    SystemDomain()
     {
         STANDARD_VM_CONTRACT;
 
@@ -3321,9 +3321,9 @@ class AppDomainIterator : public UnsafeAppDomainIterator
 #ifndef DACCESS_COMPILE
         if (GetDomain() != NULL)
         {
-#ifdef _DEBUG            
+#ifdef _DEBUG
             GetDomain()->IteratorRelease();
-#endif            
+#endif
             GetDomain()->Release();
         }
 #endif
@@ -3336,9 +3336,9 @@ class AppDomainIterator : public UnsafeAppDomainIterator
 #ifndef DACCESS_COMPILE
         if (GetDomain() != NULL)
         {
-#ifdef _DEBUG            
+#ifdef _DEBUG
             GetDomain()->IteratorRelease();
-#endif            
+#endif
             GetDomain()->Release();
         }
 
@@ -3349,7 +3349,7 @@ class AppDomainIterator : public UnsafeAppDomainIterator
         {
 #ifndef DACCESS_COMPILE
             GetDomain()->AddRef();
-#ifdef _DEBUG            
+#ifdef _DEBUG
             GetDomain()->IteratorAcquire();
 #endif
 #endif

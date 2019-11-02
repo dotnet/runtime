@@ -38,7 +38,7 @@
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
 {
     HRESULT hr = S_OK;
-    
+
     if (pPEImage != NULL)
     {
         pPEImage->AddRef();
@@ -50,7 +50,7 @@ STDAPI BinderAddRefPEImage(PEImage *pPEImage)
 STDAPI BinderReleasePEImage(PEImage *pPEImage)
 {
     HRESULT hr = S_OK;
-    
+
     if (pPEImage != NULL)
     {
         pPEImage->Release();
@@ -95,10 +95,10 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 
     ReleaseHolder<BINDER_SPACE::Assembly> result;
     HRESULT hr=S_OK;
-    
+
     SString assemblyDisplayName;
 
-    pResult->Reset();    
+    pResult->Reset();
 
     if (m_wszCodeBase == NULL)
     {
@@ -106,11 +106,11 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
 
     // Have a default binding context setup
-    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain); 
-     
+    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
+
     // Get the reference to the TPABinder context
     CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
-    
+
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
@@ -129,8 +129,8 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         {
             tmpString.SetUTF8(m_context.szLocale);
             tmpString.ConvertToUnicode(sCultureName);
-        }        
-  
+        }
+
         hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
     else if (m_wszCodeBase == NULL)
@@ -316,7 +316,7 @@ HRESULT BaseAssemblySpec::ParseName()
         return S_OK;
 
     HRESULT hr = S_OK;
-    
+
     EX_TRY
     {
         NewHolder<BINDER_SPACE::AssemblyIdentityUTF8> pAssemblyIdentity;
@@ -357,7 +357,7 @@ HRESULT BaseAssemblySpec::ParseName()
             m_context.usBuildNumber = (USHORT)pAssemblyIdentity->m_version.GetBuild();
             m_context.usRevisionNumber = (USHORT)pAssemblyIdentity->m_version.GetRevision();
         }
-            
+
         if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
         {
             if (!pAssemblyIdentity->m_cultureOrLanguage.IsEmpty())
@@ -372,7 +372,7 @@ HRESULT BaseAssemblySpec::ParseName()
         {
             m_pbPublicKeyOrToken = const_cast<BYTE *>(pAssemblyIdentity->GetPublicKeyOrTokenArray());
             m_cbPublicKeyOrToken = pAssemblyIdentity->m_publicKeyOrTokenBLOB.GetSize();
-            
+
             if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
             {
                 m_dwFlags |= afPublicKey;
@@ -415,7 +415,7 @@ HRESULT BaseAssemblySpec::ParseName()
             }
         }
 
-        
+
         if (pAssemblyIdentity->
             Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE))
         {
@@ -426,14 +426,14 @@ HRESULT BaseAssemblySpec::ParseName()
             Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
         {
             DWORD dwContentType = pAssemblyIdentity->m_kContentType;
-            
+
             _ASSERTE((dwContentType == AssemblyContentType_Default) || (dwContentType == AssemblyContentType_WindowsRuntime));
             if (dwContentType == AssemblyContentType_WindowsRuntime)
             {
                 m_dwFlags |= afContentType_WindowsRuntime;
             }
         }
-        
+
         CloneFields();
     }
     EX_CATCH_HRESULT(hr);
@@ -543,7 +543,7 @@ VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
         if (m_dwFlags & afPA_MSIL)
             assemblyIdentity.m_kProcessorArchitecture = peMSIL;
         else if (m_dwFlags & afPA_x86)
-            assemblyIdentity.m_kProcessorArchitecture = peI386; 
+            assemblyIdentity.m_kProcessorArchitecture = peI386;
         else if (m_dwFlags & afPA_IA64)
             assemblyIdentity.m_kProcessorArchitecture = peIA64;
         else if (m_dwFlags & afPA_AMD64)

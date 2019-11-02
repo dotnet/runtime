@@ -234,7 +234,7 @@ public class DiaFile
         public void NotifyDebugDir(int fExecutable, uint cbData, ref IMAGE_DEBUG_DIRECTORY pbData)
         {
             Debug.Assert(cbData == Marshal.SizeOf(typeof(IMAGE_DEBUG_DIRECTORY)), "Got unexpected size for IMAGE_DEBUG_DIRECTORY");
-            // There may be mutliple calls, or calls with no timestamp, but only one entry should be 
+            // There may be mutliple calls, or calls with no timestamp, but only one entry should be
             // for the code-view record describing the PDB file.
             if (pbData.Type == ImageDebugType.IMAGE_DEBUG_TYPE_CODEVIEW)
             {
@@ -281,7 +281,7 @@ public class DiaFile
 
         public int RestrictOriginalPathAccess()
         {
-            return 1;   // don't look in the full path specified in the debug directory 
+            return 1;   // don't look in the full path specified in the debug directory
         }
 
         public int RestrictReferencePathAccess()
@@ -412,15 +412,15 @@ public class DiaFile
         E_PDB_DEBUG_INFO_NOT_IN_PDB ,
         E_PDB_SYMSRV_BAD_CACHE_PATH ,
         E_PDB_SYMSRV_CACHE_FULL     ,
-        E_PDB_MAX           
+        E_PDB_MAX
     }
 
     // Get the DiaSourceClass from the msdia140.dll in the app directory without using COM activation
     static IDiaDataSource GetDiaSourceClass() {
-	    // This is Class ID for the DiaSourceClass used by msdia140.  
+	    // This is Class ID for the DiaSourceClass used by msdia140.
 	    var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
 	    var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
-       
+
 	    // As the DLL to create a new instance of it
 	    object comObject = null;
 	    Guid iDiaDataSourceGuid = typeof(IDiaDataSource).GUID;
@@ -590,7 +590,7 @@ public class DiaSymbol
 
         return bound.name;
     }
-    
+
     public String GetTypeString()
     {
         return GetTypeString(m_symbol);
@@ -653,7 +653,7 @@ public class DiaSymbol
             if (succ == false)
             {
                 try
-                {               
+                {
                     succ = true;
                     IDiaEnumSymbols e;
                     s.findChildren(SymTagEnum.SymTagCustomType, null, (UInt32) NameSearchOptions.nsNone, out e);

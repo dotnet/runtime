@@ -5,7 +5,7 @@
 // versioninfo.inl
 //
 // representation of version#
-// 
+//
 // Note: must be platform independent
 //
 // ======================================================================================
@@ -34,27 +34,27 @@ inline VersionInfo::VersionInfo( unsigned short major,
 }
 
 // field accessor
-inline unsigned short VersionInfo::Major() const 
+inline unsigned short VersionInfo::Major() const
 {
-    return m_wMajor; 
+    return m_wMajor;
 };
 
 // field accessor
-inline unsigned short VersionInfo::Minor() const 
+inline unsigned short VersionInfo::Minor() const
 {
-    return m_wMinor; 
+    return m_wMinor;
 };
 
 // field accessor
-inline unsigned short VersionInfo::Build() const 
+inline unsigned short VersionInfo::Build() const
 {
-    return m_wBuild; 
+    return m_wBuild;
 };
 
 // field accessor
-inline unsigned short VersionInfo::Revision() const 
+inline unsigned short VersionInfo::Revision() const
 {
-    return m_wRevision; 
+    return m_wRevision;
 };
 
 // Compares against the given version
@@ -62,12 +62,12 @@ inline unsigned short VersionInfo::Revision() const
 // Input:
 // version - the version info
 //
-// Output: 
+// Output:
 // return value:
 // -1 given version is newer
 //  1 given version is older
 //  0 given version is the same
-inline int VersionInfo::Compare(const VersionInfo& version) const 
+inline int VersionInfo::Compare(const VersionInfo& version) const
 {
     if (Major() > version.Major())
         return 1;
@@ -92,20 +92,20 @@ inline int VersionInfo::Compare(const VersionInfo& version) const
 // Parses the given string into VersionInfo
 //
 // Input:
-// szString - the string to parse, "x.x.x.x" 
+// szString - the string to parse, "x.x.x.x"
 //
-// Output: 
+// Output:
 // return value: count of fields parsed (<=4) or -1 if an error
 inline int VersionInfo::Parse(LPCTSTR szString, VersionInfo* result)
 {
     // sscanf is nice but we need an exact format match and no 0s
     size_t iLen = _tcslen(szString);
-    
+
     unsigned short wVersion[4] = {0};
     int iVerIdx = 0;
     unsigned int dwCurrentValue = 0;
     bool bFirstChar = true;
-        
+
     for (size_t i=0; i<= iLen; i++)
     {
         if(szString[i] == _T('\0'))
@@ -119,7 +119,7 @@ inline int VersionInfo::Parse(LPCTSTR szString, VersionInfo* result)
         {
             if(bFirstChar)
                 return -1;
-            
+
             // fill in
             wVersion[iVerIdx++] = (unsigned short)(dwCurrentValue & 0xffff);
 
@@ -131,8 +131,8 @@ inline int VersionInfo::Parse(LPCTSTR szString, VersionInfo* result)
                 else
                     return -1;
             }
-            
-            //reset 
+
+            //reset
             dwCurrentValue=0;
             bFirstChar=true;
             continue;
@@ -146,9 +146,9 @@ inline int VersionInfo::Parse(LPCTSTR szString, VersionInfo* result)
         if (szString[i] > _T('9'))
         {
             return -1;
-        }        
+        }
         else
-        if (szString[i] == _T('0') && bFirstChar && szString[i+1]!= _T('.') && szString[i+1]!= _T('\0') ) 
+        if (szString[i] == _T('0') && bFirstChar && szString[i+1]!= _T('.') && szString[i+1]!= _T('\0') )
         {
             return -1;
         }
@@ -159,12 +159,12 @@ inline int VersionInfo::Parse(LPCTSTR szString, VersionInfo* result)
             return -1;
 
         bFirstChar=false;
-        
+
     }
 
     //successfully parsed
     *result = VersionInfo(wVersion[0], wVersion[1], wVersion[2], wVersion[3]);
     return iVerIdx;
-    
+
 }
 

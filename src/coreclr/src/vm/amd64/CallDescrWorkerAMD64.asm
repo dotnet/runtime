@@ -13,7 +13,7 @@ extern CallDescrWorkerUnwindFrameChainHandler:proc
         NESTED_ENTRY FastCallFinalizeWorker, _TEXT, CallDescrWorkerUnwindFrameChainHandler
         alloc_stack     28h     ;; alloc callee scratch and align the stack
         END_PROLOGUE
-        
+
         ;
         ; RCX: already contains obj*
         ; RDX: address of finalizer method to call
@@ -25,7 +25,7 @@ extern CallDescrWorkerUnwindFrameChainHandler:proc
         ; !!!!!!!!!
         call    rdx
         xor     rax, rax
-        
+
         ; epilog
         add     rsp, 28h
         ret
@@ -101,7 +101,7 @@ DoCall:
         mov     ecx, dword ptr [rbx+CallDescrData__fpReturnSize]
         test    ecx, ecx
         jz      ReturnsInt
-        
+
         cmp     ecx, 4
         je      ReturnsFloat
         cmp     ecx, 8

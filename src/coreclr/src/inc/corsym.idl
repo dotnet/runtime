@@ -294,7 +294,7 @@ typedef enum CorSymSearchPolicyAttributes
 interface ISymUnmanagedBinder2 : ISymUnmanagedBinder
 {
     /*
-	 *  Given a metadata interface and a file name, returns the correct 
+	 *  Given a metadata interface and a file name, returns the correct
 	 *  ISymUnmanagedReader interface that will read the debugging symbols associated
 	 *  with the module.
 	 *
@@ -327,7 +327,7 @@ interface ISymUnmanagedBinder3 : ISymUnmanagedBinder2
 {
 	/*
 	 * GetReaderFromCallback allows the user to implement supply via callback either an
-	 * IID_IDiaReadExeAtRVACallback or IID_IDiaReadExeAtOffsetCallback to obtain the 
+	 * IID_IDiaReadExeAtRVACallback or IID_IDiaReadExeAtOffsetCallback to obtain the
 	 * Debug directory information from memory.
 	 */
 	HRESULT GetReaderFromCallback([in] IUnknown *importer,
@@ -445,7 +445,7 @@ interface ISymUnmanagedDocument : IUnknown
 
 /* ------------------------------------------------------------------------- *
  * ISymUnmanagedDocumentWriter interface
- * 
+ *
  * Provides functions for writing to a document referenced by a symbol
  * store.
  * ------------------------------------------------------------------------- */
@@ -608,7 +608,7 @@ interface ISymENCUnmanagedMethod : IUnknown
 	 * Get the documents this method has lines in.
 	 */
 	HRESULT GetDocumentsForMethod([in] ULONG32 cDocs,
-                                  [out] ULONG32 *pcDocs,                         
+                                  [out] ULONG32 *pcDocs,
                                   [in, size_is(cDocs)] ISymUnmanagedDocument* documents[]);
 	/*
 	 * Get the smallest start line and largest end line, for the method, in a specific document.
@@ -850,8 +850,8 @@ interface ISymUnmanagedSourceServerModule : IUnknown
  	// returns the source server data for the module
 	// caller must free using CoTaskMemFree()
 	HRESULT GetSourceServerData(
-			[out] ULONG* pDataByteCount, 
-			[out, size_is (, *pDataByteCount)] BYTE** ppData); 
+			[out] ULONG* pDataByteCount,
+			[out, size_is (, *pDataByteCount)] BYTE** ppData);
 
 }
 
@@ -927,7 +927,7 @@ interface ISymUnmanagedReaderSymbolSearchInfo : IUnknown
 /* ------------------------------------------------------------------------- *
  * ISymUnmanagedScope interface
  *
- * Represents a lexical scope within a method. 
+ * Represents a lexical scope within a method.
  * ------------------------------------------------------------------------- */
 
 [
@@ -1005,12 +1005,12 @@ interface ISymUnmanagedConstant : IUnknown
                     length_is(*pcchName)] WCHAR szName[]);
 
     HRESULT GetValue(VARIANT* pValue);
-    
+
    HRESULT GetSignature([in] ULONG32 cSig,
                          [out] ULONG32 *pcSig,
                          [out, size_is(cSig),
                          length_is(*pcSig)] BYTE sig[]);
-                         
+
 };
 
 /*
@@ -1134,7 +1134,7 @@ interface ISymUnmanagedSymbolSearchInfo : IUnknown
 /* ------------------------------------------------------------------------- *
  * ISymUnmanagedWriter interface
  *
- * Represents a symbol writer. Provides methods to define documents, 
+ * Represents a symbol writer. Provides methods to define documents,
  * sequence points, lexical scopes, and variables.
  * ------------------------------------------------------------------------- */
 
@@ -1496,7 +1496,7 @@ interface ISymUnmanagedWriter3 : ISymUnmanagedWriter2
 {
     /*
      * Open a method, and also provide its real section offset in image
-     */ 
+     */
     HRESULT OpenMethod2( [in] mdMethodDef method,
                         [in] ULONG32 isect,
                         [in] ULONG32 offset);
@@ -1560,11 +1560,11 @@ interface ISymUnmanagedWriter5 : ISymUnmanagedWriter4
 
     /*
      * Maps the given metadata token to the given source line span in the specified
-     * source file. 
+     * source file.
      *
      * Must be called between calls to OpenMapTokensToSourceSpans() and
      * CloseMapTokensToSourceSpans().
-     */ 
+     */
     HRESULT MapTokenToSourceSpan([in] mdToken token,
                                  [in] ISymUnmanagedDocumentWriter* document,
                                  [in] ULONG32 line,
@@ -1604,16 +1604,16 @@ interface ISymUnmanagedReader2 : ISymUnmanagedReader
                                     [out] ULONG32 *pcBuffer,
                                     [out, size_is(cBuffer),
                                     length_is(*pcBuffer)] BYTE buffer[]);
- 
+
     /*
-     * Gets every method that has line information in the provided Document.  
-     */                               
+     * Gets every method that has line information in the provided Document.
+     */
     HRESULT GetMethodsInDocument([in] ISymUnmanagedDocument *document,
                                  [in] ULONG32 cMethod,
                                  [out] ULONG32* pcMethod,
                                  [out, size_is(cMethod),
                                     length_is(*pcMethod)] ISymUnmanagedMethod* pRetVal[]);
-	
+
 };
 
 /* ------------------------------------------------------------------------- *
@@ -1625,21 +1625,21 @@ interface ISymUnmanagedReader2 : ISymUnmanagedReader
  uuid(d682fd12-43de-411c-811b-be8404cea126),
  pointer_default(unique)
 ]
-interface ISymNGenWriter : IUnknown 
+interface ISymNGenWriter : IUnknown
 {
     /*
      * Add a new public symbol to the NGEN PDB.
      */
-    HRESULT AddSymbol([in] BSTR pSymbol, 
-                      [in] USHORT iSection, 
+    HRESULT AddSymbol([in] BSTR pSymbol,
+                      [in] USHORT iSection,
                       [in] ULONGLONG rva);
-    
+
     /*
      * Adds a new section to the NGEN PDB.
      */
-    HRESULT AddSection([in] USHORT iSection, 
-                       [in] USHORT flags, 
-                       [in] long offset, 
+    HRESULT AddSection([in] USHORT iSection,
+                       [in] USHORT flags,
+                       [in] long offset,
                        [in] long cb);
 };
 
@@ -1662,14 +1662,14 @@ interface ISymNGenWriter2 : ISymNGenWriter
     HRESULT CloseMod([in] BYTE* pmod);
 
     HRESULT ModAddSymbols([in] BYTE* pmod, [in] BYTE* pbSym, [in] long cb);
-    
+
     HRESULT ModAddSecContribEx(
-        [in] BYTE* pmod, 
-        [in] USHORT isect, 
-        [in] long off, 
-        [in] long cb, 
-        [in] ULONG dwCharacteristics, 
-        [in] DWORD dwDataCrc, 
+        [in] BYTE* pmod,
+        [in] USHORT isect,
+        [in] long off,
+        [in] long cb,
+        [in] ULONG dwCharacteristics,
+        [in] DWORD dwDataCrc,
         [in] DWORD dwRelocCrc);
 
     HRESULT QueryPDBNameExW(
@@ -1727,7 +1727,7 @@ interface ISymUnmanagedAsyncMethodPropertiesWriter : IUnknown
      */
     HRESULT DefineAsyncStepInfo([in] ULONG32 count,
                                 [in, size_is(count)] ULONG32 yieldOffsets[],
-                                [in, size_is(count)] ULONG32 breakpointOffset[], 
+                                [in, size_is(count)] ULONG32 breakpointOffset[],
                                 [in, size_is(count)] mdToken breakpointMethod[]);
 };
 

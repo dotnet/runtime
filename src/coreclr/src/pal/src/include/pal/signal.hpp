@@ -53,7 +53,7 @@ extern "C" void CallSignalHandlerWrapper4();
 extern "C" void CallSignalHandlerWrapper8();
 extern "C" void CallSignalHandlerWrapper12();
 
-// Offset of the return address from the signal_handler_worker in the CallSignalHandlerWrapperX 
+// Offset of the return address from the signal_handler_worker in the CallSignalHandlerWrapperX
 // relative to the start of the function.
 // There are four offsets matching the stack alignments as described in the function header above.
 extern "C" int SignalHandlerWorkerReturnOffset0;
@@ -65,7 +65,7 @@ extern "C" int SignalHandlerWorkerReturnOffset12;
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured. 
+    Handles signal on the original stack where the signal occured.
     Invoked via setcontext.
 
 Parameters :

@@ -127,7 +127,7 @@ public:
 
         Iterator(EETypeHashTable * pTable);
         ~Iterator();
-        
+
     private:
         friend class EETypeHashTable;
 

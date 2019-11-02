@@ -22,15 +22,15 @@
 #define METHODTABLEBUILDER_H
 
 //---------------------------------------------------------------------------------------
-// 
-// MethodTableBuilder simply acts as a holder for the 
+//
+// MethodTableBuilder simply acts as a holder for the
 // large algorithm that "compiles" a type into
-// a MethodTable/EEClass/DispatchMap/VTable etc. etc. 
-// 
-// The user of this class (the ClassLoader) currently builds the EEClass 
+// a MethodTable/EEClass/DispatchMap/VTable etc. etc.
+//
+// The user of this class (the ClassLoader) currently builds the EEClass
 // first, and does a couple of other things too, though all
 // that work should probably be folded into BuildMethodTableThrowing.
-// 
+//
 class MethodTableBuilder
 {
 
@@ -54,23 +54,23 @@ public:
         BOOL fTypicalInstantiation;     // TRUE if this is generic type definition
         BOOL fSharedByGenericInstantiations; // TRUE if this is canonical type shared by instantiations
         BOOL fContainsGenericVariables; // TRUE if this is an open type
-        
+
         inline bmtGenericsInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
         inline DWORD GetNumGenericArgs() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs(); }
         inline BOOL HasInstantiation() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs() != 0; }
         inline BOOL IsTypicalTypeDefinition() const { LIMITED_METHOD_CONTRACT; return !HasInstantiation() || fTypicalInstantiation; }
 
-        inline Instantiation GetInstantiation() const 
-        { 
-            LIMITED_METHOD_CONTRACT; 
+        inline Instantiation GetInstantiation() const
+        {
+            LIMITED_METHOD_CONTRACT;
             return typeContext.m_classInst;
         }
-        
+
 #ifdef _DEBUG
         // Typical instantiation (= open type). Non-NULL only when loading any non-typical instantiation.
         // NULL if 'this' is a typical instantiation or a non-generic type.
         MethodTable * dbg_pTypicalInstantiationMT;
-        
+
         inline MethodTable * Debug_GetTypicalMethodTable() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -118,7 +118,7 @@ public:
                             BOOL fIsEnum,
                             const bmtGenericsInfo *bmtGenericsInfo,
                             LoaderAllocator *pAllocator,
-                            AllocMemTracker *pamTracker);    
+                            AllocMemTracker *pamTracker);
 
     static void GatherGenericsInfo(Module *pModule,
                                    mdTypeDef cl,
@@ -128,15 +128,15 @@ public:
 
     MethodTable *
     BuildMethodTableThrowing(
-        LoaderAllocator *          pAllocator, 
-        Module *                   pLoaderModule, 
-        Module *                   pModule, 
-        mdToken                    cl, 
-        BuildingInterfaceInfo_t *  pBuildingInterfaceList, 
-        const LayoutRawFieldInfo * pLayoutRawFieldInfos, 
-        MethodTable *              pParentMethodTable, 
-        const bmtGenericsInfo *    bmtGenericsInfo, 
-        SigPointer                 parentInst, 
+        LoaderAllocator *          pAllocator,
+        Module *                   pLoaderModule,
+        Module *                   pModule,
+        mdToken                    cl,
+        BuildingInterfaceInfo_t *  pBuildingInterfaceList,
+        const LayoutRawFieldInfo * pLayoutRawFieldInfos,
+        MethodTable *              pParentMethodTable,
+        const bmtGenericsInfo *    bmtGenericsInfo,
+        SigPointer                 parentInst,
         WORD                       wNumInterfaces);
 
     LPCWSTR GetPathForErrorMessages();
@@ -175,7 +175,7 @@ private:
     // GetHalfBakedClass: The EEClass you get back from this function may not have all its fields filled in yet.
     // Thus you have to make sure that the relevant item which you are accessing has
     // been correctly initialized in the EEClass/MethodTable construction sequence
-    // at the point at which you access it.  
+    // at the point at which you access it.
     //
     // Gradually we will move the code to a model where the process of constructing an EEClass/MethodTable
     // is more obviously correct, e.g. by relying much less on reading information using GetHalfBakedClass
@@ -183,7 +183,7 @@ private:
     //
     // <NICE> Get rid of this.</NICE>
     PTR_EEClass GetHalfBakedClass() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedClass; }
-    PTR_MethodTable GetHalfBakedMethodTable() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedMT; } 
+    PTR_MethodTable GetHalfBakedMethodTable() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedMT; }
 
     HRESULT GetCustomAttribute(mdToken parentToken, WellKnownAttribute attribute, const void  **ppData, ULONG *pcbData)
     {
@@ -211,38 +211,38 @@ private:
     WORD GetNumHandleThreadStatics() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumHandleThreadStatics(); }
     WORD GetNumStaticFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumStaticFields(); }
     WORD GetNumInstanceFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumInstanceFields(); }
-    BOOL IsInterface() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsInterface(); } 
-    BOOL HasOverLayedField() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasOverLayedField(); } 
-    BOOL IsComImport() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsComImport(); } 
+    BOOL IsInterface() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsInterface(); }
+    BOOL HasOverLayedField() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasOverLayedField(); }
+    BOOL IsComImport() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsComImport(); }
 #ifdef FEATURE_COMINTEROP
-    void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); } 
+    void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
-    BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; } 
+    BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
     BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
-    BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; } 
+    BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
-    BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); } 
-    BOOL HasLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasLayout(); } 
-    BOOL IsDelegate() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsDelegate(); } 
-    BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); } 
-    BOOL HasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasFieldsWhichMustBeInited(); } 
-    BOOL IsBlittable() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsBlittable(); } 
-    PTR_MethodDescChunk GetChunks() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetChunks(); } 
-    BOOL HasExplicitFieldOffsetLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitFieldOffsetLayout(); } 
-    BOOL IsManagedSequential() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsManagedSequential(); } 
-    BOOL HasExplicitSize() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitSize(); } 
+    BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
+    BOOL HasLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasLayout(); }
+    BOOL IsDelegate() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsDelegate(); }
+    BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); }
+    BOOL HasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasFieldsWhichMustBeInited(); }
+    BOOL IsBlittable() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsBlittable(); }
+    PTR_MethodDescChunk GetChunks() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetChunks(); }
+    BOOL HasExplicitFieldOffsetLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitFieldOffsetLayout(); }
+    BOOL IsManagedSequential() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsManagedSequential(); }
+    BOOL HasExplicitSize() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitSize(); }
 
 #ifdef _DEBUG
-    LPCUTF8 GetDebugClassName() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetDebugClassName(); } 
+    LPCUTF8 GetDebugClassName() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetDebugClassName(); }
 #endif // _DEBUG
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); }
-    Module *GetModule() { WRAPPER_NO_CONTRACT; return bmtInternal->pModule; } 
-    ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); } 
-    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return bmtInternal->pInternalImport; } 
-    FieldDesc *GetApproxFieldDescListRaw() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetFieldDescList(); } 
-    EEClassLayoutInfo *GetLayoutInfo() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetLayoutInfo(); } 
+    Module *GetModule() { WRAPPER_NO_CONTRACT; return bmtInternal->pModule; }
+    ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); }
+    IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return bmtInternal->pInternalImport; }
+    FieldDesc *GetApproxFieldDescListRaw() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetFieldDescList(); }
+    EEClassLayoutInfo *GetLayoutInfo() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetLayoutInfo(); }
 
-    // <NOTE> The following functions are used during MethodTable construction to setup information 
+    // <NOTE> The following functions are used during MethodTable construction to setup information
     // about the type being constructed in particular information stored in the EEClass.
     // USE WITH CAUTION!!  TRY NOT TO ADD MORE OF THESE!! </NOTE>
     //
@@ -250,20 +250,20 @@ private:
     // we create the EEClass object, and thus set the flags immediately at the point
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
-    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); } 
-    void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); } 
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); } 
-    void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); } 
-    void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); } 
-    void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); } 
-    void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); } 
-    void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); } 
-    void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); } 
-    void SetHasOverLayedFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverLayedFields(); } 
-    void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); } 
-    void SetNonGCThreadStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCThreadStaticFieldBytes(x); } 
+    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); }
+    void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
+    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
+    void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
+    void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
+    void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); }
+    void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); }
+    void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
+    void SetHasOverLayedFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverLayedFields(); }
+    void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); }
+    void SetNonGCThreadStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCThreadStaticFieldBytes(x); }
 #ifdef _DEBUG
-    void SetDebugClassName(LPUTF8 x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetDebugClassName(x); } 
+    void SetDebugClassName(LPUTF8 x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetDebugClassName(x); }
 #endif
 
     // Must be called prior to setting the value of any optional field on EEClass (on a debug build an assert
@@ -293,7 +293,7 @@ private:
             : resIDWhy(0),
               szMethodNameForError(NULL),
               dMethodDefInError(mdMethodDefNil),
-              pThrowable(NULL) 
+              pThrowable(NULL)
             { LIMITED_METHOD_CONTRACT; }
     };
 
@@ -348,7 +348,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Changes type's substitution - used for interface map building.
-        void 
+        void
         SetSubstitution(const Substitution & subst)
         {
             LIMITED_METHOD_CONTRACT;
@@ -675,7 +675,7 @@ private:
         //-----------------------------------------------------------------------------------------
         UINT_PTR m_handle;
 
-#ifdef _DEBUG        
+#ifdef _DEBUG
         //-----------------------------------------------------------------------------------------
         // Used in debug builds to quickly access the type in a debugger.
         union
@@ -999,7 +999,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Once a MethodDesc* is created for this method, this method will store the association.
-        void 
+        void
         SetMethodDesc(MethodDesc * pMD)
             { LIMITED_METHOD_CONTRACT; _ASSERTE(m_pMD == NULL); m_pMD = pMD; }
 
@@ -1032,7 +1032,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Sets the MethodDesc* for the unboxed entrypoint.
-        void 
+        void
         SetUnboxedMethodDesc(MethodDesc * pUnboxingMD)
             { LIMITED_METHOD_CONTRACT; _ASSERTE(m_pUnboxedMD == NULL); m_pUnboxedMD = pUnboxingMD; }
 
@@ -1073,7 +1073,7 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Provides a homogeneous view over potentially different types similar to bmtTypeHandle and
-    // TypeHandle. Currently can handle 
+    // TypeHandle. Currently can handle
     class bmtMethodHandle
     {
     public:
@@ -1236,7 +1236,7 @@ private:
         // This is the value of the encoded pointer.
         UINT_PTR m_handle;
 
-#ifdef _DEBUG        
+#ifdef _DEBUG
         //-----------------------------------------------------------------------------------------
         // Used in debug builds to quickly access the type in a debugger.
         union
@@ -1445,7 +1445,7 @@ private:
         // Number of slots allocated in Vtable
         SLOT_INDEX cVtableSlots;
 
-        // The dispatch map builder for this type. 
+        // The dispatch map builder for this type.
         //@TODO: This should be moved.
         DispatchMapBuilder *pDispatchMapBuilder;
 
@@ -1722,7 +1722,7 @@ private:
               m_equivalenceSet(0),
               m_fEquivalenceSetWithMultipleEntries(false)
             { LIMITED_METHOD_CONTRACT; }
-              
+
         //-----------------------------------------------------------------------------------------
         // Returns the bmtRTType for the interface type.
         bmtRTType *
@@ -1752,7 +1752,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Used to iterate the interface implementation slots.
-        typedef IteratorUtil::ArrayIterator<bmtInterfaceSlotImpl> 
+        typedef IteratorUtil::ArrayIterator<bmtInterfaceSlotImpl>
             InterfaceSlotIterator;
 
         InterfaceSlotIterator
@@ -1856,11 +1856,11 @@ private:
         DWORD dwInterfaceMapSize;               // count of entries in interface map
         DWORD dwInterfaceMapAllocated;          // upper bound on size of interface map
 #ifdef _DEBUG
-        // Should we inject interface duplicates for this type? (Parent has its own value stored in 
+        // Should we inject interface duplicates for this type? (Parent has its own value stored in
         // code:MethodTable::dbg_m_fHasInjectedInterfaceDuplicates)
         BOOL dbg_fShouldInjectInterfaceDuplicates;
 #endif //_DEBUG
-        
+
         //-----------------------------------------------------------------------------------------
         // Used to iterate the interface entries in the map.
         typedef IteratorUtil::ArrayIterator<bmtInterfaceEntry> MapIterator;
@@ -1970,7 +1970,7 @@ private:
     };  // struct bmtMethodInfo
 
     // --------------------------------------------------------------------------------------------
-    // Stores metadata info for a 
+    // Stores metadata info for a
     struct bmtMetaDataInfo
     {
         //-----------------------------------------------------------------------------------------
@@ -1986,10 +1986,10 @@ private:
             mdToken methodBody;             // MethodDef's for the bodies of MethodImpls. Must be defined in this type.
             mdToken methodDecl;             // Method token that body implements. Is a MethodDef or MemberRef
             // Does this methodimpl need to be considered during inexact methodimpl processing
-            bool    fConsiderDuringInexactMethodImplProcessing; 
-            // If when considered during inexact methodimpl processing it does not match any declaration method, throw. 
+            bool    fConsiderDuringInexactMethodImplProcessing;
+            // If when considered during inexact methodimpl processing it does not match any declaration method, throw.
             // This is to detect situations where a methodimpl does not match any method on any equivalent interface.
-            bool    fThrowIfUnmatchedDuringInexactMethodImplProcessing; 
+            bool    fThrowIfUnmatchedDuringInexactMethodImplProcessing;
             UINT32  interfaceEquivalenceSet;// Equivalence set in the interface map to examine
             static int __cdecl Compare(const void *elem1, const void *elem2);
             static BOOL Equal(const MethodImplTokenPair *elem1, const MethodImplTokenPair *elem2);
@@ -2022,7 +2022,7 @@ private:
     {
         // For compacting field placement
         DWORD InstanceFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];
-        
+
         DWORD NumInstanceFieldsOfSize[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];
         DWORD FirstInstanceFieldOfSize[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];
         DWORD GCPointerFieldStart;
@@ -2190,7 +2190,7 @@ private:
     StackingAllocator *
     GetStackingAllocator()
         { LIMITED_METHOD_CONTRACT; return m_pStackingAllocator; }
-    
+
     LoaderAllocator *
     GetLoaderAllocator()
         { LIMITED_METHOD_CONTRACT; return bmtAllocator; }
@@ -2257,7 +2257,7 @@ private:
     // NOTE: false will typically only be returned for System.Object and interfaces.
     inline bool
     HasParent()
-    { 
+    {
         LIMITED_METHOD_CONTRACT; return bmtInternal->pParentMT != NULL;
     }
 
@@ -2312,7 +2312,7 @@ private:
     BuildMethodTableThrowException(
                                   HRESULT hr,
                                   const bmtErrorInfo & bmtError);
-    
+
     // --------------------------------------------------------------------------------------------
     // Used to report an error building this type.
     inline VOID DECLSPEC_NORETURN
@@ -2388,7 +2388,7 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Only used in the resolve phase of the classloader. These are used to calculate
-    // the interface implementation map. The reason it is done in this way is that the 
+    // the interface implementation map. The reason it is done in this way is that the
     // interfaces must be resolved in light of generic types and substitutions, and the fact
     // that substitutions can make interfaces resolve to be identical when given a child's
     // instantiation.
@@ -2397,15 +2397,15 @@ private:
 
     void ExpandApproxInterface(
         bmtInterfaceInfo *          bmtInterface, // out parameter, various parts cumulatively written to.
-        const Substitution *        pNewInterfaceSubstChain, 
-        MethodTable *               pNewInterface, 
-        InterfaceDeclarationScope   declScope 
+        const Substitution *        pNewInterfaceSubstChain,
+        MethodTable *               pNewInterface,
+        InterfaceDeclarationScope   declScope
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     void ExpandApproxDeclaredInterfaces(
         bmtInterfaceInfo *          bmtInterface, // out parameter, various parts cumulatively written to.
-        bmtTypeHandle               thType, 
-        InterfaceDeclarationScope   declScope 
+        bmtTypeHandle               thType,
+        InterfaceDeclarationScope   declScope
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     void ExpandApproxInheritedInterfaces(
@@ -2418,7 +2418,7 @@ public:
     //------------------------------------------------------------------------
     // Loading exact interface instantiations.(slow technique)
     //
-    // These place the exact interface instantiations into the interface map at the 
+    // These place the exact interface instantiations into the interface map at the
     // appropriate locations.
 
     struct bmtExactInterfaceInfo
@@ -2429,40 +2429,40 @@ public:
         // Array of substitutions for each interface in the interface map
         Substitution * pInterfaceSubstitution;
         SigTypeContext typeContext;     // Exact type context used to supply final instantiation to substitution chains
-        
+
         inline bmtExactInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
     };  // struct bmtExactInterfaceInfo
 
 private:
     static void
     ExpandExactInterface(
-        bmtExactInterfaceInfo *     bmtInfo, 
-        MethodTable *               pIntf, 
+        bmtExactInterfaceInfo *     bmtInfo,
+        MethodTable *               pIntf,
         const Substitution *        pSubstForTypeLoad_OnStack,  // Allocated on stack!
         const Substitution *        pSubstForComparing_OnStack, // Allocated on stack!
         StackingAllocator *         pStackingAllocator
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
-    
+
 public:
     static void
     ExpandExactDeclaredInterfaces(
-        bmtExactInterfaceInfo *     bmtInfo, 
-        Module *                    pModule, 
-        mdToken                     typeDef, 
-        const Substitution *        pSubstForTypeLoad, 
+        bmtExactInterfaceInfo *     bmtInfo,
+        Module *                    pModule,
+        mdToken                     typeDef,
+        const Substitution *        pSubstForTypeLoad,
         Substitution *              pSubstForComparing,
         StackingAllocator *     pStackingAllocator
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
-    
+
     static void
     ExpandExactInheritedInterfaces(
-        bmtExactInterfaceInfo * bmtInfo, 
-        MethodTable *           pParentMT, 
-        const Substitution *    pSubstForTypeLoad, 
+        bmtExactInterfaceInfo * bmtInfo,
+        MethodTable *           pParentMT,
+        const Substitution *    pSubstForTypeLoad,
         Substitution *          pSubstForComparing,
         StackingAllocator *     pStackingAllocator);
 
-public: 
+public:
     // --------------------------------------------------------------------------------------------
     // Interface ambiguity checks when loading exact interface instantiations
     //
@@ -2483,8 +2483,8 @@ public:
     static void
     InterfacesAmbiguityCheck(
         bmtInterfaceAmbiguityCheckInfo *,
-        Module *pModule, 
-        mdToken typeDef,  
+        Module *pModule,
+        mdToken typeDef,
         const Substitution *pSubstChain,
         StackingAllocator *pStackingAllocator);
 
@@ -2492,7 +2492,7 @@ private:
     static void
     InterfaceAmbiguityCheck(
         bmtInterfaceAmbiguityCheckInfo *,
-        const Substitution *pSubstChain, 
+        const Substitution *pSubstChain,
         MethodTable *pIntfMT,
         StackingAllocator *pStackingAllocator);
 
@@ -2504,9 +2504,9 @@ public:
     // --------------------------------------------------------------------------------------------
     // Copy virtual slots inherited from parent:
     //
-    // In types created at runtime, inherited virtual slots are initialized using approximate parent 
+    // In types created at runtime, inherited virtual slots are initialized using approximate parent
     // during method table building. This method will update them based on the exact parent.
-    // In types loaded from NGen image, inherited virtual slots from cross-module parents are not 
+    // In types loaded from NGen image, inherited virtual slots from cross-module parents are not
     // initialized. This method will initialize them based on the actually loaded exact parent
     // if necessary.
     //
@@ -2516,20 +2516,20 @@ public:
         MethodTable *pApproxParentMT);
 
     // --------------------------------------------------------------------------------------------
-    // This is used at load time, using metadata-based comparisons. It returns the array of dispatch 
+    // This is used at load time, using metadata-based comparisons. It returns the array of dispatch
     // map TypeIDs to be used for pDeclIntfMT.
-    // 
+    //
     // Arguments:
     //    rg/c DispatchMapTypeIDs - Array of TypeIDs and its count of elements.
-    //    pcIfaceDuplicates - Number of duplicate occurences of the interface in the interface map (ideally <= 
+    //    pcIfaceDuplicates - Number of duplicate occurences of the interface in the interface map (ideally <=
     //         count of elements TypeIDs).
-    //  
-    void 
+    //
+    void
     ComputeDispatchMapTypeIDs(
-        MethodTable *        pDeclInftMT, 
-        const Substitution * pDeclIntfSubst, 
-        DispatchMapTypeID *  rgDispatchMapTypeIDs, 
-        UINT32               cDispatchMapTypeIDs, 
+        MethodTable *        pDeclInftMT,
+        const Substitution * pDeclIntfSubst,
+        DispatchMapTypeID *  rgDispatchMapTypeIDs,
+        UINT32               cDispatchMapTypeIDs,
         UINT32 *             pcIfaceDuplicates);
 
 private:
@@ -2542,7 +2542,7 @@ private:
         BOOL *              pMethodConstraintsMatch);
 
     // --------------------------------------------------------------------------------------------
-    // 
+    //
     VOID
     ResolveInterfaces(
         WORD cEntries,
@@ -2607,10 +2607,10 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void 
+    void
     VerifySelfReferencingStaticValueTypeFields_WithRVA(
         MethodTable ** pByValueClassCache);
-    
+
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
     BOOL
@@ -2649,8 +2649,8 @@ private:
     GetMethodClassification(METHOD_TYPE type);
 
     // --------------------------------------------------------------------------------------------
-    // Essentially, this is a helper method that combines calls to InitMethodDesc and 
-    // SetSecurityFlagsOnMethod. It then assigns the newly initialized MethodDesc to 
+    // Essentially, this is a helper method that combines calls to InitMethodDesc and
+    // SetSecurityFlagsOnMethod. It then assigns the newly initialized MethodDesc to
     // the bmtMDMethod.
     VOID
     InitNewMethodDesc(
@@ -2679,8 +2679,8 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Given an interface in our interface map, and a particular method on that interface, place
-    // a method from the parent types implementation of an equivalent interface into that method 
-    // slot. Used by PlaceInterfaceMethods to make equivalent interface implementations have the 
+    // a method from the parent types implementation of an equivalent interface into that method
+    // slot. Used by PlaceInterfaceMethods to make equivalent interface implementations have the
     // same behavior as if the parent interface was implemented on this type instead of an equivalent interface.
     // See comment in implementation for example of where this is necessary.
     VOID PlaceMethodFromParentEquivalentInterfaceIntoInterfaceSlot(
@@ -2719,7 +2719,7 @@ private:
     // --------------------------------------------------------------------------------------------
     // Find the decl method on a given interface entry that matches the method name+signature specified
     // If none is found, return a null method handle
-    bmtMethodHandle 
+    bmtMethodHandle
     FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig);
 
     // --------------------------------------------------------------------------------------------
@@ -2727,8 +2727,8 @@ private:
     // implementation method to the mapping used by virtual stub dispatch.
     VOID
     AddMethodImplDispatchMapping(
-        DispatchMapTypeID typeID, 
-        SLOT_INDEX        slotNumber, 
+        DispatchMapTypeID typeID,
+        SLOT_INDEX        slotNumber,
         bmtMDMethod *     pImplMethod);
 
     // --------------------------------------------------------------------------------------------
@@ -2786,8 +2786,8 @@ private:
     // Places a methodImpl pair on an interface where the decl is declared by an interface.
     VOID
     PlaceInterfaceDeclarationOnInterface(
-        bmtMethodHandle   hDecl, 
-        bmtMDMethod *     pImpl, 
+        bmtMethodHandle   hDecl,
+        bmtMDMethod *     pImpl,
         DWORD*            slots,
         RelativePointer<MethodDesc *> *      replaced,
         DWORD*            pSlotIndex,
@@ -2818,7 +2818,7 @@ private:
     AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T count, SIZE_T sizeOfMethodDescs);
 
     // --------------------------------------------------------------------------------------------
-    // MethodTableBuilder equivant of 
+    // MethodTableBuilder equivant of
     //      code:MethodDesc::IsUnboxingStub && code:MethodDesc::IsTightlyBoundToMethodTable.
     // Returns true if the MethodTable has to have true slot for unboxing stub of this method.
     // Used for MethodDesc layout.
@@ -2954,16 +2954,16 @@ private:
         DWORD dwTotalFields);
 
     MethodTable * AllocateNewMT(Module *pLoaderModule,
-                                DWORD dwVtableSlots, 
+                                DWORD dwVtableSlots,
                                 DWORD dwVirtuals,
-                                DWORD dwGCSize, 
-                                DWORD dwNumInterfaces, 
-                                DWORD dwNumDicts, 
-                                DWORD dwNumTypeSlots, 
+                                DWORD dwGCSize,
+                                DWORD dwNumInterfaces,
+                                DWORD dwNumDicts,
+                                DWORD dwNumTypeSlots,
                                 MethodTable *pMTParent,
                                 ClassLoader *pClassLoader,
-                                LoaderAllocator *pAllocator, 
-                                BOOL isIFace, 
+                                LoaderAllocator *pAllocator,
+                                BOOL isIFace,
                                 BOOL fDynamicStatics,
                                 BOOL fHasGenericsStaticsInfo,
                                 BOOL fNeedsRCWPerTypeData

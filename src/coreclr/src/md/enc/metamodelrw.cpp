@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModelRW.cpp
-// 
+//
 
 //
 // Implementation for the Read/Write MiniMD code.
@@ -43,18 +43,18 @@ typedef CDynArray<RID> RIDMAP;
 enum MetaDataSizeIndex
 {
     // Standard MetaData sizes (from VBA library).
-    MDSizeIndex_Standard = 0, 
-    // Minimal MetaData sizes used mainly by Reflection.Emit for small assemblies (emitting 1 type per 
+    MDSizeIndex_Standard = 0,
+    // Minimal MetaData sizes used mainly by Reflection.Emit for small assemblies (emitting 1 type per
     // assembly).
     // Motivated by the performance requirement in collectible types.
-    MDSizeIndex_Minimal  = 1, 
-    
+    MDSizeIndex_Minimal  = 1,
+
     MDSizeIndex_Count
 };  // enum MetaDataSizeIndex
 
 // Gets index of MetaData sizes used to access code:g_PoolSizeInfo, code:g_HashSize and code:g_TblSizeInfo.
-static 
-enum MetaDataSizeIndex 
+static
+enum MetaDataSizeIndex
 GetMetaDataSizeIndex(const OptionValue *pOptionValue)
 {
     if (pOptionValue->m_InitialSize == MDInitialSizeMinimal)
@@ -70,8 +70,8 @@ GetMetaDataSizeIndex(const OptionValue *pOptionValue)
 #define IX_GUID_POOL 2
 #define IX_BLOB_POOL 3
 
-static 
-const ULONG 
+static
+const ULONG
 g_PoolSizeInfo[MDSizeIndex_Count][4][2] =
 {
     {   // Standard pool sizes { Size in bytes, Number of buckets in hash } (code:MDSizeIndex_Standard).
@@ -88,16 +88,16 @@ g_PoolSizeInfo[MDSizeIndex_Count][4][2] =
     }
 };
 
-static 
-const ULONG 
+static
+const ULONG
 g_HashSize[MDSizeIndex_Count] =
 {
     257,    // Standard MetaData size (code:MDSizeIndex_Standard).
     50      // Minimal MetaData size (code:MDSizeIndex_Minimal).
 };
 
-static 
-const ULONG 
+static
+const ULONG
 g_TblSizeInfo[MDSizeIndex_Count][TBL_COUNT] =
 {
     // Standard table sizes (code:MDSizeIndex_Standard).
@@ -317,7 +317,7 @@ protected:
     HRESULT PrepMapTokens()
     {
         HRESULT hr = S_OK;
-        
+
         // If remap notifications are desired, prepare to collect the info in a RIDMAP.
         if (m_bMapToken)
         {
@@ -336,8 +336,8 @@ protected:
     ErrExit:
         return hr;
     } // CQuickSortMiniMdRW::PrepMapTokens
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT DoMapTokens()
     {
         HRESULT hr;
@@ -391,34 +391,34 @@ public:
     HRESULT Sort()
     {
         HRESULT hr = S_OK;
-        
+
         INDEBUG(m_MiniMd.Debug_CheckIsLockedForWrite();)
-        
+
         _ASSERTE(m_MiniMd.IsSortable(m_ixTbl));
         m_iCount = m_MiniMd.GetCountRecs(m_ixTbl);
-        
+
         // If remap notifications are desired, prepare to collect the info in a RIDMAP.
         IfFailGo(PrepMapTokens());
-        
+
         // We are going to sort tables. Invalidate the hash tables
         if ( m_MiniMd.m_pLookUpHashs[m_ixTbl] != NULL )
         {
             delete m_MiniMd.m_pLookUpHashs[m_ixTbl];
             m_MiniMd.m_pLookUpHashs[m_ixTbl] = NULL;
         }
-        
+
         IfFailGo(SortRange(1, m_iCount));
-        
+
         // The table is sorted until its next change.
         SetSorted();
-        
+
         // If remap notifications were desired, send them.
         IfFailGo(DoMapTokens());
-        
+
     ErrExit:
         return hr;
     } // CQuickSortMiniMdRW::Sort
-    
+
     //*****************************************************************************
     // Call to check whether the array is sorted without altering it.
     //*****************************************************************************
@@ -433,13 +433,13 @@ public:
         for (int i = 1; i < iCount; i++)
         {
             IfFailGo(Compare(i, i+1, &nResult));
-            
+
             if (nResult >= 0)
             {
                 return S_OK;
             }
         }
-             
+
         // The table is sorted until its next change.
         SetSorted();
 
@@ -450,7 +450,7 @@ public:
     //*****************************************************************************
     // Override this function to do the comparison.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT Compare(
         int  iLeft,         // First item to compare.
         int  iRight,        // Second item to compare.
@@ -479,15 +479,15 @@ public:
     } // CQuickSortMiniMdRW::Compare
 
 private:
-    __checkReturn 
+    __checkReturn
     HRESULT SortRange(
-        int iLeft, 
+        int iLeft,
         int iRight)
     {
         HRESULT hr;
         int     iLast;
         int     nResult;
-        
+
         for (;;)
         {
             // if less than two elements you're done.
@@ -495,7 +495,7 @@ private:
             {
                 return S_OK;
             }
-            
+
             // The mid-element is the pivot, move it to the left.
             IfFailRet(Compare(iLeft, (iLeft+iRight)/2, &nResult));
             if (nResult != 0)
@@ -503,7 +503,7 @@ private:
                 IfFailRet(Swap(iLeft, (iLeft+iRight)/2));
             }
             iLast = iLeft;
-            
+
             // move everything that is smaller than the pivot to the left.
             for (int i = iLeft+1; i <= iRight; i++)
             {
@@ -513,14 +513,14 @@ private:
                     IfFailRet(Swap(i, ++iLast));
                 }
             }
-            
+
             // Put the pivot to the point where it is in between smaller and larger elements.
             IfFailRet(Compare(iLeft, iLast, &nResult));
             if (nResult != 0)
             {
                 IfFailRet(Swap(iLeft, iLast));
             }
-            
+
             // Sort each partition.
             int iLeftLast = iLast - 1;
             int iRightFirst = iLast + 1;
@@ -542,9 +542,9 @@ private:
             }
         }
     } // CQuickSortMiniMdRW::SortRange
-    
+
 protected:
-    __checkReturn 
+    __checkReturn
     inline HRESULT Swap(
         int         iFirst,
         int         iSecond)
@@ -556,9 +556,9 @@ protected:
         {
             return S_OK;
         }
-        
+
         PREFAST_ASSUME_MSG(m_iElemSize <= (int) sizeof(m_buf), "The MetaData table row has to fit into buffer for swapping.");
-        
+
         IfFailRet(getRow(iFirst, &pFirst));
         IfFailRet(getRow(iSecond, &pSecond));
         memcpy(m_buf, pFirst, m_iElemSize);
@@ -590,7 +590,7 @@ public:
     //*****************************************************************************
     // Call to sort the array.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT Sort()
     {
         int     i;                      // Outer loop counter.
@@ -601,10 +601,10 @@ public:
 
         _ASSERTE(m_MiniMd.IsSortable(m_ixTbl));
         m_iCount = m_MiniMd.GetCountRecs(m_ixTbl);
-        
+
         // If remap notifications are desired, prepare to collect the info in a RIDMAP.
         IfFailGo(PrepMapTokens());
-        
+
         for (i=m_iCount; i>1; --i)
         {
             bSwap = 0;
@@ -621,13 +621,13 @@ public:
             if (!bSwap)
                 break;
         }
-        
+
         // The table is sorted until its next change.
         SetSorted();
-        
+
         // If remap notifications were desired, send them.
         IfFailGo(DoMapTokens());
-        
+
     ErrExit:
         return hr;
     } // CStableSortMiniMdRW::Sort
@@ -777,8 +777,8 @@ CMiniMdRW::~CMiniMdRW()
 //*****************************************************************************
 // return all found CAs in an enumerator
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CommonEnumCustomAttributeByName(
     mdToken        tkObj,               // [IN] Object with Custom Attribute.
     LPCUTF8        szName,              // [IN] Name of desired Custom Attribute.
@@ -786,7 +786,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
     HENUMInternal *phEnum)              // enumerator to fill up
 {
     HRESULT      hr = S_OK;
-    HRESULT      hrRet = S_FALSE;       // Assume that we won't find any 
+    HRESULT      hrRet = S_FALSE;       // Assume that we won't find any
     ULONG        ridStart, ridEnd;      // Loop start and endpoints.
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_CustomAttribute];
 
@@ -800,7 +800,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
 
     if (pHashTable)
     {
-        // table is not sorted and hash is not built so we have to create a dynamic array 
+        // table is not sorted and hash is not built so we have to create a dynamic array
         // create the dynamic enumerator.
         TOKENHASHENTRY *p;
         ULONG       iHash;
@@ -821,7 +821,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
 
                 // If here, found a match.
                 IfFailGo( HENUMInternal::AddElementToEnum(
-                    phEnum, 
+                    phEnum,
                     TokenFromRid(p->tok, mdtCustomAttribute)));
                 if (fStopAtFirstFind)
                     goto ErrExit;
@@ -854,7 +854,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
                 // If here, found a match.
                 hrRet = S_OK;
                 IfFailGo( HENUMInternal::AddElementToEnum(
-                    phEnum, 
+                    phEnum,
                     TokenFromRid(ridStart, mdtCustomAttribute)));
                 if (fStopAtFirstFind)
                     goto ErrExit;
@@ -873,8 +873,8 @@ ErrExit:
 //*****************************************************************************
 // return just the blob value of the first found CA matching the query.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CommonGetCustomAttributeByNameEx( // S_OK or error.
         mdToken            tkObj,             // [IN] Object with Custom Attribute.
         LPCUTF8            szName,            // [IN] Name of desired Custom Attribute.
@@ -888,7 +888,7 @@ CMiniMdRW::CommonGetCustomAttributeByNameEx( // S_OK or error.
     HENUMInternal       hEnum;
     mdCustomAttribute   ca;
     CustomAttributeRec *pRec;
-    
+
     hr = CommonEnumCustomAttributeByName(tkObj, szName, true, &hEnum);
     if (hr != S_OK)
         goto ErrExit;
@@ -900,7 +900,7 @@ CMiniMdRW::CommonGetCustomAttributeByNameEx( // S_OK or error.
             ppData = &pData;
         if (pcbData == 0)
             pcbData = &cbData;
-        
+
 
         if (HENUMInternal::EnumNext(&hEnum, &ca))
         {
@@ -923,15 +923,15 @@ ErrExit:
 //*****************************************************************************
 // unmark everything in this module
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::UnmarkAll()
 {
     HRESULT      hr = NOERROR;
     ULONG        ulSize = 0;
     ULONG        ixTbl;
     FilterTable *pFilter;
-    
+
     // find the max rec count with all tables
     for (ixTbl = 0; ixTbl < TBL_COUNT; ++ixTbl)
     {
@@ -940,7 +940,7 @@ CMiniMdRW::UnmarkAll()
     }
     IfNullGo(pFilter = GetFilterTable());
     IfFailGo(pFilter->UnmarkAll(this, ulSize));
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::UnmarkAll
@@ -949,15 +949,15 @@ ErrExit:
 //*****************************************************************************
 // mark everything in this module
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::MarkAll()
 {
     HRESULT      hr = NOERROR;
     ULONG        ulSize = 0;
     ULONG        ixTbl;
     FilterTable *pFilter;
-    
+
     // find the max rec count with all tables
     for (ixTbl = 0; ixTbl < TBL_COUNT; ++ixTbl)
     {
@@ -966,7 +966,7 @@ CMiniMdRW::MarkAll()
     }
     IfNullGo(pFilter = GetFilterTable());
     IfFailGo(pFilter->MarkAll(this, ulSize));
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::MarkAll
@@ -987,8 +987,8 @@ FilterTable *CMiniMdRW::GetFilterTable()
 //*****************************************************************************
 // Calculate the map between TypeRef and TypeDef
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CalculateTypeRefToTypeDefMap()
 {
     HRESULT     hr = NOERROR;
@@ -998,19 +998,19 @@ CMiniMdRW::CalculateTypeRefToTypeDefMap()
     LPCSTR      szNamespace;
     mdToken     td;
     mdToken     tkResScope;
-    
+
     PREFIX_ASSUME(GetTypeRefToTypeDefMap() != NULL);
-    
+
     for (index = 1; index <= m_Schema.m_cRecs[TBL_TypeRef]; index++)
     {
         IfFailRet(GetTypeRefRecord(index, &pTypeRefRec));
-        
+
         // Get the name and namespace of the TypeRef.
         IfFailRet(getNameOfTypeRef(pTypeRefRec, &szName));
         IfFailRet(getNamespaceOfTypeRef(pTypeRefRec, &szNamespace));
         tkResScope = getResolutionScopeOfTypeRef(pTypeRefRec);
 
-        // If the resolutionScope is an AssemblyRef, then the type is 
+        // If the resolutionScope is an AssemblyRef, then the type is
         //  external, even if it has the same name as a type in this scope.
         if (TypeFromToken(tkResScope) == mdtAssemblyRef)
             continue;
@@ -1036,8 +1036,8 @@ CMiniMdRW::CalculateTypeRefToTypeDefMap()
 //*****************************************************************************
 // Set a remap handler.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SetHandler(
     IUnknown *pIUnk)
 {
@@ -1046,23 +1046,23 @@ CMiniMdRW::SetHandler(
         m_pHandler->Release();
         m_pHandler = NULL;
     }
-    
+
     if (pIUnk != NULL)
     {
         // ignore the error for QI the IHostFilter
         pIUnk->QueryInterface(IID_IHostFilter, reinterpret_cast<void**>(&m_pHostFilter));
-        
+
         return pIUnk->QueryInterface(IID_IMapToken, reinterpret_cast<void**>(&m_pHandler));
     }
-    
+
     return S_OK;
 } // CMiniMdRW::SetHandler
 
 //*****************************************************************************
 // Set a Options
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SetOption(
     OptionValue *pOptionValue)
 {
@@ -1114,16 +1114,16 @@ CMiniMdRW::SetOption(
         {
             m_Tables[ixTbl].Delete();
             IfFailGo(m_Tables[ixTbl].InitializeEmpty_WithRecordCount(
-                m_TableDefs[ixTbl].m_cbRec, 
-                0 
+                m_TableDefs[ixTbl].m_cbRec,
+                0
                 COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
             INDEBUG_MD(m_Tables[ixTbl].Debug_SetTableInfo(NULL, ixTbl));
             m_Schema.m_cRecs[ixTbl] = 0;
         }
-        
+
         // Out-of-order is expected in an ENC scenario, never an error.
         m_OptionValue.m_ErrorIfEmitOutOfOrder = MDErrorOutOfOrderNone;
-        
+
         break;
     case MDUpdateIncremental:
         // Sortable if no external token.
@@ -1139,14 +1139,14 @@ CMiniMdRW::SetOption(
         _ASSERTE(!"Internal error -- unknown save mode");
         return E_INVALIDARG;
     }
-    
+
     // If this is an ENC session, track the generations.
     if (!m_fIsReadOnly && (m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateENC)
     {
 #ifdef FEATURE_METADATA_EMIT
         ModuleRec *pMod;
         GUID    encid;
-        
+
         // Get the module record.
         IfFailGo(GetModuleRecord(1, &pMod));
 
@@ -1162,7 +1162,7 @@ CMiniMdRW::SetOption(
         IfFailGo(E_INVALIDARG);
 #endif //!FEATURE_METADATA_EMIT
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::SetOption
@@ -1170,8 +1170,8 @@ ErrExit:
 //*****************************************************************************
 // Get Options
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetOption(
     OptionValue *pOptionValue)
 {
@@ -1182,8 +1182,8 @@ CMiniMdRW::GetOption(
 //*****************************************************************************
 // Smart MapToken.  Only calls client if token really changed.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::MapToken(    // Return value from user callback.
     RID     from,       // Old rid.
     RID     to,         // New rid.
@@ -1216,7 +1216,7 @@ CMiniMdRW::MapToken(    // Return value from user callback.
 //*****************************************************************************
 // Set max, lim, based on data.
 //*****************************************************************************
-void 
+void
 CMiniMdRW::ComputeGrowLimits(
     int bSmall)     // large or small tables?
 {
@@ -1233,7 +1233,7 @@ CMiniMdRW::ComputeGrowLimits(
         // Tables are already large
         m_maxRid = m_maxIx = UINT32_MAX;
         m_limIx = USHRT_MAX << 1;
-        m_limRid = USHRT_MAX << 1; 
+        m_limRid = USHRT_MAX << 1;
         m_eGrow = eg_grown;
     }
 } // CMiniMdRW::ComputeGrowLimits
@@ -1241,8 +1241,8 @@ CMiniMdRW::ComputeGrowLimits(
 //*****************************************************************************
 // Initialization of a new writable MiniMd's pools.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitPoolOnMem(
     int   iPool,            // The pool to initialize.
     void *pbData,           // The data from which to init.
@@ -1250,20 +1250,20 @@ CMiniMdRW::InitPoolOnMem(
     int   fIsReadOnly)      // Is the memory read-only?
 {
     HRESULT hr;
-    
+
     switch (iPool)
     {
     case MDPoolStrings:
         if (pbData == NULL)
         {   // Creates new empty string heap with default empty string entry
             IfFailRet(m_StringHeap.InitializeEmpty(
-                0 
+                0
                 COMMA_INDEBUG_MD(!fIsReadOnly)));
         }
         else
         {
             IfFailRet(m_StringHeap.Initialize(
-                MetaData::DataBlob((BYTE *)pbData, cbData), 
+                MetaData::DataBlob((BYTE *)pbData, cbData),
                 !fIsReadOnly));
         }
         break;
@@ -1271,13 +1271,13 @@ CMiniMdRW::InitPoolOnMem(
         if (pbData == NULL)
         {   // Creates new empty guid heap
             IfFailRet(m_GuidHeap.InitializeEmpty(
-                0 
+                0
                 COMMA_INDEBUG_MD(!fIsReadOnly)));
         }
         else
         {
             IfFailRet(m_GuidHeap.Initialize(
-                MetaData::DataBlob((BYTE *)pbData, cbData), 
+                MetaData::DataBlob((BYTE *)pbData, cbData),
                 !fIsReadOnly));
         }
         break;
@@ -1287,20 +1287,20 @@ CMiniMdRW::InitPoolOnMem(
             if (IsMinimalDelta())
             {   // It's EnC minimal delta, don't include default empty blob
                 IfFailRet(m_BlobHeap.InitializeEmpty_WithoutDefaultEmptyBlob(
-                    0 
+                    0
                     COMMA_INDEBUG_MD(!fIsReadOnly)));
             }
             else
             {   // Creates new empty blob heap with default empty blob entry
                 IfFailRet(m_BlobHeap.InitializeEmpty(
-                    0 
+                    0
                     COMMA_INDEBUG_MD(!fIsReadOnly)));
             }
         }
         else
         {
             IfFailRet(m_BlobHeap.Initialize(
-                MetaData::DataBlob((BYTE *)pbData, cbData), 
+                MetaData::DataBlob((BYTE *)pbData, cbData),
                 !fIsReadOnly));
         }
         break;
@@ -1310,22 +1310,22 @@ CMiniMdRW::InitPoolOnMem(
             if (IsMinimalDelta())
             {   // It's EnC minimal delta, don't include default empty user string
                 IfFailRet(m_UserStringHeap.InitializeEmpty_WithoutDefaultEmptyBlob(
-                    0 
+                    0
                     COMMA_INDEBUG_MD(!fIsReadOnly)));
             }
             else
             {   // Creates new empty user string heap (with default empty !!!blob!!! entry)
-                // Note: backaward compatiblity: doesn't add default empty user string, but default empty 
+                // Note: backaward compatiblity: doesn't add default empty user string, but default empty
                 // blob entry
                 IfFailRet(m_UserStringHeap.InitializeEmpty(
-                    0 
+                    0
                     COMMA_INDEBUG_MD(!fIsReadOnly)));
             }
         }
         else
         {
             IfFailRet(m_UserStringHeap.Initialize(
-                MetaData::DataBlob((BYTE *)pbData, cbData), 
+                MetaData::DataBlob((BYTE *)pbData, cbData),
                 !fIsReadOnly));
         }
         break;
@@ -1338,8 +1338,8 @@ CMiniMdRW::InitPoolOnMem(
 //*****************************************************************************
 // Initialization of a new writable MiniMd
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitOnMem(
     const void *pvBuf,          // The data from which to init.
     ULONG       ulBufLen,       // The data size
@@ -1350,7 +1350,7 @@ CMiniMdRW::InitOnMem(
     S_UINT32 cbTotalSize;       // Size of all data used.
     BYTE    *pBuf = const_cast<BYTE*>(reinterpret_cast<const BYTE*>(pvBuf));
     int      i;
-    
+
     // post contruction initialize the embeded lookuptable struct
     for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
     {
@@ -1365,7 +1365,7 @@ CMiniMdRW::InitOnMem(
             }
         }
     }
-    
+
     // Uncompress the schema from the buffer into our structures.
     IfFailGo(SchemaPopulate(pvBuf, ulBufLen, (ULONG *)&cbSchemaSize));
 
@@ -1380,8 +1380,8 @@ CMiniMdRW::InitOnMem(
         if (m_Schema.m_cRecs[i] > 0)
         {
             // Size of one table is rowsize * rowcount.
-            S_UINT32 cbTableSize = 
-                S_UINT32(m_TableDefs[i].m_cbRec) * 
+            S_UINT32 cbTableSize =
+                S_UINT32(m_TableDefs[i].m_cbRec) *
                 S_UINT32(m_Schema.m_cRecs[i]);
             if (cbTableSize.IsOverflow())
             {
@@ -1395,8 +1395,8 @@ CMiniMdRW::InitOnMem(
                 IfFailGo(METADATA_E_INVALID_FORMAT);
             }
             IfFailGo(m_Tables[i].Initialize(
-                m_TableDefs[i].m_cbRec, 
-                MetaData::DataBlob(pBuf, cbTableSize.Value()), 
+                m_TableDefs[i].m_cbRec,
+                MetaData::DataBlob(pBuf, cbTableSize.Value()),
                 !fIsReadOnly));         // fCopyData
             INDEBUG_MD(m_Tables[i].Debug_SetTableInfo(NULL, i));
             pBuf += cbTableSize.Value();
@@ -1404,8 +1404,8 @@ CMiniMdRW::InitOnMem(
         else
         {
             IfFailGo(m_Tables[i].InitializeEmpty_WithRecordCount(
-                m_TableDefs[i].m_cbRec, 
-                0 
+                m_TableDefs[i].m_cbRec,
+                0
                 COMMA_INDEBUG_MD(!fIsReadOnly)));
             INDEBUG_MD(m_Tables[i].Debug_SetTableInfo(NULL, i));
         }
@@ -1471,7 +1471,7 @@ CMiniMdRW::InitOnMem(
 
     // Track records that this MD started with.
     m_StartupSchema = m_Schema;
-    
+
     m_fIsReadOnly = fIsReadOnly ? 1 : 0;
 
 ErrExit:
@@ -1481,8 +1481,8 @@ ErrExit:
 //*****************************************************************************
 // Validate cross-stream consistency.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PostInit(
     int iLevel)
 {
@@ -1492,15 +1492,15 @@ CMiniMdRW::PostInit(
 //*****************************************************************************
 // Init a CMiniMdRW from the data in a CMiniMd [RO].
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitOnRO(
     CMiniMd *pMd,           // The MiniMd to update from.
     int      fIsReadOnly)   // Will updates be allowed?
 {
     HRESULT hr = S_OK;
     ULONG   i;          // Loop control.
-    
+
     // Init the schema.
     IfFailGo(SchemaPopulate(*pMd));
 
@@ -1515,7 +1515,7 @@ CMiniMdRW::InitOnRO(
             m_pVS[ixTbl]->Init(ixTbl, m_TableDefs[ixTbl].m_iKey, this);
         }
     }
-    
+
     // Copy over the column definitions.
     for (i = 0; i < m_TblCount; ++i)
     {
@@ -1528,67 +1528,67 @@ CMiniMdRW::InitOnRO(
     if (pMd->m_StringHeap.GetUnalignedSize() > 0)
     {
         IfFailGo(m_StringHeap.InitializeFromStringHeap(
-            &(pMd->m_StringHeap), 
+            &(pMd->m_StringHeap),
             !fIsReadOnly));
     }
     else
     {
         IfFailGo(m_StringHeap.InitializeEmpty(
-            0 
+            0
             COMMA_INDEBUG_MD(!fIsReadOnly)));
     }
-    
+
     // Initialize user string heap
     if (pMd->m_UserStringHeap.GetUnalignedSize() > 0)
     {
         IfFailGo(m_UserStringHeap.InitializeFromBlobHeap(
-            &(pMd->m_UserStringHeap), 
+            &(pMd->m_UserStringHeap),
             !fIsReadOnly));
     }
     else
     {
         IfFailGo(m_UserStringHeap.InitializeEmpty(
-            0 
+            0
             COMMA_INDEBUG_MD(!fIsReadOnly)));
     }
-    
+
     // Initialize guid heap
     if (pMd->m_GuidHeap.GetSize() >  0)
     {
         IfFailGo(m_GuidHeap.InitializeFromGuidHeap(
-            &(pMd->m_GuidHeap), 
+            &(pMd->m_GuidHeap),
             !fIsReadOnly));
     }
     else
     {
         IfFailGo(m_GuidHeap.InitializeEmpty(
-            0 
+            0
             COMMA_INDEBUG_MD(!fIsReadOnly)));
     }
-    
+
     // Initialize blob heap
     if (pMd->m_BlobHeap.GetUnalignedSize() > 0)
     {
         IfFailGo(m_BlobHeap.InitializeFromBlobHeap(
-            &(pMd->m_BlobHeap), 
+            &(pMd->m_BlobHeap),
             !fIsReadOnly));
     }
     else
     {
         IfFailGo(m_BlobHeap.InitializeEmpty(
-            0 
+            0
             COMMA_INDEBUG_MD(!fIsReadOnly)));
     }
-    
+
     // Init the record pools
     for (i = 0; i < m_TblCount; ++i)
     {
         if (m_Schema.m_cRecs[i] > 0)
         {
             IfFailGo(m_Tables[i].InitializeFromTable(
-                &(pMd->m_Tables[i]), 
-                m_TableDefs[i].m_cbRec, 
-                m_Schema.m_cRecs[i], 
+                &(pMd->m_Tables[i]),
+                m_TableDefs[i].m_cbRec,
+                m_Schema.m_cRecs[i],
                 !fIsReadOnly));     // fCopyData
             INDEBUG_MD(m_Tables[i].Debug_SetTableInfo(NULL, i));
 
@@ -1599,8 +1599,8 @@ CMiniMdRW::InitOnRO(
         else
         {
             IfFailGo(m_Tables[i].InitializeEmpty_WithRecordCount(
-                m_TableDefs[i].m_cbRec, 
-                2 
+                m_TableDefs[i].m_cbRec,
+                2
                 COMMA_INDEBUG_MD(!fIsReadOnly)));
             INDEBUG_MD(m_Tables[i].Debug_SetTableInfo(NULL, i));
             // An empty table can be considered unsorted.
@@ -1610,12 +1610,12 @@ CMiniMdRW::InitOnRO(
 
     // Set the limits so we will know when to grow the database.
     ComputeGrowLimits(TRUE /* small */);
-    
+
     // Track records that this MD started with.
     m_StartupSchema = m_Schema;
-    
+
     m_fIsReadOnly = fIsReadOnly ? 1 : 0;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::InitOnRO
@@ -1790,41 +1790,41 @@ ErrExit:
 //*****************************************************************************
 // Convert a read-only to read-write.  Copies data.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ConvertToRW()
 {
     HRESULT hr = S_OK;
     int     i;          // Loop control.
-    
+
     // Check for already done.
     if (!m_fIsReadOnly)
         return hr;
-    
+
     // If this is a minimal delta, then we won't allow it to be RW
     if (IsMinimalDelta())
         return CLDB_E_INCOMPATIBLE;
-    
+
     IfFailGo(m_StringHeap.MakeWritable());
     IfFailGo(m_GuidHeap.MakeWritable());
     IfFailGo(m_UserStringHeap.MakeWritable());
     IfFailGo(m_BlobHeap.MakeWritable());
-    
+
     // Init the record pools
     for (i = 0; i < (int)m_TblCount; ++i)
     {
         IfFailGo(m_Tables[i].MakeWritable());
     }
-    
+
     // Grow the tables.
     IfFailGo(ExpandTables());
-    
+
     // Track records that this MD started with.
     m_StartupSchema = m_Schema;
-    
+
     // No longer read-only.
     m_fIsReadOnly = false;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::ConvertToRW
@@ -1832,16 +1832,16 @@ ErrExit:
 //*****************************************************************************
 // Initialization of a new writable MiniMd
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitNew()
 {
     HRESULT hr = S_OK;
     int     i;                  // Loop control.
-    
+
     // Initialize the Schema.
     IfFailGo(m_Schema.InitNew(m_OptionValue.m_MetadataVersion));
-    
+
     // Allocate VS structs for tables with key columns.
     for (ULONG ixTbl=0; ixTbl<m_TblCount; ++ixTbl)
     {
@@ -1849,11 +1849,11 @@ CMiniMdRW::InitNew()
         {
             m_pVS[ixTbl] = new (nothrow) VirtualSort;
             IfNullGo(m_pVS[ixTbl]);
-            
+
             m_pVS[ixTbl]->Init(ixTbl, m_TableDefs[ixTbl].m_iKey, this);
         }
     }
-    
+
     enum MetaDataSizeIndex sizeIndex;
     sizeIndex = GetMetaDataSizeIndex(&m_OptionValue);
     if ((sizeIndex == MDSizeIndex_Standard) || (sizeIndex == MDSizeIndex_Minimal))
@@ -1866,7 +1866,7 @@ CMiniMdRW::InitNew()
         {
             m_Schema.m_cRecs[i] = 0;
         }
-        
+
         // Compute how many bits required to hold.
         m_Schema.m_rid = 1;
         m_maxRid = m_maxIx = 0;
@@ -1874,48 +1874,48 @@ CMiniMdRW::InitNew()
         m_limRid = USHRT_MAX >> AUTO_GROW_CODED_TOKEN_PADDING;
         m_eGrow = eg_ok;
     }
-    
+
     // Now call base class function to calculate the offsets, sizes.
     IfFailGo(SchemaPopulate2(NULL));
-    
+
     // Initialize the record heaps.
     for (i = 0; i < (int)m_TblCount; ++i)
     {   // Don't really have any records yet.
         m_Schema.m_cRecs[i] = 0;
         IfFailGo(m_Tables[i].InitializeEmpty_WithRecordCount(
-            m_TableDefs[i].m_cbRec, 
-            g_TblSizeInfo[sizeIndex][i] 
+            m_TableDefs[i].m_cbRec,
+            g_TblSizeInfo[sizeIndex][i]
             COMMA_INDEBUG_MD(TRUE)));       // fIsReadWrite
         INDEBUG_MD(m_Tables[i].Debug_SetTableInfo(NULL, i));
-        
+
         // Create tables as un-sorted.  We hope to add all records, then sort just once.
         SetSorted(i, false);
     }
-    
+
     // Initialize heaps
     IfFailGo(m_StringHeap.InitializeEmpty_WithItemsCount(
-        g_PoolSizeInfo[sizeIndex][IX_STRING_POOL][0], 
-        g_PoolSizeInfo[sizeIndex][IX_STRING_POOL][1] 
+        g_PoolSizeInfo[sizeIndex][IX_STRING_POOL][0],
+        g_PoolSizeInfo[sizeIndex][IX_STRING_POOL][1]
         COMMA_INDEBUG_MD(TRUE)));       // fIsReadWrite
     IfFailGo(m_BlobHeap.InitializeEmpty_WithItemsCount(
-        g_PoolSizeInfo[sizeIndex][IX_BLOB_POOL][0], 
-        g_PoolSizeInfo[sizeIndex][IX_BLOB_POOL][1] 
+        g_PoolSizeInfo[sizeIndex][IX_BLOB_POOL][0],
+        g_PoolSizeInfo[sizeIndex][IX_BLOB_POOL][1]
         COMMA_INDEBUG_MD(TRUE)));       // fIsReadWrite
     IfFailGo(m_UserStringHeap.InitializeEmpty_WithItemsCount(
-        g_PoolSizeInfo[sizeIndex][IX_US_BLOB_POOL][0], 
-        g_PoolSizeInfo[sizeIndex][IX_US_BLOB_POOL][1] 
+        g_PoolSizeInfo[sizeIndex][IX_US_BLOB_POOL][0],
+        g_PoolSizeInfo[sizeIndex][IX_US_BLOB_POOL][1]
         COMMA_INDEBUG_MD(TRUE)));       // fIsReadWrite
     IfFailGo(m_GuidHeap.InitializeEmpty_WithItemsCount(
-        g_PoolSizeInfo[sizeIndex][IX_GUID_POOL][0], 
-        g_PoolSizeInfo[sizeIndex][IX_GUID_POOL][1] 
+        g_PoolSizeInfo[sizeIndex][IX_GUID_POOL][0],
+        g_PoolSizeInfo[sizeIndex][IX_GUID_POOL][1]
         COMMA_INDEBUG_MD(TRUE)));       // fIsReadWrite
-    
+
     // Track records that this MD started with.
     m_StartupSchema = m_Schema;
-    
+
     // New db is never read-only.
     m_fIsReadOnly = false;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::InitNew
@@ -2002,8 +2002,8 @@ static int __cdecl TokenCmp(const void *a, const void *b)
 //    - Binary search (CMiniMdBase::vSearchTable or CMiniMdBase::vSearchTableNotGreater)
 //    - Bounds of a multi-element span (CMiniMdBase::SearchTableForMultipleRows)
 //
-// In theory, we could have different flags for each type of search (e.g. binary, multiple-row, etc) and 
-// avoid any over-reporting of intermediate tokens, but in practice the IBC flag bits are scarce and 
+// In theory, we could have different flags for each type of search (e.g. binary, multiple-row, etc) and
+// avoid any over-reporting of intermediate tokens, but in practice the IBC flag bits are scarce and
 // measurements show a minimal (<1%) amount of over-reporting.
 //
 //*****************************************************************************
@@ -2019,10 +2019,10 @@ enum HotTokenFlags
 __checkReturn
 HRESULT
 CMiniMdRW::GetHotMetadataTokensSearchAware(
-    CorProfileData *pProfileData, 
+    CorProfileData *pProfileData,
     ULONG ixTbl,
     ULONG *pResultCount,
-    mdToken *tokenBuffer, 
+    mdToken *tokenBuffer,
     ULONG maxCount)
 {
     HRESULT     hr = S_OK;
@@ -2034,7 +2034,7 @@ CMiniMdRW::GetHotMetadataTokensSearchAware(
     // Query the profile data to determine the number of hot search tokens
     ULONG numSearchTokens = pProfileData->GetHotTokens(ixTbl, metadataSearchFlag, metadataSearchFlag, NULL, 0);
     ULONG cRecs = GetCountRecs(ixTbl);
-    
+
     if (numSearchTokens == 0 || cRecs == 0)
     {
         // If there are none, we can simply return the hot access tokens without doing any interesting work
@@ -2089,7 +2089,7 @@ CMiniMdRW::GetHotMetadataTokensSearchAware(
                 {
                     rowFlags[mid] |= HotTokenFlags_IntermediateInBinarySearch;
                 }
-                
+
                 if (mid == rid)
                 {
                     break;
@@ -2139,7 +2139,7 @@ CMiniMdRW::GetHotMetadataTokensSearchAware(
             }
         }
     }
-    
+
     if (pResultCount)
         *pResultCount = resultCount;
 
@@ -2153,8 +2153,8 @@ CMiniMdRW::GetHotMetadataTokensSearchAware(
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetFullSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
@@ -2198,7 +2198,7 @@ CMiniMdRW::GetFullSaveSize(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_STRING_4;
     }
-    
+
     IfFailGo(m_BlobHeap.GetAlignedSize(&cbTable));
     if (cbTable > USHRT_MAX)
     {
@@ -2208,7 +2208,7 @@ CMiniMdRW::GetFullSaveSize(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_BLOB_4;
     }
-    
+
     if (m_GuidHeap.GetSize() > USHRT_MAX)
     {
         Schema.m_heaps |= CMiniMdSchema::HEAP_GUID_4;
@@ -2217,7 +2217,7 @@ CMiniMdRW::GetFullSaveSize(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_GUID_4;
     }
-    
+
     cbTotal = 0;
     // schema isn't saved for the hot metadata
     if (pProfileData == NULL)
@@ -2314,10 +2314,10 @@ CMiniMdRW::GetFullSaveSize(
     {
 #ifdef FEATURE_PREJIT
         UINT32 cbHotHeapsSize = 0;
-        
+
         IfFailGo(GetHotPoolsSaveSize(&cbHotHeapsSize, reorderingOptions, pProfileData));
         cbTotal += cbHotHeapsSize;
-        
+
         if (cbTotal <= 4)
             cbTotal = 0;
         else
@@ -2341,8 +2341,8 @@ ErrExit:
 //*****************************************************************************
 // GetSaveSize for saving just the delta (ENC) data.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetENCSaveSize(          // S_OK or error.
     UINT32 *pcbSaveSize)           // [OUT] Put the size here.
 {
@@ -2352,7 +2352,7 @@ CMiniMdRW::GetENCSaveSize(          // S_OK or error.
     UINT32  cbTable;                // Bytes in a table.
     UINT32  cbTotal;                // Bytes written.
     ULONG   ixTbl;                  // Loop control.
-    
+
     // If not saving deltas, defer to full GetSaveSize.
     if ((m_OptionValue.m_UpdateMode & MDUpdateDelta) != MDUpdateDelta)
     {
@@ -2412,27 +2412,27 @@ CMiniMdRW::GetENCSaveSize(          // S_OK or error.
 #ifdef FEATURE_PREJIT
 
 //  Determine the size of the hot blob data
-//  
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::GetHotPoolsSaveSize(
-    UINT32                   *pcbSize, 
-    MetaDataReorderingOptions reorderingOptions, 
+    UINT32                   *pcbSize,
+    MetaDataReorderingOptions reorderingOptions,
     CorProfileData           *pProfileData)
 {
     HRESULT hr = S_OK;
     UINT32 cbSavedDirSize = 0;
     UINT32 cbSavedHeapsSize = 0;
-    
+
     StreamUtil::NullStream stream;
     IfFailGo(SaveHotPoolsToStream(
-        &stream, 
-        reorderingOptions, 
-        pProfileData, 
-        &cbSavedDirSize, 
+        &stream,
+        reorderingOptions,
+        pProfileData,
+        &cbSavedDirSize,
         &cbSavedHeapsSize));
     *pcbSize = cbSavedDirSize + cbSavedHeapsSize;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::GetHotPoolsSaveSize
@@ -2443,8 +2443,8 @@ ErrExit:
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
@@ -2453,10 +2453,10 @@ CMiniMdRW::GetSaveSize(
     CorProfileData           *pProfileData)         // [IN] Optional IBC profile data for working set optimization
 {
     HRESULT hr;
-    
+
     // Prepare the data for save.
     IfFailGo(PreSave());
-    
+
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {
     case MDUpdateFull:
@@ -2477,7 +2477,7 @@ CMiniMdRW::GetSaveSize(
         _ASSERTE(!"Internal error -- unknown save mode");
         return E_INVALIDARG;
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::GetSaveSize
@@ -2485,8 +2485,8 @@ ErrExit:
 //*****************************************************************************
 // Determine how big a pool would be when saved full size.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetFullPoolSaveSize( // S_OK or error.
     int     iPool,          // The pool of interest.
     UINT32 *pcbSaveSize)    // [OUT] Put the size here.
@@ -2518,8 +2518,8 @@ CMiniMdRW::GetFullPoolSaveSize( // S_OK or error.
 //*****************************************************************************
 // Determine how big a pool would be when saved ENC size.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetENCPoolSaveSize(
     int     iPool,                  // The pool of interest.
     UINT32 *pcbSaveSize)           // [OUT] Put the size here.
@@ -2555,8 +2555,8 @@ CMiniMdRW::GetENCPoolSaveSize(
 //*****************************************************************************
 // Determine how big a pool would be when saved.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GetPoolSaveSize(
     int     iPool,          // The pool of interest.
     UINT32 *pcbSaveSize)    // [OUT] Put the size here.
@@ -2603,41 +2603,41 @@ int CMiniMdRW::IsPoolEmpty(             // True or false.
 } // CMiniMdRW::IsPoolEmpty
 
 // --------------------------------------------------------------------------------------
-// 
-// Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string 
+//
+// Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string
 // in the heap.
 // Returns S_OK and fills the string (*pData) and the next index (*pnNextIndex).
 // Returns S_FALSE if the index (nIndex) is not valid user string index.
 // Returns error code otherwise.
 // Clears *pData and sets *pnNextIndex to 0 on error or S_FALSE.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::GetUserStringAndNextIndex(
-    UINT32              nIndex, 
-    MetaData::DataBlob *pData, 
+    UINT32              nIndex,
+    MetaData::DataBlob *pData,
     UINT32             *pnNextIndex)
 {
     HRESULT hr = S_OK;
     MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
-    
+
     // First check that the index is valid to avoid debug error reporting
-    // If this turns out to be slow, then we can add a new API to BlobHeap "GetBlobWithSizePrefix_DontFail" 
+    // If this turns out to be slow, then we can add a new API to BlobHeap "GetBlobWithSizePrefix_DontFail"
     // to merge this check with following GetBlobWithSizePrefix call
     if (!m_UserStringHeap.IsValidIndex(nIndex))
     {
         return S_FALSE;
     }
-    
+
     // Get user string at index nIndex (verifies that the user string is in the heap)
     IfFailGo(m_UserStringHeap.GetBlobWithSizePrefix(
-        nIndex, 
+        nIndex,
         pData));
     _ASSERTE(hr == S_OK);
-    
+
     // Get index behind the user string - doesn't overflow, because the user string is in the heap
     *pnNextIndex = nIndex + pData->GetSize();
-    
+
     UINT32 cbUserStringSize_Ignore;
     if (!pData->GetCompressedU(&cbUserStringSize_Ignore))
     {
@@ -2645,20 +2645,20 @@ CMiniMdRW::GetUserStringAndNextIndex(
         IfFailGo(METADATA_E_INTERNAL_ERROR);
     }
     return S_OK;
-    
+
 ErrExit:
     // Fill output parameters on error
     *pnNextIndex = 0;
     pData->Clear();
-    
+
     return hr;
 } // CMiniMdRW::GetUserStringAndNextIndex
 
 //*****************************************************************************
 // Initialized TokenRemapManager
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitTokenRemapManager()
 {
     HRESULT hr = NOERROR;
@@ -2699,11 +2699,11 @@ bool CMiniMdRW::CanHaveCustomAttribute( // Can a given table have a custom attri
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 //---------------------------------------------------------------------------------------
-// 
+//
 // Perform any available pre-save optimizations.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::PreSaveFull()
 {
     HRESULT hr = S_OK;
@@ -2718,29 +2718,29 @@ CMiniMdRW::PreSaveFull()
 
     // Convert any END_OF_TABLE values for tables with child pointer tables.
     IfFailGo(ConvertMarkerToEndOfTable(
-        TBL_TypeDef, 
-        TypeDefRec::COL_MethodList, 
-        m_Schema.m_cRecs[TBL_Method] + 1, 
+        TBL_TypeDef,
+        TypeDefRec::COL_MethodList,
+        m_Schema.m_cRecs[TBL_Method] + 1,
         m_Schema.m_cRecs[TBL_TypeDef]));
     IfFailGo(ConvertMarkerToEndOfTable(
-        TBL_TypeDef, 
-        TypeDefRec::COL_FieldList, 
-        m_Schema.m_cRecs[TBL_Field] + 1, 
+        TBL_TypeDef,
+        TypeDefRec::COL_FieldList,
+        m_Schema.m_cRecs[TBL_Field] + 1,
         m_Schema.m_cRecs[TBL_TypeDef]));
     IfFailGo(ConvertMarkerToEndOfTable(
-        TBL_Method, 
-        MethodRec::COL_ParamList, 
-        m_Schema.m_cRecs[TBL_Param]+1, 
+        TBL_Method,
+        MethodRec::COL_ParamList,
+        m_Schema.m_cRecs[TBL_Param]+1,
         m_Schema.m_cRecs[TBL_Method]));
     IfFailGo(ConvertMarkerToEndOfTable(
-        TBL_PropertyMap, 
-        PropertyMapRec::COL_PropertyList, 
-        m_Schema.m_cRecs[TBL_Property] + 1, 
+        TBL_PropertyMap,
+        PropertyMapRec::COL_PropertyList,
+        m_Schema.m_cRecs[TBL_Property] + 1,
         m_Schema.m_cRecs[TBL_PropertyMap]));
     IfFailGo(ConvertMarkerToEndOfTable(
-        TBL_EventMap, 
-        EventMapRec::COL_EventList, 
-        m_Schema.m_cRecs[TBL_Event] + 1, 
+        TBL_EventMap,
+        EventMapRec::COL_EventList,
+        m_Schema.m_cRecs[TBL_Event] + 1,
         m_Schema.m_cRecs[TBL_EventMap]));
 
     // If there is a handler and in "Full" mode, eliminate the intermediate tables.
@@ -2752,39 +2752,39 @@ CMiniMdRW::PreSaveFull()
         // Temporary tables for new Fields, Methods, Params and FieldLayouts.
         MetaData::TableRW newFields;
         IfFailGo(newFields.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_Field].m_cbRec, 
-            m_Schema.m_cRecs[TBL_Field] 
+            m_TableDefs[TBL_Field].m_cbRec,
+            m_Schema.m_cRecs[TBL_Field]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newFields.Debug_SetTableInfo("TBL_Field", TBL_Field));
-        
+
         MetaData::TableRW newMethods;
         IfFailGo(newMethods.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_Method].m_cbRec, 
-            m_Schema.m_cRecs[TBL_Method] 
+            m_TableDefs[TBL_Method].m_cbRec,
+            m_Schema.m_cRecs[TBL_Method]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newMethods.Debug_SetTableInfo("TBL_Method", TBL_Method));
-        
+
         MetaData::TableRW newParams;
         IfFailGo(newParams.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_Param].m_cbRec, 
-            m_Schema.m_cRecs[TBL_Param] 
+            m_TableDefs[TBL_Param].m_cbRec,
+            m_Schema.m_cRecs[TBL_Param]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newParams.Debug_SetTableInfo("TBL_Param", TBL_Param));
-        
+
         MetaData::TableRW newEvents;
         IfFailGo(newEvents.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_Event].m_cbRec, 
-            m_Schema.m_cRecs[TBL_Event] 
+            m_TableDefs[TBL_Event].m_cbRec,
+            m_Schema.m_cRecs[TBL_Event]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newEvents.Debug_SetTableInfo("TBL_Event", TBL_Event));
-        
+
         MetaData::TableRW newPropertys;
         IfFailGo(newPropertys.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_Property].m_cbRec, 
-            m_Schema.m_cRecs[TBL_Property] 
+            m_TableDefs[TBL_Property].m_cbRec,
+            m_Schema.m_cRecs[TBL_Property]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newPropertys.Debug_SetTableInfo("TBL_Property", TBL_Property));
-        
+
         // If we have any indirect table for Field or Method and we are about to reorder these
         // tables, the MemberDef hash table will be invalid after the token movement. So invalidate
         // the hash.
@@ -2843,7 +2843,7 @@ CMiniMdRW::PreSaveFull()
                     ridOld = ridPtr;
                     IfFailGo(GetMethodRecord(ridPtr, &pOld));
                 }
-                
+
                 // Handle the params of the method.
                 if (HasIndirectTable(TBL_Method))
                 {
@@ -2877,7 +2877,7 @@ CMiniMdRW::PreSaveFull()
                 }
             }
         }
-        
+
         // Get rid of EventPtr and PropertyPtr table as well
         // Enumerate fields and copy.
         if (HasIndirectTable(TBL_Event))
@@ -2895,12 +2895,12 @@ CMiniMdRW::PreSaveFull()
                 IfFailGo(newEvents.AddRecord(&pNew, (UINT32 *)&ridNew));
                 _ASSERTE(ridNew == ridPtr);
                 memcpy(pNew, pOld, m_TableDefs[TBL_Event].m_cbRec);
-                
+
                 // Let the caller know of the token change.
                 IfFailGo(MapToken(ridOld, ridNew, mdtEvent));
             }
         }
-    
+
         if (HasIndirectTable(TBL_Property))
         {
             for (ridPtr = 1; ridPtr <= m_Schema.m_cRecs[TBL_Property]; ++ridPtr)
@@ -2921,45 +2921,45 @@ CMiniMdRW::PreSaveFull()
                 IfFailGo(MapToken(ridOld, ridNew, mdtProperty));
             }
         }
-        
-        
+
+
         // Replace the old tables with the new, sorted ones.
         if (HasIndirectTable(TBL_Field))
         {
             m_Tables[TBL_Field].Delete();
             IfFailGo(m_Tables[TBL_Field].InitializeFromTable(
-                &newFields, 
+                &newFields,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Method))
         {
             m_Tables[TBL_Method].Delete();
             IfFailGo(m_Tables[TBL_Method].InitializeFromTable(
-                &newMethods, 
+                &newMethods,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Method) || HasIndirectTable(TBL_Param))
         {
             m_Tables[TBL_Param].Delete();
             IfFailGo(m_Tables[TBL_Param].InitializeFromTable(
-                &newParams, 
+                &newParams,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Property))
         {
             m_Tables[TBL_Property].Delete();
             IfFailGo(m_Tables[TBL_Property].InitializeFromTable(
-                &newPropertys, 
+                &newPropertys,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Event))
         {
             m_Tables[TBL_Event].Delete();
             IfFailGo(m_Tables[TBL_Event].InitializeFromTable(
-                &newEvents, 
+                &newEvents,
                 TRUE));     // fCopyData
         }
-        
+
         // Empty the pointer tables table.
         m_Schema.m_cRecs[TBL_FieldPtr] = 0;
         m_Schema.m_cRecs[TBL_MethodPtr] = 0;
@@ -2999,7 +2999,7 @@ CMiniMdRW::PreSaveFull()
     IfFailGo(FixUpRefToDef());
 
     ////////////////////////////////////////////////////////////////////////////
-    // 
+    //
     // We now need to do two kinds of fixups, and the two fixups interact with
     //  each other.
     // 1) We need to sort several tables for binary searching.
@@ -3009,7 +3009,7 @@ CMiniMdRW::PreSaveFull()
 
 
     // First do fixups.  Some of these are then sorted based on fixed-up columns.
-    
+
     IfFailGo(FixUpTable(TBL_MemberRef));
     IfFailGo(FixUpTable(TBL_MethodSemantics));
     IfFailGo(FixUpTable(TBL_Constant));
@@ -3019,13 +3019,13 @@ CMiniMdRW::PreSaveFull()
     IfFailGo(FixUpTable(TBL_ImplMap));
     IfFailGo(FixUpTable(TBL_FieldRVA));
     IfFailGo(FixUpTable(TBL_FieldLayout));
-    
+
     if (SupportsGenerics())
     {
         IfFailGo(FixUpTable(TBL_GenericParam));
         IfFailGo(FixUpTable(TBL_MethodSpec));
     }
-    
+
     // Now sort any tables that are allowed to have custom attributes.
     //  This block for tables sorted in full mode only -- basically
     //  tables for which we hand out tokens.
@@ -3038,7 +3038,7 @@ CMiniMdRW::PreSaveFull()
             STABLESORTER_WITHREMAP(GenericParam, Owner);
             IfFailGo(sortGenericParam.Sort());
         }
-        
+
         // Sort the InterfaceImpl table by class.
         STABLESORTER_WITHREMAP(InterfaceImpl, Class);
         IfFailGo(sortInterfaceImpl.Sort());
@@ -3047,13 +3047,13 @@ CMiniMdRW::PreSaveFull()
         SORTER_WITHREMAP(DeclSecurity, Parent);
         IfFailGo(sortDeclSecurity.Sort());
     }
-    
+
     // The GenericParamConstraint table is parented to the GenericParam table,
     //  so it needs fixup after sorting GenericParam table.
     if (SupportsGenerics())
     {
         IfFailGo(FixUpTable(TBL_GenericParamConstraint));
-        
+
         // After fixing up the GenericParamConstraint table, we can then
         // sort it.
         if ((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateFull)
@@ -3067,9 +3067,9 @@ CMiniMdRW::PreSaveFull()
     // Fixup the custom attribute table.  After this, do not sort any table
     //  that is allowed to have a custom attribute.
     IfFailGo(FixUpTable(TBL_CustomAttribute));
-    
+
     // Sort tables for binary searches.
-    if (((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateFull) || 
+    if (((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateFull) ||
         ((m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateIncremental))
     {
         // Sort tables as required
@@ -3158,15 +3158,15 @@ CMiniMdRW::PreSaveFull()
         // Determine if the PropertyMap and EventMap are already sorted, and set the flag appropriately
         SORTER(PropertyMap, Parent);
         sortPropertyMap.CheckSortedWithNoDuplicates();
-        
+
         SORTER(EventMap, Parent);
         sortEventMap.CheckSortedWithNoDuplicates();
 
     //-------------------------------------------------------------------------
     } // enclosing scope required for initialization ("goto" above skips initialization).
-    
+
     m_bPreSaveDone = true;
-    
+
     // send the Ref->Def optmization notification to host
     if (m_pHandler != NULL)
     {
@@ -3216,7 +3216,7 @@ CMiniMdRW::PreSaveFull()
     // Ok, we've applied all of the token remaps. Make sure we don't apply them again in the future
     if (GetTokenMovementMap() != NULL)
         IfFailGo(GetTokenMovementMap()->EmptyMap());
-    
+
 ErrExit:
 
     return hr;
@@ -3227,11 +3227,11 @@ ErrExit:
 #endif
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // ENC-specific pre-safe work.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::PreSaveEnc()
 {
     HRESULT hr;
@@ -3255,11 +3255,11 @@ CMiniMdRW::PreSaveEnc()
         // Create the temporary table.
         MetaData::TableRW tempTable;
         IfFailGo(tempTable.InitializeEmpty_WithRecordCount(
-            m_TableDefs[TBL_ENCLog].m_cbRec, 
-            m_Schema.m_cRecs[TBL_ENCLog] 
+            m_TableDefs[TBL_ENCLog].m_cbRec,
+            m_Schema.m_cRecs[TBL_ENCLog]
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(tempTable.Debug_SetTableInfo("TBL_ENCLog", TBL_ENCLog));
-        
+
         // For each row in the data.
         RID     rid;
         ULONG   iKept=0;
@@ -3267,7 +3267,7 @@ CMiniMdRW::PreSaveEnc()
         {
             ENCLogRec *pFrom;
             IfFailGo(m_Tables[TBL_ENCLog].GetRecord(rid, reinterpret_cast<BYTE **>(&pFrom)));
-            
+
             // Keep this record?
             if (pFrom->GetFuncCode() == 0)
             {   // No func code.  Skip if we've seen this token before.
@@ -3312,11 +3312,11 @@ CMiniMdRW::PreSaveEnc()
         // Keep the expanded table.
         m_Tables[TBL_ENCLog].Delete();
         IfFailGo(m_Tables[TBL_ENCLog].InitializeFromTable(
-            &tempTable, 
+            &tempTable,
             TRUE));         // fCopyData
         INDEBUG_MD(m_Tables[TBL_ENCLog].Debug_SetTableInfo("TBL_ENCLog", TBL_ENCLog));
         m_Schema.m_cRecs[TBL_ENCLog] = iKept;
-        
+
         // If saving only deltas, build the ENC Map table.
         if (((m_OptionValue.m_UpdateMode & MDUpdateDelta)) == MDUpdateDelta)
         {
@@ -3326,12 +3326,12 @@ CMiniMdRW::PreSaveEnc()
                 cRecs += m_rENCRecs[ixTbl].Count();
             }
             m_Tables[TBL_ENCMap].Delete();
-            
+
             m_Schema.m_cRecs[TBL_ENCMap] = 0;
 
             IfFailGo(m_Tables[TBL_ENCMap].InitializeEmpty_WithRecordCount(
-                m_TableDefs[TBL_ENCMap].m_cbRec, 
-                cRecs 
+                m_TableDefs[TBL_ENCMap].m_cbRec,
+                cRecs
                 COMMA_INDEBUG_MD(TRUE)));
             INDEBUG_MD(m_Tables[TBL_ENCMap].Debug_SetTableInfo("TBL_ENCMap", TBL_ENCMap));
             cRecs = 0;
@@ -3352,7 +3352,7 @@ CMiniMdRW::PreSaveEnc()
 
     // Turn pre-save bit back on.
     m_bPreSaveDone = true;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::PreSaveEnc
@@ -3360,10 +3360,10 @@ ErrExit:
 //*****************************************************************************
 // Perform any appropriate pre-save optimization or reorganization.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PreSave(
-    MetaDataReorderingOptions reorderingOptions, 
+    MetaDataReorderingOptions reorderingOptions,
     CorProfileData           *pProfileData)
 {
     HRESULT hr = S_OK;
@@ -3413,15 +3413,15 @@ CMiniMdRW::PreSave(
         _ASSERTE(!"Internal error -- unknown save mode");
         return E_INVALIDARG;
     }
-    
+
     return hr;
 } // CMiniMdRW::PreSave
 
 //*****************************************************************************
 // Perform any necessary post-save cleanup.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PostSave()
 {
     if (m_rENCRecs)
@@ -3429,17 +3429,17 @@ CMiniMdRW::PostSave()
         delete [] m_rENCRecs;
         m_rENCRecs = 0;
     }
-    
+
     m_bPreSaveDone = false;
-    
+
     return S_OK;
 } // CMiniMdRW::PostSave
 
 //*****************************************************************************
 // Save the tables to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveFullTablesToStream(
     IStream                  *pIStream,
     MetaDataReorderingOptions reorderingOptions,
@@ -3469,7 +3469,7 @@ CMiniMdRW::SaveFullTablesToStream(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_STRING_4;
     }
-    
+
     if (m_GuidHeap.GetSize() > USHRT_MAX)
     {
         Schema.m_heaps |= CMiniMdSchema::HEAP_GUID_4;
@@ -3478,7 +3478,7 @@ CMiniMdRW::SaveFullTablesToStream(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_GUID_4;
     }
-    
+
     IfFailGo(m_BlobHeap.GetAlignedSize(&cbTable));
     if (cbTable > USHRT_MAX)
     {
@@ -3488,7 +3488,7 @@ CMiniMdRW::SaveFullTablesToStream(
     {
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_BLOB_4;
     }
-    
+
     cbTotal = 0;
     if (pProfileData == NULL)
     {
@@ -3587,7 +3587,7 @@ CMiniMdRW::SaveFullTablesToStream(
                         // see class HotTableHeader in metamodelro.h
 
                         // we have already written the hotItemCount above.
-                        
+
                         // so now write the offset of the first level table (just after the header)
                         offset = sizeof(hotItemCount) + 4*sizeof(offset) + sizeof(shiftCount);
                         IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
@@ -3676,7 +3676,7 @@ CMiniMdRW::SaveFullTablesToStream(
                         cbTotal += sizeof(offset);
                         IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
                         cbTotal += sizeof(offset);
-                        
+
                         // offset for actual data points immediately after the header
                         offset += sizeof(hotItemCount) + 4*sizeof(offset) + sizeof(shiftCount);
                         offset = Align4(offset);
@@ -3715,11 +3715,11 @@ CMiniMdRW::SaveFullTablesToStream(
                 // Create the temporary table.
                 MetaData::TableRW tempTable;
                 IfFailGo(tempTable.InitializeEmpty_WithRecordCount(
-                    sTempTable.m_cbRec, 
-                    m_Schema.m_cRecs[ixTbl] 
+                    sTempTable.m_cbRec,
+                    m_Schema.m_cRecs[ixTbl]
                     COMMA_INDEBUG_MD(TRUE)));
                 INDEBUG_MD(tempTable.Debug_SetTableInfo(NULL, ixTbl));
-                
+
                 // For each row in the data.
                 RID rid;
                 for (rid=1; rid<=m_Schema.m_cRecs[ixTbl]; ++rid)
@@ -3747,7 +3747,7 @@ CMiniMdRW::SaveFullTablesToStream(
                     {
                         BYTE *pRow;
                         IfFailGo(tempTable.GetRecord(
-                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1, 
+                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1,
                             &pRow));
                         IfFailGo(pIStream->Write(pRow, sTempTable.m_cbRec, 0));
                     }
@@ -3773,7 +3773,7 @@ CMiniMdRW::SaveFullTablesToStream(
                     {
                         BYTE *pRow;
                         IfFailGo(m_Tables[ixTbl].GetRecord(
-                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1, 
+                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1,
                             &pRow));
                         IfFailGo(pIStream->Write(pRow, m_TableDefs[ixTbl].m_cbRec, 0));
                     }
@@ -3792,7 +3792,7 @@ CMiniMdRW::SaveFullTablesToStream(
             // NewArrayHolder hotItemList going out of scope - no delete [] necessary
         }
     }
-    
+
     // Pad with at least 2 bytes and align on 4 bytes.
     cbAlign = Align4(cbTotal) - cbTotal;
     if (cbAlign < 2)
@@ -3800,7 +3800,7 @@ CMiniMdRW::SaveFullTablesToStream(
     IfFailGo(pIStream->Write(zeros, cbAlign, 0));
     cbTotal += cbAlign;
     _ASSERTE((m_cbSaveSize == 0) || (m_cbSaveSize == cbTotal) || (pProfileData != NULL));
-    
+
 #ifdef FEATURE_PREJIT
     if (pProfileData != NULL)
     {
@@ -3827,12 +3827,12 @@ CMiniMdRW::SaveFullTablesToStream(
 
         UINT32 cbPoolDirSize = 0;
         UINT32 cbSavedHeapsSize = 0;
-        
+
         IfFailGo(SaveHotPoolsToStream(
-            pIStream, 
-            reorderingOptions, 
-            pProfileData, 
-            &cbPoolDirSize, 
+            pIStream,
+            reorderingOptions,
+            pProfileData,
+            &cbPoolDirSize,
             &cbSavedHeapsSize));
 
         // write hot metadata (including pools) header
@@ -3840,7 +3840,7 @@ CMiniMdRW::SaveFullTablesToStream(
         IfFailGo(StreamUtil::WriteToStream(pIStream, (DWORD)cbPoolDirSize));
     }
 #endif //FEATURE_PREJIT
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::SaveFullTablesToStream
@@ -3849,7 +3849,7 @@ ErrExit:
 // Check to see if it is safe to reorder the string pool
 // The existing implementation of metadata tables is such that string offsets in different tables
 // may have different sizes.
-// Since we are going to reorder the string pool, offsets of strings would change and that may 
+// Since we are going to reorder the string pool, offsets of strings would change and that may
 // cause overflows if tables have string offsets with different sizes
 //*****************************************************************************
 BOOL CMiniMdRW::IsSafeToReorderStringPool()
@@ -3993,7 +3993,7 @@ VOID CMiniMdRW::MarkStringsInTables(BYTE * pMarks, ULONG poolSize)
                     // get the current record
                     BYTE *pOldRow;
                     IfFailThrow(m_Tables[ixTbl].GetRecord(ridOld, &pOldRow));
-                    
+
                     // get column for string; this will get me the current string offset
                     ULONG ulStringOffset = GetCol(ixTbl, ixCol, pOldRow);
 
@@ -4009,23 +4009,23 @@ VOID CMiniMdRW::MarkStringsInTables(BYTE * pMarks, ULONG poolSize)
                     switch(ixTbl)
                     {
                         case TBL_Method:
-                            ulBucketType = IsMdPublic(GetCol(TBL_Method, MethodRec::COL_Flags, pOldRow)) 
-                                                                   ? ReorderData::PublicData 
+                            ulBucketType = IsMdPublic(GetCol(TBL_Method, MethodRec::COL_Flags, pOldRow))
+                                                                   ? ReorderData::PublicData
                                                                    : ReorderData::NonPublicData;
                             break;
                         case TBL_Field:
-                            ulBucketType = IsFdPublic(GetCol(TBL_Field, FieldRec::COL_Flags, pOldRow)) 
-                                                                   ? ReorderData::PublicData 
+                            ulBucketType = IsFdPublic(GetCol(TBL_Field, FieldRec::COL_Flags, pOldRow))
+                                                                   ? ReorderData::PublicData
                                                                    : ReorderData::NonPublicData;
                             break;
                         case TBL_TypeDef:
-                            ulBucketType = IsTdPublic(GetCol(TBL_TypeDef, TypeDefRec::COL_Flags, pOldRow)) 
-                                                                   ? ReorderData::PublicData 
+                            ulBucketType = IsTdPublic(GetCol(TBL_TypeDef, TypeDefRec::COL_Flags, pOldRow))
+                                                                   ? ReorderData::PublicData
                                                                    : ReorderData::NonPublicData;
                             break;
                         case TBL_ManifestResource:
-                            ulBucketType = IsMrPublic(GetCol(TBL_ManifestResource, ManifestResourceRec::COL_Flags, pOldRow)) 
-                                                                   ? ReorderData::PublicData 
+                            ulBucketType = IsMrPublic(GetCol(TBL_ManifestResource, ManifestResourceRec::COL_Flags, pOldRow))
+                                                                   ? ReorderData::PublicData
                                                                    : ReorderData::NonPublicData;
                             break;
                         default:
@@ -4045,11 +4045,11 @@ VOID CMiniMdRW::MarkStringsInTables(BYTE * pMarks, ULONG poolSize)
 } // CMiniMdRW::MarkStringsInTables
 
 // --------------------------------------------------------------------------------------
-// 
-// Function to mark duplicate strings in the mark array. This step is basically to take care of 
+//
+// Function to mark duplicate strings in the mark array. This step is basically to take care of
 // strings that have the same tail.
 // Throws on error.
-// 
+//
 VOID CMiniMdRW::MarkDuplicateStrings(BYTE * pMarks, ULONG poolSize)
 {
 #ifdef FEATURE_PREJIT
@@ -4064,7 +4064,7 @@ VOID CMiniMdRW::MarkDuplicateStrings(BYTE * pMarks, ULONG poolSize)
 
         LPCSTR pszString;
         IfFailThrow(m_StringHeap.GetString(offset, &pszString));
-        
+
         ULONG start = offset;
         ULONG end = offset + (ULONG)strlen(pszString);
 
@@ -4133,15 +4133,15 @@ VOID CMiniMdRW::FixStringsInTables()
 } // CMiniMdRW::FixStringsInTables
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Function to fill the given string pool with strings from the existing string pool using the mark array.
 // Throws on error.
-// 
-VOID 
+//
+VOID
 CMiniMdRW::CreateReorderedStringPool(
-    MetaData::StringHeapRW *pStringHeap, 
-    BYTE                   *pMarks, 
-    ULONG                   cbHeapSize, 
+    MetaData::StringHeapRW *pStringHeap,
+    BYTE                   *pMarks,
+    ULONG                   cbHeapSize,
     CorProfileData         *pProfileData)
 {
 #if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
@@ -4153,19 +4153,19 @@ CMiniMdRW::CreateReorderedStringPool(
     if (pProfileData != NULL)
     {
         ULONG hotItems = pProfileData->GetHotTokens(
-            TBL_COUNT + MDPoolStrings, 
-            1 << ProfilingFlags_MetaData, 
-            1 << ProfilingFlags_MetaData, 
-            NULL, 
+            TBL_COUNT + MDPoolStrings,
+            1 << ProfilingFlags_MetaData,
+            1 << ProfilingFlags_MetaData,
+            NULL,
             0);
         if ( hotItems )
         {
             NewArrayHolder< ULONG > hotItemArr = new ULONG[ hotItems ];
             pProfileData->GetHotTokens(
-                TBL_COUNT + MDPoolStrings, 
-                1 << ProfilingFlags_MetaData, 
-                1 << ProfilingFlags_MetaData, 
-                reinterpret_cast<mdToken *>(&hotItemArr[0]), 
+                TBL_COUNT + MDPoolStrings,
+                1 << ProfilingFlags_MetaData,
+                1 << ProfilingFlags_MetaData,
+                reinterpret_cast<mdToken *>(&hotItemArr[0]),
                 hotItems);
 
             // convert tokens to rids
@@ -4243,10 +4243,10 @@ CMiniMdRW::CreateReorderedStringPool(
 } // CMiniMdRW::CreateReorderedStringPool
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // Function to reorganize the string pool based on IBC profile data (if available) and static analysis
 // Throws on error.
-// 
+//
 VOID CMiniMdRW::OrganizeStringPool(CorProfileData *pProfileData)
 {
 #if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
@@ -4254,109 +4254,109 @@ VOID CMiniMdRW::OrganizeStringPool(CorProfileData *pProfileData)
     {
         return;
     }
-    
+
     UINT32 cbStringHeapSize = m_StringHeap.GetUnalignedSize();
-    
+
     NewArrayHolder<BYTE> stringMarks = new BYTE[cbStringHeapSize];
     ZeroMemory(stringMarks, cbStringHeapSize);
-    
+
     // Each string will be assigned a value based on its hotness in the Mark*() functions
     // This list will be later traversed to place the strings in the right order in the string pool and also
     // to update the references in the metadata tables
-    
+
     // Mark all hot strings
     MarkHotStrings(pProfileData, stringMarks, cbStringHeapSize);
-    
+
     // Mark all strings in hot rows
     MarkStringsInHotTables(pProfileData, stringMarks, cbStringHeapSize);
-    
+
     // Mark all remaining strings
     MarkStringsInTables(stringMarks, cbStringHeapSize);
-    
+
     // Mark duplicates for  interned strings
     MarkDuplicateStrings(stringMarks, cbStringHeapSize);
-    
+
     // Initalize the temporary string heap
     MetaData::StringHeapRW tempStringHeap;
-    
+
     IfFailThrow(tempStringHeap.InitializeEmpty(
-        cbStringHeapSize 
+        cbStringHeapSize
         COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
-    
+
     // We will use this hash for fixing the string references in the profile data
     m_StringPoolOffsetHash.Reallocate(cbStringHeapSize);
-    
+
     // Create the temporary string pool using the mark arrays
     CreateReorderedStringPool(&tempStringHeap, stringMarks, cbStringHeapSize, pProfileData);
-    
+
     // Update the tables with string offsets into the temporary string pool
     FixStringsInTables();
-    
+
     // Replace the existing string pool with the modified version
     m_StringHeap.Delete();
     IfFailThrow(m_StringHeap.InitializeFromStringHeap(
-        &tempStringHeap, 
+        &tempStringHeap,
         TRUE));             // fCopyData
 #endif // FEATURE_PREJIT
 } // CMiniMdRW::OrganizeStringPool
 
 #ifdef FEATURE_PREJIT
 
-// write hot data of the pools 
+// write hot data of the pools
 //
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveHotPoolsToStream(
-    IStream                  *pStream, 
-    MetaDataReorderingOptions reorderingOptions, 
-    CorProfileData           *pProfileData, 
-    UINT32                   *pnPoolDirSize, 
+    IStream                  *pStream,
+    MetaDataReorderingOptions reorderingOptions,
+    CorProfileData           *pProfileData,
+    UINT32                   *pnPoolDirSize,
     UINT32                   *pnHeapsSavedSize)
 {
     HRESULT hr = S_OK;
     UINT32  rgHeapSavedSize[MDPoolCount] = { 0, 0, 0, 0 };
-    
-    // save pools in the order they are described in MDPools enum 
-    // 
+
+    // save pools in the order they are described in MDPools enum
+    //
     // we skip the hot string pool when we reorganize the string pool
     if (!(reorderingOptions & ReArrangeStringPool))
     {
         MetaData::HotHeapWriter stringHotHeapWriter(&m_StringHeap);
         IfFailRet(SaveHotPoolToStream(
-            pStream, 
-            pProfileData, 
-            &stringHotHeapWriter, 
+            pStream,
+            pProfileData,
+            &stringHotHeapWriter,
             &rgHeapSavedSize[MDPoolStrings]));
     }
-    
+
     // Save guid heap hot data
     MetaData::HotHeapWriter guidsHotHeapWriter(&m_GuidHeap);
     IfFailRet(SaveHotPoolToStream(
-        pStream, 
-        pProfileData, 
-        &guidsHotHeapWriter, 
+        pStream,
+        pProfileData,
+        &guidsHotHeapWriter,
         &rgHeapSavedSize[MDPoolGuids]));
-    
+
     // Save blob heap hot data
     MetaData::HotHeapWriter blobsHotHeapWriter(
-        &m_BlobHeap, 
+        &m_BlobHeap,
         FALSE);         // fUserStringHeap
     IfFailRet(SaveHotPoolToStream(
-        pStream, 
-        pProfileData, 
-        &blobsHotHeapWriter, 
+        pStream,
+        pProfileData,
+        &blobsHotHeapWriter,
         &rgHeapSavedSize[MDPoolBlobs]));
-    
+
     // Save user string heap hot data
     MetaData::HotHeapWriter userStringsHotHeapWriter(
-        &m_UserStringHeap, 
+        &m_UserStringHeap,
         TRUE);              // fUserStringHeap
     IfFailRet(SaveHotPoolToStream(
-        pStream, 
-        pProfileData, 
-        &userStringsHotHeapWriter, 
+        pStream,
+        pProfileData,
+        &userStringsHotHeapWriter,
         &rgHeapSavedSize[MDPoolUSBlobs]));
-    
+
     // fix pool offsets, they need to point to the header of each saved pool
     UINT32 nHeapEndOffset = 0;
     for (int i = MDPoolCount; i-- > 0; )
@@ -4371,7 +4371,7 @@ CMiniMdRW::SaveHotPoolsToStream(
     }
     // Store size of all heaps
     *pnHeapsSavedSize = nHeapEndOffset;
-    
+
     // save hot pool dirs
     *pnPoolDirSize = 0;
     for (int i = 0; i < MDPoolCount; i++)
@@ -4382,43 +4382,43 @@ CMiniMdRW::SaveHotPoolsToStream(
             IfFailRet(StreamUtil::WriteToStream(pStream, (ULONG)rgHeapSavedSize[i], pnPoolDirSize));
         }
     }
-    
+
     return S_OK;
 } // CMiniMdRW::SaveHotPoolsToStream
 
 // write hot data of specific blob
 //
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveHotPoolToStream(
-    IStream                 *pStream, 
-    CorProfileData          *pProfileData, 
-    MetaData::HotHeapWriter *pHotHeapWriter, 
+    IStream                 *pStream,
+    CorProfileData          *pProfileData,
+    MetaData::HotHeapWriter *pHotHeapWriter,
     UINT32                  *pnSavedSize)
 {
 
     _ASSERTE(pProfileData != NULL);
 
     HRESULT hr = S_OK;
-    // #CallToGetHotTokens 
-    // see code:CMiniMdRW.SaveFullTablesToStream#WritingHotMetaData for the main caller of this. 
+    // #CallToGetHotTokens
+    // see code:CMiniMdRW.SaveFullTablesToStream#WritingHotMetaData for the main caller of this.
     if (pProfileData->GetHotTokens(
-        pHotHeapWriter->GetTableIndex(), 
-        1 << ProfilingFlags_MetaData, 
-        1 << ProfilingFlags_MetaData, 
-        NULL, 
+        pHotHeapWriter->GetTableIndex(),
+        1 << ProfilingFlags_MetaData,
+        1 << ProfilingFlags_MetaData,
+        NULL,
         0) != 0)
     {
         IfFailRet(pHotHeapWriter->SaveToStream(
-            pStream, 
-            pProfileData, 
+            pStream,
+            pProfileData,
             pnSavedSize));
     }
     else
     {
         *pnSavedSize = 0;
     }
-    
+
     return S_OK;
 } // CMiniMdRW::SaveHotPoolToStream
 
@@ -4427,8 +4427,8 @@ CMiniMdRW::SaveHotPoolToStream(
 //*****************************************************************************
 // Save the tables to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveENCTablesToStream(
     IStream *pIStream)
 {
@@ -4490,11 +4490,11 @@ CMiniMdRW::SaveENCTablesToStream(
             // Create the temporary table.
             MetaData::TableRW tempTable;
             IfFailGo(tempTable.InitializeEmpty_WithRecordCount(
-                m_TableDefs[ixTbl].m_cbRec, 
-                Schema.m_cRecs[ixTbl] 
+                m_TableDefs[ixTbl].m_cbRec,
+                Schema.m_cRecs[ixTbl]
                 COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
             INDEBUG_MD(tempTable.Debug_SetTableInfo(NULL, ixTbl));
-            
+
             // For each row in the data.
             RID rid;
             for (ULONG iDelta=0; iDelta<Schema.m_cRecs[ixTbl]; ++iDelta)
@@ -4533,15 +4533,15 @@ ErrExit:
 //*****************************************************************************
 // Save the tables to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveTablesToStream(
     IStream                  *pIStream,              // The stream.
     MetaDataReorderingOptions reorderingOptions,
     CorProfileData           *pProfileData)
 {
     HRESULT hr;
-    
+
     // Prepare the data for save.
     IfFailGo(PreSave());
 
@@ -4568,14 +4568,14 @@ ErrExit:
 //*****************************************************************************
 // Save a full pool to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveFullPoolToStream(
     int      iPool,                 // The pool.
     IStream *pStream)               // The stream.
 {
     HRESULT hr;
-    
+
     switch (iPool)
     {
     case MDPoolStrings:
@@ -4607,14 +4607,14 @@ CMiniMdRW::SaveFullPoolToStream(
 //*****************************************************************************
 // Save a ENC pool to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveENCPoolToStream(
     int      iPool,         // The pool.
     IStream *pIStream)      // The stream.
 {
     HRESULT hr;
-    
+
     switch (iPool)
     {
     case MDPoolStrings:
@@ -4658,8 +4658,8 @@ CMiniMdRW::SaveENCPoolToStream(
 //*****************************************************************************
 // Save a pool to the stream.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SavePoolToStream(
     int      iPool,         // The pool.
     IStream *pIStream)      // The stream.
@@ -4688,8 +4688,8 @@ CMiniMdRW::SavePoolToStream(
 // Expand a table from the initial (hopeful) 2-byte column sizes to the large
 //  (but always adequate) 4-byte column sizes.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ExpandTables()
 {
     HRESULT       hr = S_OK;
@@ -4739,13 +4739,13 @@ ErrExit:
 } // CMiniMdRW::ExpandTables
 
 
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::InitWithLargeTables()
 {
     CMiniMdSchema Schema;       // Temp schema by which to build tables.
     HRESULT       hr = S_OK;
-    
+
     // Make pool indices the large size.
     Schema.m_heaps = 0;
     Schema.m_heaps |= CMiniMdSchema::HEAP_STRING_4;
@@ -4782,10 +4782,10 @@ CMiniMdRW::InitWithLargeTables()
 // Expand the sizes of a tables columns according to a new schema.  When this
 //  happens, all RID and Pool index columns expand from 2 to 4 bytes.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ExpandTableColumns(
-    CMiniMdSchema &Schema, 
+    CMiniMdSchema &Schema,
     ULONG          ixTbl)
 {
     HRESULT     hr;
@@ -4797,18 +4797,18 @@ CMiniMdRW::ExpandTableColumns(
     CMiniColDef *pToCols;               // Definitions of "To" columns.
     ULONG       cMoveCols;              // Count of columns to move.
     ULONG       cFixedCols;             // Count of columns to move.
-    
+
     // Allocate a def for the temporary table.
     sTempTable = m_TableDefs[ixTbl];
     IfFailGo(qbTempCols.ReSizeNoThrow(sTempTable.m_cCols * sizeof(CMiniColDef) + 1));
-    // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition 
+    // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition
     // call bellow (code:#SetNewColumnDefinition_call)
     *(BYTE *)(qbTempCols.Ptr()) = 0;
     sTempTable.m_pColDefs = (CMiniColDef *)((BYTE *)(qbTempCols.Ptr()) + 1);
-    
+
     // Initialize temp table col defs based on counts of data in the tables.
     IfFailGo(InitColsForTable(Schema, ixTbl, &sTempTable, 1, FALSE));
-    
+
     if (GetCountRecs(ixTbl) > 0)
     {
         // Analyze the column definitions to determine the unchanged vs changed parts.
@@ -4833,31 +4833,31 @@ CMiniMdRW::ExpandTableColumns(
         {
             _ASSERTE(sTempTable.m_pColDefs[ixCol].m_cbColumn == 4);
         }
-        
+
         // Create the temporary table.
         MetaData::TableRW tempTable;
         IfFailGo(tempTable.InitializeEmpty_WithRecordCount(
-            sTempTable.m_cbRec, 
-            m_Schema.m_cRecs[ixTbl] 
+            sTempTable.m_cbRec,
+            m_Schema.m_cRecs[ixTbl]
             COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
         INDEBUG_MD(tempTable.Debug_SetTableInfo(NULL, ixTbl));
-        
+
         // For each row in the data.
         RID rid;    // Row iterator.
-        
+
         for (rid = 1; rid <= m_Schema.m_cRecs[ixTbl]; ++rid)
         {
             RID   ridNew;
             BYTE *pFrom;
             BYTE *pTo;
-            
+
             IfFailGo(m_Tables[ixTbl].GetRecord(rid, &pFrom));
             IfFailGo(tempTable.AddRecord(&pTo, (UINT32 *)&ridNew));
             _ASSERTE(rid == ridNew);
-            
+
             // Move the fixed part.
             memcpy(pTo, pFrom, cbFixed);
-            
+
             // Expand the expanded parts.
             for (ixCol = 0; ixCol < cMoveCols; ++ixCol)
             {
@@ -4873,11 +4873,11 @@ CMiniMdRW::ExpandTableColumns(
                 }
             }
         }
-        
+
         // Keep the expanded table.
         m_Tables[ixTbl].Delete();
         IfFailGo(m_Tables[ixTbl].InitializeFromTable(
-            &tempTable, 
+            &tempTable,
             TRUE));     // fCopyData
         INDEBUG_MD(m_Tables[ixTbl].Debug_SetTableInfo(NULL, ixTbl));
     }
@@ -4885,17 +4885,17 @@ CMiniMdRW::ExpandTableColumns(
     {   // No data, so just reinitialize.
         m_Tables[ixTbl].Delete();
         IfFailGo(m_Tables[ixTbl].InitializeEmpty_WithRecordCount(
-            sTempTable.m_cbRec, 
-            g_TblSizeInfo[0][ixTbl] 
+            sTempTable.m_cbRec,
+            g_TblSizeInfo[0][ixTbl]
             COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
         INDEBUG_MD(m_Tables[ixTbl].Debug_SetTableInfo(NULL, ixTbl));
     }
-    
+
     //#SetNewColumnDefinition_call
     // Keep the new column defs.
     IfFailGo(SetNewColumnDefinition(&(m_TableDefs[ixTbl]), sTempTable.m_pColDefs, ixTbl));
     m_TableDefs[ixTbl].m_cbRec = sTempTable.m_cbRec;
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::ExpandTableColumns
@@ -4904,8 +4904,8 @@ ErrExit:
 //*****************************************************************************
 // Used by caller to let us know save is completed.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::SaveDone()
 {
     return PostSave();
@@ -4914,8 +4914,8 @@ CMiniMdRW::SaveDone()
 //*****************************************************************************
 // General post-token-move table fixup.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FixUpTable(
     ULONG ixTbl)    // Index of table to fix.
 {
@@ -4965,8 +4965,8 @@ ErrExit:
 //*****************************************************************************
 // Fixup all the embedded ref to corresponding def before we remap tokens movement.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FixUpRefToDef()
 {
     return NOERROR;
@@ -4978,11 +4978,11 @@ CMiniMdRW::FixUpRefToDef()
 //  not in the list.  Thus, for a list of 0 elements, the start and end will
 //  be the same.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::Impl_GetEndRidForColumn(   // The End rid.
-    UINT32       nTableIndex, 
-    RID          nRowIndex, 
+    UINT32       nTableIndex,
+    RID          nRowIndex,
     CMiniColDef &def,                   // Column containing the RID into other table.
     UINT32       nTargetTableIndex,     // The other table.
     RID         *pEndRid)
@@ -5024,7 +5024,7 @@ CMiniMdRW::Impl_GetEndRidForColumn(   // The End rid.
     {
         ixEnd = m_Schema.m_cRecs[nTargetTableIndex] + 1;
     }
-    
+
     *pEndRid = ixEnd;
     return S_OK;
 } // CMiniMd::Impl_GetEndRidForColumn
@@ -5032,19 +5032,19 @@ CMiniMdRW::Impl_GetEndRidForColumn(   // The End rid.
 //*****************************************************************************
 // Add a row to any table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddRecord(             // S_OK or error.
     UINT32 nTableIndex,          // The table to expand.
-    void **ppRow, 
+    void **ppRow,
     RID   *pRid)           // Put RID here.
 {
     HRESULT hr;
-    
+
     _ASSERTE(nTableIndex < m_TblCount);
     _ASSERTE(!m_bPreSaveDone && "Cannot add records after PreSave and before Save.");
     IfFailRet(m_Tables[nTableIndex].AddRecord(
-        reinterpret_cast<BYTE **>(ppRow), 
+        reinterpret_cast<BYTE **>(ppRow),
         reinterpret_cast<UINT32 *>(pRid)));
     if (*pRid > m_maxRid)
     {
@@ -5061,100 +5061,100 @@ CMiniMdRW::AddRecord(             // S_OK or error.
     {
         m_pVS[nTableIndex]->m_isMapValid = false;
     }
-    
+
     return S_OK;
 } // CMiniMdRW::AddRecord
 
 //*****************************************************************************
 // Add a row to the TypeDef table, and initialize the pointers to other tables.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddTypeDefRecord(
-    TypeDefRec **ppRow, 
+    TypeDefRec **ppRow,
     RID         *pnRowIndex)
 {
     HRESULT hr;
     IfFailRet(AddRecord(TBL_TypeDef, (void **)ppRow, pnRowIndex));
-    
+
     IfFailRet(PutCol(TBL_TypeDef, TypeDefRec::COL_MethodList, *ppRow, NewRecordPointerEndValue(TBL_Method)));
     IfFailRet(PutCol(TBL_TypeDef, TypeDefRec::COL_FieldList, *ppRow, NewRecordPointerEndValue(TBL_Field)));
-    
+
     return S_OK;
 } // CMiniMdRW::AddTypeDefRecord
 
 //*****************************************************************************
 // Add a row to the Method table, and initialize the pointers to other tables.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddMethodRecord(
-    MethodRec **ppRow, 
+    MethodRec **ppRow,
     RID        *pnRowIndex)
 {
     HRESULT hr;
     IfFailRet(AddRecord(TBL_Method, (void **)ppRow, pnRowIndex));
-    
+
     IfFailRet(PutCol(TBL_Method, MethodRec::COL_ParamList, *ppRow, NewRecordPointerEndValue(TBL_Param)));
-    
+
     return S_OK;
 } // CMiniMdRW::AddMethodRecord
 
 //*****************************************************************************
 // Add a row to the EventMap table, and initialize the pointers to other tables.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddEventMapRecord(
-    EventMapRec **ppRow, 
+    EventMapRec **ppRow,
     RID          *pnRowIndex)
 {
     HRESULT hr;
     IfFailRet(AddRecord(TBL_EventMap, (void **)ppRow, pnRowIndex));
-    
+
     IfFailRet(PutCol(TBL_EventMap, EventMapRec::COL_EventList, *ppRow, NewRecordPointerEndValue(TBL_Event)));
-    
+
     SetSorted(TBL_EventMap, false);
-    
+
     return S_OK;
 } // CMiniMdRW::AddEventMapRecord
 
 //*********************************************************************************
 // Add a row to the PropertyMap table, and initialize the pointers to other tables.
 //*********************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddPropertyMapRecord(
-    PropertyMapRec **ppRow, 
+    PropertyMapRec **ppRow,
     RID             *pnRowIndex)
 {
     HRESULT hr;
     IfFailRet(AddRecord(TBL_PropertyMap, (void **)ppRow, pnRowIndex));
-    
+
     IfFailRet(PutCol(TBL_PropertyMap, PropertyMapRec::COL_PropertyList, *ppRow, NewRecordPointerEndValue(TBL_Property)));
-    
+
     SetSorted(TBL_PropertyMap, false);
-    
+
     return S_OK;
 } // CMiniMdRW::AddPropertyMapRecord
 
 //*****************************************************************************
 // converting a ANSI heap string to unicode string to an output buffer
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::Impl_GetStringW(
-                             ULONG  ix, 
-    __out_ecount (cchBuffer) LPWSTR szOut, 
-                             ULONG  cchBuffer, 
+                             ULONG  ix,
+    __out_ecount (cchBuffer) LPWSTR szOut,
+                             ULONG  cchBuffer,
                              ULONG *pcchBuffer)
 {
     LPCSTR  szString;       // Single byte version.
     int     iSize;          // Size of resulting string, in wide chars.
     HRESULT hr = NOERROR;
-    
+
     IfFailGo(getString(ix, &szString));
-    
+
     if (*szString == 0)
     {
         // If emtpy string "", return pccBuffer 0
@@ -5181,7 +5181,7 @@ CMiniMdRW::Impl_GetStringW(
         {   // null-terminate the truncated output string
             szOut[cchBuffer - 1] = W('\0');
         }
-        
+
         hr = CLDB_S_TRUNCATION;
         goto ErrExit;
     }
@@ -5289,8 +5289,8 @@ mdToken CMiniMdRW::GetToken(
 //  is passed directly.  This allows putting data into other buffers, such as
 //  the temporary table used for saving.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutCol(              // S_OK or E_UNEXPECTED.
     CMiniColDef ColDef,         // The col def.
     void       *pvRecord,       // The row.
@@ -5335,8 +5335,8 @@ CMiniMdRW::PutCol(              // S_OK or E_UNEXPECTED.
 //*****************************************************************************
 // Add a string to the string pool, and store the offset in the cell.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
     ULONG  ixTbl,       // The table.
     ULONG  ixCol,       // The column.
@@ -5344,17 +5344,17 @@ CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
     LPCSTR szString)    // Value to put.
 {
     _ASSERTE(szString != NULL);
-    
+
     HRESULT hr = S_OK;
     UINT32  nStringIndex = 0;
-    
+
     // Valid Table, Column, Row?
     _ASSERTE(ixTbl < m_TblCount);
     _ASSERTE(ixCol < m_TableDefs[ixTbl].m_cCols);
-    
+
     // Column description.
     _ASSERTE(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iSTRING);
-    
+
     // <TODO>@FUTURE:  Set iOffset to 0 for empty string.  Work around the bug in
     // StringPool that does not handle empty strings correctly.</TODO>
     if (szString[0] == 0)
@@ -5364,12 +5364,12 @@ CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
     else
     {   // It's non-empty string
         IfFailGo(m_StringHeap.AddString(
-            szString, 
+            szString,
             &nStringIndex));
     }
-    
+
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nStringIndex);
-    
+
     if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_StringHeap.GetAlignedSize(&nStringIndex));
@@ -5383,7 +5383,7 @@ CMiniMdRW::PutString(   // S_OK or E_UNEXPECTED.
             m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::PutString
@@ -5392,8 +5392,8 @@ ErrExit:
 // Add a string to the string pool, and store the offset in the cell.
 // Returns: S_OK or E_UNEXPECTED.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutStringW(
     ULONG   ixTbl,      // The table.
     ULONG   ixCol,      // The column.
@@ -5401,7 +5401,7 @@ CMiniMdRW::PutStringW(
     LPCWSTR wszString)  // Value to put.
 {
     _ASSERTE(wszString != NULL);
-    
+
     HRESULT hr = S_OK;
     UINT32  nStringIndex = 0;   // The new string.
 
@@ -5421,12 +5421,12 @@ CMiniMdRW::PutStringW(
     else
     {   // It's non-empty string
         IfFailGo(m_StringHeap.AddStringW(
-            wszString, 
+            wszString,
             &nStringIndex));
     }
 
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nStringIndex);
-    
+
     if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_StringHeap.GetAlignedSize(&nStringIndex));
@@ -5440,7 +5440,7 @@ CMiniMdRW::PutStringW(
             m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::PutStringW
@@ -5448,8 +5448,8 @@ ErrExit:
 //*****************************************************************************
 // Add a guid to the guid pool, and store the index in the cell.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
     ULONG   ixTbl,      // The table.
     ULONG   ixCol,      // The column.
@@ -5459,7 +5459,7 @@ CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
     HRESULT hr = S_OK;
     UINT32  nIndex;
     UINT32  cbSize = 0;
-    
+
     // Valid Table, Column, Row?
     _ASSERTE(ixTbl < m_TblCount);
     _ASSERTE(ixCol < m_TableDefs[ixTbl].m_cCols);
@@ -5470,7 +5470,7 @@ CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
     IfFailGo(AddGuid(guid, &nIndex));
 
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nIndex);
-    
+
     if (m_maxIx != UINT32_MAX)
     {
         cbSize = m_GuidHeap.GetSize();
@@ -5484,7 +5484,7 @@ CMiniMdRW::PutGuid(     // S_OK or E_UNEXPECTED.
             m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::PutGuid
@@ -5493,27 +5493,27 @@ ErrExit:
 // Normally, an MVID is randomly generated for every metadata.
 // ChangeMvid() can be used to explicitly set it.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ChangeMvid(  // S_OK or E_UNEXPECTED.
     REFGUID newMvid)
 {
     HRESULT hr = S_OK;
-    
+
     ModuleRec *pModuleRec;
     IfFailRet(GetModuleRecord(1, &pModuleRec));
     UINT32 nGuidIndex = GetCol(TBL_Module, ModuleRec::COL_Mvid, pModuleRec);
-    
+
     GUID UNALIGNED *pMvid;
     IfFailRet(m_GuidHeap.GetGuid(
-        nGuidIndex, 
+        nGuidIndex,
         &pMvid));
-    
+
     // Replace the GUID with new MVID.
     *pMvid = newMvid;
     // This was missing (probably because we don't test on platform with different bitness):
     //SwapGuid(pMvid);
-    
+
     return hr;
 } // CMiniMdRW::ChangeMvid
 
@@ -5521,8 +5521,8 @@ CMiniMdRW::ChangeMvid(  // S_OK or E_UNEXPECTED.
 // Put a token into a cell.  If the column is a coded token, perform the
 //  encoding first.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
     ULONG   ixTbl,      // The table.
     ULONG   ixCol,      // The column.
@@ -5569,8 +5569,8 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
 //*****************************************************************************
 // Add a blob to the blob pool, and store the offset in the cell.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::PutBlob(
     ULONG       ixTbl,      // Table with the row.
     ULONG       ixCol,      // Column to set.
@@ -5580,20 +5580,20 @@ CMiniMdRW::PutBlob(
 {
     HRESULT hr = S_OK;
     UINT32  nBlobIndex;
-    
+
     // Valid Table, Column, Row?
     _ASSERTE(ixTbl < m_TblCount);
     _ASSERTE(ixCol < m_TableDefs[ixTbl].m_cCols);
-    
+
     // Column description.
     _ASSERTE(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iBLOB);
-    
+
     IfFailGo(m_BlobHeap.AddBlob(
-        MetaData::DataBlob((BYTE *)pvData, cbData), 
+        MetaData::DataBlob((BYTE *)pvData, cbData),
         &nBlobIndex));
-    
+
     hr = PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pvRecord, nBlobIndex);
-    
+
     if (m_maxIx != UINT32_MAX)
     {
         IfFailGo(m_BlobHeap.GetAlignedSize(&nBlobIndex));
@@ -5607,7 +5607,7 @@ CMiniMdRW::PutBlob(
             m_eGrow = eg_grow, m_maxRid = m_maxIx = UINT32_MAX;
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::PutBlob
@@ -5616,8 +5616,8 @@ ErrExit:
 // Given a table with a pointer to another table, add a row in the second table
 //  at the end of the range of rows belonging to some parent.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddChildRowIndirectForParent(
     ULONG  tblParent,       // Parent table.
     ULONG  colParent,       // Column in parent table.
@@ -5630,30 +5630,30 @@ CMiniMdRW::AddChildRowIndirectForParent(
     ULONG   i;          // Loop control.
     void   *pRow;       // A parent row.
     ULONG   ixChild;    // Some child record RID.
-    
+
     // If the row in the parent table is the last row, just append.
     if (ridParent == GetCountRecs(tblParent))
     {
         RID nRowIndex_Ignore;
         return AddRecord(tblChild, ppRow, &nRowIndex_Ignore);
     }
-    
+
     // Determine the index at which to insert a row.
     IfFailRet(getRow(tblParent, ridParent+1, &pRow));
     ixInsert = GetCol(tblParent, colParent, pRow);
-    
+
     // Insert the row.
     IfFailRet(m_Tables[tblChild].InsertRecord(ixInsert, reinterpret_cast<BYTE **>(ppRow)));
     // Count the inserted record.
     ++m_Schema.m_cRecs[tblChild];
-    
+
     if (m_Schema.m_cRecs[tblChild] > m_maxRid)
     {
         m_maxRid = m_Schema.m_cRecs[tblChild];
         if (m_maxRid > m_limRid && m_eGrow == eg_ok)
             m_eGrow = eg_grow, m_maxIx = m_maxRid = UINT32_MAX;
     }
-    
+
     // Adjust the rest of the rows in the table.
     for (i=GetCountRecs(tblParent); i>ridParent; --i)
     {
@@ -5662,7 +5662,7 @@ CMiniMdRW::AddChildRowIndirectForParent(
         ++ixChild;
         IfFailRet(PutCol(tblParent, colParent, pRow, ixChild));
     }
-    
+
     return S_OK;
 } // CMiniMdRW::AddChildRowIndirectForParent
 
@@ -5671,8 +5671,8 @@ CMiniMdRW::AddChildRowIndirectForParent(
 // indirect table and creates it if needed.  Else it just update the pointers
 // in the entries contained in the parent table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddChildRowDirectForParent(
     ULONG tblParent,    // Parent table.
     ULONG colParent,    // Column in parent table.
@@ -5772,8 +5772,8 @@ ErrExit:
 // Starting with some location, convert special END_OF_TABLE values into
 //  actual end of table values (count of records + 1).
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ConvertMarkerToEndOfTable(
     ULONG tblParent,    // Parent table to convert.
     ULONG colParent,    // Column in parent table.
@@ -5807,8 +5807,8 @@ ErrExit:
 // be required in most cases and will need to inserted at the appropriate location
 // with AddChildRowIndirectForParent() function.  So, be VERY CAREFUL when using this function!
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CreateIndirectTable(
     ULONG ixTbl,                    // Given Table.
     BOOL  bOneLess /* = true */)    // if true, create one entry less.
@@ -5866,13 +5866,13 @@ ErrExit:
 } // CMiniMdRW::CreateIndirectTable
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // The new paramter may not have been emitted in sequence order.  So
 // check the current parameter and move it up in the indirect table until
 // we find the right home.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::FixParamSequence(
     RID md)     // Rid of method with new parameter.
 {
@@ -5954,7 +5954,7 @@ CMiniMdRW::FixParamSequence(
         int cbCopy = m_TableDefs[TBL_ParamPtr].m_cbRec;
         void * pbBackup = _alloca(cbCopy);
         memcpy(pbBackup, pNewParamPtr, cbCopy);
-        
+
         IfFailRet(getEndParamListOfMethod(md, &endRid));
         for (ixEnd = endRid - 1;  iSlots;  iSlots--, --ixEnd)
         {
@@ -5973,12 +5973,12 @@ CMiniMdRW::FixParamSequence(
 } // CMiniMdRW::FixParamSequence
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Given a MethodDef and its parent TypeDef, add the MethodDef to the parent,
 //  adjusting the MethodPtr table if it exists or if it needs to be created.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::AddMethodToTypeDef(
     RID td,     // The TypeDef to which to add the Method.
     RID md)     // MethodDef to add to TypeDef.
@@ -6006,8 +6006,8 @@ ErrExit:
 // Given a FieldDef and its parent TypeDef, add the FieldDef to the parent,
 //  adjusting the FieldPtr table if it exists or if it needs to be created.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddFieldToTypeDef(
     RID td,     // The TypeDef to which to add the Field.
     RID md)     // FieldDef to add to TypeDef.
@@ -6035,8 +6035,8 @@ ErrExit:
 // Given a Param and its parent Method, add the Param to the parent,
 // adjusting the ParamPtr table if there is an indirect table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddParamToMethod(
     RID md,     // The MethodDef to which to add the Param.
     RID pd)     // Param to add to MethodDef.
@@ -6063,8 +6063,8 @@ ErrExit:
 // Given a Property and its parent PropertyMap, add the Property to the parent,
 // adjusting the PropertyPtr table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddPropertyToPropertyMap(
     RID pmd,    // The PropertyMap to which to add the Property.
     RID pd)     // Property to add to PropertyMap.
@@ -6090,8 +6090,8 @@ ErrExit:
 // Given a Event and its parent EventMap, add the Event to the parent,
 // adjusting the EventPtr table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddEventToEventMap(
     ULONG emd,      // The EventMap to which to add the Event.
     RID   ed)       // Event to add to EventMap.
@@ -6114,8 +6114,8 @@ ErrExit:
 //*****************************************************************************
 // Find helper for a constant. This will trigger constant table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindConstantHelper(      // return index to the constant table
     mdToken tkParent,           // Parent token.
     RID    *pFoundRid)
@@ -6133,8 +6133,8 @@ CMiniMdRW::FindConstantHelper(      // return index to the constant table
 //*****************************************************************************
 // Find helper for a FieldMarshal. This will trigger FieldMarshal table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindFieldMarshalHelper(  // return index to the field marshal table
     mdToken tkParent,               // Parent token. Can be a FieldDef or ParamDef.
     RID    *pFoundRid)
@@ -6155,8 +6155,8 @@ CMiniMdRW::FindFieldMarshalHelper(  // return index to the field marshal table
 // This will look up methodsemantics based on its status!
 // Can return out of memory error because of the enumerator.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindMethodSemanticsHelper(
     mdToken        tkAssociate,     // Event or property token
     HENUMInternal *phEnum)          // fill in the enum
@@ -6219,8 +6219,8 @@ ErrExit:
 // This will look up methodsemantics based on its status!
 // Return CLDB_E_RECORD_NOTFOUND if cannot find the matching one
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindAssociateHelper(
     mdToken tkAssociate,    // Event or property token
     DWORD   dwSemantics,    // [IN] given a associate semantics(setter, getter, testdefault, reset)
@@ -6288,8 +6288,8 @@ ErrExit:
 // Find helper for a MethodImpl.
 // This will trigger MethodImpl table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindMethodImplHelper(
     mdTypeDef      td,          // TypeDef token for the Class.
     HENUMInternal *phEnum)      // fill in the enum
@@ -6351,8 +6351,8 @@ ErrExit:
 // Find helper for a GenericParam.
 // This will trigger GenericParam table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindGenericParamHelper(
     mdToken        tkOwner,     // Token for the GenericParams' owner.
     HENUMInternal *phEnum)      // fill in the enum
@@ -6367,10 +6367,10 @@ CMiniMdRW::FindGenericParamHelper(
     {
         mdToken tk;
         tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef));
-        IfFailGo(SearchTableForMultipleRows(TBL_GenericParam, 
+        IfFailGo(SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
-                            tk, 
-                            &ridEnd, 
+                            tk,
+                            &ridEnd,
                             &ridStart));
         HENUMInternal::InitSimpleEnum(mdtGenericParam, ridStart, ridEnd, phEnum);
     }
@@ -6418,8 +6418,8 @@ ErrExit:
 // Find helper for a GenericParamConstraint.
 // This will trigger GenericParamConstraint table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindGenericParamConstraintHelper(
     mdGenericParam tkParam,     // Token for the GenericParam
     HENUMInternal *phEnum)      // fill in the enum
@@ -6484,8 +6484,8 @@ ErrExit:
 //*****************************************************************************
 // Find helper for a ClassLayout. This will trigger ClassLayout table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindClassLayoutHelper(   // return index to the ClassLayout table
     mdTypeDef tkParent,             // Parent token.
     RID      *pFoundRid)
@@ -6503,8 +6503,8 @@ CMiniMdRW::FindClassLayoutHelper(   // return index to the ClassLayout table
 //*****************************************************************************
 // Find helper for a FieldLayout. This will trigger FieldLayout table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindFieldLayoutHelper(   // return index to the FieldLayout table
     mdFieldDef tkField,             // Field RID.
     RID       *pFoundRid)
@@ -6522,8 +6522,8 @@ CMiniMdRW::FindFieldLayoutHelper(   // return index to the FieldLayout table
 //*****************************************************************************
 // Find helper for a ImplMap. This will trigger ImplMap table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindImplMapHelper(       // return index to the ImplMap table
     mdToken tk,                     // Member forwarded token.
     RID    *pFoundRid)
@@ -6542,8 +6542,8 @@ CMiniMdRW::FindImplMapHelper(       // return index to the ImplMap table
 //*****************************************************************************
 // Find helper for a FieldRVA. This will trigger FieldRVA table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindFieldRVAHelper(      // return index to the FieldRVA table
     mdFieldDef tkField,             // Field token.
     RID       *pFoundRid)
@@ -6561,8 +6561,8 @@ CMiniMdRW::FindFieldRVAHelper(      // return index to the FieldRVA table
 //*****************************************************************************
 // Find helper for a NestedClass. This will trigger NestedClass table to be sorted if it is not.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindNestedClassHelper(   // return index to the NestedClass table
     mdTypeDef tkClass,                // NestedClass RID.
     RID      *pFoundRid)
@@ -6579,8 +6579,8 @@ CMiniMdRW::FindNestedClassHelper(   // return index to the NestedClass table
 //*************************************************************************
 // generic find helper with hash table
 //*************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GenericFindWithHash(     // Return code.
     ULONG       ixTbl,                  // Table with hash
     ULONG       ixCol,                  // col that we hash.
@@ -6591,26 +6591,26 @@ CMiniMdRW::GenericFindWithHash(     // Return code.
     ULONG   index;
     mdToken tkHash;
     BYTE *  pRec;
-    
+
     // Partial check -- only one rid for table 0, so if type is 0, rid should be 1.
     _ASSERTE(TypeFromToken(tkTarget) != 0 || RidFromToken(tkTarget) == 1);
-    
+
     if (m_pLookUpHashs[ixTbl] == NULL)
     {
         // Just ignore the returned error - the hash is either created or not
         (void)GenericBuildHashTable(ixTbl, ixCol);
     }
-    
+
     CLookUpHash * pHashTable = m_pLookUpHashs[ixTbl];
     if (pHashTable != NULL)
     {
         TOKENHASHENTRY *p;
         ULONG       iHash;
         int         pos;
-        
+
         // Hash the data.
         iHash = HashToken(tkTarget);
-        
+
         // Go through every entry in the hash chain looking for ours.
         for (p = pHashTable->FindFirst(iHash, pos);
              p;
@@ -6650,8 +6650,8 @@ CMiniMdRW::GenericFindWithHash(     // Return code.
 //*************************************************************************
 // Build a hash table for the specified table if the size exceed the thresholds.
 //*************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GenericBuildHashTable(
     ULONG ixTbl,    // Table with hash.
     ULONG ixCol)    // Column that we hash.
@@ -6661,12 +6661,12 @@ CMiniMdRW::GenericBuildHashTable(
     mdToken         tkHash;
     ULONG           iHash;
     TOKENHASHENTRY *pEntry;
-    
+
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pLookUpHashs[ixTbl] == NULL)
     {
         ULONG ridEnd = GetCountRecs(ixTbl);
-        
+
         //<TODO>@FUTURE: we need to init the size of the hash table corresponding to the current
         // size of table in E&C's case.
         //</TODO>
@@ -6678,27 +6678,27 @@ CMiniMdRW::GenericBuildHashTable(
             IfNullGo(pHashTable);
             IfFailGo(pHashTable->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
-            
+
             // Scan every entry already in the table, add it to the hash.
             for (ULONG index = 1; index <= ridEnd; index++)
             {
                 IfFailGo(m_Tables[ixTbl].GetRecord(index, &pRec));
-                
+
                 // get the column value that we will hash
                 tkHash = GetToken(ixTbl, ixCol, pRec);
-                
+
                 // hash the value
                 iHash = HashToken(tkHash);
-                
+
                 pEntry = pHashTable->Add(iHash);
                 IfNullGo(pEntry);
                 pEntry->tok = index;
-            
+
             }
-            
+
             if (InterlockedCompareExchangeT<CLookUpHash *>(
-                &m_pLookUpHashs[ixTbl], 
-                pHashTable, 
+                &m_pLookUpHashs[ixTbl],
+                pHashTable,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pHashTable.SuppressRelease();
@@ -6712,8 +6712,8 @@ ErrExit:
 //*************************************************************************
 // Add a rid from a table into a hash. We will hash on the ixCol of the ixTbl.
 //*************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::GenericAddToHash(
     ULONG ixTbl,    // Table with hash
     ULONG ixCol,    // column that we hash by calling HashToken.
@@ -6735,7 +6735,7 @@ CMiniMdRW::GenericAddToHash(
     {
         // Adding into hash table has to be protected by write-lock
         INDEBUG(Debug_CheckIsLockedForWrite();)
-        
+
         IfFailGo(m_Tables[ixTbl].GetRecord(rid, reinterpret_cast<BYTE **>(&pRec)));
 
         tkHash = GetToken(ixTbl, ixCol, pRec);
@@ -6753,8 +6753,8 @@ ErrExit:
 //*****************************************************************************
 // look up a table by a col given col value is ulVal.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::LookUpTableByCol(
     ULONG        ulVal,         // Value for which to search.
     VirtualSort *pVSTable,      // A VirtualSort on the table, if any.
@@ -6764,7 +6764,7 @@ CMiniMdRW::LookUpTableByCol(
     HRESULT hr = NOERROR;
     ULONG   ixTbl;
     ULONG   ixCol;
-    
+
     _ASSERTE(pVSTable != NULL);
     ixTbl = pVSTable->m_ixTbl;
     ixCol = pVSTable->m_ixCol;
@@ -6777,7 +6777,7 @@ CMiniMdRW::LookUpTableByCol(
             ixTbl,
             m_TableDefs[ixTbl].m_pColDefs[ixCol],
             ulVal,
-            pRidEnd, 
+            pRidEnd,
             pRidStart));
     }
     else
@@ -6785,9 +6785,9 @@ CMiniMdRW::LookUpTableByCol(
         if (!pVSTable->m_isMapValid)
         {
             INDEBUG(Debug_CheckIsLockedForWrite();)
-            
+
             int iCount;
-            
+
             // build the parallel VirtualSort table
             if (pVSTable->m_pMap == NULL)
             {
@@ -6795,14 +6795,14 @@ CMiniMdRW::LookUpTableByCol(
                 pVSTable->m_pMap = new (nothrow) TOKENMAP;
                 IfNullGo(pVSTable->m_pMap);
             }
-            
+
             // ensure the look up table is big enough
             iCount = pVSTable->m_pMap->Count();
             if (pVSTable->m_pMap->AllocateBlock(m_Schema.m_cRecs[ixTbl] + 1 - iCount) == 0)
             {
                 IfFailGo(E_OUTOFMEMORY);
             }
-            
+
             // now build the table
             // Element 0 of m_pMap will never be used, its just being initialized anyway.
             for (ULONG i = 0; i <= m_Schema.m_cRecs[ixTbl]; i++)
@@ -6819,9 +6819,9 @@ CMiniMdRW::LookUpTableByCol(
             CMiniColDef *pCol;
             int         lo,hi,mid=0;            // binary search indices.
             RID         ridEnd, ridBegin;
-            
+
             pCol = m_TableDefs[ixTbl].m_pColDefs;
-            
+
             // Start with entire table.
             lo = 1;
             hi = GetCountRecs( ixTbl );
@@ -6830,11 +6830,11 @@ CMiniMdRW::LookUpTableByCol(
             {   // Look at the one in the middle.
                 mid = (lo + hi) / 2;
                 IfFailGo(getRow(
-                    ixTbl, 
-                    (UINT32)*(pVSTable->m_pMap->Get(mid)), 
+                    ixTbl,
+                    (UINT32)*(pVSTable->m_pMap->Get(mid)),
                     &pRow));
                 val = getIX( pRow, pCol[ixCol] );
-                
+
                 // If equal to the target, done.
                 if ( val == ulVal )
                     break;
@@ -6868,8 +6868,8 @@ CMiniMdRW::LookUpTableByCol(
                     break;
                 }
                 IfFailGo(getRow(
-                    ixTbl, 
-                    (UINT32)*(pVSTable->m_pMap->Get(ridBegin-1)), 
+                    ixTbl,
+                    (UINT32)*(pVSTable->m_pMap->Get(ridBegin-1)),
                     &pRow));
                 if (getIX(pRow, pCol[ixCol]) != ulVal)
                 {
@@ -6877,7 +6877,7 @@ CMiniMdRW::LookUpTableByCol(
                 }
                 --ridBegin;
             }
-            
+
             // If desired, search forward to end of group.
             if (pRidEnd != NULL)
             {
@@ -6888,8 +6888,8 @@ CMiniMdRW::LookUpTableByCol(
                         break;
                     }
                     IfFailGo(getRow(
-                        ixTbl, 
-                        (UINT32)*(pVSTable->m_pMap->Get(ridEnd)), 
+                        ixTbl,
+                        (UINT32)*(pVSTable->m_pMap->Get(ridEnd)),
                         &pRow));
                     if (getIX(pRow, pCol[ixCol]) != ulVal)
                     {
@@ -6908,8 +6908,8 @@ ErrExit:
     return hr;
 } // CMiniMdRW::LookUpTableByCol
 
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::Impl_SearchTableRW(
     ULONG ixTbl,        // Table to search.
     ULONG ixCol,        // Column to search.
@@ -6939,8 +6939,8 @@ CMiniMdRW::Impl_SearchTableRW(
 // Search a table for the row containing the given key value.
 //  EG. Constant table has pointer back to Param or Field.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::vSearchTable(            // RID of matching row, or 0.
     ULONG       ixTbl,                  // Table to search.
     CMiniColDef sColumn,                // Sorted key column, containing search value.
@@ -6993,7 +6993,7 @@ CMiniMdRW::vSearchTable(            // RID of matching row, or 0.
             }
         }
     }
-    
+
     *pRid = 0;
     return S_OK;
 } // CMiniMdRW::vSearchTable
@@ -7007,8 +7007,8 @@ CMiniMdRW::vSearchTable(            // RID of matching row, or 0.
 //  other values.  However, this invalid-rid value will occur only at the
 //  end of the table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::vSearchTableNotGreater( // RID of matching row, or 0.
     ULONG       ixTbl,                  // Table to search.
     CMiniColDef sColumn,                // the column def containing search value
@@ -7091,15 +7091,15 @@ CMiniMdRW::vSearchTableNotGreater( // RID of matching row, or 0.
 } // CMiniMdRW::vSearchTableNotGreater
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Create MemberRef hash table.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::CreateMemberRefHash()
 {
     HRESULT hr = S_OK;
-    
+
     if (m_pMemberRefHash == NULL)
     {
         ULONG ridEnd = getCountMemberRefs();
@@ -7110,49 +7110,49 @@ CMiniMdRW::CreateMemberRefHash()
             IfNullGo(pMemberRefHash);
             IfFailGo(pMemberRefHash->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
-            
+
             // Scan every entry already in the table, add it to the hash.
             for (ULONG index = 1; index <= ridEnd; index++)
             {
                 MemberRefRec * pMemberRef;
                 IfFailGo(GetMemberRefRecord(index, &pMemberRef));
-                
+
                 LPCSTR szMemberRefName;
                 IfFailGo(getNameOfMemberRef(pMemberRef, &szMemberRefName));
                 ULONG iHash = HashMemberRef(
-                    getClassOfMemberRef(pMemberRef), 
+                    getClassOfMemberRef(pMemberRef),
                     szMemberRefName);
-                
+
                 TOKENHASHENTRY * pEntry = pMemberRefHash->Add(iHash);
                 IfNullGo(pEntry);
                 pEntry->tok = TokenFromRid(index, mdtMemberRef);
             }
-            
+
             if (InterlockedCompareExchangeT<CMemberRefHash *>(&m_pMemberRefHash, pMemberRefHash, NULL) == NULL)
             {   // We won the initialization race
                 pMemberRefHash.SuppressRelease();
             }
         }
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::CreateMemberRefHash
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Add a new MemberRef to the hash table.
-// 
-__checkReturn 
-HRESULT 
+//
+__checkReturn
+HRESULT
 CMiniMdRW::AddMemberRefToHash(
     mdMemberRef mr)     // Token of new guy.
 {
     HRESULT hr = S_OK;
-    
+
     // If the hash exists, we will add to it - requires write-lock
     INDEBUG(Debug_CheckIsLockedForWrite();)
-    
+
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pMemberRefHash == NULL)
     {
@@ -7162,27 +7162,27 @@ CMiniMdRW::AddMemberRefToHash(
     {
         MemberRefRec * pMemberRef;
         IfFailGo(GetMemberRefRecord(RidFromToken(mr), &pMemberRef));
-        
+
         LPCSTR szMemberRefName;
         IfFailGo(getNameOfMemberRef(pMemberRef, &szMemberRefName));
         ULONG iHash = HashMemberRef(
-            getClassOfMemberRef(pMemberRef), 
+            getClassOfMemberRef(pMemberRef),
             szMemberRefName);
-        
+
         TOKENHASHENTRY * pEntry = m_pMemberRefHash->Add(iHash);
         IfNullGo(pEntry);
         pEntry->tok = TokenFromRid(RidFromToken(mr), mdtMemberRef);
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::AddMemberRefToHash
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // If the hash is built, search for the item. Ignore token *ptkMemberRef.
-// 
-CMiniMdRW::HashSearchResult 
+//
+CMiniMdRW::HashSearchResult
 CMiniMdRW::FindMemberRefFromHash(
     mdToken          tkParent,      // Parent token.
     LPCUTF8          szName,        // Name of item.
@@ -7224,8 +7224,8 @@ CMiniMdRW::FindMemberRefFromHash(
 //*****************************************************************************
 // Check a given mr token to see if this one is a match.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CompareMemberRefs(       // S_OK match, S_FALSE no match.
     mdMemberRef     mr,             // Token to check.
     mdToken         tkPar,          // Parent token.
@@ -7262,7 +7262,7 @@ CMiniMdRW::CompareMemberRefs(       // S_OK match, S_FALSE no match.
         if ((cbSigBlob != 0) && (pvSigBlob != NULL))
         {
             IfFailRet(getSignatureOfMemberRef(pMemberRef, &pvSigBlobTmp, &cbSigBlobTmp));
-            if ((cbSigBlobTmp == cbSigBlob) && 
+            if ((cbSigBlobTmp == cbSigBlob) &&
                 (memcmp(pvSigBlob, pvSigBlobTmp, cbSigBlob) == 0))
             {
                 return S_OK;
@@ -7276,8 +7276,8 @@ CMiniMdRW::CompareMemberRefs(       // S_OK match, S_FALSE no match.
 //*****************************************************************************
 // Add a new memberdef to the hash table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddMemberDefToHash(
     mdToken tkMember,   // Token of new guy. It can be MethodDef or FieldDef
     mdToken tkParent)   // Parent token.
@@ -7285,10 +7285,10 @@ CMiniMdRW::AddMemberDefToHash(
     HRESULT hr = S_OK;
     ULONG   iHash;
     MEMBERDEFHASHENTRY * pEntry;
-    
+
     // If the hash exists, we will add to it - requires write-lock
     INDEBUG(Debug_CheckIsLockedForWrite();)
-    
+
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pMemberDefHash == NULL)
     {
@@ -7310,15 +7310,15 @@ CMiniMdRW::AddMemberDefToHash(
             IfFailGo(GetFieldRecord(RidFromToken(tkMember), &pFieldRecord));
             IfFailGo(getNameOfField(pFieldRecord, &szName));
         }
-        
+
         iHash = HashMemberDef(tkParent, szName);
-        
+
         pEntry = m_pMemberDefHash->Add(iHash);
         IfNullGo(pEntry);
         pEntry->tok = tkMember;
         pEntry->tkParent = tkParent;
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::AddMemberDefToHash
@@ -7327,14 +7327,14 @@ ErrExit:
 //*****************************************************************************
 // Create MemberDef Hash
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CreateMemberDefHash()
 {
     HRESULT hr = S_OK;
     ULONG   iHash;
     MEMBERDEFHASHENTRY * pEntry;
-    
+
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pMemberDefHash == NULL)
     {
@@ -7410,10 +7410,10 @@ ErrExit:
 } // CMiniMdRW::CreateMemberDefHash
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // If the hash is built, search for the item. Ignore token *ptkMember.
-// 
-CMiniMdRW::HashSearchResult 
+//
+CMiniMdRW::HashSearchResult
 CMiniMdRW::FindMemberDefFromHash(
     mdToken         tkParent,   // Parent token.
     LPCUTF8         szName,     // Name of item.
@@ -7427,20 +7427,20 @@ CMiniMdRW::FindMemberDefFromHash(
         // Ignore the failure - the hash won't be created in the worst case
         (void)CreateMemberDefHash();
     }
-    
+
     // If the table is there, look for the item in the chain of items.
     if (m_pMemberDefHash != NULL)
     {
         MEMBERDEFHASHENTRY * pEntry;
         ULONG                iHash;
         int                  pos;
-        
+
         // Hash the data.
         iHash = HashMemberDef(tkParent, szName);
-        
+
         // Go through every entry in the hash chain looking for ours.
-        for (pEntry = m_pMemberDefHash->FindFirst(iHash, pos); 
-             pEntry != NULL; 
+        for (pEntry = m_pMemberDefHash->FindFirst(iHash, pos);
+             pEntry != NULL;
              pEntry = m_pMemberDefHash->FindNext(pos))
         {
             if ((CompareMemberDefs(pEntry->tok, pEntry->tkParent, tkParent, szName, pvSigBlob, cbSigBlob) == S_OK)
@@ -7450,7 +7450,7 @@ CMiniMdRW::FindMemberDefFromHash(
                 return Found;
             }
         }
-        
+
         return NotFound;
     }
     else
@@ -7463,8 +7463,8 @@ CMiniMdRW::FindMemberDefFromHash(
 //*****************************************************************************
 // Check a given memberDef token to see if this one is a match.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CompareMemberDefs(       // S_OK match, S_FALSE no match.
     mdToken         tkMember,       // Token to check. It can be MethodDef or FieldDef
     mdToken         tkParent,       // Parent token recorded in the hash entry
@@ -7480,7 +7480,7 @@ CMiniMdRW::CompareMemberDefs(       // S_OK match, S_FALSE no match.
     PCCOR_SIGNATURE pvSigBlobTmp;
     ULONG           cbSigBlobTmp;
     bool            bPrivateScope;
-    
+
     if (TypeFromToken(tkMember) == mdtMethodDef)
     {
         IfFailGo(GetMethodRecord(RidFromToken(tkMember), &pMethod));
@@ -7500,19 +7500,19 @@ CMiniMdRW::CompareMemberDefs(       // S_OK match, S_FALSE no match.
     {
         return S_FALSE;
     }
-    
+
     if (strcmp(szNameUtf8Tmp, szNameUtf8) == 0)
     {
         if (pvSigBlob == NULL)
         {
             return S_OK;
         }
-        
+
         // Name matched. Now check the signature if caller supplies signature
         //
         if ((cbSigBlob != 0) && (pvSigBlob != NULL))
         {
-            if ((cbSigBlobTmp == cbSigBlob) && 
+            if ((cbSigBlobTmp == cbSigBlob) &&
                 (memcmp(pvSigBlob, pvSigBlobTmp, cbSigBlob) == 0))
             {
                 return S_OK;
@@ -7527,8 +7527,8 @@ ErrExit:
 //*****************************************************************************
 // Add a new NamedItem to the hash table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddNamedItemToHash(
     ULONG   ixTbl,          // Table with the new item.
     mdToken tk,             // Token of new guy.
@@ -7541,7 +7541,7 @@ CMiniMdRW::AddNamedItemToHash(
     mdToken         tkPar = 0;      // Parent token of the item.
     ULONG           iHash;          // A named item's hash value.
     TOKENHASHENTRY *pEntry;         // New hash entry.
-    
+
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pNamedItemHash == NULL)
     {
@@ -7551,14 +7551,14 @@ CMiniMdRW::AddNamedItemToHash(
         {
             // This assert causes Dev11 #65887, turn it on when the bug is fixed
             //INDEBUG(Debug_CheckIsLockedForWrite();)
-            
+
             // OutputDebugStringA("Creating TypeRef hash\n");
             // Create a new hash.
             m_pNamedItemHash = new (nothrow) CMetaDataHashBase;
             IfNullGo(m_pNamedItemHash);
             IfFailGo(m_pNamedItemHash->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
-            
+
             // Scan every entry already in the table, add it to the hash.
             for (ULONG index = 1; index <= ridEnd; index++)
             {
@@ -7589,7 +7589,7 @@ CMiniMdRW::AddNamedItemToHash(
         IfNullGo(pEntry);
         pEntry->tok = TokenFromRid(tk, g_TblIndex[ixTbl].m_Token);
     }
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::AddNamedItemToHash
@@ -7597,7 +7597,7 @@ ErrExit:
 //*****************************************************************************
 // If the hash is built, search for the item.
 //*****************************************************************************
-CMiniMdRW::HashSearchResult 
+CMiniMdRW::HashSearchResult
 CMiniMdRW::FindNamedItemFromHash(
     ULONG     ixTbl,    // Table with the item.
     LPCUTF8   szName,   // Name of item.
@@ -7618,8 +7618,8 @@ CMiniMdRW::FindNamedItemFromHash(
         iHash = HashNamedItem(tkParent, szName);
 
         // Go through every entry in the hash chain looking for ours.
-        for (p = m_pNamedItemHash->FindFirst(iHash, pos); 
-             p != NULL; 
+        for (p = m_pNamedItemHash->FindFirst(iHash, pos);
+             p != NULL;
              p = m_pNamedItemHash->FindNext(pos))
         {   // Check that the item is from the right table.
             if (TypeFromToken(p->tok) != (ULONG)type)
@@ -7636,7 +7636,7 @@ CMiniMdRW::FindNamedItemFromHash(
                 return Found;
             }
         }
-        
+
         return NotFound;
     }
     else
@@ -7648,8 +7648,8 @@ CMiniMdRW::FindNamedItemFromHash(
 //*****************************************************************************
 // Check a given mr token to see if this one is a match.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::CompareNamedItems(   // S_OK match, S_FALSE no match.
     ULONG   ixTbl,      // Table with the item.
     mdToken tk,         // Token to check.
@@ -7659,15 +7659,15 @@ CMiniMdRW::CompareNamedItems(   // S_OK match, S_FALSE no match.
     HRESULT hr;
     BYTE   *pNamedItem;         // Item to check.
     LPCUTF8 szNameUtf8Tmp;      // Name of item to check.
-    
+
     // Get the record.
     IfFailRet(m_Tables[ixTbl].GetRecord(RidFromToken(tk), &pNamedItem));
-    
+
     // Name is cheaper to get than coded token parent, and fails pretty quickly.
     IfFailRet(getString(GetCol(ixTbl, g_TblIndex[ixTbl].m_iName, pNamedItem), &szNameUtf8Tmp));
     if (strcmp(szNameUtf8Tmp, szName) != 0)
         return S_FALSE;
-    
+
     // Name matched, try parent, if any.
     if (g_TblIndex[ixTbl].m_iParent != (ULONG)-1)
     {
@@ -7675,7 +7675,7 @@ CMiniMdRW::CompareNamedItems(   // S_OK match, S_FALSE no match.
         if (tkPar != tkParent)
             return S_FALSE;
     }
-    
+
     // Made it to here, so everything matched.
     return S_OK;
 } // CMiniMdRW::CompareNamedItems
@@ -7683,8 +7683,8 @@ CMiniMdRW::CompareNamedItems(   // S_OK match, S_FALSE no match.
 //*****************************************************************************
 // Add <md, td> entry to the MethodDef map look up table
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddMethodToLookUpTable(
     mdMethodDef md,
     mdTypeDef   td)
@@ -7692,7 +7692,7 @@ CMiniMdRW::AddMethodToLookUpTable(
     HRESULT  hr = NOERROR;
     mdToken *ptk;
     _ASSERTE((TypeFromToken(md) == mdtMethodDef) && HasIndirectTable(TBL_Method));
-    
+
     if (m_pMethodMap != NULL)
     {
         // Only add to the lookup table if it has been built already by demand.
@@ -7714,8 +7714,8 @@ ErrExit:
 //*****************************************************************************
 // Add <fd, td> entry to the FieldDef map look up table
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddFieldToLookUpTable(
     mdFieldDef fd,
     mdTypeDef  td)
@@ -7744,8 +7744,8 @@ ErrExit:
 //*****************************************************************************
 // Add <pr, td> entry to the Property map look up table
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddPropertyToLookUpTable(
     mdProperty pr,
     mdTypeDef  td)
@@ -7753,7 +7753,7 @@ CMiniMdRW::AddPropertyToLookUpTable(
     HRESULT  hr = NOERROR;
     mdToken *ptk;
     _ASSERTE((TypeFromToken(pr) == mdtProperty) && HasIndirectTable(TBL_Property));
-    
+
     if (m_pPropertyMap != NULL)
     {
         // Only add to the lookup table if it has been built already by demand.
@@ -7774,8 +7774,8 @@ ErrExit:
 //*****************************************************************************
 // Add <ev, td> entry to the Event map look up table
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddEventToLookUpTable(
     mdEvent   ev,
     mdTypeDef td)
@@ -7783,7 +7783,7 @@ CMiniMdRW::AddEventToLookUpTable(
     HRESULT  hr = NOERROR;
     mdToken *ptk;
     _ASSERTE((TypeFromToken(ev) == mdtEvent) && HasIndirectTable(TBL_Event));
-    
+
     if (m_pEventMap != NULL)
     {
         // Only add to the lookup table if it has been built already by demand.
@@ -7801,8 +7801,8 @@ ErrExit:
 //*****************************************************************************
 // Add <pd, md> entry to the Param map look up table
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::AddParamToLookUpTable(
     mdParamDef  pd,
     mdMethodDef md)
@@ -7810,7 +7810,7 @@ CMiniMdRW::AddParamToLookUpTable(
     HRESULT  hr = NOERROR;
     mdToken *ptk;
     _ASSERTE((TypeFromToken(pd) == mdtParamDef) && HasIndirectTable(TBL_Param));
-    
+
     if (m_pParamMap != NULL)
     {
         // Only add to the lookup table if it has been built already by demand.
@@ -7829,8 +7829,8 @@ ErrExit:
 // Find parent for a method token. This will use the lookup table if there is an
 // intermediate table. Or it will use FindMethodOfParent helper
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindParentOfMethodHelper(
     mdMethodDef md,     // [IN] the methoddef token
     mdTypeDef  *ptd)    // [OUT] the parent token
@@ -7846,7 +7846,7 @@ CMiniMdRW::FindParentOfMethodHelper(
             ULONG          ridEnd;
             TypeDefRec *   pTypeDefRec;
             MethodPtrRec * pMethodPtrRec;
-            
+
             // build the MethodMap table
             NewHolder<TOKENMAP> pMethodMap = new (nothrow) TOKENMAP;
             IfNullGo(pMethodMap);
@@ -7871,8 +7871,8 @@ CMiniMdRW::FindParentOfMethodHelper(
                 }
             }
             if (InterlockedCompareExchangeT<TOKENMAP *>(
-                &m_pMethodMap, 
-                pMethodMap, 
+                &m_pMethodMap,
+                pMethodMap,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pMethodMap.SuppressRelease();
@@ -7893,8 +7893,8 @@ ErrExit:
 // Find parent for a field token. This will use the lookup table if there is an
 // intermediate table. Or it will use FindFieldOfParent helper
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindParentOfFieldHelper(
     mdFieldDef fd,      // [IN] fielddef token
     mdTypeDef *ptd)     // [OUT] parent token
@@ -7909,7 +7909,7 @@ CMiniMdRW::FindParentOfFieldHelper(
             ULONG       ridStart, ridEnd;
             TypeDefRec  *pTypeDefRec;
             FieldPtrRec *pFieldPtrRec;
-            
+
             // build the FieldMap table
             NewHolder<TOKENMAP> pFieldMap = new (nothrow) TOKENMAP;
             IfNullGo(pFieldMap);
@@ -7934,8 +7934,8 @@ CMiniMdRW::FindParentOfFieldHelper(
                 }
             }
             if (InterlockedCompareExchangeT<TOKENMAP *>(
-                &m_pFieldMap, 
-                pFieldMap, 
+                &m_pFieldMap,
+                pFieldMap,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pFieldMap.SuppressRelease();
@@ -7956,8 +7956,8 @@ ErrExit:
 // Find parent for a property token. This will use the lookup table if there is an
 // intermediate table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindParentOfPropertyHelper(
     mdProperty pr,
     mdTypeDef *ptd)
@@ -7972,7 +7972,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
             ULONG       ridStart, ridEnd;
             PropertyMapRec  *pPropertyMapRec;
             PropertyPtrRec  *pPropertyPtrRec;
-            
+
             // build the PropertyMap table
             NewHolder<TOKENMAP> pPropertyMap = new (nothrow) TOKENMAP;
             IfNullGo(pPropertyMap);
@@ -7988,7 +7988,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
                 IfFailGo(GetPropertyMapRecord(indexMap, &pPropertyMapRec));
                 ridStart = getPropertyListOfPropertyMap(pPropertyMapRec);
                 IfFailGo(getEndPropertyListOfPropertyMap(indexMap, &ridEnd));
-                
+
                 for (indexPr = ridStart; indexPr < ridEnd; indexPr++)
                 {
                     IfFailGo(GetPropertyPtrRecord(indexPr, &pPropertyPtrRec));
@@ -7998,8 +7998,8 @@ CMiniMdRW::FindParentOfPropertyHelper(
                 }
             }
             if (InterlockedCompareExchangeT<TOKENMAP *>(
-                &m_pPropertyMap, 
-                pPropertyMap, 
+                &m_pPropertyMap,
+                pPropertyMap,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pPropertyMap.SuppressRelease();
@@ -8011,7 +8011,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
     {
         RID             ridPropertyMap;
         PropertyMapRec *pRec;
-        
+
         IfFailGo(FindPropertyMapParentOfProperty(RidFromToken(pr), &ridPropertyMap));
         IfFailGo(GetPropertyMapRecord(ridPropertyMap, &pRec));
         *ptd = getParentOfPropertyMap(pRec);
@@ -8025,8 +8025,8 @@ ErrExit:
 // Find parent for an Event token. This will use the lookup table if there is an
 // intermediate table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindParentOfEventHelper(
     mdEvent    ev,
     mdTypeDef *ptd)
@@ -8041,7 +8041,7 @@ CMiniMdRW::FindParentOfEventHelper(
             ULONG       ridStart, ridEnd;
             EventMapRec *pEventMapRec;
             EventPtrRec  *pEventPtrRec;
-            
+
             // build the EventMap table
             NewHolder<TOKENMAP> pEventMap = new (nothrow) TOKENMAP;
             IfNullGo(pEventMap);
@@ -8057,7 +8057,7 @@ CMiniMdRW::FindParentOfEventHelper(
                 IfFailGo(GetEventMapRecord(indexMap, &pEventMapRec));
                 ridStart = getEventListOfEventMap(pEventMapRec);
                 IfFailGo(getEndEventListOfEventMap(indexMap, &ridEnd));
-                
+
                 for (indexEv = ridStart; indexEv < ridEnd; indexEv++)
                 {
                     IfFailGo(GetEventPtrRecord(indexEv, &pEventPtrRec));
@@ -8067,8 +8067,8 @@ CMiniMdRW::FindParentOfEventHelper(
                 }
             }
             if (InterlockedCompareExchangeT<TOKENMAP *>(
-                &m_pEventMap, 
-                pEventMap, 
+                &m_pEventMap,
+                pEventMap,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pEventMap.SuppressRelease();
@@ -8080,7 +8080,7 @@ CMiniMdRW::FindParentOfEventHelper(
     {
         RID         ridEventMap;
         EventMapRec *pRec;
-        
+
         IfFailGo(FindEventMapParentOfEvent(RidFromToken(ev), &ridEventMap));
         IfFailGo(GetEventMapRecord(ridEventMap, &pRec));
         *ptd = getParentOfEventMap(pRec);
@@ -8094,8 +8094,8 @@ ErrExit:
 // Find parent for a ParamDef token. This will use the lookup table if there is an
 // intermediate table.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::FindParentOfParamHelper(
     mdParamDef   pd,
     mdMethodDef *pmd)
@@ -8110,7 +8110,7 @@ CMiniMdRW::FindParentOfParamHelper(
             ULONG       ridStart, ridEnd;
             MethodRec   *pMethodRec;
             ParamPtrRec *pParamPtrRec;
-            
+
             // build the ParamMap table
             NewHolder<TOKENMAP> pParamMap = new (nothrow) TOKENMAP;
             IfNullGo(pParamMap);
@@ -8135,8 +8135,8 @@ CMiniMdRW::FindParentOfParamHelper(
                 }
             }
             if (InterlockedCompareExchangeT<TOKENMAP *>(
-                &m_pParamMap, 
-                pParamMap, 
+                &m_pParamMap,
+                pParamMap,
                 NULL) == NULL)
             {   // We won the initializaion race
                 pParamMap.SuppressRelease();
@@ -8157,8 +8157,8 @@ ErrExit:
 //******************************************************************************
 // Add an entry in the ENC Log table.
 //******************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::UpdateENCLogHelper(
     mdToken                tk,          // Token to be added to the ENCLog table.
     CMiniMdRW::eDeltaFuncs funccode)    // Specifies the optional function code..
@@ -8177,13 +8177,13 @@ CMiniMdRW::UpdateENCLogHelper(
     IfFailGo(AddENCLogRecord(&pRecord, &iRecord));
     pRecord->SetToken(tk);
     pRecord->SetFuncCode(funccode);
-    
+
 ErrExit:
     return hr;
 } // CMiniMdRW::UpdateENCLogHelper
 
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::UpdateENCLogHelper2(
     ULONG                  ixTbl,       // Table being updated.
     ULONG                  iRid,        // Record within table.
@@ -8201,27 +8201,27 @@ ErrExit:
     return hr;
 } // CMiniMdRW::UpdateENCLogHelper2
 
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ResetENCLog()
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT     hr = S_OK;
     ModuleRec * pMod;
-    
+
     // Get the module record.
     IfFailGo(GetModuleRecord(1, &pMod));
-    
-    
+
+
     // Reset the pool deltas
     m_StringHeap.StartNewEnCSession();
     m_BlobHeap.StartNewEnCSession();
     m_UserStringHeap.StartNewEnCSession();
-    
+
     // Clear the ENCLog
     m_Tables[TBL_ENCLog].Delete();
     m_Schema.m_cRecs[TBL_ENCLog] = 0;
-    
+
 ErrExit:
     return hr;
 #else //!FEATURE_METADATA_EMIT
@@ -8232,7 +8232,7 @@ ErrExit:
 // ----------------------------------------------------------------------------
 // Workaround for compiler performance issue VSW 584653 for 2.0 RTM.
 // Get the table's VirtualSort validity state.
-bool 
+bool
 CMiniMdRW::IsTableVirtualSorted(ULONG ixTbl)
 {
     _ASSERTE(ixTbl < m_TblCount);
@@ -8251,38 +8251,38 @@ CMiniMdRW::IsTableVirtualSorted(ULONG ixTbl)
 // Returns new VirtualSort validity state in *pfIsTableVirtualSortValid.
 // Assumptions:
 //    Table's VirtualSort was valid before adding the record to the table.
-//    The caller must ensure validity of VirtualSort by calling to 
-//    IsTableVirtualSorted or by using the returned state from previous 
+//    The caller must ensure validity of VirtualSort by calling to
+//    IsTableVirtualSorted or by using the returned state from previous
 //    call to this method.
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdRW::ValidateVirtualSortAfterAddRecord(
-    ULONG ixTbl, 
+    ULONG ixTbl,
     bool *pfIsTableVirtualSortValid)
 {
     _ASSERTE(ixTbl < m_TblCount);
-    
+
     HRESULT hr;
     VirtualSort *pVS = m_pVS[ixTbl];
-    
+
     // VirtualSort was valid (had to exist)
     _ASSERTE(pVS != NULL);
     // Adding record invalidated VirtualSort
     _ASSERTE(!pVS->m_isMapValid);
     // Only 1 record was added into table (VirtualSort has 1 bogus element)
     _ASSERTE(m_Schema.m_cRecs[ixTbl] == (ULONG)pVS->m_pMap->Count());
-    
+
     // Append 1 element into VirtualSort
     mdToken *pAddedVSToken = pVS->m_pMap->Append();
     if (pAddedVSToken == NULL)
     {   // There's not enough memory
-        // Do not handle OOM now, just leave the VirtualSort invalidated, the 
-        // next allocation will take care of OOM or the VirtualSort will be 
+        // Do not handle OOM now, just leave the VirtualSort invalidated, the
+        // next allocation will take care of OOM or the VirtualSort will be
         // resorted when needed (as it was before this performance workaround)
         *pfIsTableVirtualSortValid = false;
         return S_OK;
     }
-    
+
     // Initialize added element
     int iLastElementIndex = pVS->m_pMap->Count() - 1;
     *pAddedVSToken = iLastElementIndex;
@@ -8291,11 +8291,11 @@ CMiniMdRW::ValidateVirtualSortAfterAddRecord(
     {
         int nCompareResult;
         IfFailRet(pVS->Compare(
-            iLastElementIndex - 1, 
-            iLastElementIndex, 
+            iLastElementIndex - 1,
+            iLastElementIndex,
             &nCompareResult));
         if (nCompareResult < 0)
-        {   // VirtualSort was extended - the added element is bigger than 
+        {   // VirtualSort was extended - the added element is bigger than
             // previously last element in VirtualSort
 
             // Validate VirtualSort as it is still sorted and covers all elements
@@ -8306,9 +8306,9 @@ CMiniMdRW::ValidateVirtualSortAfterAddRecord(
         }
     }
     // The added element doesn't extend VirtualSort - it is not sorted
-    
-    // Keep the VirtualSort invalidated, therefore next binary search will 
-    // force its recreation and resorting (as it did before this performance 
+
+    // Keep the VirtualSort invalidated, therefore next binary search will
+    // force its recreation and resorting (as it did before this performance
     // workaround)
     *pfIsTableVirtualSortValid = false;
     return S_OK;
@@ -8317,7 +8317,7 @@ CMiniMdRW::ValidateVirtualSortAfterAddRecord(
 #ifdef _DEBUG
 
 // ----------------------------------------------------------------------------
-void 
+void
 CMiniMdRW::Debug_CheckIsLockedForWrite()
 {
     // If this assert fires, then we are trying to modify MetaData that is not locked for write
@@ -8331,8 +8331,8 @@ CMiniMdRW::Debug_CheckIsLockedForWrite()
 // Sort the whole RID table
 //
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 VirtualSort::Sort()
 {
     m_isMapValid = true;
@@ -8346,10 +8346,10 @@ VirtualSort::Sort()
 // Sort the range from iLeft to iRight
 //
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 VirtualSort::SortRange(
-    int iLeft, 
+    int iLeft,
     int iRight)
 {
     HRESULT hr;
@@ -8408,8 +8408,8 @@ VirtualSort::SortRange(
 // Compare two RID base on the m_ixTbl's m_ixCol
 //
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 VirtualSort::Compare(
     RID  iLeft,         // First item to compare.
     RID  iRight,        // Second item to compare.
@@ -8449,7 +8449,7 @@ VirtualSort::Compare(
     }
     // Comparing an item to itself?
     _ASSERTE(!"Comparing an item to itself in sort");
-    
+
     *pnResult = 0;
     return S_OK;
 } // VirtualSort::Compare
@@ -8613,7 +8613,7 @@ HRESULT FilterTable::UnmarkAll(
     ULONG       ulSize)
 {
     HRESULT hr;
-    
+
     S_UINT32 nAllocateSize = S_UINT32(ulSize) + S_UINT32(1);
     if (nAllocateSize.IsOverflow())
     {
@@ -8624,18 +8624,18 @@ HRESULT FilterTable::UnmarkAll(
         IfFailGo(E_OUTOFMEMORY);
     }
     memset(Get(0), 0, nAllocateSize.Value() * sizeof(DWORD));
-    
+
     // unmark all of the user string
     m_daUserStringMarker = new (nothrow) CDynArray<FilterUserStringEntry>();
     IfNullGo(m_daUserStringMarker);
-    
+
     for (UINT32 nIndex = 0; ;)
     {
         MetaData::DataBlob userString;
         UINT32 nNextIndex;
         hr = pMiniMd->GetUserStringAndNextIndex(
-            nIndex, 
-            &userString, 
+            nIndex,
+            &userString,
             &nNextIndex);
         IfFailGo(hr);
         if (hr == S_FALSE)
@@ -8644,7 +8644,7 @@ HRESULT FilterTable::UnmarkAll(
             break;
         }
         _ASSERTE(hr == S_OK);
-        
+
         // Skip empty strings
         if (userString.IsEmpty())
         {
@@ -8654,11 +8654,11 @@ HRESULT FilterTable::UnmarkAll(
         FilterUserStringEntry *pItem = m_daUserStringMarker->Append();
         pItem->m_tkString = TokenFromRid(nIndex, mdtString);
         pItem->m_fMarked = false;
-        
+
         // Process next user string in the heap
         nIndex = nNextIndex;
     }
-    
+
 ErrExit:
     return hr;
 } // FilterTable::UnmarkAll
@@ -8675,7 +8675,7 @@ HRESULT FilterTable::MarkAll(
     ULONG       ulSize)
 {
     HRESULT hr = S_OK;
-    
+
     S_UINT32 nAllocateSize = S_UINT32(ulSize) + S_UINT32(1);
     if (nAllocateSize.IsOverflow())
     {
@@ -8686,18 +8686,18 @@ HRESULT FilterTable::MarkAll(
         IfFailGo(E_OUTOFMEMORY);
     }
     memset(Get(0), 0xFFFFFFFF, nAllocateSize.Value() * sizeof(DWORD));
-    
+
     // mark all of the user string
     m_daUserStringMarker = new (nothrow) CDynArray<FilterUserStringEntry>();
     IfNullGo(m_daUserStringMarker);
-    
+
     for (UINT32 nIndex = 0; ;)
     {
         MetaData::DataBlob userString;
         UINT32 nNextIndex;
         hr = pMiniMd->GetUserStringAndNextIndex(
-            nIndex, 
-            &userString, 
+            nIndex,
+            &userString,
             &nNextIndex);
         IfFailGo(hr);
         if (hr == S_FALSE)
@@ -8706,7 +8706,7 @@ HRESULT FilterTable::MarkAll(
             break;
         }
         _ASSERTE(hr == S_OK);
-        
+
         // Skip empty strings
         if (userString.IsEmpty())
         {
@@ -8716,11 +8716,11 @@ HRESULT FilterTable::MarkAll(
         FilterUserStringEntry *pItem = m_daUserStringMarker->Append();
         pItem->m_tkString = TokenFromRid(nIndex, mdtString);
         pItem->m_fMarked = true;
-        
+
         // Process next user string in the heap
         nIndex = nNextIndex;
     }
-    
+
 ErrExit:
     return hr;
 } // FilterTable::MarkAll
@@ -8827,7 +8827,7 @@ bool FilterTable::IsUserStringMarked(mdString str)
     }
 
     high = m_daUserStringMarker->Count() - 1;
-    
+
     while (low <= high)
     {
         mid = (high + low) / 2;

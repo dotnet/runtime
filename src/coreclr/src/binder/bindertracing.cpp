@@ -54,9 +54,9 @@ namespace
 
         GUID activityId = GUID_NULL;
         ActivityTracker::Stop(&activityId);
-        
+
         FireEtwAssemblyLoadStop(
-            GetClrInstanceId(), 
+            GetClrInstanceId(),
             request.AssemblyName,
             request.AssemblyPath,
             request.RequestingAssembly,

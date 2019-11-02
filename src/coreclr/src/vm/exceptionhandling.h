@@ -69,10 +69,10 @@ public:
         m_StackTraceInfo.Init();
 #endif //  DACCESS_COMPILE
 
-#ifndef FEATURE_PAL        
+#ifndef FEATURE_PAL
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
-#endif // !FEATURE_PAL        
+#endif // !FEATURE_PAL
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Initialize the default exception severity to NotCorrupting
@@ -84,7 +84,7 @@ public:
         m_fDeliveredFirstChanceNotification = FALSE;
 
         m_sfFirstPassTopmostFrame.Clear();
-        
+
         m_dwIndexClauseForCatch = 0;
         m_sfEstablisherOfActualHandlerFrame.Clear();
         m_sfCallerOfActualHandlerFrame.Clear();
@@ -121,7 +121,7 @@ public:
         m_ptrs.ContextRecord    = pContextRecord;
 
         m_pLimitFrame = NULL;
-        
+
         if (IsInstanceTaggedSEHCode(pExceptionRecord->ExceptionCode) && ::WasThrownByUs(pExceptionRecord, pExceptionRecord->ExceptionCode))
         {
             m_ExceptionFlags.SetWasThrownByUs();
@@ -129,10 +129,10 @@ public:
 
         m_StackTraceInfo.Init();
 
-#ifndef FEATURE_PAL        
+#ifndef FEATURE_PAL
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
-#endif // !FEATURE_PAL        
+#endif // !FEATURE_PAL
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Initialize the default exception severity to NotCorrupting
@@ -146,9 +146,9 @@ public:
         m_dwIndexClauseForCatch = 0;
         m_sfEstablisherOfActualHandlerFrame.Clear();
         m_sfCallerOfActualHandlerFrame.Clear();
-        
+
         m_sfFirstPassTopmostFrame.Clear();
-        
+
         m_fFixupCallerSPForGCReporting = false;
 
         m_fResetEnclosingClauseSPForCatchFunclet = FALSE;
@@ -175,11 +175,11 @@ public:
         STS_NewException,
     };
 
-    static void InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pThread, StackFrame sf, REGDISPLAY* pRD, 
-                                     PT_DISPATCHER_CONTEXT pDispatcherContext, DWORD_PTR ControlPCForEHSearch, 
+    static void InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pThread, StackFrame sf, REGDISPLAY* pRD,
+                                     PT_DISPATCHER_CONTEXT pDispatcherContext, DWORD_PTR ControlPCForEHSearch,
                                      UINT_PTR* puMethodStartPC,
                                      ExceptionTracker *pCurrentTracker);
-    
+
     void InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThisFrame, PT_DISPATCHER_CONTEXT pDispatcherContext, StackFrame sfEstablisherFrame);
 
     static void InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisFrame, Frame* pFrame, MethodDesc *pMD);
@@ -225,7 +225,7 @@ public:
     void FirstPassIsComplete();
     void SecondPassIsComplete(MethodDesc* pMD, StackFrame sfResumeStackFrame);
 
-    CLRUnwindStatus HandleFunclets(bool* pfProcessThisFrame, bool fIsFirstPass, 
+    CLRUnwindStatus HandleFunclets(bool* pfProcessThisFrame, bool fIsFirstPass,
         MethodDesc * pMD, bool fFunclet, StackFrame sf);
 
     static OBJECTREF CreateThrowable(
@@ -321,8 +321,8 @@ public:
     //
     // <WARNING>
     // It is not valid to call this function on an arbitrary funclet.  You have to be doing a full stackwalk from
-    // the leaf frame and skipping method frames as indicated by the return value of this function.  This function 
-    // relies on the ExceptionTrackers, which are collapsed in the second pass when a nested exception escapes.  
+    // the leaf frame and skipping method frames as indicated by the return value of this function.  This function
+    // relies on the ExceptionTrackers, which are collapsed in the second pass when a nested exception escapes.
     // When this happens, we'll lose information on the funclet represented by the collapsed tracker.
     // </WARNING>
     //
@@ -345,7 +345,7 @@ public:
     // Return Value:
     // StackFrame.IsNull()   - no skipping is necessary
     // Anything else         - the StackFrame of the parent method frame
-    static StackFrame FindParentStackFrameEx(CrawlFrame* pCF, 
+    static StackFrame FindParentStackFrameEx(CrawlFrame* pCF,
                                              DWORD*      pParentOffset,
                                              UINT_PTR*   pParentCallerSP);
 
@@ -409,7 +409,7 @@ private:
         ClauseCoversPC(EE_ILEXCEPTION_CLAUSE* pEHClause,
                        DWORD dwOffset);
 
-    static bool 
+    static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
 
 #ifndef DACCESS_COMPILE
@@ -469,18 +469,18 @@ private:
 
     // private helpers
     static StackFrame GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFrame *pCF);
-    
+
     static StackFrame FindParentStackFrameHelper(CrawlFrame* pCF,
                                                  bool*       pfRealParent,
-                                                 DWORD*      pParentOffset, 
+                                                 DWORD*      pParentOffset,
                                                  UINT_PTR*   pParentCallerSP,
                                                  bool        fForGCReporting = false);
 
     static StackFrame RareFindParentStackFrame(CrawlFrame* pCF,
-                                               DWORD*      pParentOffset, 
+                                               DWORD*      pParentOffset,
                                                UINT_PTR*   pParentCallerSP);
 
-    static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData); 
+    static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 
     struct DAC_EXCEPTION_POINTERS
     {
@@ -556,14 +556,14 @@ public:
     StackFrame GetEstablisherOfActualHandlingFrame()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return m_sfEstablisherOfActualHandlerFrame;
     }
 
     StackFrame GetCallerOfActualHandlingFrame()
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         return m_sfCallerOfActualHandlerFrame;
     }
 
@@ -590,7 +590,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTracker, this, m_WatsonBucketTracker));
     }
-#endif // !FEATURE_PAL        
+#endif // !FEATURE_PAL
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 private:
@@ -625,7 +625,7 @@ public:
     inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
     {
         LIMITED_METHOD_CONTRACT;
-    
+
         m_fDeliveredFirstChanceNotification = fDelivered;
     }
 
@@ -654,7 +654,7 @@ public:
     {
         return &m_EHClauseInfo;
     }
-    
+
 private: ;
 
     void ReleaseResources();
@@ -719,7 +719,7 @@ private: ;
     StackTraceInfo          m_StackTraceInfo;
     UINT_PTR                m_uCatchToCallPC;
     BOOL           m_fResetEnclosingClauseSPForCatchFunclet;
-    
+
     union
     {
         MethodDesc*         m_pSkipToParentFunctionMD;      // SKIPTOPARENT
@@ -732,7 +732,7 @@ private: ;
     EE_ILEXCEPTION_CLAUSE   m_ClauseForCatch;
     // Index of EH clause that will catch the exception
     DWORD                   m_dwIndexClauseForCatch;
-    
+
     // Establisher frame of the managed frame that contains
     // the handler for the exception (corresponding
     // to the EH index we save off in m_dwIndexClauseForCatch)
@@ -758,7 +758,7 @@ private: ;
 
     // This flag indicates whether the SP we pass to a funclet is for an enclosing funclet.
     EnclosingClauseInfo     m_EnclosingClauseInfo;
-    
+
     // This stores the actual callerSP of the frame that is about to execute the funclet.
     // It differs from "m_EnclosingClauseInfo" where upon detecting a nested exception,
     // the latter can contain the callerSP of the original funclet instead of that of the
@@ -796,7 +796,7 @@ private:
     enum
     {
         //
-        // Due to the unexpected growth of the ExceptionTracker struct, 
+        // Due to the unexpected growth of the ExceptionTracker struct,
         // GetOsPageSize() does not seem appropriate anymore on x64, and
         // we should behave the same on x64 as on ia64 regardless of
         // the difference between the page sizes on the platforms.

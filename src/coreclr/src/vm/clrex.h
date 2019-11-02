@@ -22,7 +22,7 @@ class AssemblySpec;
 class PEFile;
 class PEAssembly;
 
-struct StackTraceElement 
+struct StackTraceElement
 {
     UINT_PTR        ip;
     UINT_PTR        sp;
@@ -46,7 +46,7 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
-private:    
+private:
     // for building stack trace info
     StackTraceElement*  m_pStackTrace;      // pointer to stack trace storage
     unsigned            m_cStackTrace;      // size of stack trace storage
@@ -96,7 +96,7 @@ public:
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || Exception::IsType(type);  }
 
-    BOOL IsSameInstanceType(Exception *pException) 
+    BOOL IsSameInstanceType(Exception *pException)
     {
         STATIC_CONTRACT_MODE_COOPERATIVE;
         STATIC_CONTRACT_GC_TRIGGERS;
@@ -108,12 +108,12 @@ public:
         }
         OBJECTREF mine = GetThrowable();
         OBJECTREF other = ((CLRException*)pException)->GetThrowable();
-        return mine != NULL && other != NULL && 
+        return mine != NULL && other != NULL &&
             mine->GetMethodTable() == other->GetMethodTable();
     }
 
     // Overrides
-    virtual BOOL IsDomainBound() 
+    virtual BOOL IsDomainBound()
     {
         //@TODO special case for preallocated exceptions?
         return TRUE;
@@ -122,7 +122,7 @@ public:
     HRESULT GetHR();
     IErrorInfo *GetErrorInfo();
     HRESULT SetErrorInfo();
-    
+
     void GetMessage(SString &result);
 
  protected:
@@ -151,7 +151,7 @@ public:
     // Use these to determine if a handle or object ref is one of the preallocated handles or object refs.
     static BOOL IsPreallocatedExceptionObject(OBJECTREF o);
     static BOOL IsPreallocatedExceptionHandle(OBJECTHANDLE h);
-    
+
     // Prefer a new OOM exception if we can make one.  If we cannot, then give back the pre-allocated
     // one.
     static OBJECTREF GetBestOutOfMemoryException();
@@ -211,9 +211,9 @@ class EEException : public CLRException
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || CLRException::IsType(type); }
 
-    BOOL IsSameInstanceType(Exception *pException) 
+    BOOL IsSameInstanceType(Exception *pException)
     {
-        WRAPPER_NO_CONTRACT; 
+        WRAPPER_NO_CONTRACT;
         return pException->GetInstanceType() == GetType() && ((EEException*)pException)->m_kind == m_kind;
     }
 
@@ -240,20 +240,20 @@ class EEException : public CLRException
   protected:
     static HRESULT GetHRFromKind(RuntimeExceptionKind reKind);
 
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEException() : m_kind(kException)
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
         // We need a variant which does not allocate memory.
     }
 #endif // _DEBUG
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
         return new EEException(m_kind);
     }
-        
+
 };
 
 // ---------------------------------------------------------------------------
@@ -264,7 +264,7 @@ class EEException : public CLRException
 class EEMessageException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     HRESULT             m_hr;
     UINT                m_resID;
@@ -276,17 +276,17 @@ class EEMessageException : public EEException
     SString             m_arg6;
 
  public:
-    EEMessageException(RuntimeExceptionKind kind, UINT resID = 0, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, 
+    EEMessageException(RuntimeExceptionKind kind, UINT resID = 0, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL,
                        LPCWSTR szArg3 = NULL, LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
 
     EEMessageException(HRESULT hr);
 
     EEMessageException(HRESULT hr, bool fUseCOMException);
 
-    EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, LPCWSTR szArg3 = NULL, 
+    EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, LPCWSTR szArg3 = NULL,
                        LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
 
-    EEMessageException(RuntimeExceptionKind kind, HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, 
+    EEMessageException(RuntimeExceptionKind kind, HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL,
                        LPCWSTR szArg3 = NULL, LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
 
     // Virtual overrides
@@ -310,9 +310,9 @@ class EEMessageException : public EEException
                 m_kind, m_hr, m_resID, m_arg1, m_arg2, m_arg3, m_arg4, m_arg5, m_arg6);
     }
 
-    
+
  private:
-    
+
     static PVOID GetEEMessageExceptionVPtr()
     {
         CONTRACT (PVOID)
@@ -323,14 +323,14 @@ class EEMessageException : public EEException
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
-        
+
         EEMessageException boilerplate(E_FAIL);
         RETURN (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
 
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEMessageException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -347,7 +347,7 @@ class EEMessageException : public EEException
 class EEResourceException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     InlineSString<32>        m_resourceName;
 
@@ -361,7 +361,7 @@ class EEResourceException : public EEException
     BOOL GetThrowableMessage(SString &result);
 
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -369,7 +369,7 @@ class EEResourceException : public EEException
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEResourceException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -397,8 +397,8 @@ struct ExceptionData
     BSTR      bstrRestrictedError;              // Returned from IRestrictedErrorInfo::GetErrorDetails
     BSTR      bstrReference;                    // Returned from IRestrictedErrorInfo::GetReference
     BSTR      bstrCapabilitySid;                // Returned from IRestrictedErrorInfo::GetErrorDetails
-    IUnknown *pRestrictedErrorInfo;             // AddRef-ed RestrictedErrorInfo pointer 
-                                                // We need to keep this alive as long as user need the reference                                            
+    IUnknown *pRestrictedErrorInfo;             // AddRef-ed RestrictedErrorInfo pointer
+                                                // We need to keep this alive as long as user need the reference
     BOOL      bHasLanguageRestrictedErrorInfo;
 #endif // FEATURE_COMINTEROP
 };
@@ -406,7 +406,7 @@ struct ExceptionData
 class EECOMException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     ExceptionData m_ED;
 
@@ -430,7 +430,7 @@ class EECOMException : public EEException
     OBJECTREF CreateThrowable();
 
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -438,7 +438,7 @@ class EECOMException : public EEException
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EECOMException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -454,7 +454,7 @@ private:
 class EEFieldException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     FieldDesc   *m_pFD;
     MethodDesc  *m_pAccessingMD;
@@ -468,7 +468,7 @@ class EEFieldException : public EEException
     BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
 protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -476,7 +476,7 @@ protected:
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEFieldException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -492,7 +492,7 @@ private:
 class EEMethodException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     MethodDesc *m_pMD;
     MethodDesc *m_pAccessingMD;
@@ -506,7 +506,7 @@ class EEMethodException : public EEException
     BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -514,7 +514,7 @@ class EEMethodException : public EEException
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEMethodException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -531,7 +531,7 @@ private:
 class EETypeAccessException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     MethodTable *m_pMT;
     MethodDesc  *m_pAccessingMD;
@@ -545,7 +545,7 @@ class EETypeAccessException : public EEException
     BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -553,7 +553,7 @@ class EETypeAccessException : public EEException
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EETypeAccessException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -570,7 +570,7 @@ private:
 class EEArgumentException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
  private:
     InlineSString<32>        m_argumentName;
     InlineSString<32>        m_resourceName;
@@ -584,7 +584,7 @@ class EEArgumentException : public EEException
     OBJECTREF CreateThrowable();
 
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -592,7 +592,7 @@ class EEArgumentException : public EEException
     }
 
 private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEArgumentException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -609,7 +609,7 @@ private:
 class EETypeLoadException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
   private:
     InlineSString<64>   m_fullName;
     SString             m_pAssemblyName;
@@ -628,7 +628,7 @@ class EETypeLoadException : public EEException
     OBJECTREF CreateThrowable();
 
  protected:
-    
+
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
@@ -647,8 +647,8 @@ class EETypeLoadException : public EEException
         WRAPPER_NO_CONTRACT;
     }
 
-    
-#ifdef _DEBUG    
+
+#ifdef _DEBUG
     EETypeLoadException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -665,10 +665,10 @@ class EETypeLoadException : public EEException
 class EEFileLoadException : public EEException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
-    
+
   private:
     SString m_name;
-    HRESULT m_hr;       
+    HRESULT m_hr;
 
   public:
 
@@ -700,7 +700,7 @@ class EEFileLoadException : public EEException
     }
 
  private:
-#ifdef _DEBUG    
+#ifdef _DEBUG
     EEFileLoadException()
     {
         // Used only for DebugIsEECxxExceptionPointer to get the vtable pointer.
@@ -729,7 +729,7 @@ class EEFileLoadException : public EEException
 
 // In DAC builds, we don't want to override the normal utilcode exception handling.
 // We're not actually running in the CLR, but we may need access to some CLR-exception
-// related data structures elsewhere in this header file in order to analyze CLR 
+// related data structures elsewhere in this header file in order to analyze CLR
 // exceptions that occurred in the target.
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
@@ -742,7 +742,7 @@ class EEFileLoadException : public EEException
 //
 // We also check the global override flag incase it has been set to force pre-V4 behaviour.
 //
-// Doing the checks for "__fCaughtSO" and "__fCaughtNonCxx" will ensure that we check for 
+// Doing the checks for "__fCaughtSO" and "__fCaughtNonCxx" will ensure that we check for
 // corruption severity only if the last exception was a managed exception that could have been rethrown in the VM.
 // When "(__fCaughtSO == FALSE) && (__fCaughtNonCxx == true)" is true, it implies we are dealing with a managed exception
 // inside the VM that is represented by the CLRLastThrownObjectException instance (see EX_TRY/EX_CATCH implementation in VM
@@ -772,7 +772,7 @@ class EEFileLoadException : public EEException
 // enter EX_CATCH in VM2 which is supposed to rethrow it as well. But if the implementation of EX_CATCH in VM2 throws
 // another VM C++ exception (e.g. EEFileLoadException) *before* rethrow policy is applied, control will reach EX_CATCH
 // in VM1 that *shouldn't* rethrow (even though it has RethrowCSE as the policy) since the last exception was a VM C++
-// exception. 
+// exception.
 //
 // Scenario 3
 // ----------
@@ -877,15 +877,15 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 
 //
 // Note: we only restore the guard page if we did _not_ catch a C++ exception, since a SO exception is a SEH
-// exception. 
+// exception.
 //
 // We also need to restore the SO tolerance state, including restoring the cookie for the current stack guard.
 //
 // For VM code EX_CATCH calls CLREXception::HandleState::SetupCatch().
-// When Stack guards are disabled we will tear down the process in 
+// When Stack guards are disabled we will tear down the process in
 // CLREXception::HandleState::SetupCatch() if there is a StackOverflow.
 // So we should not reach EX_ENDTRY when there is StackOverflow.
-// This change cannot be done in ex.h as for all other code 
+// This change cannot be done in ex.h as for all other code
 // CLREXception::HandleState::SetupCatch() is not called rather
 // EXception::HandleState::SetupCatch() is called which is a nop.
 //
@@ -894,10 +894,10 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     PAL_CPP_ENDTRY
 
 
-// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef 
+// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef
 // that invokes ObjHeader::GetSyncBlock which has the INJECT_FAULT contract.
-// 
-// This EX_CATCH_HRESULT implementation can be used in functions 
+//
+// This EX_CATCH_HRESULT implementation can be used in functions
 // that have FORBID_FAULT contracts.
 //
 // However, failure due to OOM (or any other potential exception) in GetErrorInfo
@@ -991,7 +991,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                           \
     }                                                               \
 
-// This macro should be used at the entry points (e.g. COM interop boundaries) 
+// This macro should be used at the entry points (e.g. COM interop boundaries)
 // where CE's are not expected to get swallowed.
 #define END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX(fCond) \
             }                                                       \
@@ -1003,7 +1003,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                           \
     }                                                               \
 
-// This macro should be used at the entry points (e.g. COM interop boundaries) 
+// This macro should be used at the entry points (e.g. COM interop boundaries)
 // where CE's are not expected to get swallowed.
 #define END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS           \
     END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX(TRUE)
@@ -1065,7 +1065,7 @@ inline EEMessageException::EEMessageException(HRESULT hr, bool fUseCOMException)
 //   kind       -- "clr kind" of the exception
 //   resid      -- resource id for message
 //   strings    -- substitution text for message
-inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, UINT resID, LPCWSTR szArg1, LPCWSTR szArg2, 
+inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, UINT resID, LPCWSTR szArg1, LPCWSTR szArg2,
                                               LPCWSTR szArg3, LPCWSTR szArg4, LPCWSTR szArg5, LPCWSTR szArg6)
   : EEException(kind),
     m_hr(EEException::GetHRFromKind(kind)),
@@ -1085,7 +1085,7 @@ inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, UINT re
 //   hr         -- hresult that lead to this exception
 //   resid      -- resource id for message
 //   strings    -- substitution text for message
-inline EEMessageException::EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1, LPCWSTR szArg2, LPCWSTR szArg3, 
+inline EEMessageException::EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1, LPCWSTR szArg2, LPCWSTR szArg3,
                                               LPCWSTR szArg4, LPCWSTR szArg5, LPCWSTR szArg6)
   : EEException(GetKindFromHR(hr)),
     m_hr(hr),
@@ -1098,7 +1098,7 @@ inline EEMessageException::EEMessageException(HRESULT hr, UINT resID, LPCWSTR sz
     m_arg6(szArg6)
 {
 }
-    
+
 //-----------------------------------------------------------------------------
 // Constructor with no defaults
 //   kind       -- "clr kind" of the exception
@@ -1106,7 +1106,7 @@ inline EEMessageException::EEMessageException(HRESULT hr, UINT resID, LPCWSTR sz
 //   resid      -- resource id for message
 //   strings    -- substitution text for message
 inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, HRESULT hr, UINT resID, LPCWSTR szArg1,
-                                              LPCWSTR szArg2, LPCWSTR szArg3, LPCWSTR szArg4, LPCWSTR szArg5, 
+                                              LPCWSTR szArg2, LPCWSTR szArg3, LPCWSTR szArg4, LPCWSTR szArg5,
                                               LPCWSTR szArg6)
   : EEException(kind),
     m_hr(hr),
@@ -1217,7 +1217,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         return new ObjrefException();
     }
-    
+
     virtual Exception *DomainBoundCloneHelper();
 };
 
@@ -1228,23 +1228,23 @@ class CLRLastThrownObjectException : public CLRException
 
  public:
     CLRLastThrownObjectException();
-    
+
  private:
     static const int c_type = 0x4C544F20;   // 'LTO '
- 
+
  public:
     // Dynamic type query for catchers
     static int GetType() {LIMITED_METHOD_CONTRACT;  return c_type; }
     virtual int GetInstanceType() { LIMITED_METHOD_CONTRACT; return c_type; }
     BOOL IsType(int type) { WRAPPER_NO_CONTRACT; return type == c_type || CLRException::IsType(type); }
-    
+
     #if defined(_DEBUG)
       CLRLastThrownObjectException* Validate();
     #endif // _DEBUG
 
  protected:
     virtual Exception *CloneHelper();
-   
+
     virtual Exception *DomainBoundCloneHelper();
 
     virtual OBJECTREF CreateThrowable();

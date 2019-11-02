@@ -131,18 +131,18 @@ public:
 
     // Map a well-known WinRT full typename to CLR full typename
     static BOOL ConvertWellKnownFullTypeNameFromWinRTToClr(LPCWSTR *pszFullName, RedirectedTypeIndex *pIndex);
-    
+
     // Map a well-known CLR typename to WinRT typename
     static BOOL ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszFullName);
 
     // Map a well-known CLR typename to WinRT typename
     static BOOL ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszNamespace, LPCSTR *pszName);
-        
+
     // Returns names of redirected type 'index'.
     static void GetRedirectedTypeInfo(
-        RedirectedTypeIndex index, 
-        LPCSTR *            pszClrNamespace, 
-        LPCSTR *            pszClrName, 
+        RedirectedTypeIndex index,
+        LPCSTR *            pszClrNamespace,
+        LPCSTR *            pszClrName,
         LPCSTR *            pszFullWinRTName,
         FrameworkAssemblyIndex * pFrameworkAssemblyIdx,
         ContractAssemblyIndex * pContractAssemblyIdx,
@@ -160,7 +160,7 @@ public:
         DWORD       *pdwFlags,              // [OUT] return typedef flags
         mdToken     *ptkExtends             // [OUT] Put base class TypeDef/TypeRef here.
     );
-    
+
     // Find TypeDef by name
     HRESULT FindTypeDef(
         LPCSTR      szTypeDefNamespace, // [IN] Namespace for the TypeDef.
@@ -200,7 +200,7 @@ public:
         mdExportedType   *ptkExportedType  // [OUT] ExportedType token returned.
     );
 
-    // Returns rewritten metadata version string 
+    // Returns rewritten metadata version string
     HRESULT GetVersionString(
         LPCSTR       *pszVersion           // [OUT] return metadata version string
     )
@@ -253,17 +253,17 @@ public:
                 if (index != ContractAssemblyIndex::ContractAssembly_SystemRuntimeWindowsRuntime &&
                     index != ContractAssemblyIndex::ContractAssembly_SystemRuntimeWindowsRuntimeUIXaml)
                 {
-                    // The assembly ref is a contract/facade assembly. System.Runtime.WindowsRuntime and 
-                    // System.Runtime.WindowsRuntime.UI.Xaml are special cased because the contract and the implementation 
-                    // assembly share the same identity and use mscorlib's public key/token that ppbPublicKeyOrToken 
-                    // alredy contains since the raw GetAssemblyRefProps was called with mscorlib's token before this 
-                    // function was called. 
+                    // The assembly ref is a contract/facade assembly. System.Runtime.WindowsRuntime and
+                    // System.Runtime.WindowsRuntime.UI.Xaml are special cased because the contract and the implementation
+                    // assembly share the same identity and use mscorlib's public key/token that ppbPublicKeyOrToken
+                    // alredy contains since the raw GetAssemblyRefProps was called with mscorlib's token before this
+                    // function was called.
                     if (*pcbPublicKeyOrToken == sizeof(s_pbContractPublicKeyToken))
                         *ppbPublicKeyOrToken = s_pbContractPublicKeyToken;
                     else if (*pcbPublicKeyOrToken == sizeof(s_pbContractPublicKey))
                         *ppbPublicKeyOrToken = s_pbContractPublicKey;
                 }
-                else 
+                else
                 {
                     // System.Runtime.WindowsRuntime uses the ECMA key.
                     // The WinRT adapter's policy of using mscorlib's assembly references for all the additional
@@ -347,7 +347,7 @@ public:
     HRESULT ReinterpretFieldSignature      (ULONG cbOrigSigBlob, PCCOR_SIGNATURE pOrigSig, SigData **ppSigData);
     HRESULT ReinterpretTypeSpecSignature   (ULONG cbOrigSigBlob, PCCOR_SIGNATURE pOrigSig, SigData **ppSigData);
     HRESULT ReinterpretMethodSpecSignature (ULONG cbOrigSigBlob, PCCOR_SIGNATURE pOrigSig, SigData **ppSigData);
-    
+
     template<mdToken TOKENTYPE>
     HRESULT ReinterpretSignature(
         ULONG            cbOrigSigBlob,     // [IN] count of bytes in original signature blob
@@ -406,7 +406,7 @@ public:
         return ReinterpretMethodSpecSignature(cbOrigSigBlob, pOrigSig, ppSigData);
     }
 
-    // Note: This method will look in a cache for the reinterpreted signature, but does not add any values to 
+    // Note: This method will look in a cache for the reinterpreted signature, but does not add any values to
     // the cache or do any work on failure.  If we can't find it then it returns S_FALSE.
     static HRESULT GetCachedSigForToken(
         mdToken          token,             // [IN] given token
@@ -475,7 +475,7 @@ public:
     {
         return pImport->GetMethodSpecProps(tk, NULL, ppvSig, pcbSig);
     }
- 
+
     // Explicit specializations of GetOriginalSigForToken for all supported token types (IMDInternalImport)
     template<> // mdMethodDef
     HRESULT GetOriginalSigForToken<IMDInternalImport, mdtMethodDef>(IMDInternalImport *pImport, mdMethodDef tk, PCCOR_SIGNATURE *ppvSig, ULONG *pcbSig)
@@ -533,14 +533,14 @@ public:
         {
             return S_OK;
         }
-        
+
         // When loading NGen images we go through code paths that expect no faults and no
         // throws.  We will need to take a look at how we use the winmd metadata with ngen,
         // potentially storing the post-mangled metadata in the NI because as the adapter grows
         // we'll see more of these.
         CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
-        
-        HRESULT hr = S_OK;        
+
+        HRESULT hr = S_OK;
         ULONG cbOrigSigBlob = (ULONG)(-1);
         PCCOR_SIGNATURE pOrigSig = NULL;
         BOOL fPassThrough = FALSE;
@@ -553,7 +553,7 @@ public:
         {
             // We do not want to leak S_FALSE from this function
             hr = S_OK;
-            
+
             // Original signature has already been provided?
             if ((pcbOrigSigBlob == NULL) || (ppOrigSig == NULL))
             {
@@ -566,7 +566,7 @@ public:
                 pOrigSig = *ppOrigSig;
                 cbOrigSigBlob = *pcbOrigSigBlob;
             }
-            
+
             if (fPassThrough)  // We cached that we don't need to reinterpret anything.
             {
                 if (ppSig != NULL)
@@ -579,7 +579,7 @@ public:
                 SigData *pSigData;
                 IfFailRet(ReinterpretSignature<TOKENTYPE>(cbOrigSigBlob, pOrigSig, &pSigData));
                 IfFailRet(InsertCachedSigForToken(token, memoTable, &pSigData));
-                
+
                 fPassThrough = (pSigData == SigData::NOREDIRECT);
 
                 if (ppSig != NULL)
@@ -595,13 +595,13 @@ public:
         }
         // We should return error (via IfFailRet macro) or S_OK here
         _ASSERTE(hr == S_OK);
-        
+
         return hr;
-    }  
+    }
 
     //
     // Support for extra assembly refs inserted into this assembly
-    //    
+    //
     ULONG GetRawAssemblyRefCount() { return m_rawAssemblyRefCount; }
 
     mdAssemblyRef GetAssemblyRefMscorlib() { return m_assemblyRefMscorlib; }
@@ -692,7 +692,7 @@ public:
         _ASSERTE(TypeFromToken(tk) == mdtAssemblyRef);
 
         RID rid = RidFromToken(tk);
-        if (rid > 0 && 
+        if (rid > 0 &&
             rid <= m_rawAssemblyRefCount + GetExtraAssemblyRefCount())
         {
             return TRUE;
@@ -733,7 +733,7 @@ private:
     struct CABlob;
 
 private:
-    
+
     WinMDAdapter(IMDCommon * pRawMDCommon);
 
     // S_OK if this is a CLR implementation type that was mangled and hidden by WinMDExp
@@ -741,10 +741,10 @@ private:
 
     // Get TypeRefTreatment value for a typeRef
     HRESULT GetTypeRefTreatment(mdTypeRef typeRef, ULONG *ppTypeRefTreatment);
-    
+
     // Get TypeRef's index in array code:g_rgRedirectedTypes or return S_FALSE.
     HRESULT GetTypeRefRedirectedInfo(
-        mdTypeRef             tkTypeRef, 
+        mdTypeRef             tkTypeRef,
         RedirectedTypeIndex * pIndex);
 
     // Get TypeDefTreatment value for a typeDef
@@ -764,7 +764,7 @@ private:
     static HRESULT CreateClrAttributeUsageAttributeCABlob(DWORD clrTargetValue, BOOL allowMultiple, CABlob **ppCABlob);
 
     // Whether the WinRT type should be hidden from managed code
-    // Example: helper class/interface for projected jupiter structs   
+    // Example: helper class/interface for projected jupiter structs
     static BOOL IsHiddenWinRTType(LPCSTR szWinRTNamespace, LPCSTR szWinRTName);
 
     // Map a WinRT typename to CLR typename
@@ -778,12 +778,12 @@ private:
     }
 
     HRESULT RewriteTypeInSignature(SigParser * pSigParser, SigBuilder * pSigBuilder, BOOL * pfChangedSig);
-    
+
   private:
     //-----------------------------------------------------------------------------------
     // Pointer to the raw view of the metadata.
     //-----------------------------------------------------------------------------------
-    IMetaModelCommonRO *m_pRawMetaModelCommonRO;  
+    IMetaModelCommonRO *m_pRawMetaModelCommonRO;
 
 
   private:
@@ -797,13 +797,13 @@ private:
     };
 
     WinMDScenario       m_scenario;
-  
+
 
   private:
 
     //-----------------------------------------------------------------------------------
     // Every WinMD file is required to have an assemblyRef to mscorlib - this field caches that assemblyRef
-    //-----------------------------------------------------------------------------------     
+    //-----------------------------------------------------------------------------------
     mdAssemblyRef       m_assemblyRefMscorlib;
     BOOL                m_fReferencesMscorlibV4;    // m_assemblyRefMscorlib is a version=4.0.0.0 AssemblyRef
     ULONG               m_rawAssemblyRefCount;      // the raw assembly ref count not including the extra ones.
@@ -820,14 +820,14 @@ private:
         kTrClassMask                   = 0xff000000,
 
         // Lower 24-bits represent fixed values (defined in rest of enum)
-        kTrClassMisc                   = 0x00000000,  
+        kTrClassMisc                   = 0x00000000,
 
         // TypeRef is one of a small # of hard-coded Windows.Foundation types that we redirect to mscorlib counterparts.
         // Lower 24-bits is index into typeref redirection table.
         kTrClassWellKnownRedirected    = 0x01000000,
 
         kTrNotYetInitialized = kTrClassMisc|0x000000, // Entry has not yet been initialized.
-        kTrNoRewriteNeeded   = kTrClassMisc|0x000001, // Do not mangle the name. 
+        kTrNoRewriteNeeded   = kTrClassMisc|0x000001, // Do not mangle the name.
         kTrSystemDelegate    = kTrClassMisc|0x000002, // Fast-recognition code for System.Delegate
         kTrSystemAttribute   = kTrClassMisc|0x000003, // Fast-recognition code for System.Attribute
         kTrSystemEnum        = kTrClassMisc|0x000004, // Fast-recognition code for System.Enum

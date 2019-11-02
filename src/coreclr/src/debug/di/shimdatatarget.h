@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ShimDataTarget.h
-// 
+//
 
-// 
+//
 // header for liveproc data targets
 //*****************************************************************************
 
@@ -13,13 +13,13 @@
 #define SHIMDATATARGET_H_
 
 
-// Function to invoke for 
+// Function to invoke for
 typedef HRESULT (*FPContinueStatusChanged)(void * pUserData, DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus);
 
 
 //---------------------------------------------------------------------------------------
-// Data target for a live process. This is used by Shim. 
-// 
+// Data target for a live process. This is used by Shim.
+//
 class ShimDataTarget : public ICorDebugMutableDataTarget, ICorDebugDataTarget4
 {
 public:
@@ -44,7 +44,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID InterfaceId,
         PVOID* Interface);
-    
+
     virtual ULONG STDMETHODCALLTYPE AddRef();
 
     virtual ULONG STDMETHODCALLTYPE Release();
@@ -53,16 +53,16 @@ public:
     // ICorDebugMutableDataTarget.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetPlatform( 
+    virtual HRESULT STDMETHODCALLTYPE GetPlatform(
         CorDebugPlatform * pPlatform) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE ReadVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE ReadVirtual(
         CORDB_ADDRESS address,
         BYTE * pBuffer,
         ULONG32 request,
         ULONG32 * pcbRead) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE WriteVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE WriteVirtual(
         CORDB_ADDRESS address,
         const BYTE * pBuffer,
         ULONG32 request) = 0;
@@ -86,7 +86,7 @@ public:
 
     //
     // ICorDebugDataTarget4
-    //    
+    //
 
     // Unwind to the next stack frame
     virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(

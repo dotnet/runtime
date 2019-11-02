@@ -69,8 +69,8 @@ void GetMapViewOfFile(__in WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
                                NULL,
                                OPEN_EXISTING,
                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                               NULL); 
-    if (hFile == INVALID_HANDLE_VALUE) 
+                               NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
         MDInfo::Error("CreateFileA failed!");
 
     *pdwFileSize = GetFileSize(hFile, &dwHighSize);
@@ -89,7 +89,7 @@ void GetMapViewOfFile(__in WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 
     *ppbMap = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(hMapFile);
-    
+
     if (!*ppbMap)
         MDInfo::Error("MapViewOfFile failed!");
 } // void GetMapViewOfFile()
@@ -214,7 +214,7 @@ void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt
 
             // Display metadata only for object files.
             // If szObjName is specified, display metadata only for that one object file.
-            if (!_stricmp(&szName[strlen(szName) - OBJ_EXT_LEN], OBJ_EXT) && 
+            if (!_stricmp(&szName[strlen(szName) - OBJ_EXT_LEN], OBJ_EXT) &&
                 (!szObjName || !_wcsicmp(szObjName, wzName)))
             {
                 // Try to find the MetaData section in the current object file.
@@ -253,13 +253,13 @@ void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt
 void DisplayFile(__in_z __in WCHAR* szFile, BOOL isFile, ULONG DumpFilter, __in_z __in_opt WCHAR* szObjName, strPassBackFn pDisplayString)
 {
     // Open the emit scope
-    
+
     // We need to make sure this file isn't too long. Checking _MAX_PATH is probably safe, but since we have a much
     // larger buffer, we might as well use it all.
     if (wcslen(szFile) > 1000)
         return;
 
-    
+
     WCHAR szScope[1024];
 	char szString[1024];
 

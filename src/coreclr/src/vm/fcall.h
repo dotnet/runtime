@@ -13,7 +13,7 @@
 
 // It is illegal to cause a GC or EH to happen in an FCALL before setting
 // up a frame.  To prevent accidentally violating this rule, FCALLs turn
-// on BEGINGCFORBID, which insures that these things can't happen in a 
+// on BEGINGCFORBID, which insures that these things can't happen in a
 // checked build without causing an ASSERTE.  Once you set up a frame,
 // this state is turned off as long as the frame is active, and then is
 // turned on again when the frame is torn down.   This mechanism should
@@ -23,10 +23,10 @@
 
 //      HELPER_METHOD_FRAME_BEGIN_RET*()    // Use If the FCALL has a return value
 //      HELPER_METHOD_FRAME_BEGIN*()        // Use If FCALL does not return a value
-//      HELPER_METHOD_FRAME_END*()              
+//      HELPER_METHOD_FRAME_END*()
 
 // These macros introduce a scope which is protected by an HelperMethodFrame.
-// In this scope you can do EH or GC.   There are rules associated with 
+// In this scope you can do EH or GC.   There are rules associated with
 // their use.  In particular
 
 //      1) These macros can only be used in the body of a FCALL (that is
@@ -47,31 +47,31 @@
 // will protect the GC variables arg1, and arg2 as well as erecting the frame.
 
 // Another invariant that you must be aware of is the need to poll to see if
-// a GC is needed by some other thread.   Unless the FCALL is VERY short, 
-// every code path through the FCALL must do such a poll.  The important 
+// a GC is needed by some other thread.   Unless the FCALL is VERY short,
+// every code path through the FCALL must do such a poll.  The important
 // thing here is that a poll will cause a GC, and thus you can only do it
-// when all you GC variables are protected.   To make things easier 
+// when all you GC variables are protected.   To make things easier
 // HELPER_METHOD_FRAMES that protect things automatically do this poll.
 // If you don't need to protect anything HELPER_METHOD_FRAME_BEGIN_0
-// will also do the poll. 
+// will also do the poll.
 
-// Sometimes it is convenient to do the poll a the end of the frame, you 
+// Sometimes it is convenient to do the poll a the end of the frame, you
 // can use HELPER_METHOD_FRAME_BEGIN_NOPOLL and HELPER_METHOD_FRAME_END_POLL
 // to do the poll at the end.   If somewhere in the middle is the best
 // place you can do that too with HELPER_METHOD_POLL()
 
 // You don't need to erect a helper method frame to do a poll.  FC_GC_POLL
-// can do this (remember all your GC refs will be trashed).  
+// can do this (remember all your GC refs will be trashed).
 
 // Finally if your method is VERY small, you can get away without a poll,
 // you have to use FC_GC_POLL_NOT_NEEDED to mark this.
 // Use sparingly!
 
 // It is possible to set up the frame as the first operation in the FCALL and
-// tear it down as the last operation before returning.  This works and is 
+// tear it down as the last operation before returning.  This works and is
 // reasonably efficient (as good as an ECall), however, if it is the case that
 // you can defer the setup of the frame to an unlikely code path (exception path)
-// that is much better.   
+// that is much better.
 
 // If you defer setup of the frame, all codepaths leading to the frame setup
 // must be wrapped with PERMIT_HELPER_METHOD_FRAME_BEGIN/END.  These block
@@ -84,29 +84,29 @@
 // would not necessarily need to set up a frame.  </TODO>
 
 // It is common to only need to set up a frame in order to throw an exception.
-// While this can be done by doing 
+// While this can be done by doing
 
 //      HELPER_METHOD_FRAME_BEGIN()         // Use if FCALL does not return a value
 //      COMPlusThrow(execpt);
-//      HELPER_METHOD_FRAME_END()           
+//      HELPER_METHOD_FRAME_END()
 
-// It is more efficient (in space) to use convenience macro FCTHROW that does 
+// It is more efficient (in space) to use convenience macro FCTHROW that does
 // this for you (sets up a frame, and does the throw).
 
 //      FCTHROW(except)
 
 // Since FCALLS have to conform to the EE calling conventions and not to C
-// calling conventions, FCALLS, need to be declared using special macros (FCIMPL*) 
+// calling conventions, FCALLS, need to be declared using special macros (FCIMPL*)
 // that implement the correct calling conventions.  There are variants of these
-// macros depending on the number of args, and sometimes the types of the 
-// arguments. 
+// macros depending on the number of args, and sometimes the types of the
+// arguments.
 
 //------------------------------------------------------------------------
 //    A very simple example:
 //
 //      FCIMPL2(INT32, Div, INT32 x, INT32 y)
 //      {
-//          if (y == 0) 
+//          if (y == 0)
 //              FCThrow(kDivideByZeroException);
 //          return x/y;
 //      }
@@ -124,7 +124,7 @@
 //          OBJECTREF pObject = ObjectToOBJECTREF(pObject0);
 //      FCIMPL
 //
-//    For similar reasons, use Object* rather than OBJECTREF as a return type.  
+//    For similar reasons, use Object* rather than OBJECTREF as a return type.
 //    Consider either using ObjectToOBJECTREF or calling VALIDATEOBJECTREF
 //    to make sure your Object* is valid.
 //
@@ -142,7 +142,7 @@
 //    in either of the __fastcall registers (ECX/EDX), you must use "V" versions
 //    of FCDECL and  FCIMPL macros to enregister arguments correctly. Some of the
 //    most common types that fit this requirement are 64-bit values (i.e. INT64 or
-//    UINT64) and floating-point values (i.e. FLOAT or DOUBLE). For example, FCDECL3_IVI 
+//    UINT64) and floating-point values (i.e. FLOAT or DOUBLE). For example, FCDECL3_IVI
 //    must be used for FCalls that take 3 arguments and 2nd argument is INT64 and
 //    FDECL2_VV must be used for FCalls that take 2 arguments where both are FLOAT.
 //
@@ -150,12 +150,12 @@
 //    In these cases, you must use a variant of a helper method frame with PROTECT
 //    in the name, to ensure all the OBJECTREF's in the struct get protected.
 //    Also, initialize all the OBJECTREF's first.  Like this:
-//    
+//
 //    FCIMPL4(Object*, COMNlsInfo::nativeChangeCaseString, LocaleIDObject* localeUNSAFE,
 //            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, CLR_BOOL bIsToUpper)
 //    {
 //      [ignoring CONTRACT for now]
-//      struct _gc 
+//      struct _gc
 //      {
 //          STRINGREF pResult;
 //          STRINGREF pString;
@@ -164,11 +164,11 @@
 //      gc.pResult = NULL;
 //      gc.pString = ObjectToSTRINGREF(pStringUNSAFE);
 //      gc.pLocale = (LOCALEIDREF)ObjectToOBJECTREF(localeUNSAFE);
-//  
+//
 //      HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc)
-//  
-//    If you forgot the PROTECT part, the macro will only protect the first OBJECTREF, 
-//    introducing a subtle GC hole in your code.  Fortunately, we now issue a 
+//
+//    If you forgot the PROTECT part, the macro will only protect the first OBJECTREF,
+//    introducing a subtle GC hole in your code.  Fortunately, we now issue a
 //    compile-time error if you forget.
 
 // How FCall works:
@@ -465,7 +465,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #if 0
 //
 // don't use something like this... directly calling an FCALL from within the runtime breaks stackwalking because
-// the FCALL reverse mapping only gets established in ECall::GetFCallImpl and that codepath is circumvented by 
+// the FCALL reverse mapping only gets established in ECall::GetFCallImpl and that codepath is circumvented by
 // directly calling and FCALL
 // See below for usage of FC_CALL_INNER (used in SecurityStackWalk::Check presently)
 //
@@ -523,10 +523,10 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 // use the capture state machinery if the architecture has one
 //
 // For a normal build we create a loop (see explaination on RestoreState below)
-// We don't want a loop here for PREFAST since that causes 
+// We don't want a loop here for PREFAST since that causes
 //   warning 263: Using _alloca in a loop
-// And we can't use DEBUG_OK_TO_RETURN for PREFAST because the PREFAST version 
-// requires that you already be in a DEBUG_ASSURE_NO_RETURN_BEGIN scope 
+// And we can't use DEBUG_OK_TO_RETURN for PREFAST because the PREFAST version
+// requires that you already be in a DEBUG_ASSURE_NO_RETURN_BEGIN scope
 
 #define HelperMethodFrame_0OBJ      HelperMethodFrame
 #define HELPER_FRAME_ARGS(attribs)  __me, attribs
@@ -545,11 +545,11 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #endif
 
 // BEGIN: before gcpoll
-//FCallGCCanTriggerNoDtor __fcallGcCanTrigger;        
-//__fcallGcCanTrigger.Enter();                        
+//FCallGCCanTriggerNoDtor __fcallGcCanTrigger;
+//__fcallGcCanTrigger.Enter();
 
 // END: after gcpoll
-//__fcallGcCanTrigger.Leave(__FUNCTION__, __FILE__, __LINE__);    
+//__fcallGcCanTrigger.Leave(__FUNCTION__, __FILE__, __LINE__);
 
 // We have to put DEBUG_OK_TO_RETURN_BEGIN around the FORLAZYMACHSTATE
 // to allow the HELPER_FRAME to be installed inside an SO_INTOLERANT region
@@ -774,9 +774,9 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
         HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_PROTECT(Frame::FRAME_ATTR_NONE, gc)
 
 
-#define HELPER_METHOD_FRAME_END()        HELPER_METHOD_FRAME_END_EX({},FALSE)  
-#define HELPER_METHOD_FRAME_END_POLL()   HELPER_METHOD_FRAME_END_EX(HELPER_METHOD_POLL(),TRUE)  
-#define HELPER_METHOD_FRAME_END_NOTHROW()HELPER_METHOD_FRAME_END_EX_NOTHROW({},FALSE)  
+#define HELPER_METHOD_FRAME_END()        HELPER_METHOD_FRAME_END_EX({},FALSE)
+#define HELPER_METHOD_FRAME_END_POLL()   HELPER_METHOD_FRAME_END_EX(HELPER_METHOD_POLL(),TRUE)
+#define HELPER_METHOD_FRAME_END_NOTHROW()HELPER_METHOD_FRAME_END_EX_NOTHROW({},FALSE)
 
 // This is the fastest way to do a GC poll if you have already erected a HelperMethodFrame
 #define HELPER_METHOD_POLL()            { __helperframe.Poll(); INCONTRACT(__fCallCheck.SetDidPoll()); }
@@ -786,9 +786,9 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
     ( static_cast<UINT_PTR>( (__helperframe.InsureInit(false, NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
-    // Very short routines, or routines that are guarenteed to force GC or EH 
+    // Very short routines, or routines that are guarenteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
-#define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded()) 
+#define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
 
 Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
 
@@ -869,38 +869,38 @@ private:
         FCALL_TRANSITION_BEGIN(); \
         ::SetLastError(__lastError);            \
 
-void FCallAssert(void*& cache, void* target);       
+void FCallAssert(void*& cache, void* target);
 void HCallAssert(void*& cache, void* target);
 
 #else
 #define FC_COMMON_PROLOG(target, assertFn) FCALL_TRANSITION_BEGIN()
-#define FC_CAN_TRIGGER_GC() 
-#define FC_CAN_TRIGGER_GC_END() 
+#define FC_CAN_TRIGGER_GC()
+#define FC_CAN_TRIGGER_GC_END()
 #endif // ENABLE_CONTRACTS
 
 // #FC_INNER
 // Macros that allows fcall to be split into two function to avoid the helper frame overhead on common fast
 // codepaths.
-// 
+//
 // The helper routine needs to know the name of the routine that called it so that it can look up the name of
 // the managed routine this code is associted with (for managed stack traces). This is passed with the
 // FC_INNER_PROLOG macro.
-// 
+//
 // The helper can set up a HELPER_METHOD_FRAME, but should pass the
 // Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2 which indicates the exact number of
 // unwinds to do to get back to managed code. Currently we only support depth 2 which means that the
 // HELPER_METHOD_FRAME needs to be set up in the function directly called by the FCALL. The helper should
 // use the NOINLINE macro to prevent the compiler from inlining it into the FCALL (which would obviously
 // mess up the unwind count).
-// 
+//
 // The other invarient that needs to hold is that the epilog walker needs to be able to get from the call to
 // the helper routine to the end of the FCALL using trivial heurisitics.   The easiest (and only supported)
 // way of doing this is to place your helper right before a return (eg at the end of the method).  Generally
 // this is not a problem at all, since the FCALL itself will pick off some common case and then tail-call to
 // the helper for everything else.  You must use the code:FC_INNER_RETURN macros to do the call, to insure
 // that the C++ compiler does not tail-call optimize the call to the inner function and mess up the stack
-// depth. 
-// 
+// depth.
+//
 // see code:ObjectNative::GetClass for an example
 //
 #define FC_INNER_PROLOG(outerfuncname)                          \
@@ -917,20 +917,20 @@ void HCallAssert(void*& cache, void* target);
     INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
 
 #define FC_INNER_EPILOG()                                       \
-    FC_CAN_TRIGGER_GC_END(); 
+    FC_CAN_TRIGGER_GC_END();
 
 // If you are using FC_INNER, and you are tail calling to the helper method (a common case), then you need
 // to use the FC_INNER_RETURN macros (there is one for methods that return a value and another if the
-// function returns void).  This macro's purpose is to inhibit any tail calll optimization the C++ compiler 
-// might do, which would otherwise confuse the epilog walker.  
-// 
+// function returns void).  This macro's purpose is to inhibit any tail calll optimization the C++ compiler
+// might do, which would otherwise confuse the epilog walker.
+//
 // * See #FC_INNER for more
 extern int FC_NO_TAILCALL;
 #define FC_INNER_RETURN(type, expr)                                                        \
     type __retVal = expr;                                                                  \
     while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */            \
     return(__retVal);
- 
+
 #define FC_INNER_RETURN_VOID(stmt)                                                         \
     stmt;                                                                                  \
     while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */            \
@@ -942,7 +942,7 @@ extern int FC_NO_TAILCALL;
 //
 // The hidden "__me" variable lets us recover the original MethodDesc*
 // so any thrown exceptions will have the correct stack trace. FCThrow()
-// passes this along to __FCThrowInternal(). 
+// passes this along to __FCThrowInternal().
 //==============================================================================================
 
 #define GetEEFuncEntryPointMacro(func)  ((LPVOID)(func))
@@ -954,8 +954,8 @@ extern int FC_NO_TAILCALL;
 
 
 #if defined(_DEBUG) && !defined(CROSSGEN_COMPILE) && !defined(__GNUC__)
-// Build the list of all fcalls signatures. It is used in binder.cpp to verify 
-// compatibility of managed and unmanaged fcall signatures. The check is currently done 
+// Build the list of all fcalls signatures. It is used in binder.cpp to verify
+// compatibility of managed and unmanaged fcall signatures. The check is currently done
 // for x86 only.
 #define CHECK_FCALL_SIGNATURE
 #endif
@@ -1044,7 +1044,7 @@ public:
 #define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," "V" #a3) \
     rettype F_CALL_CONV funcname(a1, a2, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_VII(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," "V" #a1 "," #a2 "," #a3) \
-    rettype F_CALL_CONV funcname(a2, a3, a1) { FCIMPL_PROLOG(funcname) 
+    rettype F_CALL_CONV funcname(a2, a3, a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," #a1 "," "V" #a2 "," "V" #a3) \
     rettype F_CALL_CONV funcname(a1, a3, a2) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_IVI(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," #a1 "," "V" #a2 "," #a3) \
@@ -1157,7 +1157,7 @@ public:
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, a2, a1)
 #else // SWIZZLE_REGARG_ORDER
 
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname) 
+#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
 #define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
 #define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) {
 #define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
@@ -1181,7 +1181,7 @@ public:
 #endif // !SWIZZLE_REGARG_ORDER
 #else // SWIZZLE_STKARG_ORDER
 
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname) 
+#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
 #define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
 #define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) {
 #define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
@@ -1280,7 +1280,7 @@ public:
 // use the FC_XXX_RET types to force C/C++ compiler to do the widening.
 //
 // The most common small return type of FCALLs is bool. The widening of bool is
-// especially tricky since the value has to be also normalized. FC_BOOL_RET and 
+// especially tricky since the value has to be also normalized. FC_BOOL_RET and
 // FC_RETURN_BOOL macros are provided to make it fool-proof. FCALLs returning bool
 // should be implemented using following pattern:
 
@@ -1294,7 +1294,7 @@ public:
 
 #ifdef _PREFAST_
 
-// Use prefast build to ensure that functions returning FC_BOOL_RET 
+// Use prefast build to ensure that functions returning FC_BOOL_RET
 // are using FC_RETURN_BOOL to return it. Missing FC_RETURN_BOOL will
 // result into type mismatch error in prefast builds. This will also
 // catch misuses of FC_BOOL_RET for other places (e.g. in FCALL parameters).
@@ -1337,7 +1337,7 @@ typedef UINT16 FC_UINT16_RET;
 #define FC_DECIMAL      DECIMAL
 
 
-// The fcall entrypoints has to be at unique addresses. Use this helper macro to make 
+// The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.
 // The parameter of the FCUnique macro is an arbitrary 32-bit random non-zero number.
 #define FCUnique(unique) { Volatile<int> u = (unique); while (u.LoadWithoutBarrier() == 0) { }; }

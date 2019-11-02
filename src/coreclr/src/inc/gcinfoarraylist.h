@@ -27,7 +27,7 @@ protected:
     protected:
         IteratorBase(GcInfoArrayListBase* list, size_t firstChunkCapacity);
         ChunkBase* GetNextChunk(size_t& elementCount);
-    
+
     private:
         GcInfoArrayListBase* m_list;
         ChunkBase* m_currentChunk;

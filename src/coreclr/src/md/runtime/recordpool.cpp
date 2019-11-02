@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RecordPool.cpp -- Implementation of record heaps.
-// 
+//
 
 //
 //*****************************************************************************
@@ -15,17 +15,17 @@
 #define RECORDPOOL_GROW_MINROWS 2
 #define RECORDPOOL_GROW_DEFAULTROWS 16
 
-HRESULT 
+HRESULT
 RecordPool::InitNew(
     UINT32 cbRec,       // Record size.
     UINT32 cRecsInit)   // Initial guess of count of record.
 {
     HRESULT  hr;
     S_UINT32 cbGrow;    // Initial grow size of the pool.
-    
+
     // Size of each record is fixed.
     m_cbRec = cbRec;
-    
+
     if (cRecsInit > 0)
     {
         cbGrow = S_UINT32(cbRec) * S_UINT32(cRecsInit);
@@ -39,18 +39,18 @@ RecordPool::InitNew(
         Debug_ReportInternalError("Growing record pool overflowed.");
         return CLDB_E_INTERNALERROR;
     }
-    
+
     m_ulGrowInc = cbGrow.Value();
-    
+
     IfFailRet(StgPool::InitNew());
-    
+
     // If there is an initial size for the record pool, grow to that now.
     if (cRecsInit > 0)
     {
         if (!Grow(cbGrow.Value()))
             return E_OUTOFMEMORY;
     }
-    
+
     return S_OK;
 } // RecordPool::InitNew
 
@@ -59,7 +59,7 @@ RecordPool::InitNew(
 // (so that it may be updated), then a new hash table is generated which can
 // be used to elminate duplicates with new Records.
 //*****************************************************************************
-HRESULT 
+HRESULT
 RecordPool::InitOnMem(
     ULONG cbRec,        // Record size.
     void *pData,        // Predefined data.
@@ -68,10 +68,10 @@ RecordPool::InitOnMem(
 {
     HRESULT hr;
     m_cbRec = cbRec;
-    
+
     // Let base class init our memory structure.
     IfFailRet(StgPool::InitOnMem(pData, iSize, fReadOnly));
-    
+
     // For init on existing mem case.
     if ((pData != NULL) && (iSize != 0))
     {
@@ -79,11 +79,11 @@ RecordPool::InitOnMem(
         // If we cannot update, then we don't need a hash table.
         if (fReadOnly)
             return S_OK;
-        
+
         // Other wise copy the memory to do the update
         IfFailRet(TakeOwnershipOfInitMem());
     }
-    
+
     return S_OK;
 } // RecordPool::InitOnMem
 
@@ -109,13 +109,13 @@ bool RecordPool::Grow(                 // true if successful.
 // is returned in *piIndex.  If the Record is already in the pool, then the
 // index will be to the existing copy of the Record.
 //*****************************************************************************
-HRESULT 
+HRESULT
 RecordPool::AddRecord(
-    BYTE  **ppRecord, 
+    BYTE  **ppRecord,
     UINT32 *pnIndex)        // Return 1-based index of Record here.
 {
     _ASSERTE(pnIndex != NULL);
-    
+
     // Space on heap for new Record?
     if (m_cbRec > GetCbSegAvailable())
     {
@@ -125,19 +125,19 @@ RecordPool::AddRecord(
             return E_OUTOFMEMORY;
         }
     }
-    
+
     // Records should be aligned on record boundaries.
     _ASSERTE((GetNextOffset() % m_cbRec) == 0);
-    
+
     // Copy the Record to the heap.
     *ppRecord = GetNextLocation();
-    
+
     // Give the 1-based index back to caller.
     *pnIndex = (GetNextOffset() / m_cbRec) + 1;
-    
+
     // Update heap counters.
     SegAllocate(m_cbRec);
-    
+
     return S_OK;
 } // RecordPool::AddRecord
 
@@ -146,7 +146,7 @@ RecordPool::AddRecord(
 // insert is specified.  Shifts all records down.  Return a pointer to the
 // new record.
 //*****************************************************************************
-HRESULT 
+HRESULT
 RecordPool::InsertRecord(
     UINT32 nIndex,          // [IN] Insert record before this.
     BYTE **ppRecord)
@@ -158,21 +158,21 @@ RecordPool::InsertRecord(
     BYTE        *pFrom;                    // A copy/move source.
     ULONG        cbMove;                    // Bytes to move.
     BYTE        *pNew;                    // New record.
-    
+
     // Notice the case of appending.
     if (nIndex == (Count() + 1))
     {
         UINT32 nNewIndex_Ignore;
         return AddRecord(ppRecord, &nNewIndex_Ignore);
     }
-    
+
     // If past end or before beginning, invalid.
     if ((nIndex > Count()) || (nIndex == 0))
     {
         Debug_ReportError("Invalid index passed for inserting record.");
         return CLDB_E_INDEX_NOTFOUND;
     }
-    
+
     // This code works by allocating a new record at the end.
     // The last record is moved to the new end record.
     // Working backwards through the chained segments,
@@ -183,52 +183,52 @@ RecordPool::InsertRecord(
     // When the segment containing the insert point is finally
     //  reached, its last record is empty (from above loop), so
     //  shift from the insertion point to the end-1 by one record.
-    
+
     // Current last record.
     pCurSeg = m_pCurSeg;
     IfFailRet(GetRecord(Count(), &pSegEnd));
     _ASSERTE(hr == S_OK);
-    
+
     // Add an empty record to the end of the heap.
     {
         UINT32 nLastRecordIndex_Ignore;
         IfFailRet(AddRecord(&pNew, &nLastRecordIndex_Ignore));
     }
-    
+
     // Copy the current last record to the new record.
     memcpy(pNew, pSegEnd, m_cbRec);
-    
+
     // While the insert location is prior to the current segment,
     while (nIndex < GetIndexForRecord(pCurSeg->m_pSegData))
     {
         // Shift the segment up by one record.
         cbMove = (ULONG)(pSegEnd - pCurSeg->m_pSegData);
         memmove(pCurSeg->m_pSegData + m_cbRec, pCurSeg->m_pSegData, cbMove);
-        
+
         // Find the previous segment.
         pPrevSeg = this;
         while (pPrevSeg->m_pNextSeg != pCurSeg)
         {
             pPrevSeg = pPrevSeg->m_pNextSeg;
         }
-        
+
         // Copy the final record of the previous segment to the start of this one.
         pSegEnd = pPrevSeg->m_pSegData+pPrevSeg->m_cbSegNext-m_cbRec;
         memcpy(pCurSeg->m_pSegData, pSegEnd, m_cbRec);
-        
+
         // Make the previous segment the current segment.
         pCurSeg = pPrevSeg;
     }
-    
+
     // Shift at the insert location, forward by one.
     IfFailRet(GetRecord(nIndex, &pFrom));
     _ASSERTE(hr == S_OK);
-    
+
     cbMove = (ULONG)(pSegEnd - pFrom);
     memmove(pFrom + m_cbRec, pFrom, cbMove);
-    
+
     *ppRecord = pFrom;
-    
+
     return S_OK;
 } // RecordPool::InsertRecord
 
@@ -236,20 +236,20 @@ RecordPool::InsertRecord(
 // Return a pointer to a Record given an index previously handed out by
 // AddRecord or FindRecord.
 //*****************************************************************************
-HRESULT 
+HRESULT
 RecordPool::GetRecord(
     UINT32 nIndex,          // 1-based index of Record in pool.
     BYTE **ppRecord)
 {
     MetaData::DataBlob record;
-    
+
     if (nIndex == 0)
     {
         Debug_ReportError("Invalid index 0 passed.");
         *ppRecord = NULL;
         return CLDB_E_INDEX_NOTFOUND;
     }
-    
+
     // Convert to 0-based internal form, defer to implementation.
     HRESULT hr = GetData((nIndex - 1) * m_cbRec, &record);
     if (FAILED(hr))
@@ -259,7 +259,7 @@ RecordPool::GetRecord(
     }
     _ASSERTE(record.ContainsData(m_cbRec));
     *ppRecord = record.GetDataPointer();
-    
+
     return hr;
 } // RecordPool::GetRecord
 

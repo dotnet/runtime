@@ -23,16 +23,16 @@ Multiple assemblies with the same simple name cannot be loaded into a single loa
 ## How Load is attempted
 
 ### Basics
-If an assembly *A1* triggers the load of an assembly *C1*, the latter's load is attempted within the **LoadContext** instance of the former (which is also known as the *RequestingAssembly* or *ParentAssembly*). 
+If an assembly *A1* triggers the load of an assembly *C1*, the latter's load is attempted within the **LoadContext** instance of the former (which is also known as the *RequestingAssembly* or *ParentAssembly*).
 
 Dynamically generated assemblies add a slight twist since they do not have a *ParentAssembly/RequestingAssembly* per-se. Thus, they are associated with the load context of their *Creator Assembly* and any subsequent loads (static or dynamic) will use that load context.
 
 ### Resolution Process
 If the assembly was already present in *A1's* context, either because we had successfully loaded it earlier, or because we failed to load it for some reason, we return the corresponding status (and assembly reference for the success case).
 
-However, if *C1* was not found in *A1's* context, the *Load* method override in *A1's* context is invoked. 
+However, if *C1* was not found in *A1's* context, the *Load* method override in *A1's* context is invoked.
 
-* For *Custom LoadContext*, this override is an opportunity to load an assembly **before** the fallback (see below) to *Default LoadContext* is attempted to resolve the load. 
+* For *Custom LoadContext*, this override is an opportunity to load an assembly **before** the fallback (see below) to *Default LoadContext* is attempted to resolve the load.
 
 * For *Default LoadContext*, this override always returns *null* since *Default Context* cannot override itself.
 

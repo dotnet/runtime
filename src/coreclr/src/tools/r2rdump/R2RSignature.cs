@@ -378,7 +378,7 @@ namespace R2RDump
         public int Offset => _offset;
 
         /// <summary>
-        /// Construct the signature decoder by storing the image byte array and offset within the array. 
+        /// Construct the signature decoder by storing the image byte array and offset within the array.
         /// </summary>
         /// <param name="options">Dump options and paths</param>
         /// <param name="ecmaReader">EcmaMetadataReader object representing the PE file containing the ECMA metadata</param>
@@ -393,7 +393,7 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Construct the signature decoder by storing the image byte array and offset within the array. 
+        /// Construct the signature decoder by storing the image byte array and offset within the array.
         /// </summary>
         /// <param name="options">Dump options and paths</param>
         /// <param name="ecmaReader">Metadata reader for the R2R image</param>
@@ -424,7 +424,7 @@ namespace R2RDump
         /// <param name="data"></param>
         public uint ReadUInt()
         {
-            // Handle smallest data inline. 
+            // Handle smallest data inline.
             byte firstByte = ReadByte();
             if ((firstByte & 0x80) == 0x00) // 0??? ????
                 return firstByte;
@@ -436,7 +436,7 @@ namespace R2RDump
                 res = ((uint)(firstByte & 0x3f) << 8);
                 res |= ReadByte();
             }
-            else // 110? ???? 
+            else // 110? ????
             {
                 res = (uint)(firstByte & 0x1f) << 24;
                 res |= (uint)ReadByte() << 16;
@@ -634,7 +634,7 @@ namespace R2RDump
             EmitInlineSignatureBinaryBytes(builder, 1);
             bool moduleOverride = (fixupType & (byte)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE) != 0;
             SignatureDecoder moduleDecoder = this;
-            
+
             // Check first byte for a module override being encoded
             if (moduleOverride)
             {
@@ -1195,9 +1195,9 @@ namespace R2RDump
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodDefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMethodDef;
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader, 
-                MetadataTokens.Handle((int)methodDefToken), 
-                namespaceQualified: true, 
+                _ecmaReader.MetadataReader,
+                MetadataTokens.Handle((int)methodDefToken),
+                namespaceQualified: true,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
         }
@@ -1212,9 +1212,9 @@ namespace R2RDump
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodRefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMemberRef;
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader, 
-                MetadataTokens.Handle((int)methodRefToken), 
-                namespaceQualified: false, 
+                _ecmaReader.MetadataReader,
+                MetadataTokens.Handle((int)methodRefToken),
+                namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
         }
@@ -1244,9 +1244,9 @@ namespace R2RDump
                 fieldToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtFieldDef;
             }
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader, 
-                MetadataTokens.Handle((int)fieldToken), 
-                namespaceQualified: false, 
+                _ecmaReader.MetadataReader,
+                MetadataTokens.Handle((int)fieldToken),
+                namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
         }

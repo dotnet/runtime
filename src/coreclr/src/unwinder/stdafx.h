@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: stdafx.h
-// 
+//
 
 // Prevent the inclusion of Random.h from disabling rand().  rand() is used by some other headers we include
 // and there's no reason why DAC should be forbidden from using it.

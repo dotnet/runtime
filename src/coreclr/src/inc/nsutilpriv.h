@@ -54,11 +54,11 @@ int IsValidName(                        // true if valid, false invalid.
 //         |
 // The ".ctor" is considered one token.
 //*****************************************************************************
-static 
+static
 WCHAR *FindSep(                         // Pointer to separator or null.
     const WCHAR *szPath);               // The path to look in.
 
-static 
+static
 LPUTF8 FindSep(                         // Pointer to separator or null.
     LPCUTF8     szPath);                // The path to look in.
 
@@ -69,11 +69,11 @@ LPUTF8 FindSep(                         // Pointer to separator or null.
 //      a.b.c
 // becomes two strings "a.b" and "c" and the return value points to "c".
 //*****************************************************************************
-static 
+static
 WCHAR *SplitInline(                     // Pointer to name portion.
     __inout __inout_z WCHAR       *szPath);               // The path to split.
 
-static 
+static
 LPUTF8       SplitInline(               // Pointer to name portion.
     __inout __inout_z LPUTF8      szPath);                // The path to split.
 
@@ -94,7 +94,7 @@ void SplitInline(
 // Split the last parsable element from the end of the string as the name,
 // the first part as the namespace.
 //*****************************************************************************
-static 
+static
 int SplitPath(                          // true ok, false trunction.
     const WCHAR *szPath,                // Path to split.
     __out_ecount_opt (cchNameSpace) WCHAR *szNameSpace,           // Output for namespace value.
@@ -102,7 +102,7 @@ int SplitPath(                          // true ok, false trunction.
     __out_ecount_opt (cchName) WCHAR       *szName,                // Output for name.
     int         cchName);               // Max chars for output.
 
-static 
+static
 int SplitPath(                          // true ok, false trunction.
     LPCUTF8     szPath,                 // Path to split.
     __out_ecount_opt (cchNameSpace) LPUTF8 szNameSpace,            // Output for namespace value.
@@ -115,14 +115,14 @@ int SplitPath(                          // true ok, false trunction.
 // Take two values and put them together in a fully qualified path using the
 // correct separator.
 //*****************************************************************************
-static 
+static
 int MakePath(                           // true ok, false truncation.
     __out_ecount(cchChars) WCHAR       *szOut,                 // output path for name.
     int         cchChars,               // max chars for output path.
     const WCHAR *szNameSpace,           // Namespace.
     const WCHAR *szName);               // Name.
 
-static 
+static
 int MakePath(                           // true ok, false truncation.
     __out_ecount(cchChars) LPUTF8      szOut,                  // output path for name.
     int         cchChars,               // max chars for output path.
@@ -163,13 +163,13 @@ void MakePath(                          // throws on out of memory
 //*****************************************************************************
 // Concatinate type names to assembly names
 //*****************************************************************************
-static 
+static
 bool MakeAssemblyQualifiedName(                                  // true if ok, false if out of memory
                                CQuickBytes &qb,                  // location to put result
                                const WCHAR *szTypeName,          // Type name
                                const WCHAR *szAssemblyName);     // Assembly Name
-    
-static 
+
+static
 bool MakeAssemblyQualifiedName(                                        // true ok, false truncation
                                __out_ecount (dwBuffer) WCHAR* pBuffer, // Buffer to recieve the results
                                int    dwBuffer,                        // Number of characters total in buffer
@@ -178,20 +178,20 @@ bool MakeAssemblyQualifiedName(                                        // true o
                                const WCHAR *szAssemblyName,            // Final part of name.
                                int   dwAssemblyName);                  // Number of characters (not including null)
 
-static 
+static
 int MakeNestedTypeName(                 // true ok, false out of memory
     CQuickBytes &qb,                    // Where to put results.
     LPCUTF8     szEnclosingName,        // Full name for enclosing type
     LPCUTF8     szNestedName);          // Full name for nested type
 
-static 
+static
 int MakeNestedTypeName(                 // true ok, false truncation.
     __out_ecount (cchChars) LPUTF8      szOut,                  // output path for name.
     int         cchChars,               // max chars for output path.
     LPCUTF8     szEnclosingName,        // Full name for enclosing type
     LPCUTF8     szNestedName);          // Full name for nested type
 
-static 
+static
 void MakeNestedTypeName(                // throws on out of memory
     SString        &ssBuf,              // output path for name.
     const SString  &ssEnclosingName,    // Full name for enclosing type
@@ -256,7 +256,7 @@ void MakeNestedTypeName(                // throws on out of memory
 }
 
 #ifdef _PREFAST_
-// need to eliminate the expansion of MAKE_FULLY_QUALIFIED_MEMBER_NAME in prefast 
+// need to eliminate the expansion of MAKE_FULLY_QUALIFIED_MEMBER_NAME in prefast
 // builds to prevent it complaining about the potential for NULLs to strlen and strcat
 #undef MAKE_FULLY_QUALIFIED_MEMBER_NAME
 // need to set ptr=NULL so we don't get a build error because ptr isn't inited in a couple cases

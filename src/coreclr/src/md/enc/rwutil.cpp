@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // RWUtil.cpp
-// 
+//
 
 //
 // contains utility code to MD directory
@@ -12,32 +12,32 @@
 #include "stdafx.h"
 #include "metadata.h"
 #include "rwutil.h"
-#include "utsem.h" 
+#include "utsem.h"
 #include "../inc/mdlog.h"
 
 //*****************************************************************************
 // Helper methods
 //*****************************************************************************
-void 
+void
 Unicode2UTF(
     LPCWSTR wszSrc, // The string to convert.
-  __out_ecount(cbDst) 
+  __out_ecount(cbDst)
     LPUTF8  szDst,  // Buffer for the output UTF8 string.
     int     cbDst)  // Size of the buffer for UTF8 string.
 {
     int cchSrc = (int)wcslen(wszSrc);
     int cchRet;
-    
+
     cchRet = WszWideCharToMultiByte(
-        CP_UTF8, 
-        0, 
-        wszSrc, 
-        cchSrc + 1, 
-        szDst, 
-        cbDst, 
-        NULL, 
+        CP_UTF8,
+        0,
+        wszSrc,
+        cchSrc + 1,
+        szDst,
+        cbDst,
+        NULL,
         NULL);
-    
+
     if (cchRet == 0)
     {
         _ASSERTE_MSG(FALSE, "Converting unicode string to UTF8 string failed!");
@@ -78,12 +78,12 @@ HRESULT HENUMInternal::CreateSimpleEnum(
     *ppEnum = pEnum;
 ErrExit:
     return hr;
-    
+
 }   // CreateSimpleEnum
 
 
 //*****************************************************************************
-// Helper function to destroy Enumerator 
+// Helper function to destroy Enumerator
 //*****************************************************************************
 void HENUMInternal::DestroyEnum(
     HENUMInternal   *pmdEnum)
@@ -140,9 +140,9 @@ void HENUMInternal::ClearEnum(
 
 //*****************************************************************************
 // Helper function to iterate the enum
-//***************************************************************************** 
+//*****************************************************************************
 bool HENUMInternal::EnumNext(
-    HENUMInternal *phEnum,              // [IN] the enumerator to retrieve information  
+    HENUMInternal *phEnum,              // [IN] the enumerator to retrieve information
     mdToken     *ptk)                   // [OUT] token to scope the search
 {
     _ASSERTE(phEnum && ptk);
@@ -155,7 +155,7 @@ bool HENUMInternal::EnumNext(
         *ptk = phEnum->u.m_ulCur | phEnum->m_tkKind;
         phEnum->u.m_ulCur++;
     }
-    else 
+    else
     {
         TOKENLIST       *pdalist = (TOKENLIST *)&(phEnum->m_cursor);
 
@@ -169,7 +169,7 @@ bool HENUMInternal::EnumNext(
 // Number of items in the enumerator.
 //*****************************************************************************
 HRESULT HENUMInternal::GetCount(
-    HENUMInternal   *phEnum,            // [IN] the enumerator to retrieve information  
+    HENUMInternal   *phEnum,            // [IN] the enumerator to retrieve information
     ULONG           *pCount)            // ]OUT] the index of the desired item
 {
     // Check for empty enum.
@@ -184,14 +184,14 @@ HRESULT HENUMInternal::GetCount(
 // Get a specific element.
 //*****************************************************************************
 HRESULT HENUMInternal::GetElement(
-    HENUMInternal   *phEnum,            // [IN] the enumerator to retrieve information  
+    HENUMInternal   *phEnum,            // [IN] the enumerator to retrieve information
     ULONG           ix,                 // ]IN] the index of the desired item
     mdToken         *ptk)               // [OUT] token to fill
 {
     // Check for empty enum.
     if (phEnum == 0)
         return S_FALSE;
-    
+
     if (ix > (phEnum->u.m_ulEnd - phEnum->u.m_ulStart))
         return S_FALSE;
 
@@ -199,7 +199,7 @@ HRESULT HENUMInternal::GetElement(
     {
         *ptk = (phEnum->u.m_ulStart + ix) | phEnum->m_tkKind;
     }
-    else 
+    else
     {
         TOKENLIST       *pdalist = (TOKENLIST *)&(phEnum->m_cursor);
 
@@ -238,12 +238,12 @@ HRESULT HENUMInternal::EnumWithCount(
 
         // now fill the output
         for (ULONG i = 0; i < cTokens; i ++, pEnum->u.m_ulCur++)
-        {   
+        {
             rTokens[i] = TokenFromRid(pEnum->u.m_ulCur, pEnum->m_tkKind);
         }
 
     }
-    else 
+    else
     {
         // cannot be any other kind!
         _ASSERTE( pEnum->m_EnumType == MDDynamicArrayEnum );
@@ -252,14 +252,14 @@ HRESULT HENUMInternal::EnumWithCount(
         TOKENLIST       *pdalist = (TOKENLIST *)&(pEnum->m_cursor);
 
         for (ULONG i = 0; i < cTokens; i ++, pEnum->u.m_ulCur++)
-        {   
+        {
             rTokens[i] = *( pdalist->Get(pEnum->u.m_ulCur) );
         }
     }
 
     if (pcTokens)
         *pcTokens = cTokens;
-    
+
     if (cTokens == 0)
         hr = S_FALSE;
     return hr;
@@ -310,7 +310,7 @@ HRESULT HENUMInternal::EnumWithCount(
 
     if (pcTokens)
         *pcTokens = cTokens / 2;
-    
+
     if (cTokens == 0)
         hr = S_FALSE;
     return hr;
@@ -345,7 +345,7 @@ HRESULT HENUMInternal::CreateDynamicArrayEnum(
     *ppEnum = pEnum;
 ErrExit:
     return hr;
-    
+
 }   // _CreateDynamicArrayEnum
 
 
@@ -364,7 +364,7 @@ void HENUMInternal::InitDynamicArrayEnum(
 
     // run the constructor in place
     pdalist = (TOKENLIST *) &(pEnum->m_cursor);
-    ::new (pdalist) TOKENLIST;  
+    ::new (pdalist) TOKENLIST;
 }   // CreateDynamicArrayEnum
 
 
@@ -415,7 +415,7 @@ HRESULT HENUMInternal::AddElementToEnum(
     pEnum->u.m_ulEnd++;
 ErrExit:
     return hr;
-    
+
 }   // _AddElementToEnum
 
 
@@ -423,7 +423,7 @@ ErrExit:
 
 
 //*****************************************************************************
-// find a token in the tokenmap. 
+// find a token in the tokenmap.
 //*****************************************************************************
 MDTOKENMAP::~MDTOKENMAP()
 {
@@ -440,20 +440,20 @@ HRESULT MDTOKENMAP::Init(
     ULONG       cTotal;                 // Running total of rows in db.
     TOKENREC    *pRec;                  // A TOKENREC record.
     mdToken     tkTable;                // Token kind for a table.
-        
+
     hr = pImport->QueryInterface(IID_IMetaDataTables, (void**)&pITables);
     if (hr == S_OK)
     {
         // Determine the size of each table.
         cTotal = 0;
         for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
-        {   
+        {
             // Where does this table's data start.
             m_TableOffset[ixTbl] = cTotal;
             // See if this table has tokens.
             tkTable = CMiniMdRW::GetTokenForTable(ixTbl);
             if (tkTable == (ULONG) -1)
-            {   
+            {
                 // It doesn't have tokens, so we won't see any tokens for the table.
             }
             else
@@ -471,7 +471,7 @@ HRESULT MDTOKENMAP::Init(
         // Attempt to allocate space for all of the possible remaps.
         if (!AllocateBlock(cTotal))
             IfFailGo(E_OUTOFMEMORY);
-        // Note that no sorts are needed.        
+        // Note that no sorts are needed.
         m_sortKind = Indexed;
         // Initialize entries to "not found".
         for (ULONG i=0; i<cTotal; ++i)
@@ -495,8 +495,8 @@ HRESULT MDTOKENMAP::Init(
 
 
 
-#endif    
-    
+#endif
+
 ErrExit:
     if (pITables)
         pITables->Release();
@@ -516,7 +516,7 @@ HRESULT MDTOKENMAP::EmptyMap()
 
 
 //*****************************************************************************
-// find a token in the tokenmap. 
+// find a token in the tokenmap.
 //*****************************************************************************
 bool MDTOKENMAP::Find(
     mdToken     tkFind,                 // [IN] the token value to find
@@ -545,28 +545,28 @@ bool MDTOKENMAP::Find(
     }
     else
     {   // Shouldn't be any unsorted records, and table must be sorted in proper ordering.
-        _ASSERTE( m_iCountTotal == m_iCountSorted && 
+        _ASSERTE( m_iCountTotal == m_iCountSorted &&
             (m_sortKind == SortByFromToken || m_sortKind == Indexed) );
         _ASSERTE( (m_iCountIndexed + m_iCountTotal) == (ULONG)Count() );
-    
+
         // Start with entire table.
         lo = m_iCountIndexed;
         hi = Count() - 1;
-    
+
         // While there are rows in the range...
         while (lo <= hi)
         {   // Look at the one in the middle.
             mid = (lo + hi) / 2;
-    
+
             pRec = Get(mid);
-    
+
             // If equal to the target, done.
             if (tkFind == pRec->m_tkFrom)
             {
                 *ppRec = Get(mid);
                 return true;
             }
-    
+
             // If middle item is too small, search the top half.
             if (pRec->m_tkFrom < tkFind)
                 lo = mid + 1;
@@ -574,7 +574,7 @@ bool MDTOKENMAP::Find(
                 hi = mid - 1;
         }
     }
-    
+
     // Didn't find anything that matched.
     return false;
 } // bool MDTOKENMAP::Find()
@@ -582,7 +582,7 @@ bool MDTOKENMAP::Find(
 
 
 //*****************************************************************************
-// remap the token 
+// remap the token
 //*****************************************************************************
 HRESULT MDTOKENMAP::Remap(
     mdToken     tkFrom,
@@ -613,7 +613,7 @@ HRESULT MDTOKENMAP::Remap(
 
 
 //*****************************************************************************
-// find a token in the tokenmap. 
+// find a token in the tokenmap.
 //*****************************************************************************
 HRESULT MDTOKENMAP::InsertNotFound(
     mdToken     tkFind,
@@ -627,7 +627,7 @@ HRESULT MDTOKENMAP::InsertNotFound(
 
     // If possible, validate the input.
     _ASSERTE(!m_pImport || m_pImport->IsValidToken(tkFind));
-    
+
     if (m_sortKind == Indexed && TypeFromToken(tkFind) != mdtString)
     {
         // Get the entry.
@@ -653,27 +653,27 @@ HRESULT MDTOKENMAP::InsertNotFound(
     {   // Shouldn't be any unsorted records, and table must be sorted in proper ordering.
         _ASSERTE( m_iCountTotal == m_iCountSorted &&
             (m_sortKind == SortByFromToken || m_sortKind == Indexed) );
-    
+
         if ((Count() - m_iCountIndexed) > 0)
         {
             // Start with entire table.
             lo = m_iCountIndexed;
             hi = Count() - 1;
-    
+
             // While there are rows in the range...
             while (lo < hi)
             {   // Look at the one in the middle.
                 mid = (lo + hi) / 2;
-    
+
                 pRec = Get(mid);
-    
+
                 // If equal to the target, done.
                 if (tkFind == pRec->m_tkFrom)
                 {
                     *ppRec = Get(mid);
                     goto ErrExit;
                 }
-    
+
                 // If middle item is too small, search the top half.
                 if (pRec->m_tkFrom < tkFind)
                     lo = mid + 1;
@@ -682,7 +682,7 @@ HRESULT MDTOKENMAP::InsertNotFound(
             }
             _ASSERTE(hi <= lo);
             pRec = Get(lo);
-    
+
             if (tkFind == pRec->m_tkFrom)
             {
                 if (tkTo == pRec->m_tkTo && fDuplicate == pRec->m_isDuplicate)
@@ -695,7 +695,7 @@ HRESULT MDTOKENMAP::InsertNotFound(
                     IfFailGo( E_FAIL );
                 }
             }
-    
+
             if (tkFind < pRec->m_tkFrom)
             {
                 // insert before lo;
@@ -712,23 +712,23 @@ HRESULT MDTOKENMAP::InsertNotFound(
             // table is empty
             pRec = Insert(m_iCountIndexed);
         }
-    
-    
+
+
         // If pRec == NULL, return E_OUTOFMEMORY
         IfNullGo(pRec);
-    
+
         m_iCountTotal++;
         m_iCountSorted++;
-    
+
         *ppRec = pRec;
-    
+
         // initialize the record
         pRec->m_tkFrom = tkFind;
         pRec->m_isDuplicate = fDuplicate;
         pRec->m_tkTo = tkTo;
         pRec->m_isFoundInImport = false;
     }
-    
+
 ErrExit:
     return hr;
 } // HRESULT MDTOKENMAP::InsertNotFound()
@@ -795,7 +795,7 @@ bool MDTOKENMAP::FindWithToToken(
 
 
 //*****************************************************************************
-// output a remapped token 
+// output a remapped token
 //*****************************************************************************
 mdToken MDTOKENMAP::SafeRemap(
     mdToken     tkFrom)                 // [IN] the token value to find
@@ -811,7 +811,7 @@ mdToken MDTOKENMAP::SafeRemap(
     {
         return pRec->m_tkTo;
     }
-    
+
     return tkFrom;
 } // mdToken MDTOKENMAP::SafeRemap()
 
@@ -895,7 +895,7 @@ void MDTOKENMAP::SortRangeToToken(
 
 
 //*****************************************************************************
-// find a token in the tokenmap. 
+// find a token in the tokenmap.
 //*****************************************************************************
 HRESULT MDTOKENMAP::AppendRecord(
     mdToken     tkFind,
@@ -908,7 +908,7 @@ HRESULT MDTOKENMAP::AppendRecord(
 
     // If possible, validate the input.
     _ASSERTE(!m_pImport || m_pImport->IsValidToken(tkFind));
-    
+
     // If the map is indexed, and this is a table token, update-in-place.
     if (m_sortKind == Indexed && TypeFromToken(tkFind) != mdtString)
     {
@@ -928,11 +928,11 @@ HRESULT MDTOKENMAP::AppendRecord(
     {
         pRec = Append();
         IfNullGo(pRec);
-    
+
         // number of entries increased but not the sorted entry
         m_iCountTotal++;
     }
-    
+
     // Store the data.
     pRec->m_tkFrom = tkFind;
     pRec->m_isDuplicate = fDuplicate;
@@ -1018,7 +1018,7 @@ HRESULT CMapToken::QueryInterface(REFIID riid, void **ppUnk)
 //
 //*********************************************************************************************************
 HRESULT CMapToken::Map(
-    mdToken     tkFrom, 
+    mdToken     tkFrom,
     mdToken     tkTo)
 {
     HRESULT     hr = NOERROR;
@@ -1045,7 +1045,7 @@ ErrExit:
 //
 //*********************************************************************************************************
 bool    CMapToken::Find(
-    mdToken     tkFrom, 
+    mdToken     tkFrom,
     TOKENREC    **pRecTo)
 {
     TOKENREC    *pRec;
@@ -1125,7 +1125,7 @@ TokenRemapManager::~TokenRemapManager()
 //
 //*********************************************************************************************************
 HRESULT TokenRemapManager::ClearAndEnsureCapacity(
-    ULONG       cTypeRef, 
+    ULONG       cTypeRef,
     ULONG       cMemberRef)
 {
     HRESULT     hr = NOERROR;
@@ -1135,14 +1135,14 @@ HRESULT TokenRemapManager::ClearAndEnsureCapacity(
             IfFailGo( E_OUTOFMEMORY );
     }
     memset( m_TypeRefToTypeDefMap.Get(0), 0, (cTypeRef + 1) * sizeof(mdToken) );
-    
+
     if ( ((ULONG) (m_MemberRefToMemberDefMap.Count())) < (cMemberRef + 1) )
     {
         if ( m_MemberRefToMemberDefMap.AllocateBlock(cMemberRef + 1 - m_MemberRefToMemberDefMap.Count() ) == 0 )
             IfFailGo( E_OUTOFMEMORY );
     }
     memset( m_MemberRefToMemberDefMap.Get(0), 0, (cMemberRef + 1) * sizeof(mdToken) );
-    
+
 ErrExit:
     return hr;
 } // HRESULT TokenRemapManager::ClearAndEnsureCapacity()
@@ -1196,15 +1196,15 @@ CMDSemReadWrite::~CMDSemReadWrite()
 HRESULT CMDSemReadWrite::LockRead()
 {
     HRESULT hr = S_OK;
-    
+
     _ASSERTE(!m_fLockedForRead && !m_fLockedForWrite);
-    
+
     if (m_pSem == NULL)
     {
         INDEBUG(m_fLockedForRead = true);
         return hr;
     }
-    
+
     LOG((LF_METADATA, LL_EVERYTHING, "LockRead called from CSemReadWrite::LockRead \n"));
     IfFailRet(m_pSem->LockRead());
     m_fLockedForRead = true;
@@ -1222,7 +1222,7 @@ HRESULT CMDSemReadWrite::LockWrite()
     HRESULT hr = S_OK;
 
     _ASSERTE(!m_fLockedForRead && !m_fLockedForWrite);
-    
+
     if (m_pSem == NULL)
     {
         INDEBUG(m_fLockedForWrite = true);
@@ -1244,16 +1244,16 @@ HRESULT CMDSemReadWrite::LockWrite()
 HRESULT CMDSemReadWrite::ConvertReadLockToWriteLock()
 {
     _ASSERTE(!m_fLockedForWrite);
-    
+
     HRESULT hr = S_OK;
-    
+
     if (m_pSem == NULL)
     {
         INDEBUG(m_fLockedForRead = false);
         INDEBUG(m_fLockedForWrite = true);
         return hr;
     }
-    
+
     if (m_fLockedForRead)
     {
         LOG((LF_METADATA, LL_EVERYTHING, "UnlockRead called from CSemReadWrite::ConvertReadLockToWriteLock \n"));

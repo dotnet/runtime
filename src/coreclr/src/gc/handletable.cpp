@@ -258,9 +258,9 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     {
         NOTHROW;
         GC_NOTRIGGER;
-        if (object != NULL) 
-        { 
-            MODE_COOPERATIVE; 
+        if (object != NULL)
+        {
+            MODE_COOPERATIVE;
         }
         else
         {
@@ -496,7 +496,7 @@ uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle)
  * HndGetHandleTable
  *
  * Returns the containing table of a handle.
- * 
+ *
  */
 HHANDLETABLE HndGetHandleTable(OBJECTHANDLE handle)
 {
@@ -554,21 +554,21 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
 
     // unwrap the objectref we were given
     _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
-    
+
     _ASSERTE (objref != NULL);
 
     // find the write barrier for this handle
     uint8_t *barrier = (uint8_t *)((uintptr_t)handle & HANDLE_SEGMENT_ALIGN_MASK);
-    
+
     // sanity
     _ASSERTE(barrier);
-    
+
     // find the offset of this handle into the segment
     uintptr_t offset = (uintptr_t)handle & HANDLE_SEGMENT_CONTENT_MASK;
-    
+
     // make sure it is in the handle area and not the header
     _ASSERTE(offset >= HANDLE_HEADER_SIZE);
-    
+
     // compute the clump index for this handle
     offset = (offset - HANDLE_HEADER_SIZE) / (HANDLE_SIZE * HANDLE_HANDLES_PER_CLUMP);
 
@@ -592,7 +592,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
         {
             generation = 0;
         }
-        
+
         if (uType == HNDTYPE_DEPENDENT)
         {
             generation = 0;
@@ -603,7 +603,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
             // We have to be careful here. HndWriteBarrier is not under any synchronization
             // Consider the scenario where 2 threads are hitting the line below at the same
             // time. Only one will win. If the winner has an older age than the loser, we
-            // just created a potential GC hole  (The clump will not be reporting the 
+            // just created a potential GC hole  (The clump will not be reporting the
             // youngest handle in the clump, thus GC may skip the clump). To fix this
             // we just set the clump age to 0, which means that whoever wins the race
             // results are the same, as GC will always look at the clump
@@ -929,7 +929,7 @@ uint32_t HndCountHandles(HHANDLETABLE hTable)
     WRAPPER_NO_CONTRACT;
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
-    
+
     // initialize the count of handles in the cache to 0
     uint32_t uCacheCount = 0;
 
@@ -977,11 +977,11 @@ uint32_t HndCountHandles(HHANDLETABLE hTable)
 /*
  * HndCountAllHandles
  *
- * Counts the total number of handles that are marked as "used" that are not 
+ * Counts the total number of handles that are marked as "used" that are not
  * currently residing in some handle table's cache.
  *
  * Provided to compute the correct value for the GC Handle perfcounter.
- * The 'fUseLocks' flag specifies whether to acquire each handle table's lock 
+ * The 'fUseLocks' flag specifies whether to acquire each handle table's lock
  * while its handles are being counted.
  *
  */
@@ -989,7 +989,7 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
 {
     uint32_t uCount = 0;
     int offset = 0;
-    
+
     // get number of HandleTables per HandleTableBucket
     int n_slots = getNumberOfSlots();
 
@@ -1015,12 +1015,12 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
                 HHANDLETABLE * pTable = (*pBucket)->pTable;
                 HHANDLETABLE * pLastTable = pTable + n_slots;
 
-                // if the 'fUseLocks' flag is set, acquire the lock for this handle table before 
-                // calling HndCountHandles() - this will prevent dwCount from being modified and 
+                // if the 'fUseLocks' flag is set, acquire the lock for this handle table before
+                // calling HndCountHandles() - this will prevent dwCount from being modified and
                 // it will also prevent any of the main caches from being rebalanced
                 if (fUseLocks)
                     for (; pTable != pLastTable; ++pTable)
-                    {                   
+                    {
                         CrstHolder ch(&(Table(*pTable)->Lock));
                         uCount += HndCountHandles(*pTable);
                     }

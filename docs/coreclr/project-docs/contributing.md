@@ -22,7 +22,7 @@ The team marks the most straightforward issues as "up for grabs". This set of is
 Contribution "Bar"
 ------------------
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/master/roadmap.md). 
+Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET Core, too. We may revert changes if they are found to be breaking.
 
@@ -48,7 +48,7 @@ Please do:
 
 Please do not:
 
-* **DON'T** make PRs for style changes. 
+* **DON'T** make PRs for style changes.
 * **DON'T** surprise us with big pull requests. Instead, file an issue and start
   a discussion so we can agree on a direction before you invest a large amount
   of time.
@@ -142,7 +142,7 @@ The following rules must be followed for PRs that include files from another pro
 - The license of the file is left in-tact.
 - The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
 
-See [IdnMapping.cs](../../src/System.Private.CoreLib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file. 
+See [IdnMapping.cs](../../src/System.Private.CoreLib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file.
 
 Porting Files from Other Projects
 ---------------------------------

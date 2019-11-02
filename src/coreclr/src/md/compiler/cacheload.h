@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CacheLoad.h
-// 
+//
 
 //
 // Class for returning the memory image where the image lives
@@ -13,7 +13,7 @@
 #define __CACHELOAD__H__
 
 
-#undef  INTERFACE   
+#undef  INTERFACE
 #define INTERFACE ICacheLoad
 DECLARE_INTERFACE_(ICacheLoad, IUnknown)
 {

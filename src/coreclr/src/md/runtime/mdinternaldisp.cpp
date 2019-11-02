@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 //  File: MDInternalDisp.CPP
-// 
+//
 
 //  Notes:
-//      
+//
 //
 // ===========================================================================
 #include "stdafx.h"
@@ -22,8 +22,8 @@
 
 // forward declaration
 HRESULT GetInternalWithRWFormat(
-    LPVOID      pData, 
-    ULONG       cbData, 
+    LPVOID      pData,
+    ULONG       cbData,
     DWORD       flags,                  // [IN] MDInternal_OpenForRead or MDInternal_OpenForENC
     REFIID      riid,                   // [in] The interface desired.
     void        **ppIUnk);              // [out] Return interface on success.
@@ -33,10 +33,10 @@ HRESULT GetInternalWithRWFormat(
 // This function will determine if the in-memory image is a readonly, readwrite,
 // or ICR format.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CheckFileFormat(
-    LPVOID        pData, 
-    ULONG         cbData, 
+    LPVOID        pData,
+    ULONG         cbData,
     MDFileFormat *pFormat)  // [OUT] the file format
 {
     HRESULT        hr = NOERROR;
@@ -44,15 +44,15 @@ CheckFileFormat(
     PSTORAGESTREAM pStream;     // Pointer to each stream.
     int            i;
     ULONG          cbStreamBuffer;
-    
+
     _ASSERTE(pFormat != NULL);
-    
+
     *pFormat = MDFormat_Invalid;
-    
+
     // Validate the signature of the format, or it isn't ours.
     if (FAILED(hr = MDFormat::VerifySignature((PSTORAGESIGNATURE) pData, cbData)))
         goto ErrExit;
-    
+
     // Remaining buffer size behind the stream header (pStream).
     cbStreamBuffer = cbData;
     // Get back the first stream.
@@ -62,7 +62,7 @@ CheckFileFormat(
         Debug_ReportError("Invalid MetaData storage signature - cannot get the first stream header.");
         IfFailGo(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // Loop through each stream and pick off the ones we need.
     for (i = 0; i < sHdr.GetiStreams(); i++)
     {
@@ -79,7 +79,7 @@ CheckFileFormat(
             Debug_ReportError("Invalid stream header - cannot get next stream header.");
             IfFailGo(CLDB_E_FILE_CORRUPT);
         }
-        
+
         // Check that stream header is within the buffer.
         if (((LPBYTE)pStream >= ((LPBYTE)pData + cbData)) ||
             ((LPBYTE)pNext   >  ((LPBYTE)pData + cbData)))
@@ -88,21 +88,21 @@ CheckFileFormat(
             hr = CLDB_E_FILE_CORRUPT;
             goto ErrExit;
         }
-        
+
         // Check that the stream data starts and fits within the buffer.
         //  need two checks on size because of wraparound.
-        if ((pStream->GetOffset() > cbData) || 
-            (pStream->GetSize() > cbData) || 
-            ((pStream->GetSize() + pStream->GetOffset()) < pStream->GetOffset()) || 
+        if ((pStream->GetOffset() > cbData) ||
+            (pStream->GetSize() > cbData) ||
+            ((pStream->GetSize() + pStream->GetOffset()) < pStream->GetOffset()) ||
             ((pStream->GetSize() + pStream->GetOffset()) > cbData))
         {
             Debug_ReportError("Stream data are not within MetaData block.");
             hr = CLDB_E_FILE_CORRUPT;
             goto ErrExit;
         }
-        
+
         // Pick off the location and size of the data.
-        
+
         if (strcmp(pStream->GetName(), COMPRESSED_MODEL_STREAM_A) == 0)
         {
             // Validate that only one of compressed/uncompressed is present.
@@ -131,22 +131,22 @@ CheckFileFormat(
         {
             // Found the uncompressed format
             *pFormat = MDFormat_ICR;
-            
-            // keep going. We may find the compressed format later. 
+
+            // keep going. We may find the compressed format later.
             // If so, we want to use the compressed format.
         }
-        
+
         // Pick off the next stream if there is one.
         pStream = pNext;
         cbStreamBuffer = (ULONG)((LPBYTE)pData + cbData - (LPBYTE)pNext);
     }
-    
+
     if (*pFormat == MDFormat_Invalid)
     {   // Didn't find a good stream.
         Debug_ReportError("Cannot find MetaData stream.");
         hr = CLDB_E_FILE_CORRUPT;
     }
-    
+
 ErrExit:
     return hr;
 } // CheckFileFormat
@@ -159,8 +159,8 @@ ErrExit:
 // return an interface which implements ReadOnly or ReadWrite.
 //*****************************************************************************
 STDAPI GetMDInternalInterface(
-    LPVOID      pData, 
-    ULONG       cbData, 
+    LPVOID      pData,
+    ULONG       cbData,
     DWORD       flags,                  // [IN] ofRead or ofWrite.
     REFIID      riid,                   // [in] The interface desired.
     void        **ppIUnk)               // [out] Return interface on success.

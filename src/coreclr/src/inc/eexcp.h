@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 // ==++==
-// 
+//
 
-// 
+//
 //
 
 //
@@ -29,34 +29,34 @@ typedef PTR_VOID PTR_EXCEPTION_CLAUSE_TOKEN;
 struct EE_ILEXCEPTION_CLAUSE  {
     //Flags is not marked as volatile since it is always accessed
     //    from within a critical section
-    CorExceptionFlag    Flags;  
-    DWORD               TryStartPC;    
+    CorExceptionFlag    Flags;
+    DWORD               TryStartPC;
     DWORD               TryEndPC;
-    DWORD               HandlerStartPC;  
-    DWORD               HandlerEndPC;  
+    DWORD               HandlerStartPC;
+    DWORD               HandlerEndPC;
     union {
-        void*           TypeHandle; 
+        void*           TypeHandle;
         mdToken         ClassToken;
         DWORD           FilterOffset;
-    };  
+    };
 };
 
 struct EE_ILEXCEPTION;
 typedef DPTR(EE_ILEXCEPTION) PTR_EE_ILEXCEPTION;
 
-struct EE_ILEXCEPTION : public COR_ILMETHOD_SECT_FAT 
+struct EE_ILEXCEPTION : public COR_ILMETHOD_SECT_FAT
 {
     EE_ILEXCEPTION_CLAUSE Clauses[1];     // actually variable size
 
-    void Init(unsigned ehCount) 
+    void Init(unsigned ehCount)
     {
         LIMITED_METHOD_CONTRACT;
 
         SetKind(CorILMethod_Sect_FatFormat);
-        SetDataSize((unsigned)sizeof(EE_ILEXCEPTION_CLAUSE) * ehCount); 
+        SetDataSize((unsigned)sizeof(EE_ILEXCEPTION_CLAUSE) * ehCount);
     }
 
-    unsigned EHCount() const 
+    unsigned EHCount() const
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -71,7 +71,7 @@ struct EE_ILEXCEPTION : public COR_ILMETHOD_SECT_FAT
 
         return (offsetof(EE_ILEXCEPTION, Clauses) + sizeof(EE_ILEXCEPTION_CLAUSE) * ehCount);
     }
-    EE_ILEXCEPTION_CLAUSE *EHClause(unsigned i) 
+    EE_ILEXCEPTION_CLAUSE *EHClause(unsigned i)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return &(PTR_EE_ILEXCEPTION_CLAUSE(PTR_HOST_MEMBER_TADDR(EE_ILEXCEPTION,this,Clauses))[i]);
@@ -133,14 +133,14 @@ inline BOOL IsDuplicateClause(EE_ILEXCEPTION_CLAUSE* pEHClause)
 //
 // "Cloned" finally is a contruct that represents a finally block that is used as
 // fall through for normal try-block execution. Such a "cloned" finally will:
-// 
+//
 // 1) Have its try-clause's Start and End PC the same as its handler's start PC (i.e. will have
 //    zero length try block), AND
 // 2) Is marked duplicate
 //
 // Because of their fall-through nature, JIT guarantees that only finally constructs can be cloned,
 // and not catch or fault (since they cannot be fallen through but are invoked as funclets).
-// 
+//
 // The cloned finally construct is also used to mark "call to finally" thunks that are not within
 // the EH region protected by the finally, and also not within the enclosing region. This is done
 // to prevent ThreadAbortException from creating an infinite loop of calling the same finally.

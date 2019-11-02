@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // StgTiggerStorage.cpp
-// 
+//
 
 //
 // TiggerStorage is a stripped down version of compound doc files.  Doc files
@@ -24,10 +24,10 @@
 //#CLRRuntimeHostInternal_GetImageVersionString
 // External implementation of call to code:ICLRRuntimeHostInternal::GetImageVersionString.
 // Implemented in clr.dll and mscordbi.dll.
-HRESULT 
+HRESULT
 CLRRuntimeHostInternal_GetImageVersionString(
-  __out_ecount(*pcchBuffer) 
-    LPWSTR  wszBuffer, 
+  __out_ecount(*pcchBuffer)
+    LPWSTR  wszBuffer,
     DWORD * pcchBuffer);
 
 TiggerStorage::TiggerStorage() :
@@ -53,7 +53,7 @@ TiggerStorage::~TiggerStorage()
 //*****************************************************************************
 // Init this storage object on top of the given storage unit.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::Init(
     StgIO            *pStgIO,       // The I/O subsystem.
     __in __in_z LPSTR pVersion)     // 'Compiled for' CLR version
@@ -62,28 +62,28 @@ TiggerStorage::Init(
     ULONG             cbData;       // Offset of header data.
     void             *ptr;          // Signature.
     HRESULT           hr = S_OK;
-    
+
     // Make sure we always start at the beginning.
-    // 
+    //
     pStgIO->Seek(0, FILE_BEGIN);
-    
+
     // Save the storage unit.
     m_pStgIO = pStgIO;
     m_pStgIO->AddRef();
-    
+
     // For cases where the data already exists, verify the signature.
     if ((pStgIO->GetFlags() & DBPROP_TMODEF_CREATE) == 0)
     {
         // Map the contents into memory for easy access.
         IfFailGo(pStgIO->MapFileToMem(ptr, &cbData));
-        
+
         // Get a pointer to the signature of the file, which is the first part.
         IfFailGo(pStgIO->GetPtrForMem(0, sizeof(STORAGESIGNATURE), ptr));
-        
+
         // Finally, we can check the signature.
         pSig = (PSTORAGESIGNATURE)ptr;
         IfFailGo(MDFormat::VerifySignature(pSig, cbData));
-        
+
         // Read and verify the header.
         IfFailGo(ReadHeader());
     }
@@ -92,7 +92,7 @@ TiggerStorage::Init(
     {
         IfFailGo(WriteSignature(pVersion));
     }
-    
+
 ErrExit:
     if (FAILED(hr) && (m_pStgIO != NULL))
     {
@@ -105,7 +105,7 @@ ErrExit:
 //*****************************************************************************
 // This function is a workaround to allow access to the "version requested" string.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::GetHeaderPointer(
     const void **ppv,   // Put pointer to header here.
     ULONG       *pcb)   // Put size of pointer here.
@@ -130,22 +130,22 @@ TiggerStorage::GetHeaderPointer(
 //*****************************************************************************
 //  Get the default "Compiled for" version used to emit the meta-data
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::GetDefaultVersion(
     LPCSTR *ppVersion)
 {
     static LPSTR g_pDefaultVersion;
-    
+
     if (g_pDefaultVersion == NULL)
     {
 #ifndef DACCESS_COMPILE
         HRESULT hr;
-        
+
         WCHAR wszVersion[_MAX_PATH];
         DWORD cchVersion = _MAX_PATH;
         //#CallTo_CLRRuntimeHostInternal_GetImageVersionString
         IfFailRet(CLRRuntimeHostInternal_GetImageVersionString(wszVersion, &cchVersion));
-        
+
         CHAR szVersion[_MAX_PATH];
         DWORD dwSize = WszWideCharToMultiByte(CP_UTF8, 0, wszVersion, -1, szVersion, _MAX_PATH, NULL, NULL);
         if (dwSize == 0)
@@ -154,12 +154,12 @@ TiggerStorage::GetDefaultVersion(
             szVersion[0] = 0;
             dwSize = 1;
         }
-        
+
         NewArrayHolder<CHAR> pVersion = new (nothrow) CHAR[dwSize];
         IfNullRet(pVersion);
-        
+
         memcpy(pVersion, szVersion, dwSize);
-        
+
         if (InterlockedCompareExchangeT<CHAR *>(&g_pDefaultVersion, pVersion, NULL) == NULL)
         {   // We won the initialization race
             pVersion.SuppressRelease();
@@ -168,12 +168,12 @@ TiggerStorage::GetDefaultVersion(
         DacNotImpl();
 #endif //DACCESS_COMPILE
     }
-    
+
     *ppVersion = g_pDefaultVersion;
     return S_OK;
 } // TiggerStorage::GetDefaultVersion
 
-HRESULT 
+HRESULT
 TiggerStorage::SizeOfStorageSignature(LPCSTR pVersion, ULONG *pcbSignatureSize)
 {
     HRESULT     hr;
@@ -193,15 +193,15 @@ TiggerStorage::SizeOfStorageSignature(LPCSTR pVersion, ULONG *pcbSignatureSize)
 
 
 //*****************************************************************************
-// Retrieves a the size and a pointer to the extra data that can optionally be 
-// written in the header of the storage system.  This data is not required to 
-// be in the file, in which case *pcbExtra will come back as 0 and pbData will 
-// be set to NULL. You must have initialized the storage using Init() before 
+// Retrieves a the size and a pointer to the extra data that can optionally be
+// written in the header of the storage system.  This data is not required to
+// be in the file, in which case *pcbExtra will come back as 0 and pbData will
+// be set to NULL. You must have initialized the storage using Init() before
 // calling this function.
-// 
+//
 // Return value: S_OK if found, S_FALSE, or error.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::GetExtraData(
     ULONG *pcbExtra,    // Return size of extra data.
     BYTE *&pbData)      // Return a pointer to extra data.
@@ -230,9 +230,9 @@ TiggerStorage::GetExtraData(
 //*****************************************************************************
 // Called when this stream is going away.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::WriteHeader(
-    STORAGESTREAMLST *pList,        // List of streams.     
+    STORAGESTREAMLST *pList,        // List of streams.
     ULONG             cbExtraData,  // Size of extra data, may be 0.
     BYTE             *pbExtraData)  // Pointer to extra data for header.
 {
@@ -240,43 +240,43 @@ TiggerStorage::WriteHeader(
     ULONG   cbWritten;  // Track write quantity.
     HRESULT hr;
     SAVETRACE(ULONG cbDebugSize);   // Track debug size of header.
-    
+
     SAVETRACE(DbgWriteEx(W("PSS:  Header:\n")));
-    
+
     // Save the count and set flags.
     m_StgHdr.SetiStreams(pList->Count());
     if (cbExtraData != 0)
         m_StgHdr.AddFlags(STGHDR_EXTRADATA);
-    
+
     // Write out the header of the file.
     IfFailRet(m_pStgIO->Write(&m_StgHdr, sizeof(STORAGEHEADER), &cbWritten));
-    
+
     // Write out extra data if there is any.
     if (cbExtraData != 0)
     {
         _ASSERTE(pbExtraData);
         _ASSERTE((cbExtraData % 4) == 0);
-        
+
         // First write the length value.
         IfFailRet(m_pStgIO->Write(&cbExtraData, sizeof(ULONG), &cbWritten));
-        
+
         // And then the data.
         IfFailRet(m_pStgIO->Write(pbExtraData, cbExtraData, &cbWritten));
         SAVETRACE(DbgWriteEx(W("PSS:    extra data size %d\n"), m_pStgIO->GetCurrentOffset() - cbDebugSize);cbDebugSize=m_pStgIO->GetCurrentOffset());
     }
-    
+
     // Save off each data stream.
     for (int i = 0; i < pList->Count(); i++)
     {
         PSTORAGESTREAM pStream = pList->Get(i);
-        
+
         // How big is the structure (aligned) for this struct.
         iLen = (ULONG)(sizeof(STORAGESTREAM) - MAXSTREAMNAME + strlen(pStream->GetName()) + 1);
-        
+
         // Write the header including the name to disk.  Does not include
         // full name buffer in struct, just string and null terminator.
         IfFailRet(m_pStgIO->Write(pStream, iLen, &cbWritten));
-        
+
         // Align the data out to 4 bytes.
         if (iLen != ALIGN4BYTE(iLen))
         {
@@ -295,30 +295,30 @@ TiggerStorage::WriteHeader(
 // Called when all data has been written.  Forces cached data to be flushed
 // and stream lists to be validated.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::WriteFinished(
-    STORAGESTREAMLST *pList,        // List of streams.     
+    STORAGESTREAMLST *pList,        // List of streams.
     ULONG            *pcbSaveSize,  // Return size of total data.
     BOOL              fDeltaSave)   // Was this a delta
 {
     PSTORAGESTREAM pEntry;      // Loop control.
     HRESULT        hr;
-    
+
     // If caller wants the total size of the file, we are there right now.
     if (pcbSaveSize != NULL)
         *pcbSaveSize = m_pStgIO->GetCurrentOffset();
-    
+
     // Flush our internal write cache to disk.
     IfFailRet(m_pStgIO->FlushCache());
-    
+
     // Force user's data onto disk right now so that Commit() can be
     // more accurate (although not totally up to the D in ACID).
     hr = m_pStgIO->FlushFileBuffers();
     _ASSERTE(SUCCEEDED(hr));
-    
+
     // Run through all of the streams and validate them against the expected
     // list we wrote out originally.
-    
+
     // Robustness check: stream counts must match what was written.
     _ASSERTE(pList->Count() == m_Streams.Count());
     if (pList->Count() != m_Streams.Count())
@@ -326,7 +326,7 @@ TiggerStorage::WriteFinished(
         _ASSERTE_MSG(FALSE, "Mismatch in streams, save would cause corruption.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // If we're saving a true delta, then this sanity check won't help.
     // @TODO - Implement a sanity check for the deltas
     if (!fDeltaSave)
@@ -335,24 +335,24 @@ TiggerStorage::WriteFinished(
         for (int i = 0; i < pList->Count(); i++)
         {
             pEntry = pList->Get(i);
-            
+
             _ASSERTE(pEntry->GetOffset() == m_Streams[i].GetOffset());
             _ASSERTE(pEntry->GetSize() == m_Streams[i].GetSize());
             _ASSERTE(strcmp(pEntry->GetName(), m_Streams[i].GetName()) == 0);
-            
+
             // For robustness, check that everything matches expected value,
             // and if it does not, refuse to save the data and force a rollback.
             // The alternative is corruption of the data file.
-            if ((pEntry->GetOffset() != m_Streams[i].GetOffset()) || 
-                (pEntry->GetSize() != m_Streams[i].GetSize()) || 
+            if ((pEntry->GetOffset() != m_Streams[i].GetOffset()) ||
+                (pEntry->GetSize() != m_Streams[i].GetSize()) ||
                 (strcmp(pEntry->GetName(), m_Streams[i].GetName()) != 0))
             {
                 _ASSERTE_MSG(FALSE, "Mismatch in streams, save would cause corruption.");
                 hr = PostError(CLDB_E_FILE_CORRUPT);
                 break;
             }
-            
-            //<REVISIT_TODO>@future: 
+
+            //<REVISIT_TODO>@future:
             // if iOffset or iSize mismatches, it means a bug in GetSaveSize
             // which we can successfully detect right here.  In that case, we
             // could use the pStgIO and seek back to the header and correct the
@@ -383,14 +383,14 @@ HRESULT TiggerStorage::ResetBackingStore()  // Return code.
 // stream data and the header overhead the file format incurs.  The name is
 // stored in ANSI and the header struct is aligned to 4 bytes.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::GetStreamSaveSize(
     LPCWSTR szStreamName,       // Name of stream.
     UINT32  cbDataSize,         // Size of data to go into stream.
     UINT32 *pcbSaveSize)        // Return data size plus stream overhead.
 {
     UINT32 cbTotalSize;            // Add up each element.
-    
+
     // Find out how large the name will be.
     cbTotalSize = ::WszWideCharToMultiByte(CP_ACP, 0, szStreamName, -1, 0, 0, 0, 0);
     _ASSERTE(cbTotalSize != 0);
@@ -463,11 +463,11 @@ HRESULT TiggerStorage::CalcOffsets(     // Return code.
         cbOffset += pEntry->GetSize();
     }
     return (S_OK);
-}   
+}
 
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     const OLECHAR *pwcsName,
     DWORD       grfMode,
     DWORD       reserved1,
@@ -481,7 +481,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
 
 
 #ifndef DACCESS_COMPILE
-HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     LPCSTR      szName,
     DWORD       grfMode,
     DWORD       reserved1,
@@ -499,7 +499,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     {
         // <REVISIT_TODO>REVIEW: STGM_FAILIFTHERE is 0, the following condition will be always false</REVISIT_TODO>
         if (pStream->GetOffset() != 0xffffffff && ((grfMode & STGM_CREATE) == STGM_FAILIFTHERE))
-            return (PostError(STG_E_FILEALREADYEXISTS));                
+            return (PostError(STG_E_FILEALREADYEXISTS));
     }
     // Add a control to track this stream.
     else if (!pStream && (pStream = m_Streams.Append()) == 0)
@@ -525,7 +525,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
 #endif //!DACCESS_COMPILE
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
     const OLECHAR *pwcsName,
     void        *reserved1,
     DWORD       grfMode,
@@ -536,7 +536,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStorage( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStorage(
     const OLECHAR *pwcsName,
     DWORD       grfMode,
     DWORD       dwStgFmt,
@@ -547,32 +547,32 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStorage(
 }
 
 
-HRESULT STDMETHODCALLTYPE 
+HRESULT STDMETHODCALLTYPE
 TiggerStorage::OpenStorage(
-    const OLECHAR * wcsName, 
-    IStorage *      pStgPriority, 
-    DWORD           dwMode, 
-  __in 
-    SNB             snbExclude, 
-    DWORD           reserved, 
+    const OLECHAR * wcsName,
+    IStorage *      pStgPriority,
+    DWORD           dwMode,
+  __in
+    SNB             snbExclude,
+    DWORD           reserved,
     IStorage **     ppStg)
 {
     return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE 
-TiggerStorage::CopyTo( 
-    DWORD       cIidExclude, 
-    const IID * rgIidExclude, 
-  __in 
-    SNB         snbExclude, 
+HRESULT STDMETHODCALLTYPE
+TiggerStorage::CopyTo(
+    DWORD       cIidExclude,
+    const IID * rgIidExclude,
+  __in
+    SNB         snbExclude,
     IStorage *  pStgDest)
 {
     return E_NOTIMPL;
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::MoveElementTo( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::MoveElementTo(
     const OLECHAR *pwcsName,
     IStorage    *pstgDest,
     const OLECHAR *pwcsNewName,
@@ -582,7 +582,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::MoveElementTo(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::Commit( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::Commit(
     DWORD       grfCommitFlags)
 {
     return (E_NOTIMPL);
@@ -595,7 +595,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::Revert()
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::EnumElements( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::EnumElements(
     DWORD       reserved1,
     void        *reserved2,
     DWORD       reserved3,
@@ -605,14 +605,14 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::EnumElements(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::DestroyElement( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::DestroyElement(
     const OLECHAR *pwcsName)
 {
     return (E_NOTIMPL);
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::RenameElement( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::RenameElement(
     const OLECHAR *pwcsOldName,
     const OLECHAR *pwcsNewName)
 {
@@ -620,7 +620,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::RenameElement(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::SetElementTimes( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::SetElementTimes(
     const OLECHAR *pwcsName,
     const FILETIME *pctime,
     const FILETIME *patime,
@@ -630,14 +630,14 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::SetElementTimes(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::SetClass( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::SetClass(
     REFCLSID    clsid)
 {
     return (E_NOTIMPL);
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::SetStateBits( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::SetStateBits(
     DWORD       grfStateBits,
     DWORD       grfMask)
 {
@@ -645,7 +645,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::SetStateBits(
 }
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::Stat( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::Stat(
     STATSTG     *pstatstg,
     DWORD       grfStatFlag)
 {
@@ -654,7 +654,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::Stat(
 
 
 
-HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream( 
+HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
     LPCWSTR     szStream,
     ULONG       *pcbData,
     void        **ppAddress)
@@ -687,7 +687,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
 //*****************************************************************************
 // Called by the stream implementation to write data out to disk.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::Write(
     LPCSTR      szName,         // Name of stream we're writing.
     const void *pData,          // Data to write.
@@ -717,7 +717,7 @@ TiggerStorage::Write(
             if (FAILED(hr = m_pStgIO->Write(&pad, ALIGN4BYTE(iOffset) - iOffset, &cb)))
                 return hr;
             iOffset = m_pStgIO->GetCurrentOffset();
-            
+
             _ASSERTE((iOffset % 4) == 0);
         }
     }
@@ -733,7 +733,7 @@ TiggerStorage::Write(
         // On success, record the new data.
         if (pStream->GetOffset() == 0xffffffff)
             pStream->SetOffset(iOffset);
-        pStream->SetSize(pStream->GetSize() + *pcbWritten);  
+        pStream->SetSize(pStream->GetSize() + *pcbWritten);
         return S_OK;
     }
     else
@@ -747,9 +747,9 @@ TiggerStorage::Write(
 // Private
 //
 
-HRESULT 
+HRESULT
 TiggerStorage::FindStream(
-    LPCSTR                szName, 
+    LPCSTR                szName,
     __out PSTORAGESTREAM *stream)
 {
     *stream = NULL;
@@ -757,16 +757,16 @@ TiggerStorage::FindStream(
     if (m_pStreamList != NULL)
     {
         PSTORAGESTREAM p = m_pStreamList;
-        
+
         SIZE_T pStartMD = (SIZE_T)(m_pStgIO->m_pData);
         SIZE_T pEndMD = NULL;
-        
+
         if (!ClrSafeInt<SIZE_T>::addition(pStartMD, m_pStgIO->m_cbData, pEndMD))
         {
             Debug_ReportError("Invalid MetaData storage headers - size overflow.");
             return CLDB_E_FILE_CORRUPT;
         }
-        
+
         for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
         {
             // Make sure this stream pointer is still inside the metadata
@@ -775,7 +775,7 @@ TiggerStorage::FindStream(
                 Debug_ReportError("Invalid MetaData storage header - reached outside headers block.");
                 return CLDB_E_FILE_CORRUPT;
             }
-            
+
             if (SString::_stricmp(p->GetName(), szName) == 0)
             {
                 *stream = p;
@@ -804,7 +804,7 @@ TiggerStorage::FindStream(
 // Write the signature area of the file format to disk.  This includes the
 // "magic" identifier and the version information.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::WriteSignature(
     LPCSTR pVersion)
 {
@@ -817,13 +817,13 @@ TiggerStorage::WriteSignature(
         IfFailRet(GetDefaultVersion(&pVersion));
     }
     _ASSERTE(pVersion != NULL);
-    
+
     ULONG versionSize = (ULONG)strlen(pVersion) + 1;
     ULONG alignedVersionSize = (ULONG)ALIGN_UP(versionSize, 4);
-    
+
     // Signature belongs at the start of the file.
     _ASSERTE(m_pStgIO->GetCurrentOffset() == 0);
-    
+
     sSig.SetSignature(STORAGE_MAGIC_SIG);
     sSig.SetMajorVer(FILE_VER_MAJOR);
     sSig.SetMinorVer(FILE_VER_MINOR);
@@ -831,7 +831,7 @@ TiggerStorage::WriteSignature(
     sSig.SetVersionStringLength(alignedVersionSize);
     IfFailRet(m_pStgIO->Write(&sSig, sizeof(STORAGESIGNATURE), &cbWritten));
     IfFailRet(m_pStgIO->Write(pVersion, versionSize, &cbWritten));
-    
+
     // Write padding
     if (alignedVersionSize - versionSize != 0)
     {
@@ -839,7 +839,7 @@ TiggerStorage::WriteSignature(
         ZeroMemory(padding, sizeof(padding));
         IfFailRet(m_pStgIO->Write(padding, alignedVersionSize - versionSize, &cbWritten));
     }
-    
+
     return hr;
 } // TiggerStorage::WriteSignature
 
@@ -848,7 +848,7 @@ TiggerStorage::WriteSignature(
 // Read the header from disk.  This reads the header for the most recent version
 // of the file format which has the header at the front of the data file.
 //*****************************************************************************
-HRESULT 
+HRESULT
 TiggerStorage::ReadHeader()
 {
     PSTORAGESTREAM pAppend, pStream;    // For copy of array.
@@ -857,19 +857,19 @@ TiggerStorage::ReadHeader()
     ULONG          cbExtra;             // Size of extra data.
     ULONG          cbRead;              // For calc of read sizes.
     HRESULT        hr;
-    
+
     // Read the signature
     if (FAILED(hr = m_pStgIO->GetPtrForMem(0, sizeof(STORAGESIGNATURE), ptr)))
     {
         Debug_ReportError("Cannot read MetaData storage signature header.");
         return hr;
     }
-    
+
     PSTORAGESIGNATURE pStorage = (PSTORAGESIGNATURE)ptr;
-    
+
     // Header data starts after signature.
     iOffset = sizeof(STORAGESIGNATURE) + pStorage->GetVersionStringLength();
-    
+
     // Read the storage header which has the stream counts.  Throw in the extra
     // count which might not exist, but saves us down stream.
     if (FAILED(hr = m_pStgIO->GetPtrForMem(iOffset, sizeof(STORAGEHEADER) + sizeof(ULONG), ptr)))
@@ -878,7 +878,7 @@ TiggerStorage::ReadHeader()
         return hr;
     }
     _ASSERTE(m_pStgIO->IsAlignedPtr((ULONG_PTR) ptr, 4));
-    
+
     // Read the storage header which has the stream counts.  Throw in the extra
     // count which might not exist, but saves us down stream.
     if (FAILED(hr = m_pStgIO->GetPtrForMem(iOffset, sizeof(STORAGEHEADER) + sizeof(ULONG), ptr)))
@@ -891,19 +891,19 @@ TiggerStorage::ReadHeader()
         Debug_ReportError("Invalid MetaData storage headers - unaligned size.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // Copy the header into memory and check it.
     memcpy(&m_StgHdr, ptr, sizeof(STORAGEHEADER));
     IfFailRet( VerifyHeader() );
     ptr = (void *)((PSTORAGEHEADER)ptr + 1);
     iOffset += sizeof(STORAGEHEADER);
-    
+
     // Save off a pointer to the extra data.
     if ((m_StgHdr.GetFlags() & STGHDR_EXTRADATA) != 0)
     {
         m_pbExtra = ptr;
         cbExtra = sizeof(ULONG) + *(ULONG *)ptr;
-        
+
         // Force the extra data to get faulted in.
         IfFailRet(m_pStgIO->GetPtrForMem(iOffset, cbExtra, ptr));
         if (!m_pStgIO->IsAlignedPtr((ULONG_PTR)ptr, 4))
@@ -918,7 +918,7 @@ TiggerStorage::ReadHeader()
         cbExtra = 0;
     }
     iOffset += cbExtra;
-    
+
     // Force the worst case scenario of bytes to get faulted in for the
     // streams.  This makes the rest of this code very simple.
     cbRead = sizeof(STORAGESTREAM) * m_StgHdr.GetiStreams();
@@ -935,7 +935,7 @@ TiggerStorage::ReadHeader()
             Debug_ReportError("Invalid MetaData stogare headers - unaligned start.");
             return PostError(CLDB_E_FILE_CORRUPT);
         }
-        
+
         // For read only, just access the header data.
         if (m_pStgIO->IsReadOnly())
         {
@@ -946,7 +946,7 @@ TiggerStorage::ReadHeader()
         else
         {
             pStream = (PSTORAGESTREAM)ptr;
-            
+
             // Copy each of the stream headers.
             for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
             {
@@ -967,7 +967,7 @@ TiggerStorage::ReadHeader()
                     return PostError(CLDB_E_FILE_CORRUPT);
                 }
             }
-            
+
             // All must be loaded and accounted for.
             _ASSERTE(m_StgHdr.GetiStreams() == m_Streams.Count());
         }
@@ -1002,7 +1002,7 @@ ULONG TiggerStorage::PrintSizeInfo(bool verbose)
         {
             pNext = storStream->NextStream();
             printf("Stream #%d (%s) Header: %d, Data: %d\n",i,storStream->GetName(), (BYTE*)pNext - (BYTE*)storStream, storStream->GetSize());
-            total += storStream->GetSize(); 
+            total += storStream->GetSize();
             storStream = pNext;
         }
     }

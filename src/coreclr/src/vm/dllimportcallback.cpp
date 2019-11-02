@@ -169,7 +169,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // Make space for return value - instead of repeatedly doing push eax edx <trash regs> pop edx eax
     // we will save the return value once and restore it just before returning.
     pcpusl->X86EmitSubEsp(sizeof(PCONTEXT(NULL)->Eax) + sizeof(PCONTEXT(NULL)->Edx));
-    
+
     // Load thread descriptor into ECX
     const X86Reg kECXthread = kECX;
 
@@ -379,7 +379,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         pcpusl->X86EmitOp(0xff, (X86Reg)2, (X86Reg)kESP_Unsafe, iCallSlotOffset);
 
         // Emit a NOP so we know that we can call managed code
-        INDEBUG(pcpusl->Emit8(X86_INSTR_NOP)); 
+        INDEBUG(pcpusl->Emit8(X86_INSTR_NOP));
 
         // restore EDI
         pcpusl->X86EmitPopReg(kEDI);
@@ -410,7 +410,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
 
         // mov [ESP+iCallSlotOffset], SCRATCHREG
         pcpusl->X86EmitIndexRegStore((X86Reg)kESP_Unsafe,iCallSlotOffset,SCRATCH_REGISTER_X86REG);
-        
+
         // call [ESP+iCallSlotOffset]
         pcpusl->X86EmitOp(0xff, (X86Reg)2, (X86Reg)kESP_Unsafe, iCallSlotOffset);
 
@@ -435,7 +435,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
 
         INDEBUG(pcpusl->Emit8(X86_INSTR_NOP)); // Emit a NOP so we know that we can call managed code
     }
-    
+
     // skip the call slot
     pcpusl->X86EmitAddEsp(4);
 
@@ -660,7 +660,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         {
             // this is a copy-constructed argument - get its size
             TypeHandle thPtr = pMetaSig->GetLastTypeHandleThrowing();
-            
+
             _ASSERTE(thPtr.IsPointer());
             cbSize = thPtr.AsTypeDesc()->GetTypeParam().GetSize();
 
@@ -839,7 +839,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    // Fail 
+    // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
                                              W("Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.")
@@ -1069,7 +1069,7 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
 //----------------------------------------------------------
 // This initializer is called during load time.
 // It does not do any stub initialization or sigparsing.
-// The RunTimeInit() must be called subsequently to fully 
+// The RunTimeInit() must be called subsequently to fully
 // UMThunkMarshInfo.
 //----------------------------------------------------------
 VOID UMThunkMarshInfo::LoadTimeInit(MethodDesc* pMD)

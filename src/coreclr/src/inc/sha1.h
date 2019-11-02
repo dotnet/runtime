@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 
 #ifndef SHA1_H_
 #define SHA1_H_
@@ -25,7 +25,7 @@ typedef struct {
                              // Unused part of buffer (at end) is zero
         DWORD partial_hash[5];
                              // Hash through last full block
-        DWORD nbit_total[2];       
+        DWORD nbit_total[2];
                              // Total length of message so far
                              // (bits, mod 2^64)
 } SHA1_CTX;
@@ -36,7 +36,7 @@ private:
     SHA1_CTX m_Context;
     BYTE     m_Value[SHA1_HASH_SIZE];
     BOOL     m_fFinalized;
-    
+
     void SHA1Init(SHA1_CTX*);
     void SHA1Update(SHA1_CTX*, const BYTE*, const DWORD);
     void SHA1Final(SHA1_CTX*, BYTE* digest);

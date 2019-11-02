@@ -27,7 +27,7 @@
     ; push lr to get good stacktrace in debugger
     PROLOG_SAVE_REG_PAIR           fp, lr, #-32!
     str x0, [sp, #16]
-    ; FuncEvalHijackWorker returns the address we should jump to. 
+    ; FuncEvalHijackWorker returns the address we should jump to.
     bl FuncEvalHijackWorker
 
     EPILOG_STACK_FREE 32
@@ -99,4 +99,4 @@ ExceptionHijackEnd
 
     ; must be at end of file
     END
-    
+

@@ -59,7 +59,7 @@ public:
         ITEM_COUNT,
     };
 
-    Module *m_module;    
+    Module *m_module;
     CEEPreloader *m_preloader;
     ZapImage * m_pZapImage;
 
@@ -75,17 +75,17 @@ public:
     public:
         typedef const void * key_t;
 
-        static key_t GetKey(element_t e) 
-        { 
+        static key_t GetKey(element_t e)
+        {
             LIMITED_METHOD_CONTRACT;
             return e.ptr;
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1 == k2);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k;
@@ -179,16 +179,16 @@ public:
         typedef const MethodDesc * key_t;
 
         static key_t GetKey(element_t e)
-        { 
+        {
             LIMITED_METHOD_CONTRACT;
             return e.pMD;
         }
-        static BOOL Equals(key_t k1, key_t k2) 
-        { 
+        static BOOL Equals(key_t k1, key_t k2)
+        {
             LIMITED_METHOD_CONTRACT;
             return (k1 == k2);
         }
-        static count_t Hash(key_t k) 
+        static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
             return (count_t)(size_t)k;
@@ -224,7 +224,7 @@ public:
     ZapHeap * GetHeap();
 
     //
-    // Data is stored in the image store in three phases. 
+    // Data is stored in the image store in three phases.
     //
 
     //
@@ -233,7 +233,7 @@ public:
     // structures which are being stored into the image.
     //
     // This would typically done by methods on the objects themselves,
-    // each of which stores itself and any objects it references.  
+    // each of which stores itself and any objects it references.
     // Reference loops must be explicitly tested for using IsStored.
     // (Each structure can be stored only once.)
     //
@@ -288,13 +288,13 @@ public:
     //
     // In the second phase, data is arranged in the image by successive calls
     // to PlaceMappedRange.  Items are arranged using pointers to data structures in the
-    // original heap, or by giving a StoredStructure along with the original 
+    // original heap, or by giving a StoredStructure along with the original
     // mapping.
     //
 
     // Concrete mapped ranges are the ones that actually correspond to allocations
     // of new space within the image.  They should be placed first.  We do not
-    // necessarily populate the space in the image (i.e. copy the data to the image) 
+    // necessarily populate the space in the image (i.e. copy the data to the image)
     // from the concrete range: for example the space associated with a
     // combo structure gets filled by copying the data from the individual items
     // that make up the parts of the combo structure.
@@ -406,7 +406,7 @@ public:
     void *GetImagePointer(PVOID p, SSIZE_T offset = 0);
     ZapNode * GetNodeForStructure(PVOID p, SSIZE_T * pOffset);
 
-    void ZeroPointerField(PVOID p, SSIZE_T offset) 
+    void ZeroPointerField(PVOID p, SSIZE_T offset)
       { WRAPPER_NO_CONTRACT; ZeroField(p, offset, sizeof(void*)); }
 
 
@@ -424,7 +424,7 @@ public:
     void SaveRvaStructure();
     void FixupRvaStructure();
 
-    // Surrogates are used to reorganize the data before they are saved. RegisterSurrogate and LookupSurrogate 
+    // Surrogates are used to reorganize the data before they are saved. RegisterSurrogate and LookupSurrogate
     // maintains mapping from the original data to the reorganized data.
     void RegisterSurrogate(PVOID ptr, PVOID surrogate);
     PVOID LookupSurrogate(PVOID ptr);

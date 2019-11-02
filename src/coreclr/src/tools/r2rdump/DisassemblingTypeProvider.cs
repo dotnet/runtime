@@ -121,7 +121,7 @@ namespace R2RDump
             }
 
             builder.Append(']');
-            
+
             return builder.ToString();
         }
 
@@ -173,5 +173,5 @@ namespace R2RDump
             return builder.ToString();
         }
     }
-    
+
 }

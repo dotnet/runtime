@@ -11,8 +11,8 @@
 #include <pal_assert.h>
 #include "twowaypipe.h"
 
-// Creates a server side of the pipe. 
-// Id is used to create pipes names and uniquely identify the pipe on the machine. 
+// Creates a server side of the pipe.
+// Id is used to create pipes names and uniquely identify the pipe on the machine.
 // true - success, false - failure (use GetLastError() for more details)
 bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 {
@@ -44,7 +44,7 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 }
 
 // Connects to a previously opened server side of the pipe.
-// Id is used to locate the pipe on the machine. 
+// Id is used to locate the pipe on the machine.
 // true - success, false - failure (use GetLastError() for more details)
 bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 {
@@ -175,7 +175,7 @@ bool TwoWayPipe::Disconnect()
     return true;
 }
 
-// Used by debugger side (RS) to cleanup the target (LS) named pipes 
+// Used by debugger side (RS) to cleanup the target (LS) named pipes
 // and semaphores when the debugger detects the debuggee process  exited.
 void TwoWayPipe::CleanupTargetProcess()
 {

@@ -30,7 +30,7 @@ extern "C"
 Function :
     MAPGetRegionInfo
 
-    Parameters: 
+    Parameters:
     lpAddress: pointer to the starting memory location, not necessary
                to be rounded to the page location
 
@@ -38,7 +38,7 @@ Function :
               the information is stored in this struct
 
     Note: This function is to be used in virtual.c
-          
+
     Returns TRUE if this function finds information about the specified address
 --*/
 

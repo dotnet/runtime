@@ -92,7 +92,7 @@ inline void ClrFlsIncrementValue(DWORD slot, int increment)
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     _ASSERTE(increment != 0);
-    
+
     void **block = (*__ClrFlsGetBlock)();
     size_t value;
 
@@ -146,12 +146,12 @@ inline BOOL ClrFlsCheckValue(DWORD slot, void ** pValue)
 
 #ifdef _DEBUG
     *pValue = ULongToPtr(0xcccccccc);
-#endif //_DEBUG 
+#endif //_DEBUG
 	void **block = (*__ClrFlsGetBlock)();
 	if (block != NULL)
     {
         *pValue = block[slot];
-        return TRUE;    
+        return TRUE;
     }
     else
     {
@@ -380,7 +380,7 @@ inline bool IsInCantAllocRegion ()
 {
     size_t count = 0;
     if (ClrFlsCheckValue(TlsIdx_CantAllocCount, (LPVOID *)&count))
-    {        
+    {
         _ASSERTE (count >= 0);
         return count > 0;
     }

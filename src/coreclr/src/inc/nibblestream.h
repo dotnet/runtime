@@ -17,14 +17,14 @@ typedef BYTE NIBBLE;
 //-----------------------------------------------------------------------------
 // This class allows variable-length compression of DWORDs.
 //
-// A value can be stored using one or more nibbles. 3 bits of a nibble are used 
-// to store 3 bits of the value, and the top bit indicates if  the following nibble 
+// A value can be stored using one or more nibbles. 3 bits of a nibble are used
+// to store 3 bits of the value, and the top bit indicates if  the following nibble
 // contains rest of the value. If the top bit is not set, then this
-// nibble is the last part of the value. 
+// nibble is the last part of the value.
 // The higher bits of the value are written out first, and the lowest 3 bits
 // are written out last.
 //
-// In the encoded stream of bytes, the lower nibble of a byte is used before 
+// In the encoded stream of bytes, the lower nibble of a byte is used before
 // the high nibble.
 //
 // A binary value ABCDEFGHI (where A is the highest bit) is encoded as
@@ -52,7 +52,7 @@ public:
     NibbleWriter()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         m_fPending = false;
     }
 
@@ -126,7 +126,7 @@ public:
             {
                 WriteNibble((NIBBLE) ((dw >> 3) | 8));
             }
-            
+
             WriteNibble((NIBBLE) (dw & 7));
             return;
         }
@@ -143,7 +143,7 @@ public:
             WriteNibble((NIBBLE) ((dw >> i) & 0x7) | 0x8);
             i -= 3;
         }
-        WriteNibble((NIBBLE) dw & 0x7);        
+        WriteNibble((NIBBLE) dw & 0x7);
     }
 
     // Write a signed 32 bit value.
@@ -155,7 +155,7 @@ public:
             GC_NOTRIGGER;
         }
         CONTRACTL_END;
-        
+
         DWORD dw = (x < 0) ? (((-x) << 1) + 1) : (x << 1);
         WriteEncodedU32(dw);
     };
@@ -178,7 +178,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(pBuffer != NULL);
-        
+
         m_pBuffer = pBuffer;
         m_cBytes = size;
         m_cNibble = 0;
@@ -204,7 +204,7 @@ public:
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-        
+
         NIBBLE i = 0;
         // Bufer should have been allocated large enough to hold data.
         if (!(m_cNibble / 2 < m_cBytes))
@@ -213,7 +213,7 @@ public:
             // We could wind up here if somebody provided us invalid data (maybe by corrupting an ngenned image).
             EX_THROW(HRException, (E_INVALIDARG));
         }
-        
+
         BYTE p = m_pBuffer[m_cNibble / 2];
         if ((m_cNibble & 1) == 0)
         {
@@ -231,7 +231,7 @@ public:
     }
 
     // Read an unsigned int that was encoded via variable length nibble encoding
-    // from NibbleWriter::WriteEncodedU32.    
+    // from NibbleWriter::WriteEncodedU32.
     DWORD ReadEncodedU32()
     {
         CONTRACTL
@@ -241,7 +241,7 @@ public:
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-        
+
         DWORD dw =0;
 
 #if defined(_DEBUG) || defined(DACCESS_COMPILE)
@@ -254,7 +254,7 @@ public:
         do
         {
 #if defined(_DEBUG) || defined(DACCESS_COMPILE)
-            // If we've already read 11 nibbles (with 3 bits of usable data each), then we 
+            // If we've already read 11 nibbles (with 3 bits of usable data each), then we
             // should be done reading a 32-bit integer.
             // Avoid working with corrupted data and potentially long loops by failing
             if(dwCount > 11)
@@ -263,7 +263,7 @@ public:
 #ifdef DACCESS_COMPILE
                 DacError(CORDBG_E_TARGET_INCONSISTENT);
 #endif
-            }                
+            }
             dwCount++;
 #endif
 
@@ -283,7 +283,7 @@ public:
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-        
+
         DWORD dw = ReadEncodedU32();
         int x = dw >> 1;
         return (dw & 1) ? (-x) : (x);

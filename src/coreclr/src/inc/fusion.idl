@@ -34,8 +34,8 @@ cpp_quote("#endif")
 
 typedef enum _tagAssemblyContentType
 {
-    AssemblyContentType_Default         = 0x00000000, 
-    AssemblyContentType_WindowsRuntime  = 0x00000001, 
+    AssemblyContentType_Default         = 0x00000000,
+    AssemblyContentType_WindowsRuntime  = 0x00000001,
     AssemblyContentType_Invalid         = 0xffffffff
 } AssemblyContentType;
 
@@ -93,24 +93,24 @@ interface IAssemblyName: IUnknown
         ASM_NAME_CONTENT_TYPE,          // 28 ... 0x1c
         ASM_NAME_MAX_PARAMS             // 29 ... 0x1d
     } ASM_NAME;
-    
+
     typedef enum
     {
-        ASM_DISPLAYF_VERSION               = 0x1, 
-        ASM_DISPLAYF_CULTURE               = 0x2, 
-        ASM_DISPLAYF_PUBLIC_KEY_TOKEN      = 0x4, 
-        ASM_DISPLAYF_PUBLIC_KEY            = 0x8, 
-        ASM_DISPLAYF_CUSTOM                = 0x10, 
-        ASM_DISPLAYF_PROCESSORARCHITECTURE = 0x20, 
-        ASM_DISPLAYF_LANGUAGEID            = 0x40, 
-        ASM_DISPLAYF_RETARGET              = 0x80, 
-        ASM_DISPLAYF_CONFIG_MASK           = 0x100, 
-        ASM_DISPLAYF_MVID                  = 0x200, 
-        ASM_DISPLAYF_CONTENT_TYPE          = 0x400, 
+        ASM_DISPLAYF_VERSION               = 0x1,
+        ASM_DISPLAYF_CULTURE               = 0x2,
+        ASM_DISPLAYF_PUBLIC_KEY_TOKEN      = 0x4,
+        ASM_DISPLAYF_PUBLIC_KEY            = 0x8,
+        ASM_DISPLAYF_CUSTOM                = 0x10,
+        ASM_DISPLAYF_PROCESSORARCHITECTURE = 0x20,
+        ASM_DISPLAYF_LANGUAGEID            = 0x40,
+        ASM_DISPLAYF_RETARGET              = 0x80,
+        ASM_DISPLAYF_CONFIG_MASK           = 0x100,
+        ASM_DISPLAYF_MVID                  = 0x200,
+        ASM_DISPLAYF_CONTENT_TYPE          = 0x400,
 
-        
+
         // ASM_DISPLAYF_FULL shows the full identity of the assembly.
-        // It should be used when you are working with APIs taking 
+        // It should be used when you are working with APIs taking
         // assembly full identity, such as GAC APIs.
         //
         // WARNING!!! ASM_DISPLAYF_FULL will change in the future,
@@ -126,12 +126,12 @@ interface IAssemblyName: IUnknown
     } ASM_DISPLAY_FLAGS;
 
     HRESULT SetProperty(
-        [in]    DWORD        PropertyId, 
+        [in]    DWORD        PropertyId,
         [in]    void const * pvProperty,
         [in]    DWORD        cbProperty);
 
     HRESULT GetProperty(
-        [in]         DWORD    PropertyId, 
+        [in]         DWORD    PropertyId,
         [out]        LPVOID   pvProperty,
         [in, out]    LPDWORD  pcbProperty);
 

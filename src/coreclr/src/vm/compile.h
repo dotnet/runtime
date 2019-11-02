@@ -5,7 +5,7 @@
 // File: compile.h
 //
 // Interfaces and support for zap compiler and zap files
-// 
+//
 
 // ===========================================================================
 
@@ -21,38 +21,38 @@ zapped image.  The object model looks like the following:
                     |                    |
                     +--------------------+
                               |
-                              *    
+                              *
                      ICorCompileDataStore           Zapper
-                    
-           =====================================================      
-                    
+
+           =====================================================
+
                      ICorCompilePreloader           EE
-                              * 
-                              | 
+                              *
+                              |
                     +--------------------+
                     |                    |
                     |    CEEPreloader    |
                     |                    |
-                    +--------------------+                    
+                    +--------------------+
                               |
-                              *    
-                     DataImage::IDataStore                    
-                    
-                                                 
+                              *
+                     DataImage::IDataStore
+
+
                     +--------------------+
                     |                    |
                     |     DataImage      |
                     |                    |
                     +--------------------+
-                    
+
 ZapperModule - Created by the zapper for each module.  It implements the
                ICorCompileDataStore interface that the preloader uses to
                allocate space for the EE data structures.  Currently it
                allocates space in a single PE section (though the DataImage
                has logic to further subdivide the space into subsections).
-  
+
 CEEPreloader - Created by ZapperModule in order to serialize EE
-               data structures.  It implements two interfaces.  
+               data structures.  It implements two interfaces.
                ICorCompilePreloader is used by ZapperModule to inquire
                about the offsets of various EE data structures inside
                the preloader section.  DataImage::IDataStore is used
@@ -66,7 +66,7 @@ DataImage    - Created by CEEPreloader to keep track of memory used by
                subsections.  This is accomplished by splitting the work into
                three phases (there are comments in dataimage.h that explain
                this in detail).
-               
+
 
 The CEEPreloader is created when ZapperModule::Preload calls
 m_zapper->m_pEECompileInfo->PreloadModule.  PreloadModule creates
@@ -81,14 +81,14 @@ method.  A Save method is required to:
    one of the DataImage storage methods (such as DataImage::StoreStructure).
 2) Call the Save method on the objects that it owns.  The interesting
    part of the hierarchy looks like:
-   
+
    Module::Save
      MethodTable::Save (in profile order)
        EEClass::Save
-         MethodDescChunk::Save (method desc chunks can be split into hot 
+         MethodDescChunk::Save (method desc chunks can be split into hot
                                 and cold based on profile info)
            MethodDesc::Save
-           
+
 Note that while the architecture requires the data structures in the
 preloader sections to look like their EE counterparts, it is possible
 to work around that limitation by constructing multiple submappings of
@@ -97,7 +97,7 @@ data (i.e. each method desc has information that tells you how far it is
 from the MethodDescChunk, and that needs to change when reordering method
 descs).  In such cases you create new copies of that memory and construct
 a regular copying map for each of the new updated copies (DataImage::StoreStructure),
-and a pointer update map for each of the original EE data structures 
+and a pointer update map for each of the original EE data structures
 (DataImage::StoreStructureUsingSurrogate).  See MethodDescChunk::Save for
 an example on how to do this.
 
@@ -106,9 +106,9 @@ calls CEEPreloader::Link to generate fixups for the data.  CEEPreloader::Link
 calls Module::Fixup, which results in a data structure walk very similar to
 that of Module::Save.  Each data structure calls one of the FixupPointerField
 methods on the DataImage, which in turn forwards the call to
-CEEPreloader::AddFixup, which forwards it to the zapper 
+CEEPreloader::AddFixup, which forwards it to the zapper
 (ZapperModule::AddFixup).
-   
+
 */
 
 #ifndef COMPILE_H_
@@ -117,15 +117,15 @@ CEEPreloader::AddFixup, which forwards it to the zapper
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
 
 struct ZapperLoaderModuleTableKey {
-    ZapperLoaderModuleTableKey(Module *pDefinitionModule, 
-        mdToken token, 
+    ZapperLoaderModuleTableKey(Module *pDefinitionModule,
+        mdToken token,
         Instantiation classInst,
         Instantiation methodInst)
         : m_inst(classInst, methodInst)
     { WRAPPER_NO_CONTRACT;
       this->m_pDefinitionModule = pDefinitionModule;
       this->m_token = token;  }
-    
+
     Module *m_pDefinitionModule;
     mdToken m_token;
     SigTypeContext m_inst;
@@ -133,45 +133,45 @@ struct ZapperLoaderModuleTableKey {
 
 struct ZapperLoaderModuleTableEntry {
     ZapperLoaderModuleTableEntry(): key(0,0,Instantiation(),Instantiation()) { WRAPPER_NO_CONTRACT; this->result = 0; }
-    ZapperLoaderModuleTableEntry(const ZapperLoaderModuleTableKey &_key,Module *_result) 
+    ZapperLoaderModuleTableEntry(const ZapperLoaderModuleTableKey &_key,Module *_result)
         : key(_key)
     { this->result = _result; }
-    
+
     ZapperLoaderModuleTableKey key;
     Module *result;
 } ;
 
 class ZapperLoaderModuleTableTraits : public NoRemoveSHashTraits<DefaultSHashTraits<ZapperLoaderModuleTableEntry> >
 {
-    
+
 public:
     typedef const ZapperLoaderModuleTableKey *key_t;
     static const ZapperLoaderModuleTableKey * GetKey(const ZapperLoaderModuleTableEntry &e) { return &e.key; }
-    static count_t Hash(const ZapperLoaderModuleTableKey * k) 
-    { 
+    static count_t Hash(const ZapperLoaderModuleTableKey * k)
+    {
         LIMITED_METHOD_CONTRACT;
-        
+
         DWORD dwHash = 5381;
-        
+
         dwHash = ((dwHash << 5) + dwHash) ^ (unsigned int)(SIZE_T)k->m_pDefinitionModule;
         dwHash = ((dwHash << 5) + dwHash) ^ (unsigned int)(SIZE_T)k->m_token;
         dwHash = ((dwHash << 5) + dwHash) ^ EEInstantiationHashTableHelper:: Hash(&k->m_inst);
         return dwHash;
     }
-    
+
     static BOOL Equals(const ZapperLoaderModuleTableKey *e1, const ZapperLoaderModuleTableKey *e2)
     {
         WRAPPER_NO_CONTRACT;
-        return e1->m_pDefinitionModule == e2->m_pDefinitionModule && 
-            e1->m_token == e2->m_token && 
+        return e1->m_pDefinitionModule == e2->m_pDefinitionModule &&
+            e1->m_token == e2->m_token &&
             SigTypeContext::Equal(&e1->m_inst, &e2->m_inst);
     }
-    static const ZapperLoaderModuleTableEntry Null() 
+    static const ZapperLoaderModuleTableEntry Null()
     { return ZapperLoaderModuleTableEntry(); }
-    
-    static bool IsNull(const ZapperLoaderModuleTableEntry &e) 
+
+    static bool IsNull(const ZapperLoaderModuleTableEntry &e)
     { LIMITED_METHOD_CONTRACT; return e.key.m_pDefinitionModule == 0 && e.key.m_token == 0 && e.key.m_inst.IsEmpty(); }
-    
+
 };
 
 
@@ -189,8 +189,8 @@ class CEECompileInfo : public ICorCompileInfo
     {
         WRAPPER_NO_CONTRACT;
     }
-    
-    HRESULT Startup(     BOOL                     fForceDebug, 
+
+    HRESULT Startup(     BOOL                     fForceDebug,
                          BOOL                     fForceProfiling,
                          BOOL                     fForceInstrument);
 
@@ -221,9 +221,9 @@ class CEECompileInfo : public ICorCompileInfo
 
 
     BOOL CheckAssemblyZap(
-        CORINFO_ASSEMBLY_HANDLE assembly, 
-      __out_ecount_opt(*cAssemblyManifestModulePath) 
-        LPWSTR                  assemblyManifestModulePath, 
+        CORINFO_ASSEMBLY_HANDLE assembly,
+      __out_ecount_opt(*cAssemblyManifestModulePath)
+        LPWSTR                  assemblyManifestModulePath,
         LPDWORD                 cAssemblyManifestModulePath);
 
     HRESULT SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembly,
@@ -245,7 +245,7 @@ class CEECompileInfo : public ICorCompileInfo
     void EncodeModuleAsIndex( CORINFO_MODULE_HANDLE   fromHandle,
                               CORINFO_MODULE_HANDLE   handle,
                               DWORD                   *pIndex,
-                              IMetaDataAssemblyEmit   *pAssemblyEmit); 
+                              IMetaDataAssemblyEmit   *pAssemblyEmit);
 
     void EncodeClass(  CORINFO_MODULE_HANDLE   referencingModule,
                        CORINFO_CLASS_HANDLE    classHandle,
@@ -262,7 +262,7 @@ class CEECompileInfo : public ICorCompileInfo
                        CORINFO_RESOLVED_TOKEN  *pConstrainedResolvedToken,
                        BOOL                    fEncodeUsingResolvedTokenSpecStreams);
 
-    virtual mdToken TryEncodeMethodAsToken(CORINFO_METHOD_HANDLE handle, 
+    virtual mdToken TryEncodeMethodAsToken(CORINFO_METHOD_HANDLE handle,
                                            CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                            CORINFO_MODULE_HANDLE * referencingModule);
 
@@ -320,19 +320,19 @@ class CEECompileInfo : public ICorCompileInfo
                                     ICorCompileDataStore    *pData,
                                     CorProfileData          *profileData);
 
-    
+
     HRESULT GetLoadHint(CORINFO_ASSEMBLY_HANDLE   hAssembly,
                         CORINFO_ASSEMBLY_HANDLE hAssemblyDependency,
                         LoadHintEnum           *loadHint,
                         LoadHintEnum           *defaultLoadHint);
 
-    HRESULT GetAssemblyVersionInfo(CORINFO_ASSEMBLY_HANDLE Handle, 
+    HRESULT GetAssemblyVersionInfo(CORINFO_ASSEMBLY_HANDLE Handle,
                                     CORCOMPILE_VERSION_INFO *pInfo);
 
     void GetAssemblyCodeBase(CORINFO_ASSEMBLY_HANDLE hAssembly,
                              SString                &result);
 
-    void GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, 
+    void GetCallRefMap(CORINFO_METHOD_HANDLE hMethod,
                        GCRefMapBuilder * pBuilder,
                        bool isDispatchCell);
 
@@ -361,7 +361,7 @@ class CEECompileInfo : public ICorCompileInfo
 
 #ifdef FEATURE_READYTORUN_COMPILER
     CORCOMPILE_FIXUP_BLOB_KIND GetFieldBaseOffset(
-            CORINFO_CLASS_HANDLE classHnd, 
+            CORINFO_CLASS_HANDLE classHnd,
             DWORD * pBaseOffset);
 
     BOOL NeedsTypeLayoutCheck(CORINFO_CLASS_HANDLE classHnd);
@@ -387,8 +387,8 @@ class CEECompileInfo : public ICorCompileInfo
     // places where some items (i.e. generic instantiations) are placed, in order to get some of them
     // placed into the module we are compiling.  However, the
     // results of ComputeLoaderModule must be stable for the duration
-    // of an entire instance of the VM, i.e. for the duration of a compilation 
-    // process.  Thus each time we place an item into a non-standard LoaderModule we record 
+    // of an entire instance of the VM, i.e. for the duration of a compilation
+    // process.  Thus each time we place an item into a non-standard LoaderModule we record
     // that fact.
 
     Module *LookupZapperLoaderModule(const ZapperLoaderModuleTableKey *pKey)
@@ -415,7 +415,7 @@ class CEECompileInfo : public ICorCompileInfo
     }
 
     ZapperLoaderModuleTable m_ZapperLoaderModuleTable;
-    
+
 private:
     BOOL m_fCachingOfInliningHintsEnabled;
     BOOL m_fGeneratingNgenPDB;
@@ -558,7 +558,7 @@ class CEEPreloader : public ICorCompilePreloader
     DWORD MapMethodHandle(CORINFO_METHOD_HANDLE handle);
     DWORD MapFieldHandle(CORINFO_FIELD_HANDLE handle);
     DWORD MapAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE handle);
-    DWORD MapGenericHandle(CORINFO_GENERIC_HANDLE handle);    
+    DWORD MapGenericHandle(CORINFO_GENERIC_HANDLE handle);
     DWORD MapModuleIDHandle(CORINFO_MODULE_HANDLE handle);
 
     void AddMethodToTransitiveClosureOfInstantiations(CORINFO_METHOD_HANDLE handle);
@@ -613,10 +613,10 @@ public:
             CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
 
     BOOL CanEmbedClassID     (CORINFO_CLASS_HANDLE    typeHandle);
-    BOOL CanEmbedModuleID    (CORINFO_MODULE_HANDLE   moduleHandle);    
+    BOOL CanEmbedModuleID    (CORINFO_MODULE_HANDLE   moduleHandle);
     BOOL CanEmbedModuleHandle(CORINFO_MODULE_HANDLE   moduleHandle);
     BOOL CanEmbedClassHandle (CORINFO_CLASS_HANDLE    typeHandle);
-    BOOL CanEmbedMethodHandle(CORINFO_METHOD_HANDLE   methodHandle, 
+    BOOL CanEmbedMethodHandle(CORINFO_METHOD_HANDLE   methodHandle,
                               CORINFO_METHOD_HANDLE   contextHandle);
     BOOL CanEmbedFieldHandle (CORINFO_FIELD_HANDLE    fieldHandle);
 
@@ -645,7 +645,7 @@ public:
     CORINFO_METHOD_HANDLE FindMethodForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry);
 
     void ReportInlining(CORINFO_METHOD_HANDLE inliner, CORINFO_METHOD_HANDLE inlinee);
-    
+
     void Link();
     void FixupRVAs();
 
@@ -684,7 +684,7 @@ struct RefCache
             // use an exception model. Thus we probably have to move the hashmap init
             // calls out of the ctor so can catch these exceptions and translate them to
             // hresults.
-            // 
+            //
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
             m_sAssemblyRefMap.Init(FALSE,NULL);
@@ -731,12 +731,12 @@ public:
 
 typedef SHash<AssemblySpecDefRefMapTraits> AssemblySpecMapDefRefMapTable;
 
-class CompilationDomain : public AppDomain, 
+class CompilationDomain : public AppDomain,
                           public ICorCompilationDomain
 {
 
  public:
-    BOOL                    m_fForceDebug; 
+    BOOL                    m_fForceDebug;
     BOOL                    m_fForceProfiling;
     BOOL                    m_fForceInstrument;
 
@@ -745,10 +745,10 @@ class CompilationDomain : public AppDomain,
     // method.  This code needs to be cleaned up.  See bug #284709 for background.
     BOOL canCallNeedsRestore() { return  (m_pTargetImage != NULL); };
 
-    // DDB 175659: Make sure that canCallNeedsRestore() returns FALSE during compilation 
+    // DDB 175659: Make sure that canCallNeedsRestore() returns FALSE during compilation
     // domain shutdown.
     void setCannotCallNeedsRestore() { m_pTargetImage = NULL; }
-    
+
   private:
 
     Assembly                *m_pTargetAssembly;     // Assembly being compiled
@@ -774,7 +774,7 @@ class CompilationDomain : public AppDomain,
   public:
 
 #ifndef DACCESS_COMPILE
-    CompilationDomain(BOOL fForceDebug = FALSE, 
+    CompilationDomain(BOOL fForceDebug = FALSE,
                       BOOL fForceProfiling = FALSE,
                       BOOL fForceInstrument = FALSE);
     ~CompilationDomain();
@@ -813,19 +813,19 @@ class CompilationDomain : public AppDomain,
 
         // Add a new cache entry
         HRESULT hr;
-        
+
         if (FAILED(hr = m_rRefCaches.ReSizeNoThrow(uSize + 1)))
         {
             _ASSERTE(hr == E_OUTOFMEMORY);
             return NULL;
         }
-        
+
         m_rRefCaches[uSize] = new (nothrow) RefCache(pModule);
         return m_rRefCaches[uSize];
     }
 
     void SetTarget(Assembly * pAssembly, Module *pModule);
-    
+
     void SetTargetImage(DataImage * pImage, CEEPreloader * pPreloader);
     DataImage * GetTargetImage() { LIMITED_METHOD_CONTRACT; return m_pTargetImage; }
 

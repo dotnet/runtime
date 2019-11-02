@@ -12,7 +12,7 @@
 **
 ** Purpose: Solve native/manage cyclic reference issue by
 ** walking RCW objects
-** 
+**
 ==============================================================*/
 
 #ifndef _H_RCWWALKER_
@@ -35,7 +35,7 @@ class RCWWalker
 
 private :
     static VolatilePtr<IJupiterGCManager>  s_pGCManager;            // The one and only GCManager instance
-    static BOOL                     s_bGCStarted;                   // Has GC started?    
+    static BOOL                     s_bGCStarted;                   // Has GC started?
     SVAL_DECL(BOOL,                 s_bIsGlobalPeggingOn);           // Do we need to peg every CCW?
 
 public :
@@ -67,11 +67,11 @@ public :
             pJupiterObject->AddRefFromTrackerSource();
         }
     }
-    
+
     //
     // Send out ReleaseFromTrackerSource callback for every cached interface pointer
-    // This needs to be made before call Release because we should never be in a 
-    // state that reported refs > actual refs 
+    // This needs to be made before call Release because we should never be in a
+    // state that reported refs > actual refs
     //
     FORCEINLINE static void BeforeInterfaceRelease(RCW *pRCW)
     {
@@ -81,7 +81,7 @@ public :
             MODE_ANY;
         }
         CONTRACTL_END;
-    
+
         IJupiterObject *pJupiterObject = pRCW->GetJupiterObject();
         if (pJupiterObject)
         {
@@ -89,8 +89,8 @@ public :
             pJupiterObject->ReleaseFromTrackerSource();
         }
     }
-    
-    
+
+
 #endif // !DACCESS_COMPILE
 
 
@@ -102,7 +102,7 @@ public :
     //
     static FORCEINLINE BOOL IsGlobalPeggingOn()
     {
-        // We need this weird cast because s_bIsGlobalPeggingOn is used in DAC and defined as 
+        // We need this weird cast because s_bIsGlobalPeggingOn is used in DAC and defined as
         // __GlobalVal in DAC build
         // C++'s operator magic didn't work if two levels of operator overloading are involved...
         return VolatileLoad((BOOL *)&s_bIsGlobalPeggingOn);
@@ -111,12 +111,12 @@ public :
 #ifndef DACCESS_COMPILE
     //
     // Tells GC whether walking all the Jupiter RCW is necessary, which only should happen
-    // if we have seen jupiter RCWs 
+    // if we have seen jupiter RCWs
     //
     static FORCEINLINE BOOL NeedToWalkRCWs()
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return (((IJupiterGCManager *)s_pGCManager) != NULL);
     }
 
@@ -125,7 +125,7 @@ public :
     //
     static FORCEINLINE BOOL HasGCStarted()
     {
-        return s_bGCStarted;    
+        return s_bGCStarted;
     }
 
     //
@@ -133,18 +133,18 @@ public :
     // We do most of our work here
     //
     static void OnGCStarted(int nCondemnedGeneration);
-    
+
     //
     // Called when GC finished
     //
     static void OnGCFinished(int nCondemnedGeneration);
 
 private :
-    static void OnGCStartedWorker();    
-    static void OnGCFinishedWorker();    
-    static void WalkRCWs();    
+    static void OnGCStartedWorker();
+    static void OnGCFinishedWorker();
+    static void WalkRCWs();
     static HRESULT WalkOneRCW(RCW *pRCW, RCWRefCache *pRCWRefCache);
-#endif // DACCESS_COMPILE    
+#endif // DACCESS_COMPILE
 };
 
 #endif // FEATURE_COMINTEROP

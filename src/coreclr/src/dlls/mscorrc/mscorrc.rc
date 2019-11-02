@@ -47,7 +47,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"A call to PInvoke function '%1$s' has unbalanced the stack. This is likely because the managed PInvoke "\
     L"signature does not match the unmanaged target signature. Check that the calling convention and "      \
     L"parameters of the PInvoke signature match the target unmanaged signature."
-    
+
 #define MDARC_PINVOKE_LOG_MSG                                                                               \
     L"The first PInvoke call to export '%1$s' in module '%2$s' has been made."
 
@@ -64,11 +64,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #define MDARC_BINDING_FAILURE_DISPLAYNAME_ONLY_MSG                                                          \
     L"The assembly with display name '%1$s' failed to load in the '%2$s' binding context of the "           \
-    L"AppDomain with ID %3$d. The cause of the failure was: %4$s"                                               
+    L"AppDomain with ID %3$d. The cause of the failure was: %4$s"
 
 #define MDARC_BINDING_FAILURE_MSG                                                                           \
     L"The assembly with display name '%1$s' loaded from code base '%2$s' failed to load "                   \
-    L"in the '%3$s' binding context of the AppDomain with ID %4$d. The cause of the failure was: %5$s"             
+    L"in the '%3$s' binding context of the AppDomain with ID %4$d. The cause of the failure was: %5$s"
 
 #define MDARC_INVALID_CONFIG_FILE_MSG                                                                       \
     L"The '%1$s' configuration file is invalid."
@@ -113,7 +113,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define MDARC_REENTRANCY_MSG                                                                                \
     L"Attempting to call into managed code without transitioning out first.  Do not "                       \
     L"attempt to run managed code inside low-level native extensibility points, such as the vectored "      \
-    L"exception handler, since doing so can cause corruption and data loss." 
+    L"exception handler, since doing so can cause corruption and data loss."
 
 #define MDARC_REPORT_AV_ON_COM_RELEASE_MSG                                                                  \
     L"An exception was caught but handled while releasing a COM interface pointer "                         \
@@ -122,7 +122,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"refcount error or other problem with a COM object's Release. Make sure "                              \
     L"refcounts are managed properly. While these types of exceptions are caught by the CLR, "              \
     L"they can still lead to corruption and data loss so if possible the issue causing the exception "      \
-    L"should be addressed" 
+    L"should be addressed"
 
 #define MDARC_REPORT_AV_ON_COM_RELEASE_WITH_VTABLE_MSG                                                      \
     L"An exception was caught but handled while releasing a COM interface pointer "                         \
@@ -132,7 +132,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"refcounts are managed properly.  The COM interface pointer's original vtable "                        \
     L"pointer was 0x%1$x. While these types of exceptions are caught by the CLR, "                          \
     L"they can still lead to corruption and data loss so if possible the issue causing the exception "      \
-    L"should be addressed" 
+    L"should be addressed"
 
 #define MDARC_INVALID_VARIANT_MSG                                                                           \
     L"An invalid VARIANT was detected during a conversion from an unmanaged VARIANT "                       \
@@ -200,7 +200,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"Invalid function pointer 0x%1$x was passed into the runtime to be converted to a delegate. "          \
     L"Passing in invalid function pointers to be converted to delegates can cause crashes, "                \
     L"corruption or data loss. "
-    
+
 #define MDARC_DIRTY_CAST_AND_CALL_ON_INTERFACE_MSG                                                          \
     L"The native component calling into the CLR through this ComCallWrapper has performed an "              \
     L"illegal cast on this IUnknown or IDispatch pointer.  The caller neglected to call QueryInterface "    \
@@ -215,7 +215,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"by marking the class with the following attribute, located in the "                                   \
     L"System.Runtime.InteropServices namespace: "                                                           \
     L"[ClassInterface(ClassInterfaceType.AutoDual)] "                                                       \
-    
+
 #define MDARC_INVALID_CER_CALL_MSG                                                                          \
     L"Method '%1$s', while executing within a constrained execution region, makes a call "                  \
     L"at IL offset 0x%2$04X to '%3$s', which does not have a sufficiently strong reliability "              \
@@ -226,13 +226,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"at IL offset 0x%2$04X to '%3$s', which is virtual and cannot be prepared automatically "              \
     L"at compile time. The caller must ensure this method is prepared explicitly at "                       \
     L"runtime before entering the constrained execution region."
-    
+
 #define MDARC_OPENGENERIC_CER_CALL_MSG                                                                      \
     L"Method '%1$s', which contains at least one constrained execution region, cannot be "                  \
     L"prepared automatically since it has one or more unbound generic type parameters. "                    \
     L"The caller must ensure this method is prepared explicitly at runtime prior to "                       \
     L"execution."
-    
+
 #define MDARC_ILLEGAL_PCR_MSG                                                                               \
     L"Method '%1$s' calls RuntimeHelpers.PrepareConstrainedRegions() at IL offset 0x%2$04X. "               \
     L"This is invalid since it does not coincide with the beginning of a try clause."
@@ -240,36 +240,36 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define MDARC_MARSHALCLEANUPERROR_THREADCULTURE_MSG                                                         \
     L"The CLR marshaler encountered an error while attempting to restore the thread culture after a call "  \
     L"from unmanaged to managed where an LCID was used to specify the culture for the call. This will "     \
-    L"cause the thread's culture to remain set to the one associated with the LCID. The cause of the failure was: %1$s"  
+    L"cause the thread's culture to remain set to the one associated with the LCID. The cause of the failure was: %1$s"
 
 #define MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP_MSG                                                        \
     L"The CLR marshaler encountered an error while attempting to associate a SafeHandle with an unmanaged resource. " \
-    L"This may cause the unmanaged resource to be leaked. The cause of the failure was: %1$s"  
+    L"This may cause the unmanaged resource to be leaked. The cause of the failure was: %1$s"
 
 #define MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP_MSG                                                         \
     L"An exception was thrown from the CleanupNativeData method of a custom marshaler of type '%1$s'. "     \
-    L"This may cause an unmanaged data leak and should be corrected if possible. The cause of the failure was: %1$s"  
+    L"This may cause an unmanaged data leak and should be corrected if possible. The cause of the failure was: %1$s"
 
 #define MDARC_SAFEHANDLE_CRITICAL_FAILURE_MSG                                                               \
     L"A SafeHandle or CriticalHandle of type '%1$s' failed to properly release the handle "                 \
     L"with value 0x%2$p. This usually indicates that the handle was released incorrectly "                  \
     L"via another means (such as extracting the handle using DangerousGetHandle and "                       \
     L"closing it directly or building another SafeHandle around it.)"
-    
+
 #define MDARC_DLLMAIN_RETURNS_FALSE_MSG                                                                     \
     L"Function DllMain, called with reason DLL_PROCESS_ATTACH, returned FALSE. DLL initialization failed. " \
     L"To ignore the DllMain return, set Registry value "                                                    \
     L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\.NETFramework\\IgnoreDllMainReturn to 1"
-    
+
 #define MDARC_INVALID_MEMBER_DECLARATION_MSG                                                                \
     L"The following error occurred while determining how to marshal the parameters of member '%1$s' of type '%2$s': " \
-    L"%3$s This is most likely due to an incompatible MarshalAs attribute on one of the parameters. "  
-    
+    L"%3$s This is most likely due to an incompatible MarshalAs attribute on one of the parameters. "
+
 #define MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR_MSG                                                            \
     L"A COM client has called managed method '%1$s' on type '%2$s'. This method does not have an HRESULT return type and " \
     L"an exception was thrown that was not handled. The exception contains the following message: %3$s. "   \
     L"This exception will be caught and zero will be returned to the COM caller if the method's return "    \
-    L"type is not void." 
+    L"type is not void."
 
 #define MDARC_ASYNCHRONOUS_THREADABORT_MSG                                                                  \
     L"User code running on thread %1$i has attempted to abort thread %2$i. This may result in a corrupt state " \
@@ -284,13 +284,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"A QueryInterface call was made requesting the class interface of COM visible managed class '%1$s'. "  \
     L"However since this class derives from non COM visible class '%2$s', the QueryInterface call will fail. " \
     L"This is done to prevent the non COM visible base class from being constrained by the COM versioning " \
-    L"rules."    
+    L"rules."
 
 #define MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG                                                       \
     L"A QueryInterface call was made requesting the default IDispatch interface of COM visible managed "    \
     L"class '%1$s'. However since this class does not have an explicit default interface and derives from non "\
     L"COM visible class '%2$s', the QueryInterface call will fail. This is done to prevent the non COM "    \
-    L"visible base class from being constrained by the COM versioning rules."    
+    L"visible base class from being constrained by the COM versioning rules."
 
 #define MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG \
     L"The runtime has encountered a fatal error. The address of the error was at 0x%1$08x, on thread 0x%2$x. "\
@@ -310,12 +310,12 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"An overlapped pointer (0x%1$p) may have been freed before the I/O operation completed. "              \
     L"Freeing an overlapped pointer before the I/O operation completes will cause GC heap corruption "      \
     L"when the I/O does complete. "                                                                         \
-    L"Note that this MDA may not represent an error if the overlapped operation did not start successfully" 
-   
+    L"Note that this MDA may not represent an error if the overlapped operation did not start successfully"
+
 #define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG                                                         \
     L"A thread has entered fiber mode and therefore debugging must be stopped."
-    
-STRINGTABLE DISCARDABLE 
+
+STRINGTABLE DISCARDABLE
 BEGIN
     MDARC_PINVOKE_SIGNATURE_MISMATCH            MDARC_PINVOKE_SIGNATURE_MISMATCH_MSG
     MDARC_LOAD_FROM_CONTEXT                     MDARC_LOAD_FROM_CONTEXT_MSG
@@ -354,8 +354,8 @@ BEGIN
     MDARC_DLLMAIN_RETURNS_FALSE                 MDARC_DLLMAIN_RETURNS_FALSE_MSG
     MDARC_INVALID_MEMBER_DECLARATION            MDARC_INVALID_MEMBER_DECLARATION_MSG
     MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR        MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR_MSG
-    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG  
-    MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH   MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG  
+    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG
+    MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH   MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG
     MDARC_PINVOKE_LOG                           MDARC_PINVOKE_LOG_MSG
     MDARC_FATAL_EXECUTION_ENGINE_ERROR          MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG
     MDARC_INVALID_OVERLAPPED_TO_PINVOKE         MDARC_INVALID_OVERLAPPED_TO_PINVOKE_MSG
@@ -374,16 +374,16 @@ BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
     CLDB_E_SMDUPLICATE                      "Shared memory '%hs' already exists."
     CLDB_E_NO_DATA                          "No metadata was found."
-    
+
     CLDB_E_FILE_CORRUPT                     "Database file is corrupt and may not be usable."
-    
+
     CLDB_E_INDEX_NOTFOUND                   "Index %s not found."
 
     CLDB_E_RECORD_NOTFOUND                  "No records found."
-    
+
     CLDB_E_INTERNALERROR                    "Internal error 0x%08x."
     META_E_INVALID_TOKEN_TYPE               "A token passed to a metadata function has the wrong type."
-    
+
     META_E_CA_INVALID_TARGET                "The custom attribute is not valid for the target object's type."
     META_E_CA_INVALID_ARGTYPE               "Unexpected property found in custom attribute value."
     META_E_CA_INVALID_BLOB                  "Unable to process the custom attribute value - it may be corrupt or incorrect."
@@ -401,7 +401,7 @@ BEGIN
     META_E_CA_CUSTMARSH_TYPE_REQUIRED       "A MarshalType or MarshalTypeRef setting is required for a custom marshaler."
     META_E_CA_BAD_FRIENDS_ARGS              "[%1] InternalsVisibleTo declarations cannot have a version, culture, public key token, or processor architecture specified."
     META_E_CA_FRIENDS_SN_REQUIRED           "[%1] Strong-name signed assemblies must specify a public key in their InternalsVisibleTo declarations."
-    
+
     // These strings belong to the MetaData validator.
     VLDTR_E_RID_OUTOFRANGE                  "Error (Structural): Table=0x%08x, Col=0x%08x, Row=0x%08x, has rid out of range."
     VLDTR_E_STRING_INVALID                  "Error (Structural): Table=0x%08x, Col=0x%08x, Row=0x%08x, has an invalid String offset."
@@ -435,7 +435,7 @@ BEGIN
     VLDTR_E_FMD_PINVOKENOTSTATIC            "Error: PInvoke item (field,method) must be Static."
     //@GENERICS
     VLDTR_E_GP_ILLEGAL_VARIANT_MVAR         "Error: GenericParam is a method type parameter and must be non-variant, not co-or-contra variant."
-    
+
     COR_E_APPDOMAINUNLOADED                 "Error: Attempt to access unloaded AppDomain."
     COR_E_MISSINGMETHOD                     "Error: Missing method '%2' from class '%1'."
     COR_E_FIXUPSINEXE                       "Cannot load executable '%1' because it contains extra relocations or has relocations stripped."
@@ -493,7 +493,7 @@ BEGIN
     END
 
 // These strings are generated from within the EE.
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     CEE_E_CVTRES_NOT_FOUND                  "Could not execute CVTRES.EXE."
     IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED   "The system does not support the %1 thread apartment."
@@ -516,10 +516,10 @@ BEGIN
     IDS_EE_METHOD_CONSTRAINTS_VIOLATION     "Method %1.%2: type argument '%3' violates the constraint of type parameter '%4'."
     IDS_EE_NOSYNCHRONIZED                   "Synchronized attribute cannot be used with this method type."
     IDS_EE_LOAD_BAD_MAIN_SIG                "Main method for type '%1' has invalid signature."
-    
+
     IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1' was not found."
 
-    
+
     E_ACCESSDENIED                          "Access is denied: '%1'."
     COR_E_BADIMAGEFORMAT                    "The format of the file '%1' is invalid."
     COR_E_NEWER_RUNTIME                     "The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded."
@@ -551,7 +551,7 @@ BEGIN
     IDS_EE_BADMARSHAL_I4                    "Invalid managed/unmanaged type combination (Int32/UInt32 must be paired with I4, U4, or Error)."
     IDS_EE_BADMARSHAL_ARRAY                 "Invalid managed/unmanaged type combination (Arrays can only be marshaled as LPArray, ByValArray, or SafeArray)."
     IDS_EE_BADMARSHALPARAM_STRING           "Invalid managed/unmanaged type combination (String parameters and return types must be paired with LPStr, LPWStr, LPTStr, BStr, TBStr, VBByRefStr, or AnsiBStr)."
-    IDS_EE_BADMARSHALFIELD_ARRAY            "Invalid managed/unmanaged type combination (Array fields must be paired with ByValArray or SafeArray)." 
+    IDS_EE_BADMARSHALFIELD_ARRAY            "Invalid managed/unmanaged type combination (Array fields must be paired with ByValArray or SafeArray)."
     IDS_EE_BADMARSHALFIELD_STRING           "Invalid managed/unmanaged type combination (String fields must be paired with LPStr, LPWStr, LPTStr, BStr, or ByValTStr)."
     IDS_EE_BADMARSHALFIELD_DECIMAL          "Invalid managed/unmanaged type combination (Decimal fields must be paired with Struct or Currency)."
     IDS_EE_BADMARSHAL_STRINGARRAY           "Invalid managed/unmanaged type combination (String[] must be paired with an ArraySubType of LPStr, LPWStr, BStr, or LPTStr)."
@@ -570,7 +570,7 @@ BEGIN
     IDS_EE_BADMARSHAL_I4                    "Invalid managed/unmanaged type combination (Int32/UInt32 must be paired with I4 or U4)."
     IDS_EE_BADMARSHAL_ARRAY                 "Invalid managed/unmanaged type combination (Arrays can only be marshaled as LPArray or ByValArray)."
     IDS_EE_BADMARSHALPARAM_STRING           "Invalid managed/unmanaged type combination (String parameters and return types must be paired with LPStr, LPWStr, or LPTStr)."
-    IDS_EE_BADMARSHALFIELD_ARRAY            "Invalid managed/unmanaged type combination (Array fields must be paired with ByValArray)." 
+    IDS_EE_BADMARSHALFIELD_ARRAY            "Invalid managed/unmanaged type combination (Array fields must be paired with ByValArray)."
     IDS_EE_BADMARSHALFIELD_STRING           "Invalid managed/unmanaged type combination (String fields must be paired with LPStr, LPWStr, LPTStr, or ByValTStr)."
     IDS_EE_BADMARSHALFIELD_DECIMAL          "Invalid managed/unmanaged type combination (Decimal fields must be paired with Struct)."
     IDS_EE_BADMARSHAL_STRINGARRAY           "Invalid managed/unmanaged type combination (String[] must be paired with an ArraySubType of LPStr, LPWStr, or LPTStr)."
@@ -632,11 +632,11 @@ BEGIN
 
     IDS_EE_BADMARSHALPARAM_STRINGBUILDER    "Invalid managed/unmanaged type combination (StringBuilders must be paired with LPStr, LPWStr, or LPTStr)."
     IDS_EE_BADMARSHALPARAM_NO_LPTSTR        "Invalid managed/unmanaged type combination (Strings cannot be paired with LPTStr for parameters and return types of methods in interfaces exposed to COM)."
-    
+
     IDS_EE_BADMARSHALFIELD_NOCUSTOMMARSH    "Custom marshalers cannot be used on fields of structures."
     IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE   "Fixed sized array fields inside structures must have the MarshalAs SizeConst field set to the size of the array."
     IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE "Fixed sized array fields cannot have a SizeConst of zero."
-    IDS_EE_BADMARSHALFIELD_LAYOUTCLASS      "Invalid managed/unmanaged type combination  (Classes with layout fields must be paired with Struct or Interface)." 
+    IDS_EE_BADMARSHALFIELD_LAYOUTCLASS      "Invalid managed/unmanaged type combination  (Classes with layout fields must be paired with Struct or Interface)."
     IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  "Struct or class fields cannot be of type StringBuilder. The same effect can usually be achieved by using a String field and preinitializing it to a string with length matching the length of the appropriate buffer."
     IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING "The length for ByValTStr strings cannot be zero."
 
@@ -677,7 +677,7 @@ BEGIN
     IDS_EE_ADUNLOAD_IN_FINALIZER            "AppDomain cannot be unloaded during object finalization."
     IDS_EE_ADUNLOAD_DEFAULT                 "The default domain cannot be unloaded."
     IDS_EE_ADUNLOAD_CANT_UNWIND_THREAD      "AppDomain cannot be unloaded because the thread '%1' cannot be unwound out of it."
-    
+
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
     IDS_CLASSLOAD_VARIANCE_IN_METHOD_ARG    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in the signature for an argument in method '%3'."
@@ -760,14 +760,14 @@ BEGIN
     IDS_CANNOT_MARSHAL                      "Type '%1' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed."
 
     IDS_CANNOT_MARSHAL_RECURSIVE_DEF        "Type '%1' cannot be marshaled as an unmanaged structure; its native layout contains a recursive definition so no meaningful size can be computed."
-    
+
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
     IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
     IDS_NOLAYOUT_IN_EMBEDDED_VALUECLASS     "Type could not be marshaled because an embedded valuetype has no layout information."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
-    
+
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 
     IDS_EE_INVALIDCOMSOURCEITF              "The list of COM source interfaces for type '%1' contains non interface or generic type '%2'."
@@ -782,7 +782,7 @@ BEGIN
     IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR   "Function can only be called from inside the class constructor of a class derived from a COM imported class."
     IDS_EE_CALLBACK_ALREADY_REGISTERED      "Base type has already registered a type creation callback."
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
-    
+
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_CANNOTCAST_HELPER_PATH           "Type %s originates from '%s' in the context '%s' at location '%s'"
     IDS_EE_CANNOTCAST_HELPER_BYTE           "Type %s originates from '%s' in the context '%s' in a byte array"
@@ -791,10 +791,10 @@ BEGIN
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
-    
+
     // Errors associated with parsing security custom attributes at compile time.
     CORSECATTR_E_BAD_ACTION                 "Security custom attribute has invalid SecurityAction."
-    
+
     IDS_EE_COPY_OUTOFRANGE                   "Requested range extends past the end of the array."
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
@@ -830,7 +830,7 @@ BEGIN
 
     IDS_EE_MISSING_FIELD                    "Field not found: '%1'."
     IDS_EE_MISSING_METHOD                   "Method not found: '%1'."
-    
+
     IDS_EE_NO_IDISPATCH                     "This object cannot be marshaled as an IDispatch."
     IDS_EE_NO_BACKING_CLASS_FACTORY         "An instance of the __ComObject type cannot be created unless the type has been obtained using GetTypeFromProgID or GetTypeFromCLSID."
 
@@ -872,7 +872,7 @@ BEGIN
     IDS_EE_THREAD_DEADLOCK_VICTIM           "The current thread has been chosen as a deadlock victim."
 
     IDS_EE_PATH_TOO_LONG                    "The path is too long after being fully qualified.  Make sure the full path is less than 260 characters and the directory name is less than 248 characters."
-    
+
     IDS_EE_INVALID_SAFEARRAY                "Specified SAFEARRAY is invalid."
 
     IDS_EE_METHOD_NOT_FOUND_ON_EV_PROV      "Method '%1' of COM event interface '%2' is not present on event provider '%3'."
@@ -894,17 +894,17 @@ BEGIN
     IDS_EE_SH_FIELD_INVALID_OPERATION       "Structures containing SafeHandle fields are not allowed in this operation."
     IDS_EE_CANNOT_CREATE_SAFEHANDLE_FIELD   "SafeHandle fields cannot be created from an unmanaged handle."
     IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
-    
+
     IDS_EE_CANNOT_CREATE_CRITICALHANDLE_FIELD "CriticalHandle fields cannot be created from an unmanaged handle."
     IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED      "CriticalHandle derived types cannot be stored in Variants."
-    
+
     IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED    "VariantWrappers cannot be stored in Variants."
     IDS_EE_RECORD_NON_SUPPORTED_FIELDS      "The structure contains fields that are not supported in unmanaged records."
 
     IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was given a negative offset."
 
     IDS_CLASSLOAD_OVERLAPPING_INTERFACES "The type '%1' in assembly '%2' has a contracting interface set for some instantiations"
-    
+
     IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY "Attempted to load a 64-bit assembly on a 32-bit platform."
 
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_IMPLICIT_OVERRIDE  "Method '%3' on type '%1' from assembly '%2' tried to implicitly override a method with weaker type parameter constraints."
@@ -913,7 +913,7 @@ BEGIN
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_PARENT_METHOD_IMPL "Method '%3' on type '%1' from assembly '%2' tried to explicitly implement a parent method with weaker type parameter constraints."
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL "Method '%3' on type '%1' from assembly '%2' tried to explicitly implement an interface method with weaker type parameter constraints."
     IDS_CLASSLOAD_EXPLICIT_GENERIC "Could not load type '%1' from assembly '%2' because generic types cannot have explicit layout."
-    
+
     IDS_EE_COM_INVISIBLE_PARENT "Type '%1' has a ComVisible(false) parent '%2' in its hierarchy, therefore QueryInterface calls for IDispatch or class interfaces are disallowed."
 
     IDS_EE_ATTEMPT_TO_CREATE_GENERIC_CCW    "Generic types cannot be marshaled to COM interface pointers."
@@ -963,12 +963,12 @@ BEGIN
     IDS_ER_CODECONTRACT_DETAILMSG            "Contract details: "
 END
 
-STRINGTABLE DISCARDABLE 
-BEGIN 
+STRINGTABLE DISCARDABLE
+BEGIN
     IDS_COMPLUS_ERROR                        "CLR error: %lx.\n The program will now terminate."
-    IDS_FATAL_ERROR                         "Fatal error"     
+    IDS_FATAL_ERROR                         "Fatal error"
     IDS_ERROR                               "Error"
-    
+
     IDS_DEBUG_UNHANDLEDEXCEPTION_IPC         "INTERNAL ERROR:\n\nUnhandled exception in Debugger::HandleIPCEvent.\n\nEvent ID=0x%x.\n\nException code=0x%08x, Eip=0x%08x.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\n"
     IDS_DEBUG_UNHANDLED_EXCEPTION_MSG        "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application."
     IDS_DEBUG_USER_BREAKPOINT_MSG            "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint."
@@ -977,7 +977,7 @@ END
 
 
 // Verifier error messages
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     VER_E_FIELD_SIG         "[field sig]"
 
@@ -988,7 +988,7 @@ BEGIN
 END
 
 // General prompt strings.
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_RTL                             "RTL_False"    //  change this to RTL_True on Arabic/Hebrew system
 END
@@ -1128,7 +1128,7 @@ BEGIN
 
 
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_EE_BADMARSHAL_TYPE_ANSIBSTR                   "Marshalling as AnsiBStr is not supported"
     IDS_EE_BADMARSHAL_TYPE_VBBYVALSTR                 "Marshalling as VBByRefString is not supported"
@@ -1140,7 +1140,7 @@ BEGIN
     IDS_EE_ERROR_COM                                  "COM is not supported"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
@@ -1148,7 +1148,7 @@ BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_TPA_BINDING_CONTEXT "Default binding context is already attached to managed load context."
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_NATIVE_IMAGE_CANNOT_BE_LOADED_MULTIPLE_TIMES "Native image cannot be loaded multiple times"
 END
@@ -1162,11 +1162,11 @@ END
 // added in earlier builds where we freely mixed defined hresults and internal resource ids.
 // You may wish to remove the earlier entry and redirect all references to it to the
 // one in this table.
-// 
-// If you want to add resource strings to these Hresults, update the corerror.xml in inc 
+//
+// If you want to add resource strings to these Hresults, update the corerror.xml in inc
 // directory, and mscorurt.rc will be auto-generated to include the string.
 //
 
 #include <mscorurt.rc>
 
-#endif    
+#endif

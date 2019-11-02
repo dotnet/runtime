@@ -85,13 +85,13 @@ public:
     }
 
     // public method to retrieve m_HashTableCrstGlobal
-    Crst* GetHashTableCrstGlobal() 
+    Crst* GetHashTableCrstGlobal()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_HashTableCrstGlobal;
     }
 
-private:    
+private:
     // Helper method to add a string to the global string literal map.
     StringLiteralEntry *AddStringLiteral(EEStringData *pStringData);
 
@@ -100,18 +100,18 @@ private:
 
     // Called by StringLiteralEntry when its RefCount falls to 0.
     void RemoveStringLiteralEntry(StringLiteralEntry *pEntry);
-    
+
     // Hash tables that maps a Unicode string to a LiteralStringEntry.
     EEUnicodeStringLiteralHashTable    *m_StringToEntryHashTable;
 
     // The memorypool for hash entries for this hash table.
     MemoryPool                  *m_MemoryPool;
 
-    // The hash table table critical section.  
-    // (the Global suffix is so that it is clear in context whether the global table is being locked 
+    // The hash table table critical section.
+    // (the Global suffix is so that it is clear in context whether the global table is being locked
     // or the per app domain table is being locked.  Sometimes there was confusion in the code
     // changing the name of the global one will avoid this problem and prevent copy/paste errors)
-    
+
     Crst                        m_HashTableCrstGlobal;
 
     // The large heap handle table.
@@ -153,8 +153,8 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION((LONG)VolatileLoad(&m_dwRefCount) > 0);            
-            PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());            
+            PRECONDITION((LONG)VolatileLoad(&m_dwRefCount) > 0);
+            PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
 
@@ -168,13 +168,13 @@ public:
     }
 #ifndef DACCESS_COMPILE
     FORCEINLINE static void StaticRelease(StringLiteralEntry* pEntry)
-    {        
+    {
         CONTRACTL
         {
-            PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());            
+            PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
-        
+
         pEntry->Release();
     }
 #else
@@ -208,11 +208,11 @@ public:
             _ASSERTE(SystemDomain::GetGlobalStringLiteralMapNoCreate());
             SystemDomain::GetGlobalStringLiteralMapNoCreate()->RemoveStringLiteralEntry(this);
             // Puts this entry in the free list
-            DeleteEntry (this);             
+            DeleteEntry (this);
         }
     }
 #endif // DACCESS_COMPILE
-    
+
     LONG GetRefCount()
     {
         CONTRACTL
@@ -251,7 +251,7 @@ public:
             PRECONDITION(CheckPointer(pStringData));
         }
         CONTRACTL_END;
-            
+
         WCHAR *thisChars;
         int thisLength;
 
@@ -272,16 +272,16 @@ private:
     };
 
 #ifdef _DEBUG
-    BOOL m_bDeleted;       
+    BOOL m_bDeleted;
 #endif
 
     // The static lists below are protected by GetGlobalStringLiteralMap()->m_HashTableCrstGlobal
-    static StringLiteralEntryArray *s_EntryList; // always the first entry array in the chain. 
+    static StringLiteralEntryArray *s_EntryList; // always the first entry array in the chain.
     static DWORD                    s_UsedEntries;   // number of entries used up in the first array
     static StringLiteralEntry      *s_FreeEntryList; // free list chained thru the arrays.
 };
 
-typedef Wrapper<StringLiteralEntry*,DoNothing,StringLiteralEntry::StaticRelease> StringLiteralEntryHolder; 
+typedef Wrapper<StringLiteralEntry*,DoNothing,StringLiteralEntry::StaticRelease> StringLiteralEntryHolder;
 
 class StringLiteralEntryArray
 {

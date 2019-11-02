@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModel.cpp -- Base portion of compressed COM+ metadata.
-// 
+//
 
 //
 //*****************************************************************************
@@ -110,54 +110,54 @@ TblCol g_PtrTableIxs[TBL_COUNT] = {
 //*****************************************************************************
 // Initialize a new schema.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdSchema::InitNew(
     MetadataVersion mdVersion)
 {
     // Make sure the tables fit in the mask.
     _ASSERTE((sizeof(m_maskvalid) * 8) > TBL_COUNT);
-    
+
     m_ulReserved = 0;
-    
+
     if(mdVersion == MDVersion1)
     {
-        m_major = METAMODEL_MAJOR_VER_V1_0;              
+        m_major = METAMODEL_MAJOR_VER_V1_0;
         m_minor = METAMODEL_MINOR_VER_V1_0;
     }
     else if (mdVersion == MDVersion2)
     {
-        m_major = METAMODEL_MAJOR_VER;              
+        m_major = METAMODEL_MAJOR_VER;
         m_minor = METAMODEL_MINOR_VER;
     }
     else
     {
         return E_INVALIDARG;
     }
-    
-    m_heaps = 0;                
-    m_rid = 0;                  
-    m_maskvalid = 0;            
-    m_sorted = 0;               
-    memset(m_cRecs, 0, sizeof(m_cRecs));        
+
+    m_heaps = 0;
+    m_rid = 0;
+    m_maskvalid = 0;
+    m_sorted = 0;
+    memset(m_cRecs, 0, sizeof(m_cRecs));
     m_ulExtra = 0;
-    
+
     return S_OK;
 } // CMiniMdSchema::InitNew
 
 //*****************************************************************************
 // Compress a schema into a compressed version of the schema.
 //*****************************************************************************
-ULONG 
+ULONG
 CMiniMdSchema::SaveTo(
     void *pvData)
 {
     ULONG ulData;   // Bytes stored.
     CMiniMdSchema *pDest = reinterpret_cast<CMiniMdSchema*>(pvData);
     const unsigned __int64 one = 1;
-    
+
     // Make sure the tables fit in the mask.
     _ASSERTE((sizeof(m_maskvalid) * 8) > TBL_COUNT);
-    
+
     // Set the flag for the extra data.
 #if defined(EXTRA_DATA)
     if (m_ulExtra != 0)
@@ -176,12 +176,12 @@ CMiniMdSchema::SaveTo(
     _ASSERTE((m_major == METAMODEL_MAJOR_VER && m_minor == METAMODEL_MINOR_VER) ||
             (m_major == METAMODEL_MAJOR_VER_B1 && m_minor == METAMODEL_MINOR_VER_B1) ||
             (m_major == METAMODEL_MAJOR_VER_V1_0 && m_minor == METAMODEL_MINOR_VER_V1_0));
-    
+
     // Transfer the fixed fields.
     *static_cast<CMiniMdSchemaBase*>(pDest) = *static_cast<CMiniMdSchemaBase*>(this);
     static_cast<CMiniMdSchemaBase*>(pDest)->ConvertEndianness();
     ulData = sizeof(CMiniMdSchemaBase);
-    
+
     // Transfer the variable fields.
     m_maskvalid = 0;
     for (int iSrc=0, iDst=0; iSrc<TBL_COUNT; ++iSrc)
@@ -195,7 +195,7 @@ CMiniMdSchema::SaveTo(
     }
     // Refresh the mask.
     pDest->m_maskvalid = VAL64(m_maskvalid);
-    
+
 #if defined(EXTRA_DATA)
     // Store the extra data.
     if (m_ulExtra != 0)
@@ -211,26 +211,26 @@ CMiniMdSchema::SaveTo(
 // Load a schema from a compressed version of the schema.
 // Returns count of bytes consumed.  -1 if error.
 //*****************************************************************************
-ULONG 
+ULONG
 CMiniMdSchema::LoadFrom(
     const void *pvData,     // Data to load from.
     ULONG       cbData)     // Amount of data available.
 {
     ULONG ulData;   // Bytes consumed.
-    
+
     ulData = sizeof(CMiniMdSchemaBase);
-    
+
     // Be sure we can get the base part.
     if (cbData < ulData)
         return (ULONG)(-1);
-    
-    // Transfer the fixed fields. The (void*) casts prevents the compiler 
+
+    // Transfer the fixed fields. The (void*) casts prevents the compiler
     // from making bad assumptions about the alignment.
     memcpy((void *)this, (void *)pvData, sizeof(CMiniMdSchemaBase));
     static_cast<CMiniMdSchemaBase*>(this)->ConvertEndianness();
-    
+
     unsigned __int64 maskvalid = m_maskvalid;
-    
+
     // Transfer the variable fields.
     memset(m_cRecs, 0, sizeof(m_cRecs));
     int iDst;
@@ -247,7 +247,7 @@ CMiniMdSchema::LoadFrom(
             // Verify that the data is there before touching it.
             if (cbData < (ulData + sizeof(UINT32)))
                 return (ULONG)(-1);
-            
+
             m_cRecs[iDst] = GET_UNALIGNED_VAL32((const BYTE *)pvData + ulData);
             // It's safe to sum, because we checked integer overflow above
             ulData += sizeof(UINT32);
@@ -270,7 +270,7 @@ CMiniMdSchema::LoadFrom(
             }
         }
     }
-    
+
     // Retrieve the extra 4 bytes data.
     if ((m_heaps & EXTRA_DATA) != 0)
     {
@@ -283,22 +283,22 @@ CMiniMdSchema::LoadFrom(
         // Verify that the 4 bytes data is there before touching it.
         if (cbData < (ulData + sizeof(UINT32)))
             return (ULONG)(-1);
-        
+
         m_ulExtra = GET_UNALIGNED_VAL32((const BYTE *)pvData + ulData);
         // Check the size we used for buffer overflow verification above
         ulData += sizeof(UINT32);
     }
-    
+
     // Did we go past end of buffer?
     if (cbData < ulData)
         return (ULONG)(-1);
-    
+
     return ulData;
 } // CMiniMdSchema::LoadFrom
 
 
 const mdToken CMiniMdBase::mdtTypeDefOrRef[3] = {
-    mdtTypeDef, 
+    mdtTypeDef,
     mdtTypeRef,
     mdtTypeSpec
 };
@@ -306,19 +306,19 @@ const mdToken CMiniMdBase::mdtTypeDefOrRef[3] = {
 // This array needs to be ordered the same as the source tables are processed (currently
 //  {field, param, property}) for binary search.
 const mdToken CMiniMdBase::mdtHasConstant[3] = {
-    mdtFieldDef, 
-    mdtParamDef, 
+    mdtFieldDef,
+    mdtParamDef,
     mdtProperty
 };
 
 const mdToken CMiniMdBase::mdtHasCustomAttribute[24] = {
-    mdtMethodDef, 
-    mdtFieldDef, 
-    mdtTypeRef, 
-    mdtTypeDef, 
-    mdtParamDef, 
-    mdtInterfaceImpl, 
-    mdtMemberRef, 
+    mdtMethodDef,
+    mdtFieldDef,
+    mdtTypeRef,
+    mdtTypeDef,
+    mdtParamDef,
+    mdtInterfaceImpl,
+    mdtMemberRef,
     mdtModule,
     mdtPermission,
     mdtProperty,
@@ -348,7 +348,7 @@ const mdToken CMiniMdBase::mdtHasDeclSecurity[3] = {
 };
 
 const mdToken CMiniMdBase::mdtMemberRefParent[5] = {
-    mdtTypeDef, 
+    mdtTypeDef,
     mdtTypeRef,
     mdtModuleRef,
     mdtMethodDef,
@@ -361,7 +361,7 @@ const mdToken CMiniMdBase::mdtHasSemantic[2] = {
 };
 
 const mdToken CMiniMdBase::mdtMethodDefOrRef[2] = {
-    mdtMethodDef, 
+    mdtMethodDef,
     mdtMemberRef
 };
 
@@ -396,13 +396,13 @@ const mdToken CMiniMdBase::mdtTypeOrMethodDef[2] = {
     mdtMethodDef
 };
 
-const int CMiniMdBase::m_cb[] = {0,1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5}; 
+const int CMiniMdBase::m_cb[] = {0,1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
 
 //*****************************************************************************
 // Function to encode a token into fewer bits.  Looks up token type in array of types.
 //*****************************************************************************
 //<TODO>@consider whether this could be a binary search.</TODO>
-ULONG 
+ULONG
 CMiniMdBase::encodeToken(
     RID           rid,          // Rid to encode.
     mdToken       typ,          // Token type to encode.
@@ -489,12 +489,12 @@ CMiniMdBase::~CMiniMdBase()
         }
     }
 } // CMiniMdBase::~CMiniMdBase
-    
+
 //*****************************************************************************
 // Build the schema based on the header data provided.
 // Handle all supported versions, and adjust data structures appropriately.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdBase::SchemaPopulate(
     const void *pvData,     // Pointer to the buffer.
     ULONG       cbData,     // Size of the buffer.
@@ -504,29 +504,29 @@ CMiniMdBase::SchemaPopulate(
     ULONG   cb;         // Bytes read for header.
     ULONG   cbTables;   // Bytes needed for tables.
     ULONG   cbTotal;    // Bytes read for header + needed for tables.
-    
+
     // Uncompress the schema from the buffer into our structures.
     cb = m_Schema.LoadFrom(pvData, cbData);
-    
+
     if ((cb > cbData) || (cb == (ULONG)(-1)))
     {
         Debug_ReportError("Schema is not in MetaData block.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
-    
+
     // Is this the "native" version of the metadata for this runtime?
     if ((m_Schema.m_major != METAMODEL_MAJOR_VER) || (m_Schema.m_minor != METAMODEL_MINOR_VER))
     {
         // No it's not. Is this an older version that we support?
-        
+
         // Is this v1.0?
-        if ((m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0) && 
+        if ((m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0) &&
             (m_Schema.m_minor == METAMODEL_MINOR_VER_V1_0))
-        {   
+        {
             // Older version has fewer tables.
             m_TblCount = TBL_COUNT_V1;
         }
-        else if ((m_Schema.m_major == METAMODEL_MAJOR_VER_B1) && 
+        else if ((m_Schema.m_major == METAMODEL_MAJOR_VER_B1) &&
                  (m_Schema.m_minor == METAMODEL_MINOR_VER_B1))
         {
             // 1.1 had a different type of GenericParam table
@@ -539,17 +539,17 @@ CMiniMdBase::SchemaPopulate(
             return PostError(CLDB_E_FILE_OLDVER, m_Schema.m_major, m_Schema.m_minor);
         }
     }
-    
+
     // Populate the schema, based on the row counts and heap sizes.
     IfFailRet(SchemaPopulate2(&cbTables));
-    
+
     // Check that header plus tables fits within the size given.
     if (!ClrSafeInt<ULONG>::addition(cb, cbTables, cbTotal) || (cbTotal > cbData))
     {
         Debug_ReportError("Tables are not within MetaData block.");
         return PostError(CLDB_E_FILE_CORRUPT);
     }
-    
+
     *pcbUsed = cb;
     return S_OK;
 } // CMiniMdBase::SchemaPopulate
@@ -557,14 +557,14 @@ CMiniMdBase::SchemaPopulate(
 //*****************************************************************************
 // Initialize from another MD
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdBase::SchemaPopulate(
     const CMiniMdBase &that)
 {
     HRESULT hr;
     // Copy over the schema.
     m_Schema = that.m_Schema;
-    
+
     // Adjust for prior versions.
     if (m_Schema.m_major != METAMODEL_MAJOR_VER || m_Schema.m_minor != METAMODEL_MINOR_VER)
     {
@@ -580,15 +580,15 @@ CMiniMdBase::SchemaPopulate(
             m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
         }
         // Is it a supported old version?  This should never fail!
-        else 
+        else
         {
             Debug_ReportError("Initializing on an unknown schema version");
             return PostError(CLDB_E_FILE_OLDVER, m_Schema.m_major,m_Schema.m_minor);
         }
     }
-    
+
     IfFailRet(SchemaPopulate2(NULL));
-    
+
     return S_OK;
 } // CMiniMdBase::SchemaPopulate
 
@@ -601,24 +601,24 @@ HRESULT CMiniMdBase::SchemaPopulate2(
 {
     HRESULT hr;                 // A result.
     ULONG   cbTotal = 0;        // Total size of all tables.
-    
+
     // How big are the various pool inidices?
     m_iStringsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_STRING_4) ? 0xffffffff : 0xffff;
     m_iGuidsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_GUID_4) ? 0xffffffff : 0xffff;
     m_iBlobsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_BLOB_4) ? 0xffffffff : 0xffff;
-    
+
     // Make extra bits exactly zero or one bit.
     if (bExtra)
         bExtra = 1;
-    
+
     // Until ENC, make extra bits exactly zero.
     bExtra = 0;
-    
+
     // For each table...
     for (int ixTbl = 0; ixTbl < (int)m_TblCount; ++ixTbl)
     {
         IfFailRet(InitColsForTable(m_Schema, ixTbl, &m_TableDefs[ixTbl], bExtra, TRUE));
-        
+
         // Accumulate size of this table.
         // Check integer overflow for table size: USHORT * ULONG: m_TableDefs[ixTbl].m_cbRec * GetCountRecs(ixTbl)
         ULONG cbTable;
@@ -637,7 +637,7 @@ HRESULT CMiniMdBase::SchemaPopulate2(
     // Check that unused table (e.g. generic tables in v1 format) are empty
     for (ULONG ixTbl = m_TblCount; ixTbl < TBL_COUNT; ixTbl++)
     {
-        // All unused tables have to be empty - malicious assemblies can have v1 format version, but can 
+        // All unused tables have to be empty - malicious assemblies can have v1 format version, but can
         // contain non-empty v2-only tables, this will catch it and refuse to load such assemblies
         if (GetCountRecs(ixTbl) != 0)
         {
@@ -645,18 +645,18 @@ HRESULT CMiniMdBase::SchemaPopulate2(
             return PostError(CLDB_E_FILE_CORRUPT);
         }
     }
-    
+
     // Let caller know sizes required.
     if (pcbTables != NULL)
         *pcbTables = cbTotal;
-    
+
     return S_OK;
 } // CMiniMdBase::SchemaPopulate2
 
 //*****************************************************************************
 // Get the template table definition for a given table.
 //*****************************************************************************
-const CMiniTableDef * 
+const CMiniTableDef *
 CMiniMdBase::GetTableDefTemplate(
     int ixTbl)
 {
@@ -678,10 +678,10 @@ CMiniMdBase::GetTableDefTemplate(
 //*****************************************************************************
 // Initialize the column defs for a table, based on their types and sizes.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdBase::InitColsForTable(
     CMiniMdSchema &Schema,          // Schema with sizes.
-    int            ixTbl,           // Index of table to init.                                 
+    int            ixTbl,           // Index of table to init.
     CMiniTableDef *pTable,          // Table to init.
     int            bExtra,          // Extra bits for rid column.
     BOOL           fUsePointers)    // Should we have pTable point to it's Column Descriptors, or
@@ -692,18 +692,18 @@ CMiniMdBase::InitColsForTable(
     BYTE        iOffset;                // Running size of a record.
     BYTE        iSize;                  // Size of a field.
     HRESULT     hr = S_OK;
-    
+
     _ASSERTE((bExtra == 0) || (bExtra == 1));
     _ASSERTE(NumItems(pCols) >= pTable->m_cCols);
-    
+
     bExtra = 0;//<TODO>@FUTURE: save in schema header.  until then use 0.</TODO>
-    
+
     iOffset = 0;
-    
+
     pTemplate = GetTableDefTemplate(ixTbl);
-    
+
     PREFIX_ASSUME(pTemplate->m_pColDefs != NULL);
-    
+
     // For each column in the table...
     for (ULONG ixCol = 0; ixCol < pTable->m_cCols; ++ixCol)
     {
@@ -785,7 +785,7 @@ CMiniMdBase::InitColsForTable(
 
         // Align to 2 bytes.
         iSize += iSize & 1;
-         
+
         iOffset += iSize;
     }
     // Record size of entire record.
@@ -802,7 +802,7 @@ CMiniMdBase::InitColsForTable(
     {
         // We'll need to have pTable->m_pColDefs point to some data instead
         hr = SetNewColumnDefinition(pTable, pCols, ixTbl);
-    }        
+    }
     // If no key, set to a distinct value.
     if (pTable->m_iKey >= pTable->m_cCols)
         pTable->m_iKey = (BYTE) -1;
@@ -813,39 +813,39 @@ CMiniMdBase::InitColsForTable(
 //*****************************************************************************
 // Place a new Column Definition into the metadata.
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdBase::SetNewColumnDefinition(
-    CMiniTableDef *pTable, 
-    CMiniColDef   *pCols, 
+    CMiniTableDef *pTable,
+    CMiniColDef   *pCols,
     DWORD          ixTbl)
 {
     // Look up the global cache to see if we can use a cached copy
-    if (UsesAllocatedMemory(pCols) || 
+    if (UsesAllocatedMemory(pCols) ||
         !FindSharedColDefs(pTable, pCols, ixTbl))
     {
         // See if we've already allocated memory for this item
-        
+
         if (!UsesAllocatedMemory(pTable->m_pColDefs))
         {
             // We don't have this column definition cached. Allocate new memory for it.
             // Notice, we allocate one more byte than necessary, so we can 'mark' this chunk of memory
             // as allocated so we can free it later.
-            
+
             BYTE *newMemory = new (nothrow) BYTE[(sizeof(CMiniColDef)*pTable->m_cCols)+1];
 
             if (newMemory == NULL)
                 return E_OUTOFMEMORY;
-            
+
             // Mark the first byte in this as with the "allocated memory marker"
             *newMemory = ALLOCATED_MEMORY_MARKER;
 
             // Have the pointer point to the first Column Descriptor
             pTable->m_pColDefs = BYTEARRAY_TO_COLDES(newMemory);
         }
-        
+
         memcpy(pTable->m_pColDefs, pCols, sizeof(CMiniColDef)*pTable->m_cCols);
     }
-    
+
     return S_OK;
 } // CMiniMdBase::SetNewColumnDefinition
 
@@ -853,7 +853,7 @@ CMiniMdBase::SetNewColumnDefinition(
 //*****************************************************************************
 // Get the count of records in a table.  Virtual.
 //*****************************************************************************
-ULONG 
+ULONG
 CMiniMdBase::GetCountRecs(
     ULONG ixTbl)
 {
@@ -864,15 +864,15 @@ CMiniMdBase::GetCountRecs(
 
 #if BIGENDIAN
 // Endian Swaps the passed in blob representing a constant into the passed in StgPool
-HRESULT 
+HRESULT
 CMiniMdBase::SwapConstant(
     const void *pBlobValue,     // Original Value pointer
     DWORD       dwType,         // Type of the constant
     void       *pConstant,      // [Out] Location to store constant into
     ULONG       ValueLength)    // [In] Length of constant
-{ 
+{
     HRESULT hr = NOERROR;
-    
+
     switch (dwType)
     {
     case ELEMENT_TYPE_BOOLEAN:
@@ -882,13 +882,13 @@ CMiniMdBase::SwapConstant(
         // Just return the value
         *(BYTE *)pConstant = *(BYTE *)pBlobValue;
         return NOERROR;
-        
+
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
     case ELEMENT_TYPE_CHAR:
         _ASSERTE(ValueLength == 2);
         *(SHORT *)pConstant = GET_UNALIGNED_VAL16(pBlobValue);
-        break;  
+        break;
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
@@ -901,14 +901,14 @@ CMiniMdBase::SwapConstant(
             *(float *)pConstant = (float &)Value;
         }
         break;
-        
+
     case ELEMENT_TYPE_R8:
         {
             __int64 Value = GET_UNALIGNED_VAL64(pBlobValue);
             *(double *)pConstant = (double &) Value;
         }
         break;
-        
+
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
         _ASSERTE(ValueLength == 8);
@@ -917,7 +917,7 @@ CMiniMdBase::SwapConstant(
     case ELEMENT_TYPE_STRING:
         memcpy(pConstant, pBlobValue, ValueLength);
         SwapStringLength((WCHAR *)pConstant, (ValueLength)/sizeof(WCHAR));
-        break;  
+        break;
     default:
         _ASSERTE(!"BAD TYPE!");
         return E_INVALIDARG;
@@ -928,12 +928,12 @@ CMiniMdBase::SwapConstant(
 #endif //BIGENDIAN
 
 //*****************************************************************************
-// It is non-trivial to sort propertymap. VB is generating properties in 
+// It is non-trivial to sort propertymap. VB is generating properties in
 // non-sorted order!!!
 //*****************************************************************************
-HRESULT 
+HRESULT
 CMiniMdBase::FindPropertyMapFor(
-    RID  ridParent, 
+    RID  ridParent,
     RID *pFoundRid)
 {
     HRESULT hr;
@@ -946,7 +946,7 @@ CMiniMdBase::FindPropertyMapFor(
     // the sorted bit if we have verified it (see definition in MetaModel.h)
     if (IsVerified() && m_Schema.IsSorted(TBL_PropertyMap))
     {
-        return vSearchTable(TBL_PropertyMap, 
+        return vSearchTable(TBL_PropertyMap,
                             _COLDEF(PropertyMap,Parent),
                             ridParent,
                             pFoundRid);
@@ -977,13 +977,13 @@ CMiniMdBase::FindPropertyMapFor(
 
 
 //*****************************************************************************
-// It is non-trivial to sort eventmap. VB is generating events in 
+// It is non-trivial to sort eventmap. VB is generating events in
 // non-sorted order!!!
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdBase::FindEventMapFor(
-    RID  ridParent, 
+    RID  ridParent,
     RID *pFoundRid)
 {
     HRESULT hr;
@@ -1002,14 +1002,14 @@ CMiniMdBase::FindEventMapFor(
                             pFoundRid);
     }
     else
-    {    
+    {
         iCount = GetCountRecs(TBL_EventMap);
-    
+
         // loop through all LocalVar
         for (i = 1; i <= iCount; i++)
         {
             IfFailRet(vGetRow(TBL_EventMap, i, &pRec));
-    
+
             // linear search for propertymap record
             rid = getIX(pRec, _COLDEF(EventMap,Parent));
             if (rid == ridParent)
@@ -1018,7 +1018,7 @@ CMiniMdBase::FindEventMapFor(
                 return S_OK;
             }
         }
-    
+
         *pFoundRid = 0;
         return S_OK;
     }
@@ -1028,8 +1028,8 @@ CMiniMdBase::FindEventMapFor(
 //*****************************************************************************
 // Search for a custom value with a given type.
 //*****************************************************************************
-__checkReturn 
-HRESULT 
+__checkReturn
+HRESULT
 CMiniMdBase::FindCustomAttributeFor(
     RID     rid,        // The object's rid.
     mdToken tkObj,      // The object's type.
@@ -1050,8 +1050,8 @@ CMiniMdBase::FindCustomAttributeFor(
         *pFoundRid = 0;
         return S_OK;
     }
-    
-    // Found an entry that matches the item.  Could be anywhere in a range of 
+
+    // Found an entry that matches the item.  Could be anywhere in a range of
     //  custom values for the item, somewhat at random.  Search for a match
     //  on name.  On entry to the first loop, we know the object is the desired
     //  one, so the object test is at the bottom.
@@ -1108,19 +1108,19 @@ CMiniMdBase::FindCustomAttributeFor(
 //*****************************************************************************
 // See if we can find a globally shared Column Def Array for this table
 //*****************************************************************************
-BOOL 
+BOOL
 CMiniMdBase::FindSharedColDefs(
-    CMiniTableDef *pTable, 
-    CMiniColDef   *pColsToMatch, 
+    CMiniTableDef *pTable,
+    CMiniColDef   *pColsToMatch,
     DWORD          ixTbl)
 {
     // The majority of the time, m_pColDefs will point to the correct Column Definition Array.
     if (!memcmp(pTable->m_pColDefs, pColsToMatch, sizeof(CMiniColDef)*(pTable->m_cCols)))
         return TRUE;
-   
+
     else
     {
-        // m_pColDefs points to a set of Column Def Arrays, with the byte previous to it the number 
+        // m_pColDefs points to a set of Column Def Arrays, with the byte previous to it the number
         // of column descriptors that we have.
         CMiniColDef *pListOfColumnDefs = BYTEARRAY_TO_COLDES(s_TableColumnDescriptors[ixTbl]);
 
@@ -1139,7 +1139,7 @@ CMiniMdBase::FindSharedColDefs(
         }
     }
 
-    // We weren't able to find a shared column definition        
+    // We weren't able to find a shared column definition
     return FALSE;
 }// CMiniMdBase::FindSharedColDefs
 
@@ -1147,12 +1147,12 @@ CMiniMdBase::FindSharedColDefs(
 // Determines where the Table Def's Column Definitions used shared memory or
 // allocated memory
 //*****************************************************************************
-BOOL 
+BOOL
 CMiniMdBase::UsesAllocatedMemory(
     CMiniColDef *pCols)
 {
     BYTE *pMem = COLDES_TO_BYTEARRAY(pCols);
-    
+
     // If the byte preceding this pointer is -1, then we allocated it and it must be freed
     return (*pMem == ALLOCATED_MEMORY_MARKER);
 }// CMiniMdBase::UsesAllocatedMemory

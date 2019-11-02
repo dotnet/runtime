@@ -179,21 +179,21 @@ extern "C" {
 // LLP64 => longs = 32 bits, long long = 64 bits)
 //
 // To handle this difference, we #define long to be int (and thus 32 bits) when
-// compiling those files.  (See the bottom of this file or search for 
-// #define long to see where we do this.)  
+// compiling those files.  (See the bottom of this file or search for
+// #define long to see where we do this.)
 //
-// But this fix is more complicated than it seems, because we also use the 
+// But this fix is more complicated than it seems, because we also use the
 // preprocessor to #define __int64 to long for LP64 architectures (__int64
-// isn't a builtin in gcc).   We don't want __int64 to be an int (by cascading 
-// macro rules).  So we play this little trick below where we add 
-// __cppmungestrip before "long", which is what we're really #defining __int64 
-// to.  The preprocessor sees __cppmungestriplong as something different than 
-// long, so it doesn't replace it with int.  The during the cppmunge phase, we 
+// isn't a builtin in gcc).   We don't want __int64 to be an int (by cascading
+// macro rules).  So we play this little trick below where we add
+// __cppmungestrip before "long", which is what we're really #defining __int64
+// to.  The preprocessor sees __cppmungestriplong as something different than
+// long, so it doesn't replace it with int.  The during the cppmunge phase, we
 // remove the __cppmungestrip part, leaving long for the compiler to see.
 //
-// Note that we can't just use a typedef to define __int64 as long before 
-// #defining long because typedefed types can't be signedness-agnostic (i.e. 
-// they must be either signed or unsigned) and we want to be able to use 
+// Note that we can't just use a typedef to define __int64 as long before
+// #defining long because typedefed types can't be signedness-agnostic (i.e.
+// they must be either signed or unsigned) and we want to be able to use
 // __int64 as though it were intrinsic
 
 #ifdef BIT64
@@ -591,7 +591,7 @@ typedef char16_t WCHAR;
 
 #ifndef PAL_STDCPP_COMPAT
 
-#if defined(__linux__) 
+#if defined(__linux__)
 #ifdef BIT64
 typedef long int intptr_t;
 typedef unsigned long int uintptr_t;

@@ -23,7 +23,7 @@ $count = 0;
 while (<>)
 {
    # Process only OPDEF(....) lines
-   if (/OPDEF\(\s*/)  
+   if (/OPDEF\(\s*/)
    {
       chop;               # Strip off trailing CR
        s/^OPDEF\(\s*//;    # Strip off "OP("

@@ -20,9 +20,9 @@ CoreClrCallbacks g_CoreClrCallbacks;
 // In some cirumstance (e.g, the thread suspecd another thread), allocation on heap
 // could cause dead lock. We use a counter in TLS to indicate the current thread is not allowed
 // to do heap allocation.
-//In cases where CLRTlsInfo doesn't exist and we still want to track CantAlloc info (this is important to 
-//stress log), We use a global counter. This introduces the problem where one thread could disable allocation 
-//for another thread, but the cases should be rare (we limit the use to stress log for now) and the period 
+//In cases where CLRTlsInfo doesn't exist and we still want to track CantAlloc info (this is important to
+//stress log), We use a global counter. This introduces the problem where one thread could disable allocation
+//for another thread, but the cases should be rare (we limit the use to stress log for now) and the period
 //should (MUST) be short
 //only stress log check this counter
 
@@ -139,7 +139,7 @@ static void SetupHashStack ()
 {
     CANNOT_HAVE_CONTRACT;
 
-    FHashStack oldValue = InterlockedCompareExchangeT(&fHashStack, 
+    FHashStack oldValue = InterlockedCompareExchangeT(&fHashStack,
         reinterpret_cast<FHashStack>(1), reinterpret_cast<FHashStack>(0));
     if ((size_t) oldValue >= 2) {
         return;
@@ -209,7 +209,7 @@ int RFS_HashStack ()
 //
 // This function is safe to call before or during CRT initialization. It can not
 // legally return NULL (it only does so in the case of a broken build invariant.)
-// 
+//
 // TODO puCLR SxS utilcode work: Since this is never supposed to return NULL, it should
 // not be present in SELF_NO_HOST builds of utilcode where there isn't necessarily a
 // CLR in the process.  We should also ASSERT that GetModuleHandleA isn't returning
@@ -219,14 +219,14 @@ int RFS_HashStack ()
 HMODULE GetCLRModule ()
 {
     //! WARNING: At the time this function is invoked, the C Runtime has NOT been fully initialized, let alone the CLR.
-    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!) 
+    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!)
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_SUPPORTS_DAC; // DAC can call in here since we initialize the SxS callbacks in ClrDataAccess::Initialize.
 
 #ifdef DACCESS_COMPILE
     // For DAC, "g_CoreClrCallbacks" is populated in InitUtilCode when the latter is invoked
-    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the 
+    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the
     // host-process address space.
     //
     // This function will be invoked in the host when DAC uses SEHException::GetHr that calls into
@@ -243,7 +243,7 @@ HMODULE GetCLRModule ()
     // This is the normal coreclr case - we return the module handle that was captured in our DllMain.
 #ifdef DACCESS_COMPILE
     // For DAC, "g_CoreClrCallbacks" is populated in InitUtilCode when the latter is invoked
-    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the 
+    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the
     // host-process address space.
     //
     // This function will be invoked in the host when DAC uses SEHException::GetHr that calls into
@@ -402,7 +402,7 @@ LoadsTypeHolder::~LoadsTypeHolder()
 VOID InitUtilcode(CoreClrCallbacks const & cccallbacks)
 {
     //! WARNING: At the time this function is invoked, the C Runtime has NOT been fully initialized, let alone the CLR.
-    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!) 
+    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!)
 
     LIMITED_METHOD_CONTRACT;
 
@@ -422,12 +422,12 @@ void OnUninitializedCoreClrCallbacks()
 {
     // Supports DAC since it can be called from GetCLRModule which supports DAC as well.
     LIMITED_METHOD_DAC_CONTRACT;
-    
+
     // If you got here, the most likely cause of the failure is that you're loading some DLL
     // (other than coreclr.dll) that links to utilcode.lib, or that you're using a nohost
     // variant of utilcode.lib but hitting code that assumes there is a CLR in the process.
     //
-    // It is expected that coreclr.dll 
+    // It is expected that coreclr.dll
     // is the ONLY dll that links to utilcode libraries.
     //
     // If you must introduce a new dll that links to utilcode.lib, it is your responsibility
@@ -435,12 +435,12 @@ void OnUninitializedCoreClrCallbacks()
     // loaded instance of coreclr. And you'll have to do without the CRT being initialized.
     //
     // Can't use an _ASSERTE here because even that's broken if we get to this point.
-    MessageBoxW(0, 
+    MessageBoxW(0,
                 W("g_CoreClrCallbacks not initialized."),
                 W("\n\n")
                 W("You got here because the dll that included this copy of utilcode.lib ")
                 W("did not call InitUtilcode() The most likely cause is that you're running ")
-                W("a dll (other than coreclr.dll) that links to utilcode.lib.") 
+                W("a dll (other than coreclr.dll) that links to utilcode.lib.")
                 ,
                 0);
     _ASSERTE(FALSE);

@@ -13,7 +13,7 @@ The current liveness model supports:
 * Sources that are last use AND DelayFree (interfere with all sources and defs)
 * Kills (interfere with all uses but no defs)
 
-Previously (eons ago) when we were working on arm32, the model had all but the last def 
+Previously (eons ago) when we were working on arm32, the model had all but the last def
 interfering with the uses and internal registers (i.e. they went live during the first
 location for the node).
 * This supports the ability to reuse inputs, e.g. for long adds, subs or addresses, after the first def register goes live.
@@ -42,7 +42,7 @@ the lo and hi computations together.
 
 There are concerns about this, because it requires generating a number of extra temps
 in the case of nested expressions. However, mikedn has done some experimentation
-[here](https://github.com/mikedn/coreclr/blob/decompose/src/jit/lower.cpp#L424) 
+[here](https://github.com/mikedn/coreclr/blob/decompose/src/jit/lower.cpp#L424)
 that indicates that this approach may not be as problematic as we feared.
 
 This basic idea is that whenever we need to decompose hi/lo operations but keep them
@@ -52,7 +52,7 @@ together (i.e. can’t preserve the tree traversal/linear order invariants), we 
 
 The idea here woudl be to retain `TYP_LONG` nodes in the IR, and to find a way to extend
 the liveness model used by Lowering, LSRA and CodeGen to ensure good register allocation.
-o	
+o
 
 In the table below, there are several operations that have different register lifetime
 characteristics.

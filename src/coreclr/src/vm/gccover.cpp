@@ -9,7 +9,7 @@
 
 /* This file holds code that is designed to test GC pointer tracking in
    fully interruptible code.  We basically do a GC everywhere we can in
-   jitted code 
+   jitted code
  */
 /****************************************************************************/
 
@@ -144,10 +144,10 @@ void SetupAndSprinkleBreakpoints(
     gcCover->codeMan           = pCodeInfo->GetCodeManager();
     gcCover->gcInfoToken       = pCodeInfo->GetGCInfoToken();
     gcCover->callerThread      = 0;
-    gcCover->doingEpilogChecks = true;    
+    gcCover->doingEpilogChecks = true;
 
-    gcCover->SprinkleBreakpoints(gcCover->savedCode, 
-                                 gcCover->methodRegion.hotStartAddress,  
+    gcCover->SprinkleBreakpoints(gcCover->savedCode,
+                                 gcCover->methodRegion.hotStartAddress,
                                  gcCover->methodRegion.hotSize,
                                  0,
                                  fZapped);
@@ -156,8 +156,8 @@ void SetupAndSprinkleBreakpoints(
 #if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
     if (gcCover->methodRegion.coldSize != 0)
     {
-        gcCover->SprinkleBreakpoints(gcCover->savedCode + gcCover->methodRegion.hotSize, 
-                                     gcCover->methodRegion.coldStartAddress,  
+        gcCover->SprinkleBreakpoints(gcCover->savedCode + gcCover->methodRegion.hotSize,
+                                     gcCover->methodRegion.coldStartAddress,
                                      gcCover->methodRegion.coldSize,
                                      gcCover->methodRegion.hotSize,
                                      fZapped);
@@ -235,9 +235,9 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 #ifdef FEATURE_PREJIT
 
 void SetupGcCoverageForNativeMethod(NativeCodeVersion nativeCodeVersion,
-                                    PCODE codeStart, 
+                                    PCODE codeStart,
                                      IJitManager::MethodRegionInfo& methodRegionInfo
-                                   ) 
+                                   )
 {
     _ASSERTE(!nativeCodeVersion.IsNull());
 
@@ -256,7 +256,7 @@ void SetupGcCoverageForNativeMethod(NativeCodeVersion nativeCodeVersion,
 
 void SetupGcCoverageForNativeImage(Module* module)
 {
-    // Disable IBC logging here because of NGen image is not fully initialized yet. Eager bound 
+    // Disable IBC logging here because of NGen image is not fully initialized yet. Eager bound
     // indirection cells are not initialized yet and so IBC logging would crash while attempting to dereference them.
     IBCLoggingDisabler disableLogging;
 
@@ -269,10 +269,10 @@ void SetupGcCoverageForNativeImage(Module* module)
         printf("wszSetupGcCoverage is NULL. Will not SetupGcCoverage for any module.\n");
         return;
     }
-    else 
+    else
     {
         if ((wcscmp(W("*"), wszSetupGcCoverage) == 0) ||  // "*" means will gcstress all modules
-            (wcsstr(module->GetDebugName(), wszSetupGcCoverage) != NULL)) 
+            (wcsstr(module->GetDebugName(), wszSetupGcCoverage) != NULL))
         {
             printf("[%ws] matched %ws\n", wszSetupGcCoverage, module->GetDebugName());
             // Fall through
@@ -289,13 +289,13 @@ void SetupGcCoverageForNativeImage(Module* module)
     if (g_pConfig->SkipGCCoverage(module->GetSimpleName()))
         return;
 #endif
-    
-    MethodIterator mi(module);    
+
+    MethodIterator mi(module);
     while (mi.Next())
     {
         PTR_MethodDesc pMD = mi.GetMethodDesc();
         PCODE pMethodStart = mi.GetMethodStartAddress();
-        
+
         IJitManager::MethodRegionInfo methodRegionInfo;
         mi.GetMethodRegionInfo(&methodRegionInfo);
 
@@ -483,7 +483,7 @@ public:
 // conditions with the GC.
 //
 // For example, for an inlined PInvoke stub, the JIT generates the following code
-// 
+//
 //    call    CORINFO_HELP_INIT_PINVOKE_FRAME // Obtain the thread pointer
 //
 //    mov      byte  ptr[rsi + 12], 0   // Switch to preemptive mode [thread->premptiveGcDisabled = 0]
@@ -494,8 +494,8 @@ public:
 //    call[CORINFO_HELP_STOP_FOR_GC]             // Call JIT_RareDisableHelper()
 //
 //
-// For the SprinkleBreakPoints() routine, the JIT_RareDisableHelper() itself will 
-// look like an ordinary indirect call/safepoint. So, it may rewrite it with 
+// For the SprinkleBreakPoints() routine, the JIT_RareDisableHelper() itself will
+// look like an ordinary indirect call/safepoint. So, it may rewrite it with
 // a TRAP to perform GC
 //
 //    call    CORINFO_HELP_INIT_PINVOKE_FRAME // Obtain the thread pointer
@@ -515,15 +515,15 @@ public:
 // 3)	Then the thread T is put back to preemptive mode (because that's where it was).
 //      Thread T continues execution along with the GC thread.
 // 4)	The Jitted code puts thread T to cooperative mode, as part of PInvoke epilog
-// 5)	Now instead of CORINFO_HELP_STOP_FOR_GC(), we hit the GCStress trap and start 
+// 5)	Now instead of CORINFO_HELP_STOP_FOR_GC(), we hit the GCStress trap and start
 //      another round of GCStress while in Cooperative mode.
 // 6)	Now, thread T can modify the stack (ex: RedirectionFrame setup) while the GC thread is scanning it.
-// 
+//
 // This problem can be avoided by not inserting traps-for-GC in place of calls to CORINFO_HELP_STOP_FOR_GC()
 //
 // How do we identify the calls to CORINFO_HELP_STOP_FOR_GC()?
-// Since this is a GCStress only requirement, its not worth special identification in the GcInfo 
-// Since CORINFO_HELP_STOP_FOR_GC() calls are realized as indirect calls by the JIT, we cannot identify 
+// Since this is a GCStress only requirement, its not worth special identification in the GcInfo
+// Since CORINFO_HELP_STOP_FOR_GC() calls are realized as indirect calls by the JIT, we cannot identify
 // them by address at the time of SprinkleBreakpoints().
 // So, we actually let the SprinkleBreakpoints() replace the call to CORINFO_HELP_STOP_FOR_GC() with a trap,
 // and revert it back to the original instruction the first time we hit the trap in OnGcCoverageInterrupt().
@@ -534,14 +534,14 @@ extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
 
 /****************************************************************************/
 /* sprinkle interrupt instructions that will stop on every GCSafe location
-   regionOffsetAdj - Represents the offset of the current region 
+   regionOffsetAdj - Represents the offset of the current region
                      from the beginning of the method (is 0 for hot region)
 */
 
 void GCCoverageInfo::SprinkleBreakpoints(
-        BYTE * saveAddr, 
-        PCODE  pCode, 
-        size_t codeSize, 
+        BYTE * saveAddr,
+        PCODE  pCode,
+        size_t codeSize,
         size_t regionOffsetAdj,
         BOOL   fZapped)
 {
@@ -586,10 +586,10 @@ void GCCoverageInfo::SprinkleBreakpoints(
     //  and we have found it's target MethodDesc
     MethodDesc* prevDirectCallTargetMD = NULL;
 
-    /* TODO. Simulating the hijack could cause problems in cases where the 
-       return register is not always a valid GC ref on the return offset. 
-       That could happen if we got to the return offset via a branch 
-       and not via return from the preceding call. However, this has not been 
+    /* TODO. Simulating the hijack could cause problems in cases where the
+       return register is not always a valid GC ref on the return offset.
+       That could happen if we got to the return offset via a branch
+       and not via return from the preceding call. However, this has not been
        an issue so far.
 
        Example:
@@ -644,7 +644,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
         case InstructionType::Call_DirectUnconditional:
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
-            {       
+            {
 #ifdef _TARGET_AMD64_
                 if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
@@ -703,7 +703,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         }
 
         // If we couldn't find the method desc targetMD is zero
-        prevDirectCallTargetMD = targetMD;                        
+        prevDirectCallTargetMD = targetMD;
 
         cur += len;
 
@@ -748,13 +748,13 @@ void GCCoverageInfo::SprinkleBreakpoints(
     }
 
     GcInfoDecoder safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-    
+
     assert(methodRegion.hotSize > 0);
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     safePointDecoder.EnumerateSafePoints(&replaceSafePointInstructionWithGcStressInstr,this);
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    
+
     safePointDecoder.EnumerateInterruptibleRanges(&replaceInterruptibleRangesWithGcStressInstr, this);
 
     FlushInstructionCache(GetCurrentProcess(), (BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize);
@@ -764,7 +764,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         FlushInstructionCache(GetCurrentProcess(), (BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize);
     }
 
-#else    
+#else
     _ASSERTE(!"not implemented for platform");
 #endif // _TARGET_X86_
 }
@@ -788,7 +788,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     }
     else
     {
-        //For some methods( eg MCCTest.MyClass.GetSum2 in test file jit\jit64\mcc\interop\mcc_i07.il) gcinfo points to a safepoint 
+        //For some methods( eg MCCTest.MyClass.GetSum2 in test file jit\jit64\mcc\interop\mcc_i07.il) gcinfo points to a safepoint
         //beyond the length of the method. So commenting the below assert.
         //_ASSERTE(safePointOffset - ptr->hotSize < ptr->coldSize);
         return;
@@ -797,7 +797,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     PBYTE instrPtr = (BYTE*)PCODEToPINSTR(pCode);
 
     // For code sequences of the type
-    // BL func1 
+    // BL func1
     // BL func2    // Safe point 1
     // mov r1 r0  // Safe point 2
     // Both the above safe points instruction must be replaced with gcStress instruction.
@@ -843,9 +843,9 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         instructionIsACallThroughRegister = TRUE;
     }
 #endif  // _TARGET_XXXX_
-    // safe point must always be after a call instruction 
+    // safe point must always be after a call instruction
     // and cannot be both call by register & immediate
-    // The safe points are also marked at jump calls( a special variant of 
+    // The safe points are also marked at jump calls( a special variant of
     // tail call). However that call site will never appear on the stack.
     // So commenting the assert for now. As for such places the previous
     // instruction will not be a call instruction.
@@ -933,13 +933,13 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
 
         if(stopOffset <= ptr->hotSize)
         {
-            pCode = ptr->hotStartAddress + stopOffset;        
+            pCode = ptr->hotStartAddress + stopOffset;
             rangeStop = (BYTE*)PCODEToPINSTR(pCode);
         }
         else
         {
             //Interruptible range is spanning across hot & cold region
-            pCode = ptr->hotStartAddress + ptr->hotSize;        
+            pCode = ptr->hotStartAddress + ptr->hotSize;
             rangeStop = (BYTE*)PCODEToPINSTR(pCode);
             acrossHotRegion++;
         }
@@ -953,7 +953,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
 
         coldOffset = stopOffset - ptr->hotSize;
         _ASSERTE(coldOffset <= ptr->coldSize);
-        pCode = ptr->coldStartAddress + coldOffset;        
+        pCode = ptr->coldStartAddress + coldOffset;
         rangeStop = (BYTE*)PCODEToPINSTR(pCode);
     }
 
@@ -992,7 +992,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
             //Set rangeStart & rangeStop for the second iteration
             _ASSERTE(acrossHotRegion==1);
             rangeStart = (BYTE*)PCODEToPINSTR(ptr->coldStartAddress);
-            pCode = ptr->coldStartAddress + stopOffset - ptr->hotSize;        
+            pCode = ptr->coldStartAddress + stopOffset - ptr->hotSize;
             rangeStop = (BYTE*)PCODEToPINSTR(pCode);
         }
     }
@@ -1006,13 +1006,13 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
 // For other architectures call does not happen via stub.
 // For other architectures we can get the target directly by calling getTargetOfCall().
 // This is not the case for arm64/arm so need to decode the stub
-// instruction to find the actual jithelper target. 
-// For other architecture we detect call to JIT_RareDisableHelper 
+// instruction to find the actual jithelper target.
+// For other architecture we detect call to JIT_RareDisableHelper
 // in function OnGcCoverageInterrupt() since getTargetOfCall() can
 // get the actual jithelper target.
 bool isCallToStopForGCJitHelper(PBYTE instrPtr)
 {
-#if defined(_TARGET_ARM64_)    
+#if defined(_TARGET_ARM64_)
    if (((*reinterpret_cast<DWORD*>(instrPtr)) & 0xFC000000) == 0x94000000) // Do we have a BL instruction?
    {
        // call through immediate
@@ -1065,13 +1065,13 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
 
     // In certain situations, the instruction bytes are read from a different
     // location than the actual bytes being executed.
-    // When decoding the instructions of a method which is sprinkled with 
-    // TRAP instructions for GCStress, we decode the bytes from a copy 
+    // When decoding the instructions of a method which is sprinkled with
+    // TRAP instructions for GCStress, we decode the bytes from a copy
     // of the instructions stored before the traps-for-gc were inserted.
     // However, the PC-relative addressing/displacement of the CALL-target
     // will still be with respect to the currently executing PC.
-    // So, if a register context is available, we pick the PC from it 
-    // (for address calculation purposes only). 
+    // So, if a register context is available, we pick the PC from it
+    // (for address calculation purposes only).
 
     PBYTE PC = (regs) ? (PBYTE)GetIP(regs) : instrPtr;
 
@@ -1160,9 +1160,9 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         case 0:
         case 1:
         case 2:
-            
+
             if (rm == 4) {
-                
+
                 //
                 // Get values from the SIB byte
                 //
@@ -1293,7 +1293,7 @@ void checkAndUpdateReg(DWORD& origVal, DWORD curVal, bool gcHappened) {
     _ASSERTE(gcHappened);    // If the register values are different, a GC must have happened
     _ASSERTE(GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE*) size_t(origVal)));    // And the pointers involved are on the GCHeap
     _ASSERTE(GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE*) size_t(curVal)));
-    origVal = curVal;       // this is now the best estimate of what should be returned. 
+    origVal = curVal;       // this is now the best estimate of what should be returned.
 }
 
 #endif // _TARGET_X86_
@@ -1338,8 +1338,8 @@ bool IsGcCoverageInterrupt(LPVOID ip)
     return false;
 }
 
-// Remove the GcCoverage interrupt instruction, and restore the 
-// original instruction. Only one instruction must be used, 
+// Remove the GcCoverage interrupt instruction, and restore the
+// original instruction. Only one instruction must be used,
 // because multiple threads can be executing the same code stream.
 
 void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
@@ -1422,7 +1422,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     return TRUE;
 }
 
-// There are some code path in DoGcStress to return without doing a GC but we 
+// There are some code path in DoGcStress to return without doing a GC but we
 // now relies on EE suspension to update the GC STRESS instruction.
 // We need to do a extra EE suspension/resume even without GC.
 FORCEINLINE void UpdateGCStressInstructionWithoutGC ()
@@ -1455,7 +1455,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
     {
-        // This assert can fail if another thread changed original instruction to 
+        // This assert can fail if another thread changed original instruction to
         // GCCoverage Interrupt instruction between these two commands. Uncomment it
         // when threading issue gets resolved.
         // _ASSERTE(IsOriginalInstruction(instrPtr, gcCover, offset));
@@ -1508,7 +1508,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         afterCallProtect[0] = (instrVal32 == INTERRUPT_INSTR_PROTECT_RET_32);
     }
 #elif defined(_TARGET_ARM64_)
-    DWORD instrVal = *(DWORD *)instrPtr; 
+    DWORD instrVal = *(DWORD *)instrPtr;
     forceStack[6] = &instrVal;            // This is so I can see it fastchecked
 
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
@@ -1527,48 +1527,48 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
                     gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
                     bShouldUpdateProlog = false;
                 }
-            }    
+            }
             else {
                 // We have been in this routine before.  Give up on epilog checking because
-                // it is hard to insure that the saved caller register state is correct 
+                // it is hard to insure that the saved caller register state is correct
                 // This also has the effect of only doing the checking once per routine
-                // (Even if there are multiple epilogs) 
+                // (Even if there are multiple epilogs)
                 gcCover->doingEpilogChecks = false;
             }
-        } 
+        }
 
         // If some other thread removes interrupt points, we abandon epilog testing
         // for this routine since the barrier at the beginning of the routine may not
-        // be up anymore, and thus the caller context is now not guaranteed to be correct.  
+        // be up anymore, and thus the caller context is now not guaranteed to be correct.
         // This should happen only very rarely so is not a big deal.
         if (gcCover->callerThread != pThread)
             gcCover->doingEpilogChecks = false;
     }
 
     instrVal = gcCover->savedCode[offset];
-#endif // _TARGET_X86_    
+#endif // _TARGET_X86_
 
 
     // <GCStress instruction update race>
     // Remove the interrupt instruction the next time we suspend the EE,
-    // which should happen below in the call to StressHeap().  This is 
+    // which should happen below in the call to StressHeap().  This is
     // done with the EE suspended so that we do not race with the executing
     // code on some other thread.  If we allow that race, we may sometimes
-    // get a STATUS_ACCESS_VIOLATION instead of the expected 
+    // get a STATUS_ACCESS_VIOLATION instead of the expected
     // STATUS_PRIVILEGED_INSTRUCTION because the OS has to inspect the code
     // stream to determine which exception code to raise.  As a result, some
     // thread may take the exception due to the HLT, but by the time the OS
     // inspects the code stream, the HLT may be replaced with the original
     // code and it will just raise a STATUS_ACCESS_VIOLATION.
 #ifdef _TARGET_X86_
-    // only restore the original instruction if: 
+    // only restore the original instruction if:
     //    this is not the first instruction in the method's prolog, or
     //    if it is, only if this is the second time we run in this method
     // note that if this is the second time in the prolog we've already disabled epilog checks
     if (offset != 0 || bShouldUpdateProlog)
 #endif
     pThread->PostGCStressInstructionUpdate((BYTE*)instrPtr, &gcCover->savedCode[offset]);
-    
+
 #ifdef _TARGET_X86_
     /* are we in a prolog or epilog?  If so just test the unwind logic
        but don't actually do a GC since the prolog and epilog are not
@@ -1577,48 +1577,48 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     {
         // We are not at a GC safe point so we can't Suspend EE (Suspend EE will yield to GC).
         // But we still have to update the GC Stress instruction. We do it directly without suspending
-        // other threads, which means a race on updating is still possible. But for X86 the window of 
+        // other threads, which means a race on updating is still possible. But for X86 the window of
         // race is so small that we could ignore it. We need a better solution if the race becomes a real problem.
         // see details about <GCStress instruction update race> in comments above
         pThread->CommitGCStressInstructionUpdate ();
-        
+
         REGDISPLAY regDisp;
         CONTEXT copyRegs = *regs;
 
         pThread->Thread::InitRegDisplay(&regDisp, &copyRegs, true);
         pThread->UnhijackThread();
-        
+
         CodeManState codeManState;
         codeManState.dwIsSet = 0;
-        
+
         // unwind out of the prolog or epilog
-        gcCover->codeMan->UnwindStackFrame(&regDisp, 
+        gcCover->codeMan->UnwindStackFrame(&regDisp,
                 &codeInfo, UpdateAllRegs, &codeManState, NULL);
-    
-        // Note we always doing the unwind, since that at does some checking (that we 
+
+        // Note we always doing the unwind, since that at does some checking (that we
         // unwind to a valid return address), but we only do the precise checking when
-        // we are certain we have a good caller state 
+        // we are certain we have a good caller state
         if (gcCover->doingEpilogChecks) {
             // Confirm that we recovered our register state properly
             _ASSERTE(regDisp.PCTAddr == TADDR(gcCover->callerRegs.Esp));
-            
+
             // If a GC happened in this function, then the registers will not match
             // precisely.  However there is still checks we can do.  Also we can update
             // the saved register to its new value so that if a GC does not happen between
-            // instructions we can recover (and since GCs are not allowed in the 
+            // instructions we can recover (and since GCs are not allowed in the
             // prologs and epilogs, we get get complete coverage except for the first
             // instruction in the epilog  (TODO: fix it for the first instr Case)
-            
-            _ASSERTE(pThread->PreemptiveGCDisabled());    // Epilogs should be in cooperative mode, no GC can happen right now. 
+
+            _ASSERTE(pThread->PreemptiveGCDisabled());    // Epilogs should be in cooperative mode, no GC can happen right now.
             bool gcHappened = gcCover->gcCount != GCHeapUtilities::GetGCHeap()->GetGcCount();
             checkAndUpdateReg(gcCover->callerRegs.Edi, *regDisp.GetEdiLocation(), gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Esi, *regDisp.GetEsiLocation(), gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Ebx, *regDisp.GetEbxLocation(), gcHappened);
             checkAndUpdateReg(gcCover->callerRegs.Ebp, *regDisp.GetEbpLocation(), gcHappened);
-            
+
             gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
 
-        }        
+        }
         return;
     }
 #endif // _TARGET_X86_
@@ -1635,13 +1635,13 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
        To figure this out, we need to stop AT the call so we can determine the
        target (and thus whether it returns a GC pointer), and then place the
        a different interrupt instruction so that the GCCover harness protects
-       EAX before doing the GC).  This effectively simulates a hijack in 
+       EAX before doing the GC).  This effectively simulates a hijack in
        non-fully interruptible code */
 
-    /* TODO. Simulating the hijack could cause problems in cases where the 
-       return register is not always a valid GC ref on the return offset. 
-       That could happen if we got to the return offset via a branch 
-       and not via return from the preceding call. However, this has not been 
+    /* TODO. Simulating the hijack could cause problems in cases where the
+       return register is not always a valid GC ref on the return offset.
+       That could happen if we got to the return offset via a branch
+       and not via return from the preceding call. However, this has not been
        an issue so far.
 
        Example:
@@ -1656,17 +1656,17 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         // We need to update the GC Stress instruction. With partially-interruptible code
         // the call instruction is not a GC safe point so we can't use
         // StressHeap or UpdateGCStressInstructionWithoutGC to take care of updating;
-        // So we just update the instruction directly. There are still chances for a race, 
+        // So we just update the instruction directly. There are still chances for a race,
         // but it's not been a problem so far.
         // see details about <GCStress instruction update race> in comments above
-        pThread->CommitGCStressInstructionUpdate ();        
+        pThread->CommitGCStressInstructionUpdate ();
         PBYTE nextInstr;
         PBYTE target = getTargetOfCall((BYTE*) instrPtr, regs, (BYTE**)&nextInstr);
         if (target != 0)
         {
             if (!pThread->PreemptiveGCDisabled())
             {
-                // We are in preemptive mode in JITTed code. This implies that we are into IL stub 
+                // We are in preemptive mode in JITTed code. This implies that we are into IL stub
                 // close to PINVOKE method. This call will never return objectrefs.
 #ifdef _TARGET_ARM_
                     size_t instrLen = GetARMInstructionLength(nextInstr);
@@ -1699,11 +1699,11 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         // Note this needs to reach beyond the call by up to 4 bytes.
         FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 10);
 
-        // It's not GC safe point, the GC Stress instruction is 
+        // It's not GC safe point, the GC Stress instruction is
         // already committed and interrupt is already put at next instruction so we just return.
         return;
     }
-#else 
+#else
     PORTABILITY_ASSERT("DoGcStress - NYI on this platform");
 #endif // _TARGET_*
 
@@ -1716,12 +1716,12 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
 
 #if 0
-    // TODO currently disabled.  we only do a GC once per instruction location.  
+    // TODO currently disabled.  we only do a GC once per instruction location.
 
   /* note that for multiple threads, we can loose track and
        forget to set reset the interrupt after we executed
        an instruction, so some instruction points will not be
-       executed twice, but we still ge350t very good coverage 
+       executed twice, but we still ge350t very good coverage
        (perfect for single threaded cases) */
 
     /* if we have not run this instruction in the past */
@@ -1810,7 +1810,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             regs->X[0] = retValRegs[0];
 #else
             PORTABILITY_ASSERT("DoGCStress - return register");
-#endif            
+#endif
         }
 
         if (afterCallProtect[1])
@@ -1819,7 +1819,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             regs->Rdx = retValRegs[numberOfRegs - 1];
 #else // !_TARGET_AMD64_ || !PLATFORM_UNIX
             _ASSERTE(!"Not expected multi reg return with pointers.");
-#endif // !_TARGET_AMD64_ || !PLATFORM_UNIX   
+#endif // !_TARGET_AMD64_ || !PLATFORM_UNIX
         }
     }
 
@@ -1835,7 +1835,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
     return;
-   
+
 }
 
 #endif // HAVE_GCCOVER

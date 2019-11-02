@@ -9,7 +9,7 @@
 
 #include "holder.h"
 
-template <typename TYPE> 
+template <typename TYPE>
 inline void DoTheReleaseHost(TYPE *value)
 {
     if (value)

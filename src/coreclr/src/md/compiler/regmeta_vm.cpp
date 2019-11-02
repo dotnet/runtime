@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-    
+
 //*****************************************************************************
 
-// 
+//
 // RegMeta.cpp
 //
 // Implementation for meta data public interface methods for full version.
@@ -66,9 +66,9 @@ ErrExit:
         m_bCached = false;
     }
     return hr;
-#else // FEATURE_METADATA_IN_VM 
+#else // FEATURE_METADATA_IN_VM
     return S_OK;
-#endif // FEATURE_METADATA_IN_VM 
+#endif // FEATURE_METADATA_IN_VM
 } // RegMeta::AddToCache
 
 
@@ -82,11 +82,11 @@ HRESULT RegMeta::FindCachedReadOnlyEntry(
 {
 #if defined(FEATURE_METADATA_IN_VM)
     return LOADEDMODULES::FindCachedReadOnlyEntry(szName, dwOpenFlags, ppMeta);
-#else // FEATURE_METADATA_IN_VM 
+#else // FEATURE_METADATA_IN_VM
     // No cache support in standalone version.
     *ppMeta = NULL;
     return S_FALSE;
-#endif // FEATURE_METADATA_IN_VM 
+#endif // FEATURE_METADATA_IN_VM
 } // RegMeta::FindCachedReadOnlyEntry
 
 
@@ -94,7 +94,7 @@ HRESULT RegMeta::FindCachedReadOnlyEntry(
 
 //*****************************************************************************
 // Helper function to startup the EE
-// 
+//
 // Notes:
 //    This is called by code:RegMeta.DefineSecurityAttributeSet.
 //*****************************************************************************
@@ -111,7 +111,7 @@ HRESULT RegMeta::StartupEE()
 //*****************************************************************************
 // Persist a set of security custom attributes into a set of permission set
 // blobs on the same class or method.
-// 
+//
 // Notes:
 //    Only in the full version because this is an emit operation.
 //*****************************************************************************
@@ -128,34 +128,34 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
 
 
 //*****************************************************************************
-// Implementation of IMetaDataImport::ResolveTypeRef to resolve a typeref across scopes. 
-// 
+// Implementation of IMetaDataImport::ResolveTypeRef to resolve a typeref across scopes.
+//
 // Arguments:
 //    tr - typeref within this scope to resolve
 //    riid - interface on ppIScope to support
 //    ppIScope - out-parameter to get metadata scope for typedef (*ptd)
 //    ptd - out-parameter to get typedef that the ref resolves to.
-// 
+//
 // Notes:
 // TypeDefs define a type within a scope. TypeRefs refer to type-defs in other scopes
 // and allow you to import a type from another scope. This function attempts to determine
 // which type-def a type-ref points to.
-// 
+//
 // This resolve (type-ref, this cope) --> (type-def=*ptd, other scope=*ppIScope)
-// 
+//
 // However, this resolution requires knowing what modules have been loaded, which is not decided
 // until runtime via loader / fusion policy. Thus this interface can't possibly be correct since
 // it doesn't have that knowledge. Furthermore, when inspecting metadata from another process
 // (such as a debugger inspecting the debuggee's metadata), this API can be truly misleading.
-// 
+//
 // This API usage should be avoided.
-// 
+//
 //*****************************************************************************
-STDMETHODIMP 
+STDMETHODIMP
 RegMeta::ResolveTypeRef(
-    mdTypeRef   tr, 
-    REFIID      riid, 
-    IUnknown ** ppIScope, 
+    mdTypeRef   tr,
+    REFIID      riid,
+    IUnknown ** ppIScope,
     mdTypeDef * ptd)
 {
 #ifdef FEATURE_METADATA_IN_VM
@@ -167,7 +167,7 @@ RegMeta::ResolveTypeRef(
     WCHAR        wzNameSpace[_MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
 
-    LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", 
+    LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         this, tr, riid, ppIScope, ptd));
 
     START_MD_PERF();
@@ -183,7 +183,7 @@ RegMeta::ResolveTypeRef(
 
     if (IsNilToken(tr))
     {
-        if (ptd != NULL) 
+        if (ptd != NULL)
         {
             *ptd = mdTypeDefNil;
         }
@@ -192,7 +192,7 @@ RegMeta::ResolveTypeRef(
         {
             *ppIScope = NULL;
         }
-        
+
         STOP_MD_PERF(ResolveTypeRef);
         hr = E_INVALIDARG;
         goto ErrExit;
@@ -218,16 +218,16 @@ RegMeta::ResolveTypeRef(
         // Truncate the namespace string
         wzNameSpace[lengthof(wzNameSpace) - 1] = 0;
     }
-    
+
     //***********************
     // before we go off to CORPATH, check the loaded modules!
     //***********************
     if (LOADEDMODULES::ResolveTypeRefWithLoadedModules(
-        tr, 
-        this, 
-        pMiniMd, 
-        riid, 
-        ppIScope, 
+        tr,
+        this,
+        pMiniMd,
+        riid,
+        ppIScope,
         ptd) == NOERROR)
     {
         // Done!! We found one match among the loaded modules.
@@ -239,7 +239,7 @@ RegMeta::ResolveTypeRef(
 ErrExit:
     STOP_MD_PERF(ResolveTypeRef);
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 #else // FEATURE_METADATA_IN_VM
     return E_NOTIMPL;
@@ -248,7 +248,7 @@ ErrExit:
 
 
 
-// Full version handles metadata caching, which Release() needs to coordinate with. 
+// Full version handles metadata caching, which Release() needs to coordinate with.
 // Thus Release() is in a satellite lib.
 ULONG RegMeta::Release()
 {
@@ -258,7 +258,7 @@ ULONG RegMeta::Release()
     _ASSERTE(!m_bCached || LOADEDMODULES::IsEntryInList(this));
 #else
     _ASSERTE(!m_bCached);
-#endif // FEATURE_METADATA_IN_VM 
+#endif // FEATURE_METADATA_IN_VM
     BOOL  bCached = m_bCached;
     ULONG cRef = InterlockedDecrement(&m_cRef);
     // NOTE: 'this' may be unsafe after this point, if the module is cached, and
@@ -281,9 +281,9 @@ ULONG RegMeta::Release()
             m_bCached = false;
             delete this;
         }
-#endif // FEATURE_METADATA_IN_VM 
+#endif // FEATURE_METADATA_IN_VM
     }
     END_CLEANUP_ENTRYPOINT
-    
+
     return cRef;
 } // RegMeta::Release

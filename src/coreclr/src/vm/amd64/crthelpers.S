@@ -14,22 +14,22 @@
 //
 
 // void JIT_MemSet(void* dest, int c, size_t count)
-// 
+//
 // Purpose:
 //    Sets the first "count" bytes of the block of memory pointed byte
 //    "dest" to the specified value (interpreted as an unsigned char).
-// 
+//
 // Entry:
 //    RDI: void* dest    - Pointer to the block of memory to fill.
 //    RSI: int c         - Value to be set.
 //    RDX: size_t count  - Number of bytes to be set to the value.
-// 
+//
 // Exit:
-// 
+//
 // Uses:
-// 
+//
 // Exceptions:
-// 
+//
 LEAF_ENTRY JIT_MemSet, _TEXT
         test    rdx, rdx                // check if count is zero
         jz      Exit_MemSet             // if zero, no bytes to set

@@ -8,7 +8,7 @@
 
 //
 // IN:
-// InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                          before actual InlinedCallFrame data)
 //
 //
@@ -20,7 +20,7 @@ LEAF_END JIT_PInvokeBegin, _TEXT
 
 //
 // IN:
-// InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+// InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
 //                          before actual InlinedCallFrame data)
 //
 //

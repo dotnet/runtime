@@ -49,7 +49,7 @@ EEHashEntry_t * EEUtf8HashTableHelper::AllocateEntry(LPCUTF8 pKey, BOOL bDeepCop
         if (!pEntry)
             return NULL;
 
-        memcpy(pEntry->Key + sizeof(LPUTF8), pKey, StringLen + 1); 
+        memcpy(pEntry->Key + sizeof(LPUTF8), pKey, StringLen + 1);
         *((LPUTF8*)pEntry->Key) = (LPUTF8)(pEntry->Key + sizeof(LPUTF8));
     }
     else
@@ -134,7 +134,7 @@ EEHashEntry_t * EEUnicodeHashTableHelper::AllocateEntry(EEStringData *pKey, BOOL
             pEntryKey->SetIsOnlyLowChars (pKey->GetIsOnlyLowChars());
             pEntryKey->SetCharCount (pKey->GetCharCount());
             pEntryKey->SetStringBuffer ((LPWSTR) ((LPBYTE)pEntry->Key + sizeof(EEStringData)));
-            memcpy((LPWSTR)pEntryKey->GetStringBuffer(), pKey->GetStringBuffer(), pKey->GetCharCount() * sizeof(WCHAR)); 
+            memcpy((LPWSTR)pEntryKey->GetStringBuffer(), pKey->GetStringBuffer(), pKey->GetCharCount() * sizeof(WCHAR));
         }
     }
     else
@@ -217,10 +217,10 @@ EEHashEntry_t * EEUnicodeStringLiteralHashTableHelper::AllocateEntry(EEStringDat
     }
     CONTRACTL_END
 
-    // We assert here because we expect that the heap is not null for EEUnicodeStringLiteralHash table. 
-    // If someone finds more uses of this kind of hashtable then remove this asserte. 
+    // We assert here because we expect that the heap is not null for EEUnicodeStringLiteralHash table.
+    // If someone finds more uses of this kind of hashtable then remove this asserte.
     // Also note that in case of heap being null we go ahead and use new /delete which is EXPENSIVE
-    // But for production code this might be ok if the memory is fragmented then thers a better chance 
+    // But for production code this might be ok if the memory is fragmented then thers a better chance
     // of getting smaller allocations than full pages.
     _ASSERTE (pHeap);
 
@@ -241,10 +241,10 @@ void EEUnicodeStringLiteralHashTableHelper::DeleteEntry(EEHashEntry_t *pEntry, v
     }
     CONTRACTL_END
 
-    // We assert here because we expect that the heap is not null for EEUnicodeStringLiteralHash table. 
-    // If someone finds more uses of this kind of hashtable then remove this asserte. 
+    // We assert here because we expect that the heap is not null for EEUnicodeStringLiteralHash table.
+    // If someone finds more uses of this kind of hashtable then remove this asserte.
     // Also note that in case of heap being null we go ahead and use new /delete which is EXPENSIVE
-    // But for production code this might be ok if the memory is fragmented then thers a better chance 
+    // But for production code this might be ok if the memory is fragmented then thers a better chance
     // of getting smaller allocations than full pages.
     _ASSERTE (pHeap);
 
@@ -266,7 +266,7 @@ BOOL EEUnicodeStringLiteralHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, E
     CONTRACTL_END
 
     GCX_COOP();
-    
+
     StringLiteralEntry *pHashData = (StringLiteralEntry *)pEntry->Data;
 
     EEStringData pEntryKey;
@@ -302,7 +302,7 @@ EEHashEntry_t *EEInstantiationHashTableHelper::AllocateEntry(const SigTypeContex
         GC_NOTRIGGER;
     }
     CONTRACTL_END
-    
+
     EEHashEntry_t *pEntry = (EEHashEntry_t *) new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(SigTypeContext)];
     if (!pEntry)
         return NULL;
@@ -382,7 +382,7 @@ EEHashEntry_t *EEClassFactoryInfoHashTableHelper::AllocateEntry(ClassFactoryInfo
 
     pEntry = (EEHashEntry_t *) new (nothrow) BYTE[cbEntry.Value()];
     if (pEntry) {
-        memcpy(pEntry->Key + sizeof(ClassFactoryInfo), pKey->m_strServerName, cbStringLen.Value()); 
+        memcpy(pEntry->Key + sizeof(ClassFactoryInfo), pKey->m_strServerName, cbStringLen.Value());
         ((ClassFactoryInfo*)pEntry->Key)->m_strServerName = pKey->m_strServerName ? (WCHAR*)(pEntry->Key + sizeof(ClassFactoryInfo)) : NULL;
         ((ClassFactoryInfo*)pEntry->Key)->m_clsid = pKey->m_clsid;
     }

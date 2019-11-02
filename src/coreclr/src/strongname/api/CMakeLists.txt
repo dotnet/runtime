@@ -1,7 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 #this will again add vm to include directories. However, this will add vm to be the first include folder.
-#This is required because util.hpp is also present in ildasm folder and so due to ordering wrong util.hpp 
+#This is required because util.hpp is also present in ildasm folder and so due to ordering wrong util.hpp
 #is pickedup.
 include_directories(BEFORE ${VM_DIR})
 

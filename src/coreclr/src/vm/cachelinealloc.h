@@ -13,7 +13,7 @@
 //
 // @comm
 //
-//    
+//
 // <nl> Definitions.:
 // <nl>	Class Name						Header file
 // <nl>	---------------------------		---------------
@@ -22,12 +22,12 @@
 // <nl><nl>
 //  Notes:
 //		The CacheLineAllocator maintains a pool of free CacheLines
-//		
-//		The CacheLine Allocator provides static member functions 
+//
+//		The CacheLine Allocator provides static member functions
 //		GetCacheLine and FreeCacheLine,
-//		
+//
 // <nl><nl>
-//  
+//
 //---------------------------------------------------------------------------
 
 #ifndef _H_CACHELINE_ALLOCATOR_
@@ -66,7 +66,7 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,32); 
+        memset(&m_Link,0,32);
     }
 
     void Init64()
@@ -80,7 +80,7 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,64); 
+        memset(&m_Link,0,64);
     }
 
     CacheLine()
@@ -94,7 +94,7 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,sizeof(CacheLine)); 
+        memset(&m_Link,0,sizeof(CacheLine));
     }
 };
 #include <poppack.h>
@@ -106,7 +106,7 @@ typedef CacheLine* LPCacheLine;
 //		Handles Allocation/DeAllocation of cache lines
 //		used for hash table overflow buckets
 ///////////////////////////////////////////////////////
-class CCacheLineAllocator 
+class CCacheLineAllocator
 {
     typedef SList<CacheLine, true> REGISTRYLIST;
     typedef SList<CacheLine, true> FREELIST32;
@@ -118,28 +118,28 @@ public:
     CCacheLineAllocator ();
     //destructor
     ~CCacheLineAllocator ();
-   
+
     // free cacheline blocks
-    FREELIST32         m_freeList32; //32 byte 
+    FREELIST32         m_freeList32; //32 byte
     FREELIST64         m_freeList64; //64 byte
 
     // registry for virtual free
     REGISTRYLIST     m_registryList;
-    
+
     void *VAlloc(ULONG cbSize);
 
     void VFree(void* pv);
 
-	// GetCacheLine, 
+	// GetCacheLine,
 	void *	GetCacheLine32();
-    
-    // GetCacheLine, 
+
+    // GetCacheLine,
 	void *	GetCacheLine64();
 
-	// FreeCacheLine, 
+	// FreeCacheLine,
 	void FreeCacheLine32(void *pCacheLine);
 
-	// FreeCacheLine, 
+	// FreeCacheLine,
 	void FreeCacheLine64(void *pCacheLine);
 
 };

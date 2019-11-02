@@ -9,7 +9,7 @@ add_definitions(-DUSE_COREDISTOOLS)
 
 if(WIN32)
   #use static crt
-  add_definitions(-MT) 
+  add_definitions(-MT)
 endif(WIN32)
 
 include_directories(.)

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: task.cpp
-// 
+//
 
 //
 // ClrDataTask.
@@ -86,13 +86,13 @@ ClrDataTask::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetProcess( 
+ClrDataTask::GetProcess(
     /* [out] */ IXCLRDataProcess **process)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *process = static_cast<IXCLRDataProcess*>(m_dac);
@@ -111,15 +111,15 @@ ClrDataTask::GetProcess(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetCurrentAppDomain( 
+ClrDataTask::GetCurrentAppDomain(
     /* [out] */ IXCLRDataAppDomain **appDomain)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_thread->GetDomain())
@@ -145,9 +145,9 @@ ClrDataTask::GetCurrentAppDomain(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetName( 
+ClrDataTask::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -155,7 +155,7 @@ ClrDataTask::GetName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX - Microsoft.
@@ -173,15 +173,15 @@ ClrDataTask::GetName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetUniqueID( 
+ClrDataTask::GetUniqueID(
     /* [out] */ ULONG64 *id)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *id = m_thread->GetThreadId();
@@ -199,15 +199,15 @@ ClrDataTask::GetUniqueID(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetFlags( 
+ClrDataTask::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft - GC check.
@@ -226,15 +226,15 @@ ClrDataTask::GetFlags(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::IsSameObject( 
+ClrDataTask::IsSameObject(
     /* [in] */ IXCLRDataTask* task)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = PTR_HOST_TO_TADDR(m_thread) ==
@@ -253,15 +253,15 @@ ClrDataTask::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetManagedObject( 
+ClrDataTask::GetManagedObject(
     /* [out] */ IXCLRDataValue **value)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -279,15 +279,15 @@ ClrDataTask::GetManagedObject(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetDesiredExecutionState( 
+ClrDataTask::GetDesiredExecutionState(
     /* [out] */ ULONG32 *state)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -305,15 +305,15 @@ ClrDataTask::GetDesiredExecutionState(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::SetDesiredExecutionState( 
+ClrDataTask::SetDesiredExecutionState(
     /* [in] */ ULONG32 state)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -331,9 +331,9 @@ ClrDataTask::SetDesiredExecutionState(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::CreateStackWalk( 
+ClrDataTask::CreateStackWalk(
     /* [in] */ ULONG32 flags,
     /* [out] */ IXCLRDataStackWalk **stackWalk)
 {
@@ -343,15 +343,15 @@ ClrDataTask::CreateStackWalk(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     ClrDataStackWalk* walkClass = NULL;
-    
+
     EX_TRY
     {
         walkClass = new (nothrow) ClrDataStackWalk(m_dac, m_thread, flags);
-        
+
         if (!walkClass)
         {
             status = E_OUTOFMEMORY;
@@ -369,9 +369,9 @@ ClrDataTask::CreateStackWalk(
     {
         if (walkClass)
         {
-            delete walkClass;    
+            delete walkClass;
         }
-        
+
         if (!DacExceptionFilter(GET_EXCEPTION(), m_dac, &status))
         {
             EX_RETHROW;
@@ -382,15 +382,15 @@ ClrDataTask::CreateStackWalk(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetOSThreadID( 
+ClrDataTask::GetOSThreadID(
     /* [out] */ ULONG32 *id)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_thread->GetOSThreadId() &&
@@ -417,9 +417,9 @@ ClrDataTask::GetOSThreadID(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetContext( 
+ClrDataTask::GetContext(
     /* [in] */ ULONG32 contextFlags,
     /* [in] */ ULONG32 contextBufSize,
     /* [out] */ ULONG32 *contextSize,
@@ -431,12 +431,12 @@ ClrDataTask::GetContext(
     {
         *contextSize = ContextSizeForFlags(contextFlags);
     }
-    
+
     if (!CheckContextSizeForFlags(contextBufSize, contextFlags))
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
 
     EX_TRY
@@ -466,9 +466,9 @@ ClrDataTask::GetContext(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::SetContext( 
+ClrDataTask::SetContext(
     /* [in] */ ULONG32 contextSize,
     /* [size_is][in] */ BYTE context[  ])
 {
@@ -507,15 +507,15 @@ ClrDataTask::SetContext(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetCurrentExceptionState( 
+ClrDataTask::GetCurrentExceptionState(
     /* [out] */ IXCLRDataExceptionState **exception)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ClrDataExceptionState::NewFromThread(m_dac,
@@ -537,13 +537,13 @@ ClrDataTask::GetCurrentExceptionState(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::GetLastExceptionState( 
+ClrDataTask::GetLastExceptionState(
     /* [out] */ IXCLRDataExceptionState **exception)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_thread->m_LastThrownObjectHandle)
@@ -577,7 +577,7 @@ ClrDataTask::GetLastExceptionState(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataTask::Request( 
+ClrDataTask::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -587,7 +587,7 @@ ClrDataTask::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -609,7 +609,7 @@ ClrDataTask::Request(
         default:
             status = E_INVALIDARG;
             break;
-        }        
+        }
     }
     EX_CATCH
     {
@@ -684,13 +684,13 @@ ClrDataAppDomain::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::GetProcess( 
+ClrDataAppDomain::GetProcess(
     /* [out] */ IXCLRDataProcess **process)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *process = static_cast<IXCLRDataProcess*>(m_dac);
@@ -709,9 +709,9 @@ ClrDataAppDomain::GetProcess(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::GetName( 
+ClrDataAppDomain::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -719,7 +719,7 @@ ClrDataAppDomain::GetName(
     HRESULT status = S_OK;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         bool isUtf8;
@@ -766,15 +766,15 @@ ClrDataAppDomain::GetName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::GetFlags( 
+ClrDataAppDomain::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *flags = CLRDATA_DOMAIN_DEFAULT;
@@ -794,13 +794,13 @@ ClrDataAppDomain::GetFlags(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::IsSameObject( 
+ClrDataAppDomain::IsSameObject(
     /* [in] */ IXCLRDataAppDomain* appDomain)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = PTR_HOST_TO_TADDR(m_appDomain) ==
@@ -819,15 +819,15 @@ ClrDataAppDomain::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::GetManagedObject( 
+ClrDataAppDomain::GetManagedObject(
     /* [out] */ IXCLRDataValue **value)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -845,24 +845,24 @@ ClrDataAppDomain::GetManagedObject(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::GetUniqueID( 
+ClrDataAppDomain::GetUniqueID(
     /* [out] */ ULONG64 *id)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     *id = DefaultADID;
     status = S_OK;
 
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAppDomain::Request( 
+ClrDataAppDomain::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -872,7 +872,7 @@ ClrDataAppDomain::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = E_INVALIDARG;
@@ -950,13 +950,13 @@ ClrDataAssembly::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::StartEnumModules( 
+ClrDataAssembly::StartEnumModules(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         Assembly::ModuleIterator* iter = new (nothrow)
@@ -984,16 +984,16 @@ ClrDataAssembly::StartEnumModules(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::EnumModule( 
+ClrDataAssembly::EnumModule(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataModule **mod)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         Assembly::ModuleIterator* iter =
@@ -1023,13 +1023,13 @@ ClrDataAssembly::EnumModule(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::EndEnumModules( 
+ClrDataAssembly::EndEnumModules(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         Assembly::ModuleIterator* iter =
@@ -1049,15 +1049,15 @@ ClrDataAssembly::EndEnumModules(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::StartEnumAppDomains( 
+ClrDataAssembly::StartEnumAppDomains(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1075,16 +1075,16 @@ ClrDataAssembly::StartEnumAppDomains(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::EnumAppDomain( 
+ClrDataAssembly::EnumAppDomain(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataAppDomain **appDomain)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1102,15 +1102,15 @@ ClrDataAssembly::EnumAppDomain(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::EndEnumAppDomains( 
+ClrDataAssembly::EndEnumAppDomains(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1130,7 +1130,7 @@ ClrDataAssembly::EndEnumAppDomains(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::GetName( 
+ClrDataAssembly::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -1138,7 +1138,7 @@ ClrDataAssembly::GetName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ConvertUtf8(m_assembly->GetSimpleName(),
@@ -1156,9 +1156,9 @@ ClrDataAssembly::GetName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::GetFileName( 
+ClrDataAssembly::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -1166,7 +1166,7 @@ ClrDataAssembly::GetFileName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         COUNT_T _nameLen;
@@ -1197,9 +1197,9 @@ ClrDataAssembly::GetFileName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::GetDisplayName( 
+ClrDataAssembly::GetDisplayName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -1207,7 +1207,7 @@ ClrDataAssembly::GetDisplayName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1225,15 +1225,15 @@ ClrDataAssembly::GetDisplayName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::GetFlags( 
+ClrDataAssembly::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *flags = CLRDATA_ASSEMBLY_DEFAULT;
@@ -1251,15 +1251,15 @@ ClrDataAssembly::GetFlags(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::IsSameObject( 
+ClrDataAssembly::IsSameObject(
     /* [in] */ IXCLRDataAssembly* assembly)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = (PTR_HOST_TO_TADDR(m_assembly) ==
@@ -1279,9 +1279,9 @@ ClrDataAssembly::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataAssembly::Request( 
+ClrDataAssembly::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -1291,7 +1291,7 @@ ClrDataAssembly::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -1361,7 +1361,7 @@ ClrDataModule::QueryInterface(THIS_
                               OUT PVOID* iface)
 {
     _ASSERTE(iface != NULL);
-    
+
     if (IsEqualIID(interfaceId, IID_IUnknown) ||
         IsEqualIID(interfaceId, __uuidof(IXCLRDataModule)))
     {
@@ -1407,13 +1407,13 @@ ClrDataModule::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumAssemblies( 
+ClrDataModule::StartEnumAssemblies(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ProcessModIter* iter = new (nothrow) ProcessModIter;
@@ -1439,16 +1439,16 @@ ClrDataModule::StartEnumAssemblies(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumAssembly( 
+ClrDataModule::EnumAssembly(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataAssembly **assembly)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ProcessModIter* iter = FROM_CDENUM(ProcessModIter, *handle);
@@ -1460,7 +1460,7 @@ ClrDataModule::EnumAssembly(
         // assembly.
         // Is there a more direct way?
         //
-        
+
         for (;;)
         {
             if (!(module = iter->NextModule()))
@@ -1468,7 +1468,7 @@ ClrDataModule::EnumAssembly(
                 status = S_FALSE;
                 break;
             }
-            
+
             if (PTR_HOST_TO_TADDR(module) == PTR_HOST_TO_TADDR(m_module))
             {
                 *assembly = new (nothrow)
@@ -1492,13 +1492,13 @@ ClrDataModule::EnumAssembly(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumAssemblies( 
+ClrDataModule::EndEnumAssemblies(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ProcessModIter* iter = FROM_CDENUM(ProcessModIter, handle);
@@ -1517,15 +1517,15 @@ ClrDataModule::EndEnumAssemblies(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumAppDomains( 
+ClrDataModule::StartEnumAppDomains(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1543,16 +1543,16 @@ ClrDataModule::StartEnumAppDomains(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumAppDomain( 
+ClrDataModule::EnumAppDomain(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataAppDomain **appDomain)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1570,15 +1570,15 @@ ClrDataModule::EnumAppDomain(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumAppDomains( 
+ClrDataModule::EndEnumAppDomains(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -1598,13 +1598,13 @@ ClrDataModule::EndEnumAppDomains(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumTypeDefinitions( 
+ClrDataModule::StartEnumTypeDefinitions(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = MetaEnum::New(m_module,
@@ -1626,16 +1626,16 @@ ClrDataModule::StartEnumTypeDefinitions(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumTypeDefinition( 
+ClrDataModule::EnumTypeDefinition(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataTypeDefinition **typeDefinition)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         mdTypeDef token;
@@ -1664,13 +1664,13 @@ ClrDataModule::EnumTypeDefinition(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumTypeDefinitions( 
+ClrDataModule::EndEnumTypeDefinitions(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = MetaEnum::CdEnd(handle);
@@ -1687,16 +1687,16 @@ ClrDataModule::EndEnumTypeDefinitions(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumTypeInstances( 
+ClrDataModule::StartEnumTypeInstances(
     /* [in] */ IXCLRDataAppDomain* appDomain,
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = MetaEnum::New(m_module,
@@ -1718,16 +1718,16 @@ ClrDataModule::StartEnumTypeInstances(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumTypeInstance( 
+ClrDataModule::EnumTypeInstance(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataTypeInstance **typeInstance)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         for (;;)
@@ -1769,13 +1769,13 @@ ClrDataModule::EnumTypeInstance(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumTypeInstances( 
+ClrDataModule::EndEnumTypeInstances(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = MetaEnum::CdEnd(handle);
@@ -1792,9 +1792,9 @@ ClrDataModule::EndEnumTypeInstances(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumTypeDefinitionsByName( 
+ClrDataModule::StartEnumTypeDefinitionsByName(
     /* [in] */ LPCWSTR name,
     /* [in] */ ULONG32 flags,
     /* [out] */ CLRDATA_ENUM* handle)
@@ -1802,7 +1802,7 @@ ClrDataModule::StartEnumTypeDefinitionsByName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdStartType(name,
@@ -1825,16 +1825,16 @@ ClrDataModule::StartEnumTypeDefinitionsByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumTypeDefinitionByName( 
+ClrDataModule::EnumTypeDefinitionByName(
     /* [out][in] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataTypeDefinition **type)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         mdTypeDef token;
@@ -1861,15 +1861,15 @@ ClrDataModule::EnumTypeDefinitionByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumTypeDefinitionsByName( 
+ClrDataModule::EndEnumTypeDefinitionsByName(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdEnd(handle);
@@ -1886,9 +1886,9 @@ ClrDataModule::EndEnumTypeDefinitionsByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumTypeInstancesByName( 
+ClrDataModule::StartEnumTypeInstancesByName(
     /* [in] */ LPCWSTR name,
     /* [in] */ ULONG32 flags,
     /* [in] */ IXCLRDataAppDomain *appDomain,
@@ -1897,7 +1897,7 @@ ClrDataModule::StartEnumTypeInstancesByName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdStartType(name,
@@ -1920,16 +1920,16 @@ ClrDataModule::StartEnumTypeInstancesByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumTypeInstanceByName( 
+ClrDataModule::EnumTypeInstanceByName(
     /* [out][in] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataTypeInstance **type)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         SplitName* split; split = FROM_CDENUM(SplitName, *handle);
@@ -1938,13 +1938,13 @@ ClrDataModule::EnumTypeInstanceByName(
         {
             AppDomain* appDomain;
             mdTypeDef token;
-            
+
             if ((status = SplitName::
                  CdNextDomainType(handle, &appDomain, &token)) != S_OK)
             {
                 break;
             }
-            
+
             // If the type hasn't been used there won't be anything
             // loaded.  It's not an instance, then, just keep going.
             if ((status = ClrDataTypeInstance::
@@ -1971,15 +1971,15 @@ ClrDataModule::EnumTypeInstanceByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumTypeInstancesByName( 
+ClrDataModule::EndEnumTypeInstancesByName(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdEnd(handle);
@@ -1996,9 +1996,9 @@ ClrDataModule::EndEnumTypeInstancesByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetTypeDefinitionByToken( 
+ClrDataModule::GetTypeDefinitionByToken(
     /* [in] */ mdTypeDef token,
     /* [out] */ IXCLRDataTypeDefinition **typeDefinition)
 {
@@ -2010,9 +2010,9 @@ ClrDataModule::GetTypeDefinitionByToken(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ClrDataTypeDefinition::
@@ -2034,9 +2034,9 @@ ClrDataModule::GetTypeDefinitionByToken(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumMethodDefinitionsByName( 
+ClrDataModule::StartEnumMethodDefinitionsByName(
     /* [in] */ LPCWSTR name,
     /* [in] */ ULONG32 flags,
     /* [out] */ CLRDATA_ENUM* handle)
@@ -2044,7 +2044,7 @@ ClrDataModule::StartEnumMethodDefinitionsByName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdStartMethod(name,
@@ -2068,16 +2068,16 @@ ClrDataModule::StartEnumMethodDefinitionsByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumMethodDefinitionByName( 
+ClrDataModule::EnumMethodDefinitionByName(
     /* [out][in] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataMethodDefinition **method)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         mdMethodDef token;
@@ -2104,15 +2104,15 @@ ClrDataModule::EnumMethodDefinitionByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumMethodDefinitionsByName( 
+ClrDataModule::EndEnumMethodDefinitionsByName(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdEnd(handle);
@@ -2129,9 +2129,9 @@ ClrDataModule::EndEnumMethodDefinitionsByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumMethodInstancesByName( 
+ClrDataModule::StartEnumMethodInstancesByName(
     /* [in] */ LPCWSTR name,
     /* [in] */ ULONG32 flags,
     /* [in] */ IXCLRDataAppDomain* appDomain,
@@ -2140,7 +2140,7 @@ ClrDataModule::StartEnumMethodInstancesByName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdStartMethod(name,
@@ -2164,16 +2164,16 @@ ClrDataModule::StartEnumMethodInstancesByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumMethodInstanceByName( 
+ClrDataModule::EnumMethodInstanceByName(
     /* [out][in] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataMethodInstance **method)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         SplitName* split; split = FROM_CDENUM(SplitName, *handle);
@@ -2216,15 +2216,15 @@ ClrDataModule::EnumMethodInstanceByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumMethodInstancesByName( 
+ClrDataModule::EndEnumMethodInstancesByName(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdEnd(handle);
@@ -2241,9 +2241,9 @@ ClrDataModule::EndEnumMethodInstancesByName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetMethodDefinitionByToken( 
+ClrDataModule::GetMethodDefinitionByToken(
     /* [in] */ mdMethodDef token,
     /* [out] */ IXCLRDataMethodDefinition **methodDefinition)
 {
@@ -2255,9 +2255,9 @@ ClrDataModule::GetMethodDefinitionByToken(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ClrDataMethodDefinition::
@@ -2279,9 +2279,9 @@ ClrDataModule::GetMethodDefinitionByToken(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumDataByName( 
+ClrDataModule::StartEnumDataByName(
     /* [in] */ LPCWSTR name,
     /* [in] */ ULONG32 flags,
     /* [in] */ IXCLRDataAppDomain* appDomain,
@@ -2291,7 +2291,7 @@ ClrDataModule::StartEnumDataByName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdStartField(name,
@@ -2321,16 +2321,16 @@ ClrDataModule::StartEnumDataByName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumDataByName( 
+ClrDataModule::EnumDataByName(
     /* [out][in] */ CLRDATA_ENUM* handle,
     /* [out] */ IXCLRDataValue **value)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdNextDomainField(m_dac, handle, value);
@@ -2347,15 +2347,15 @@ ClrDataModule::EnumDataByName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumDataByName( 
+ClrDataModule::EndEnumDataByName(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = SplitName::CdEnd(handle);
@@ -2372,9 +2372,9 @@ ClrDataModule::EndEnumDataByName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetName( 
+ClrDataModule::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
@@ -2382,7 +2382,7 @@ ClrDataModule::GetName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ConvertUtf8(m_module->GetSimpleName(),
@@ -2400,9 +2400,9 @@ ClrDataModule::GetName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetFileName( 
+ClrDataModule::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
     /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
@@ -2410,7 +2410,7 @@ ClrDataModule::GetFileName(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         COUNT_T _nameLen;
@@ -2445,15 +2445,15 @@ ClrDataModule::GetFileName(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetVersionId( 
+ClrDataModule::GetVersionId(
     /* [out] */ GUID* vid)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_module->GetFile()->HasMetadata())
@@ -2463,7 +2463,7 @@ ClrDataModule::GetVersionId(
         else
         {
             GUID mdVid;
-            
+
             status = m_module->GetMDImport()->GetScopeProps(NULL, &mdVid);
             if (SUCCEEDED(status))
             {
@@ -2483,15 +2483,15 @@ ClrDataModule::GetVersionId(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::GetFlags( 
+ClrDataModule::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *flags = 0;
@@ -2519,15 +2519,15 @@ ClrDataModule::GetFlags(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::IsSameObject( 
+ClrDataModule::IsSameObject(
     /* [in] */ IXCLRDataModule* mod)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = (PTR_HOST_TO_TADDR(m_module) ==
@@ -2547,15 +2547,15 @@ ClrDataModule::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::StartEnumExtents( 
+ClrDataModule::StartEnumExtents(
     /* [out] */ CLRDATA_ENUM* handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_setExtents)
@@ -2567,9 +2567,9 @@ ClrDataModule::StartEnumExtents(
                 status = E_INVALIDARG;
                 goto Exit;
             }
-            
+
             CLRDATA_MODULE_EXTENT* extent = m_extents;
-        
+
             if (file->GetLoadedImageContents() != NULL)
             {
                 extent->base =
@@ -2606,16 +2606,16 @@ ClrDataModule::StartEnumExtents(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EnumExtent( 
+ClrDataModule::EnumExtent(
     /* [in, out] */ CLRDATA_ENUM* handle,
     /* [out] */ CLRDATA_MODULE_EXTENT *extent)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         CLRDATA_MODULE_EXTENT* curExtent =
@@ -2651,13 +2651,13 @@ ClrDataModule::EnumExtent(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::EndEnumExtents( 
+ClrDataModule::EndEnumExtents(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // Enumerator holds no resources.
@@ -2676,7 +2676,7 @@ ClrDataModule::EndEnumExtents(
     return status;
 }
 
-HRESULT 
+HRESULT
 ClrDataModule::RequestGetModulePtr(
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -2697,10 +2697,10 @@ ClrDataModule::RequestGetModulePtr(
     DacpGetModuleAddress * outGMA = reinterpret_cast<DacpGetModuleAddress *> (outBuffer);
 
     outGMA->ModulePtr = TO_CDADDR(PTR_HOST_TO_TADDR(m_module));
-    return S_OK;    
+    return S_OK;
 }
 
-HRESULT 
+HRESULT
 ClrDataModule::RequestGetModuleData(
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -2752,11 +2752,11 @@ ClrDataModule::RequestGetModuleData(
         outGMD->InMemoryPdbSize = range.Size();
     }
 
-    return S_OK;    
+    return S_OK;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::Request( 
+ClrDataModule::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -2766,7 +2766,7 @@ ClrDataModule::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -2792,7 +2792,7 @@ ClrDataModule::Request(
         case DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA:
             status = RequestGetModuleData(inBufferSize, inBuffer, outBufferSize, outBuffer);
             break;
-                
+
         default:
             status = E_INVALIDARG;
             break;
@@ -2812,7 +2812,7 @@ ClrDataModule::Request(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataModule::SetJITCompilerFlags( 
+ClrDataModule::SetJITCompilerFlags(
     /* [in] */ DWORD dwFlags)
 {
     // Note: this is similar but not equivalent to the DacDbi version of this function
@@ -2869,14 +2869,14 @@ ClrDataModule::SetJITCompilerFlags(
     DAC_LEAVE();
     return hr;
 }
-    
+
 HRESULT
 ClrDataModule::GetMdInterface(PVOID* retIface)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_mdImport == NULL)
@@ -2886,7 +2886,7 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
                 status = E_NOINTERFACE;
                 goto Exit;
             }
-        
+
             //
             // Make sure internal MD is in RW format.
             //
@@ -2917,7 +2917,7 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
                 goto Exit;
             }
         }
-        
+
         _ASSERTE(m_mdImport != NULL);
         m_mdImport->AddRef();
         *retIface = m_mdImport;
@@ -3002,13 +3002,13 @@ ClrDataMethodDefinition::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetTypeDefinition( 
+ClrDataMethodDefinition::GetTypeDefinition(
     /* [out] */ IXCLRDataTypeDefinition **typeDefinition)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         TypeHandle typeHandle;
@@ -3027,7 +3027,7 @@ ClrDataMethodDefinition::GetTypeDefinition(
                 goto Exit;
             }
         }
-        
+
         *typeDefinition = new (nothrow)
             ClrDataTypeDefinition(m_dac, m_module, token, typeHandle);
         status = *typeDefinition ? S_OK : E_OUTOFMEMORY;
@@ -3048,14 +3048,14 @@ ClrDataMethodDefinition::GetTypeDefinition(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::StartEnumInstances( 
+ClrDataMethodDefinition::StartEnumInstances(
     /* [in] */ IXCLRDataAppDomain* appDomain,
     /* [out] */ CLRDATA_ENUM *handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_methodDesc)
@@ -3081,16 +3081,16 @@ ClrDataMethodDefinition::StartEnumInstances(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::EnumInstance( 
+ClrDataMethodDefinition::EnumInstance(
     /* [out][in] */ CLRDATA_ENUM *handle,
     /* [out] */ IXCLRDataMethodInstance **instance)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = EnumMethodInstances::CdNext(m_dac, handle, instance);
@@ -3107,15 +3107,15 @@ ClrDataMethodDefinition::EnumInstance(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::EndEnumInstances( 
+ClrDataMethodDefinition::EndEnumInstances(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = EnumMethodInstances::CdEnd(handle);
@@ -3132,9 +3132,9 @@ ClrDataMethodDefinition::EndEnumInstances(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetName( 
+ClrDataMethodDefinition::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
@@ -3146,9 +3146,9 @@ ClrDataMethodDefinition::GetName(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_methodDesc)
@@ -3159,7 +3159,7 @@ ClrDataMethodDefinition::GetName(
         else
         {
             char methName[MAX_CLASSNAME_LENGTH];
-            
+
             status = GetFullMethodNameFromMetadata(m_module->GetMDImport(),
                                                    m_token,
                                                    NumItems(methName),
@@ -3182,20 +3182,20 @@ ClrDataMethodDefinition::GetName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetTokenAndScope( 
+ClrDataMethodDefinition::GetTokenAndScope(
     /* [out] */ mdToken *token,
     /* [out] */ IXCLRDataModule **Module)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = S_OK;
-        
+
         if (token)
         {
             *token = m_token;
@@ -3222,13 +3222,13 @@ ClrDataMethodDefinition::GetTokenAndScope(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetFlags( 
+ClrDataMethodDefinition::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = GetSharedMethodFlags(m_methodDesc, flags);
@@ -3245,15 +3245,15 @@ ClrDataMethodDefinition::GetFlags(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::IsSameObject( 
+ClrDataMethodDefinition::IsSameObject(
     /* [in] */ IXCLRDataMethodDefinition* method)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_methodDesc)
@@ -3284,15 +3284,15 @@ ClrDataMethodDefinition::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetLatestEnCVersion( 
+ClrDataMethodDefinition::GetLatestEnCVersion(
     /* [out] */ ULONG32* version)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -3313,13 +3313,13 @@ ClrDataMethodDefinition::GetLatestEnCVersion(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::StartEnumExtents( 
+ClrDataMethodDefinition::StartEnumExtents(
     /* [out] */ CLRDATA_ENUM *handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         COR_ILMETHOD* ilMeth = GetIlMethod();
@@ -3338,16 +3338,16 @@ ClrDataMethodDefinition::StartEnumExtents(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::EnumExtent( 
+ClrDataMethodDefinition::EnumExtent(
     /* [out][in] */ CLRDATA_ENUM *handle,
     /* [out] */ CLRDATA_METHDEF_EXTENT *extent)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (*handle)
@@ -3363,7 +3363,7 @@ ClrDataMethodDefinition::EnumExtent(
             extent->type = CLRDATA_METHDEF_IL;
             // XXX Microsoft - EnC version.
             extent->enCVersion = 0;
-            
+
             status = S_OK;
         }
         else
@@ -3383,15 +3383,15 @@ ClrDataMethodDefinition::EnumExtent(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::EndEnumExtents( 
+ClrDataMethodDefinition::EndEnumExtents(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // Nothing to do.
@@ -3409,15 +3409,15 @@ ClrDataMethodDefinition::EndEnumExtents(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::GetCodeNotification( 
+ClrDataMethodDefinition::GetCodeNotification(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         JITNotifications jn(m_dac->GetHostJitNotificationTable());
@@ -3444,23 +3444,23 @@ ClrDataMethodDefinition::GetCodeNotification(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::SetCodeNotification( 
+ClrDataMethodDefinition::SetCodeNotification(
     /* [in] */ ULONG32 flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!IsValidMethodCodeNotification(flags))
         {
-            status = E_INVALIDARG;    
+            status = E_INVALIDARG;
         }
         else
-        {        
+        {
             JITNotifications jn(m_dac->GetHostJitNotificationTable());
             if (!jn.IsActive())
             {
@@ -3470,11 +3470,11 @@ ClrDataMethodDefinition::SetCodeNotification(
             {
                 TADDR modulePtr = PTR_HOST_TO_TADDR(m_module);
                 USHORT NType = jn.Requested(modulePtr, m_token);
-                
+
                 if (NType == flags)
                 {
                     // notification already set
-                    status = S_OK;  
+                    status = S_OK;
                 }
                 else
                 {
@@ -3489,7 +3489,7 @@ ClrDataMethodDefinition::SetCodeNotification(
                         // error setting notification
                         status = E_FAIL;
                     }
-                }                        
+                }
             }
         }
     }
@@ -3505,7 +3505,7 @@ ClrDataMethodDefinition::SetCodeNotification(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
 ClrDataMethodDefinition::GetRepresentativeEntryAddress(
     /* [out] */ CLRDATA_ADDRESS* addr)
@@ -3513,7 +3513,7 @@ ClrDataMethodDefinition::GetRepresentativeEntryAddress(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         COR_ILMETHOD* ilMeth = GetIlMethod();
@@ -3549,7 +3549,7 @@ ClrDataMethodDefinition::HasClassOrMethodInstantiation(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_methodDesc)
@@ -3576,7 +3576,7 @@ ClrDataMethodDefinition::HasClassOrMethodInstantiation(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodDefinition::Request( 
+ClrDataMethodDefinition::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -3586,7 +3586,7 @@ ClrDataMethodDefinition::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -3604,7 +3604,7 @@ ClrDataMethodDefinition::Request(
                 status = S_OK;
             }
             break;
-                
+
         default:
             status = E_INVALIDARG;
             break;
@@ -3641,7 +3641,7 @@ ClrDataMethodDefinition::GetIlMethod(void)
     {
         ULONG ilRva;
         ULONG implFlags;
-        
+
         if (FAILED(m_module->GetMDImport()->
             GetMethodImplProps(m_token, &ilRva, &implFlags)))
         {
@@ -3657,7 +3657,7 @@ ClrDataMethodDefinition::GetIlMethod(void)
         }
     }
 }
-        
+
 HRESULT
 ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
                                        Module* module,
@@ -3678,7 +3678,7 @@ ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
     }
 
     PREFIX_ASSUME(methDef || pubMethDef);
-    
+
     if (methDef)
     {
         *methDef = def;
@@ -3706,7 +3706,7 @@ ClrDataMethodDefinition::GetSharedMethodFlags(MethodDesc* methodDesc,
             (*flags) |= CLRDATA_METHOD_HAS_THIS;
         }
     }
-            
+
     return S_OK;
 }
 
@@ -3772,13 +3772,13 @@ ClrDataMethodInstance::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetTypeInstance( 
+ClrDataMethodInstance::GetTypeInstance(
     /* [out] */ IXCLRDataTypeInstance **typeInstance)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (!m_appDomain)
@@ -3807,15 +3807,15 @@ ClrDataMethodInstance::GetTypeInstance(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetDefinition( 
+ClrDataMethodInstance::GetDefinition(
     /* [out] */ IXCLRDataMethodDefinition **methodDefinition)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *methodDefinition = new (nothrow)
@@ -3837,20 +3837,20 @@ ClrDataMethodInstance::GetDefinition(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetTokenAndScope( 
+ClrDataMethodInstance::GetTokenAndScope(
     /* [out] */ mdToken *token,
     /* [out] */ IXCLRDataModule **mod)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = S_OK;
-        
+
         if (token)
         {
             *token = m_methodDesc->GetMemberDef();
@@ -3877,7 +3877,7 @@ ClrDataMethodInstance::GetTokenAndScope(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetName( 
+ClrDataMethodInstance::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
@@ -3889,9 +3889,9 @@ ClrDataMethodInstance::GetName(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = m_dac->GetFullMethodName(m_methodDesc, bufLen, nameLen, name);
@@ -3918,15 +3918,15 @@ ClrDataMethodInstance::GetName(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetFlags( 
+ClrDataMethodInstance::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = ClrDataMethodDefinition::
@@ -3946,13 +3946,13 @@ ClrDataMethodInstance::GetFlags(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::IsSameObject( 
+ClrDataMethodInstance::IsSameObject(
     /* [in] */ IXCLRDataMethodInstance* method)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         status = (PTR_HOST_TO_TADDR(m_appDomain) ==
@@ -3975,15 +3975,15 @@ ClrDataMethodInstance::IsSameObject(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetEnCVersion( 
+ClrDataMethodInstance::GetEnCVersion(
     /* [out] */ ULONG32* version)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -4004,13 +4004,13 @@ ClrDataMethodInstance::GetEnCVersion(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetNumTypeArguments( 
+ClrDataMethodInstance::GetNumTypeArguments(
     /* [out] */ ULONG32 *numTypeArgs)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -4028,16 +4028,16 @@ ClrDataMethodInstance::GetNumTypeArguments(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetTypeArgumentByIndex( 
+ClrDataMethodInstance::GetTypeArgumentByIndex(
     /* [in] */ ULONG32 index,
     /* [out] */ IXCLRDataTypeInstance **typeArg)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -4055,9 +4055,9 @@ ClrDataMethodInstance::GetTypeArgumentByIndex(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetILOffsetsByAddress( 
+ClrDataMethodInstance::GetILOffsetsByAddress(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 offsetsLen,
     /* [out] */ ULONG32 *offsetsNeeded,
@@ -4073,7 +4073,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
         ULONG32 numMap;
         ULONG32 codeOffset;
         ULONG32 hits = 0;
-        
+
 #ifdef _TARGET_ARM_
         address &= ~THUMB_CODE; // on ARM windbg passes in an address with the mode flag set... need to workaround
 #endif
@@ -4087,7 +4087,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
         {
             goto Exit;
         }
-        
+
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (codeOffset >= map[i].nativeStartOffset &&
@@ -4096,7 +4096,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
                  codeOffset < map[i].nativeEndOffset))
             {
                 hits++;
-                
+
                 if (offsetsLen && ilOffsets)
                 {
                     *ilOffsets = map[i].ilOffset;
@@ -4111,7 +4111,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
             *offsetsNeeded = hits;
         }
         status = hits ? S_OK : E_NOINTERFACE;
-        
+
     Exit: ;
     }
     EX_CATCH
@@ -4127,13 +4127,13 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
     {
         delete [] map;
     }
-    
+
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetAddressRangesByILOffset( 
+ClrDataMethodInstance::GetAddressRangesByILOffset(
     /* [in] */ ULONG32 ilOffset,
     /* [in] */ ULONG32 rangesLen,
     /* [out] */ ULONG32 *rangesNeeded,
@@ -4144,13 +4144,13 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
     bool mapAllocated = false;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ULONG32 numMap;
         CLRDATA_ADDRESS codeStart;
         ULONG32 hits = 0;
-        
+
         if ((status = m_dac->GetMethodNativeMap(m_methodDesc,
                                                 0,
                                                 &numMap,
@@ -4161,13 +4161,13 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
         {
             goto Exit;
         }
-        
+
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (map[i].ilOffset == ilOffset)
             {
                 hits++;
-                
+
                 if (rangesLen && addressRanges)
                 {
                     addressRanges->startAddress =
@@ -4193,7 +4193,7 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
             *rangesNeeded = hits;
         }
         status = hits ? S_OK : E_NOINTERFACE;
-        
+
     Exit: ;
     }
     EX_CATCH
@@ -4209,13 +4209,13 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
     {
         delete [] map;
     }
-    
+
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::GetILAddressMap( 
+ClrDataMethodInstance::GetILAddressMap(
     /* [in] */ ULONG32 mapLen,
     /* [out] */ ULONG32 *mapNeeded,
     /* [size_is][out] */ CLRDATA_IL_ADDRESS_MAP maps[  ])
@@ -4225,12 +4225,12 @@ ClrDataMethodInstance::GetILAddressMap(
     bool mapAllocated = false;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         ULONG32 numMap;
         CLRDATA_ADDRESS codeStart;
-        
+
         if ((status = m_dac->GetMethodNativeMap(m_methodDesc,
                                                 0,
                                                 &numMap,
@@ -4241,7 +4241,7 @@ ClrDataMethodInstance::GetILAddressMap(
         {
             goto Exit;
         }
-        
+
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (mapLen && maps)
@@ -4268,7 +4268,7 @@ ClrDataMethodInstance::GetILAddressMap(
             *mapNeeded = numMap;
         }
         status = numMap ? S_OK : E_NOINTERFACE;
-        
+
     Exit: ;
     }
     EX_CATCH
@@ -4284,19 +4284,19 @@ ClrDataMethodInstance::GetILAddressMap(
     {
         delete [] map;
     }
-    
+
     DAC_LEAVE();
     return status;
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::StartEnumExtents( 
+ClrDataMethodInstance::StartEnumExtents(
     /* [out] */ CLRDATA_ENUM *handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         METH_EXTENTS* extents;
@@ -4319,16 +4319,16 @@ ClrDataMethodInstance::StartEnumExtents(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::EnumExtent( 
+ClrDataMethodInstance::EnumExtent(
     /* [out][in] */ CLRDATA_ENUM *handle,
     /* [out] */ CLRDATA_ADDRESS_RANGE *extent)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         METH_EXTENTS* extents =
@@ -4357,15 +4357,15 @@ ClrDataMethodInstance::EnumExtent(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::EndEnumExtents( 
+ClrDataMethodInstance::EndEnumExtents(
     /* [in] */ CLRDATA_ENUM handle)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         delete FROM_CDENUM(METH_EXTENTS, handle);
@@ -4383,7 +4383,7 @@ ClrDataMethodInstance::EndEnumExtents(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
 ClrDataMethodInstance::GetRepresentativeEntryAddress(
     /* [out] */ CLRDATA_ADDRESS* addr)
@@ -4391,7 +4391,7 @@ ClrDataMethodInstance::GetRepresentativeEntryAddress(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_methodDesc->HasNativeCode())
@@ -4416,9 +4416,9 @@ ClrDataMethodInstance::GetRepresentativeEntryAddress(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataMethodInstance::Request( 
+ClrDataMethodInstance::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -4428,7 +4428,7 @@ ClrDataMethodInstance::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -4446,7 +4446,7 @@ ClrDataMethodInstance::Request(
                 status = S_OK;
             }
             break;
-                
+
         default:
             status = E_INVALIDARG;
             break;
@@ -4488,7 +4488,7 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
     }
 
     PREFIX_ASSUME(methInst || pubMethInst);
-    
+
     if (methInst)
     {
         *methInst = inst;
@@ -4500,7 +4500,7 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
 
     return S_OK;
 }
-    
+
 //----------------------------------------------------------------------------
 //
 // ClrDataExceptionState.
@@ -4571,13 +4571,13 @@ ClrDataExceptionState::Release(THIS)
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetFlags( 
+ClrDataExceptionState::GetFlags(
     /* [out] */ ULONG32 *flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *flags = m_flags;
@@ -4601,15 +4601,15 @@ ClrDataExceptionState::GetFlags(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetPrevious( 
+ClrDataExceptionState::GetPrevious(
     /* [out] */ IXCLRDataExceptionState **exState)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         if (m_prevExInfo)
@@ -4642,15 +4642,15 @@ ClrDataExceptionState::GetPrevious(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetManagedObject( 
+ClrDataExceptionState::GetManagedObject(
     /* [out] */ IXCLRDataValue **value)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         PTR_UNCHECKED_OBJECTREF throwRef(m_throwable);
@@ -4659,14 +4659,14 @@ ClrDataExceptionState::GetManagedObject(
             status = E_INVALIDARG;
             goto Exit;
         }
-            
+
         NativeVarLocation varLoc;
         ClrDataValue* RefVal;
 
         varLoc.addr = TO_CDADDR(m_throwable);
         varLoc.size = sizeof(TADDR);
         varLoc.contextReg = false;
-            
+
         RefVal = new (nothrow)
             ClrDataValue(m_dac,
                          m_appDomain,
@@ -4699,15 +4699,15 @@ ClrDataExceptionState::GetManagedObject(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetBaseType( 
+ClrDataExceptionState::GetBaseType(
     /* [out] */ CLRDataBaseExceptionType *type)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -4725,15 +4725,15 @@ ClrDataExceptionState::GetBaseType(
     DAC_LEAVE();
     return status;
 }
-    
+
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetCode( 
+ClrDataExceptionState::GetCode(
     /* [out] */ ULONG32 *code)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         // XXX Microsoft.
@@ -4751,9 +4751,9 @@ ClrDataExceptionState::GetCode(
     DAC_LEAVE();
     return status;
 }
-        
+
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::GetString( 
+ClrDataExceptionState::GetString(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *strLen,
     /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ])
@@ -4761,12 +4761,12 @@ ClrDataExceptionState::GetString(
     HRESULT status = E_FAIL;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         PTR_UNCHECKED_OBJECTREF throwRef(m_throwable);
         STRINGREF message = EXCEPTIONREF(*throwRef)->GetMessage();
- 
+
         if (message == NULL)
         {
             if (strLen)
@@ -4814,7 +4814,7 @@ ClrDataExceptionState::GetString(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::IsSameState( 
+ClrDataExceptionState::IsSameState(
     /* [in] */ EXCEPTION_RECORD64 *exRecord,
     /* [in] */ ULONG32 contextSize,
     /* [size_is][in] */ BYTE cxRecord[  ])
@@ -4824,7 +4824,7 @@ ClrDataExceptionState::IsSameState(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::IsSameState2( 
+ClrDataExceptionState::IsSameState2(
     /* [in] */ ULONG32 flags,
     /* [in] */ EXCEPTION_RECORD64 *exRecord,
     /* [in] */ ULONG32 contextSize,
@@ -4837,9 +4837,9 @@ ClrDataExceptionState::IsSameState2(
     {
         return E_INVALIDARG;
     }
-    
+
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         PTR_EXCEPTION_RECORD infoExRecord;
@@ -4862,7 +4862,7 @@ ClrDataExceptionState::IsSameState2(
 
             goto Exit;
         }
-        
+
         infoExRecord = GetCurrentExceptionRecord();
 
         if ((TADDR)infoExRecord->ExceptionAddress ==
@@ -4893,7 +4893,7 @@ ClrDataExceptionState::GetTask(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         *task = new (nothrow)
@@ -4915,7 +4915,7 @@ ClrDataExceptionState::GetTask(
 }
 
 HRESULT STDMETHODCALLTYPE
-ClrDataExceptionState::Request( 
+ClrDataExceptionState::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -4925,7 +4925,7 @@ ClrDataExceptionState::Request(
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-    
+
     EX_TRY
     {
         switch(reqCode)
@@ -4972,7 +4972,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
     {
         return E_NOINTERFACE;
     }
-    
+
     ClrDataExStateType* exState;
     ClrDataExceptionState* exIf;
 
@@ -4981,7 +4981,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 #else
     exState = &(thread->GetExceptionState()->m_currentExInfo);
 #endif // FEATURE_EH_FUNCLETS
-            
+
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
                               thread->GetDomain(),
@@ -4996,7 +4996,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
     }
 
     PREFIX_ASSUME(exception || pubException);
-    
+
     if (exception)
     {
         *exception = exIf;
@@ -5009,7 +5009,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
     return S_OK;
 }
 
-PTR_EXCEPTION_RECORD 
+PTR_EXCEPTION_RECORD
 ClrDataExceptionState::GetCurrentExceptionRecord()
 {
     PTR_EXCEPTION_RECORD pExRecord = NULL;
@@ -5081,13 +5081,13 @@ EnumMethodDefinitions::Next(ClrDataAccess* dac,
         {
             return status;
         }
-            
+
         m_needMethodStart = false;
     }
 
  NextMethod:
     mdToken methodToken;
-    
+
     if ((status = m_methodEnum.NextToken(&methodToken, NULL, NULL)) != S_OK)
     {
         if (status == S_FALSE)
@@ -5103,7 +5103,7 @@ EnumMethodDefinitions::Next(ClrDataAccess* dac,
     {
         ULONG ilRva;
         ULONG implFlags;
-            
+
         status = m_module->GetMDImport()->
             GetMethodImplProps(methodToken, &ilRva, &implFlags);
         if (FAILED(status))
@@ -5143,7 +5143,7 @@ EnumMethodDefinitions::CdStart(Module* mod,
                                CLRDATA_ENUM* handle)
 {
     HRESULT status;
-    
+
     *handle = NULL;
 
     if (!mod)
@@ -5163,7 +5163,7 @@ EnumMethodDefinitions::CdStart(Module* mod,
         delete iter;
         return status;
     }
-    
+
     *handle = TO_CDENUM(iter);
     return S_OK;
 }
@@ -5249,7 +5249,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
                            m_methodDesc->GetMemberDef(),    // token
                            m_methodDesc);                   // intial method desc
     }
-    
+
  NextMethod:
     {
         // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
@@ -5284,7 +5284,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
         *handle = 0;
         return S_FALSE;
     }
-    
+
     EnumMethodInstances* iter = new (nothrow)
         EnumMethodInstances(methodDesc, appDomain);
     if (iter)

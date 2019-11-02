@@ -124,7 +124,7 @@ LOCAL_LABEL(LFloatingPointReturnDone):
 LOCAL_LABEL(LReturnDone):
 
 #ifdef _DEBUG
-        // trash the floating point registers to ensure that the HFA return values 
+        // trash the floating point registers to ensure that the HFA return values
         // won't survive by accident
         vldm    sp, {d0-d3}
 #endif
@@ -139,9 +139,9 @@ LOCAL_LABEL(LReturnDone):
 // This helper routine is where returns for irregular tail calls end up
 // so they can dynamically pop their stack arguments.
 //-----------------------------------------------------------------------------
-// 
+//
 // Stack Layout (stack grows up, 0 at the top, offsets relative to frame pointer, r7):
-// 
+//
 // sp ->     callee stack arguments
 //           :
 //           :
@@ -170,10 +170,10 @@ LOCAL_LABEL(LReturnDone):
         // This prolog is never executed, but we keep it here for reference
         // and for the unwind data it generates
         //
-        
+
         // Spill callee saved registers and return address.
         PROLOG_PUSH         "{r4-r11,lr}"
-        
+
         PROLOG_STACK_SAVE_OFFSET   r7, #12
 
         //
@@ -184,7 +184,7 @@ LOCAL_LABEL(LReturnDone):
         // PROLOG_STACK_ALLOC  0x0C
         //
         // Set r11 for frame chain
-        //add     r11, r7, 0x1C 
+        //add     r11, r7, 0x1C
         //
         // Set the vtable for TailCallFrame
         //bl      TCF_GETMETHODFRAMEVPTR
@@ -198,7 +198,7 @@ LOCAL_LABEL(LReturnDone):
         // and initialize r5 & r6 for unlinking later
         //CALL_GETTHREAD
         //mov     r6, r0
-        //ldr     r5, [r6, #Thread__m_pFrame]        
+        //ldr     r5, [r6, #Thread__m_pFrame]
         //str     r5, [r7, #-4]
         //sub     r0, r7, 8
         //str     r0, [r6, #Thread__m_pFrame]
@@ -238,13 +238,13 @@ LOCAL_LABEL(GoodGSCookie):
         //
         str     r5, [r6, #Thread__m_pFrame]
 
-        // 
+        //
         // epilog
         //
         EPILOG_STACK_RESTORE_OFFSET   r7, #12
         EPILOG_POP              "{r4-r11,lr}"
         bx lr
-        
+
     NESTED_END TailCallHelperStub, _TEXT
 
 // ------------------------------------------------------------------
@@ -589,7 +589,7 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
     //     UINT64  d[8];
     // };
     // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function 
+    // void       *probeSp;    // stack pointer of managed function
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
@@ -632,7 +632,7 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
     //     UINT64  d[8];
     // };
     // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function 
+    // void       *probeSp;    // stack pointer of managed function
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
@@ -675,7 +675,7 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
     //     UINT64  d[8];
     // };
     // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function 
+    // void       *probeSp;    // stack pointer of managed function
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
@@ -968,7 +968,7 @@ LOCAL_LABEL(stackProbe_loop):
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     PATCH_LABEL StubDispatchFixupPatchLabel
     bx   r12
- 
+
     NESTED_END StubDispatchFixupStub, _TEXT
 #endif // FEATURE_PREJIT
 
@@ -1060,7 +1060,7 @@ LOCAL_LABEL(CallCppHelper3):
 // ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
     LEAF_ENTRY JIT_Stelem_Ref, _TEXT
-    
+
     // We retain arguments as they were passed and use r0 == array// r1 == idx// r2 == val
 
     // check for null array
@@ -1095,7 +1095,7 @@ LOCAL_LABEL(AssigningNull):
     adds    r0, r1, LSL #2               // r0 = r0 + (r1 x 4) = array->m_array[idx]
     str     r2, [r0, #PtrArray__m_Array] // array->m_array[idx] = val
     bx      lr
-   
+
 LOCAL_LABEL(ThrowNullReferenceException):
     // Tail call JIT_InternalThrow(NullReferenceException)
     ldr     r0, =CORINFO_NullReferenceException_ASM
@@ -1117,14 +1117,14 @@ LOCAL_LABEL(ThrowIndexOutOfRangeException):
     PROLOG_PUSH {lr}
     PROLOG_PUSH {r0-r2}
 
-    CHECK_STACK_ALIGNMENT 
+    CHECK_STACK_ALIGNMENT
 
     // allow in case val can be casted to array element type
     // call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
     mov     r1, r12 // array->GetArrayElementTypeHandle()
     mov     r0, r2
     bl      C_FUNC(ObjIsInstanceOfCached)
-    cmp     r0, TypeHandle_CanCast 
+    cmp     r0, TypeHandle_CanCast
     beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
 
     // check via raising frame
@@ -1132,7 +1132,7 @@ LOCAL_LABEL(NeedFrame):
     mov     r1, sp                  // r1 = &array
     adds    r0, sp, #8              // r0 = &val
     bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
- 
+
 LOCAL_LABEL(DoWrite):
     EPILOG_POP {r0-r2}
     EPILOG_POP {lr}
@@ -1154,7 +1154,7 @@ LOCAL_LABEL(DoWrite):
     b       C_FUNC(JIT_WriteBarrier)
 
     LEAF_END JIT_Stelem_DoWrite, _TEXT
-    
+
 #define __wbScratch r3
 #define pShadow r7
 
@@ -1165,33 +1165,33 @@ LOCAL_LABEL(DoWrite):
         __\name\()__g_ephemeral_high_offset = 0xffff
         __\name\()__g_card_table_offset = 0xffff
      .endm
-    
+
     .macro LOAD_GC_GLOBAL name, regName, globalName
 \name\()__\globalName\()_offset:
     __\name\()__\globalName\()_offset = (\name\()__\globalName\()_offset - \name)
         movw \regName, #0
         movt \regName, #0
     .endm
-    
+
     .macro UPDATE_GC_SHADOW name, ptrReg, valReg
         // Todo: implement, debugging helper
     .endm
-    
+
     .macro UPDATE_CARD_TABLE name, ptrReg, valReg, mp, postGrow, tmpReg
-            
+
         LOAD_GC_GLOBAL \name, __wbScratch, g_ephemeral_low
         cmp \valReg, __wbScratch
         blo 0f
-        
+
         .if(\postGrow)
             LOAD_GC_GLOBAL \name, __wbScratch, g_ephemeral_high
             cmp \valReg, __wbScratch
             bhs 0f
         .endif
-        
+
         LOAD_GC_GLOBAL \name, __wbScratch, g_card_table
         add __wbScratch, __wbScratch, \ptrReg, lsr #10
-        
+
         .if(\mp)
             ldrb \tmpReg, [__wbScratch]
             cmp \tmpReg, #0xff
@@ -1202,10 +1202,10 @@ LOCAL_LABEL(DoWrite):
             mov \tmpReg, #0xff
             strb \tmpReg, [__wbScratch]
         .endif
-        
+
 0:
     .endm
-    
+
     .macro CHECK_GC_HEAP_RANGE name, ptrReg, label
         LOAD_GC_GLOBAL \name, __wbScratch, g_lowest_address
         cmp \ptrReg, __wbScratch
@@ -1214,21 +1214,21 @@ LOCAL_LABEL(DoWrite):
         cmp \ptrReg, __wbScratch
         bhs \label
     .endm
-    
+
     .macro JIT_WRITEBARRIER name, mp, post
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
         .if(\mp)
             dmb
         .endif
-        
+
         str r1, [r0]
         UPDATE_GC_SHADOW \name, r0, r1
         UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
         bx lr
     LEAF_END_MARKED \name, _TEXT
     .endm
-    
+
     .macro JIT_CHECKEDWRITEBARRIER_SP name, post
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
@@ -1240,7 +1240,7 @@ LOCAL_LABEL(DoWrite):
         bx lr
     LEAF_END_MARKED \name, _TEXT
     .endm
-    
+
     .macro JIT_CHECKEDWRITEBARRIER_MP name, post
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
@@ -1255,14 +1255,14 @@ LOCAL_LABEL(DoWrite):
         bx lr
     LEAF_END_MARKED \name, _TEXT
     .endm
-    
+
     .macro JIT_BYREFWRITEBARRIER name, mp, post
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
         .if(\mp)
             dmb
         .endif
-        
+
         ldr r2, [r1]
         str r2, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
@@ -1274,7 +1274,7 @@ LOCAL_LABEL(DoWrite):
         bx lr
     LEAF_END_MARKED \name, _TEXT
     .endm
-    
+
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
         .word \name
         .word \name\()_End
@@ -1290,7 +1290,7 @@ LOCAL_LABEL(DoWrite):
     JIT_WRITEBARRIER JIT_WriteBarrier_SP_Post, 0, 1
     JIT_WRITEBARRIER JIT_WriteBarrier_MP_Pre,  1, 0
     JIT_WRITEBARRIER JIT_WriteBarrier_MP_Post, 1, 1
-    
+
     JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Pre,  0
     JIT_CHECKEDWRITEBARRIER_SP JIT_CheckedWriteBarrier_SP_Post, 1
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  0
@@ -1300,7 +1300,7 @@ LOCAL_LABEL(DoWrite):
     JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Post, 0, 1
     JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Pre,  1, 0
     JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Post, 1, 1
-    
+
 //    .section .clrwb, "d"
 g_rgWriteBarrierDescriptors:
 
@@ -1308,22 +1308,22 @@ g_rgWriteBarrierDescriptors:
     JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_SP_Post
     JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_WriteBarrier_MP_Post
-    
+
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Post
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Post
-    
+
     JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Post
     JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Post
-    
+
     // Sentinel value
     .word 0
-    
+
 //    .text
-    
+
     .global g_rgWriteBarrierDescriptors
 
 #ifdef FEATURE_READYTORUN

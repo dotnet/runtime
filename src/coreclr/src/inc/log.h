@@ -26,7 +26,7 @@ enum {
 };
 
 
-#define LL_EVERYTHING  10   
+#define LL_EVERYTHING  10
 #define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trival run
 #define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trival run
 #define LL_INFO10000    7       // can be expected to generate 10,000 logs per small but not trival run

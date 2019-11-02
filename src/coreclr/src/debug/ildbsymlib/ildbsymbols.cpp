@@ -76,7 +76,7 @@ STDAPI IldbSymbolsGetClassObject(REFCLSID rclsid, REFIID riid, void** ppvObject)
 //*****************************************************************************
 // QueryInterface is called to pick a v-table on the co-class.
 //*****************************************************************************
-HRESULT STDMETHODCALLTYPE CIldbClassFactory::QueryInterface( 
+HRESULT STDMETHODCALLTYPE CIldbClassFactory::QueryInterface(
     REFIID      riid,
     void        **ppvObject)
 {
@@ -113,7 +113,7 @@ HRESULT STDMETHODCALLTYPE CIldbClassFactory::QueryInterface(
 // this class was created in the first place.  The returned pointer is the
 // v-table matching the IID if there.
 //*****************************************************************************
-HRESULT STDMETHODCALLTYPE CIldbClassFactory::CreateInstance( 
+HRESULT STDMETHODCALLTYPE CIldbClassFactory::CreateInstance(
     IUnknown    *pUnkOuter,
     REFIID      riid,
     void        **ppvObject)
@@ -136,7 +136,7 @@ HRESULT STDMETHODCALLTYPE CIldbClassFactory::CreateInstance(
     return (hr);
 }
 
-// Version of CreateInstance called directly from clients 
+// Version of CreateInstance called directly from clients
 STDAPI IldbSymbolsCreateInstance(REFCLSID rclsid, REFIID riid, void** ppvIUnknown)
 {
     IClassFactory *pClassFactory = NULL;
@@ -148,7 +148,7 @@ STDAPI IldbSymbolsCreateInstance(REFCLSID rclsid, REFIID riid, void** ppvIUnknow
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE CIldbClassFactory::LockServer( 
+HRESULT STDMETHODCALLTYPE CIldbClassFactory::LockServer(
     BOOL        fLock)
 {
     return (S_OK);

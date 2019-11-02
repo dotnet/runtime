@@ -13,7 +13,7 @@ inline BOOL MethodDesc::HasTemporaryEntryPoint()
     return GetMethodDescChunk()->HasTemporaryEntryPoints();
 }
 
-inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const 
+inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;

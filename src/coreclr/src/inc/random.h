@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 // random.h
-// 
+//
 
-// 
+//
 // Defines a random number generator, initially from the System.Random code in the BCL.  If you notice any problems,
 // please compare to the implementation in src\mscorlib\src\system\random.cs.
 //
@@ -44,11 +44,11 @@
 #endif //!DO_NOT_DISABLE_RAND && !USE_STL
 
 
-class CLRRandom 
+class CLRRandom
 {
 private:
     //
-    // Private Constants 
+    // Private Constants
     //
     static const int MBIG =  INT_MAX;
     static const int MSEED = 161803398;
@@ -75,7 +75,7 @@ public:
         initialized = false;
     }
 
-    void Init() 
+    void Init()
     {
         LIMITED_METHOD_CONTRACT;
         LARGE_INTEGER time;
@@ -84,7 +84,7 @@ public:
         Init((int)time.u.LowPart ^ GetCurrentThreadId() ^ GetCurrentProcessId());
     }
 
-    void Init(int Seed) 
+    void Init(int Seed)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -115,7 +115,7 @@ public:
         initialized = true;
     }
 
-    bool IsInitialized() 
+    bool IsInitialized()
     {
         LIMITED_METHOD_CONTRACT;
         return initialized;
@@ -132,7 +132,7 @@ private:
     **Arguments: None
     **Exceptions: None
     ==============================================================================*/
-    double Sample() 
+    double Sample()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -141,7 +141,7 @@ private:
         return (InternalSample()*(1.0/MBIG));
     }
 
-    int InternalSample() 
+    int InternalSample()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -154,7 +154,7 @@ private:
 
         retVal = SeedArray[locINext]-SeedArray[locINextp];
 
-        if (retVal == MBIG) retVal--;          
+        if (retVal == MBIG) retVal--;
         if (retVal<0) retVal+=MBIG;
 
         SeedArray[locINext]=retVal;
@@ -165,11 +165,11 @@ private:
         return retVal;
     }
 
-    double GetSampleForLargeRange() 
+    double GetSampleForLargeRange()
     {
         LIMITED_METHOD_CONTRACT;
 
-        // The distribution of double value returned by Sample 
+        // The distribution of double value returned by Sample
         // is not distributed well enough for a large range.
         // If we use Sample for a range [Int32.MinValue..Int32.MaxValue)
         // We will end up getting even numbers only.
@@ -182,14 +182,14 @@ private:
         }
         double d = result;
         d += (INT_MAX - 1); // get a number in range [0 .. 2 * Int32MaxValue - 1)
-        d /= 2*(unsigned int)INT_MAX - 1  ;              
+        d /= 2*(unsigned int)INT_MAX - 1  ;
         return d;
     }
 
 public:
     //
     // Public Instance Methods
-    // 
+    //
 
 
     /*=====================================Next=====================================
@@ -197,7 +197,7 @@ public:
     **Arguments: None
     **Exceptions: None.
     ==============================================================================*/
-    int Next() 
+    int Next()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);
@@ -211,8 +211,8 @@ public:
     **           maxValue -- One greater than the greatest legal return value.
     **Exceptions: None.
     ==============================================================================*/
-    int Next(int minValue, int maxValue) 
-    {        
+    int Next(int minValue, int maxValue)
+    {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);
         _ASSERTE(minValue < maxValue);
@@ -220,9 +220,9 @@ public:
         LONGLONG range = (LONGLONG)maxValue-minValue;
         double result;
 
-        if( range <= (LONGLONG)INT_MAX) 
+        if( range <= (LONGLONG)INT_MAX)
             result = (Sample() * range) + minValue;
-        else 
+        else
             result = (GetSampleForLargeRange() * range) + minValue;
 
         _ASSERTE(result >= minValue && result < maxValue);
@@ -235,7 +235,7 @@ public:
     **Arguments: maxValue -- One more than the greatest legal return value.
     **Exceptions: None.
     ==============================================================================*/
-    int Next(int maxValue) 
+    int Next(int maxValue)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);
@@ -250,7 +250,7 @@ public:
     **Arguments: None
     **Exceptions: None
     ==============================================================================*/
-    double NextDouble() 
+    double NextDouble()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);
@@ -271,7 +271,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);
         for (int i=0; i<length; i++) {
-            buffer[i]=(BYTE)(InternalSample()%(256)); 
+            buffer[i]=(BYTE)(InternalSample()%(256));
         }
     }
 };

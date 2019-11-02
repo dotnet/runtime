@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: ShimLocalDataTarget.cpp
 //
 //*****************************************************************************
 #include "stdafx.h"
 #include "safewrap.h"
 
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 
@@ -37,16 +37,16 @@ public:
     // ICorDebugMutableDataTarget.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetPlatform( 
+    virtual HRESULT STDMETHODCALLTYPE GetPlatform(
         CorDebugPlatform *pPlatform);
 
-    virtual HRESULT STDMETHODCALLTYPE ReadVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE ReadVirtual(
         CORDB_ADDRESS address,
         BYTE * pBuffer,
         ULONG32 request,
         ULONG32 *pcbRead);
 
-    virtual HRESULT STDMETHODCALLTYPE WriteVirtual( 
+    virtual HRESULT STDMETHODCALLTYPE WriteVirtual(
         CORDB_ADDRESS address,
         const BYTE * pBuffer,
         ULONG32 request);
@@ -78,16 +78,16 @@ private:
 // Determines whether the target and host are running on compatible platforms.
 // Arguments:
 //     input: hTargetProcess - handle for the target process
-// Return Value: TRUE iff both target and host are both Wow64 or neither is. 
+// Return Value: TRUE iff both target and host are both Wow64 or neither is.
 // Note: throws
 BOOL CompatibleHostAndTargetPlatforms(HANDLE hTargetProcess)
 {
-#if defined(FEATURE_PAL)    
+#if defined(FEATURE_PAL)
     return TRUE;
 #else
     // get the platform for the host process
     BOOL fHostProcessIsWow64 = FALSE;
-    BOOL fSuccess = FALSE;            
+    BOOL fSuccess = FALSE;
     HANDLE hHostProcess = GetCurrentProcess();
 
     fSuccess = IsWow64Process(hHostProcess, &fHostProcessIsWow64);
@@ -98,7 +98,7 @@ BOOL CompatibleHostAndTargetPlatforms(HANDLE hTargetProcess)
     {
         ThrowHR(HRESULT_FROM_GetLastError());
     }
-    
+
     //  get the platform for the target process
     if (hTargetProcess == NULL)
     {
@@ -135,7 +135,7 @@ BOOL CompatibleHostAndTargetPlatforms(HANDLE hTargetProcess)
 
 //---------------------------------------------------------------------------------------
 //
-// ctor for ShimLocalDataTarget. 
+// ctor for ShimLocalDataTarget.
 //
 // Arguments:
 //      processId - pid of live process.
@@ -145,7 +145,7 @@ BOOL CompatibleHostAndTargetPlatforms(HANDLE hTargetProcess)
 //    Shim takes ownership of handle hProcess.
 //
 
-ShimLocalDataTarget::ShimLocalDataTarget(DWORD processId, HANDLE hProcess)    
+ShimLocalDataTarget::ShimLocalDataTarget(DWORD processId, HANDLE hProcess)
 {
     m_ref = 0;
 
@@ -160,7 +160,7 @@ ShimLocalDataTarget::ShimLocalDataTarget(DWORD processId, HANDLE hProcess)
 
 //---------------------------------------------------------------------------------------
 //
-// dctor for ShimLocalDataTarget. 
+// dctor for ShimLocalDataTarget.
 //
 ShimLocalDataTarget::~ShimLocalDataTarget()
 {
@@ -214,9 +214,9 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     HRESULT hr = S_OK;
     HANDLE hProcess = NULL;
     ShimLocalDataTarget * pLocalDataTarget = NULL;
-    
+
     *ppDataTarget = NULL;
-    
+
     hProcess = OpenProcess(
         PROCESS_DUP_HANDLE        |
         PROCESS_QUERY_INFORMATION |
@@ -269,19 +269,19 @@ Label_Exit:
             CloseHandle(hProcess);
         }
         delete pLocalDataTarget;
-    }    
+    }
 
     return hr;
 }
 
 // impl of interface method ICorDebugDataTarget::GetPlatform
 HRESULT STDMETHODCALLTYPE
-ShimLocalDataTarget::GetPlatform( 
+ShimLocalDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
 #ifdef FEATURE_PAL
 #error ShimLocalDataTarget is not implemented on PAL systems yet
-#endif    
+#endif
     // Assume that we're running on Windows for now.
 #if defined(DBG_TARGET_X86)
     *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
@@ -299,7 +299,7 @@ ShimLocalDataTarget::GetPlatform(
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
 HRESULT STDMETHODCALLTYPE
-ShimLocalDataTarget::ReadVirtual( 
+ShimLocalDataTarget::ReadVirtual(
     CORDB_ADDRESS address,
     PBYTE pBuffer,
     ULONG32 cbRequestSize,
@@ -348,7 +348,7 @@ ShimLocalDataTarget::ReadVirtual(
 
 // impl of interface method ICorDebugMutableDataTarget::WriteVirtual
 HRESULT STDMETHODCALLTYPE
-ShimLocalDataTarget::WriteVirtual( 
+ShimLocalDataTarget::WriteVirtual(
     CORDB_ADDRESS pAddress,
     const BYTE * pBuffer,
     ULONG32 cbRequestSize)
@@ -376,7 +376,7 @@ ShimLocalDataTarget::GetThreadContext(
     BYTE * pContext)
 {
     ReturnFailureIfStateNotOk();
-    // @dbgtodo - Ideally we should cache the thread handles so that we don't need to 
+    // @dbgtodo - Ideally we should cache the thread handles so that we don't need to
     // open and close the thread handles every time.
 
     HRESULT hr = E_FAIL;
@@ -385,10 +385,10 @@ ShimLocalDataTarget::GetThreadContext(
     {
         return E_INVALIDARG;
     }
-    
+
     HandleHolder hThread = OpenThread(
-        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION , 
-        FALSE, // thread handle is not inheritable. 
+        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION ,
+        FALSE, // thread handle is not inheritable.
         dwThreadID);
 
     if (hThread != NULL)
@@ -421,9 +421,9 @@ ShimLocalDataTarget::SetThreadContext(
         return E_INVALIDARG;
     }
 
-    
+
     HandleHolder hThread = OpenThread(
-        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION, 
+        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION,
         FALSE, // thread handle is not inheritable.
         dwThreadID);
 
@@ -457,15 +457,15 @@ ShimLocalDataTarget::ContinueStatusChanged(
 //
 // Unwind the stack to the next frame.
 //
-// Return Value: 
+// Return Value:
 //     context filled in with the next frame
 //
-HRESULT STDMETHODCALLTYPE 
+HRESULT STDMETHODCALLTYPE
 ShimLocalDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
 {
 #ifndef FEATURE_PAL
     _ASSERTE(!"ShimLocalDataTarget::VirtualUnwind NOT IMPLEMENTED");
-#endif 
+#endif
     return E_NOTIMPL;
 }
 

@@ -9,10 +9,10 @@
 //#CLRRuntimeHostInternal_GetImageVersionString
 // External implementation of call to code:ICLRRuntimeHostInternal::GetImageVersionString.
 // Implemented in clr.dll and mscordbi.dll.
-HRESULT 
+HRESULT
 CLRRuntimeHostInternal_GetImageVersionString(
-  __out_ecount(*pcchBuffer) 
-    LPWSTR  wszBuffer, 
+  __out_ecount(*pcchBuffer)
+    LPWSTR  wszBuffer,
     DWORD * pcchBuffer);
 
 //----------------------------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ CLRRuntimeHostInternal_GetImageVersionString(
 static const char s_szWinRTPrefix[] = "<WinRT>";
 //static const size_t s_ncWinRTPrefix = sizeof(s_szWinRTPrefix) - 1;
 
-static const char s_szCLRPrefix[] = "<CLR>"; 
+static const char s_szCLRPrefix[] = "<CLR>";
 static const size_t s_ncCLRPrefix = sizeof(s_szCLRPrefix) - 1;
 
 // the public key token of the ecma key used by some framework assemblies (mscorlib, system, etc).
@@ -109,7 +109,7 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
     {
         pNewAdapter->m_scenario = kWinMDExp;
         szClrPortion++;
-        
+
         // skip the "CLR" prefix if present
         if ((szClrPortion[0] == 'c' || szClrPortion[0] == 'C') &&
             (szClrPortion[1] == 'l' || szClrPortion[1] == 'L') &&
@@ -159,7 +159,7 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
         LPCSTR arefName;
         USHORT usMajorVersion;
         IfFailGo(pNewAdapter->m_pRawMetaModelCommonRO->CommonGetAssemblyRefProps(mdar, &usMajorVersion, NULL, NULL, NULL, NULL, NULL, NULL, &arefName, NULL, NULL, NULL));
-        
+
         // We check for legacy Core library name since Windows.winmd references mscorlib and not System.Private.CoreLib
         if (0 == strcmp(arefName, LegacyCoreLibName_A))
         {
@@ -183,7 +183,7 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
 
 
     //------------------------------------------------------------------------------------------------
-    // All initialization tasks done. 
+    // All initialization tasks done.
     //------------------------------------------------------------------------------------------------
     *ppAdapter = pNewAdapter;
     hr = S_OK;
@@ -248,7 +248,7 @@ struct HiddenWinRTTypeInfo
 
 #define DEFINE_PROJECTED_TYPE(szWinRTNS, szWinRTName, szClrNS, szClrName, nClrAsmIdx, nContractAsmIdx, nWinRTIndex, nClrIndex, nWinMDTypeKind)
 
-static const HiddenWinRTTypeInfo g_rgHiddenWinRTTypes[] = 
+static const HiddenWinRTTypeInfo g_rgHiddenWinRTTypes[] =
 {
     #include "WinRTProjectedTypes.h"
 };
@@ -258,12 +258,12 @@ static const HiddenWinRTTypeInfo g_rgHiddenWinRTTypes[] =
 #undef DEFINE_PROJECTED_TYPE
 
 // Whether the WinRT type should be hidden from managed code
-// Example: helper class for projected jupiter structs 
+// Example: helper class for projected jupiter structs
 // (helper class interfaces are already private by default)
 BOOL WinMDAdapter::IsHiddenWinRTType(LPCSTR szWinRTNamespace, LPCSTR szWinRTName)
 {
     _ASSERTE(szWinRTNamespace && szWinRTName);
-    
+
     for (UINT i = 0; i < _countof(g_rgHiddenWinRTTypes); i++)
     {
         if (0 == strcmp(szWinRTNamespace, g_rgHiddenWinRTTypes[i].szWinRTNamespace))
@@ -274,8 +274,8 @@ BOOL WinMDAdapter::IsHiddenWinRTType(LPCSTR szWinRTNamespace, LPCSTR szWinRTName
             }
         }
     }
-    
-    return FALSE;    
+
+    return FALSE;
 }
 
 //------------------------------------------------------------------------------
@@ -317,8 +317,8 @@ struct RedirectedTypeInfo
         COMMA_INDEBUG(WinMDAdapter::RedirectedTypeIndex_ ## nClrIndex) \
     },
 
-static const RedirectedTypeInfo 
-g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] = 
+static const RedirectedTypeInfo
+g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
 {
 #include "WinRTProjectedTypes.h"
 
@@ -350,7 +350,7 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
     {
         _ASSERTE(g_rgRedirectedTypes[i].dbg_nIndex1 == i);
         _ASSERTE(g_rgRedirectedTypes[i].dbg_nIndex2 == i);
-        
+
         if (0 == strcmp(*pszNamespace, g_rgRedirectedTypes[i].szWinRTNamespace))
         {
             if (0 == strcmp(*pszName, g_rgRedirectedTypes[i].szWinRTName))
@@ -373,7 +373,7 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
     {
         _ASSERTE(g_rgRedirectedTypes[i].dbg_nIndex1 == i);
         _ASSERTE(g_rgRedirectedTypes[i].dbg_nIndex2 == i);
-        
+
         if (0 == wcscmp(*pwszFullName, g_rgRedirectedTypes[i].wszWinRTFullName))
         {
             *pwszFullName = g_rgRedirectedTypes[i].wszClrFullName;
@@ -398,7 +398,7 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
 /*static*/ BOOL WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszFullName)
 {
     _ASSERTE(pszFullName);
-   
+
     for (UINT i = 0; i < RedirectedTypeIndex_Count; i++)
     {
         if (0 == strcmp(g_rgRedirectedTypes[i].szClrFullName, *pszFullName))
@@ -414,7 +414,7 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
 {
     _ASSERTE(pszNamespace);
     _ASSERTE(pszName);
-   
+
     for (UINT i = 0; i < RedirectedTypeIndex_Count; i++)
     {
         if (0 == strcmp(g_rgRedirectedTypes[i].szClrNamespace, *pszNamespace) &&
@@ -422,7 +422,7 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
         {
             *pszNamespace   = g_rgRedirectedTypes[i].szWinRTNamespace;
             *pszName        = g_rgRedirectedTypes[i].szWinRTName;
-            
+
             return TRUE;
         }
     }
@@ -430,15 +430,15 @@ g_rgRedirectedTypes[WinMDAdapter::RedirectedTypeIndex_Count] =
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Returns names of redirected type 'index'.
-// 
+//
 //static
-void 
+void
 WinMDAdapter::GetRedirectedTypeInfo(
-    RedirectedTypeIndex index, 
-    LPCSTR *            pszClrNamespace, 
-    LPCSTR *            pszClrName, 
+    RedirectedTypeIndex index,
+    LPCSTR *            pszClrNamespace,
+    LPCSTR *            pszClrName,
     LPCSTR *            pszFullWinRTName,
     FrameworkAssemblyIndex * pFrameworkAssemblyIdx,
     ContractAssemblyIndex * pContractAssemblyIdx,
@@ -457,7 +457,7 @@ WinMDAdapter::GetRedirectedTypeInfo(
     if (pszFullWinRTName != nullptr)
     {
         *pszFullWinRTName = g_rgRedirectedTypes[index].szWinRTFullName;
-    }	
+    }
     if (pFrameworkAssemblyIdx != nullptr)
     {
         *pFrameworkAssemblyIdx = g_rgRedirectedTypes[index].nClrAssemblyIndex;
@@ -473,40 +473,40 @@ WinMDAdapter::GetRedirectedTypeInfo(
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Returns WinRT name of redirected type 'index'.
-// 
-//static 
-LPCWSTR 
+//
+//static
+LPCWSTR
 WinMDAdapter::GetRedirectedTypeFullWinRTName(
     RedirectedTypeIndex index)
 {
     _ASSERTE(index < RedirectedTypeIndex_Count);
-    
+
     return g_rgRedirectedTypes[index].wszWinRTFullName;
 }
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Returns CLR name of redirected type 'index'.
-// 
-//static 
-LPCSTR 
+//
+//static
+LPCSTR
 WinMDAdapter::GetRedirectedTypeFullCLRName(
     RedirectedTypeIndex index)
 {
     _ASSERTE(index < RedirectedTypeIndex_Count);
-    
+
     return g_rgRedirectedTypes[index].szClrFullName;
 }
 
 //------------------------------------------------------------------------------
-// 
+//
 // Get TypeRefTreatment value for a TypeRef
-// 
-HRESULT 
+//
+HRESULT
     WinMDAdapter::GetTypeDefTreatment(
-    mdTypeDef tkTypeDef, 
+    mdTypeDef tkTypeDef,
     ULONG *   pTypeDefTreatment)
 {
     HRESULT hr;
@@ -667,7 +667,7 @@ ErrExit:
 HRESULT WinMDAdapter::GetTypeDefProps(mdTypeDef    tkTypeDef,           // [IN] given typedef
     LPCUTF8     *pszNamespace,        // [OUT] return typedef namespace
     LPCUTF8     *pszName,             // [OUT] return typedef name
-    DWORD       *pdwFlags,            // [OUT] return typedef flags                                    
+    DWORD       *pdwFlags,            // [OUT] return typedef flags
     mdToken     *ptkExtends           // [OUT] Put base class TypeDef/TypeRef here.
     )
 {
@@ -733,15 +733,15 @@ HRESULT WinMDAdapter::GetTypeDefProps(mdTypeDef    tkTypeDef,           // [IN] 
         default:
             UNREACHABLE();
     }
-    
+
     if ((treatment & kTdMarkAbstractFlag) == kTdMarkAbstractFlag)
     {
         dwFlags |= tdAbstract;
-    }    
+    }
     if ((treatment & kTdMarkInternalFlag) == kTdMarkInternalFlag)
     {
         dwFlags &= ~tdPublic;
-    }    
+    }
 
     if (pszNamespace)
         *pszNamespace = szNamespace;
@@ -751,7 +751,7 @@ HRESULT WinMDAdapter::GetTypeDefProps(mdTypeDef    tkTypeDef,           // [IN] 
         *pdwFlags = dwFlags;
     if (ptkExtends)
         *ptkExtends = extends;
-    
+
     hr = S_OK;
 
  ErrExit:
@@ -769,22 +769,22 @@ HRESULT WinMDAdapter::FindTypeDef(
 )
 {
     HRESULT hr = S_OK;
-    
+
     _ASSERTE((szTypeDefName != NULL) && (ptkTypeDef != NULL));
-    _ASSERTE((TypeFromToken(tkEnclosingClass) == mdtTypeRef) || 
-             (TypeFromToken(tkEnclosingClass) == mdtTypeDef) || 
+    _ASSERTE((TypeFromToken(tkEnclosingClass) == mdtTypeRef) ||
+             (TypeFromToken(tkEnclosingClass) == mdtTypeDef) ||
              IsNilToken(tkEnclosingClass));
-    
+
     // initialize the output parameter
     *ptkTypeDef = mdTypeDefNil;
-    
+
     // Treat no namespace as empty string.
     if (szTypeDefNamespace == NULL)
         szTypeDefNamespace = "";
-    
+
     // Do a linear search
     ULONG        cTypeDefRecs = m_pRawMetaModelCommonRO->CommonGetRowCount(mdtTypeDef);
-    
+
     // Get TypeDef of the tkEnclosingClass passed in
     if (TypeFromToken(tkEnclosingClass) == mdtTypeRef)
     {
@@ -795,13 +795,13 @@ HRESULT WinMDAdapter::FindTypeDef(
         IfFailRet(this->GetTypeRefProps(tkEnclosingClass, &szNamespace, &szName, &tkResolutionScope));
         // Update tkEnclosingClass to TypeDef
         IfFailRet(this->FindTypeDef(
-                    szNamespace, 
-                    szName, 
-                    (TypeFromToken(tkResolutionScope) == mdtTypeRef) ? tkResolutionScope : mdTokenNil, 
+                    szNamespace,
+                    szName,
+                    (TypeFromToken(tkResolutionScope) == mdtTypeRef) ? tkResolutionScope : mdTokenNil,
                     &tkEnclosingClass));
         _ASSERTE(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
     }
-    
+
     // Search for the TypeDef
     for (ULONG i = 1; i <= cTypeDefRecs; i++)
     {
@@ -831,10 +831,10 @@ HRESULT WinMDAdapter::FindTypeDef(
             if (enclosingTypeDef != tkEnclosingClass)
             {
                 // Type was not nested by tkEnclosingClass
-                continue;     
+                continue;
             }
         }
-        
+
         if (strcmp(szTypeDefName, szName) == 0)
         {
             if (strcmp(szTypeDefNamespace, szNamespace) == 0)
@@ -849,14 +849,14 @@ HRESULT WinMDAdapter::FindTypeDef(
 }
 
 //------------------------------------------------------------------------------
-// 
+//
 // Modifies TypeRef names and resolution scope.
-// 
-HRESULT 
+//
+HRESULT
 WinMDAdapter::GetTypeRefProps(
     mdTypeRef tkTypeRef,
-    LPCSTR *  pszNamespace, 
-    LPCSTR *  pszName, 
+    LPCSTR *  pszNamespace,
+    LPCSTR *  pszName,
     mdToken * ptkResolutionScope)
 {
 
@@ -891,45 +891,45 @@ WinMDAdapter::GetTypeRefProps(
             case kTrSystemEnum:
                 IfFailGo(m_pRawMetaModelCommonRO->CommonGetTypeRefProps(tkTypeRef, pszNamespace, pszName, ptkResolutionScope));
                 break;
-    
+
             case kTrSystemDelegate:
                 if (pszNamespace != NULL)       *pszNamespace = "System";
                 if (pszName != NULL)            *pszName = "MulticastDelegate";
                 if (ptkResolutionScope) *ptkResolutionScope = mdtAssemblyRef | (m_rawAssemblyRefCount + ContractAssembly_SystemRuntime + 1);
                 break;
-    
+
             case kTrSystemAttribute:
                 if (pszNamespace != NULL)       *pszNamespace = "System";
-                if (pszName != NULL)            *pszName = "Attribute";                
+                if (pszName != NULL)            *pszName = "Attribute";
                 if (ptkResolutionScope != NULL) *ptkResolutionScope = mdtAssemblyRef | (m_rawAssemblyRefCount + ContractAssembly_SystemRuntime + 1);
                 break;
-    
+
             default:
                 _ASSERTE(!"Unknown treatment value.");
                 break;
-    
+
         }
     }
     hr = S_OK;
-    
+
 ErrExit:
     return hr;
 } // WinMDAdapter::GetTypeRefProps
 
 //------------------------------------------------------------------------------
-// 
+//
 // Get TypeRefTreatment value for a TypeRef
-// 
-HRESULT 
+//
+HRESULT
 WinMDAdapter::GetTypeRefTreatment(
-    mdTypeRef tkTypeRef, 
+    mdTypeRef tkTypeRef,
     ULONG *   pTypeRefTreatment)
 {
     HRESULT hr;
 
     _ASSERTE(pTypeRefTreatment != NULL);
     _ASSERTE(TypeFromToken(tkTypeRef) == mdtTypeRef);
-    
+
     ULONG typeRefIndex = RidFromToken(tkTypeRef) - 1;
     ULONG treatment;
     IfFailGo(m_typeRefTreatmentMemoTable.GetEntry(typeRefIndex, &treatment));
@@ -975,35 +975,35 @@ WinMDAdapter::GetTypeRefTreatment(
         IfFailGo(m_typeRefTreatmentMemoTable.InitEntry(typeRefIndex, &treatment));
     }
     _ASSERTE(treatment != kTrNotYetInitialized);
-    
+
     *pTypeRefTreatment = treatment;
     hr = S_OK;
-    
+
 ErrExit:
     return hr;
 } // WinMDAdapter::GetTypeRefTreatment
 
 
 //------------------------------------------------------------------------------
-// 
+//
 // Get TypeRef's index in array code:g_rgRedirectedTypes.
 // Returns S_OK if TypeRef is redirected and fills its index (*pIndex).
 // Returns S_FALSE if type is not well known redirected type (*pIndex is not initialized).
 
-// 
-HRESULT 
+//
+HRESULT
 WinMDAdapter::GetTypeRefRedirectedInfo(
-    mdTypeRef             tkTypeRef, 
+    mdTypeRef             tkTypeRef,
     RedirectedTypeIndex * pIndex)
 {
     _ASSERTE(TypeFromToken(tkTypeRef) == mdtTypeRef);
     _ASSERTE(pIndex != NULL);
-    
+
     HRESULT hr;
     ULONG   treatment;
     ULONG treatmentClass;
     IfFailGo(GetTypeRefTreatment(tkTypeRef, &treatment));
-    
+
     treatmentClass = treatment & kTrClassMask;
     if (treatmentClass == kTrClassWellKnownRedirected)
     {
@@ -1016,15 +1016,15 @@ WinMDAdapter::GetTypeRefRedirectedInfo(
         // Do not initialize *pIndex
         hr = S_FALSE;
     }
-    
+
 ErrExit:
     return hr;
 }
 
 //------------------------------------------------------------------------------
-// 
+//
 // Finds a typeref by its (transformed) name
-// 
+//
 HRESULT WinMDAdapter::FindTypeRef(  // S_OK or error.
         LPCSTR      szNamespace,            // [IN] Namespace for the TypeRef.
         LPCSTR      szName,                 // [IN] Name of the TypeRef.
@@ -1039,13 +1039,13 @@ HRESULT WinMDAdapter::FindTypeRef(  // S_OK or error.
 
     // initialize the output parameter
     *ptk = mdTypeRefNil;
-    
+
     // Treat no namespace as empty string.
     if (!szNamespace)
         szNamespace = "";
 
     ULONG       cTypeRefRecs = m_pRawMetaModelCommonRO->CommonGetRowCount(mdtTypeRef);
-    
+
     for (ULONG i = 1; i <= cTypeRefRecs; i++)
     {
         LPCUTF8     szNamespaceTmp;
@@ -1102,11 +1102,11 @@ HRESULT WinMDAdapter::ModifyExportedTypeName(
 //------------------------------------------------------------------------------
 
 // We must optionally add an assembly ref for System.Numerics.Vectors.dll since this assembly is not available
-// on downlevel platforms. 
+// on downlevel platforms.
 //
 // This function assumes that System.Numerics.Vectors.dll is the last assembly that
-// we add so if we find a reference then we return ContractAssembly_Count otherwise we return 
-// ContractAssembly_Count - 1. 
+// we add so if we find a reference then we return ContractAssembly_Count otherwise we return
+// ContractAssembly_Count - 1.
 int WinMDAdapter::GetExtraAssemblyRefCount()
 {
     HRESULT hr;
@@ -1147,7 +1147,7 @@ ErrExit:
     {
         // Setting m_extraAssemblyRefCount to ContractAssembly_Count so that this function returns a stable value and
         // that if there is a System.Numerics type ref that it does not have a dangling assembly ref
-        m_extraAssemblyRefCount = ContractAssembly_Count; 
+        m_extraAssemblyRefCount = ContractAssembly_Count;
     }
 
     return m_extraAssemblyRefCount;
@@ -1287,7 +1287,7 @@ HRESULT WinMDAdapter::ModifyMethodProps(mdMethodDef tkMethodDef, /*[in, out]*/ D
 
     dwAttr = pdwAttr ? *pdwAttr: 0;
     dwImplFlags = pdwImplFlags ? *pdwImplFlags : 0;
-    ulRVA = pulRVA ? *pulRVA : 0; 
+    ulRVA = pulRVA ? *pulRVA : 0;
 
     switch (mdTreatment & kMdTreatmentMask)
     {
@@ -1346,7 +1346,7 @@ HRESULT WinMDAdapter::ModifyMethodProps(mdMethodDef tkMethodDef, /*[in, out]*/ D
                 *pszName = "Dispose";
             }
             break;
-            
+
         default:
             UNREACHABLE();
 
@@ -1421,7 +1421,7 @@ ErrExit:
 
 HRESULT WinMDAdapter::ModifyMemberProps(mdToken tkMember, /*[in, out]*/ DWORD *pdwAttr, /* [in,out] */ DWORD *pdwImplFlags, /* [in,out] */ ULONG *pulRVA, LPCSTR *pszNewName)
 {
-    HRESULT hr; 
+    HRESULT hr;
     switch(TypeFromToken(tkMember))
     {
     case mdtMethodDef: IfFailGo(ModifyMethodProps(tkMember, pdwAttr, pdwImplFlags, pulRVA, pszNewName));
@@ -1435,7 +1435,7 @@ HRESULT WinMDAdapter::ModifyMemberProps(mdToken tkMember, /*[in, out]*/ DWORD *p
         // instead of IDisposable.Close
         //
         UINT nIndex = WinMDAdapter::RedirectedTypeIndex_Invalid;
-        if (pszNewName && 
+        if (pszNewName &&
             CheckIfMethodImplImplementsARedirectedInterface(tkMember, &nIndex) == S_OK &&
             nIndex == WinMDAdapter::RedirectedTypeIndex_Windows_Foundation_IClosable)
         {
@@ -1444,7 +1444,7 @@ HRESULT WinMDAdapter::ModifyMemberProps(mdToken tkMember, /*[in, out]*/ DWORD *p
     }
     break;
 
-    case mdtFieldDef: 
+    case mdtFieldDef:
         IfFailGo(ModifyFieldDefProps(tkMember, pdwAttr));
         break;
     }
@@ -1466,7 +1466,7 @@ HRESULT WinMDAdapter::GetMethodDefTreatment(mdMethodDef tkMethodDef, ULONG *ppMe
 
     // Thread-safety: No lock is needed to update this table as we're monotonically advancing a kMdNotYetInitialized to
     //    some other fixed byte. The work to decide this value is idempotent and side-effect free so
-    //    there's no harm if two threads do it concurrently. 
+    //    there's no harm if two threads do it concurrently.
     ULONG mdTreatment;
     IfFailGo(m_methodDefTreatmentMemoTable.GetEntry(index, &mdTreatment));
     if (hr == S_FALSE)
@@ -1483,7 +1483,7 @@ HRESULT WinMDAdapter::GetMethodDefTreatment(mdMethodDef tkMethodDef, ULONG *ppMe
         // we took the time to look up the declaring type. Do enough validity checks to avoid corrupting the heap
         // or table but otherwise, swallow validity errors as this is just an optimization.
         // Methods on RuntimeClasses need to get treatment data per method.
-        if (((mdTreatment & kMdTreatmentMask) != kMdOther) && 
+        if (((mdTreatment & kMdTreatmentMask) != kMdOther) &&
             ((mdTreatment & kMdTreatmentMask) != kMdHiddenImpl) &&
             ((mdTreatment & kMdTreatmentMask) != kMdRenameToDisposeMethod))
         {
@@ -1594,9 +1594,9 @@ HRESULT WinMDAdapter::ComputeMethodDefTreatment(mdMethodDef tkMethodDef, mdTypeD
         // Also we want to check if the methodImpl is IClosable.Close then we will change the name.
         bool fSeenRedirectedInterfaces = false;
         bool fSeenNonRedirectedInterfaces = false;
-        
+
         bool isIClosableCloseMethod = false;
-        
+
         mdToken tkMethodImplFirst;
         ULONG count;
         IfFailGo(m_pRawMetaModelCommonRO->CommonGetMethodImpls(tkDeclaringTypeDef, &tkMethodImplFirst, &count));
@@ -1623,9 +1623,9 @@ HRESULT WinMDAdapter::ComputeMethodDefTreatment(mdMethodDef tkMethodDef, mdTypeD
                     fSeenRedirectedInterfaces = true;
                     if (nIndex == WinMDAdapter::RedirectedTypeIndex_Windows_Foundation_IClosable)
                     {
-                        // This method implements IClosable.Close 
+                        // This method implements IClosable.Close
                         // Let's rename it to Dispose later
-                        // Once we know this implements IClosable.Close, we are done looking as we know 
+                        // Once we know this implements IClosable.Close, we are done looking as we know
                         // we won't hide it
                         isIClosableCloseMethod = true;
                         break;
@@ -1744,10 +1744,10 @@ HRESULT WinMDAdapter::GetCustomAttributeBlob(
                     RedirectedTypeIndex redirectedTypeIndex;
                     IfFailGo(GetTypeRefRedirectedInfo(tkCtorType, &redirectedTypeIndex));
                     _ASSERTE((hr == S_OK) || (hr == S_FALSE));
-                    
+
                     if ((hr == S_OK) && (redirectedTypeIndex == RedirectedTypeIndex_Windows_Foundation_Metadata_AttributeUsageAttribute))
                     {
-                        // We found a Windows.Foundation.Metadata.AttributeUsageAttribute. The TypeRef redirection already makes this 
+                        // We found a Windows.Foundation.Metadata.AttributeUsageAttribute. The TypeRef redirection already makes this
                         // look like a System.AttributeUsageAttribute. Must munge the blob so that it matches the CLR expections.
                         BOOL  allowMultiple;
                         DWORD clrTargetValue;
@@ -1792,7 +1792,7 @@ HRESULT WinMDAdapter::GetCustomAttributeBlob(
 
 //------------------------------------------------------------------------------
 
-// Note: This method will look in a cache for the reinterpreted signature, but does not add any values to 
+// Note: This method will look in a cache for the reinterpreted signature, but does not add any values to
 // the cache or do any work on failure.  If we can't find it then it returns S_FALSE.
 HRESULT WinMDAdapter::GetCachedSigForToken(
     mdToken          token,             // [IN] given token
@@ -1805,7 +1805,7 @@ HRESULT WinMDAdapter::GetCachedSigForToken(
     _ASSERTE(pfPassThrough != NULL);
 
     HRESULT hr;
-    
+
     ULONG index = RidFromToken(token) - 1;
 
     // If someone already queried this method signature, use the previous result.
@@ -1878,7 +1878,7 @@ static HRESULT FinalizeSignatureRewrite(
     if (fChangedSig)
     {
         *ppSigData = WinMDAdapter::SigData::Create(cbNewSigLen, pNewSigBytes);
-        
+
         if (*ppSigData == NULL)
         {
             return E_OUTOFMEMORY;
@@ -1906,8 +1906,8 @@ HRESULT WinMDAdapter::ReinterpretMethodSignature(
     _ASSERTE(ppSigData != NULL);
 
     HRESULT hr;
-    
-    // @REVISIT_TODO: Need to allocate memory here.  We cannot take a lock though (such as any lock needed by 'new'), or we can get 
+
+    // @REVISIT_TODO: Need to allocate memory here.  We cannot take a lock though (such as any lock needed by 'new'), or we can get
     // into deadlocks from profilers that need to inspect metadata to walk the stack.  Needs some help from some loader/ngen experts.
 
     BOOL fChangedSig = FALSE;
@@ -1915,7 +1915,7 @@ HRESULT WinMDAdapter::ReinterpretMethodSignature(
     // The following implements MethodDef signature parsing, per ECMA CLI spec, section 23.2.1.
     SigParser sigParser(pOrigSig, cbOrigSigBlob);
     SigBuilder newSig(cbOrigSigBlob);   // We will not change the signature size, just modify it a bit (E_T_CLASS <-> E_T_VALUETYPE)
-    
+
     // Read calling convention info - Note: Calling convention is always one byte
     ULONG callingConvention;
     IfFailGo(sigParser.GetCallingConvInfo(&callingConvention));
@@ -1929,12 +1929,12 @@ HRESULT WinMDAdapter::ReinterpretMethodSignature(
         IfFailGo(sigParser.GetData(&genericArgsCount));
         newSig.AppendData(genericArgsCount);
     }
-    
+
     // Read number of locals / method parameters
     ULONG cParameters;
     IfFailGo(sigParser.GetData(&cParameters));
     newSig.AppendData(cParameters);
-    
+
     if (callingConvention != CORINFO_CALLCONV_LOCAL_SIG)
     {
         // Read return type
@@ -1949,7 +1949,7 @@ HRESULT WinMDAdapter::ReinterpretMethodSignature(
 
     IfFailGo(FinalizeSignatureRewrite(newSig, fChangedSig, ppSigData DEBUG_ARG(cbOrigSigBlob)));
     return S_OK;
-    
+
 ErrExit:
     Debug_ReportError("Couldn't parse a signature in WinMDAdapter::ReinterpretMethodSignature!");
     return hr;
@@ -1971,12 +1971,12 @@ HRESULT WinMDAdapter::ReinterpretFieldSignature(
 
     HRESULT hr = S_OK;
     BOOL fChangedSig = FALSE;
-    
+
     // The following implements FieldDef signature parsing, per ECMA CLI spec, section 23.2.4.
     // Format is FIELD [custom modifiers]* Type
     SigParser sigParser(pOrigSig, cbOrigSigBlob);
     SigBuilder newSig(cbOrigSigBlob);   // We will not change the signature size, just modify it a bit (E_T_CLASS <-> E_T_VALUETYPE)
-    
+
     // Read calling convention info - this should be IMAGE_CEE_CS_CALLCONV_FIELD.
     ULONG callingConvention;
     IfFailGo(sigParser.GetCallingConvInfo(&callingConvention));
@@ -1989,7 +1989,7 @@ HRESULT WinMDAdapter::ReinterpretFieldSignature(
 
     IfFailGo(FinalizeSignatureRewrite(newSig, fChangedSig, ppSigData DEBUG_ARG(cbOrigSigBlob)));
     return S_OK;
-    
+
 ErrExit:
     Debug_ReportError("Couldn't parse a signature in WinMDAdapter::ReinterpretFieldSignature!");
     return hr;
@@ -2015,13 +2015,13 @@ HRESULT WinMDAdapter::ReinterpretTypeSpecSignature(
     // Format is [custom modifiers]* Type
     SigParser sigParser(pOrigSig, cbOrigSigBlob);
     SigBuilder newSig(cbOrigSigBlob);   // We will not change the signature size, just modify it a bit (E_T_CLASS <-> E_T_VALUETYPE)
-    
+
     // Rewrite the type
     IfFailGo(RewriteTypeInSignature(&sigParser, &newSig, &fChangedSig));
 
     IfFailGo(FinalizeSignatureRewrite(newSig, fChangedSig, ppSigData DEBUG_ARG(cbOrigSigBlob)));
     return S_OK;
-    
+
 ErrExit:
     Debug_ReportError("Couldn't parse a signature in WinMDAdapter::ReinterpretTypeSpecSignature!");
     return hr;
@@ -2047,7 +2047,7 @@ HRESULT WinMDAdapter::ReinterpretMethodSpecSignature(
     // Format is GENERICINST GenArgCount Type+
     SigParser sigParser(pOrigSig, cbOrigSigBlob);
     SigBuilder newSig(cbOrigSigBlob);   // We will not change the signature size, just modify it a bit (E_T_CLASS <-> E_T_VALUETYPE)
-    
+
     // Read calling convention info - this should be IMAGE_CEE_CS_CALLCONV_GENERICINST.
     ULONG callingConvention;
     IfFailGo(sigParser.GetCallingConvInfo(&callingConvention));
@@ -2068,7 +2068,7 @@ HRESULT WinMDAdapter::ReinterpretMethodSpecSignature(
 
     IfFailGo(FinalizeSignatureRewrite(newSig, fChangedSig, ppSigData DEBUG_ARG(cbOrigSigBlob)));
     return S_OK;
-    
+
 ErrExit:
     Debug_ReportError("Couldn't parse a signature in WinMDAdapter::ReinterpretMethodSpecSignature!");
     return hr;
@@ -2076,19 +2076,19 @@ ErrExit:
 
 
 //------------------------------------------------------------------------------
-// 
+//
 // We expose some WinRT types to managed as CLR types, while changing reference type <-> value type:
 //  E_T_CLASS Windows.Foundation.IReference<T>                  ---> E_T_VALUETYPE System.Nullable<T>
 //  E_T_CLASS Windows.Foundation.Collections.IKeyValuePair<U,V> ---> E_T_VALUETYPE System.Collections.Generic.KeyValuePair<U,V>
 //  E_T_VALUETYPE Windows.UI.Xaml.Interop.TypeName              ---> E_T_CLASS System.Type
 //  E_T_VALUETYPE Windows.Foundation.HResult                    ---> E_T_CLASS System.Exception
 HRESULT WinMDAdapter::RewriteTypeInSignature(
-    SigParser *  pSigParser, 
-    SigBuilder * pSigBuilder, 
+    SigParser *  pSigParser,
+    SigBuilder * pSigBuilder,
     BOOL *       pfChangedSig)
 {
     HRESULT hr;
-    
+
     BYTE elementType;
     IfFailGo(pSigParser->GetByte(&elementType));
 
@@ -2123,13 +2123,13 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
         {
             mdToken token;
             IfFailGo(pSigParser->GetToken(&token));
-            
+
             if (TypeFromToken(token) == mdtTypeRef)
             {
                 RedirectedTypeIndex nRedirectedTypeIndex;
                 IfFailGo(this->GetTypeRefRedirectedInfo(token, &nRedirectedTypeIndex));
                 _ASSERTE((hr == S_OK) || (hr == S_FALSE));
-                
+
                 if (hr == S_OK)
                 {   // TypeRef is well known redirectetd type (with index in array code:g_rgRedirectedTypes)
                     if (nRedirectedTypeIndex == RedirectedTypeIndex_Windows_Foundation_IReference ||
@@ -2142,23 +2142,23 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
                 // We do not want to return S_FALSE
                 hr = S_OK;
             }
-            
+
             pSigBuilder->AppendByte(elementType);
             pSigBuilder->AppendToken(token);
-            
+
             break;
         }
     case ELEMENT_TYPE_VALUETYPE:
         {
             mdToken token;
             IfFailGo(pSigParser->GetToken(&token));
-            
+
             if (TypeFromToken(token) == mdtTypeRef)
             {
                 RedirectedTypeIndex nRedirectedTypeIndex;
                 IfFailGo(this->GetTypeRefRedirectedInfo(token, &nRedirectedTypeIndex));
                 _ASSERTE((hr == S_OK) || (hr == S_FALSE));
-                
+
                 if (hr == S_OK)
                 {   // TypeRef is well known redirectetd type (with index in array code:g_rgRedirectedTypes)
                     if (nRedirectedTypeIndex == RedirectedTypeIndex_Windows_UI_Xaml_Interop_TypeName ||
@@ -2173,13 +2173,13 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
                 // We do not want to return S_FALSE
                 hr = S_OK;
             }
-            
+
             pSigBuilder->AppendByte(elementType);
             pSigBuilder->AppendToken(token);
-            
+
             break;
         }
-        
+
         // Read a type
     case ELEMENT_TYPE_SZARRAY:  // SZARRAY <type>
     case ELEMENT_TYPE_PTR:      // PTR <type>
@@ -2187,7 +2187,7 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
     case ELEMENT_TYPE_SENTINEL: // sentinel for VARARGS ("..." in the parameter list), it behaves as prefix to next arg
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             IfFailGo(RewriteTypeInSignature(pSigParser, pSigBuilder, pfChangedSig));
             break;
         }
@@ -2197,11 +2197,11 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
     case ELEMENT_TYPE_CMOD_OPT:      // optional C modifier : E_T_CMOD_OPT <mdTypeRef/mdTypeDef>
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             mdToken token;
             IfFailGo(pSigParser->GetToken(&token));
             pSigBuilder->AppendToken(token);
-            
+
             // Process next type or custom modifier
             IfFailGo(RewriteTypeInSignature(pSigParser, pSigBuilder, pfChangedSig));
             break;
@@ -2212,7 +2212,7 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
     case ELEMENT_TYPE_MVAR:    // a method type variable MVAR <number>
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             ULONG number;
             IfFailGo(pSigParser->GetData(&number));
             pSigBuilder->AppendData(number);
@@ -2222,10 +2222,10 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
     case ELEMENT_TYPE_ARRAY:     // MDARRAY <type> <rank> <bcount> <bound1> ... <lbcount> <lb1> ...
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             // Read array type
             IfFailGo(RewriteTypeInSignature(pSigParser, pSigBuilder, pfChangedSig));
-            
+
             // Read rank
             ULONG rank;
             IfFailGo(pSigParser->GetData(&rank));
@@ -2238,7 +2238,7 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
                 ULONG cDimensionSizes;
                 IfFailGo(pSigParser->GetData(&cDimensionSizes));
                 pSigBuilder->AppendData(cDimensionSizes);
-                
+
                 // Read all dimension sizes
                 for (ULONG i = 0; i < cDimensionSizes; i++)
                 {
@@ -2246,7 +2246,7 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
                     IfFailGo(pSigParser->GetData(&dimensionSize));
                     pSigBuilder->AppendData(dimensionSize);
                 }
-                
+
                 // Read number of lower bounds
                 ULONG cLowerBounds;
                 IfFailGo(pSigParser->GetData(&cLowerBounds));
@@ -2266,15 +2266,15 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
     case ELEMENT_TYPE_GENERICINST:     // GENERICINST <generic type> <argCnt> <arg1> ... <argn>
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             // Read the generic type
             IfFailGo(RewriteTypeInSignature(pSigParser, pSigBuilder, pfChangedSig));
-            
+
             // Read arg count
             ULONG cGenericTypeArguments;
             IfFailGo(pSigParser->GetData(&cGenericTypeArguments));
             pSigBuilder->AppendData(cGenericTypeArguments);
-            
+
             // Read each type argument
             for (ULONG i = 0; i < cGenericTypeArguments; i++)
             {
@@ -2282,27 +2282,27 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
             }
             break;
         }
-        
+
     case ELEMENT_TYPE_FNPTR:     // FNPTR <complete sig for the function including calling convention>
         /*
         // FNPTR is not supported in C#/VB, thefore this is not a main scenario.
         // This implementation was late during .NET 4.5, but may be useful in future releases when we decide to support more languages for managed WinMD implementation.
         {
             pSigBuilder->AppendByte(elementType);
-            
+
             // Read calling convention
             DWORD callingConvention;
             IfFailGo(pSigParser->GetData(&callingConvention));
             pSigBuilder->AppendData(callingConvention);
-            
+
             // Read arg count
             ULONG cArgs;
             IfFailGo(pSigParser->GetData(&cArgs));
             pSigBuilder->AppendData(cArgs);
-            
+
             // Read return argument
             IfFailGo(RewriteTypeInSignature(pSigParser, pSigBuilder, pfChangedSig));
-            
+
             // Read each argument
             for (ULONG i = 0; i < cArgs; i++)
             {
@@ -2313,20 +2313,20 @@ HRESULT WinMDAdapter::RewriteTypeInSignature(
         */
         Debug_ReportError("ELEMENT_TYPE_FNPTR signature parsing in WinMD Adapter is NYI.");
         IfFailGo(E_FAIL);
-        
+
     case ELEMENT_TYPE_END:
     case ELEMENT_TYPE_INTERNAL:     // INTERNAL <typehandle>  (Only in ngen images, but not reachable from MetaData - no sig rewriting)
     case ELEMENT_TYPE_PINNED:       // PINNED <type>, used only in LocalSig (no sig rewriting)
         Debug_ReportError("Unexpected CorElementType in a signature.  Sig parsing failing.");
         IfFailGo(E_FAIL);
-        
+
     default:
         Debug_ReportError("Unknown CorElementType.");
         IfFailGo(E_FAIL);
     }
     _ASSERTE(hr == S_OK);
     return hr;
-    
+
 ErrExit:
     Debug_ReportError("Sig parsing failed.");
     return hr;
@@ -2348,7 +2348,7 @@ static DWORD ConvertToClrAttributeTarget(DWORD winRTTarget)
         DWORD WinRTValue;
         DWORD ClrValue;
     };
-    
+
     static const AttributeTargetsPair s_attributeTargetPairs[] =
     {
 #define DEFINE_PROJECTED_TYPE(a,b,c,d,e,f,g,h,i)
@@ -2400,7 +2400,7 @@ HRESULT WinMDAdapter::TranslateWinMDAttributeUsageAttribute(mdTypeDef tkTypeDefO
     //    01 00        - Fixed prolog for CA's
     //    xx xx xx xx  - The Windows.Foundation.Metadata.AttributeTarget value
     //    00 00        - Indicates 0 name/value pairs following.
-    if (cbWFUsageBlob != 2 + sizeof(DWORD) + 2)  
+    if (cbWFUsageBlob != 2 + sizeof(DWORD) + 2)
     {
         IfFailGo(COR_E_BADIMAGEFORMAT);
     }
@@ -2409,7 +2409,7 @@ HRESULT WinMDAdapter::TranslateWinMDAttributeUsageAttribute(mdTypeDef tkTypeDefO
         DWORD wfTargetValue = *(DWORD*)(pbWFUsageBlob + 2);
         *pClrTargetValue = ConvertToClrAttributeTarget(wfTargetValue);
     }
-    
+
     // add AttributeTargets.Method, AttributeTargets.Constructor , AttributeTargets.Property, and AttributeTargets.Event if this is the VersionAttribute
     LPCSTR  szNamespace;
     LPCSTR  szName;
@@ -2512,7 +2512,7 @@ HRESULT WinMDAdapter::AddMethodImplsToEnum(mdTypeDef tkTypeDef, HENUMInternal *h
         IfFailGo(m_pRawMetaModelCommonRO->CommonGetMethodImplProps(tkMethodImpl, &tkBody, &tkDecl));
         UINT nIndex;
         IfFailGo(CheckIfMethodImplImplementsARedirectedInterface(tkDecl, &nIndex));
-        if (hr == S_FALSE || 
+        if (hr == S_FALSE ||
             (SUCCEEDED(hr) && nIndex == WinMDAdapter::RedirectedTypeIndex_Windows_Foundation_IClosable))
         {
             // Keep MethodImpl for IClosable methods and non-redirected interfaces
@@ -2662,7 +2662,7 @@ HRESULT WinMDAdapter::CheckIfMethodImplImplementsARedirectedInterface(mdToken tk
 
 //-----------------------------------------------------------------------------------------------------
 
-// Sentinel value in m_redirectedMethodSigMemoTable or m_redirectedFieldMemoTable. 
+// Sentinel value in m_redirectedMethodSigMemoTable or m_redirectedFieldMemoTable.
 // Means "do no signature rewriting. Return the one from the underlying importer."
 /*static*/ WinMDAdapter::SigData * const WinMDAdapter::SigData::NOREDIRECT = ((WinMDAdapter::SigData *)(0x1));
 
@@ -2701,7 +2701,7 @@ HRESULT WinMDAdapter::CheckIfMethodImplImplementsARedirectedInterface(mdToken tk
 
 //-----------------------------------------------------------------------------------------------------
 // S_OK if pUnknown is really a WinMD wrapper. This is just a polite way of asking "is it bad to
-//   to static cast pUnknown to RegMeta/MDInternalRO." 
+//   to static cast pUnknown to RegMeta/MDInternalRO."
 //-----------------------------------------------------------------------------------------------------
 HRESULT CheckIfImportingWinMD(IUnknown *pUnknown)
 {
@@ -2743,7 +2743,7 @@ HRESULT VerifyNotWinMDHelper(IUnknown *pUnknown
     {
         DbgAssertDialog(file, line, assertMsg);
     }
-#endif 
+#endif
 #endif
     return E_NOTIMPL;
 }

@@ -47,8 +47,8 @@ AllocFlagsToHeapAllocFlags (IN  UINT  AllocFlags,
     }
     return success;
 }
-        
-    
+
+
 
 /*++
 Function:
@@ -134,7 +134,7 @@ LocalFree(
     {
         bRetVal = TRUE;
     }
-    
+
     LOGEXIT( "LocalFree returning %p.\n", bRetVal == TRUE ? (HLOCAL)NULL : hMem );
     PERF_EXIT(LocalFree);
     return bRetVal == TRUE ? (HLOCAL)NULL : hMem;

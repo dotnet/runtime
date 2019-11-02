@@ -304,8 +304,8 @@ class Zapper
     void DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId);
 
     HRESULT Compile(LPCWSTR path, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig = NULL);
-    void    DontUseProfileData();  
-    bool    HasProfileData();     
+    void    DontUseProfileData();
+    bool    HasProfileData();
 
     void CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
     ZapImage * CompileModule(CORINFO_MODULE_HANDLE hModule,
@@ -331,11 +331,11 @@ class Zapper
                                                   BOOL *pfHitMismatchedVersion,
                                                   BOOL *pfHitMismatchedDependencies,
                                                   BOOL useHardLink = FALSE);
-    void            CopyAndInstallFromRepository(LPCWSTR lpszNativeImageDir, 
-                                                 LPCWSTR lpszNativeImageName, 
+    void            CopyAndInstallFromRepository(LPCWSTR lpszNativeImageDir,
+                                                 LPCWSTR lpszNativeImageName,
                                                  CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig,
                                                  BOOL useHardLink = FALSE);
-    void            InstallFromRepository(LPCWSTR lpszNativeImage, 
+    void            InstallFromRepository(LPCWSTR lpszNativeImage,
                                           CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
 
     void            CopyDirectory(LPCWSTR srcPath, LPCWSTR dstPath);
@@ -425,7 +425,7 @@ class ZapperOptions
     bool        m_ignoreProfileData;    // Don't use profile data
     bool        m_noProcedureSplitting; // Don't do procedure splitting
 
-    bool        m_fHasAnyProfileData;   // true if we successfully loaded and used 
+    bool        m_fHasAnyProfileData;   // true if we successfully loaded and used
                                         //  any profile data when compiling this assembly
 
     bool        m_fPartialNGen;         // Generate partial NGen images using IBC data

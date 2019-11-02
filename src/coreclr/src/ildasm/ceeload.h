@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEELOAD.H
-// 
+//
 
 // CEELOAD.H defines the class use to represent the PE file
 // ===========================================================================
-#ifndef CEELoad_H 
+#ifndef CEELoad_H
 #define CEELoad_H
 
 class PELoader;
@@ -20,7 +20,7 @@ class SectionInfo
 public:
     BYTE *  m_pSection;         // pointer to the beginning of the section
     DWORD   m_dwSectionOffset;  // RVA
-    DWORD   m_dwSectionSize;    
+    DWORD   m_dwSectionSize;
 
     // init this class's member variables from the provided directory
     void Init(PELoader *pPELoader, IMAGE_DATA_DIRECTORY *dir);
@@ -44,7 +44,7 @@ class PELoader {
 
     union
     {
-        PIMAGE_NT_HEADERS64	m_pNT64;	
+        PIMAGE_NT_HEADERS64	m_pNT64;
         PIMAGE_NT_HEADERS32 m_pNT32;
     };
 

@@ -53,13 +53,13 @@ static const char* globalizationInvariantVar = "CORECLR_GLOBAL_INVARIANT";
 bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
 {
     bool result = false;
-    
+
     entrypointExecutable.clear();
 
     // Get path to the executable for the current process using
     // platform specific means.
 #if defined(__APPLE__)
-    
+
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t lenActualPath = 0;
     if (_NSGetExecutablePath(nullptr, &lenActualPath) == -1)
@@ -124,7 +124,7 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
     // On other OSs, return the symlink that will be resolved by GetAbsolutePath
     // to fetch the entrypoint EXE absolute path, inclusive of filename.
     result = GetAbsolutePath(symlinkEntrypointExecutable, entrypointExecutable);
-#endif 
+#endif
 
     return result;
 }
@@ -272,11 +272,11 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
                 tpaList.append(":");
             }
         }
-        
+
         // Rewind the directory stream to be able to iterate over it for the next extension
         rewinddir(dir);
     }
-    
+
     closedir(dir);
 }
 
@@ -458,12 +458,12 @@ int ExecuteManagedAssembly(
             unsigned int domainId;
 
             int st = initializeCoreCLR(
-                        currentExeAbsolutePath, 
-                        "unixcorerun", 
-                        sizeof(propertyKeys) / sizeof(propertyKeys[0]), 
-                        propertyKeys, 
-                        propertyValues, 
-                        &hostHandle, 
+                        currentExeAbsolutePath,
+                        "unixcorerun",
+                        sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+                        propertyKeys,
+                        propertyValues,
+                        &hostHandle,
                         &domainId);
 
             if (!SUCCEEDED(st))
@@ -471,7 +471,7 @@ int ExecuteManagedAssembly(
                 fprintf(stderr, "coreclr_initialize failed - status: 0x%08x\n", st);
                 exitCode = -1;
             }
-            else 
+            else
             {
                 st = executeAssembly(
                         hostHandle,

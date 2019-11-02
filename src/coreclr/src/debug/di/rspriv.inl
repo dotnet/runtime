@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: rspriv.inl
-// 
+//
 
 //
 // Inline functions for rspriv.h
@@ -25,7 +25,7 @@ INativeEventPipeline * CordbWin32EventThread::GetNativePipeline()
 
 // True if we're interop-debugging, else false.
 // Note, we include this even in Non-interop builds because there are runtime checks throughout the APIs
-// that certain operations only succeed/fail in interop-debugging. 
+// that certain operations only succeed/fail in interop-debugging.
 inline
 bool CordbProcess::IsInteropDebugging()
 {
@@ -43,13 +43,13 @@ bool CordbProcess::IsInteropDebugging()
 // Returns:
 //    ShimProcess object if available; else NULL.
 //
-// Notes: 
-//    This shim has V2 emulation logic. 
+// Notes:
+//    This shim has V2 emulation logic.
 //    If we have no ShimProcess object, then we're in a V3 codepath.
 //    @dbgtodo - eventually, remove all emulation and this function.
 //-----------------------------------------------------------------------------
 inline
-ShimProcess * CordbProcess::GetShim() 
+ShimProcess * CordbProcess::GetShim()
 {
     return m_pShim;
 };
@@ -62,14 +62,14 @@ ShimProcess * CordbProcess::GetShim()
 // Arguments:
 //    T - type of structure to read.
 //    pRemotePtr - remote pointer into target (src).
-//    pLocalBuffer - local buffer to copy into (Dest). 
+//    pLocalBuffer - local buffer to copy into (Dest).
 //
 // Return Value:
 //    Returns S_OK on success, in the event of a short read returns ERROR_PARTIAL_COPY
 //
 // Notes:
-//    This just does a raw Byte copy, but does not do any Marshalling. 
-//    This fails if any part of the buffer can't be read. 
+//    This just does a raw Byte copy, but does not do any Marshalling.
+//    This fails if any part of the buffer can't be read.
 //
 //---------------------------------------------------------------------------------------
 template<typename T>
@@ -80,7 +80,7 @@ HRESULT CordbProcess::SafeReadStruct(CORDB_ADDRESS pRemotePtr, T * pLocalBuffer)
     {
         TargetBuffer tb(pRemotePtr, sizeof(T));
         SafeReadBuffer(tb, (PBYTE) pLocalBuffer);
-    } 
+    }
     EX_CATCH_HRESULT(hr) ;
     return hr;
 }
@@ -94,7 +94,7 @@ RSInitHolder<T>::~RSInitHolder()
     {
         CordbProcess * pProcess = m_pObject->GetProcess();
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        
+
         m_pObject->Neuter();
 
         // Can't explicitly call 'delete' because somebody may have taken a reference.
@@ -108,25 +108,25 @@ RSInitHolder<T>::~RSInitHolder()
 // Arguments:
 //    T - type of structure to read.
 //    pRemotePtr - remote pointer into target (dest).
-//    pLocalBuffer - local buffer to write (Src). 
+//    pLocalBuffer - local buffer to write (Src).
 //
 // Return Value:
 //    Returns S_OK on success, in the event of a short write returns ERROR_PARTIAL_COPY
 //
 // Notes:
-//    This just does a raw Byte copy into the Target, but does not do any Marshalling. 
-//    This fails if any part of the buffer can't be written. 
+//    This just does a raw Byte copy into the Target, but does not do any Marshalling.
+//    This fails if any part of the buffer can't be written.
 //
 //---------------------------------------------------------------------------------------
 template<typename T> inline
 HRESULT CordbProcess::SafeWriteStruct(CORDB_ADDRESS pRemotePtr, const T* pLocalBuffer)
 {
     HRESULT hr= S_OK;
-    EX_TRY 
+    EX_TRY
     {
         TargetBuffer tb(pRemotePtr, sizeof(T));
         SafeWriteBuffer(tb, (BYTE *) (pLocalBuffer));
-    } 
+    }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
@@ -149,14 +149,14 @@ CordbAppDomain *CordbJITILFrame::GetCurrentAppDomain()
 inline
 void CordbProcess::ForceDacFlush()
 {
-    // We need to take the process lock here because otherwise we could race with the Arrowhead stackwalking 
+    // We need to take the process lock here because otherwise we could race with the Arrowhead stackwalking
     // APIs.  The Arrowhead stackwalking APIs check the flush counter and refresh all the state if necessary.
     // However, while one thread is refreshing the state of the stackwalker, another thread may come in
     // and force a flush.  That's why we need to take a process lock before we flush.  We need to synchronize
     // with other threads which are using DAC memory.
     RSLockHolder lockHolder(GetProcessLock());
 
-    // For Mac debugging, it is not safe to call into the DAC once code:INativeEventPipeline::TerminateProcess 
+    // For Mac debugging, it is not safe to call into the DAC once code:INativeEventPipeline::TerminateProcess
     // is called.  Also, we must check m_exiting under the process lock.
     if (!m_exiting)
     {
@@ -455,10 +455,10 @@ ULONG CordbCommonBase::BaseRelease()
 inline ULONG CordbCommonBase::BaseAddRefEnforceExternal()
 {
     // External refs shouldn't be called while in the RS
-#ifdef RSCONTRACTS   
+#ifdef RSCONTRACTS
     DbgRSThread * pThread = DbgRSThread::GetThread();
-    CONSISTENCY_CHECK_MSGF(!pThread->IsInRS(), 
-        ("External addref for pThis=0x%p, name='%s' called from within RS", 
+    CONSISTENCY_CHECK_MSGF(!pThread->IsInRS(),
+        ("External addref for pThis=0x%p, name='%s' called from within RS",
             this, this->DbgGetName()
         ));
 #endif
@@ -468,11 +468,11 @@ inline ULONG CordbCommonBase::BaseAddRefEnforceExternal()
 
 inline ULONG CordbCommonBase::BaseReleaseEnforceExternal()
 {
-#ifdef RSCONTRACTS   
+#ifdef RSCONTRACTS
     DbgRSThread * pThread = DbgRSThread::GetThread();
-    
-    CONSISTENCY_CHECK_MSGF(!pThread->IsInRS(), 
-        ("External release for pThis=0x%p, name='%s' called from within RS", 
+
+    CONSISTENCY_CHECK_MSGF(!pThread->IsInRS(),
+        ("External release for pThis=0x%p, name='%s' called from within RS",
             this, this->DbgGetName()
         ));
 #endif
@@ -616,7 +616,7 @@ inline T* CordbSafeHashTable<T>::GetBaseOrThrow(ULONG_PTR id, BOOL fFab)
 //    Caller locks.
 //
 // Notes:
-//    Array takes strong internal references. 
+//    Array takes strong internal references.
 //    This can be useful for dancing around locks; eg: If we want to iterate on a hash
 //    and do an operation that requires a lock that can't be held when iterating.
 //    (Example: Neuter needs Big stop-go lock; Hash is protected by little Process-lock).
@@ -627,7 +627,7 @@ inline void CordbSafeHashTable<T>::CopyToArray(RSPtrArray<T> * pArray)
     // Assumes caller has necessary locks to iterate
     UINT32 count = GetCount();
     pArray->AllocOrThrow(count);
-    
+
 
     HASHFIND find;
     UINT32 idx = 0;
@@ -641,12 +641,12 @@ inline void CordbSafeHashTable<T>::CopyToArray(RSPtrArray<T> * pArray)
     }
 
     // Assert is at end.
-    _ASSERTE(pCordbBase == NULL);  
+    _ASSERTE(pCordbBase == NULL);
 }
 
 // Empty the contents of the hash to an array. Array gets ownersship.
 //
-// Arguments: 
+// Arguments:
 //    pArray - array to allocate and get ownership
 //
 // Assumptions:
@@ -658,15 +658,15 @@ template <class T>
 inline void CordbSafeHashTable<T>::TransferToArray(RSPtrArray<T> * pArray)
 {
     // Assumes caller has necessary locks
-    
+
     HASHFIND find;
     UINT32 count = GetCount();
     UINT32 idx = 0;
 
     pArray->AllocOrThrow(count);
-    
+
     while(idx < count)
-    {        
+    {
         T * pCordbBase = FindFirst(&find);
         _ASSERTE(pCordbBase != NULL);
         pArray->Assign(idx, pCordbBase);
@@ -678,30 +678,30 @@ inline void CordbSafeHashTable<T>::TransferToArray(RSPtrArray<T> * pArray)
     }
 
     // Assert is at end.
-    _ASSERTE(GetCount() == 0);  
+    _ASSERTE(GetCount() == 0);
 }
 
 //
 // Neuter all elements in the hash table and empty the hash.
-// 
+//
 // Arguments:
 //    pLock - lock required to iterate through hash.
 //
 // Assumptions:
-//    Caller ensured it's safe to Neuter. 
+//    Caller ensured it's safe to Neuter.
 //    Caller has locked the hash.
 //
 template <class T>
 inline void CordbSafeHashTable<T>::NeuterAndClear(RSLock * pLock)
 {
     _ASSERTE(pLock->HasLock());
-    
+
     HASHFIND find;
     UINT32 count = GetCount();
     UINT32 idx = 0;
 
     while(idx < count)
-    {        
+    {
         T * pCordbBase = FindFirst(&find);
         _ASSERTE(pCordbBase != NULL);
 
@@ -716,7 +716,7 @@ inline void CordbSafeHashTable<T>::NeuterAndClear(RSLock * pLock)
     }
 
     // Assert is at end.
-    _ASSERTE(GetCount() == 0);  
+    _ASSERTE(GetCount() == 0);
 }
 
 

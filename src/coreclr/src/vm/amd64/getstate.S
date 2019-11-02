@@ -27,7 +27,7 @@ LEAF_END GetCurrentIP, _TEXT
 LEAF_ENTRY LazyMachStateCaptureState, _TEXT
 
         mov     rdx, [rsp]      // get the return address
-        
+
         mov     [rdi + OFFSETOF__MachState__m_Capture + 0*8], r12
         mov     [rdi + OFFSETOF__MachState__m_Capture + 1*8], r13
         mov     [rdi + OFFSETOF__MachState__m_Capture + 2*8], r14

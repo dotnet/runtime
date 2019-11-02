@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: debugger.inl
-// 
+//
 
 //
 // Inline definitions for the Left-Side of the CLR debugging services
-// This is logically part of the header file. 
+// This is logically part of the header file.
 //
 //*****************************************************************************
 
@@ -28,18 +28,18 @@ inline RCThreadLazyInit *Debugger::GetRCThreadLazyData()
     return &(GetLazyData()->m_RCThread);
 }
 
-inline DebuggerLazyInit *Debugger::GetLazyData() 
-{ 
+inline DebuggerLazyInit *Debugger::GetLazyData()
+{
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(m_pLazyData != NULL); 
-    return m_pLazyData; 
+    _ASSERTE(m_pLazyData != NULL);
+    return m_pLazyData;
 }
 
-inline DebuggerModuleTable * Debugger::GetModuleTable() 
-{ 
+inline DebuggerModuleTable * Debugger::GetModuleTable()
+{
     LIMITED_METHOD_CONTRACT;
 
-    return m_pModules; 
+    return m_pModules;
 }
 
 
@@ -50,10 +50,10 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 
 //-----------------------------------------------------------------------------
 // Constructor for a Debugger-Module.
-// @dbgtodo inspection - get rid of this entire class as we move things out-of-proc. 
+// @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
-inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule, 
-                                      DomainFile *  pDomainFile, 
+inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
+                                      DomainFile *  pDomainFile,
                                       AppDomain *   pAppDomain) :
         m_enableClassLoadCallbacks(FALSE),
         m_pPrimaryModule(NULL),
@@ -69,9 +69,9 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
     PickPrimaryModule();
 
 
-    // Do we have any optimized code?   
+    // Do we have any optimized code?
     DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();
-    m_fHasOptimizedCode = CORDebuggerAllowJITOpts(dwDebugBits);    
+    m_fHasOptimizedCode = CORDebuggerAllowJITOpts(dwDebugBits);
 
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module
     // evolves. So we force this on here and refuse to change it for all dynamic modules.
@@ -80,35 +80,35 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
         EnableClassLoadCallbacks(TRUE);
     }
 }
-    
+
 //-----------------------------------------------------------------------------
 // Returns true if we have any optimized code in the module.
-// 
+//
 // Notes:
-//    JMC-probes aren't emitted in optimized code. 
+//    JMC-probes aren't emitted in optimized code.
 //    <TODO> Life would be nice if the Jit tracked this. </TODO>
 //-----------------------------------------------------------------------------
-inline bool DebuggerModule::HasAnyOptimizedCode() 
-{ 
+inline bool DebuggerModule::HasAnyOptimizedCode()
+{
     LIMITED_METHOD_CONTRACT;
-    Module * pModule = this->GetPrimaryModule()->GetRuntimeModule();    
+    Module * pModule = this->GetPrimaryModule()->GetRuntimeModule();
     DWORD dwDebugBits = pModule->GetDebuggerInfoBits();
-    return CORDebuggerAllowJITOpts(dwDebugBits);    
+    return CORDebuggerAllowJITOpts(dwDebugBits);
 }
 
 //-----------------------------------------------------------------------------
 // Return true if we've enabled class-load callbacks.
 //-----------------------------------------------------------------------------
-inline BOOL DebuggerModule::ClassLoadCallbacksEnabled(void) 
-{ 
-    return m_enableClassLoadCallbacks; 
+inline BOOL DebuggerModule::ClassLoadCallbacksEnabled(void)
+{
+    return m_enableClassLoadCallbacks;
 }
 
 //-----------------------------------------------------------------------------
 // Set whether we should enable class-load callbacks for this module.
 //-----------------------------------------------------------------------------
-inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f) 
-{ 
+inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f)
+{
     if (m_enableClassLoadCallbacks != f)
     {
         if (f)
@@ -123,13 +123,13 @@ inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f)
         }
 
         m_enableClassLoadCallbacks = f;
-    }    
+    }
 }
 
 //-----------------------------------------------------------------------------
 // Return the appdomain that this module exists in.
 //-----------------------------------------------------------------------------
-inline AppDomain* DebuggerModule::GetAppDomain() 
+inline AppDomain* DebuggerModule::GetAppDomain()
 {
     return m_pAppDomain;
 }
@@ -150,18 +150,18 @@ inline Module * DebuggerModule::GetRuntimeModule()
 // This is bad. We need to move away from this.
 // Once we stop lying, then every module will be it's own PrimaryModule. :)
 //
-// Currently, Module* is 1:n w/ DebuggerModule. 
+// Currently, Module* is 1:n w/ DebuggerModule.
 // We add a notion of PrimaryModule so that:
-// Module* is 1:1 w/ DebuggerModule::GetPrimaryModule(); 
+// Module* is 1:1 w/ DebuggerModule::GetPrimaryModule();
 // This should help transition towards exposing shared modules.
 // If the Runtime module is shared, then this gives a common DM.
 // If the runtime module is not shared, then this is an identity function.
 // </TODO>
 //-----------------------------------------------------------------------------
-inline DebuggerModule * DebuggerModule::GetPrimaryModule() 
+inline DebuggerModule * DebuggerModule::GetPrimaryModule()
 {
     _ASSERTE(m_pPrimaryModule != NULL);
-    return m_pPrimaryModule; 
+    return m_pPrimaryModule;
 }
 
 //-----------------------------------------------------------------------------
@@ -170,11 +170,11 @@ inline DebuggerModule * DebuggerModule::GetPrimaryModule()
 inline void DebuggerModule::SetPrimaryModule(DebuggerModule * pPrimary)
 {
     _ASSERTE(pPrimary != NULL);
-    // Our primary module must by definition refer to the same runtime module as us 
+    // Our primary module must by definition refer to the same runtime module as us
     _ASSERTE(pPrimary->GetRuntimeModule() == this->GetRuntimeModule());
 
     LOG((LF_CORDB, LL_EVERYTHING, "DM::SetPrimaryModule - this=%p, pPrimary=%p\n", this, pPrimary));
-    m_pPrimaryModule = pPrimary;        
+    m_pPrimaryModule = pPrimary;
 }
 
 inline DebuggerEval * FuncEvalFrame::GetDebuggerEval()
@@ -277,7 +277,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
-    
+
     pRD->pCurrentContextPointers->R4 = &(pDE->m_context.R4);
     pRD->pCurrentContextPointers->R5 = &(pDE->m_context.R5);
     pRD->pCurrentContextPointers->R6 = &(pDE->m_context.R6);
@@ -334,7 +334,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->volatileCurrContextPointers.X16 = &(pDE->m_context.X16);
     pRD->volatileCurrContextPointers.X17 = &(pDE->m_context.X17);
 
-    SyncRegDisplayToCurrentContext(pRD); 
+    SyncRegDisplayToCurrentContext(pRD);
 #else
     PORTABILITY_ASSERT("FuncEvalFrame::UpdateRegDisplay is not implemented on this platform.");
 #endif

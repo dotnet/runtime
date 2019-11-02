@@ -15,7 +15,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 Toolchain Setup
 ---------------
 
-Install the following packages for the toolchain: 
+Install the following packages for the toolchain:
 
 - bash
 - cmake
@@ -237,7 +237,7 @@ janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % ./corerun HelloWorld.exe fre
 
 If all works, you should be greeted by a friendly daemon you know well.
 
-Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies. 
+Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies.
 
 A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would be great! Some of our processes (e.g. the System.Private.CoreLib build) rely on Windows-specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
 
@@ -273,7 +273,7 @@ To install clang 3.7: `sudo pkg install llvm37`
 
 To install clang development snapshot: `sudo pkg install llvm-devel`
 
-clang35 and clang36 download llvm35 and llvm36 packages as a dependency. 
+clang35 and clang36 download llvm35 and llvm36 packages as a dependency.
 
 llvm37 and llvm-devel include clang and lldb. Since clang is included with llvm 3.7 and onward, there is no clang37 package.
 

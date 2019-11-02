@@ -73,24 +73,24 @@ typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 typedef void promote_carefully_func(promote_func*, PTR_PTR_Object, ScanContext*, uint32_t);
 
 void PromoteCarefully(promote_func   fn,
-                      PTR_PTR_Object obj, 
-                      ScanContext*   sc, 
+                      PTR_PTR_Object obj,
+                      ScanContext*   sc,
                       uint32_t       flags = GC_CALL_INTERIOR);
 
 class LoaderAllocator;
 void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator);
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Encapsulates how compressed integers and typeref tokens are encoded into
 // a bytestream.
 //
-// As you use this class please understand the implicit normalizations 
+// As you use this class please understand the implicit normalizations
 // on the CorElementType's returned by the various methods, especially
 // for variable types (e.g. !0 in generic signatures), string types
-// (i.e. E_T_STRING), object types (E_T_OBJECT), constructed types 
+// (i.e. E_T_STRING), object types (E_T_OBJECT), constructed types
 // (e.g. List<int>) and enums.
-// 
+//
 class SigPointer : public SigParser
 {
     friend class MetaSig;
@@ -98,7 +98,7 @@ class SigPointer : public SigParser
 public:
     // Constructor.
     SigPointer() { LIMITED_METHOD_DAC_CONTRACT; }
-    
+
     // Copy constructor.
     SigPointer(const SigPointer & sig) : SigParser(sig)
     {
@@ -111,16 +111,16 @@ public:
     }
 
     // Signature from a pointer. INSECURE!!!
-    // WARNING: Should not be used as it is insecure, because we do not have size of the signature and 
+    // WARNING: Should not be used as it is insecure, because we do not have size of the signature and
     // therefore we can read behind the end of buffer/file.
-    FORCEINLINE 
+    FORCEINLINE
     SigPointer(PCCOR_SIGNATURE ptr) : SigParser(ptr)
     {
         WRAPPER_NO_CONTRACT;
     }
-    
+
     // Signature from a pointer and size.
-    FORCEINLINE 
+    FORCEINLINE
     SigPointer(PCCOR_SIGNATURE ptr, DWORD len) : SigParser(ptr, len)
     {
         WRAPPER_NO_CONTRACT;
@@ -132,7 +132,7 @@ public:
     // apart from custom modifiers which for historical reasons tend to get eaten.
     //
     // DO NOT USE THESE METHODS UNLESS YOU'RE TOTALLY SURE YOU WANT
-    // THE RAW signature.  You nearly always want GetElemTypeClosed() or 
+    // THE RAW signature.  You nearly always want GetElemTypeClosed() or
     // PeekElemTypeClosed() or one of the MetaSig functions.  See the notes above.
     // These functions will return E_T_INTERNAL, E_T_VAR, E_T_MVAR and such
     // so the caller must be able to deal with those
@@ -145,7 +145,7 @@ public:
 
     //=========================================================================
     // The CLOSED interface for reading signatures.  With the following
-    // methods you see the signature "as if" all type variables are 
+    // methods you see the signature "as if" all type variables are
     // replaced by the given instantiations.  However, no type loads happen.
     //
     // In general this is what you want to use if the signature may include
@@ -172,7 +172,7 @@ public:
         // this will return the token for the generic class, e.g. for a signature
         // for "struct Pair<int,int>" this will return a token for "Pair".
         //
-        // The token will only make sense in the context of the module where 
+        // The token will only make sense in the context of the module where
         // the signature occurs.
         //
         // WARNING: This api will return a mdTokenNil for a E_T_VALUETYPE obtained
@@ -183,7 +183,7 @@ public:
 
 
     //=========================================================================
-    // The INTERNAL-NORMALIZED interface for reading signatures.  You see 
+    // The INTERNAL-NORMALIZED interface for reading signatures.  You see
     // information concerning the signature, but taking into account normalizations
     // performed for layout of data, e.g. enums and one-field VCs.
     //=========================================================================
@@ -195,15 +195,15 @@ public:
         //------------------------------------------------------------------------
         // Assumes that the SigPointer points to the start of an element type.
         // Returns size of that element in bytes. This is the minimum size that a
-        // field of this type would occupy inside an object. 
+        // field of this type would occupy inside an object.
         //------------------------------------------------------------------------
         UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const;
-    
+
 private:
 
         // SigPointer should be just after E_T_VAR or E_T_MVAR
         TypeHandle GetTypeVariable(CorElementType et,const SigTypeContext *pTypeContext);
-        TypeHandle GetTypeVariableThrowing(Module *pModule, 
+        TypeHandle GetTypeVariableThrowing(Module *pModule,
                                            CorElementType et,
                                            ClassLoader::LoadTypesFlag fLoadTypes,
                                            const SigTypeContext *pTypeContext);
@@ -227,10 +227,10 @@ public:
         TypeHandle GetTypeHandleNT(Module* pModule,
                                    const SigTypeContext *pTypeContext) const;
 
-        // pTypeContext indicates how to instantiate any generic type parameters we come 
+        // pTypeContext indicates how to instantiate any generic type parameters we come
         // However, first we implicitly apply the substitution pSubst to the metadata if pSubst is supplied.
         // That is, if the metadata contains a type variable "!0" then we first look up
-        // !0 in pSubst to produce another item of metdata and continue processing.  
+        // !0 in pSubst to produce another item of metdata and continue processing.
         // If pSubst is empty then we look up !0 in the pTypeContext to produce a final
         // type handle.  If any of these are out of range we throw an exception.
         //
@@ -238,17 +238,17 @@ public:
         // If dropGenericArgumentLevel is TRUE, and the metadata represents an instantiated generic type,
         // then generic arguments to the generic type will be loaded one level lower. (This is used by the
         // class loader to avoid looping on definitions such as class C : D<C>)
-        //   
+        //
         // If dropGenericArgumentLevel is TRUE and
         // level=CLASS_LOAD_APPROXPARENTS, then the instantiated
-        // generic type is "approximated" in the following way: 
-        // - for generic interfaces, the generic type (uninstantiated) is returned 
+        // generic type is "approximated" in the following way:
+        // - for generic interfaces, the generic type (uninstantiated) is returned
         // - for other generic instantiations, System.Object is used in place of any reference types
-        //   occurring in the type arguments 
+        //   occurring in the type arguments
         // This semantics is used by the class loader to load tricky recursive definitions in phases
         // (e.g. class C : D<C>, or struct S : I<S>)
         TypeHandle GetTypeHandleThrowing(Module* pModule,
-                                         const SigTypeContext *pTypeContext, 
+                                         const SigTypeContext *pTypeContext,
                                          ClassLoader::LoadTypesFlag fLoadTypes = ClassLoader::LoadTypes,
                                          ClassLoadLevel level = CLASS_LOADED,
                                          BOOL dropGenericArgumentLevel = FALSE,
@@ -258,12 +258,12 @@ public:
 public:
         //------------------------------------------------------------------------
         // Does this type contain class or method type parameters whose instantiation cannot
-        // be determined at JIT-compile time from the instantiations in the method context? 
+        // be determined at JIT-compile time from the instantiations in the method context?
         // Return a combination of hasClassVar and hasMethodVar flags.
         //
         // Example: class C<A,B> containing instance method m<T,U>
         // Suppose that the method context is C<float,string>::m<double,object>
-        // Then the type Dict<!0,!!0> is considered to have *no* "polymorphic" type parameters because 
+        // Then the type Dict<!0,!!0> is considered to have *no* "polymorphic" type parameters because
         // !0 is known to be float and !!0 is known to be double
         // But Dict<!1,!!1> has polymorphic class *and* method type parameters because both
         // !1=string and !!1=object are reference types and so code using these can be shared with
@@ -285,7 +285,7 @@ public:
 
 
         //------------------------------------------------------------------------
-        // Tests if the element class name is szClassName. 
+        // Tests if the element class name is szClassName.
         //------------------------------------------------------------------------
         BOOL IsClass(Module* pModule, LPCUTF8 szClassName, const SigTypeContext *pTypeContext = NULL) const;
         BOOL IsClassThrowing(Module* pModule, LPCUTF8 szClassName, const SigTypeContext *pTypeContext = NULL) const;
@@ -316,21 +316,21 @@ class  DacDbiInterfaceImpl;
 
 //---------------------------------------------------------------------------------------
 //
-// Currently, PCCOR_SIGNATURE is used all over the runtime to represent a signature, which is just 
-// an array of bytes.  The problem with PCCOR_SIGNATURE is that it doesn't tell you the length of 
-// the signature (i.e. the number of bytes in the array).  This is particularly troublesome for DAC, 
-// which needs to know how much memory to grab from out of process.  This class is an encapsulation 
+// Currently, PCCOR_SIGNATURE is used all over the runtime to represent a signature, which is just
+// an array of bytes.  The problem with PCCOR_SIGNATURE is that it doesn't tell you the length of
+// the signature (i.e. the number of bytes in the array).  This is particularly troublesome for DAC,
+// which needs to know how much memory to grab from out of process.  This class is an encapsulation
 // over PCCOR_SIGNATURE AND the length of the signature it points to.
 //
 // Notes:
-//    This class is meant to be read-only.  Moreover, preferrably we should never read the raw 
+//    This class is meant to be read-only.  Moreover, preferrably we should never read the raw
 //    PCCOR_SIGNATURE pointer directly, but there are likely some cases where it is inevitable.
 //    We should keep these to a minimum.
 //
-//    We should move over to Signature instead of PCCOR_SIGNATURE.  
+//    We should move over to Signature instead of PCCOR_SIGNATURE.
 //
-//    To get a Signature, you can create one yourself by using a constructor.  However, it's recommended 
-//    that you check whether the Signature should be constructed at a lower level.  For example, instead of 
+//    To get a Signature, you can create one yourself by using a constructor.  However, it's recommended
+//    that you check whether the Signature should be constructed at a lower level.  For example, instead of
 //    creating a Signature in FramedMethodFrame::PromoteCallerStackWalker(), we should add a member function
 //    to MethodDesc to return a Signature.
 //
@@ -379,7 +379,7 @@ private:
 
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // A substitution represents the composition of several formal type instantiations
 // It is used when matching formal signatures across the inheritance hierarchy.
 //
@@ -396,7 +396,7 @@ private:
 // may contain type variables instantiated by <inst_n>
 //
 // Any type variables in <inst_n> are treated as "free".
-// 
+//
 class Substitution
 {
 private:
@@ -406,32 +406,32 @@ private:
 
 public:
     Substitution()
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
-        m_pModule = NULL; 
+        m_pModule = NULL;
         m_pNext = NULL;
     }
-    
+
     Substitution(
-        Module *             pModuleArg, 
-        const SigPointer &   sigInst, 
+        Module *             pModuleArg,
+        const SigPointer &   sigInst,
         const Substitution * pNextSubstitution)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
-        m_pModule = pModuleArg; 
+        m_pModule = pModuleArg;
         m_sigInst = sigInst;
         m_pNext = pNextSubstitution;
     }
 
     Substitution(
-        mdToken              parentTypeDefOrRefOrSpec, 
-        Module *             pModuleArg, 
+        mdToken              parentTypeDefOrRefOrSpec,
+        Module *             pModuleArg,
         const Substitution * nextArg);
-    
+
     Substitution(const Substitution & subst)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
-        m_pModule = subst.m_pModule; 
+        m_pModule = subst.m_pModule;
         m_sigInst = subst.m_sigInst;
         m_pNext = subst.m_pNext;
     }
@@ -441,17 +441,17 @@ public:
     const Substitution * GetNext() const { LIMITED_METHOD_DAC_CONTRACT; return m_pNext; }
     const SigPointer & GetInst() const { LIMITED_METHOD_DAC_CONTRACT; return m_sigInst; }
     DWORD GetLength() const;
-    
+
     void CopyToArray(Substitution * pTarget /* must have type Substitution[GetLength()] */ ) const;
 
 };  // class Substitution
 
 //---------------------------------------------------------------------------------------
-// 
+//
 // Linked list that records what tokens are currently being compared for equivalence. This prevents
 // infinite recursion when types refer to each other in a cycle, e.g. a delegate that takes itself as
 // a parameter or a struct that declares a field of itself (illegal but we don't know at this point).
-// 
+//
 class TokenPairList
 {
 public:
@@ -507,12 +507,12 @@ private:
 };  // class TokenPairList
 
 //---------------------------------------------------------------------------------------
-// 
+//
 class MetaSig
 {
     public:
-        enum MetaSigKind { 
-            sigMember, 
+        enum MetaSigKind {
+            sigMember,
             sigLocalVars,
             sigField,
             };
@@ -522,8 +522,8 @@ class MetaSig
         //------------------------------------------------------------------
         void Init(PCCOR_SIGNATURE szMetaSig,
                 DWORD cbMetaSig,
-                Module* pModule, 
-                const SigTypeContext *pTypeContext, 
+                Module* pModule,
+                const SigTypeContext *pTypeContext,
                 MetaSigKind kind = sigMember);
 
         //------------------------------------------------------------------
@@ -531,15 +531,15 @@ class MetaSig
         //
         // The instantiations are used to fill in type variables on calls
         // to PeekArg, GetReturnType, GetNextArg, GetTypeHandle, GetRetTypeHandle and
-        // so on.  
+        // so on.
         //
         // Please make sure you know what you're doing by leaving classInst and methodInst to default NULL
         // Are you sure the signature cannot contain type parameters (E_T_VAR, E_T_MVAR)?
         //------------------------------------------------------------------
-        MetaSig(PCCOR_SIGNATURE szMetaSig, 
+        MetaSig(PCCOR_SIGNATURE szMetaSig,
                 DWORD cbMetaSig,
-                Module* pModule, 
-                const SigTypeContext *pTypeContext, 
+                Module* pModule,
+                const SigTypeContext *pTypeContext,
                 MetaSigKind kind = sigMember)
         {
             WRAPPER_NO_CONTRACT;
@@ -548,17 +548,17 @@ class MetaSig
 
         // this is just a variation of the previous constructor to ease the transition to Signature
         MetaSig(const Signature &      signature,
-                Module               * pModule, 
-                const SigTypeContext * pTypeContext, 
+                Module               * pModule,
+                const SigTypeContext * pTypeContext,
                 MetaSigKind            kind = sigMember)
         {
             WRAPPER_NO_CONTRACT;
             Init(signature.GetRawSig(), signature.GetRawSigLen(), pModule, pTypeContext, kind);
         }
 
-        // The following create MetaSigs for parsing the signature of the given method.  
-        // They are identical except that they give slightly different 
-        // type contexts.  (Note the type context will only be relevant if we 
+        // The following create MetaSigs for parsing the signature of the given method.
+        // They are identical except that they give slightly different
+        // type contexts.  (Note the type context will only be relevant if we
         // are parsing a method on an array type or on a generic type.)
         // See TypeCtxt.h for more details.
         // If declaringType is omitted then a *representative* instantiation may be obtained from pMD or pFD
@@ -630,13 +630,13 @@ class MetaSig
             LIMITED_METHOD_DAC_CONTRACT;
             return m_nArgs;
         }
-        
+
         //----------------------------------------------------------
         // Returns the calling convention (see IMAGE_CEE_CS_CALLCONV_*
         // defines in cor.h) - throws.
         //----------------------------------------------------------
         static BYTE GetCallingConvention(
-            Module          *pModule, 
+            Module          *pModule,
             const Signature &signature)
         {
             CONTRACTL
@@ -647,24 +647,24 @@ class MetaSig
                 SUPPORTS_DAC;
             }
             CONTRACTL_END
-            
+
             PCCOR_SIGNATURE pSig = signature.GetRawSig();
-            
+
             if (signature.GetRawSigLen() < 1)
             {
                 ThrowHR(COR_E_BADIMAGEFORMAT);
             }
             return (BYTE)(IMAGE_CEE_CS_CALLCONV_MASK & CorSigUncompressCallingConv(/*modifies*/pSig));
         }
-        
+
         //----------------------------------------------------------
         // Returns the calling convention (see IMAGE_CEE_CS_CALLCONV_*
         // defines in cor.h) - doesn't throw.
         //----------------------------------------------------------
-        __checkReturn 
+        __checkReturn
         static HRESULT GetCallingConvention_NoThrow(
-            Module          *pModule, 
-            const Signature &signature, 
+            Module          *pModule,
+            const Signature &signature,
             BYTE            *pbCallingConvention)
         {
             CONTRACTL
@@ -675,9 +675,9 @@ class MetaSig
                 SUPPORTS_DAC;
             }
             CONTRACTL_END
-            
+
             PCCOR_SIGNATURE pSig = signature.GetRawSig();
-            
+
             if (signature.GetRawSigLen() < 1)
             {
                 *pbCallingConvention = 0;
@@ -686,7 +686,7 @@ class MetaSig
             *pbCallingConvention = (BYTE)(IMAGE_CEE_CS_CALLCONV_MASK & CorSigUncompressCallingConv(/*modifies*/pSig));
             return S_OK;
         }
-        
+
         //----------------------------------------------------------
         // Returns the calling convention (see IMAGE_CEE_CS_CALLCONV_*
         // defines in cor.h)
@@ -695,7 +695,7 @@ class MetaSig
         {
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
-            return m_CallConv & IMAGE_CEE_CS_CALLCONV_MASK; 
+            return m_CallConv & IMAGE_CEE_CS_CALLCONV_MASK;
         }
 
         //----------------------------------------------------------
@@ -717,7 +717,7 @@ class MetaSig
             LIMITED_METHOD_CONTRACT;
 
             return m_CallConv & IMAGE_CEE_CS_CALLCONV_HASTHIS;
-        }  
+        }
 
         //----------------------------------------------------------
         // Has a explicit 'this' pointer?
@@ -727,8 +727,8 @@ class MetaSig
             LIMITED_METHOD_CONTRACT;
 
             return m_CallConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS;
-        }  
-                
+        }
+
         //----------------------------------------------------------
         // Is a generic method with explicit arity?
         //----------------------------------------------------------
@@ -736,8 +736,8 @@ class MetaSig
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & IMAGE_CEE_CS_CALLCONV_GENERIC;
-        }  
-        
+        }
+
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
@@ -747,7 +747,7 @@ class MetaSig
             SUPPORTS_DAC;
             return GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_VARARG;
         }
-        
+
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
@@ -761,10 +761,10 @@ class MetaSig
                 SUPPORTS_DAC;
             }
             CONTRACTL_END
-            
+
             HRESULT hr;
             BYTE    nCallingConvention;
-            
+
             hr = GetCallingConvention_NoThrow(pModule, signature, &nCallingConvention);
             if (FAILED(hr))
             {   // Invalid signatures are not VarArg
@@ -772,24 +772,24 @@ class MetaSig
             }
             return nCallingConvention == IMAGE_CEE_CS_CALLCONV_VARARG;
         }
-        
+
         Module* GetModule() const
         {
             LIMITED_METHOD_DAC_CONTRACT;
-            
+
             return m_pModule;
         }
-        
+
         //----------------------------------------------------------
         // Returns the unmanaged calling convention.
         //----------------------------------------------------------
         static BOOL GetUnmanagedCallingConvention(Module *pModule, PCCOR_SIGNATURE pSig, ULONG cSig, CorPinvokeMap *pPinvokeMapOut);
 
         //------------------------------------------------------------------
-        // Like NextArg, but return only normalized type (enums flattned to 
+        // Like NextArg, but return only normalized type (enums flattned to
         // underlying type ...
         //------------------------------------------------------------------
-        CorElementType 
+        CorElementType
         NextArgNormalized(TypeHandle * pthValueType = NULL)
         {
             CONTRACTL
@@ -830,8 +830,8 @@ class MetaSig
         //------------------------------------------------------------------------
         static UINT GetElemSize(CorElementType etype, TypeHandle thValueType);
 
-        UINT GetReturnTypeSize() 
-        {    
+        UINT GetReturnTypeSize()
+        {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
             return m_pRetType.SizeOf(m_pModule, &m_typeContext);
@@ -896,13 +896,13 @@ class MetaSig
         BOOL IsTreatAsVarArg()
         {
             LIMITED_METHOD_DAC_CONTRACT;
-            
+
             return (m_flags & TREAT_AS_VARARG);
         }
 
         //------------------------------------------------------------------
         // Determines if the current argument is System/String.
-        // Caller must determine first that the argument type is 
+        // Caller must determine first that the argument type is
         // ELEMENT_TYPE_CLASS or ELEMENT_TYPE_STRING.  This may be used during
         // GC.
         //------------------------------------------------------------------
@@ -910,7 +910,7 @@ class MetaSig
 
         //------------------------------------------------------------------
         // Determines if the current argument is a particular class.
-        // Caller must determine first that the argument type 
+        // Caller must determine first that the argument type
         // is ELEMENT_TYPE_CLASS.
         //------------------------------------------------------------------
         BOOL IsClass(LPCUTF8 szClassName) const;
@@ -939,7 +939,7 @@ class MetaSig
                                              BOOL dropGenericArgumentLevel = FALSE) const
         {
              WRAPPER_NO_CONTRACT;
-             return m_pLastType.GetTypeHandleThrowing(m_pModule, &m_typeContext, fLoadTypes, 
+             return m_pLastType.GetTypeHandleThrowing(m_pModule, &m_typeContext, fLoadTypes,
                                                       level, dropGenericArgumentLevel);
         }
 
@@ -973,17 +973,17 @@ class MetaSig
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
-        static 
-        BOOL 
+        static
+        BOOL
         CompareElementType(
-            PCCOR_SIGNATURE &    pSig1, 
-            PCCOR_SIGNATURE &    pSig2, 
-            PCCOR_SIGNATURE      pEndSig1, 
-            PCCOR_SIGNATURE      pEndSig2, 
-            Module *             pModule1, 
-            Module *             pModule2, 
-            const Substitution * pSubst1, 
-            const Substitution * pSubst2, 
+            PCCOR_SIGNATURE &    pSig1,
+            PCCOR_SIGNATURE &    pSig2,
+            PCCOR_SIGNATURE      pEndSig1,
+            PCCOR_SIGNATURE      pEndSig2,
+            Module *             pModule1,
+            Module *             pModule2,
+            const Substitution * pSubst1,
+            const Substitution * pSubst2,
             TokenPairList *      pVisited = NULL);
 
 
@@ -991,7 +991,7 @@ class MetaSig
         // If pTypeDef1 is C<...> and pTypeDef2 is C<...> (for possibly different instantiations)
         // then check C<!0, ... !n> @ pSubst1 == C<!0, ..., !n> @ pSubst2, i.e.
         // that the head type (C) is the same and that when the head type is treated
-        // as an uninstantiated type definition and we apply each of the substitutions 
+        // as an uninstantiated type definition and we apply each of the substitutions
         // then the same type results.  This effectively checks that the two substitutions
         // are equivalent.
         static BOOL CompareTypeDefsUnderSubstitutions(MethodTable *pTypeDef1,          MethodTable *pTypeDef2,
@@ -1002,12 +1002,12 @@ class MetaSig
         // Compare two complete method signatures, first applying optional substitutions pSubst1 and pSubst2
         // to class type parameters (E_T_VAR) in the respective signatures
         static BOOL CompareMethodSigs(
-            PCCOR_SIGNATURE pSig1, 
-            DWORD       cSig1, 
-            Module*     pModule1, 
+            PCCOR_SIGNATURE pSig1,
+            DWORD       cSig1,
+            Module*     pModule1,
             const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2, 
-            DWORD       cSig2, 
+            PCCOR_SIGNATURE pSig2,
+            DWORD       cSig2,
             Module*     pModule2,
             const Substitution* pSubst2,
             TokenPairList *pVisited = NULL
@@ -1020,23 +1020,23 @@ class MetaSig
         //          FAILED  if OOM or some other blocking error
         //
         static HRESULT CompareMethodSigsNT(
-            PCCOR_SIGNATURE pSig1, 
-            DWORD       cSig1, 
-            Module*     pModule1, 
+            PCCOR_SIGNATURE pSig1,
+            DWORD       cSig1,
+            Module*     pModule1,
             const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2, 
-            DWORD       cSig2, 
+            PCCOR_SIGNATURE pSig2,
+            DWORD       cSig2,
             Module*     pModule2,
             const Substitution* pSubst2,
             TokenPairList *pVisited = NULL
         );
 
         static BOOL CompareFieldSigs(
-            PCCOR_SIGNATURE pSig1, 
-            DWORD       cSig1, 
-            Module*     pModule1, 
-            PCCOR_SIGNATURE pSig2, 
-            DWORD       cSig2, 
+            PCCOR_SIGNATURE pSig1,
+            DWORD       cSig1,
+            Module*     pModule1,
+            PCCOR_SIGNATURE pSig2,
+            DWORD       cSig2,
             Module*     pModule2,
             TokenPairList *pVisited = NULL
         );
@@ -1050,7 +1050,7 @@ class MetaSig
         // given a subsitution for the latter's (class) type parameters.
         // This is used by the class loader to verify type safety of method overriding and interface implementation.
         static BOOL CompareMethodConstraints(const Substitution *pSubst1,
-                                             Module *pModule1, 
+                                             Module *pModule1,
                                              mdMethodDef tok1, //implementing method
                                              const Substitution *pSubst2,
                                              Module *pModule2,
@@ -1095,7 +1095,7 @@ public:
 
         // this walks the sig and checks to see if all  types in the sig can be loaded
         static void CheckSigTypesCanBeLoaded(MethodDesc *pMD);
-        
+
         const SigTypeContext *GetSigTypeContext() const { LIMITED_METHOD_CONTRACT; return &m_typeContext; }
 
         // Disallow copy constructor.
@@ -1155,7 +1155,7 @@ struct TypeIdentifierData
 
     HRESULT Init(Module *pModule, mdToken tk);
     BOOL IsEqual(const TypeIdentifierData & data) const;
-    
+
 private:
     SIZE_T  m_cbScope;
     LPCUTF8 m_pchScope;

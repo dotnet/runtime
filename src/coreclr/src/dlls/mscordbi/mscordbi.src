@@ -7,7 +7,7 @@ LIBRARY         mscordbi
 EXPORTS
     // COM-instantiation - for CorPublish
     DllGetClassObjectInternal private
-    
+
     // In-proc (Whidbey-style) creation path from the shim - CDIFV and it's replacement
     CreateCordbObject private
 
@@ -16,7 +16,7 @@ EXPORTS
     OpenVirtualProcessImpl2
 
     // DEPRECATED - use OpenVirtualProcessImpl
-    OpenVirtualProcess private 
+    OpenVirtualProcess private
     OpenVirtualProcess2
 
     CoreCLRCreateCordbObject private

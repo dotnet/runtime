@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // ClassFactory.cpp
-// 
+//
 
 //
 // Dll* routines for entry points, and support for COM framework.  The class
@@ -45,7 +45,7 @@ const COCLASS_REGISTER g_CoClasses[] =
 //*****************************************************************************
 // Called by COM to get a class factory for a given CLSID.  If it is one we
 // support, instantiate a class factory object and prepare for create instance.
-// 
+//
 // Notes:
 //   This gets invoked from mscorwks's DllGetClassObject.
 //*****************************************************************************
@@ -91,7 +91,7 @@ STDAPI MetaDataDllGetClassObject(       // Return code.
 //*****************************************************************************
 // QueryInterface is called to pick a v-table on the co-class.
 //*****************************************************************************
-HRESULT STDMETHODCALLTYPE MDClassFactory::QueryInterface( 
+HRESULT STDMETHODCALLTYPE MDClassFactory::QueryInterface(
     REFIID      riid,
     void        **ppvObject)
 {
@@ -123,7 +123,7 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::QueryInterface(
 // this class was created in the first place.  The returned pointer is the
 // v-table matching the IID if there.
 //*****************************************************************************
-HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance( 
+HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
     IUnknown    *pUnkOuter,
     REFIID      riid,
     void        **ppvObject)
@@ -146,12 +146,12 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
 
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
-    
+
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE 
-MDClassFactory::LockServer( 
+HRESULT STDMETHODCALLTYPE
+MDClassFactory::LockServer(
     BOOL fLock)
 {
     // @FUTURE: Should we return E_NOTIMPL instead of S_OK?

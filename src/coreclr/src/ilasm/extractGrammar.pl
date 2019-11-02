@@ -12,9 +12,9 @@ my $grammar = $2;
 
 #my $line;
 #foreach $line (split /\n/s, $prefix) {
-#	if ($line =~ /^\s*%token/) { 
+#	if ($line =~ /^\s*%token/) {
 #		$line =~ s/\s*<.*>//g;
-#		print "$line\n" 
+#		print "$line\n"
 #	}
 #}
 

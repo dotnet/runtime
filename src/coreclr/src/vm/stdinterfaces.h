@@ -103,8 +103,8 @@ inline static Enum_StdInterfaces GetStdInterfaceKind(PTR_IUnknown pUnk)
 
     PTR_SLOT pVtable = dac_cast<PTR_SLOT>(*(dac_cast<PTR_TADDR>(pUnk)));
     PTR_StdInterfaceDesc pDesc = dac_cast<PTR_StdInterfaceDesc>(dac_cast<PTR_BYTE>(pVtable) - offsetof(StdInterfaceDesc<1>, m_vtable));
-    
-#ifndef DACCESS_COMPILE   
+
+#ifndef DACCESS_COMPILE
     // Make sure the interface kind is the right one
     // Only do this in non-DAC build as I don't want to bring in g_rgStdVtables global variable
     _ASSERTE(g_rgStdVtables[pDesc->m_StdInterfaceKind] == pVtable);
@@ -117,11 +117,11 @@ inline static Enum_StdInterfaces GetStdInterfaceKind(PTR_IUnknown pUnk)
 // IUnknown is part of IDispatch
 // Common vtables for well-known COM interfaces
 // shared by all COM+ callable wrappers.
-extern const StdInterfaceDesc<3>  g_InnerUnknown;         
+extern const StdInterfaceDesc<3>  g_InnerUnknown;
 extern const StdInterfaceDesc<4>  g_IProvideClassInfo;
-extern const StdInterfaceDesc<9>  g_IMarshal;         
+extern const StdInterfaceDesc<9>  g_IMarshal;
 extern const StdInterfaceDesc<4>  g_ISupportsErrorInfo;
-extern const StdInterfaceDesc<8>  g_IErrorInfo;       
+extern const StdInterfaceDesc<8>  g_IErrorInfo;
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
@@ -419,8 +419,8 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
 
 //------------------------------------------------------------------------------------------
 //      ICustomPropertyProvider methods for Jupiter
-HRESULT __stdcall ICustomPropertyProvider_GetProperty_Wrapper(IUnknown *pPropertyProvider, 
-                                                              HSTRING hstrName, 
+HRESULT __stdcall ICustomPropertyProvider_GetProperty_Wrapper(IUnknown *pPropertyProvider,
+                                                              HSTRING hstrName,
                                                               /* [out] */ IUnknown **ppProperty);
 
 // Windows.UI.DirectUI.Xaml.TypeNameNative
@@ -430,15 +430,15 @@ struct TypeNameNative
     int         typeKind;
 };
 
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty_Wrapper(IUnknown *pPropertyProvider, 
-                                                                     HSTRING hstrName, 
+HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty_Wrapper(IUnknown *pPropertyProvider,
+                                                                     HSTRING hstrName,
                                                                      TypeNameNative indexedParamType,
                                                                      /* [out, retval] */ IUnknown **ppProperty);
 
-HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation_Wrapper(IUnknown *pPropertyProvider, 
+HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation_Wrapper(IUnknown *pPropertyProvider,
                                                                           /* [out, retval] */ HSTRING *phstrStringRepresentation);
 
-HRESULT __stdcall ICustomPropertyProvider_GetType_Wrapper(IUnknown *pPropertyProvider, 
+HRESULT __stdcall ICustomPropertyProvider_GetType_Wrapper(IUnknown *pPropertyProvider,
                                                           /* [out, retval] */ TypeNameNative *pTypeIdentifier);
 
 HRESULT __stdcall IStringable_ToString_Wrapper(IUnknown* pStringable,

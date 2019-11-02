@@ -129,7 +129,7 @@ namespace BINDER_SPACE
         StackScratchBuffer sCultureBuffer;
         LPCSTR m_szSimpleNameUTF8;
         LPCSTR m_szCultureOrLanguageUTF8;
-    };    
+    };
 };
 
 #endif

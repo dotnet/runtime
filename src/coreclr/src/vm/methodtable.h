@@ -9,7 +9,7 @@
 #define _METHODTABLE_H_
 
 /*
- *  Include Files 
+ *  Include Files
  */
 #include "vars.hpp"
 #include "cor.h"
@@ -82,16 +82,16 @@ enum class WellKnownAttribute : DWORD;
 // MethodTables, i.e. a new MethodTable gets allocated for each such instantiation.
 // The entries in these tables (i.e. the code) are, however, often shared.
 //
-// In particular, a MethodTable's vtable contents (and hence method descriptors) may be 
+// In particular, a MethodTable's vtable contents (and hence method descriptors) may be
 // shared between compatible instantiations (e.g. List<string> and List<object> have
-// the same vtable *contents*).  Likewise the EEClass will be shared between 
-// compatible instantiations whenever the vtable contents are. 
+// the same vtable *contents*).  Likewise the EEClass will be shared between
+// compatible instantiations whenever the vtable contents are.
 //
 // !!! Thus that it is _not_ generally the case that GetClass.GetMethodTable() == t. !!!
 //
 // Instantiated interfaces have their own method tables unique to the instantiation e.g. I<string> is
 // distinct from I<int> and I<object>
-// 
+//
 // For generic types the interface map lists generic interfaces
 // For instantiated types the interface map lists instantiated interfaces
 //   e.g. for C<T> : I<T>, J<string>
@@ -223,13 +223,13 @@ protected:
 #endif // FEATURE_COMINTEROP
 
 //
-// This struct contains cached information on the GUID associated with a type. 
+// This struct contains cached information on the GUID associated with a type.
 //
 
 struct GuidInfo
 {
     GUID         m_Guid;                // The actual guid of the type.
-    BOOL         m_bGeneratedFromName;  // A boolean indicating if it was generated from the 
+    BOOL         m_bGeneratedFromName;  // A boolean indicating if it was generated from the
                                         // name of the type.
 };
 
@@ -270,12 +270,12 @@ typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 // MethodTableWriteableData.
 struct CrossModuleGenericsStaticsInfo
 {
-    // Module this method table statics are attached to. 
+    // Module this method table statics are attached to.
     //
-    // The statics has to be attached to module referenced from the generic instantiation 
-    // in domain-neutral code. We need to guarantee that the module for the statics 
+    // The statics has to be attached to module referenced from the generic instantiation
+    // in domain-neutral code. We need to guarantee that the module for the statics
     // has a valid local represenation in an appdomain.
-    // 
+    //
     PTR_Module          m_pModuleForStatics;
 
     // Method table ID for statics
@@ -294,7 +294,7 @@ struct RCWPerTypeData;
 //
 struct MethodTableWriteableData
 {
-    friend class MethodTable; 
+    friend class MethodTable;
 #if defined(DACCESS_COMPILE)
     friend class NativeImageDumper;
 #endif
@@ -304,10 +304,10 @@ struct MethodTableWriteableData
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
-    
+
         enum_flag_Unrestored                = 0x00000004,
         enum_flag_HasApproxParent           = 0x00000010,
-        enum_flag_UnrestoredTypeKey         = 0x00000020,     
+        enum_flag_UnrestoredTypeKey         = 0x00000020,
         enum_flag_IsNotFullyLoaded          = 0x00000040,
         enum_flag_DependenciesLoaded        = 0x00000080,     // class and all depedencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
@@ -318,7 +318,7 @@ struct MethodTableWriteableData
 
 #ifdef FEATURE_PREJIT
         // These flags are used only at ngen time. We store them here since
-        // we are running out of available flags in MethodTable. They may eventually 
+        // we are running out of available flags in MethodTable. They may eventually
         // go into ngen speficic state.
         enum_flag_NGEN_IsFixedUp            = 0x00010000, // This MT has been fixed up during NGEN
         enum_flag_NGEN_IsNeedsRestoreCached = 0x00020000, // Set if we have cached the results of needs restore computation
@@ -342,15 +342,15 @@ struct MethodTableWriteableData
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
     /*
-     * m_hExposedClassObject is LoaderAllocator slot index to 
-     * a RuntimeType instance for this class. 
+     * m_hExposedClassObject is LoaderAllocator slot index to
+     * a RuntimeType instance for this class.
      */
     LOADERHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
-    // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if 
-    // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a 
+    // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
+    // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
     // GC (like AD unload)
     Volatile<DWORD> m_dwLastVerifedGCCnt;
 
@@ -605,7 +605,7 @@ typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHel
 //@GENERICS:
 // Each generic type has a corresponding "generic" method table that serves the following
 // purposes:
-// * The method table pointer is used as a representative for the generic type e.g. in reflection 
+// * The method table pointer is used as a representative for the generic type e.g. in reflection
 // * MethodDescs for methods in the vtable are used for reflection; they should never be invoked.
 // Some other information (e.g. BaseSize) makes no sense "generically" but unfortunately gets put in anyway.
 //
@@ -613,7 +613,7 @@ typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHel
 // However, the EEClass structure can be shared between compatible instantiations e.g. List<string> and List<object>.
 // In that case, MethodDescs are also shared between compatible instantiations (but see below about generic methods).
 // Hence the vtable entries for MethodTables belonging to such an EEClass are the same.
-// 
+//
 // The non-vtable section of such MethodTables are only present for one of the instantiations (the first one
 // requested) as non-vtable entries are never accessed through the vtable pointer of an object so it's always possible
 // to ensure that they are accessed through the representative MethodTable that contains them.
@@ -622,13 +622,13 @@ typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHel
 // objects point at (see code:Object).  It holds the size and GC layout of the type, as well as the dispatch table
 // for virtual dispach (but not interface dispatch).  There is a distinct method table for every instance of
 // a generic type. From here you can get to
-// 
+//
 // * code:EEClass
-// 
+//
 // Important fields
 //     * code:MethodTable.m_pEEClass - pointer to the cold part of the type.
 //     * code:MethodTable.m_pParentMethodTable - the method table of the parent type.
-//     
+//
 class MethodTableBuilder;
 class MethodTable
 {
@@ -650,7 +650,7 @@ class MethodTable
 #endif
 
 public:
-    // Do some sanity checking to make sure it's a method table 
+    // Do some sanity checking to make sure it's a method table
     // and not pointing to some random memory.  In particular
     // check that (apart from the special case of instantiated generic types) we have
     // GetCanonicalMethodTable() == this;
@@ -666,8 +666,8 @@ public:
     PTR_Module GetModuleIfLoaded();
 
     // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral), 
-    // and returns an AppDomain if any of the parts are from an AppDomain, 
+    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
+    // and returns an AppDomain if any of the parts are from an AppDomain,
     // i.e. are domain-bound.  Note that if any of the parts are domain-bound
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
@@ -684,7 +684,7 @@ public:
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure
     // that a type never outlives its loader module with respect to app-domain unloading
     //
-    // GetModuleForStatics() is the third kind of module. GetModuleForStatics() is module that 
+    // GetModuleForStatics() is the third kind of module. GetModuleForStatics() is module that
     // statics are attached to.
     PTR_Module GetLoaderModule();
     PTR_LoaderAllocator GetLoaderAllocator();
@@ -720,13 +720,13 @@ public:
     // Retrieves the COM interface type.
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
-    
+
     // Determines whether this is a WinRT-legal type
     BOOL IsLegalWinRTType(OBJECTREF *poref);
 
     // Determines whether this is a WinRT-legal type - don't use it with array
     BOOL IsLegalNonArrayWinRTType();
-    
+
     MethodTable *GetDefaultWinRTInterface();
 
     OBJECTHANDLE GetOHDelegate();
@@ -739,7 +739,7 @@ public:
 
     BOOL            IsExtensibleRCW();
 
-    // Helper to get parent class skipping over COM class in 
+    // Helper to get parent class skipping over COM class in
     // the hierarchy
     MethodTable* GetComPlusParentMethodTable();
 
@@ -753,7 +753,7 @@ public:
 
     //-------------------------------------------------------------------
     // Sparse VTables.   These require a SparseVTableMap in the EEClass in
-    // order to record how the CLR's vtable slots map across to COM 
+    // order to record how the CLR's vtable slots map across to COM
     // Interop slots.
     //
     int IsSparseForCOMInterop();
@@ -766,7 +766,7 @@ public:
     ClassFactoryBase       *GetComClassFactory();
     BOOL                    SetComClassFactory(ClassFactoryBase *pFactory);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    
+
     OBJECTREF GetObjCreateDelegate();
     void SetObjCreateDelegate(OBJECTREF orDelegate);
 
@@ -805,7 +805,7 @@ public:
 
 #ifdef FEATURE_ICASTABLE
     void SetICastable();
-#endif  
+#endif
 
     BOOL IsICastable(); // This type implements ICastable interface
 
@@ -857,7 +857,7 @@ public:
 
     CHECK CheckActivated();
     CHECK CheckInstanceActivated();
-    
+
     //-------------------------------------------------------------------
     // THE DEFAULT CONSTRUCTOR
     //
@@ -871,11 +871,11 @@ public:
     BOOL HasExplicitOrImplicitPublicDefaultConstructor();
 
     //-------------------------------------------------------------------
-    // THE CLASS INITIALIZATION CONDITION 
+    // THE CLASS INITIALIZATION CONDITION
     //  (and related DomainLocalModule storage)
     //
     // - populate the DomainLocalModule if needed
-    // - run the cctor 
+    // - run the cctor
     //
 
 public:
@@ -903,10 +903,10 @@ public:
 
     // Init the m_dwFlags field for an array
     void SetIsArray(CorElementType arrayType, CorElementType elementType);
-        
+
     BOOL IsClassPreInited();
-    
-    // mark the class as having its cctor run.  
+
+    // mark the class as having its cctor run.
 #ifndef DACCESS_COMPILE
     void SetClassInited();
     BOOL  IsClassInited();
@@ -938,12 +938,12 @@ private:
         LIMITED_METHOD_CONTRACT;
         return RidFromToken(typeToken) - 1;
     }
-    
+
     // called from CheckRunClassInitThrowing().  The type wasn't marked as
     // inited while we were there, so let's attempt to do the work.
     void  DoRunClassInitThrowing();
 
-    BOOL RunClassInitEx(OBJECTREF *pThrowable); 
+    BOOL RunClassInitEx(OBJECTREF *pThrowable);
 
 public:
     //-------------------------------------------------------------------
@@ -978,7 +978,7 @@ public:
 
     // This is different from !IsRestored() in that it checks if restoring
     // will ever be needed for this ngened data-structure.
-    // This is to be used at ngen time of a dependent module to determine 
+    // This is to be used at ngen time of a dependent module to determine
     // if it can be accessed directly, or if the restoring mechanism needs
     // to be hooked in.
     BOOL ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited);
@@ -999,7 +999,7 @@ public:
     // This returns true at NGen time if we may need to attach statics to
     // other module than current loader module at runtime
     BOOL NeedsCrossModuleGenericsStaticsInfo();
-    
+
     // Returns true at NGen time if we may need to write into the MethodTable at runtime
     BOOL IsWriteable();
 
@@ -1017,15 +1017,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsPreRestored() && 
+        return !IsPreRestored() &&
             (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
     }
 
     // Actually do the restore actions on the method table
     void Restore();
-    
+
     void SetIsRestored();
- 
+
     inline BOOL IsRestored_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1052,7 +1052,7 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // LOAD LEVEL 
+    // LOAD LEVEL
     //
     // The load level of a method table is derived from various flag bits
     // See classloadlevel.h for details of each level
@@ -1062,7 +1062,7 @@ public:
     // this level (generic arguments, parent, interfaces, etc).
     // Fully loading a type to this level is done outside locks, hence the need for
     // a single atomic action that sets the level.
-    // 
+    //
     inline void SetIsFullyLoaded()
     {
         CONTRACTL
@@ -1080,7 +1080,7 @@ public:
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
-    inline BOOL IsFullyLoaded() 
+    inline BOOL IsFullyLoaded()
     {
         WRAPPER_NO_CONTRACT;
 
@@ -1093,7 +1093,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_SkipWinRTOverride);
     }
-    
+
     inline void SetSkipWinRTOverride()
     {
         WRAPPER_NO_CONTRACT;
@@ -1134,7 +1134,7 @@ public:
         WRAPPER_NO_CONTRACT;
         FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
-    
+
     inline void SetIsDependenciesLoaded()
     {
         CONTRACTL
@@ -1190,7 +1190,7 @@ public:
         return TypeHandle(this).CheckLoadLevel(level);
     }
 #endif
- 
+
 
     void DoFullyLoad(Generics::RecursionGraph * const pVisited, const ClassLoadLevel level, DFLPendingList * const pPending, BOOL * const pfBailed,
                      const InstantiationContext * const pInstContext);
@@ -1198,10 +1198,10 @@ public:
     //-------------------------------------------------------------------
     // METHOD TABLES AS TYPE DESCRIPTORS
     //
-    // A MethodTable can represeent a type such as "String" or an 
+    // A MethodTable can represeent a type such as "String" or an
     // instantiated type such as "List<String>".
     //
-    
+
     inline BOOL IsInterface()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1222,7 +1222,7 @@ public:
 
     BOOL IsExternallyVisible();
 
-    // Get the instantiation for this instantiated type e.g. for Dict<string,int> 
+    // Get the instantiation for this instantiated type e.g. for Dict<string,int>
     // this would be an array {string,int}
     // If not instantiated, return NULL
     Instantiation GetInstantiation();
@@ -1338,18 +1338,18 @@ public:
 
     // class is a com object class
     Module* GetDefiningModuleForOpenType();
-    
-    inline BOOL IsTypicalTypeDefinition()       
+
+    inline BOOL IsTypicalTypeDefinition()
     {
         LIMITED_METHOD_CONTRACT;
         return !HasInstantiation() || IsGenericTypeDefinition();
     }
 
-    typedef enum 
-    { 
-        modeProjected = 0x1, 
-        modeRedirected = 0x2, 
-        modeAll = modeProjected|modeRedirected 
+    typedef enum
+    {
+        modeProjected = 0x1,
+        modeRedirected = 0x2,
+        modeAll = modeProjected|modeRedirected
     } Mode;
 
     // Is this a generic interface/delegate that can be used for COM interop?
@@ -1359,7 +1359,7 @@ public:
     BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);
 
     //-------------------------------------------------------------------
-    // GENERICS & CODE SHARING 
+    // GENERICS & CODE SHARING
     //
 
     BOOL IsSharedByGenericInstantiations();
@@ -1467,15 +1467,15 @@ public:
     // Rather than the traditional array of code pointers (or "slots") we use a two-level vtable in
     // which slots for virtual methods live in chunks.  Doing so allows the chunks to be shared among
     // method tables (the most common example being between parent and child classes where the child
-    // does not override any method in the chunk).  This yields substantial space savings at the fixed 
+    // does not override any method in the chunk).  This yields substantial space savings at the fixed
     // cost of one additional indirection for a virtual call.
     //
     // Note that none of this should be visible outside the implementation of MethodTable; all other
     // code continues to refer to a virtual method via the traditional slot number.  This is similar to
     // how we refer to non-virtual methods as having a slot number despite having long ago moved their
     // code pointers out of the vtable.
-    // 
-    // Consider a class where GetNumVirtuals is 5 and (for the sake of the example) assume we break 
+    //
+    // Consider a class where GetNumVirtuals is 5 and (for the sake of the example) assume we break
     // the vtable into chunks of size 3.  The layout would be as follows:
     //
     //   pMT                       chunk 1                   chunk 2
@@ -1492,11 +1492,11 @@ public:
     //   ------------------
     //
     // We refer to "ptr to chunk 1" and "ptr to chunk 2" as "indirection slots."
-    // 
-    // The current chunking strategy is independent of class properties; all are of size 8.  Several 
-    // other strategies were tried, and the only one that has performed better empirically is to begin 
+    //
+    // The current chunking strategy is independent of class properties; all are of size 8.  Several
+    // other strategies were tried, and the only one that has performed better empirically is to begin
     // with a single chunk of size 4 (matching the number of virtuals in System.Object) and then
-    // continue with chunks of size 8.  However it was a small improvement and required the run-time 
+    // continue with chunks of size 8.  However it was a small improvement and required the run-time
     // helpers listed below to be measurably slower.
     //
     // If you want to change this, you should only need to modify the first four functions below
@@ -1593,7 +1593,7 @@ public:
     inline PTR_PCODE GetNonVirtualSlotsArray()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(HasNonVirtualSlotsArray());        
+        _ASSERTE(HasNonVirtualSlotsArray());
         return RelativePointer<PTR_PCODE>::GetValueAtPtr(GetNonVirtualSlotsPtr());
     }
 
@@ -1613,7 +1613,7 @@ public:
         SetFlag(enum_flag_HasSingleNonVirtualSlot);
     }
 #endif
-    
+
     inline unsigned GetNonVirtualSlotsArraySize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1670,7 +1670,7 @@ public:
     // for functionality checks. Do not confuse with GetNumVirtuals()!
     WORD GetNumVtableSlots()
     {
-        LIMITED_METHOD_DAC_CONTRACT; 
+        LIMITED_METHOD_DAC_CONTRACT;
         return GetNumVirtuals() + GetNumNonVirtualSlots();
     }
 
@@ -1691,7 +1691,7 @@ public:
     MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
 
     //-------------------------------------------------------------------
-    // BoxedEntryPoint MethodDescs.  
+    // BoxedEntryPoint MethodDescs.
     //
     // Virtual methods on structs have BoxedEntryPoint method descs in their vtable.
     // See also notes for MethodDesc::FindOrCreateAssociatedMethodDesc.  You should
@@ -1704,7 +1704,7 @@ public:
     MethodDesc* GetExistingUnboxedEntryPointMD(MethodDesc *pMD);
 
     //-------------------------------------------------------------------
-    // FIELD LAYOUT, OBJECT SIZE ETC. 
+    // FIELD LAYOUT, OBJECT SIZE ETC.
     //
 
     inline BOOL HasLayout();
@@ -1720,15 +1720,15 @@ public:
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()
-    { 
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_BaseSize); 
+        return(m_BaseSize);
     }
 
-    void            SetBaseSize(DWORD baseSize)       
-    { 
+    void            SetBaseSize(DWORD baseSize)
+    {
         LIMITED_METHOD_CONTRACT;
-        m_BaseSize = baseSize; 
+        m_BaseSize = baseSize;
     }
 
     BOOL            IsStringOrArray() const
@@ -1765,7 +1765,7 @@ public:
     // The component size is actually 16-bit WORD, but this method is returning SIZE_T to ensure
     // that SIZE_T is used everywhere for object size computation. It is necessary to support
     // objects bigger than 2GB.
-    SIZE_T          GetComponentSize()  
+    SIZE_T          GetComponentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return HasComponentSize() ? RawGetComponentSize() : 0;
@@ -1808,7 +1808,7 @@ public:
 
 
     // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.
-    DWORD           ContainsPointers()  
+    DWORD           ContainsPointers()
     {
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_ContainsPointers);
@@ -1832,7 +1832,7 @@ public:
     NOINLINE BYTE *GetLoaderAllocatorObjectForGC();
 
     BOOL            IsNotTightlyPacked();
-    
+
     void SetContainsPointers()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1856,14 +1856,14 @@ public:
     //-------------------------------------------------------------------
     // FIELD DESCRIPTORS
     //
-    // Most of this API still lives on EEClass.  
+    // Most of this API still lives on EEClass.
     //
     // ************************************ WARNING *************
     // **   !!!!INSTANCE FIELDDESCS ARE REPRESENTATIVES!!!!!   **
     // ** THEY ARE SHARED BY COMPATIBLE GENERIC INSTANTIATIONS **
     // ************************************ WARNING *************
 
-    // This goes straight to the EEClass 
+    // This goes straight to the EEClass
     // Careful about using this method. If it's possible that fields may have been added via EnC, then
     // must use the FieldDescIterator as any fields added via EnC won't be in the raw list
     PTR_FieldDesc GetApproxFieldDescListRaw();
@@ -1971,10 +1971,10 @@ public:
 
     //-------------------------------------------------------------------
     // CASTING
-    // 
+    //
     BOOL CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
     BOOL CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
-    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);  
+    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);
     BOOL ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
     BOOL ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited);
 
@@ -2127,13 +2127,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return offsetof(MethodTable, m_dwFlags);
-    } 
+    }
 
     static UINT32 GetIfArrayThenSzArrayFlag()
     {
         LIMITED_METHOD_CONTRACT;
         return enum_flag_Category_IfArrayThenSzArray;
-    } 
+    }
 
     //-------------------------------------------------------------------
     // CONSTRUCTION
@@ -2141,7 +2141,7 @@ public:
     // Do not call the following at any time except when creating a method table.
     // One day we will have proper constructors for method tables and all these
     // will disappear.
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     inline void SetClass(EEClass *pClass)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2168,9 +2168,9 @@ public:
 
     MethodDesc *GetMethodDescForInterfaceMethod(TypeHandle ownerType, MethodDesc *pInterfaceMD, BOOL throwOnConflict);
     MethodDesc *GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceMD, BOOL throwOnConflict); // You can only use this one for non-generic interfaces
-    
+
     //-------------------------------------------------------------------
-    // INTERFACE MAP.  
+    // INTERFACE MAP.
     //
 
     inline PTR_InterfaceInfo GetInterfaceMap();
@@ -2264,7 +2264,7 @@ public:
         DWORD GetIndex()
         {
             LIMITED_METHOD_CONTRACT;
-            return m_i;            
+            return m_i;
         }
     };  // class InterfaceMapIterator
 
@@ -2337,7 +2337,7 @@ public:
     //-------------------------------------------------------------------
     // VIRTUAL/INTERFACE CALL RESOLUTION
     //
-    // These should probably go in method.hpp since they don't have 
+    // These should probably go in method.hpp since they don't have
     // much to do with method tables per se.
     //
 
@@ -2350,11 +2350,11 @@ public:
 #endif // FEATURE_COMINTEROP
 
 
-    // Try a partial resolve of the constraint call, up to generic code sharing.  
+    // Try a partial resolve of the constraint call, up to generic code sharing.
     //
     // Note that this will not necessarily resolve the call exactly, since we might be compiling
     // shared generic code - it may just resolve it to a candidate suitable for
-    // JIT compilation, and require a runtime lookup for the actual code pointer 
+    // JIT compilation, and require a runtime lookup for the actual code pointer
     // to call.
     //
     // Return NULL if the call could not be resolved, e.g. because it is invoked
@@ -2363,8 +2363,8 @@ public:
     //
     // Always returns an unboxed entry point with a uniform calling convention.
     MethodDesc * TryResolveConstraintMethodApprox(
-        TypeHandle   ownerType, 
-        MethodDesc * pMD, 
+        TypeHandle   ownerType,
+        MethodDesc * pMD,
         BOOL *       pfForceUseRuntimeLookup = NULL);
 
     //-------------------------------------------------------------------
@@ -2417,8 +2417,8 @@ protected:
 
 private:
     BOOL FindDispatchImpl(
-        UINT32         typeID, 
-        UINT32         slotNumber, 
+        UINT32         typeID,
+        UINT32         slotNumber,
         DispatchSlot * pImplSlot,
         BOOL           throwOnConflict);
 
@@ -2435,7 +2435,7 @@ public:
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
 
     // You must use the second of these two if there is any chance the pMD is a method
-    // on a generic interface such as IComparable<T> (which it normally can be).  The 
+    // on a generic interface such as IComparable<T> (which it normally can be).  The
     // ownerType is used to provide an exact qualification in the case the pMD is
     // a shared method descriptor.
     DispatchSlot FindDispatchSlotForInterfaceMD(MethodDesc *pMD, BOOL throwOnConflict);
@@ -2592,7 +2592,7 @@ public:
     // GENERICS DICT INFO
     //
 
-    // Number of generic arguments, whether this is a method table for 
+    // Number of generic arguments, whether this is a method table for
     // a generic type instantiation, e.g. List<string> or the "generic" MethodTable
     // e.g. for List.
     inline DWORD GetNumGenericArgs()
@@ -2617,11 +2617,11 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // OBJECTS 
+    // OBJECTS
     //
 
     OBJECTREF Allocate();
-    
+
     // This flavor of Allocate is more efficient, but can only be used
     // if IsRestored(), CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
@@ -2647,11 +2647,11 @@ public:
     void DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL debug);
     void DebugDumpGCDesc(LPCUTF8 pszClassName, BOOL debug);
 #endif //_DEBUG
-    
+
     inline BOOL IsAgileAndFinalizable()
     {
         LIMITED_METHOD_CONTRACT;
-        // Right now, System.Thread is the only cases of this. 
+        // Right now, System.Thread is the only cases of this.
         // Things should stay this way - please don't change without talking to EE team.
         return this == g_pThreadClass;
     }
@@ -2665,7 +2665,7 @@ public:
     // appropiate to use this. For example, we treat enums as their underlying type or some structs are
     // optimized to be ints. To get the signature type or the verifier type (same as signature except for
     // enums are normalized to the primtive type that underlies them), use the APIs in Typehandle.h
-    //      
+    //
     //   * code:TypeHandle.GetSignatureCorElementType()
     //   * code:TypeHandle.GetVerifierCorElementType()
     //   * code:TypeHandle.GetInternalCorElementType()
@@ -2678,9 +2678,9 @@ public:
     // See code:TypeHandle::GetSignatureCorElementType for description
     CorElementType GetSignatureCorElementType();
 
-    // A true primitive is one who's GetVerifierCorElementType() == 
-    //      ELEMENT_TYPE_I, 
-    //      ELEMENT_TYPE_I4, 
+    // A true primitive is one who's GetVerifierCorElementType() ==
+    //      ELEMENT_TYPE_I,
+    //      ELEMENT_TYPE_I4,
     //      ELEMENT_TYPE_TYPEDBYREF etc.
     // Note that GetIntenalCorElementType might return these same values for some additional
     // types such as Enums and some structs.
@@ -2716,7 +2716,7 @@ public:
     inline BOOL IsValueType();
 
     // Returns "TRUE" iff "this" is a struct type such that return buffers used for returning a value
-    // of this type must be stack-allocated.  This will generally be true only if the struct 
+    // of this type must be stack-allocated.  This will generally be true only if the struct
     // contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
     // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
     // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
@@ -2727,10 +2727,10 @@ public:
     inline BOOL IsEnum();
 
     // Is this array? Returns false for System.Array.
-    inline BOOL IsArray()           
-    { 
+    inline BOOL IsArray()
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_Category_Array_Mask) == enum_flag_Category_Array; 
+        return GetFlag(enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
     }
     inline BOOL IsMultiDimArray()
     {
@@ -2752,12 +2752,12 @@ public:
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         SetFlag(enum_flag_Category_Nullable);
     }
-    
-    inline BOOL IsStructMarshalable() 
+
+    inline BOOL IsStructMarshalable()
     {
         LIMITED_METHOD_CONTRACT;
         PRECONDITION(!IsInterface());
-        return GetFlag(enum_flag_IfNotInterfaceThenMarshalable); 
+        return GetFlag(enum_flag_IfNotInterfaceThenMarshalable);
     }
 
     inline void SetStructMarshalable()
@@ -2766,9 +2766,9 @@ public:
         PRECONDITION(!IsInterface());
         SetFlag(enum_flag_IfNotInterfaceThenMarshalable);
     }
-    
-    // The following methods are only valid for the 
-    // method tables for array types.  These MTs may 
+
+    // The following methods are only valid for the
+    // method tables for array types.  These MTs may
     // be shared between array types and thus GetArrayElementTypeHandle
     // may only be approximate.  If you need the exact element type handle then
     // you should probably be calling GetArrayElementTypeHandle on a TypeHandle,
@@ -2778,7 +2778,7 @@ public:
     // At the moment only the object[] MethodTable is shared between array types.
     // In the future the amount of sharing of method tables is likely to be increased.
     CorElementType GetArrayElementType();
-    DWORD GetRank(); 
+    DWORD GetRank();
 
     TypeHandle GetApproxArrayElementTypeHandle()
     {
@@ -2847,7 +2847,7 @@ public:
     HRESULT GetCustomAttribute(WellKnownAttribute attribute,
                                const void  **ppData,
                                ULONG *pcbData);
-    
+
     mdTypeDef GetEnclosingCl();
 
 #ifdef DACCESS_COMPILE
@@ -2870,29 +2870,29 @@ public:
     //-------------------------------------------------------------------
     // DICTIONARIES FOR GENERIC INSTANTIATIONS
     //
-    // The PerInstInfo pointer is a pointer to per-instantiation pointer table, 
+    // The PerInstInfo pointer is a pointer to per-instantiation pointer table,
     // each entry of which points to an instantiation "dictionary"
     // for an instantiated type; the last pointer points to a
-    // dictionary which is specific to this method table, previous 
-    // entries point to dictionaries in superclasses. Instantiated interfaces and structs 
+    // dictionary which is specific to this method table, previous
+    // entries point to dictionaries in superclasses. Instantiated interfaces and structs
     // have just single dictionary (no inheritance).
     //
     // GetNumDicts() gives the number of dictionaries.
     //
-    //@nice GENERICS: instead of a separate table of pointers, put the pointers 
+    //@nice GENERICS: instead of a separate table of pointers, put the pointers
     // in the vtable itself. Advantages:
     // * Time: we save an indirection as we don't need to go through PerInstInfo first.
     // * Space: no need for PerInstInfo (1 word)
-    // Problem is that lots of code assumes that the vtable is filled 
+    // Problem is that lots of code assumes that the vtable is filled
     // uniformly with pointers to MethodDesc stubs.
     //
-    // The dictionary for the method table is just an array of handles for 
+    // The dictionary for the method table is just an array of handles for
     // type parameters in the following cases:
     // * instantiated interfaces (no code)
     // * instantiated types whose code is not shared
-    // Otherwise, it starts with the type parameters and then has a fixed 
+    // Otherwise, it starts with the type parameters and then has a fixed
     // number of slots for handles (types & methods)
-    // that are filled in lazily at run-time. Finally there is a "spill-bucket" 
+    // that are filled in lazily at run-time. Finally there is a "spill-bucket"
     // pointer used when the dictionary gets filled.
     // In summary:
     //    typar_1              type handle for first type parameter
@@ -2903,14 +2903,14 @@ public:
     //    slot_m               slot for last run-time handle (initially null)
     //    next_bucket          pointer to spill bucket (possibly null)
     // The spill bucket contains just run-time handle slots.
-    //   (Alternative: continue chaining buckets. 
-    //    Advantage: no need to deallocate when growing dictionaries. 
+    //   (Alternative: continue chaining buckets.
+    //    Advantage: no need to deallocate when growing dictionaries.
     //    Disadvantage: more indirections required at run-time.)
     //
     // The layout of dictionaries is determined by GetClass()->GetDictionaryLayout()
     // Thus the layout can vary between incompatible instantiations. This is sometimes useful because individual type
-    // parameters may or may not be shared. For example, consider a two parameter class Dict<K,D>. In instantiations shared with 
-    // Dict<double,string> any reference to K is known at JIT-compile-time (it's double) but any token containing D 
+    // parameters may or may not be shared. For example, consider a two parameter class Dict<K,D>. In instantiations shared with
+    // Dict<double,string> any reference to K is known at JIT-compile-time (it's double) but any token containing D
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
@@ -2971,15 +2971,15 @@ public:
     PTR_Dictionary GetDictionary();
 
 #ifdef FEATURE_PREJIT
-    // 
-    // After the zapper compiles all code in a module it may attempt 
+    //
+    // After the zapper compiles all code in a module it may attempt
     // to populate entries in all dictionaries
     // associated with generic types.  This is an optional step - nothing will
     // go wrong at runtime except we may get more one-off calls to JIT_GenericHandle.
     // Although these are one-off we prefer to avoid them since they touch metadata
     // pages.
     //
-    // Fully populating a dictionary may in theory load more types. However 
+    // Fully populating a dictionary may in theory load more types. However
     // for the moment only those entries that refer to types that
     // are already loaded will be filled in.
     void PrepopulateDictionary(DataImage * image, BOOL nonExpansive);
@@ -2990,18 +2990,18 @@ public:
     // suitable for interpreting the current class.
     //
     // If, for example, the definition for the current class is
-    //   D<T> : C<List<T>, T[] > 
-    // then this (for C<!0,!1>) will be 
+    //   D<T> : C<List<T>, T[] >
+    // then this (for C<!0,!1>) will be
     //   0 --> List<T>
     //   1 --> T[]
     // added to the chain of substitutions.
-    // 
+    //
     // Subsequently, if the definition for C is
     //   C<T, U> : B< Dictionary<T, U> >
     // then the next subst (for B<!0>) will be
     //   0 --> Dictionary< List<T>, T[] >
 
-    Substitution GetSubstitutionForParent(const Substitution *pSubst); 
+    Substitution GetSubstitutionForParent(const Substitution *pSubst);
 
     inline DWORD GetAttrClass();
 
@@ -3023,7 +3023,7 @@ public:
     //
     /*
      * m_ExposedClassObject is a RuntimeType instance for this class.  But
-     * do NOT use it for Arrays or remoted objects!  All arrays of objects 
+     * do NOT use it for Arrays or remoted objects!  All arrays of objects
      * share the same MethodTable/EEClass.
      * @GENERICS: this is per-instantiation data
      */
@@ -3033,7 +3033,7 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
 
-   
+
     // ------------------------------------------------------------------
     // Private part of MethodTable
     // ------------------------------------------------------------------
@@ -3074,7 +3074,7 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // The GUID Info 
+    // The GUID Info
     // Used by COM interop to get GUIDs (IIDs and CLSIDs)
 
     // Get/store cached GUID information
@@ -3118,7 +3118,7 @@ private:
 
 public :
     //-------------------------------------------------------------------
-    // Debug Info 
+    // Debug Info
     //
 
 
@@ -3179,7 +3179,7 @@ public:
         virtual MethodData  *GetDeclMethodData() = 0;
         MethodTable *GetDeclMethodTable() { return m_pDeclMT; }
         virtual MethodDesc  *GetDeclMethodDesc(UINT32 slotNumber) = 0;
-        
+
         virtual MethodData  *GetImplMethodData() = 0;
         MethodTable *GetImplMethodTable() { return m_pImplMT; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber) = 0;
@@ -3248,14 +3248,14 @@ public:
                 { LIMITED_METHOD_CONTRACT; m_pMD = pMD; }
             inline MethodDesc *GetMethodDesc()
                 { LIMITED_METHOD_CONTRACT; return m_pMD; }
-                
+
         };
 
         static void ProcessMap(
-            const DispatchMapTypeID * rgTypeIDs, 
-            UINT32                    cTypeIDs, 
-            MethodTable *             pMT, 
-            UINT32                    cCurrentChainDepth, 
+            const DispatchMapTypeID * rgTypeIDs,
+            UINT32                    cTypeIDs,
+            MethodTable *             pMT,
+            UINT32                    cCurrentChainDepth,
             MethodDataEntry *         rgWorkingData);
     };  // class MethodData
 
@@ -3303,7 +3303,7 @@ protected:
         // This is used in staged map decoding - it indicates which type we will next decode.
         UINT32       m_iNextChainDepth;
         static const UINT32 MAX_CHAIN_DEPTH = UINT32_MAX;
-        
+
         BOOL m_containsMethodImpl;
 
         // NOTE: Use of these APIs are unlocked and may appear to be erroneous. However, since calls
@@ -3411,9 +3411,9 @@ protected:
         static UINT32 GetObjectSize(MethodTable *pMTDecl);
 
         MethodDataInterfaceImpl(
-            const DispatchMapTypeID * rgDeclTypeIDs, 
-            UINT32                    cDeclTypeIDs, 
-            MethodData *              pDecl, 
+            const DispatchMapTypeID * rgDeclTypeIDs,
+            UINT32                    cDeclTypeIDs,
+            MethodData *              pDecl,
             MethodData *              pImpl);
         virtual ~MethodDataInterfaceImpl();
 
@@ -3445,11 +3445,11 @@ protected:
 
         BOOL PopulateNextLevel();
         void Init(
-            const DispatchMapTypeID * rgDeclTypeIDs, 
-            UINT32                    cDeclTypeIDs, 
-            MethodData *              pDecl, 
+            const DispatchMapTypeID * rgDeclTypeIDs,
+            UINT32                    cDeclTypeIDs,
+            MethodData *              pDecl,
             MethodData *              pImpl);
-        
+
         MethodData *m_pDecl;
         MethodData *m_pImpl;
 
@@ -3502,9 +3502,9 @@ public:
     // This method is used by BuildMethodTable because the exact interface has not yet been loaded.
     // NOTE: This method does not cache the resulting MethodData object in the global MethodDataCache.
     static MethodData * GetMethodData(
-        const DispatchMapTypeID * rgDeclTypeIDs, 
-        UINT32                    cDeclTypeIDs, 
-        MethodTable *             pMTDecl, 
+        const DispatchMapTypeID * rgDeclTypeIDs,
+        UINT32                    cDeclTypeIDs,
+        MethodTable *             pMTDecl,
         MethodTable *             pMTImpl);
 
     void CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT);
@@ -3516,9 +3516,9 @@ protected:
     static MethodData *GetMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl, BOOL fCanCache);
     // NOTE: This method does not cache the resulting MethodData object in the global MethodDataCache.
     static MethodData * GetMethodDataHelper(
-        const DispatchMapTypeID * rgDeclTypeIDs, 
-        UINT32                    cDeclTypeIDs, 
-        MethodTable *             pMTDecl, 
+        const DispatchMapTypeID * rgDeclTypeIDs,
+        UINT32                    cDeclTypeIDs,
+        MethodTable *             pMTDecl,
         MethodTable *             pMTImpl);
 
 public:
@@ -3562,7 +3562,7 @@ public:
     // This includes new static methods, new non-virtual methods, and any overrides
     // of the parent's virtual methods. It does not include virtual method implementations
     // provided by the parent
-    
+
     class IntroducedMethodIterator
     {
     public:
@@ -3574,7 +3574,7 @@ public:
         inline MethodDesc *GetMethodDesc() const;
 
         // Static worker methods of the iterator. These are meant to be used
-        // by RuntimeTypeHandle::GetFirstIntroducedMethod and RuntimeTypeHandle::GetNextIntroducedMethod 
+        // by RuntimeTypeHandle::GetFirstIntroducedMethod and RuntimeTypeHandle::GetNextIntroducedMethod
         // only to expose this iterator to managed code.
         static MethodDesc * GetFirst(MethodTable * pMT);
         static MethodDesc * GetNext(MethodDesc * pMD);
@@ -3590,7 +3590,7 @@ public:
     };  // class IntroducedMethodIterator
 
     //-------------------------------------------------------------------
-    // INSTANCE MEMBER VARIABLES 
+    // INSTANCE MEMBER VARIABLES
     //
 
 #ifdef DACCESS_COMPILE
@@ -3732,7 +3732,7 @@ private:
                                                               // to detect this condition when restoring
 
         enum_flag_ComObject                   = 0x40000000, // class is a com object
-        
+
         enum_flag_HasComponentSize            = 0x80000000,   // This is set if component size is used for flags.
 
         // Types that require non-trivial interface cast have this bit set in the category
@@ -3811,7 +3811,7 @@ private:
         return (IsStringOrArray() ? (((DWORD)enum_flag_StringArrayValues & (DWORD)mask) == (DWORD)flag) :
             ((m_dwFlags & (DWORD)mask) == (DWORD)flag));
     }
-                                                               
+
     __forceinline void ClearFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags &= ~flag;
@@ -3857,10 +3857,10 @@ public:
         public_enum_flag_NonTrivialInterfaceCast = enum_flag_NonTrivialInterfaceCast,
     };
 
-private: 
+private:
     /*
      * This stuff must be first in the struct and should fit on a cache line - don't move it. Used by the GC.
-     */   
+     */
     // struct
     // {
 
@@ -3876,15 +3876,15 @@ private:
 
     // Class token if it fits into 16-bits. If this is (WORD)-1, the class token is stored in the TokenOverflow optional member.
     WORD            m_wToken;
-        
+
     // <NICE> In the normal cases we shouldn't need a full word for each of these </NICE>
     WORD            m_wNumVirtuals;
     WORD            m_wNumInterfaces;
-    
+
 #ifdef _DEBUG
     LPCUTF8         debug_m_szClassName;
 #endif //_DEBUG
-    
+
     // On Linux ARM is a RelativeFixupPointer. Otherwise,
     // Parent PTR_MethodTable if enum_flag_HasIndirectParent is not set. Pointer to indirection cell
     // if enum_flag_enum_flag_HasIndirectParent is set. The indirection is offset by offsetof(MethodTable, m_pParentMethodTable).
@@ -3893,13 +3893,13 @@ private:
     ParentMT_t m_pParentMethodTable;
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
-    
+
 #if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
     RelativePointer<PTR_MethodTableWriteableData> m_pWriteableData;
 #else
     PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
 #endif
-    
+
     // The value of lowest two bits describe what the union contains
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
@@ -3907,7 +3907,7 @@ private:
         UNION_METHODTABLE  = 2,    //  2 - pointer to canonical MethodTable.
         UNION_INDIRECTION  = 3     //  3 - pointer to indirection cell that points to canonical MethodTable.
     };                             //      (used only if FEATURE_PREJIT is defined)
-    static const TADDR UNION_MASK = 3; 
+    static const TADDR UNION_MASK = 3;
 
     union {
 #if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
@@ -3930,9 +3930,9 @@ private:
         return (pCanonMT & ~UNION_MASK);
     }
 
-    // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive 
+    // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
     // JITed code and JIT helpers. However, they are frequently not present. The space is used by other
-    // multipurpose slots on first come first served basis if the fixed ones are not present. The other 
+    // multipurpose slots on first come first served basis if the fixed ones are not present. The other
     // multipurpose are DispatchMapSlot, NonVirtualSlots, ModuleOverride (see enum_flag_MultipurposeSlotsMask).
     // The multipurpose slots that do not fit are stored after vtable slots.
 
@@ -3972,14 +3972,14 @@ private:
     void *operator new(size_t dummy);
     void operator delete(void *pData);
     MethodTable();
-    
+
     // Optional members.  These are used for fields in the data structure where
     // the fields are (a) known when MT is created and (b) there is a default
     // value for the field in the common case.  That is, they are normally used
     // for data that is only relevant to a small number of method tables.
 
     // Optional members and multipurpose slots have similar purpose, but they differ in details:
-    // - Multipurpose slots can only accomodate pointer sized structures right now. It is non-trivial 
+    // - Multipurpose slots can only accomodate pointer sized structures right now. It is non-trivial
     //   to add new ones, the access is faster.
     // - Optional members can accomodate structures of any size. It is trivial to add new ones,
     //   the access is slower.
@@ -4038,7 +4038,7 @@ public:
     }
 
     METHODTABLE_OPTIONAL_MEMBERS()
- 
+
 private:
     inline DWORD GetStartOffsetOfOptionalMembers()
     {
@@ -4061,7 +4061,7 @@ private:
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
 
-    // The PerInstInfo is a (possibly empty) array of pointers to 
+    // The PerInstInfo is a (possibly empty) array of pointers to
     // Instantiations/Dictionaries. This array comes after the optional members.
     inline DWORD GetPerInstInfoSize();
 
@@ -4072,7 +4072,7 @@ private:
     inline DWORD GetInterfaceMapSize();
 
     // The instantiation/dictionary comes at the end of the MethodTable after
-    //  the interface map.  
+    //  the interface map.
     inline DWORD GetInstAndDictSize();
 
 private:
@@ -4144,7 +4144,7 @@ static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);
 #endif // defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 
-MethodTable* CreateMinimalMethodTable(Module* pContainingModule, 
+MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
                                       LoaderHeap* pCreationHeap,
                                       AllocMemTracker* pamTracker);
 

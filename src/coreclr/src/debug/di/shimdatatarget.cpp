@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
-// 
+//
 // File: ShimDataTarget.cpp
 //
 //*****************************************************************************
 #include "stdafx.h"
 #include "safewrap.h"
 
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 
@@ -52,13 +52,13 @@ HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
 // Standard impl of IUnknown::AddRef
 ULONG STDMETHODCALLTYPE ShimDataTarget::AddRef()
 {
-    LONG ref = InterlockedIncrement(&m_ref);    
+    LONG ref = InterlockedIncrement(&m_ref);
     return ref;
 }
 
 // Standard impl of IUnknown::Release
 ULONG STDMETHODCALLTYPE ShimDataTarget::Release()
-{    
+{
     LONG ref = InterlockedDecrement(&m_ref);
     if (ref == 0)
     {
@@ -71,7 +71,7 @@ ULONG STDMETHODCALLTYPE ShimDataTarget::Release()
 //
 // Get the OS Process ID that this DataTarget is for.
 //
-// Return Value: 
+// Return Value:
 //     The OS PID of the process this data target is representing.
 DWORD ShimDataTarget::GetPid()
 {

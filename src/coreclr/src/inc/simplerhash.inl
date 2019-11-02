@@ -74,7 +74,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::operator delete[](void * p, 
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
-unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetCount() const 
+unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetCount() const
 {
     return m_tableCount;
 }
@@ -136,7 +136,7 @@ template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetIndexForKey(Key k) const
 {
     unsigned hash = KeyFuncs::GetHashCode(k);
-    
+
     unsigned index = magicNumberRem(hash, m_tableSizeInfo);
 
     return index;
@@ -242,7 +242,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::CheckGrowth()
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Grow()
 {
-    unsigned newSize = (unsigned) (m_tableCount 
+    unsigned newSize = (unsigned) (m_tableCount
                                    * Behavior::s_growth_factor_numerator / Behavior::s_growth_factor_denominator
                                    * Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator);
     if (newSize < Behavior::s_minimum_allocation)
@@ -279,11 +279,11 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Reallocate(unsigned newTable
         while (pN != NULL)
         {
             Node* pNext = pN->m_next;
-            
+
             unsigned newIndex = magicNumberRem(KeyFuncs::GetHashCode(pN->m_key), newPrime);
             pN->m_next = newTable[newIndex];
             newTable[newIndex] = pN;
-            
+
             pN = pNext;
         }
     }
@@ -301,10 +301,10 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Reallocate(unsigned newTable
 // Table of primes and their magic-number-divide constant.
 // For more info see the book "Hacker's Delight" chapter 10.9 "Unsigned Division by Divisors >= 1"
 // These were selected by looking for primes, each roughly twice as big as the next, having
-// 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower). 
+// 32-bit magic numbers, (because the algorithm for using 33-bit magic numbers is slightly slower).
 //
 
-SELECTANY const PrimeInfo primeInfo[] = 
+SELECTANY const PrimeInfo primeInfo[] =
 {
     PrimeInfo(9,         0x38e38e39, 1),
     PrimeInfo(23,        0xb21642c9, 4),
@@ -317,9 +317,9 @@ SELECTANY const PrimeInfo primeInfo[] =
     PrimeInfo(2473,      0x6a009f01, 10),
     PrimeInfo(4327,      0xf2555049, 12),
     PrimeInfo(7499,      0x45ea155f, 11),
-    PrimeInfo(12973,     0x1434f6d3, 10),               
-    PrimeInfo(22433,     0x2ebe18db, 12),               
-    PrimeInfo(46559,     0xb42bebd5, 15),               
+    PrimeInfo(12973,     0x1434f6d3, 10),
+    PrimeInfo(22433,     0x2ebe18db, 12),
+    PrimeInfo(46559,     0xb42bebd5, 15),
     PrimeInfo(96581,     0xadb61b1b, 16),
     PrimeInfo(200341,    0x29df2461, 15),
     PrimeInfo(415517,    0xa181c46d, 18),
@@ -327,10 +327,10 @@ SELECTANY const PrimeInfo primeInfo[] =
     PrimeInfo(1787021,   0x9636c46f, 20),
     PrimeInfo(3705617,   0x4870adc1, 20),
     PrimeInfo(7684087,   0x8bbc5b83, 22),
-    PrimeInfo(15933877,  0x86c65361, 23),           
-    PrimeInfo(33040633,  0x40fec79b, 23),           
-    PrimeInfo(68513161,  0x7d605cd1, 25),           
-    PrimeInfo(142069021, 0xf1da390b, 27),           
+    PrimeInfo(15933877,  0x86c65361, 23),
+    PrimeInfo(33040633,  0x40fec79b, 23),
+    PrimeInfo(68513161,  0x7d605cd1, 25),
+    PrimeInfo(142069021, 0xf1da390b, 27),
     PrimeInfo(294594427, 0x74a2507d, 27),
     PrimeInfo(733045421, 0x5dbec447, 28),
 };

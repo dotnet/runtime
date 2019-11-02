@@ -72,7 +72,7 @@ namespace CorUnix
         // InitializePostCreate is called from within the context of the
         // new thread.
         //
-        
+
         virtual
         PAL_ERROR
         InitializePostCreate(

@@ -8,8 +8,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 //
-// This function creates a stack frame right below the target frame, restores all callee 
-// saved registers from the passed in context, sets the RSP to that frame and sets the 
+// This function creates a stack frame right below the target frame, restores all callee
+// saved registers from the passed in context, sets the RSP to that frame and sets the
 // return address to the target frame's RIP.
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
@@ -38,8 +38,8 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         // CFA is now right at the RSP.
         .cfi_def_cfa_offset 0
 
-        // Indicate that now that we have moved the RSP to the target address, 
-        // the RBP is no longer saved in the current stack frame. 
+        // Indicate that now that we have moved the RSP to the target address,
+        // the RBP is no longer saved in the current stack frame.
         .cfi_restore rbp
 
         mov     rax, [rdi + CONTEXT_Rip]
@@ -47,6 +47,6 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         // Store return address to the stack
         push_register rax
         // The PAL_SEHException pointer
-        mov     rdi, rsi 
+        mov     rdi, rsi
         jmp     EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT

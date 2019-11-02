@@ -255,7 +255,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
 #define               OFFSETOF__DomainLocalModule__m_pDataBlob   0x030
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pDataBlob  
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pDataBlob
                     == offsetof(DomainLocalModule, m_pDataBlob));
 
 // If this changes then we can't just test one bit in the assembly code.
@@ -265,7 +265,7 @@ ASMCONSTANTS_C_ASSERT(ClassInitFlags::INITIALIZED_FLAG == 1);
 
 // For JIT_GetSharedGCStaticBaseWorker
 
-#define               OFFSETOF__DomainLocalModule__m_pGCStatics 0x020 
+#define               OFFSETOF__DomainLocalModule__m_pGCStatics 0x020
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pGCStatics
                     == offsetof(DomainLocalModule, m_pGCStatics));
 
@@ -290,7 +290,7 @@ ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
 #define                  CORINFO_ArgumentNullException_ASM 8
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentNullException_ASM
                       == CORINFO_ArgumentNullException);
-                      
+
 #define                  CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM
                       == CORINFO_ArgumentException);
@@ -332,7 +332,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
 
 #define               OFFSETOF__MethodDesc__m_wFlags        DBG_FRE(0x2E, 0x06)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags));
-                    
+
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));
@@ -474,11 +474,11 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
                     == offsetof(CONTEXT, Xmm15));
 
 #define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT)
-ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame 
+ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
 
 #define               OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted 
+ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted
                     == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
 
 #define               OFFSETOF__PtrArray__m_NumComponents 0x8
@@ -510,7 +510,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 
 #define UMTHUNKSTUB_HOST_NOTIFY_FLAG_RBPOFFSET (0x40)   // xmm save size
 
-#define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z 
+#define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 
 
 #define                     DELEGATE_FIELD_OFFSET__METHOD_AUX           0x20
@@ -602,7 +602,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__TransitionBlock__m_argumentRegisters == offsetof
 // in the error message. This is useful if a size or offset changes. To use, comment out
 // the compile-time assert that is firing, enable the constant finder, add the appropriate
 // constant to find to BogusFunction(), and build.
-// 
+//
 // Here's a sample compiler error:
 // d:\dd\clr\src\ndp\clr\src\vm\i386\asmconstants.h(326) : error C2248: 'FindCompileTimeConstant<N>::FindCompileTimeConstant' : cannot access private member declared in class 'FindCompileTimeConstant<N>'
 //         with

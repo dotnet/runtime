@@ -6,8 +6,8 @@
 //
 // ===========================================================================
 // File: servprov.h
-// 
-// =========================================================================== 
+//
+// ===========================================================================
 // simplified servprov.h for PAL
 
 #include "rpc.h"
@@ -23,10 +23,10 @@ EXTERN_C const IID IID_IServiceProvider;
 
 interface IServiceProvider : public IUnknown
 {
-    virtual /* [local] */ HRESULT STDMETHODCALLTYPE QueryService( 
+    virtual /* [local] */ HRESULT STDMETHODCALLTYPE QueryService(
         /* [in] */ REFGUID guidService,
         /* [in] */ REFIID riid,
-        /* [out] */ void **ppvObject) = 0;    
+        /* [out] */ void **ppvObject) = 0;
 };
 
 #endif // __IServiceProvider_INTERFACE_DEFINED__

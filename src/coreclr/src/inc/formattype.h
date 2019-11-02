@@ -24,12 +24,12 @@ struct ParamDescriptor
     DWORD	attr;
 };
 
-char* DumpMarshaling(IMDInternalImport* pImport, 
-                     __inout_ecount(cchszString) char* szString, 
-                     DWORD cchszString, 
+char* DumpMarshaling(IMDInternalImport* pImport,
+                     __inout_ecount(cchszString) char* szString,
+                     DWORD cchszString,
                      mdToken tok);
-char* DumpParamAttr(__inout_ecount(cchszString) char* szString, 
-                    DWORD cchszString, 
+char* DumpParamAttr(__inout_ecount(cchszString) char* szString,
+                    DWORD cchszString,
                     DWORD dwAttr);
 
 void appendStr(CQuickBytes *out, const char* str, unsigned len=(unsigned)-1);
@@ -37,28 +37,28 @@ void insertStr(CQuickBytes *out, const char* str);
 char* asString(CQuickBytes *out);
 
 const char* PrettyPrintSig(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    unsigned typeLen,					// the lenght of 'typePtr' 
-    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig 
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    unsigned typeLen,					// the lenght of 'typePtr'
+    const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
     __in_opt const char* inlabel,			// prefix for names (NULL if no names required)
     BOOL printTyArity=FALSE);           // flag to print Type Param number (MemberRefs only)
 
 PCCOR_SIGNATURE PrettyPrintType(
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI);          // ptr to IMDInternal class with ComSig
 
 PCCOR_SIGNATURE PrettyPrintTypeOrDef(   // outside ILDASM - simple wrapper of PrettyPrintType
-    PCCOR_SIGNATURE typePtr,            // type to convert,     
-    CQuickBytes *out,                   // where to put the pretty printed string   
+    PCCOR_SIGNATURE typePtr,            // type to convert,
+    CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI);          // ptr to IMDInternal class with ComSig
 
 
 const char* PrettyPrintClass(
-    CQuickBytes *out,                   // where to put the pretty printed string   
-    mdToken tk,					 		// The class token to look up 
+    CQuickBytes *out,                   // where to put the pretty printed string
+    mdToken tk,					 		// The class token to look up
     IMDInternalImport *pIMDI);          // ptr to IMDInternalImport class with ComSig
 
 //================= ILDASM-specific ==================================================================
@@ -97,7 +97,7 @@ inline BOOL IsDup(mdToken tk)
         mdToken tktype = TypeFromToken(tk);
         if((tktype==mdtTypeDef)||(tktype==mdtMethodDef)||(tktype==mdtFieldDef))
         {
-            for (unsigned i=0; i<g_NumDups; i++) 
+            for (unsigned i=0; i<g_NumDups; i++)
             {
                 if((*g_dups)[i] == tk) return TRUE;
             }
@@ -148,8 +148,8 @@ extern mdToken  g_tkMVarOwner;
 //void SetMVarOwner(mdToken tk) { g_tkMVarOwner = tk; }
 BOOL PrettyPrintGP(                      // defined in dasm.cpp
     mdToken tkOwner,                    // Class, method or 0
-    CQuickBytes *out,                   // where to put the pretty printed generic param   
-    int n);	      			 		    // Index of generic param 
+    CQuickBytes *out,                   // where to put the pretty printed generic param
+    int n);	      			 		    // Index of generic param
 
 //============== End of ILDASM-specific ================================================================
 

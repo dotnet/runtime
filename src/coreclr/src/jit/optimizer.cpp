@@ -5091,14 +5091,14 @@ void Compiler::optCloneLoops()
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("loopclonehashlo");
     unsigned methHashLo = 0;
-    if (lostr != NULL) 
+    if (lostr != NULL)
     {
         sscanf_s(lostr, "%x", &methHashLo);
         // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
     }
     char* histr = getenv("loopclonehashhi");
     unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL) 
+    if (histr != NULL)
     {
         sscanf_s(histr, "%x", &methHashHi);
         // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
@@ -6336,14 +6336,14 @@ void Compiler::optHoistLoopCode()
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("loophoisthashlo");
     unsigned methHashLo = 0;
-    if (lostr != NULL) 
+    if (lostr != NULL)
     {
         sscanf_s(lostr, "%x", &methHashLo);
         // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
     }
     char* histr = getenv("loophoisthashhi");
     unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL) 
+    if (histr != NULL)
     {
         sscanf_s(histr, "%x", &methHashHi);
         // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.

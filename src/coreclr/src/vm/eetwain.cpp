@@ -59,7 +59,7 @@ static  bool  trEnumGCRefs          = false;
 static  bool  dspPtr                = false; // prints the live ptrs as reported
 #endif
 
-// NOTE: enabling compiler optimizations, even for debug builds.  
+// NOTE: enabling compiler optimizations, even for debug builds.
 // Comment this out in order to be able to fully debug methods here.
 #if defined(_MSC_VER)
 #pragma optimize("tg", on)
@@ -76,10 +76,10 @@ __forceinline unsigned decodeUnsigned(PTR_CBYTE& src)
 
     BYTE     byte  = *src++;
     unsigned value = byte & 0x7f;
-    while (byte & 0x80) 
+    while (byte & 0x80)
     {
 #ifdef DACCESS_COMPILE
-        // In DAC builds, the target data may be corrupt.  Rather than return incorrect data 
+        // In DAC builds, the target data may be corrupt.  Rather than return incorrect data
         // and risk wasting time in a potentially long loop, we want to fail early and gracefully.
         // The data is encoded with 7 value-bits per byte, and so we may need to read a maximum
         // of 5 bytes (7*5=35) to read a full 32-bit integer.
@@ -111,7 +111,7 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
     while (byte & 0x80)
     {
 #ifdef DACCESS_COMPILE
-        // In DAC builds, the target data may be corrupt.  Rather than return incorrect data 
+        // In DAC builds, the target data may be corrupt.  Rather than return incorrect data
         // and risk wasting time in a potentially long loop, we want to fail early and gracefully.
         // The data is encoded with 7 value-bits per byte, and so we may need to read a maximum
         // of 5 bytes (7*5=35) to read a full 32-bit integer.
@@ -131,7 +131,7 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
 }
 
 // Fast versions of the above, with one iteration of the loop unrolled
-#define fastDecodeUnsigned(src) (((*(src) & 0x80) == 0) ? (unsigned) (*(src)++) : decodeUnsigned((src)))   
+#define fastDecodeUnsigned(src) (((*(src) & 0x80) == 0) ? (unsigned) (*(src)++) : decodeUnsigned((src)))
 #define fastDecodeSigned(src)   (((*(src) & 0xC0) == 0) ? (unsigned) (*(src)++) : decodeSigned((src)))
 
 // Fast skipping past encoded integers
@@ -148,8 +148,8 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
 /*****************************************************************************
  *
  *  Decodes the X86 GcInfo header and returns the decoded information
- *  in the hdrInfo struct. 
- *  curOffset is the code offset within the active method used in the 
+ *  in the hdrInfo struct.
+ *  curOffset is the code offset within the active method used in the
  *  computation of PrologOffs/EpilogOffs.
  *  Returns the size of the header (number of bytes decoded).
  */
@@ -349,7 +349,7 @@ static size_t   DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     }
 
     infoPtr->savedRegMask = (RegMask)savedRegs;
-    
+
     infoPtr->savedRegsCountExclFP = savedRegsCount;
     if (header.ebpFrame || header.doubleAlign)
     {
@@ -364,7 +364,7 @@ static size_t   DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     _ASSERTE(infoPtr->gsCookieOffset == INVALID_GS_COOKIE_OFFSET ||
              (infoPtr->gsCookieOffset < infoPtr->stackSize) &&
              ((header.gsCookieOffset % sizeof(void*)) == 0));
-    
+
     return  table - PTR_CBYTE(gcInfoToken.Info);
 }
 
@@ -392,7 +392,7 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->localloc && info->ebpFrame);
-    
+
     unsigned position = info->savedRegsCountExclFP +
                         info->securityCheck +
                         1;
@@ -405,7 +405,7 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
-    
+
     unsigned position = info->savedRegsCountExclFP +
                         info->securityCheck +
                         info->localloc +
@@ -416,7 +416,7 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
 {
     LIMITED_METHOD_DAC_CONTRACT;
- 
+
     _ASSERTE(info->handlers && info->ebpFrame);
 
     return GetParamTypeArgOffset(info) +
@@ -435,10 +435,10 @@ PTR_TADDR GetFirstBaseSPslotPtr(TADDR ebp, hdrInfo * info)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->handlers && info->ebpFrame);
-    
-    size_t offsetFromEBP = GetStartShadowSPSlotsOffset(info) 
+
+    size_t offsetFromEBP = GetStartShadowSPSlotsOffset(info)
                         + sizeof(TADDR); // to get to the *start* of the next slot
-                        
+
     return PTR_TADDR(ebp - offsetFromEBP);
 }
 
@@ -448,7 +448,7 @@ inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNesti
 
     _ASSERTE(info->handlers && info->ebpFrame);
 
-    unsigned numberOfShadowSPSlots = maxHandlerNestingLevel + 
+    unsigned numberOfShadowSPSlots = maxHandlerNestingLevel +
                                      1 + // For zero-termination
                                      1; // For a filter (which can be active at the same time as a catch/finally handler
 
@@ -528,7 +528,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
         NOTHROW;
         GC_NOTRIGGER;
         HOST_NOCALLS;
-        SUPPORTS_DAC; 
+        SUPPORTS_DAC;
     } CONTRACTL_END;
 
     _ASSERTE(info->ebpFrame && info->handlers);
@@ -540,7 +540,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // Many of the conditions that we'd like to assert cannot be asserted in the case that we're
     // in the middle of a stackwalk seeded by a profiler, since such seeds can't be trusted
     // (profilers are external, untrusted sources).  So during profiler walks, we test the condition
-    // and throw an exception if it's not met.  Otherwise, we just assert the condition. 
+    // and throw an exception if it's not met.  Otherwise, we just assert the condition.
     #define FAIL_IF_SPECULATIVE_WALK(condition)         \
         if (info->isSpeculativeStackWalk)               \
         {                                               \
@@ -564,7 +564,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
        Also do some sanity checks */
 
     // The shadow slots contain the SP of the nested EH clauses currently active on the stack.
-    // The slots grow towards lower address on the stack and is terminted by a NULL entry.  
+    // The slots grow towards lower address on the stack and is terminted by a NULL entry.
     // Since each subsequent slot contains the SP of a more nested EH clause, the contents of the slots are
     // expected to be in decreasing order.
     size_t lvl = 0;
@@ -593,9 +593,9 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             // Is this a funclet we unwound before (can only happen with filters) ?
             // If unwindESP is specified, normally we expect it to be the last entry in the shadow slot array.
             // Or, if there is a filter, we expect unwindESP to be the second last entry.  However, this may
-            // not be the case in DAC builds.  For example, the user can use .cxr in an EH clause to set a 
+            // not be the case in DAC builds.  For example, the user can use .cxr in an EH clause to set a
             // CONTEXT captured in the try clause.  In this case, unwindESP will be the ESP of the parent
-            // function, but the shadow slot array will contain the SP of the EH clause, which is closer to 
+            // function, but the shadow slot array will contain the SP of the EH clause, which is closer to
             // the leaf than the parent method.
 
             if (unwindESP != (TADDR) IGNORE_VAL &&
@@ -603,7 +603,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
                 (curSlotVal & ~ICodeManager::SHADOW_SP_BITS))
             {
                 // In non-DAC builds, the only time unwindESP is closer to the root than entries in the shadow
-                // slot array is when the last entry in the array is for a filter.  Also, filters can't have 
+                // slot array is when the last entry in the array is for a filter.  Also, filters can't have
                 // nested handlers.
                 if ((pSlot[0] & ICodeManager::SHADOW_SP_IN_FILTER) &&
                     (pSlot[-1] == 0) &&
@@ -692,7 +692,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 
     // Take the offset (from EBP) of the last slot of the header, plus one for the EBP slot itself
     // to get the total size of the header.
-    return sizeof(TADDR) + 
+    return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
 }
 #endif // !USE_GC_INFO_DECODER
@@ -913,9 +913,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 #elif defined(_TARGET_AMD64_)
 
     // Strategy for zeroing out the frame on x64:
-    // 
+    //
     // The stack frame looks like this (stack grows up)
-    // 
+    //
     // =======================================
     //             <--- RSP == RBP (invariant: localalloc disallowed before remap)
     // Arguments for next call (if there is one)
@@ -931,34 +931,34 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // Arguments for this frame (that's getting remapped).  Will naturally be preserved
     // since fixed-frame size doesn't include this.
     // =======================================
-    // 
+    //
     // Goal: Zero out everything AFTER (above) frame header.
-    // 
+    //
     // How do we find this stuff?
-    // 
-    // EECodeInfo::GetFixedStackSize() gives us the full size from the top ("Arguments 
+    //
+    // EECodeInfo::GetFixedStackSize() gives us the full size from the top ("Arguments
     // for next call") all the way down to and including Return Address.
-    // 
+    //
     // GetSizeOfEditAndContinuePreservedArea() gives us the size in bytes of the
     // frame header at the bottom.
-    // 
+    //
     // So we start at RSP, and zero out:
     //     GetFixedStackSize() - GetSizeOfEditAndContinuePreservedArea() bytes.
-    // 
+    //
     // We'll need to restore PSPSym; location gotten from GCInfo.
     // We'll need to copy security object; location gotten from GCInfo.
 
     // GCInfo for old method
     GcInfoDecoder oldGcDecoder(
         pOldCodeInfo->GetGCInfoToken(),
-        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE), 
+        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
     // GCInfo for new method
     GcInfoDecoder newGcDecoder(
         pNewCodeInfo->GetGCInfoToken(),
-        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE), 
+        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
@@ -966,13 +966,13 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     UINT32 newSizeOfPreservedArea = newGcDecoder.GetSizeOfEditAndContinuePreservedArea();
 
     // This ensures the JIT generated EnC compliant code.
-    if ((oldSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) || 
+    if ((oldSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ||
         (newSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA))
     {
         _ASSERTE(!"FixContextForEnC called on a non-EnC-compliant method frame");
         return CORDBG_E_ENC_INFOLESS_METHOD;
     }
-    
+
     // JIT is required to emit frame register for EnC-compliant code
     _ASSERTE(pOldCodeInfo->HasFrameRegister());
     _ASSERTE(pNewCodeInfo->HasFrameRegister());
@@ -1041,7 +1041,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     SIZE_T *rgVal1 = NULL;
     SIZE_T *rgVal2 = NULL;
 
-    {   
+    {
         SIZE_T local;
 
         // We'll need to sort the old native var info by variable number, since the
@@ -1218,7 +1218,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         size_t frameHeaderSize = GetSizeOfFrameHeaderForEnC( &newInfo );
         _ASSERTE( frameHeaderSize <= oldInfo.stackSize );
         _ASSERTE( GetSizeOfFrameHeaderForEnC( &oldInfo ) == frameHeaderSize );
-    
+
 #elif defined(_TARGET_AMD64_)
 
         // Next few statements zero out all registers that may end up holding new variables.
@@ -1274,7 +1274,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             // Make sure that stack variables existing in both old and new methods did not
             // move.  This matters if the address of a local is used in the remapped method.
             // For example:
-            // 
+            //
             //    static unsafe void Main(string[] args)
             //    {
             //        int x;
@@ -1282,7 +1282,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             //                 <- Edit made here - cannot move address of x
             //        *p = 5;
             //    }
-            //    
+            //
             if ((i + unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) < oldNumVars) &&  // Does variable exist in old method?
                  (oldMethodVarsSorted[i].loc.vlType == ICorDebugInfo::VLT_STK) &&   // Is the variable on the stack?
                  (newMethodVarsSorted[i].loc.vlType == ICorDebugInfo::VLT_STK))
@@ -1310,8 +1310,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                 }
 
                 // Ideally we'd like to verify that the stack locals (if any) start at exactly the end
-                // of the header.  However, we can't easily determine the size of value classes here, 
-                // and so (since the stack grows towards 0) can't easily determine where the end of 
+                // of the header.  However, we can't easily determine the size of value classes here,
+                // and so (since the stack grows towards 0) can't easily determine where the end of
                 // the local lies.
             }
 #elif defined (_TARGET_AMD64_)
@@ -1332,7 +1332,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                     _ASSERTE(
                         // The ref must exist in the portion we'll zero-out
                         (
-                            (newStackBase <= addrOfPtr) && 
+                            (newStackBase <= addrOfPtr) &&
                             (addrOfPtr < newStackBase + (newFixedStackSize - frameHeaderSize))
                         ) ||
                         // OR in the caller's frame (for parameters)
@@ -1342,7 +1342,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                     // points to will be zeroed out
                     // ...
                 }
-            
+
             case ICorDebugInfo::VLT_STK:
             case ICorDebugInfo::VLT_STK2:
             case ICorDebugInfo::VLT_REG_STK:
@@ -1352,7 +1352,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                 _ASSERTE(
                     // The value must exist in the portion we'll zero-out
                     (
-                        (newStackBase <= (TADDR) pVarStackLocation) && 
+                        (newStackBase <= (TADDR) pVarStackLocation) &&
                         ((TADDR) pVarStackLocation < newStackBase + (newFixedStackSize - frameHeaderSize))
                     ) ||
                     // OR in the caller's frame (for parameters)
@@ -1643,7 +1643,7 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 #ifdef _DEBUG
     if (info.argTabOffset != INVALID_ARGTAB_OFFSET)
     {
-        CONSISTENCY_CHECK_MSGF((info.argTabOffset == (unsigned) (table - tableStart)), 
+        CONSISTENCY_CHECK_MSGF((info.argTabOffset == (unsigned) (table - tableStart)),
           ("table = %p, tableStart = %p, info.argTabOffset = %d", table, tableStart, info.argTabOffset));
     }
 #endif
@@ -1893,9 +1893,9 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
 
             unsigned encType = *table++;
 #if defined(DACCESS_COMPILE)
-            // In this scenario, it is invalid to have a zero byte in the GC info encoding (refer to the 
-            // comments above). At least one bit has to be set.  For example, a byte can represent which 
-            // register is the "this" pointer, and this byte has to be 0x10, 0x20, or 0x40.  Having a zero 
+            // In this scenario, it is invalid to have a zero byte in the GC info encoding (refer to the
+            // comments above). At least one bit has to be set.  For example, a byte can represent which
+            // register is the "this" pointer, and this byte has to be 0x10, 0x20, or 0x40.  Having a zero
             // byte indicates there is most likely some sort of DAC error, and it may lead to problems such as
             // infinite loops.  So we bail out early instead.
             if (encType == 0)
@@ -1984,7 +1984,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
                 }
                 break;
 
-            case 0xFB:  // huge encoding        This is the only partially interruptible 
+            case 0xFB:  // huge encoding        This is the only partially interruptible
                         //                      encoding that supports a pushed ArgMask
                         //                      which is greater than 32-bits.
                         //                      The ArgMask is encoded using the argTab
@@ -2112,11 +2112,11 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
 
             unsigned val = *table++;
 #if defined(DACCESS_COMPILE)
-            // In this scenario, a 0 means that there is a push at the current offset.  For a struct with 
+            // In this scenario, a 0 means that there is a push at the current offset.  For a struct with
             // two double fields, the JIT may use two movq instructions to push the struct onto the stack, and
             // the JIT will encode 4 pushes at the same code offset.  This means that we can have up to 4
-            // consecutive bytes of 0 without changing the code offset.  Having more than 4 consecutive bytes 
-            // of zero indicates that there is most likely some sort of DAC error, and it may lead to problems 
+            // consecutive bytes of 0 without changing the code offset.  Having more than 4 consecutive bytes
+            // of zero indicates that there is most likely some sort of DAC error, and it may lead to problems
             // such as infinite loops.  So we bail out early instead.
             if (val == 0)
             {
@@ -2304,17 +2304,17 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
 
                       case 0x08:
                         //
-                        // 0xF8   call     11111000   [PBSDpbsd][32-bit delta][32-bit ArgCnt]  
+                        // 0xF8   call     11111000   [PBSDpbsd][32-bit delta][32-bit ArgCnt]
                         //                            [32-bit PndCnt][32-bit PndSize][PndOffs...]
                         //
                         val         = *table++;
                         skip        = *dac_cast<PTR_DWORD>(table); table += sizeof(DWORD);
-// [VSUQFE 4670] 
+// [VSUQFE 4670]
                         // If we've already reached curOffs and the skip amount
                         // is non-zero then we are done
                         if ((scanOffs == curOffs) && (skip > 0))
                             goto FINISHED;
-// [VSUQFE 4670] 
+// [VSUQFE 4670]
                         scanOffs   += skip;
                         if (scanOffs > curOffs)
                             goto FINISHED;
@@ -2333,7 +2333,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
 
                       case 0x0C:
                         //
-                        // 0xFF   end      11111111   End of table marker 
+                        // 0xFF   end      11111111   End of table marker
                         //
                         _ASSERTE(val==0xff);
                         goto FINISHED;
@@ -2537,7 +2537,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 #if defined(DACCESS_COMPILE)
         // In this scenario, a zero byte means that EAX is going dead at the current offset.  Since EAX
         // can't go dead more than once at any given offset, it's invalid to have two consecutive bytes
-        // of zero.  If this were to happen, then it means that there is most likely some sort of DAC 
+        // of zero.  If this were to happen, then it means that there is most likely some sort of DAC
         // error, and it may lead to problems such as infinite loops.  So we bail out early instead.
         if ((val == 0) && fLastByteIsZero)
         {
@@ -2866,7 +2866,7 @@ REPORT_REFS:
 
 unsigned GetPushedArgSize(hdrInfo * info, PTR_CBYTE table, DWORD curOffs)
 {
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     unsigned sz;
 
@@ -2961,7 +2961,7 @@ bool CheckInstrByte(BYTE val, BYTE expectedValue)
  */
 bool CheckInstrBytePattern(BYTE valPattern, BYTE expectedPattern, BYTE val)
 {
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     _ASSERTE((valPattern & val) == valPattern);
 
@@ -2983,7 +2983,7 @@ bool CheckInstrWord(WORD val, WORD expectedValue)
 // "actualHaltOffset" is the offset when the code was suspended
 // It is assumed that there is linear control flow from offset 0 to "actualHaltOffset".
 //
-// This has been factored out just so that the intent of the comparison 
+// This has been factored out just so that the intent of the comparison
 // is clear (compared to the opposite intent)
 
 bool InstructionAlreadyExecuted(unsigned walkOffset, unsigned actualHaltOffset)
@@ -3069,11 +3069,11 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SUPPORTS_DAC; 
+        SUPPORTS_DAC;
     } CONTRACTL_END;
 
     _ASSERTE(size != 0);
-    
+
     if (size == sizeof(void*))
     {
         // We do "push eax" instead of "sub esp,4"
@@ -3113,7 +3113,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
             offset += 15;
         }
     }
-    
+
     // sub ESP, size
     return (SKIP_ARITH_REG(size, base, offset));
 }
@@ -3246,7 +3246,7 @@ void EECodeManager::QuickUnwindStackFrame(PREGDISPLAY pRD, StackwalkCacheEntry *
         {
             pTargetCtx->Rbp = pSourceCtx->Rbp;
         }
-        else 
+        else
         {
             pTargetCtx->Rbp = *(UINT_PTR*)(pSourceCtx->Rsp + pCacheEntry->RBPOffset);
         }
@@ -3313,18 +3313,18 @@ static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 /*****************************************************************************/
 
 void UnwindEspFrameEpilog(
-        PREGDISPLAY pContext, 
+        PREGDISPLAY pContext,
         hdrInfo * info,
         PTR_CBYTE epilogBase,
         unsigned flags)
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     _ASSERTE(info->epilogOffs != hdrInfo::NOT_IN_EPILOG);
     _ASSERTE(!info->ebpFrame && !info->doubleAlign);
     _ASSERTE(info->epilogOffs > 0);
-    
+
     int offset = 0;
     unsigned ESP = pContext->SP;
 
@@ -3332,16 +3332,16 @@ void UnwindEspFrameEpilog(
     {
         if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
         {
-            /* We have NOT executed the "ADD ESP, FrameSize", 
+            /* We have NOT executed the "ADD ESP, FrameSize",
                so manually adjust stack pointer */
             ESP += info->rawStkSize;
         }
 
         // We have already popped off the frame (excluding the callee-saved registers)
-        
+
         if (epilogBase[0] == X86_INSTR_POP_ECX)
         {
-            // We may use "POP ecx" for doing "ADD ESP, 4", 
+            // We may use "POP ecx" for doing "ADD ESP, 4",
             // or we may not (in the case of JMP epilogs)
             _ASSERTE(info->rawStkSize == sizeof(void*));
             offset = SKIP_POP_REG(epilogBase, offset);
@@ -3352,7 +3352,7 @@ void UnwindEspFrameEpilog(
             offset = SKIP_ARITH_REG(info->rawStkSize, epilogBase, offset);
         }
     }
-    
+
     /* Remaining callee-saved regs are at ESP. Need to update
        regsMask as well to exclude registers which have already been popped. */
 
@@ -3380,10 +3380,10 @@ void UnwindEspFrameEpilog(
             /* Adjust ESP */
             ESP += sizeof(void*);
         }
-        
+
         offset = SKIP_POP_REG(epilogBase, offset);
     }
-    
+
     //CEE_JMP generates an epilog similar to a normal CEE_RET epilog except for the last instruction
     _ASSERTE(CheckInstrBytePattern(epilogBase[offset] & X86_INSTR_RET, X86_INSTR_RET, epilogBase[offset]) //ret
         || CheckInstrBytePattern(epilogBase[offset], X86_INSTR_JMP_NEAR_REL32, epilogBase[offset]) //jmp ret32
@@ -3399,24 +3399,24 @@ void UnwindEspFrameEpilog(
 /*****************************************************************************/
 
 void UnwindEbpDoubleAlignFrameEpilog(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE epilogBase, 
+        PREGDISPLAY pContext,
+        hdrInfo * info,
+        PTR_CBYTE epilogBase,
         unsigned flags)
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     _ASSERTE(info->epilogOffs != hdrInfo::NOT_IN_EPILOG);
     _ASSERTE(info->ebpFrame || info->doubleAlign);
-    
+
     _ASSERTE(info->argSize < 0x10000); // "ret" only has a 2 byte operand
 
    /* See how many instructions we have executed in the
       epilog to determine which callee-saved registers
       have already been popped */
     int offset = 0;
-   
+
     unsigned ESP = pContext->SP;
 
     bool needMovEspEbp = false;
@@ -3447,7 +3447,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         else if (info->savedRegsCountExclFP == 0)
         {
             // We will just generate "mov esp, ebp" and be done with it.
-            
+
             if (info->rawStkSize != 0)
             {
                 needMovEspEbp = true;
@@ -3459,7 +3459,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         }
         else if (info->rawStkSize == sizeof(void*))
         {
-            // "pop ecx" will make ESP point to the callee-saved registers           
+            // "pop ecx" will make ESP point to the callee-saved registers
             if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
                 ESP += sizeof(void*);
             offset = SKIP_POP_REG(epilogBase, offset);
@@ -3468,7 +3468,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         {
             // We need to make ESP point to the callee-saved registers
             //    lea esp, [ebp-calleeSavedRegs]
-            
+
             needLea = true;
         }
 
@@ -3476,11 +3476,11 @@ void UnwindEbpDoubleAlignFrameEpilog(
         {
             // lea esp, [ebp-calleeSavedRegs]
 
-            unsigned calleeSavedRegsSize = info->savedRegsCountExclFP * sizeof(void*); 
+            unsigned calleeSavedRegsSize = info->savedRegsCountExclFP * sizeof(void*);
 
             if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
                 ESP = GetRegdisplayFP(pContext) - calleeSavedRegsSize;
-            
+
             offset = SKIP_LEA_ESP_EBP(-int(calleeSavedRegsSize), epilogBase, offset);
         }
     }
@@ -3492,7 +3492,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
 
         if ((info->savedRegMask & regMask) == 0)
             continue;
-        
+
         if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
         {
             if (flags & UpdateAllRegs)
@@ -3504,12 +3504,12 @@ void UnwindEbpDoubleAlignFrameEpilog(
 
         offset = SKIP_POP_REG(epilogBase, offset);
     }
-    
+
     if (needMovEspEbp)
     {
         if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
             ESP = GetRegdisplayFP(pContext);
-            
+
         offset = SKIP_MOV_REG_REG(epilogBase, offset);
     }
 
@@ -3546,13 +3546,13 @@ inline SIZE_T ESPIncrOnReturn(hdrInfo * info)
 /*****************************************************************************/
 
 void UnwindEpilog(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE epilogBase, 
+        PREGDISPLAY pContext,
+        hdrInfo * info,
+        PTR_CBYTE epilogBase,
         unsigned flags)
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
     _ASSERTE(info->epilogOffs != hdrInfo::NOT_IN_EPILOG);
     // _ASSERTE(flags & ActiveStackFrame); // <TODO> Wont work for thread death</TODO>
     _ASSERTE(info->epilogOffs > 0);
@@ -3566,7 +3566,7 @@ void UnwindEpilog(
         UnwindEspFrameEpilog(pContext, info, epilogBase, flags);
     }
 
-#ifdef _DEBUG    
+#ifdef _DEBUG
     if (flags & UpdateAllRegs)
         TRASH_CALLEE_UNSAVED_REGS(pContext);
 #endif
@@ -3579,20 +3579,20 @@ void UnwindEpilog(
 /*****************************************************************************/
 
 void UnwindEspFrameProlog(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE methodStart, 
+        PREGDISPLAY pContext,
+        hdrInfo * info,
+        PTR_CBYTE methodStart,
         unsigned flags)
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     /* we are in the middle of the prolog */
     _ASSERTE(info->prologOffs != hdrInfo::NOT_IN_PROLOG);
     _ASSERTE(!info->ebpFrame && !info->doubleAlign);
 
     unsigned offset = 0;
-    
+
 #ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
@@ -3604,7 +3604,7 @@ void UnwindEspFrameProlog(
 
     const DWORD curOffs = info->prologOffs;
     unsigned ESP = pContext->SP;
-    
+
     // Find out how many callee-saved regs have already been pushed
 
     unsigned regsMask = RM_NONE;
@@ -3616,13 +3616,13 @@ void UnwindEspFrameProlog(
 
         if (!(info->savedRegMask & regMask))
             continue;
-        
+
         if (InstructionAlreadyExecuted(offset, curOffs))
         {
             ESP += sizeof(void*);
             regsMask    |= regMask;
         }
-        
+
         offset = SKIP_PUSH_REG(methodStart, offset);
     }
 
@@ -3638,11 +3638,11 @@ void UnwindEspFrameProlog(
             ESP += info->rawStkSize;
         }
     }
-    
+
     //
-    // Stack probe checks here 
+    // Stack probe checks here
     //
-    
+
     // Poison the value, we don't set it properly at the end of the prolog
     INDEBUG(offset = 0xCCCCCCCC);
 
@@ -3681,22 +3681,22 @@ void UnwindEspFrameProlog(
 /*****************************************************************************/
 
 void UnwindEspFrame(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE table, 
+        PREGDISPLAY pContext,
+        hdrInfo * info,
+        PTR_CBYTE table,
         PTR_CBYTE methodStart,
         DWORD curOffs,
         unsigned flags)
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     _ASSERTE(!info->ebpFrame && !info->doubleAlign);
     _ASSERTE(info->epilogOffs == hdrInfo::NOT_IN_EPILOG);
 
     unsigned ESP = pContext->SP;
 
-    
+
     if (info->prologOffs != hdrInfo::NOT_IN_PROLOG)
     {
         if (info->prologOffs != 0) // Do nothing for the very start of the method
@@ -3710,7 +3710,7 @@ void UnwindEspFrame(
         /* we are past the prolog, ESP has been set above */
 
         // Are there any arguments pushed on the stack?
-        
+
         ESP += GetPushedArgSize(info, table, curOffs);
 
         ESP += info->rawStkSize;
@@ -3723,7 +3723,7 @@ void UnwindEspFrame(
 
             if ((regMask & regsMask) == 0)
                 continue;
-            
+
             SetLocation(pContext, i - 1, PTR_DWORD((TADDR)ESP));
 
             ESP += sizeof(unsigned);
@@ -3744,18 +3744,18 @@ void UnwindEspFrame(
 /*****************************************************************************/
 
 void UnwindEbpDoubleAlignFrameProlog(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE methodStart, 
+        PREGDISPLAY pContext,
+        hdrInfo * info,
+        PTR_CBYTE methodStart,
         unsigned flags)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(info->prologOffs != hdrInfo::NOT_IN_PROLOG);
     _ASSERTE(info->ebpFrame || info->doubleAlign);
-    
+
     DWORD offset = 0;
-    
+
 #ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
@@ -3771,7 +3771,7 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     // If we have still not excecuted "push ebp; mov ebp, esp", then we need to
     // report the frame relative to ESP
-    
+
     if (!InstructionAlreadyExecuted(offset + 1, curOffs))
     {
         _ASSERTE(CheckInstrByte(methodStart [offset], X86_INSTR_PUSH_EBP) ||
@@ -3789,7 +3789,7 @@ void UnwindEbpDoubleAlignFrameProlog(
         pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 
         /* EBP and callee-saved registers still have the correct value */
-        
+
         return;
     }
 
@@ -3797,15 +3797,15 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     offset = SKIP_MOV_REG_REG(methodStart,
                 SKIP_PUSH_REG(methodStart, offset));
-    
+
     /* At this point, EBP has been set up. The caller's ESP and the return value
        can be determined using EBP. Since we are still in the prolog,
        we need to know our exact location to determine the callee-saved registers */
-       
+
     const unsigned curEBP = GetRegdisplayFP(pContext);
-    
+
     if (flags & UpdateAllRegs)
-    {        
+    {
         PTR_DWORD pSavedRegs = PTR_DWORD((TADDR)curEBP);
 
         /* make sure that we align ESP just like the method's prolog did */
@@ -3832,7 +3832,7 @@ void UnwindEbpDoubleAlignFrameProlog(
 
             if ((info->savedRegMask & regMask) == 0)
                 continue;
-            
+
             if (InstructionAlreadyExecuted(offset, curOffs))
             {
                 SetLocation(pContext, i, PTR_DWORD(--pSavedRegs));
@@ -3844,12 +3844,12 @@ void UnwindEbpDoubleAlignFrameProlog(
 
         TRASH_CALLEE_UNSAVED_REGS(pContext);
     }
-    
+
     /* The caller's saved EBP is pointed to by our EBP */
 
     pContext->SetEbpLocation(PTR_DWORD((TADDR)curEBP));
     pContext->SP = DWORD((TADDR)(curEBP + sizeof(void *)));
-    
+
     /* Stack pointer points to return address */
 
     pContext->PCTAddr = (TADDR)pContext->SP;
@@ -3869,7 +3869,7 @@ bool UnwindEbpDoubleAlignFrame(
         StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
 {
     LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC; 
+    SUPPORTS_DAC;
 
     _ASSERTE(info->ebpFrame || info->doubleAlign);
 
@@ -3974,11 +3974,11 @@ bool UnwindEbpDoubleAlignFrame(
     //
     // Prolog of an EBP method
     //
-    
+
     if (info->prologOffs != hdrInfo::NOT_IN_PROLOG)
     {
         UnwindEbpDoubleAlignFrameProlog(pContext, info, methodStart, flags);
-        
+
         /* Now adjust stack pointer. */
 
         pContext->SP += ESPIncrOnReturn(info);
@@ -3989,7 +3989,7 @@ bool UnwindEbpDoubleAlignFrame(
     {
         // Get to the first callee-saved register
         PTR_DWORD pSavedRegs = PTR_DWORD((TADDR)curEBP);
-        
+
         if (info->doubleAlign && (curEBP & 0x04))
             pSavedRegs--;
 
@@ -3998,7 +3998,7 @@ bool UnwindEbpDoubleAlignFrame(
             RegMask regMask = CALLEE_SAVED_REGISTERS_MASK[i];
             if ((info->savedRegMask & regMask) == 0)
                 continue;
-            
+
             SetLocation(pContext, i, --pSavedRegs);
         }
     }
@@ -4028,7 +4028,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
         NOTHROW;
         GC_NOTRIGGER;
         HOST_NOCALLS;
-        SUPPORTS_DAC; 
+        SUPPORTS_DAC;
     } CONTRACTL_END;
 
     // Address where the method has been interrupted
@@ -4058,7 +4058,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
     hdrInfo * info = &stateBuf->hdrInfoBody;
 
     info->isSpeculativeStackWalk = ((flags & SpeculativeStackwalk) != 0);
-    
+
     if (pUnwindInfo != NULL)
     {
         pUnwindInfo->securityObjectOffset = 0;
@@ -4069,7 +4069,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
             _ASSERTE(securityObjectOffset != 0);
             pUnwindInfo->securityObjectOffset = DWORD(securityObjectOffset);
         }
-            
+
         pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
         pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
     }
@@ -4088,7 +4088,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
         /*---------------------------------------------------------------------
          *  Now handle ESP frames
          */
-         
+
         UnwindEspFrame(pContext, info, table, methodStart, curOffs, flags);
         return true;
     }
@@ -4212,14 +4212,14 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     // if the LIGHTUNWIND flag is passed to StackWalkFramesEx().
     if (pUnwindInfo != NULL)
     {
-        pCodeInfo->GetOffsetsFromUnwindInfo(&(pUnwindInfo->RSPOffsetFromUnwindInfo), 
+        pCodeInfo->GetOffsetsFromUnwindInfo(&(pUnwindInfo->RSPOffsetFromUnwindInfo),
                                             &(pUnwindInfo->RBPOffset));
     }
 #endif // _TARGET_AMD64_
 
     _ASSERTE(pCodeInfo != NULL);
     Thread::VirtualUnwindCallFrame(pContext, pCodeInfo);
-    return true;    
+    return true;
 }
 
 /*****************************************************************************/
@@ -4230,16 +4230,16 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 
 /* report args in 'msig' to the GC.
    'argsStart' is start of the stack-based arguments
-   'varArgSig' describes the arguments 
+   'varArgSig' describes the arguments
    'ctx' has the GC reporting info
 */
-void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx) 
+void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx)
 {
     WRAPPER_NO_CONTRACT;
 
     //Note: no instantiations needed for varargs
-    MetaSig msig(varArgSig->signature, 
-                 varArgSig->pModule, 
+    MetaSig msig(varArgSig->signature,
+                 varArgSig->pModule,
                  NULL);
 
     PTR_BYTE pFrameBase = argsStart - TransitionBlock::GetOffsetOfArgs();
@@ -4352,7 +4352,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
     /* Are we in the prolog or epilog of the method? */
 
-    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG || 
+    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
         info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
 
@@ -4890,10 +4890,10 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                            (lowBits & pinned_OFFSET_FLAG)  ? "pinned" : "");
 #endif
 
-                    
+
                     int  dspOffs = ptrAddr;
                     char frameType;
-                    
+
                     if (info.ebpFrame) {
                         dspOffs   -= EBP;
                         frameType  = 'B';
@@ -4902,7 +4902,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                         dspOffs   -= ESP;
                         frameType  = 'S';
                     }
-                    
+
                     if (dspOffs < 0)
                         printf("%cP-%02XH]: ", frameType, -dspOffs);
                     else
@@ -5015,9 +5015,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #endif // _TARGET_ARM_
 
 #ifdef _DEBUG
-    // Get the name of the current method 
+    // Get the name of the current method
     const char * methodName = pCodeInfo->GetMethodDesc()->GetName();
-    LOG((LF_GCINFO, LL_INFO1000, "Reporting GC refs for %s at offset %04x.\n", 
+    LOG((LF_GCINFO, LL_INFO1000, "Reporting GC refs for %s at offset %04x.\n",
         methodName, curOffs));
 #endif
 
@@ -5039,7 +5039,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         if(!_gcInfoDecoder.IsInterruptible())
         {
             // This must be the offset after a call
-#ifdef _DEBUG            
+#ifdef _DEBUG
             GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
             _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
 #endif
@@ -5115,7 +5115,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         curOffs &= (~THUMB_CODE);
 #endif // _TARGET_ARM_
 
-        LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n", 
+        LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",
             methodName, curOffs));
     }
 
@@ -5181,13 +5181,13 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #ifndef _TARGET_X86_
         //
         // SPECIAL CASE:
-        //      IL marshaling stubs have signatures that are marked as vararg, 
+        //      IL marshaling stubs have signatures that are marked as vararg,
         //      but they are callsite sigs that actually contain complete sig
         //      info.  There are two reasons for this:
         //          1) the stub callsites expect the method to be vararg
         //          2) the marshaling stub must have full sig info so that
         //             it can do a ldarg.N on the arguments it needs to marshal.
-        //      The result of this is that the code below will report the 
+        //      The result of this is that the code below will report the
         //      variable arguments twice--once from the va sig cookie and once
         //      from the explicit method signature (in the method's gc info).
         //
@@ -5214,7 +5214,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         PTR_BYTE prevSP = dac_cast<PTR_BYTE>(GetCallerSp(pRD));
 
-        _ASSERTE(prevSP + VASigCookieOffset >= dac_cast<PTR_BYTE>(GetSP(pRD->pCurrentContext)));        
+        _ASSERTE(prevSP + VASigCookieOffset >= dac_cast<PTR_BYTE>(GetSP(pRD->pCurrentContext)));
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
         // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
@@ -5505,8 +5505,8 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
                              relOffset,
                              &info);
 
-    if (!info.genericsContext || 
-        info.prologOffs != hdrInfo::NOT_IN_PROLOG || 
+    if (!info.genericsContext ||
+        info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
         info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
         return GENERIC_PARAM_CONTEXT_NONE;
@@ -5569,8 +5569,8 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
                              relOffset,
                              &info);
 
-    if (!info.genericsContext || 
-        info.prologOffs != hdrInfo::NOT_IN_PROLOG || 
+    if (!info.genericsContext ||
+        info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
         info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
     {
         return NULL;
@@ -5629,7 +5629,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
             // can be the same for funclets and the main function.
             // However, we have a caller SP, so we need to convert
             baseStackSlot -= pCodeInfo->GetFixedStackSize();
-            
+
 #endif // _TARGET_AMD64_
 
             // For funclets we have to do an extra dereference to get the PSPSym first.
@@ -5686,7 +5686,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifndef USE_GC_INFO_DECODER
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
-    
+
     /* Extract the necessary information from the info block header */
     hdrInfo * info = &stateBuf->hdrInfoBody;
     stateBuf->hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, // <TODO>truncation</TODO>
@@ -5694,14 +5694,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                                    info);
 
     pState->dwIsSet = 1;
-    
+
     if (info->prologOffs != hdrInfo::NOT_IN_PROLOG ||
         info->epilogOffs != hdrInfo::NOT_IN_EPILOG ||
         info->gsCookieOffset == INVALID_GS_COOKIE_OFFSET)
     {
         return NULL;
     }
-    
+
     if  (info->ebpFrame)
     {
         DWORD curEBP = GetRegdisplayFP(pContext);
@@ -5710,9 +5710,9 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
     else
     {
-        PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info) + stateBuf->hdrInfoSize;       
+        PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info) + stateBuf->hdrInfoSize;
         unsigned argSize = GetPushedArgSize(info, table, relOffset);
-        
+
         return PVOID(SIZE_T(pContext->SP + argSize + info->gsCookieOffset));
     }
 
@@ -5759,7 +5759,7 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
     if (prologSize)
         *prologSize = info.prologSize;
 
-    return ((info.prologOffs != hdrInfo::NOT_IN_PROLOG) || 
+    return ((info.prologOffs != hdrInfo::NOT_IN_PROLOG) ||
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
 }
 
@@ -6040,7 +6040,7 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
     pState->dwIsSet = 1;
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    if (trFixContext) 
+    if (trFixContext)
     {
         printf("GetAmbientSP [%s][%s] for %s.%s: ",
                stateBuf->hdrInfoBody.ebpFrame?"ebp":"   ",
@@ -6105,7 +6105,7 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
     This is currently only used on x86.
  */
 
-// virtual 
+// virtual
 ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 {
     CONTRACTL {

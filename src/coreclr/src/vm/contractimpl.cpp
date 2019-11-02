@@ -19,7 +19,7 @@
 #include "virtualcallstub.h"
 #include "decodemd.h"
 
-#ifdef FEATURE_PREJIT 
+#ifdef FEATURE_PREJIT
 #include "compile.h"
 #endif
 
@@ -27,12 +27,12 @@
 DummyGlobalContract ___contract;
 #endif
 
-#ifdef LOGGING 
+#ifdef LOGGING
 //----------------------------------------------------------------------------
 StubDispatchStats g_sdStats = {0};
 #endif // LOGGING
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
 MethodDesc * DispatchSlot::GetMethodDesc()
@@ -110,7 +110,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
 
     // Lookup the value.
     UINT32 id = LookupTypeID(pMT);
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
     // If the value is not in the table, take the lock, get a new ID, and
     // insert the new pair.
     if (id == TypeIDProvider::INVALID_TYPE_ID)
@@ -139,7 +139,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         m_idMap.InsertValue((UPTR)id, (UPTR)pMT >> 1);
         m_mtMap.InsertValue((UPTR)pMT, (UPTR)id);
         m_entryCount++;
-        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() || 
+        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() ||
                           (LookupType(id) == pMT));
     }
 #else // DACCESS_COMPILE
@@ -150,7 +150,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
     return id;
 } // TypeIDMap::GetTypeID
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 //------------------------------------------------------------------------
 // Remove all types that belong to the passed in LoaderAllocator
@@ -189,10 +189,10 @@ void TypeIDMap::RemoveTypes(LoaderAllocator *pLoaderAllocator)
 //------------------------------------------------------------------------
 // If TRUE, it points to a matching entry.
 // If FALSE, it is at the insertion point.
-BOOL 
+BOOL
 DispatchMapBuilder::Find(
-    DispatchMapTypeID typeID, 
-    UINT32            slotNumber, 
+    DispatchMapTypeID typeID,
+    UINT32            slotNumber,
     Iterator &        it)
 {
     WRAPPER_NO_CONTRACT;
@@ -231,9 +231,9 @@ BOOL DispatchMapBuilder::Contains(DispatchMapTypeID typeID, UINT32 slotNumber)
 //------------------------------------------------------------------------
 void
 DispatchMapBuilder::InsertMDMapping(
-    DispatchMapTypeID typeID, 
-    UINT32            slotNumber, 
-    MethodDesc *      pMDTarget, 
+    DispatchMapTypeID typeID,
+    UINT32            slotNumber,
+    MethodDesc *      pMDTarget,
     BOOL              fIsMethodImpl)
 {
     CONTRACTL {
@@ -298,7 +298,7 @@ DispatchMapBuilderNode * DispatchMapBuilder::NewEntry()
 
 //----------------------------------------------------------------------------
 DispatchMap::DispatchMap(
-    BYTE * pMap, 
+    BYTE * pMap,
     UINT32 cbMap)
 {
     LIMITED_METHOD_CONTRACT;
@@ -319,16 +319,16 @@ DispatchMap::DispatchMap(
 //   bool:  Whether or not the target slot/index values can be negative.
 //   {
 //     slot:       The slot of type that is being mapped
-//     index/slot: This is a slot mapping for the current type. The implementation search is 
+//     index/slot: This is a slot mapping for the current type. The implementation search is
 //                 modified to <this, slot> and the search is restarted from the initial type.
 //   }
 // }
-void 
+void
 DispatchMap::CreateEncodedMapping(
-    MethodTable *        pMT, 
-    DispatchMapBuilder * pMapBuilder, 
-    StackingAllocator *  pAllocator, 
-    BYTE **              ppbMap, 
+    MethodTable *        pMT,
+    DispatchMapBuilder * pMapBuilder,
+    StackingAllocator *  pAllocator,
+    BYTE **              ppbMap,
     UINT32 *             pcbMap)
 {
     CONTRACTL {
@@ -393,7 +393,7 @@ DispatchMap::CreateEncodedMapping(
         // Start encoding the map
         DispatchMapBuilder::Iterator it(pMapBuilder);
         it.SkipThisTypeEntries();
-        
+
         INT32 curType = -1;
         INT32 prevType;
         INT32 deltaType;
@@ -437,7 +437,7 @@ DispatchMap::CreateEncodedMapping(
             do
             {
                 // Only virtual targets can be mapped virtually.
-                CONSISTENCY_CHECK((it.GetTargetMD() == NULL) || 
+                CONSISTENCY_CHECK((it.GetTargetMD() == NULL) ||
                                   it.GetTargetMD()->IsVirtual());
                 // Encode the slot
                 prevSlot = curSlot;
@@ -445,12 +445,12 @@ DispatchMap::CreateEncodedMapping(
                 INT32 deltaSlot = curSlot - prevSlot - ENCODING_SLOT_DELTA;
                 CONSISTENCY_CHECK(0 <= deltaSlot);
                 e.Encode((unsigned)deltaSlot);
-                
+
                 // Calculate and encode the target slot delta
                 prevTargetSlot = curTargetSlot;
                 curTargetSlot = (INT32)it.GetTargetSlot();
                 INT32 delta = curTargetSlot - prevTargetSlot - ENCODING_TARGET_SLOT_DELTA;
-                
+
                 if (fHasNegatives)
                 {
                     e.EncodeSigned((signed)delta);
@@ -463,13 +463,13 @@ DispatchMap::CreateEncodedMapping(
             }
             while (it.Next() && it.GetTypeID().ToUINT32() == (UINT32)curType);
         } // while (it.IsValid())
-        
+
         // Finish and finalize the map, and set the out params.
         e.Done();
         *pcbMap = e.Contents(ppbMap);
     }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     // Let's verify the mapping
     {
         EncodedMapIterator itMap(*ppbMap);
@@ -503,12 +503,12 @@ void DispatchMap::Save(DataImage * image)
     UINT32 cbObj = GetObjectSize(cbMap);
 
     image->StoreInternedStructure(
-        this, 
-        cbObj, 
-        DataImage::ITEM_DISPATCH_MAP, 
+        this,
+        cbObj,
+        DataImage::ITEM_DISPATCH_MAP,
         sizeof(void *));
 
-#ifdef LOGGING 
+#ifdef LOGGING
     g_sdStats.m_cNGENDispatchMap++;
     g_sdStats.m_cbNGENDispatchMap += cbObj;
 #endif //LOGGING
@@ -537,7 +537,7 @@ UINT32 DispatchMap::GetMapSize()
     return (UINT32)(dac_cast<TADDR>(it.m_d.End()) - PTR_HOST_MEMBER_TADDR(DispatchMap, this, m_rgMap));
 }
 
-#ifdef DACCESS_COMPILE 
+#ifdef DACCESS_COMPILE
 
 //------------------------------------------------------------------------
 void DispatchMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -606,7 +606,7 @@ DispatchMap::EncodedMapIterator::EncodedMapIterator(MethodTable * pMT)
 
     if (pMT->HasDispatchMap())
     {
-        DispatchMap * pMap = pMT->GetDispatchMap();        
+        DispatchMap * pMap = pMT->GetDispatchMap();
         Init(PTR_BYTE(PTR_HOST_MEMBER_TADDR(DispatchMap, pMap, m_rgMap)));
     }
     else
@@ -663,8 +663,8 @@ BOOL DispatchMap::EncodedMapIterator::Next()
         }
         m_curTypeId =
             DispatchMapTypeID::FromUINT32(
-                (UINT32)((INT32)m_curTypeId.ToUINT32() + 
-                         (INT32)m_d.Next() + 
+                (UINT32)((INT32)m_curTypeId.ToUINT32() +
+                         (INT32)m_d.Next() +
                          ENCODING_TYPE_DELTA));
         _ASSERTE(!m_curTypeId.IsThisClass());
         m_curEntry = 0;
@@ -681,9 +681,9 @@ BOOL DispatchMap::EncodedMapIterator::Next()
     m_curSlot = (UINT32)((INT32)m_curSlot + (INT32)m_d.Next() + ENCODING_SLOT_DELTA);
 
     // If virtual, get the target virtual slot number
-    m_curTargetSlot = 
-        (UINT32)((INT32)m_curTargetSlot + 
-                 ENCODING_TARGET_SLOT_DELTA + 
+    m_curTargetSlot =
+        (UINT32)((INT32)m_curTargetSlot +
+                 ENCODING_TARGET_SLOT_DELTA +
                  (INT32)(m_fCurTypeHasNegativeEntries ? m_d.NextSigned() : m_d.Next()));
     m_e.InitVirtualMapping(m_curTypeId, m_curSlot, m_curTargetSlot);
 

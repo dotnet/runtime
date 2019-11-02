@@ -170,7 +170,7 @@ C_FUNC(\Name\()_End):
         .endif
 
         CHECK_STACK_ALIGNMENT
-        
+
         END_PROLOGUE
 
 .endm

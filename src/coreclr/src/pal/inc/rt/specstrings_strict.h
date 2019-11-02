@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/************************************************************************* 
+/*************************************************************************
 *  This file documents all the macros approved for use in windows source
 *  code. It includes some experimental macros which should only be used by
 *  experts.
@@ -17,12 +17,12 @@
 *  There are several levels of strictness, each level includes the behavior of
 *  all previous levels.
 *
-*  0 - Disable strict checking 
-*  1 - Break on unapproved macros and misuse of statement 
+*  0 - Disable strict checking
+*  1 - Break on unapproved macros and misuse of statement
 *      macros such as __fallthrough (default)
 *  2 - Deprecated some old macros that should not be used
-*  3 - Use VS 2005 Source Annotation to make sure every macro 
-*      is used in the right context. For example placing __in on a return 
+*  3 - Use VS 2005 Source Annotation to make sure every macro
+*      is used in the right context. For example placing __in on a return
 *      parameter will result in an error.
 *
 
@@ -37,32 +37,32 @@
 *  specstrings.h provides a set of annotations to describe how a function uses
 *  its parameters - the assumptions it makes about them, and the guarantees it
 *  makes upon finishing.
-* 
+*
 *  Annotations must be placed before a function parameter's type or its return
 *  type. There are two basic classes of common annotations buffer annotations
 *  and advanced annotations.  Buffer annotations describe how functions use
 *  their pointer parameters, and advanced annotations either describe
 *  complex/unusual buffer behavior, or provide additional information about a
 *  parameter that is not otherwise expressible.
-* 
+*
 *  Buffer Annotations
-* 
+*
 *  The most important annotations in SpecStrings.h provide a consistent way to
 *  annotate buffer parameters or return values for a function. Each of these
 *  annotations describes a single buffer (which could be a string, a
 *  fixed-length or variable-length array, or just a pointer) that the function
 *  interacts with: where it is, how large it is, how much is initialized, and
 *  what the function does with it.
-* 
+*
 *  The appropriate macro for a given buffer can be constructed using the table
 *  below.  Just pick the appropriate values from each category, and combine
 *  them together with a leading underscore. Some combinations of values do not
 *  make sense as buffer annotations. Only meaningful annotations can be added
 *  to your code; for a list of these, see the buffer annotation definitions
 *  section.
-* 
+*
 *  Only a single buffer annotation should be used for each parameter.
-* 
+*
 *  |------------|------------|---------|--------|----------|---------------|
 *  |   Level    |   Usage    |  Size   | Output | Optional |  Parameters   |
 *  |------------|------------|---------|--------|----------|---------------|
@@ -74,17 +74,17 @@
 *  |------------|------------|---------|--------|----------|---------------|
 *
 *  Note: "<>" represents the empty string.
-* 
+*
 *  Level: Describes the buffer pointer's level of indirection from the
 *  parameter or return value 'p'.
-* 
+*
 *  <>         : p is the buffer pointer.
 *  _deref     : *p is the buffer pointer. p must not be NULL.
-*  _deref_opt : *p may be the buffer pointer. p may be NULL, in which case the 
+*  _deref_opt : *p may be the buffer pointer. p may be NULL, in which case the
 *               rest of the annotation is ignored.
-* 
+*
 *  Usage: Describes how the function uses the buffer.
-* 
+*
 *  <> : The buffer is not accessed. If used on the return value or with
 *  _deref, the function will provide the buffer, and it will be uninitialized
 *  at exit.  Otherwise, the caller must provide the buffer. This should only
@@ -105,7 +105,7 @@
 *  Size: Describes the total size of the buffer. This may be less than the
 *  space actually allocated for the buffer, in which case it describes the
 *  accessible amount.
-* 
+*
 *  <> : No buffer size is given. If the type specifies the buffer size (such
 *  as with LPSTR and LPWSTR), that amount is used. Otherwise, the buffer is
 *  one element long. Must be used with _in, _out, or _inout.
@@ -113,12 +113,12 @@
 *  _ecount : The buffer size is an explicit element count.
 *
 *  _bcount : The buffer size is an explicit byte count.
-* 
+*
 *  Output: Describes how much of the buffer will be initialized by the
 *  function. For _inout buffers, this also describes how much is initialized
 *  at entry. Omit this category for _in buffers; they must be fully
 *  initialized by the caller.
-* 
+*
 *  <> : The type specifies how much is initialized. For instance, a function
 *  initializing an LPWSTR must NULL-terminate the string.
 *
@@ -126,16 +126,16 @@
 *
 *  _part : The function initializes part of the buffer, and explicitly
 *  indicates how much.
-* 
+*
 *  Optional: Describes if the buffer itself is optional.
-* 
+*
 *  <>   : The pointer to the buffer must not be NULL.
 *
 *  _opt : The pointer to the buffer might be NULL. It will be checked before
 *  being dereferenced.
-* 
+*
 *  Parameters: Gives explicit counts for the size and length of the buffer.
-* 
+*
 *  <> : There is no explicit count. Use when neither _ecount nor _bcount is
 *  used.
 *
@@ -144,47 +144,47 @@
 *
 *  (size,length) : The buffer's total size and initialized length are
 *  given. Use with _ecount_part and _bcount_part.
-* 
+*
 *  ----------------------------------------------------------------------------
 *  Buffer Annotation Examples
-* 
+*
 *  LWSTDAPI_(BOOL) StrToIntExA(
 *      LPCSTR pszString,  //  No annotation required, const implies __in.
 *      DWORD dwFlags,
 *      __out int *piRet   // A pointer whose dereference will be filled in.
 *  );
-* 
+*
 *  void MyPaintingFunction(
 *      __in HWND hwndControl,     //  An initialized read-only parameter.
-*      __in_opt HDC hdcOptional,  //  An initialized read-only parameter that 
+*      __in_opt HDC hdcOptional,  //  An initialized read-only parameter that
 *                                 //  might be NULL.
-*      __inout IPropertyStore *ppsStore // An initialized parameter that 
+*      __inout IPropertyStore *ppsStore // An initialized parameter that
 *                                       // may be freely used and modified.
 *  );
-* 
+*
 *  LWSTDAPI_(BOOL) PathCompactPathExA(
 *      __out_ecount(cchMax) LPSTR pszOut, //  A string buffer with cch elements
-*                                         //  that will be '\0' terminated 
+*                                         //  that will be '\0' terminated
 *                                         //  on exit.
-*      LPCSTR pszSrc,                     //  No annotation required, 
+*      LPCSTR pszSrc,                     //  No annotation required,
 *                                         //  const implies __in.
-*      UINT cchMax,                              
+*      UINT cchMax,
 *      DWORD dwFlags
 *  );
-* 
+*
 *  HRESULT SHLocalAllocBytes(
 *      size_t cb,
 *      __deref_bcount(cb) T **ppv //  A pointer whose dereference will be set
 *                                 //  to an uninitialized buffer with cb bytes.
 *  );
-* 
+*
 *  __inout_bcount_full(cb) : A buffer with cb elements that is fully
 *  initialized at entry and exit, and may be written to by this function.
-* 
+*
 *  __out_ecount_part(count, *countOut) : A buffer with count elements that
 *  will be partially initialized by this function. The function indicates how
 *  much it initialized by setting *countOut.
-* 
+*
 ************************************************************************/
 
 #if (_MSC_VER >= 1400) && !defined(__midl) && !defined(_PREFAST_) && (__SPECSTRINGS_STRICT_LEVEL > 0)
@@ -375,7 +375,7 @@
 #define __deref_opt_out_xcount_part_opt(size,len)     __allowed(on_parameter)
 #define __deref_opt_out_ecount_full_opt(size)         __allowed(on_parameter)
 #define __deref_opt_out_bcount_full_opt(size)         __allowed(on_parameter)
-#define __deref_opt_out_xcount_full_opt(size)         __allowed(on_parameter)  
+#define __deref_opt_out_xcount_full_opt(size)         __allowed(on_parameter)
 #define __deref_opt_out_z_opt                         __allowed(on_parameter)
 #define __deref_opt_out_ecount_z_opt(size)            __allowed(on_parameter)
 #define __deref_opt_out_bcount_z_opt(size)            __allowed(on_parameter)
@@ -383,7 +383,7 @@
 #define __deref_opt_inout_ecount_opt(size)            __allowed(on_parameter)
 #define __deref_opt_inout_bcount_opt(size)            __allowed(on_parameter)
 #define __deref_opt_inout_xcount_opt(size)            __allowed(on_parameter)
-#define __deref_opt_inout_ecount_part_opt(size,len)   __allowed(on_parameter) 
+#define __deref_opt_inout_ecount_part_opt(size,len)   __allowed(on_parameter)
 #define __deref_opt_inout_bcount_part_opt(size,len)   __allowed(on_parameter)
 #define __deref_opt_inout_xcount_part_opt(size,len)   __allowed(on_parameter)
 #define __deref_opt_inout_ecount_full_opt(size)       __allowed(on_parameter)
@@ -466,12 +466,12 @@
 
 /************************************************************************
 *  Advanced Annotations
-* 
+*
 *  Advanced annotations describe behavior that is not expressible with the
 *  regular buffer macros. These may be used either to annotate buffer
 *  parameters that involve complex or conditional behavior, or to enrich
 *  existing annotations with additional information.
-* 
+*
 *  _At_(expr, annotes) : annotation list annotes applies to target 'expr'
 *
 *  _When_(expr, annotes) : annotation list annotes applies when 'expr' is true
@@ -483,57 +483,57 @@
 *  the function must always satisfy its guarantees. Added automatically to
 *  functions that indicate success in standard ways, such as by returning an
 *  HRESULT.
-* 
+*
 *  __out_awcount(expr, size) T *p : Pointer p is a buffer whose size may be
 *  given in either bytes or elements. If <expr> is true, this acts like
 *  __out_bcount. If <expr> is false, this acts like __out_ecount. This
 *  should only be used to annotate old APIs.
-* 
+*
 *  __in_awcount(expr, size) T* p : Pointer p is a buffer whose size may be given
 *  in either bytes or elements. If <expr> is true, this acts like
 *  __in_bcount. If <expr> is false, this acts like __in_ecount. This should
 *  only be used to annotate old APIs.
-* 
+*
 *  __nullterminated T* p : Pointer p is a buffer that may be read or written
 *  up to and including the first '\0' character or pointer. May be used on
 *  typedefs, which marks valid (properly initialized) instances of that type
 *  as being null-terminated.
-* 
+*
 *  __nullnullterminated T* p : Pointer p is a buffer that may be read or
 *  written up to and including the first sequence of two '\0' characters or
 *  pointers. May be used on typedefs, which marks valid instances of that
 *  type as being double-null terminated.
-* 
+*
 *  __reserved T v : Value v must be 0/NULL, reserved for future use.
-* 
+*
 *  __checkReturn T f(); : Return value of f must not be ignored by callers
 *  of this function.
-* 
+*
 *  __typefix(ctype) T v : Value v should be treated as an instance of ctype,
 *  rather than its declared type when considering validity.
-* 
+*
 *  __override T f(); : Specify C#-style 'override' behaviour for overriding
 *  virtual methods.
-* 
+*
 *  __callback T f(); : Function f can be used as a function pointer.
-* 
+*
 *  __format_string T p : Pointer p is a string that contains % markers in
 *  the style of printf.
-* 
+*
 *  __blocksOn(resource) f(); : Function f blocks on the resource 'resource'.
-* 
+*
 *  __fallthrough : Annotates switch statement labels where fall-through is
 *  desired, to distinguish from forgotten break statements.
-* 
+*
 *  __range(low_bnd, up_bnd) int f(): The return from the function "f" must
 *  be in the inclusive numeric range [low_bnd, up_bnd].
 *
 *  __in_range(low_bnd, up_bnd) int i : Precondition that integer i must be
 *  in the inclusive numeric range [low_bnd, up_bnd].
-* 
+*
 *  __out_range(low_bnd, up_bnd) int i : Postcondition that integer i must be
 *  in the inclusive numeric range [low_bnd, up_bnd].
-* 
+*
 *  __deref_in_range(low_bnd, up_bnd) int* pi : Precondition that integer *pi
 *  must be in the inclusive numeric range [low_bnd, up_bnd].
 *
@@ -545,16 +545,16 @@
 *
 *  The first argument of a range macro may also be a C relational operator
 *  (<,>,!=, ==, <=, >=).
-*  
+*
 *  __range(rel_op, j) int f(): Postcondition that "f() rel_op j" must be
 *  true.  Note that j may be a expression known only at runtime.
 *
 *  __in_range(rel_op, j) int i : Precondition that "i rel_op j" must be
 *  true.  Note that j may be a expression known only at runtime.
-* 
+*
 *  __out_range(rel_op, j) int i : Postcondition that integer "i rel_op j"
 *  must be true.  Note that j may be a expression known only at runtime.
-* 
+*
 *  __deref_in_range(rel_op, j) int *pi : Precondition that "*pi rel_op j"
 *  must be true.  Note that j may be a expression known only at runtime.
 *
@@ -577,11 +577,11 @@
 *  __out_bound int i : Postcondition that integer i must be bound, but the
 *  exact range can't be specified at compile time.  __out_range should be
 *  used if the range can be explicitly stated.
-* 
+*
 *  __deref_out_bound int pi : Postcondition that integer *pi must be bound,
 *  but the exact range can't be specified at compile time.
 *  __deref_out_range should be used if the range can be explicitly stated.
-* 
+*
 *  __assume_bound(expr); : Assume that the expression is bound to some known
 *  range. This can be used to suppress integer overflow warnings on integral
 *  expressions that are known to be bound due to reasons not explicit in the
@@ -590,8 +590,8 @@
 *  __analysis_assume_nulltermianted(expr); : Assume that the expression is
 *  a null terminated buffer. Use this to suppress tool noise specific to
 *  nulltermination warnings, and capture deeper invariants tools can not
-*  discover. 
-* 
+*  discover.
+*
 *  __allocator void f(): Function allocates memory using an integral size
 *  argument
 *
@@ -601,69 +601,69 @@
 *  void myfree(__deallocate_opt(Mem) void *p) : Memory is freed, no longer
 *  usable upon return, and p may be null.
 *
-*  void free(__post_invalid void* x): Mark memory as untouchable when 
+*  void free(__post_invalid void* x): Mark memory as untouchable when
 *  function returns.
 *
 *  ----------------------------------------------------------------------------
 *  Advanced Annotation Examples
-* 
-*  __success(return == TRUE) LWSTDAPI_(BOOL) 
+*
+*  __success(return == TRUE) LWSTDAPI_(BOOL)
 *  PathCanonicalizeA(__out_ecount(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath);
 *  //  pszBuf is only guaranteed to be null-terminated when TRUE is returned.
-* 
+*
 *  // Initialized LPWSTRs are null-terminated strings.
 *  typedef __nullterminated WCHAR* LPWSTR;
-* 
+*
 *  __out_ecount(cch) __typefix(LPWSTR) void *psz;
-*  // psz is a buffer parameter which will be a null-terminated WCHAR string 
+*  // psz is a buffer parameter which will be a null-terminated WCHAR string
 *  // at exit, and which initially contains cch WCHARs.
-* 
+*
 ************************************************************************/
 #define _At_(expr, annotes)      __allowed(on_parameter_or_return)
 #define _When_(expr, annotes)    __allowed(on_parameter_or_return)
 #define __success(expr)          _SAL_VERSION_CHECK(__success)
-#define __out_awcount(expr,size) __allowed(on_parameter) 
-#define __in_awcount(expr,size)  __allowed(on_parameter)   
+#define __out_awcount(expr,size) __allowed(on_parameter)
+#define __in_awcount(expr,size)  __allowed(on_parameter)
 #define __nullterminated         _SAL_VERSION_CHECK(__nullterminated)
 #define __nullnullterminated     _SAL_VERSION_CHECK(__nullnullterminated)
 #define __clr_reserved           _SAL_VERSION_CHECK(__reserved)
 #define __checkReturn            _SAL_VERSION_CHECK(__checkReturn)
-#define __typefix(ctype)         __allowed(on_parameter_or_return) 
-#define __override               __allowed(on_function) 
-#define __callback               __allowed(on_function) 
-#define __format_string          __allowed(on_parameter_or_return) 
-#define __blocksOn(resource)     __allowed(on_function) 
+#define __typefix(ctype)         __allowed(on_parameter_or_return)
+#define __override               __allowed(on_function)
+#define __callback               __allowed(on_function)
+#define __format_string          __allowed(on_parameter_or_return)
+#define __blocksOn(resource)     __allowed(on_function)
 #define __fallthrough            __allowed(as_statement)
-#define __range(lb,ub)           __allowed(on_return) 
+#define __range(lb,ub)           __allowed(on_return)
 #define __in_range(lb,ub)        _SAL_VERSION_CHECK(__in_range)
 #define __out_range(lb,ub)       _SAL_VERSION_CHECK(__out_range)
-#define __deref_in_range(lb,ub)  __allowed(on_parameter) 
+#define __deref_in_range(lb,ub)  __allowed(on_parameter)
 #define __deref_out_range(lb,ub) _SAL_VERSION_CHECK(__deref_out_range)
-#define __deref_inout_range(lb,ub) __allowed(on_parameter) 
+#define __deref_inout_range(lb,ub) __allowed(on_parameter)
 #define __field_range(lb,ub)     _SAL_VERSION_CHECK(__field_range)
-#define __range_max(a,b)         __allowed(on_return) 
-#define __range_min(a,b)         __allowed(on_return) 
-#define __bound                  __allowed(on_return) 
-#define __in_bound               __allowed(on_parameter) 
-#define __out_bound              __allowed(on_parameter) 
-#define __deref_out_bound        __allowed(on_parameter) 
+#define __range_max(a,b)         __allowed(on_return)
+#define __range_min(a,b)         __allowed(on_return)
+#define __bound                  __allowed(on_return)
+#define __in_bound               __allowed(on_parameter)
+#define __out_bound              __allowed(on_parameter)
+#define __deref_out_bound        __allowed(on_parameter)
 #define __assume_bound(i)        __allowed(as_statement_with_arg(i))
 #define __analysis_assume_nullterminated(x) \
                                  __allowed(as_statement_with_arg(x))
-#define __allocator              __allowed(on_function) 
-#define __deallocate(kind)       __allowed(on_parameter) 
-#define __deallocate_opt(kind)   __allowed(on_parameter) 
-#define __post_invalid           __allowed(on_parameter_or_return) 
+#define __allocator              __allowed(on_function)
+#define __deallocate(kind)       __allowed(on_parameter)
+#define __deallocate_opt(kind)   __allowed(on_parameter)
+#define __post_invalid           __allowed(on_parameter_or_return)
 #define __post_nullnullterminated           \
                                  __allowed(on_parameter_or_return)
-/*************************************************************************** 
+/***************************************************************************
 * Expert Macros
 ***************************************************************************/
 #define __null                  __allowed(on_typedecl)
 #define __notnull               __allowed(on_typedecl)
 #define __maybenull             __allowed(on_typedecl)
 #define __exceptthat            __allowed(on_typedecl)
-/*************************************************************************** 
+/***************************************************************************
 * Macros to classify fields of structures.
 *                          Structure Annotations
 *
@@ -764,54 +764,54 @@
 *                        The pointer to the block of memory is may be
 *                        NULL
 *
-*     
-*   // Basic Usage of Struct Annotations                         
-*   #include <stdio.h>                                           
-*   #include <stdlib.h>                                          
-*   struct buf_s {                                               
-*    int sz;                                                     
-*    __field_bcount_full(sz)                                     
-*    char *buf;                                                  
-*   };                                                           
-*   void InitBuf(__out struct *buf_s b,int sz) {                 
-*        b->buf = calloc(sz,sizeof(char));                       
-*        b->sz = sz;                                             
-*   }                                                            
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {          
-*     fwrite(b->buf,b->sz,sizeof(char),fp);                      
-*   }                                                            
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {        
-*     fread(b->buf,b->sz,sizeof(char),fp);                       
-*   }                                                            
-*                                                                 
-*                                                                 
-*                                                                 
-*   // Inline Allocated Buffer                                   
-*   struct buf_s {                                               
-*    int sz;                                                     
-*    __field_bcount(sz)                                          
-*    char buf[1];                                                
-*   };                                                           
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {          
-*     fwrite(&(b->buf),b->sz,sizeof(char),fp);                   
-*   }                                                            
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {        
-*     fread(&(b->buf),b->sz,sizeof(char),fp);                    
-*   }                                                            
-*                                                                 
-*                                                                 
-*                                                                 
-*   // Embedded Header Structure                                 
-*   __struct_bcount(sz)                                          
-*   struct buf_s {                                               
-*    int sz;                                                     
-*   };                                                           
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {          
-*     fwrite(&b,b->sz,sizeof(char),fp);                          
-*   }                                                            
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {        
-*     fread(&b,b->sz,sizeof(char),fp);                           
-*   }                                                            
+*
+*   // Basic Usage of Struct Annotations
+*   #include <stdio.h>
+*   #include <stdlib.h>
+*   struct buf_s {
+*    int sz;
+*    __field_bcount_full(sz)
+*    char *buf;
+*   };
+*   void InitBuf(__out struct *buf_s b,int sz) {
+*        b->buf = calloc(sz,sizeof(char));
+*        b->sz = sz;
+*   }
+*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*     fwrite(b->buf,b->sz,sizeof(char),fp);
+*   }
+*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*     fread(b->buf,b->sz,sizeof(char),fp);
+*   }
+*
+*
+*
+*   // Inline Allocated Buffer
+*   struct buf_s {
+*    int sz;
+*    __field_bcount(sz)
+*    char buf[1];
+*   };
+*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*     fwrite(&(b->buf),b->sz,sizeof(char),fp);
+*   }
+*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*     fread(&(b->buf),b->sz,sizeof(char),fp);
+*   }
+*
+*
+*
+*   // Embedded Header Structure
+*   __struct_bcount(sz)
+*   struct buf_s {
+*    int sz;
+*   };
+*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*     fwrite(&b,b->sz,sizeof(char),fp);
+*   }
+*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*     fread(&b,b->sz,sizeof(char),fp);
+*   }
 *
 *
 ****************************************************************************/
@@ -831,13 +831,13 @@
 #define __field_bcount_full(size)          __allowed(on_field)
 #define __field_xcount_full(size)          __allowed(on_field)
 #define __field_ecount_full_opt(size)      __allowed(on_field)
-#define __field_bcount_full_opt(size)      __allowed(on_field) 
+#define __field_bcount_full_opt(size)      __allowed(on_field)
 #define __field_xcount_full_opt(size)      __allowed(on_field)
 #define __field_nullterminated             __allowed(on_field)
-#define __struct_bcount(size)              __allowed(on_struct) 
-#define __struct_xcount(size)              __allowed(on_struct) 
+#define __struct_bcount(size)              __allowed(on_struct)
+#define __struct_xcount(size)              __allowed(on_struct)
 
-/*************************************************************************** 
+/***************************************************************************
 * Macros to classify the entrypoints and indicate their category.
 *
 * Pre-defined control point categories include: RPC, KERNEL, GDI.
@@ -845,12 +845,12 @@
 * Pre-defined control point macros include:
 *  __rpc_entry, __kernel_entry, __gdi_entry.
 ***************************************************************************/
-#define __control_entrypoint(category)     __allowed(on_function) 
-#define __rpc_entry                        __allowed(on_function) 
-#define __kernel_entry                     __allowed(on_function) 
-#define __gdi_entry                        __allowed(on_function)  
+#define __control_entrypoint(category)     __allowed(on_function)
+#define __rpc_entry                        __allowed(on_function)
+#define __kernel_entry                     __allowed(on_function)
+#define __gdi_entry                        __allowed(on_function)
 
-/*************************************************************************** 
+/***************************************************************************
 * Macros to track untrusted data and their validation. The list of untrusted
 * sources include:
 *
@@ -859,15 +859,15 @@
 * INTERNET                 - WinInet and WinHttp readers
 * USER_REGISTRY            - HKCU portions of the registry
 * USER_MODE                - Parameters to kernel entry points
-* RPC                      - Parameters to RPC entry points 
-* DRIVER                   - Device driver 
+* RPC                      - Parameters to RPC entry points
+* DRIVER                   - Device driver
 ***************************************************************************/
-#define __in_data_source(src_sym)       __allowed(on_parameter) 
-#define __out_data_source(src_sym)      __allowed(on_parameter) 
+#define __in_data_source(src_sym)       __allowed(on_parameter)
+#define __out_data_source(src_sym)      __allowed(on_parameter)
 #define __field_data_source(src_sym)    __allowed(on_field)
 #define __this_out_data_source(src_syn) __allowed(on_function)
 
-/************************************************************************** 
+/**************************************************************************
 * Macros to tag file parsing code. Predefined formats include:
 *  PNG                     - Portable Network Graphics
 *  JPEG                    - Joint Photographic Experts Group
@@ -887,40 +887,40 @@
 *  AVI                     - Audio Visual Interchange
 *  ACM                     - Audio Compression Manager
 **************************************************************************/
-#define __out_validated(filetype_sym)         __allowed(on_parameter) 
-#define __this_out_validated(filetype_sym)    __allowed(on_function)   
-#define __file_parser(filetype_sym)           __allowed(on_function) 
-#define __file_parser_class(filetype_sym)     __allowed(on_struct)  
-#define __file_parser_library(filetype_sym)   __allowed(as_global_decl)  
+#define __out_validated(filetype_sym)         __allowed(on_parameter)
+#define __this_out_validated(filetype_sym)    __allowed(on_function)
+#define __file_parser(filetype_sym)           __allowed(on_function)
+#define __file_parser_class(filetype_sym)     __allowed(on_struct)
+#define __file_parser_library(filetype_sym)   __allowed(as_global_decl)
 
-/*************************************************************************** 
+/***************************************************************************
 * Macros to track the code content in the file. The type of code
 * contents currently tracked:
 *
-* NDIS_DRIVER                   - NDIS Device driver 
+* NDIS_DRIVER                   - NDIS Device driver
 ***************************************************************************/
-#define __source_code_content(codetype_sym)     __allowed(as_global_decl) 
+#define __source_code_content(codetype_sym)     __allowed(as_global_decl)
 
-/*************************************************************************** 
+/***************************************************************************
 * Macros to track the code content in the class. The type of code
 * contents currently tracked:
 *
 * DCOM                          - Class implementing DCOM
 ***************************************************************************/
-#define __class_code_content(codetype_sym)    __allowed(on_struct) 
+#define __class_code_content(codetype_sym)    __allowed(on_struct)
 
 /*************************************************************************
 * Macros to tag encoded function pointers
 **************************************************************************/
-#define __encoded_pointer                 
-#define __encoded_array                   
+#define __encoded_pointer
+#define __encoded_array
 #define __field_encoded_pointer           __allowed(on_field)
 #define __field_encoded_array             __allowed(on_field)
 
-#define __transfer(formal)                __allowed(on_parameter_or_return) 
+#define __transfer(formal)                __allowed(on_parameter_or_return)
 #define __assume_validated(exp)           __allowed(as_statement_with_arg(exp))
 
-/************************************************************************* 
+/*************************************************************************
 * __analysis_assume(expr) : Expert macro use only when directed. Use this to
 * tell static analysis tools like PREfix and PREfast about a non-coded
 * assumption that you wish the tools to assume. The assumption will be
@@ -937,7 +937,7 @@
 #define __analysis_assume(expr) __allowed(as_statement_with_arg(expr))
 #define __analysis_assert(expr) __allowed(as_statement_with_arg(expr))
 
-/************************************************************************* 
+/*************************************************************************
 * __analysis_hint(hint_sym) : Expert macro use only when
 * directed. Use this to influence certain analysis heuristics
 * used by the tools. These hints do not describe the semantics
@@ -947,13 +947,13 @@
 * Current hints that are supported are:
 *
 * INLINE   - inline this function during analysis overrides any
-*            default heuristics 
-* NOINLINE - do not inline this function during analysis overrides 
+*            default heuristics
+* NOINLINE - do not inline this function during analysis overrides
 *            and default heuristics
 *************************************************************************/
 #define __analysis_hint(hint) __allowed(on_function)
 
-/************************************************************************* 
+/*************************************************************************
 * Macros to encode abstract properties of values. Used by SALadt.h
 *************************************************************************/
 #define __type_has_adt_prop(adt,prop)     __allowed(on_typdecl)
@@ -962,9 +962,9 @@
 #define __out_transfer_adt_prop(arg)      __allowed(on_parameter)
 #define __out_has_type_adt_props(typ)     __allowed(on_parameter)
 
-/************************************************************************* 
-* Macros used by Prefast for Drivers 
-* 
+/*************************************************************************
+* Macros used by Prefast for Drivers
+*
 *  __possibly_notnullterminated :
 *
 *  Used for return values of parameters or functions that do not
@@ -973,18 +973,18 @@
 *************************************************************************/
 #define __possibly_notnullterminated    __allowed(on_parameter_or_return)
 
-/************************************************************************* 
+/*************************************************************************
 * Advanced macros
-* 
-*  __volatile 
+*
+*  __volatile
 * The __volatile annotation identifies a global variable or
-* structure field that: 
-*   1) is not declared volatile; 
+* structure field that:
+*   1) is not declared volatile;
 *   2) is accessed concurrently by multiple threads.
 *
 * The __deref_volatile annotation identifies a global variable
 * or structure field that stores a pointer to some data that:
-*   1) is not declared volatile; 
+*   1) is not declared volatile;
 *   2) is accessed concurrently by multiple threads.
 *
 * Prefast uses these annotations to find patterns of code that
@@ -1004,7 +1004,7 @@
 #define __nonvolatile                    __allowed(on_global_or_field)
 #define __deref_nonvolatile              __allowed(on_global_or_field)
 
-/************************************************************************* 
+/*************************************************************************
 * Macros deprecated with strict level greater then 1.
 **************************************************************************/
 #if (__SPECSTRINGS_STRICT_LEVEL > 1)
@@ -1019,33 +1019,33 @@
 #pragma deprecated(__inout_nz)
 #pragma deprecated(__inout_ecount_nz)
 #pragma deprecated(__inout_bcount_nz)
-#pragma deprecated(__in_nz_opt)          
+#pragma deprecated(__in_nz_opt)
 #pragma deprecated(__in_ecount_nz_opt)
 #pragma deprecated(__in_bcount_nz_opt)
 #pragma deprecated(__out_ecount_nz_opt)
 #pragma deprecated(__out_bcount_nz_opt)
-#pragma deprecated(__inout_nz_opt)       
+#pragma deprecated(__inout_nz_opt)
 #pragma deprecated(__inout_ecount_nz_opt)
 #pragma deprecated(__inout_bcount_nz_opt)
-#pragma deprecated(__deref_out_nz)                 
+#pragma deprecated(__deref_out_nz)
 #pragma deprecated(__deref_out_ecount_nz)
 #pragma deprecated(__deref_out_bcount_nz)
-#pragma deprecated(__deref_inout_nz)               
+#pragma deprecated(__deref_inout_nz)
 #pragma deprecated(__deref_inout_ecount_nz)
 #pragma deprecated(__deref_inout_bcount_nz)
-#pragma deprecated(__deref_out_nz_opt)             
+#pragma deprecated(__deref_out_nz_opt)
 #pragma deprecated(__deref_out_ecount_nz_opt)
 #pragma deprecated(__deref_out_bcount_nz_opt)
-#pragma deprecated(__deref_inout_nz_opt)           
+#pragma deprecated(__deref_inout_nz_opt)
 #pragma deprecated(__deref_inout_ecount_nz_opt)
 #pragma deprecated(__deref_inout_bcount_nz_opt)
-#pragma deprecated(__deref_opt_inout_nz)           
+#pragma deprecated(__deref_opt_inout_nz)
 #pragma deprecated(__deref_opt_inout_ecount_nz)
 #pragma deprecated(__deref_opt_inout_bcount_nz)
-#pragma deprecated(__deref_opt_out_nz_opt)         
+#pragma deprecated(__deref_opt_out_nz_opt)
 #pragma deprecated(__deref_opt_out_ecount_nz_opt)
 #pragma deprecated(__deref_opt_out_bcount_nz_opt)
-#pragma deprecated(__deref_opt_inout_nz_opt)       
+#pragma deprecated(__deref_opt_inout_nz_opt)
 #pragma deprecated(__deref_opt_inout_ecount_nz_opt)
 #pragma deprecated(__deref_opt_inout_bcount_nz_opt)
 #pragma deprecated(__deref)
@@ -1067,52 +1067,52 @@
 #pragma deprecated(__precond)
 #endif
 /* Define soon to be deprecated macros to nops. */
-#define __in_nz                                       
-#define __in_ecount_nz(size)                          
-#define __in_bcount_nz(size)                          
-#define __out_nz                                      
-#define __out_nz_opt                                  
-#define __out_ecount_nz(size)                         
-#define __out_bcount_nz(size)                         
-#define __inout_nz                                    
-#define __inout_ecount_nz(size)                       
-#define __inout_bcount_nz(size)                       
-#define __in_nz_opt                                   
-#define __in_ecount_nz_opt(size)                      
-#define __in_bcount_nz_opt(size)                      
-#define __out_ecount_nz_opt(size)                     
-#define __out_bcount_nz_opt(size)                     
-#define __inout_nz_opt                                
-#define __inout_ecount_nz_opt(size)                   
-#define __inout_bcount_nz_opt(size)                   
-#define __deref_out_nz                                
-#define __deref_out_ecount_nz(size)                   
-#define __deref_out_bcount_nz(size)                   
-#define __deref_inout_nz                              
-#define __deref_inout_ecount_nz(size)                 
-#define __deref_inout_bcount_nz(size)                 
-#define __deref_out_nz_opt                            
-#define __deref_out_ecount_nz_opt(size)               
-#define __deref_out_bcount_nz_opt(size)               
-#define __deref_inout_nz_opt                          
-#define __deref_inout_ecount_nz_opt(size)             
-#define __deref_inout_bcount_nz_opt(size)             
-#define __deref_opt_inout_nz                          
-#define __deref_opt_inout_ecount_nz(size)             
-#define __deref_opt_inout_bcount_nz(size)             
-#define __deref_opt_out_nz_opt                        
-#define __deref_opt_out_ecount_nz_opt(size)           
-#define __deref_opt_out_bcount_nz_opt(size)           
-#define __deref_opt_inout_nz_opt                      
-#define __deref_opt_inout_ecount_nz_opt(size)         
-#define __deref_opt_inout_bcount_nz_opt(size)         
-#define __deref             
-#define __pre               
-#define __post              
-#define __readableTo(count) 
-#define __writableTo(count) 
-#define __maybevalid        
-#define __inexpressible_readableTo(string) 
+#define __in_nz
+#define __in_ecount_nz(size)
+#define __in_bcount_nz(size)
+#define __out_nz
+#define __out_nz_opt
+#define __out_ecount_nz(size)
+#define __out_bcount_nz(size)
+#define __inout_nz
+#define __inout_ecount_nz(size)
+#define __inout_bcount_nz(size)
+#define __in_nz_opt
+#define __in_ecount_nz_opt(size)
+#define __in_bcount_nz_opt(size)
+#define __out_ecount_nz_opt(size)
+#define __out_bcount_nz_opt(size)
+#define __inout_nz_opt
+#define __inout_ecount_nz_opt(size)
+#define __inout_bcount_nz_opt(size)
+#define __deref_out_nz
+#define __deref_out_ecount_nz(size)
+#define __deref_out_bcount_nz(size)
+#define __deref_inout_nz
+#define __deref_inout_ecount_nz(size)
+#define __deref_inout_bcount_nz(size)
+#define __deref_out_nz_opt
+#define __deref_out_ecount_nz_opt(size)
+#define __deref_out_bcount_nz_opt(size)
+#define __deref_inout_nz_opt
+#define __deref_inout_ecount_nz_opt(size)
+#define __deref_inout_bcount_nz_opt(size)
+#define __deref_opt_inout_nz
+#define __deref_opt_inout_ecount_nz(size)
+#define __deref_opt_inout_bcount_nz(size)
+#define __deref_opt_out_nz_opt
+#define __deref_opt_out_ecount_nz_opt(size)
+#define __deref_opt_out_bcount_nz_opt(size)
+#define __deref_opt_inout_nz_opt
+#define __deref_opt_inout_ecount_nz_opt(size)
+#define __deref_opt_inout_bcount_nz_opt(size)
+#define __deref
+#define __pre
+#define __post
+#define __readableTo(count)
+#define __writableTo(count)
+#define __maybevalid
+#define __inexpressible_readableTo(string)
 #define __data_entrypoint(category)
 #define __readonly
 #define __byte_writableTo(count)
@@ -1124,7 +1124,7 @@
 #define __refparam
 #define __precond(condition)
 
-/************************************************************************* 
+/*************************************************************************
 * Definitions to force a compile error when macros are used improperly.
 * Relies on VS 2005 source annotations.
 *************************************************************************/
@@ -1160,7 +1160,7 @@
 #define __$allowed_on_function [method: OnFunctionOnly]
 #define __$allowed_on_struct [OnStructOnly]
 #define __$allowed_on_field [OnFieldOnly]
-#define __$allowed_on_parameter_or_return [OnParameterOrReturnOnly] 
+#define __$allowed_on_parameter_or_return [OnParameterOrReturnOnly]
 #define __$allowed_on_global_or_field /* empty */
 #pragma push_macro( "DECL_SA" )
 #pragma push_macro( "SA" )
@@ -1169,7 +1169,7 @@
 #define DECL_SA(name,loc) \
   [repeatable] \
   [source_annotation_attribute( loc )] \
-  struct name##Attribute { name##Attribute(); const char* ignored; }; 
+  struct name##Attribute { name##Attribute(); const char* ignored; };
 #else
 #define SA(x) SA_##x
 #define DECL_SA(name,loc) \
@@ -1185,6 +1185,6 @@ DECL_SA(OnFieldOnly,SA(Field));
 DECL_SA(OnParameterOrReturnOnly,SA(Parameter) | SA(ReturnValue));
 #pragma pop_macro( "SA" )
 #pragma pop_macro( "DECL_SA" )
-#endif 
-#endif 
+#endif
+#endif
 #endif

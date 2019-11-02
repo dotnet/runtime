@@ -128,7 +128,7 @@ inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
 
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
-    
+
     return (LPVOID)display->GetEbpLocation();
 }
 
@@ -200,12 +200,12 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
-    return NULL; 
+    return NULL;
 }
 
 inline TADDR GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
-    return NULL; 
+    return NULL;
 }
 
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
@@ -236,13 +236,13 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display)
 #elif defined(_TARGET_ARM_)
 
 // ResumableFrame is pushed on the stack before
-// starting the GC. registers r0-r3 in ResumableFrame can 
+// starting the GC. registers r0-r3 in ResumableFrame can
 // contain roots which might need to be updated if they are
 // relocated. On Stack walking the addresses of the registers in the
 // resumable Frame are passed to GC using pCurrentContextPointers
 // member in _REGDISPLAY. However On ARM KNONVOLATILE_CONTEXT_POINTERS
 // does not contain pointers for volatile registers. Therefore creating
-// this structure to store pointers to volatile registers and adding an object 
+// this structure to store pointers to volatile registers and adding an object
 // as member in _REGDISPLAY
 typedef struct _ArmVolatileContextPointer
 {
@@ -446,7 +446,7 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
 {
     WRAPPER_NO_CONTRACT;
 
-    // The general strategy is to extract the register state from the input REGDISPLAY 
+    // The general strategy is to extract the register state from the input REGDISPLAY
     // into the new CONTEXT then simply call FillRegDisplay.
 
     T_CONTEXT* pOutCallerCtx = NULL;
@@ -481,7 +481,7 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
         FillRegDisplay(pOutRD, pOutCtx, pOutCallerCtx);
 }
 
-// Get address of a register in a CONTEXT given the reg number. For X86, 
+// Get address of a register in a CONTEXT given the reg number. For X86,
 // the reg number is the R/M number from ModR/M byte or base in SIB byte
 inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
 {

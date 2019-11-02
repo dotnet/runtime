@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 
 #include "common.h"
 #include "gcenv.h"
@@ -112,7 +112,7 @@ void GCHandleManager::DestroyHandleStore(IGCHandleStore* store)
 
 OBJECTHANDLE GCHandleManager::CreateGlobalHandleOfType(Object* object, HandleType type)
 {
-    return ::HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, ObjectToOBJECTREF(object)); 
+    return ::HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, ObjectToOBJECTREF(object));
 }
 
 OBJECTHANDLE GCHandleManager::CreateDuplicateHandle(OBJECTHANDLE handle)

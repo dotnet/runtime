@@ -4,7 +4,7 @@
 
 
 /**********************************************************************
-svcworker.cpp -- logic for the runtime implementation of the native 
+svcworker.cpp -- logic for the runtime implementation of the native
 image service.
 
 Overview:  the runtime implementation is accessed via a local COM
@@ -43,10 +43,10 @@ inline void SvcLogger::CheckInit()
     if(pss == NULL)
     {
         StackSString* psstemp = new StackSString();
-        StackSString* pssOrig = InterlockedCompareExchangeT(&pss, psstemp, NULL); 
+        StackSString* pssOrig = InterlockedCompareExchangeT(&pss, psstemp, NULL);
         if(pssOrig)
-            delete psstemp;  
-    }        
+            delete psstemp;
+    }
 }
 
 SvcLogger::~SvcLogger()
@@ -157,7 +157,7 @@ void SvcLogger::Log(const WCHAR *message, CorSvcLogLevel logLevel)
 
 void SvcLogger::LogHelper(SString s, CorSvcLogLevel logLevel)
 {
-    CheckInit(); 
+    CheckInit();
     pss->Append(s);
 
     // Does s contain a newline?

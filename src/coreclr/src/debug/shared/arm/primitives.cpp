@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: primitives.cpp
-// 
+//
 
 //
 // Platform-specific debugger primitives
@@ -28,7 +28,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
         CopyContextChunk(&(pDst->Sp), &(pSrc->Sp), &(pDst->Fpscr),
                          DT_CONTEXT_CONTROL);
-    
+
     if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
         CopyContextChunk(&(pDst->R0), &(pSrc->R0), &(pDst->Sp),
                          DT_CONTEXT_INTEGER);
@@ -44,15 +44,15 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
 }
 
 
-// Update the regdisplay from a given context. 
-void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD, 
+// Update the regdisplay from a given context.
+void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
                                             DT_CONTEXT* pContext)
 {
     // We must pay attention to the context flags so that we only use valid portions
     // of the context.
     DWORD flags = pContext->ContextFlags;
     if ((flags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {    
+    {
         pDRD->PC = (SIZE_T)CORDbgGetIP(pContext);
         pDRD->SP = (SIZE_T)CORDbgGetSP(pContext);
         pDRD->LR = (SIZE_T)pContext->Lr;

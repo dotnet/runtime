@@ -22,8 +22,8 @@ namespace std
     template<class iter, class CompareFunc>
     iter find_if ( iter first, iter last, CompareFunc comp )
     {
-        for ( ; first!=last ; first++ ) 
-            if ( comp(*first) ) 
+        for ( ; first!=last ; first++ )
+            if ( comp(*first) )
                 break;
         return first;
     }

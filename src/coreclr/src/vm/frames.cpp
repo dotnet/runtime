@@ -79,7 +79,7 @@ void Frame::Log() {
     else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
         frameType = "UMThkCallFrame";
 #endif
-    else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr()) 
+    else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr())
     {
         sprintf_s(buff, COUNTOF(buff), "PInvoke CALLI target" FMT_ADDR,
                   DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
@@ -89,28 +89,28 @@ void Frame::Log() {
         frameType = "StubDispatch";
     else if (GetVTablePtr() == ExternalMethodFrame::GetMethodFrameVPtr())
         frameType = "ExternalMethod";
-    else 
+    else
         frameType = "Unknown";
 
     if (method != 0)
-        LOG((LF_STUBS, LL_INFO1000000, 
+        LOG((LF_STUBS, LL_INFO1000000,
              "IN %s Stub Method = %s::%s SIG %s ESP of return" FMT_ADDR "\n",
-             frameType, 
+             frameType,
              method->m_pszDebugClassName,
              method->m_pszDebugMethodName,
              method->m_pszDebugMethodSignature,
              DBG_ADDR(GetReturnAddressPtr())));
-    else 
-        LOG((LF_STUBS, LL_INFO1000000, 
-             "IN %s Stub Method UNKNOWN ESP of return" FMT_ADDR "\n", 
-             frameType, 
+    else
+        LOG((LF_STUBS, LL_INFO1000000,
+             "IN %s Stub Method UNKNOWN ESP of return" FMT_ADDR "\n",
+             frameType,
              DBG_ADDR(GetReturnAddressPtr()) ));
 
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
 }
 
 //-----------------------------------------------------------------------
-// This function is used to log transitions in either direction 
+// This function is used to log transitions in either direction
 // between unmanaged code and CLR/managed code.
 // This is typically done in a stub that sets up a Frame, which is
 // passed as an argument to this function.
@@ -161,7 +161,7 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 
         // we expect to be called from JITTED code or from special code sites inside
         // mscorwks like callDescr which we have put a NOP (0x90) so we know that they
-        // are specially blessed. 
+        // are specially blessed.
     if (!ExecutionManager::IsManagedCode(retAddr) &&
         (
 #ifdef DACCESS_COMPILE
@@ -172,11 +172,11 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
     {
         LOG((LF_GC, LL_INFO10, "Bad caller to managed code: retAddr=0x%08x, *retAddr=0x%x\n",
              retAddr, *(BYTE*)PTR_BYTE(retAddr)));
-        
+
         return false;
     }
 
-        // it better be a return address of some kind 
+        // it better be a return address of some kind
     TADDR dummy;
     if (isRetAddr(retAddr, &dummy))
         return true;
@@ -206,7 +206,7 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 
 //-----------------------------------------------------------------------
 // Count of the number of frame types
-const size_t FRAME_TYPES_COUNT = 
+const size_t FRAME_TYPES_COUNT =
 #define FRAME_TYPE_NAME(frameType) +1
 #include "frames.h"
 ;
@@ -248,7 +248,7 @@ void Frame::LogFrame(
     char        buf[32];
     const char  *pFrameType;
     pFrameType = GetFrameTypeName();
-    
+
     if (pFrameType == NULL)
     {
         pFrameType = GetFrameTypeName(GetVTablePtr());
@@ -272,7 +272,7 @@ void Frame::LogFrameChain(
 {
     if (!LoggingOn(LF, LL))
         return;
-    
+
     Frame *pFrame = this;
     while (pFrame != FRAME_TOP)
     {
@@ -321,11 +321,11 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 
     if (pFrame == NULL || pFrame == FRAME_TOP)
         return false;
-    
+
 #ifndef DACCESS_COMPILE
     TADDR vptr = pFrame->GetVTablePtr();
     //
-    // Helper MethodFrame,GCFrame,DebuggerSecurityCodeMarkFrame are the most 
+    // Helper MethodFrame,GCFrame,DebuggerSecurityCodeMarkFrame are the most
     // common frame types, explicitly check for them.
     //
     if (vptr == HelperMethodFrame::GetMethodFrameVPtr())
@@ -347,7 +347,7 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 // Returns the location of the expected GSCookie,
 // Return NULL if the frame's vtable pointer is corrupt
 //
-// Note that Frame::GetGSCookiePtr is a virtual method, 
+// Note that Frame::GetGSCookiePtr is a virtual method,
 // and so it cannot be used without first checking if
 // the vtable is valid.
 
@@ -394,7 +394,7 @@ VOID Frame::Push(Thread *pThread)
     CONTRACTL_END;
 
     _ASSERTE(*GetGSCookiePtr() == GetProcessGSCookie());
-    
+
     m_Next = pThread->GetFrame();
 
     // GetOsPageSize() is used to relax the assert for cases where two Frames are
@@ -405,16 +405,16 @@ VOID Frame::Push(Thread *pThread)
     _ASSERTE(((m_Next == FRAME_TOP) ||
               (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
-    
-    _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun 
+
+    _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
              // corruptions. In that case, the Frame chain may be corrupted,
              // and the rest of the assert is not valid.
-             // Note that the corrupted Frame chain will be detected 
+             // Note that the corrupted Frame chain will be detected
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
              (*m_Next->GetGSCookiePtr() == GetProcessGSCookie()));
-    
+
     pThread->SetFrame(this);
 }
 
@@ -443,10 +443,10 @@ VOID Frame::Pop(Thread *pThread)
 
     _ASSERTE(pThread->GetFrame() == this && "Popping a frame out of order ?");
     _ASSERTE(*GetGSCookiePtr() == GetProcessGSCookie());
-    _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun 
+    _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
              // corruptions. In that case, the Frame chain may be corrupted,
              // and the rest of the assert is not valid.
-             // Note that the corrupted Frame chain will be detected 
+             // Note that the corrupted Frame chain will be detected
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
@@ -458,7 +458,7 @@ VOID Frame::Pop(Thread *pThread)
 
 #if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 void Frame::PopIfChained()
-{      
+{
     CONTRACTL
     {
         NOTHROW;
@@ -474,7 +474,7 @@ void Frame::PopIfChained()
         // frame chain managed by the Thread.
         Pop();
     }
-}      
+}
 #endif // FEATURE_PAL && !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 //-----------------------------------------------------------------------
@@ -497,7 +497,7 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
     // Using the ArgIterator constructor calls ArgIterator::Init which calls GetInitialOfsAdjust
     // which calls SizeOfArgStack, which thinks it may load value types.
     // However all these will have previously been loaded.
-    // 
+    //
     // I'm not entirely convinced this is the best places to put this: CrawlFrame::GetExactGenericArgsToken
     // may be another option.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
@@ -507,7 +507,7 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
 
     MetaSig msig(pFunction);
     ArgIterator argit (&msig);
-        
+
     INT offs = argit.GetParamTypeArgOffset();
 
     TADDR taParamTypeArg = *PTR_TADDR(GetTransitionBlock() + offs);
@@ -572,7 +572,7 @@ BOOL PrestubMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     LOG((LF_CORDB, LL_INFO10000,
          "PrestubMethodFrame::TraceFrame: ip=" FMT_ADDR "\n", DBG_ADDR(trace->GetAddress()) ));
-    
+
     return TRUE;
 }
 
@@ -707,7 +707,7 @@ void StubDispatchFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
     PTR_BYTE pGCRefMap = GetGCRefMap();
     if (pGCRefMap != NULL)
-    { 
+    {
         PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);
     }
     else
@@ -794,7 +794,7 @@ Frame::Interception PrestubMethodFrame::GetInterception()
     LIMITED_METHOD_DAC_CONTRACT;
 
     //
-    // The only direct kind of interception done by the prestub 
+    // The only direct kind of interception done by the prestub
     // is class initialization.
     //
 
@@ -1010,7 +1010,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 #ifdef FEATURE_INTERPRETER
 // Methods of IntepreterFrame.
-InterpreterFrame::InterpreterFrame(Interpreter* interp) 
+InterpreterFrame::InterpreterFrame(Interpreter* interp)
   : Frame(), m_interp(interp)
 {
     Push();
@@ -1105,7 +1105,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     int regNo = 0;
     bool moreRegisters = false;
 
-    do 
+    do
     {
         ReturnKind r = ExtractRegReturnKind(returnKind, regNo, moreRegisters);
         PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->ReturnValue[regNo]);
@@ -1134,9 +1134,9 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
             break;
 
         default:
-            _ASSERTE(!"Impossible two bit encoding"); 
+            _ASSERTE(!"Impossible two bit encoding");
         }
-        
+
         regNo++;
     } while (moreRegisters);
 }
@@ -1204,7 +1204,7 @@ void ProtectValueClassFrame::GcScanRoots(promote_func *fn, ScanContext *sc)
 void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     // I believe this is the contract:
     //CONTRACTL
     //{
@@ -1215,9 +1215,9 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     //    MODE_ANY;
     //}
     //CONTRACTL_END
-    
+
     MethodDesc *pFunction;
-    
+
     LOG((LF_GC, INFO3, "    Promoting method caller Arguments\n" ));
 
     // We're going to have to look at the signature to determine
@@ -1285,8 +1285,8 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
         BOOL interior = pFunction->GetMethodTable()->IsValueType() && !pFunction->IsUnboxingStub();
 
         PTR_PTR_VOID pThis = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetThisOffset());
-        LOG((LF_GC, INFO3, 
-             "    'this' Argument at " FMT_ADDR "promoted from" FMT_ADDR "\n", 
+        LOG((LF_GC, INFO3,
+             "    'this' Argument at " FMT_ADDR "promoted from" FMT_ADDR "\n",
              DBG_ADDR(pThis), DBG_ADDR(*pThis) ));
 
         if (interior)
@@ -1411,9 +1411,9 @@ void PInvokeCalliFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         return;
     }
 
-    // no instantiations needed for varargs 
+    // no instantiations needed for varargs
     MetaSig msig(varArgSig->signature,
-                 varArgSig->pModule, 
+                 varArgSig->pModule,
                  NULL);
     PromoteCallerStackHelper(fn, sc, NULL, &msig);
 }
@@ -1471,9 +1471,9 @@ void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 #endif // FEATURE_COMINTEROP
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
-// For IsProtectedByGCFrame, we need to know whether a given object ref is protected 
-// by a ComPlusMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are 
-// quite complicated, we don't want to duplicate their logic so we call GCScanRoots with 
+// For IsProtectedByGCFrame, we need to know whether a given object ref is protected
+// by a ComPlusMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
 struct IsObjRefProtectedScanContext : public ScanContext
@@ -1542,7 +1542,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 
     // Find ComMethodFrame
 
-    while ((pCurFrame != FRAME_TOP) && 
+    while ((pCurFrame != FRAME_TOP) &&
            (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr()))
     {
         pCurFrame = pCurFrame->PtrNextFrame();
@@ -1590,10 +1590,10 @@ void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // Pieces of the UMEntryThunk need to be saved.
     UMEntryThunk *pThunk = GetUMEntryThunk();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThunk), sizeof(UMEntryThunk));        
-    
+    DacEnumMemoryRegion(dac_cast<TADDR>(pThunk), sizeof(UMEntryThunk));
+
     UMThunkMarshInfo *pMarshInfo = pThunk->GetUMThunkMarshInfo();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pMarshInfo), sizeof(UMThunkMarshInfo));        
+    DacEnumMemoryRegion(dac_cast<TADDR>(pMarshInfo), sizeof(UMThunkMarshInfo));
 }
 #endif
 
@@ -1602,7 +1602,7 @@ void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #ifndef DACCESS_COMPILE
 
 #if defined(_MSC_VER) && defined(_TARGET_X86_)
-#pragma optimize("y", on)   // Small critical routines, don't put in EBP frame 
+#pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #endif
 
 // Initialization of HelperMethodFrame.
@@ -1647,7 +1647,7 @@ void HelperMethodFrame::Pop()
     } CONTRACTL_END;
 
     Thread * pThread = m_pThread;
-    
+
     if ((m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) || !pThread->HasThreadStateOpportunistic(Thread::TS_AbortInitiated))
     {
         Frame::Pop(pThread);
@@ -1727,7 +1727,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //
 // Return Value:
 //     Normally, the function always returns TRUE meaning the initialization succeeded.
-//     
+//
 //     However, if hostCallPreference is NoHostCalls, AND if a callee (like
 //     LazyMachState::unwindLazyState) needed to acquire a JIT reader lock and was unable
 //     to do so (lest it re-enter the host), then InsureInit will abort and return FALSE.
@@ -1738,7 +1738,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
 
 BOOL HelperMethodFrame::InsureInit(bool initialInit,
                                     MachState * unwindState,
-                                    HostCallPreference hostCallPreference /* = AllowHostCalls */) 
+                                    HostCallPreference hostCallPreference /* = AllowHostCalls */)
 {
     CONTRACTL {
         NOTHROW;
@@ -1769,20 +1769,20 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     // caller of the FCALL.   Thus FCalls must erect the frame directly in the
     // FCall.  For JIT helpers, however, we can rely on this, and so they can
     // be sneakier and defer the HelperMethodFrame setup to a called worker method.
-   
+
     // Work with a copy so that we only write the values once.
     // this avoids race conditions.
     LazyMachState* lazy = &m_MachState;
     DWORD threadId = m_pThread->GetOSThreadId();
     MachState unwound;
-    
+
     if (!initialInit &&
         m_FCallEntry == 0 &&
         !(m_Attribs & Frame::FRAME_ATTR_EXACT_DEPTH)) // Jit Helper
     {
         LazyMachState::unwindLazyState(
-            lazy, 
-            &unwound, 
+            lazy,
+            &unwound,
             threadId,
             0,
             hostCallPreference);
@@ -1796,7 +1796,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             // m_MachState, this HelperMethodFrame will still be considered not fully
             // initialized (so a future call into InsureInit() will attempt to complete
             // initialization again).
-            // 
+            //
             // Note that, in DAC builds, the contract with LazyMachState::unwindLazyState
             // is a bit different, and it's expected that LazyMachState::unwindLazyState
             // will commonly return an unwound state with _pRetAddr==NULL (which counts
@@ -1815,7 +1815,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     }
     else
     {
-        // True FCall 
+        // True FCall
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 1);
     }
 
@@ -1849,7 +1849,7 @@ Assembly* SecureDelegateFrame::GetAssembly()
         MethodDesc* pMethod = (MethodDesc*) delegate->GetMethodPtrAux();
         Assembly* pAssembly = pMethod->GetAssembly();
         _ASSERTE(pAssembly != NULL);
-        return pAssembly;        
+        return pAssembly;
     }
     else
         return NULL;
@@ -1945,7 +1945,7 @@ VOID InlinedCallFrame::Init()
     WRAPPER_NO_CONTRACT;
 
     *((TADDR *)this) = GetMethodFrameVPtr();
-    
+
     // GetGSCookiePtr contains a virtual call and this is a perf critical method so we don't want to call it in ret builds
     GSCookie *ptrGS = (GSCookie *)((BYTE *)this - sizeof(GSCookie));
     _ASSERTE(ptrGS == GetGSCookiePtr());
@@ -1971,7 +1971,7 @@ void UnmanagedToManagedFrame::ExceptionUnwind()
 PCODE UnmanagedToManagedFrame::GetReturnAddress()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     PCODE pRetAddr = Frame::GetReturnAddress();
 
     if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&

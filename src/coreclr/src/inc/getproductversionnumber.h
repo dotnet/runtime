@@ -5,7 +5,7 @@
 // GetProductVersionNumber.h
 //
 // Helper function to retrieve the file version number of a file.
-// 
+//
 // ======================================================================================
 
 
@@ -48,7 +48,7 @@ void inline GetProductVersionNumber(SString &szFullPath, DWORD * pdwVersionMS, D
     }
 
     // Create the buffer to store the file information.
-    NewHolder<BYTE> pbFileInfo(new BYTE[dwFileInfoSize]); 
+    NewHolder<BYTE> pbFileInfo(new BYTE[dwFileInfoSize]);
 
     // Actually retrieve the file version information.
     if (!GetFileVersionInfo(szFullPath, NULL, dwFileInfoSize, pbFileInfo))

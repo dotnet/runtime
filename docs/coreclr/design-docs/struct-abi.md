@@ -12,7 +12,7 @@ when it comes to the handling of structs (aka value types).
   the code programmatically, with #ifdefs, and yet even where the requirements
   are shared, they are often handled in different code paths.
 
-- When passing or returning structs, the code generator sometimes requires 
+- When passing or returning structs, the code generator sometimes requires
   that the struct must be copied to or from memory. The morpher (`fgMorphArgs()`)
   attempts to discern these cases, and create copies when necessary, but sometimes it
   makes copies when they aren't needed.

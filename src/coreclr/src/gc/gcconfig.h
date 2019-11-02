@@ -52,11 +52,11 @@ public:
 
 // Note that the configs starting BGCFLTuningEnabled ending BGCG2RatioStep are for BGC servo
 // tuning which is currently an experimental feature which is why I'm not putting any of these
-// in clrconfigvalues.h (yet). 
-// The only public facing configs are BGCFLTuningEnabled and BGCMemGoal. 
+// in clrconfigvalues.h (yet).
+// The only public facing configs are BGCFLTuningEnabled and BGCMemGoal.
 // Currently the set point is the BGCMemGoal you specify, which indicates what physical memory
 // load you'd like GC to maintain. And BGCFLTuningEnabled is to enable/disable this tuning.
-// 
+//
 // The value for BGCG2RatioStep, BGCFLkd and BGCFLSmoothFactor and BGCFLff will be divided by 100.
 // The value for BGCMLkp and BGCMLki will be divided by 1000.
 // The value for BGCFLkp and BGCFLki will be divided by 1000000.

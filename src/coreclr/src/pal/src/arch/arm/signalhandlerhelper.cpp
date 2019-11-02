@@ -15,7 +15,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured. 
+    Handles signal on the original stack where the signal occured.
     Invoked via setcontext.
 
 Parameters :
@@ -55,7 +55,7 @@ void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, 
     *--sp = (size_t)MCREG_Pc(ucontext->uc_mcontext) | ((cpsr & (1 << 5)) >> 5);
     // pushed frame pointer
     *--sp = (size_t)MCREG_R11(ucontext->uc_mcontext);
-    *--sp = (size_t)MCREG_R7(ucontext->uc_mcontext); 
+    *--sp = (size_t)MCREG_R7(ucontext->uc_mcontext);
 #else
     size_t size = ALIGN_UP(sizeof(ucontext->uc_mcontext), 8);
     sp -= size / sizeof(size_t);

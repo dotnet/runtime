@@ -71,7 +71,7 @@ struct AsmManAssembly
         isAutodetect = isRef = FALSE;
     */
     }
-	~AsmManAssembly() 
+	~AsmManAssembly()
 	{
 		if(szAlias && (szAlias != szName)) delete [] szAlias;
 		if(szName) delete [] szName;
@@ -194,7 +194,7 @@ class AsmMan
     AsmManRes*          m_pCurManRes;
     ErrorReporter*      report;
     void*               m_pAssembler;
-    
+
     AsmManFile*         GetFileByName(__in __nullterminated char* szFileName);
     AsmManAssembly*     GetAsmRefByName(__in __nullterminated const char* szAsmRefName);
     AsmManComType*      GetComTypeByName(__in_opt __nullterminated char* szComTypeName,
@@ -218,23 +218,23 @@ public:
     BOOL    m_fMResNew[MAX_MANIFEST_RESOURCES];
 	DWORD	m_dwMResNum;
 	DWORD	m_dwMResSizeTotal;
-	AsmMan() { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAsmEmitter = NULL; 
-				memset(m_wzMResName,0,sizeof(m_wzMResName)); 
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize)); 
+	AsmMan() { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAsmEmitter = NULL;
+				memset(m_wzMResName,0,sizeof(m_wzMResName));
+				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
 				m_dwMResNum = m_dwMResSizeTotal = 0; };
 	AsmMan(void* pAsm) { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAssembler = pAsm;  m_pAsmEmitter = NULL;
-				memset(m_wzMResName,0,sizeof(m_wzMResName)); 
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize)); 
+				memset(m_wzMResName,0,sizeof(m_wzMResName));
+				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
 				m_dwMResNum = m_dwMResSizeTotal = 0; };
 	AsmMan(ErrorReporter* rpt) { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; report = rpt;  m_pAsmEmitter = NULL;
-				memset(m_wzMResName,0,sizeof(m_wzMResName)); 
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize)); 
+				memset(m_wzMResName,0,sizeof(m_wzMResName));
+				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
 				m_dwMResNum = m_dwMResSizeTotal = 0; };
-	~AsmMan() 
-	{ 
-		if(m_pAssembly) delete m_pAssembly; 
-		if(m_szScopeName) delete m_szScopeName; 
-		if(m_pGUID) delete m_pGUID; 
+	~AsmMan()
+	{
+		if(m_pAssembly) delete m_pAssembly;
+		if(m_szScopeName) delete m_szScopeName;
+		if(m_pGUID) delete m_pGUID;
 	};
 	void	SetErrorReporter(ErrorReporter* rpt) { report = rpt; };
 	HRESULT EmitManifest(void);
@@ -273,7 +273,7 @@ public:
     void    SetManifestResAsmRef(__in __nullterminated char* szAsmRefName);
 
     AsmManAssembly*     GetAsmRefByAsmName(__in __nullterminated const char* szAsmName);
-    
+
     mdToken             GetFileTokByName(__in __nullterminated char* szFileName);
     mdToken             GetAsmRefTokByName(__in __nullterminated const char* szAsmRefName);
     mdToken             GetAsmTokByName(__in __nullterminated const char* szAsmName)

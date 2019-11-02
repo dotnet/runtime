@@ -19,7 +19,7 @@ bool parseDBFlag = true;
 #define dbprintf(x)     if (parseDBFlag) printf x
 #define YYDEBUG 1
 #else
-#define dbprintf(x)     
+#define dbprintf(x)
 #endif
 
 #define FAIL_UNLESS(cond, msg) if (!(cond)) { parser->success = false; parser->error msg; }
@@ -44,8 +44,8 @@ void SetFunctionPtrs()
     NewStrFromToken = PENV->pfn_NewStrFromToken;
     NewStaticStrFromToken = PENV->pfn_NewStaticStrFromToken;
     GetDouble = PENV->pfn_GetDouble;
-}    
-    
+}
+
 
 static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3 = 0);
 static char* newString(__in __nullterminated const char* str1);
@@ -75,13 +75,13 @@ struct VarName
 };
 SORTEDARRAY<VarName> VarNameList;
 void DefineVar(__in __nullterminated char* sz, BinStr* pbs) { VarNameList.PUSH(new VarName(sz,pbs)); };
-void UndefVar(__in __nullterminated char* sz) 
-{ 
-    CHECK_LOCAL_STATIC_VAR(static VarName VN(NULL,NULL)); 
+void UndefVar(__in __nullterminated char* sz)
+{
+    CHECK_LOCAL_STATIC_VAR(static VarName VN(NULL,NULL));
 
-    VN.name = sz; 
-    VarNameList.DEL(&VN); 
-    VN.name = NULL; 
+    VN.name = sz;
+    VarNameList.DEL(&VN);
+    VN.name = NULL;
     delete [] sz;
 }
 VarName* FindVarDef(__in __nullterminated char* sz)
@@ -91,7 +91,7 @@ VarName* FindVarDef(__in __nullterminated char* sz)
     VarName* Ret = NULL;
     VN.name = sz;
     Ret = VarNameList.FIND(&VN);
-    VN.name = NULL; 
+    VN.name = NULL;
     delete [] sz;
     return Ret;
 }
@@ -127,12 +127,12 @@ void FixupConstraints()
                     PASM->m_pImporter->GetTypeSpecFromToken(*ptk,(PCCOR_SIGNATURE*)&pSig,&cSig);
                     if((pSig)&&(cSig))
                     {
-                        FixupTyPars(pSig,cSig);    
+                        FixupTyPars(pSig,cSig);
                     } // end if((pSig)&&(cSig))
                 } // end if(TypeFromToken(*ptk)==mdtTypeSpec)
-            } //end for(ptk    
+            } //end for(ptk
         } // end for(pTPL
-    } //end if((TyParFixupList.COUNT()) 
+    } //end if((TyParFixupList.COUNT())
 }
 
 #define SET_PA(x,y,z) {x = (CorAssemblyFlags)(((y) & ~afPA_FullMask)|(z)|afPA_Specified);}

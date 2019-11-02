@@ -7,14 +7,14 @@
 
 //
 // @commn: Bunch of utility classes
-//     
+//
 // HISTORY:
 //   02/03/98:  	created helper classes
 //						SLink, link node for singly linked list, every class that is intrusively
 //								linked should have a data member of this type
-//						SList, template linked list class, contains only inline 
+//						SList, template linked list class, contains only inline
 //								methods for fast list operations, with proper type checking
-//						
+//
 //						see below for futher info. on how to use these template classes
 //
 //-----------------------------------------------------------------------------
@@ -28,7 +28,7 @@
 #define _H_SLIST_
 
 //------------------------------------------------------------------
-// struct SLink, to use a singly linked list 
+// struct SLink, to use a singly linked list
 // have a data member m_Link of type SLink in your class
 // and instantiate the template SList class
 //--------------------------------------------------------------------
@@ -39,7 +39,7 @@ typedef DPTR(struct SLink) PTR_SLink;
 struct SLink
 {
     PTR_SLink m_pNext;
-    SLink() 
+    SLink()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -81,7 +81,7 @@ struct SLink
 		    }
             pHead = pHead->m_pNext;
 	    }
-    	
+
 	    return pFreeLink;
     }
 };
@@ -96,7 +96,7 @@ struct SLink
 //   'SList<MyClass, false, MyClass*, &MyClass::m_FieldName>'
 //
 // SList has two different behaviours depending on boolean
-// fHead variable, 
+// fHead variable,
 //
 // if fHead is true, then the list allows only InsertHead  operations
 // if fHead is false, then the list allows only InsertTail operations
@@ -110,11 +110,11 @@ class SList
 {
 public:
     // typedef used by the Queue class below
-    typedef T ENTRY_TYPE; 
+    typedef T ENTRY_TYPE;
 
 protected:
 
-    // used as sentinel 
+    // used as sentinel
     SLink  m_link; // slink.m_pNext == Null
     PTR_SLink m_pHead;
     PTR_SLink m_pTail;
@@ -125,7 +125,7 @@ protected:
         LIMITED_METHOD_DAC_CONTRACT;
         return &(pLink->*LinkPtr);
     }
-    
+
     // move to the beginning of the object given the pointer within the object
     static T* GetObject (SLink* pLink)
     {
@@ -161,7 +161,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pHead = &m_link;
-        // NOTE :: fHead variable is template argument 
+        // NOTE :: fHead variable is template argument
         // the following code is a compiled in, only if the fHead flag
         // is set to false,
         if (!fHead)
@@ -190,12 +190,12 @@ public:
             m_pTail->m_pNext = pLink;
             m_pTail = pLink;
         }
-        else 
+        else
         {// you instantiated this class asking only for InsertHead operations
             _ASSERTE(0);
         }
     }
-	
+
     void InsertHead(T *pObj)
     {
         LIMITED_METHOD_CONTRACT;
@@ -204,7 +204,7 @@ public:
         {
             _ASSERTE(pObj != NULL);
             SLink *pLink = GetLink(pObj);
-            
+
             pLink->m_pNext = m_pHead->m_pNext;
             m_pHead->m_pNext = pLink;
         }
@@ -234,7 +234,7 @@ public:
 
         return GetObject(pLink);
     }
-    
+
 #endif // !DACCESS_COMPILE
 
     T*	GetHead()
@@ -242,7 +242,7 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetObject(m_pHead->m_pNext);
     }
-    
+
     T*	GetTail()
     {
         WRAPPER_NO_CONTRACT;
@@ -269,13 +269,13 @@ public:
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(pObj != NULL);
-                
+
         SLink   *prior;
         SLink   *ret = SLink::FindAndRemove(m_pHead, GetLink(pObj), &prior);
-        
+
         if (ret == m_pTail)
             m_pTail = prior;
-        
+
         return GetObject(ret);
     }
 
@@ -301,10 +301,10 @@ public:
 
         T & operator*()
         { _ASSERTE(m_cur != NULL); return *m_cur; }
-        
+
         T * operator->() const
         { return m_cur; }
-        
+
     private:
         Iterator(SList * pList)
             : m_cur(pList->GetHead())

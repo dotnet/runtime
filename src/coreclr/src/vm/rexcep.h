@@ -5,14 +5,14 @@
 
 //
 // Purpose: Lists the commonly-used Runtime Exceptions visible to users.
-// 
+//
 
 //
 //====================================================================
 
 // If you add an exception, modify CorError.h to add an HResult there.
 // (Guidelines for picking a unique number for your HRESULT are in CorError.h)
-// Also modify your managed Exception class to include its HResult.  
+// Also modify your managed Exception class to include its HResult.
 // Modify __HResults in the same directory as your exception, to include
 // your new HResult.  And of course, add your exception and symbolic
 // name for your HResult to the list below so it can be thrown from
@@ -20,7 +20,7 @@
 
 //
 // Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to 
+// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -28,7 +28,7 @@
 
 // This is an exhaustive list of all exceptions that can be
 // thrown by the EE itself.  If you add to this list the IL spec
-// needs to be updated!   
+// needs to be updated!
 
 // Note: When multiple exceptions map to the same hresult it is very important
 //       that the exception that should be created when the hresult in question
@@ -48,7 +48,7 @@
 // ns               Namespace of the exception.
 // reKind           Name of the exception.
 // bHRformessage    When the exception is thrown from the EE, if this argument is true
-//                  the EE will create a string with the HRESULT, so that you get a more 
+//                  the EE will create a string with the HRESULT, so that you get a more
 //                  meaningful error message than let's say AssemblyLoadException.
 //                  Usually you want to set this to true if your exception corresponds to
 //                  more than one HRESULT.
@@ -80,7 +80,7 @@
 #include "namespace.h"
 
 
-// Temporary workaround - adding some HRESULTs that the Jupiter team will define and 
+// Temporary workaround - adding some HRESULTs that the Jupiter team will define and
 // add to one of their header files for errors.  Once these have been RI'ed into
 // windows and are in a file adjacent to winerror.h, we can remove these constants.
 // Given integration time, remove this by August 2011 at the very latest.
@@ -126,7 +126,7 @@ DEFINE_EXCEPTION(g_SystemNS,           ArgumentOutOfRangeException,    false,  C
 DEFINE_EXCEPTION(g_SystemNS,           ArrayTypeMismatchException,     false,  COR_E_ARRAYTYPEMISMATCH)
 
 // Keep in sync with the list in EEFileLoadException::GetFileLoadKind in clrex.cpp
-DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true, 
+DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  COR_E_BADIMAGEFORMAT, CLDB_E_FILE_OLDVER,
                  CLDB_E_INDEX_NOTFOUND,
                  CLDB_E_FILE_CORRUPT, COR_E_NEWER_RUNTIME,
@@ -144,7 +144,7 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY)
 
 // CannotUnloadAppDomainException is removed in CoreCLR
-#define kCannotUnloadAppDomainException kException 
+#define kCannotUnloadAppDomainException kException
 
 DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  COR_E_CODECONTRACTFAILED)
 
@@ -187,8 +187,8 @@ DEFINE_EXCEPTION(g_IONS,               FileLoadException,              true,
                  MSEE_E_ASSEMBLYLOADINPROGRESS,
                  HRESULT_FROM_WIN32(ERROR_FILE_INVALID))
 
-DEFINE_EXCEPTION(g_IONS,               FileNotFoundException,           true, 
-                 HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND), HRESULT_FROM_WIN32(ERROR_MOD_NOT_FOUND), 
+DEFINE_EXCEPTION(g_IONS,               FileNotFoundException,           true,
+                 HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND), HRESULT_FROM_WIN32(ERROR_MOD_NOT_FOUND),
                  HRESULT_FROM_WIN32(ERROR_INVALID_NAME), CTL_E_FILENOTFOUND,
                  HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND), HRESULT_FROM_WIN32(ERROR_BAD_NET_NAME),
                  HRESULT_FROM_WIN32(ERROR_BAD_NETPATH), HRESULT_FROM_WIN32(ERROR_NOT_READY),
@@ -214,9 +214,9 @@ DEFINE_EXCEPTION(g_SystemNS,           InvalidOperationException,      false,  C
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_EXCEPTION_HR_WINRT_ONLY(g_SystemNS, InvalidOperationException,  COR_E_INVALIDOPERATION,
-                                                                       E_ILLEGAL_STATE_CHANGE, 
-                                                                       E_ILLEGAL_METHOD_CALL,   
-                                                                       E_ILLEGAL_DELEGATE_ASSIGNMENT, 
+                                                                       E_ILLEGAL_STATE_CHANGE,
+                                                                       E_ILLEGAL_METHOD_CALL,
+                                                                       E_ILLEGAL_DELEGATE_ASSIGNMENT,
                                                                        HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE))
 #endif  // FEATURE_COMINTEROP
 
@@ -253,7 +253,7 @@ DEFINE_EXCEPTION(g_SystemNS,           OperationCanceledException,     false,  C
 DEFINE_EXCEPTION(g_SystemNS,           OverflowException,              false,  COR_E_OVERFLOW, CTL_E_OVERFLOW)
 
 DEFINE_EXCEPTION(g_IONS,               PathTooLongException,           false,  COR_E_PATHTOOLONG)
- 
+
 DEFINE_EXCEPTION(g_SystemNS,           PlatformNotSupportedException,  false,  COR_E_PLATFORMNOTSUPPORTED)
 
 DEFINE_EXCEPTION(g_SystemNS,           RankException,                  false,  COR_E_RANK)
@@ -326,7 +326,7 @@ DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_DirectUINS, LayoutCycleException, "Syste
 #endif // FEATURE_COMINTEROP
 
 
-// Please see comments on at the top of this list 
+// Please see comments on at the top of this list
 
 #undef DEFINE_EXCEPTION
 #undef DEFINE_EXCEPTION_HR_WINRT_ONLY

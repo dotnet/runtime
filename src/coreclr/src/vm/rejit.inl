@@ -5,7 +5,7 @@
 // File: REJIT.INL
 //
 
-// 
+//
 // Inline definitions of various items declared in REJIT.H
 // ===========================================================================
 #ifndef _REJIT_INL_
@@ -96,7 +96,7 @@ inline BOOL ReJitManager::IsReJITEnabled()
     return FALSE;
 }
 
-// static 
+// static
 inline void ReJitManager::InitStatic()
 {
 }

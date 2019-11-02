@@ -1,7 +1,7 @@
 project(CoreRun)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
- 
+
 set(CoreRun_SOURCES corerun.cpp logger.cpp)
 set(CoreRun_RESOURCES native.rc)
 
@@ -34,5 +34,5 @@ else()
 
     # Can't compile on linux yet so only add for windows
     install_clr(CoreRun)
-    
+
 endif(CLR_CMAKE_PLATFORM_UNIX)

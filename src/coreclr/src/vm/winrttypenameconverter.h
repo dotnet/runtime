@@ -12,7 +12,7 @@
 
 #ifndef FEATURE_COMINTEROP
 #error This file should only be included when FEATURE_COMINTEROP is defined
-#endif 
+#endif
 
 #pragma once
 
@@ -26,7 +26,7 @@ struct WinRTTypeNameInfo;
 //
 class WinRTTypeNameConverter
 {
-public :    
+public :
     //==============================================================================================
     // Managed -> WinRT
     //==============================================================================================
@@ -49,7 +49,7 @@ public :
     // Append the WinRT type name for the method table, if it is a WinRT primitive type
     //
     static bool AppendWinRTNameForPrimitiveType(MethodTable *pMT, SString &strName);
-    
+
     //
     // Is the specified MethodTable a WinRT primitive type
     //
@@ -65,7 +65,7 @@ public :
     static bool IsRedirectedType(MethodTable *pMT)
     {
         WRAPPER_NO_CONTRACT;
-        return ResolveRedirectedType(pMT, NULL);        
+        return ResolveRedirectedType(pMT, NULL);
     }
 
     static bool IsRedirectedType(MethodTable *pMT, WinMDAdapter::WinMDTypeKind kind);
@@ -92,9 +92,9 @@ public :
     // Parse the WinRT type name in the form of WinRTType=TypeName[<WinRTType[, WinRTType, ...]>]
     //
     static TypeHandle LoadManagedTypeForWinRTTypeName(LPCWSTR wszWinRTTypeName, ICLRPrivBinder * loadBinder, bool *pbIsPrimitive);
-    
+
 private :
-    
+
     //
     // Get predefined WinRT name for a primitive type
     //
@@ -104,13 +104,13 @@ private :
     // Return MethodTable* for the specified WinRT primitive type name
     //
     static bool GetMethodTableFromWinRTPrimitiveType(LPCWSTR wszTypeName, UINT32 uTypeNameLen, MethodTable **ppMT);
-    
+
     //
     // Return TypeHandle for the specified WinRT type name (supports generic type)
-    // Updates wszWinRTTypeName pointer as it parse the string    
+    // Updates wszWinRTTypeName pointer as it parse the string
     //
     static TypeHandle LoadManagedTypeForWinRTTypeNameInternal(SString *ssTypeName, ICLRPrivBinder* loadBinder, bool *pbIsPrimitive);
-    
+
     //
     // Return MethodTable* for the specified WinRT primitive type name (non-generic type)
     // Updates wszWinRTTypeName pointer as it parse the string

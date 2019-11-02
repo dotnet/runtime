@@ -19,7 +19,7 @@
 #define DEFAULT_MACHINE_WIDE_LOG_SIZE (1 * 1024 * 1024)
 // User specific log is yet smaller 200KB
 #define DEFAULT_USER_WIDE_LOG_SIZE (200 * 1024)
-// Log size default of 100 KB. This should be big enough to hold some log info from roughly 100 
+// Log size default of 100 KB. This should be big enough to hold some log info from roughly 100
 // ngen events. (Roughly 200KB of space including secondary log file.)
 #define DEFAULT_APPLOCAL_WIDE_LOG_SIZE (100*1024)
 
@@ -42,25 +42,25 @@ enum DebugType
 // NGening a module invokes the runtime against which the module was built.
 // Thus this structure needs to be backwards-compatible.
 //
-// If additional options need to be added to this structure, 
+// If additional options need to be added to this structure,
 // add them to the end of the structure and make sure you update
 // logic throughout the runtime to look at a different size in the dwSize
 // field. This is how we'll 'version' this structure.
-// 
+//
 // If you are adding a code-generation flag (like debug or prof), use
 // fInstrument as a template (but be sure to add your new flag as the
-// last element in the struct). 
+// last element in the struct).
 
 typedef struct _NGenOptions
 {
     DWORD       dwSize;         // Size of the structure. Used to version the structure
-    
+
     // V1
-    
+
     bool        fDebug;         // Generate debuggable code and debug information
     bool        fDebugOpt;      // Generate debugging information, but optimized code
     bool        fProf;          // Generate instrumented code for profiling (call graphs)
-    
+
     bool        fSilent;        // Dont spew text output
     LPCWSTR     lpszExecutableFileName; // Name of the module to ngen
 
@@ -108,7 +108,7 @@ typedef struct _NGenOptions
 // Function pointer types that we use to dynamically bind to the appropriate runtime version
 extern "C" typedef HRESULT STDAPICALLTYPE
     NGenCreateZapperAPI(
-        HANDLE* hZapper, 
+        HANDLE* hZapper,
         NGenOptions *options);
 typedef NGenCreateZapperAPI *PNGenCreateZapper;
 

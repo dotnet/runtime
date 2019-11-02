@@ -21,7 +21,7 @@ DynamicArray<mdToken>      *g_dups = NULL;           // used by ILDASM
 DWORD                       g_NumDups=0;              // used by ILDASM
 DynamicArray<TypeDefDescr> *g_typedefs = NULL;           // used by ILDASM
 DWORD                       g_NumTypedefs=0;              // used by ILDASM
- 
+
 // buffers created in Init and deleted in Uninit (dasm.cpp)
 CQuickBytes             * g_szBuf_KEYWORD  = NULL;
 CQuickBytes             * g_szBuf_COMMENT  = NULL;
@@ -57,7 +57,7 @@ const char* KEYWORD(__in_opt __nullterminated const char* szOrig)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     const char* szPrefix = "";
     const char* szPostfix = "";
     if(g_fDumpHTML)
@@ -91,7 +91,7 @@ const char* COMMENT(__in_opt __nullterminated const char* szOrig)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     const char* szPrefix = "";
     const char* szPostfix = "";
     if(g_fDumpHTML)
@@ -130,7 +130,7 @@ const char* ERRORMSG(__in_opt __nullterminated const char* szOrig)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     const char* szPrefix = "";
     const char* szPostfix = "";
     if(g_fDumpHTML)
@@ -165,7 +165,7 @@ const char* ANCHORPT(__in __nullterminated const char* szOrig, mdToken tk)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     if(g_fDumpHTML)
     {
         char  szPrefix[64];
@@ -188,7 +188,7 @@ const char* JUMPPT(__in __nullterminated const char* szOrig, mdToken tk)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     if(g_fDumpHTML)
     {
         char  szPrefix[64];
@@ -221,7 +221,7 @@ const char* UnquotedProperName(__in __nullterminated const char* name, unsigned 
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     CQuickBytes *buff = g_szBuf_UnquotedProperName;
     _ASSERTE (buff);
     if(g_fUseProperName)
@@ -236,7 +236,7 @@ const char* UnquotedProperName(__in __nullterminated const char* name, unsigned 
                     len = (unsigned)strlen(name);
                 pcend = pcn + len;
                 buff->Shrink(0);
-                for (pcn = name; pcn < pcend; pcn++) 
+                for (pcn = name; pcn < pcend; pcn++)
                 {
                     switch(*pcn)
                     {
@@ -277,7 +277,7 @@ const char* ProperName(__in __nullterminated const char* name, bool isLocalName)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     CQuickBytes *buff = g_szBuf_ProperName;
     _ASSERTE (buff);
     if(g_fUseProperName)

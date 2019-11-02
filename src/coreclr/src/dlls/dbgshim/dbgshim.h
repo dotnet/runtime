@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // DbgShim.h
-// 
+//
 //*****************************************************************************
 
 #include <windows.h>
@@ -52,7 +52,7 @@ GetStartupNotificationEvent(
     __out HANDLE* phStartupEvent);
 
 EXTERN_C HRESULT
-EnumerateCLRs(DWORD debuggeePID, 
+EnumerateCLRs(DWORD debuggeePID,
     __out HANDLE** ppHandleArrayOut,
     __out LPWSTR** ppStringArrayOut,
     __out DWORD* pdwArrayLengthOut);
@@ -88,5 +88,5 @@ CreateDebuggingInterfaceFromVersion2(
 
 EXTERN_C HRESULT
 CreateDebuggingInterfaceFromVersion(
-    __in LPCWSTR szDebuggeeVersion, 
+    __in LPCWSTR szDebuggeeVersion,
     __out IUnknown ** ppCordb);

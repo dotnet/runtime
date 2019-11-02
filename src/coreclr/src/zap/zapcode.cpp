@@ -143,7 +143,7 @@ void ZapImage::OutputCode(CodeType codeType)
     // Note there are three codeTypes: ProfiledHot, Unprofiled and ProfiledCold
 #if defined(REDHAWK)
     SectionMethodListGenerator map;
-#endif 
+#endif
 
     bool fCold = (codeType == ProfiledCold);
     CorInfoRegionKind regionKind = (codeType == ProfiledHot) ? CORINFO_REGION_HOT : CORINFO_REGION_COLD;
@@ -638,7 +638,7 @@ void ZapImage::OutputGCInfo()
         ZapMethodHeader * pMethod = m_MethodCompilationOrder[i];
         ZapGCInfo * pGCInfo = pMethod->m_pGCInfo;
 
-        UINT32 uOffset = 0; 
+        UINT32 uOffset = 0;
         if (pGCInfo->GetType() == ZapNodeType_InnerPtr)
         {
             uOffset = ((ZapInnerPtr*)pGCInfo)->GetOffset();
@@ -767,13 +767,13 @@ void ZapImage::AddRelocsForEHClauses(ZapExceptionInfo * pExceptionInfo)
         {
             ZapNode *pEETypeNode = (ZapNode*)pClause->EETypeReference;
 
-            // @TODO: we're using a full pointer for each EEType reference in the EH clause. This will be 
-            // 64bits on a 64bit system, though, which is twice as large as it needs to be. We should make 
-            // these 32bit RVA's and compute the final address at runtime when we start supporting 64bit 
+            // @TODO: we're using a full pointer for each EEType reference in the EH clause. This will be
+            // 64bits on a 64bit system, though, which is twice as large as it needs to be. We should make
+            // these 32bit RVA's and compute the final address at runtime when we start supporting 64bit
             // systems. See comments in ZapInfo::setEHinfo() for more details.
             //
-            // N.B! If we move to RVAs, then the runtime structure that matches the EE_ILEXCEPTION struct 
-            // needs to have a padding field removed.  (The C++ compiler introduced 4 bytes of padding between 
+            // N.B! If we move to RVAs, then the runtime structure that matches the EE_ILEXCEPTION struct
+            // needs to have a padding field removed.  (The C++ compiler introduced 4 bytes of padding between
             // 'DataSize' and 'Clauses' because 'Clauses' has a pointer field in it.  This padding will
             // disappear when we change the pointers to RVAs.)
             pRelocs[relocIndex].m_type = IMAGE_REL_BASED_PTR;
@@ -859,7 +859,7 @@ public:
         S_SIZE_T cbAllocSize = S_SIZE_T(sizeof(ZapCodeBlobConst<alignment>)) + S_SIZE_T(cbSize);
         if(cbAllocSize.IsOverflow())
             ThrowHR(COR_E_OVERFLOW);
-        
+
         void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
         ZapCodeBlob * pZapCodeBlob = new (pMemory) ZapCodeBlobConst<alignment>(cbSize);
@@ -931,7 +931,7 @@ void ZapCodeMethodDescs::Save(ZapWriter * pZapWriter)
     ZapImage * pImage = ZapImage::GetImage(pZapWriter);
 
     COUNT_T nUnwindInfos = 0;
-    
+
     for (COUNT_T curMethod = m_iStartMethod; curMethod < m_iEndMethod; curMethod++)
     {
         ZapMethodHeader * pMethod = pImage->m_MethodCompilationOrder[curMethod];
@@ -1063,7 +1063,7 @@ ZapGCInfo * ZapGCInfo::NewGCInfo(ZapWriter * pWriter, PVOID pGCInfo, SIZE_T cbGC
     void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
 
     ZapGCInfo * pZapGCInfo = new (pMemory) ZapGCInfo(cbGCInfo, cbUnwindInfo);
-    
+
     memcpy(pZapGCInfo->GetGCInfo(), pGCInfo, cbGCInfo);
     memcpy(pZapGCInfo->GetUnwindInfo(), pUnwindInfo, cbUnwindInfo);
 
@@ -1491,7 +1491,7 @@ DWORD ZapExceptionInfoLookupTable::GetSize()
     return (numExceptionInfoEntries + 1) * sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY);
 }
 
-void ZapExceptionInfoLookupTable::Save(ZapWriter* pZapWriter) 
+void ZapExceptionInfoLookupTable::Save(ZapWriter* pZapWriter)
 {
 
     if(m_exceptionInfoEntries.GetCount() == 0)
@@ -1520,7 +1520,7 @@ void ZapExceptionInfoLookupTable::Save(ZapWriter* pZapWriter)
             DWORD ehClauseSize = size % sizeof(CORCOMPILE_EXCEPTION_CLAUSE);
             CONSISTENCY_CHECK_MSG(ehClauseSize == 0, "There must be no gaps between 2 successive clause arrays, please check ZapExceptionInfo alignment");
         }
-#endif 
+#endif
     }
 
     // write a sentinal entry.. this entry helps to find the number of EHClauses for the last entry
@@ -1533,7 +1533,7 @@ void ZapExceptionInfoLookupTable::Save(ZapWriter* pZapWriter)
     sentinalEntry.MethodStartRVA = (DWORD)-1;
 
     // points just after the end of the Exception table
-    // the sentinal node m_pExceptionInfo pointer actually points to an invalid CORCOMPILE_EXCEPTION_CLAUSE 
+    // the sentinal node m_pExceptionInfo pointer actually points to an invalid CORCOMPILE_EXCEPTION_CLAUSE
     // area.  The lookup algorithm will never dereference the sentinal pointer, and hence this is safe
     sentinalEntry.ExceptionInfoRVA = pLastExceptionInfo->GetRVA() + pLastExceptionInfo->GetSize();
 
@@ -1576,8 +1576,8 @@ void ZapUnwindInfoLookupTable::Save(ZapWriter* pZapWriter)
 
         COUNT_T iCurrentIndex = RelativePC / RUNTIME_FUNCTION_LOOKUP_STRIDE;
 
-        // Note that we should not be using pUnwindInfo->GetEndAddress() here. The binary search 
-        // in the VM that's accelerated by this table does not look at the EndAddress either, and 
+        // Note that we should not be using pUnwindInfo->GetEndAddress() here. The binary search
+        // in the VM that's accelerated by this table does not look at the EndAddress either, and
         // so not using EndAddress here assures consistency.
         COUNT_T iPreviousIndex = (RelativePC - 1)/ RUNTIME_FUNCTION_LOOKUP_STRIDE;
 

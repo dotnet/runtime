@@ -140,7 +140,7 @@ class BranchInstructionFormat : public InstructionFormat
 
         virtual BOOL CanReach(UINT refSize, UINT variationCode, BOOL fExternal, INT_PTR offset)
         {
-            if (fExternal) 
+            if (fExternal)
             {
                 // Note that the parameter 'offset' is not an offset but the target address itself (when fExternal is true)
                 return (refSize == InstructionFormat::k64);
@@ -159,7 +159,7 @@ class BranchInstructionFormat : public InstructionFormat
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
                 __int64 dataOffset = pDataBuffer - pOutBuffer;
-                    
+
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
 
@@ -187,7 +187,7 @@ class BranchInstructionFormat : public InstructionFormat
 
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
                 __int64 dataOffset = pDataBuffer - pOutBuffer;
-                    
+
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
 
@@ -246,7 +246,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
         {
             LIMITED_METHOD_CONTRACT;
             // VariationCode is used to indicate the register the label is going to be loaded
-                
+
             DWORD imm =(DWORD)(fixedUpReference>>12);
             if (imm>>21)
                 COMPlusThrow(kNotSupportedException);
@@ -297,8 +297,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.X26 = unwoundstate->captureX19_X29[7] = baseState->captureX19_X29[7];
     context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
     context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
-    context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];	
-    context.Lr = NULL; // Filled by the unwinder 
+    context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];
+    context.Lr = NULL; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -318,8 +318,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.X26 = &unwoundstate->captureX19_X29[7];
     nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
     nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
-    nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];	
-    nonVolContextPtrs.Lr = NULL; // Filled by the unwinder 
+    nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];
+    nonVolContextPtrs.Lr = NULL; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -357,7 +357,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
         else
         {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
             BOOL fFailedReaderLock = FALSE;
             BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
@@ -419,7 +419,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->ptrX19_X29[7] = nonVolContextPtrs.X26;
     unwoundstate->ptrX19_X29[8] = nonVolContextPtrs.X27;
     unwoundstate->ptrX19_X29[9] = nonVolContextPtrs.X28;
-    unwoundstate->ptrX19_X29[10] = nonVolContextPtrs.Fp;	
+    unwoundstate->ptrX19_X29[10] = nonVolContextPtrs.Fp;
 #endif // DACCESS_COMPILE
 
     unwoundstate->_pc = context.Pc;
@@ -438,16 +438,16 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-    
+
     //
     // Copy the saved state from the frame to the current context.
     //
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState._pc, m_MachState._sp));
-    
+
  #if defined(DACCESS_COMPILE)
     // For DAC, we may get here when the HMF is still uninitialized.
     // So we may need to unwind here.
@@ -495,7 +495,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pContext = NULL;
     pRD->ControlPC = GetReturnAddress(); // m_MachState._pc;
     pRD->SP = (DWORD64)(size_t)m_MachState._sp;
-    
+
     pRD->pCurrentContext->Pc = pRD->ControlPC;
     pRD->pCurrentContext->Sp = pRD->SP;
 
@@ -527,7 +527,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
 #endif
 
-#if !defined(DACCESS_COMPILE)    
+#if !defined(DACCESS_COMPILE)
     pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
     pRD->pCurrentContextPointers->X20 = m_MachState.ptrX19_X29[1];
     pRD->pCurrentContextPointers->X21 = m_MachState.ptrX19_X29[2];
@@ -575,7 +575,7 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
     int n = 0;
 
     m_rgCode[n++] = 0x10000089; // adr x9, #16
-    m_rgCode[n++] = 0xA940312A; // ldp x10,x12,[x9] 
+    m_rgCode[n++] = 0xA940312A; // ldp x10,x12,[x9]
     m_rgCode[n++] = 0xD61F0140; // br x10
 
     _ASSERTE(n+1 == _countof(m_rgCode));
@@ -608,7 +608,7 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     int n = 0;
 
     m_rgCode[n++] = 0x1000008B; // adr x11, #16
-    m_rgCode[n++] = 0xA940316A; // ldp x10,x12,[x11] 
+    m_rgCode[n++] = 0xA940316A; // ldp x10,x12,[x11]
     m_rgCode[n++] = 0xD61F0140; // br x10
 
     _ASSERTE(n+1 == _countof(m_rgCode));
@@ -637,7 +637,7 @@ void NDirectImportPrecode::Fixup(DataImage *image)
 void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     InitCommon();
 
     // Initialize chunk indices only if they are not initialized yet. This is necessary to make MethodDesc::Reset work.
@@ -684,7 +684,7 @@ void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
-    // Note that GetMethodDesc() does not return the correct value because of 
+    // Note that GetMethodDesc() does not return the correct value because of
     // regrouping of MethodDescs into hot and cold blocks. That's why the caller
     // has to supply the actual MethodDesc
 
@@ -728,8 +728,8 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_rgCode[n++] = 0xd61f0200; // br  x16
     n++;                        // empty 4 bytes for data alignment below
     _ASSERTE(n == _countof(m_rgCode));
-    
-    
+
+
     m_pTarget = GetPreStubEntryPoint();
     m_pMethodDesc = (TADDR)pMD;
 }
@@ -744,7 +744,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     if (FixupPrecode::IsFixupPrecodeByASM(pCode))
     {
         PCODE pTarget = dac_cast<PTR_FixupPrecode>(pInstr)->m_pTarget;
-        
+
         if (isJump(pTarget))
         {
             pTarget = decodeJump(pTarget);
@@ -756,7 +756,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
     // StubPrecode
     if (pInstr[0] == 0x10000089 && // adr x9, #16
-        pInstr[1] == 0xA940312A && // ldp x10,x12,[x9] 
+        pInstr[1] == 0xA940312A && // ldp x10,x12,[x9]
         pInstr[2] == 0xD61F0140) // br x10
     {
         PCODE pTarget = dac_cast<PTR_StubPrecode>(pInstr)->m_pTarget;
@@ -811,11 +811,11 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 
 #ifndef CROSSGEN_COMPILE
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-    
+
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, pCalleeSaved);
@@ -830,7 +830,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     // Finally, syncup the regdisplay with the context
     SyncRegDisplayToCurrentContext(pRD);
-    
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
@@ -840,7 +840,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifndef	CROSSGEN_COMPILE
 
 void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
-{ 
+{
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
     _ASSERTE(!"ARM64:NYI");
 }
@@ -854,8 +854,8 @@ void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 
 #endif // CROSSGEN_COMPILE
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     LIMITED_METHOD_DAC_CONTRACT;
 
     // Copy the context to regdisplay
@@ -893,7 +893,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-#ifdef PROFILING_SUPPORTED        
+#ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
         HOST_NOCALLS;
@@ -944,14 +944,14 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr(void) 
-{ 
+TADDR ResumableFrame::GetReturnAddressPtr(void)
+{
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
-{ 
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
     CONTRACT_VOID
     {
         NOTHROW;
@@ -984,7 +984,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-    
+
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
@@ -996,14 +996,14 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
      pRD->IsCallerContextValid = FALSE;
      pRD->IsCallerSPValid      = FALSE;
- 
+
      pRD->pCurrentContext->Pc = m_ReturnAddress;
      size_t s = sizeof(struct HijackArgs);
      _ASSERTE(s%8 == 0); // HijackArgs contains register values and hence will be a multiple of 8
-     // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes 
-     s = s + s%16; 
+     // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
+     s = s + s%16;
      pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
- 
+
      pRD->pCurrentContext->X0 = m_Args->X0;
 
      pRD->pCurrentContext->X19 = m_Args->X19;
@@ -1070,7 +1070,7 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
 }
 #endif // FEATURE_COMINTEROP
 
-void JIT_TailCall() 
+void JIT_TailCall()
 {
     _ASSERTE(!"ARM64:NYI");
 }
@@ -1184,7 +1184,7 @@ AdjustContextForVirtualStub(
         return FALSE;
     }
 
-    PCODE callsite = GetAdjustedCallAddress(GetLR(pContext)); 
+    PCODE callsite = GetAdjustedCallAddress(GetLR(pContext));
 
     // Lr must already have been saved before calling so it should not be necessary to restore Lr
 
@@ -1223,7 +1223,7 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     // _label
     // m_pTargetCode data
     // m_pvSecretParam data
-    
+
     m_code[0] = 0x1000008c;
     m_code[1] = 0xa9403190;
     m_code[2] = 0xd61f0200;
@@ -1345,7 +1345,7 @@ void StubLinkerCPU::EmitCmpImm(IntReg reg, int imm)
         // Encoding: 1|1|1|1|0|0|0|0|shift(2)|imm(12)|Rn|Rt
         // Where I encode shift as 0 and Rt has to be 1F
         Emit32((DWORD) ((0xF1<<24) | ((0xFFF & imm)<<10) | (reg<<5) | (0x1F)) );
-        
+
     }
     else
         _ASSERTE(!"ARM64: NYI");
@@ -1356,11 +1356,11 @@ void StubLinkerCPU::EmitCmpReg(IntReg Xn, IntReg Xm)
 
     // Encoding for CMP (shifted register)
     // sf|1|1|0|1|0|1|1|shift(2)|0|Xm(5)|imm(6)|Xn(5)|XZR(5)
-    // where 
+    // where
     //    sf = 1 for 64-bit variant,
     //    shift will be set to 00 (LSL)
-    //    imm(6), which is the shift amount, will be set to 0 
-    
+    //    imm(6), which is the shift amount, will be set to 0
+
     Emit32((DWORD) (0xEB<<24) | (Xm<<16) | (Xn<<5) | 0x1F);
 }
 
@@ -1392,15 +1392,15 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
     DescribeProlog(cIntRegArgs, cVecRegArgs, cCalleeSavedRegs, cbStackSpace);
 
 
-    
-    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emiting right prolog that's 
-    // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504. 
+
+    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emiting right prolog that's
+    // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
     // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
-    // prolog and epilog generation as well as unwindinfo generation. 
+    // prolog and epilog generation as well as unwindinfo generation.
     _ASSERTE((totalPaddedFrameSize <= 504) && "NYI:ARM64 Implement StubLinker prologs with larger than 504 bytes of frame size");
     if (totalPaddedFrameSize > 504)
         COMPlusThrow(kNotSupportedException);
-    
+
     // Here is how the stack would look like (Stack grows up)
     // [Low Address]
     //            +------------+
@@ -1408,22 +1408,22 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
     //            :            :   | Stack Frame, (i.e outgoing arguments) including padding
     //            |            | <-+
     //            +------------+
-    //            | FP         | 
+    //            | FP         |
     //            +------------+
-    //            | LR         | 
+    //            | LR         |
     //            +------------+
     //            | X19        | <-+
     //            +------------+   |
-    //            :            :   | Callee-saved registers 
+    //            :            :   | Callee-saved registers
     //            +------------+   |
     //            | X28        | <-+
-    //            +------------+ 
+    //            +------------+
     //            | V0         | <-+
     //            +------------+   |
     //            :            :   | Vec Args
     //            +------------+   |
     //            | V7         | <-+
-    //            +------------+ 
+    //            +------------+
     //            | X0         | <-+
     //            +------------+   |
     //            :            :   | Int Args
@@ -1432,7 +1432,7 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
     //            +------------+
     //  Old SP -> |[Stack Args]|
     // [High Address]
-    
+
 
 
     // Regarding the order of operations in the prolog and epilog;
@@ -1446,9 +1446,9 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
     //
     // Another bit that we can save is resetting the frame pointer.
     // This is not necessary when the SP doesn't get modified beyond prolog and epilog. (i.e no alloca/localloc)
-    // And in that case we don't need to report setting up the FP either. 
-    
-    
+    // And in that case we don't need to report setting up the FP either.
+
+
 
     // 1. Relocate SP
     EmitSubImm(RegSp, RegSp, totalPaddedFrameSize);
@@ -1467,7 +1467,7 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRe
 
     // 4. Set the frame pointer
     EmitMovReg(RegFp, RegSp);
-    
+
     // 5. Store floating point argument registers
     cbOffset += cCalleeSavedRegs*sizeof(void*);
     _ASSERTE(cVecRegArgs <= 8);
@@ -1543,7 +1543,7 @@ void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum
     int opc = isVec ? 1 : 2;
     Emit32((DWORD) ( (opc<<30) | // opc
                      (0x5<<27) |
-                     (!!isVec<<26) | 
+                     (!!isVec<<26) |
                      (!postIndex<<24) |
                      (!!writeBack<<23) |
                      (!!isLoad<<22) |
@@ -1575,12 +1575,12 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
     BOOL isLoad    = flags & 1;
     BOOL writeBack = flags & 2;
     BOOL postIndex = flags & 4;
-    if (writeBack) 
+    if (writeBack)
     {
         _ASSERTE(-256 <= offset && offset <= 255);
         Emit32((DWORD) ( (0x1F<<27) |
                          (!!isVec<<26) |
-                         (!writeBack<<24) | 
+                         (!writeBack<<24) |
                          (!!isLoad<<22) |
                          ((0x1FF & offset) << 12) |
                          (!postIndex<<11) |
@@ -1594,7 +1594,7 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
         _ASSERTE((0 <= offset) && (offset <= 32760));
         _ASSERTE((offset & 7) == 0);
         Emit32((DWORD) ( (0x1F<<27) |
-                         (!!isVec<<26) | 
+                         (!!isVec<<26) |
                          (!writeBack<<24) |
                          (!!isLoad<<22) |
                          ((0xFFF & (offset >> 3)) << 10) |
@@ -1603,7 +1603,7 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
               );
     }
 
-              
+
 
 }
 
@@ -1616,7 +1616,7 @@ void StubLinkerCPU::EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option
                      (Xn << 5) |
                      (Xt)
                 ));
-    
+
 }
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
@@ -1624,21 +1624,21 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
     if (Xd == RegSp || Xm == RegSp)
     {
         // This is a different encoding than the regular MOV (register) below.
-        // Note that RegSp and RegZero share the same encoding. 
+        // Note that RegSp and RegZero share the same encoding.
         // TODO: check that the intention is not mov Xd, XZR
         //  MOV <Xd|SP>, <Xn|SP>
-        // which is equivalent to 
+        // which is equivalent to
         //  ADD <Xd|SP>, <Xn|SP>, #0
         // Encoding: sf|0|0|1|0|0|0|1|shift(2)|imm(12)|Xn|Xd
-        // where 
+        // where
         //  sf = 1 -> 64-bit variant
-        //  shift and imm12 are both 0 
+        //  shift and imm12 are both 0
         Emit32((DWORD) (0x91000000 | (Xm << 5) | Xd));
     }
     else
     {
         //  MOV <Xd>, <Xm>
-        // which is eqivalent to 
+        // which is eqivalent to
         //  ORR <Xd>. XZR, <Xm>
         // Encoding: sf|0|1|0|1|0|1|0|shift(2)|0|Xm|imm(6)|Xn|Xd
         // where
@@ -1656,7 +1656,7 @@ void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
     // where <shift> is encoded as LSL #0 (no shift) when shift=00 and LSL #12 when shift=01. (No shift in this impl)
     // imm(12) is an unsigned immediate in the range of 0 to 4095
     // Rn and Rd are both encoded as SP=31
-    // sf = 1 for 64-bit variant 
+    // sf = 1 for 64-bit variant
     _ASSERTE((0 <= value) && (value <= 4095));
     Emit32((DWORD) ((0xD1 << 24) | (value << 10) | (Xd << 5) | Xn));
 
@@ -1669,7 +1669,7 @@ void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
     // where <shift> is encoded as LSL #0 (no shift) when shift=00 and LSL #12 when shift=01. (No shift in this impl)
     // imm(12) is an unsigned immediate in the range of 0 to 4095
     // Rn and Rd are both encoded as SP=31
-    // sf = 1 for 64-bit variant 
+    // sf = 1 for 64-bit variant
     _ASSERTE((0 <= value) && (value <= 4095));
     Emit32((DWORD) ((0x91 << 24) | (value << 10) | (Xn << 5) | Xd));
 }
@@ -1820,7 +1820,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 
     // padding to make 8 byte aligned
     *(DWORD*)p = 0xBADC0DF0; p += 4;
-    
+
     // label:
     // arg
     *(TADDR*)p = arg;
@@ -1828,7 +1828,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     // target
     *(PCODE*)p = target;
     p += 8;
-    
+
     END_DYNAMIC_HELPER_EMIT();
 }
 
@@ -1836,10 +1836,10 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     STANDARD_VM_CONTRACT;
-    
-    // if p is already aligned at 8-byte then padding is required for data alignment  
+
+    // if p is already aligned at 8-byte then padding is required for data alignment
     bool padding = (((uintptr_t)p & 0x7) == 0);
-    
+
     // adr x8, <label>
     // ldp x1, x12, [x8]
     LoadRegPair(p, 1, 12, padding?16:12);
@@ -1847,22 +1847,22 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, T
 
     // br x12
     *(DWORD*)p = 0xd61f0180;
-    p += 4; 
+    p += 4;
 
     if(padding)
     {
         // padding to make 8 byte aligned
-        *(DWORD*)p = 0xBADC0DF0; 
+        *(DWORD*)p = 0xBADC0DF0;
         p += 4;
     }
-    
+
     // label:
     // arg
     *(TADDR*)p = arg;
     p += 8;
     // target
     *(PCODE*)p = target;
-    p += 8; 
+    p += 8;
 }
 
 PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
@@ -1870,10 +1870,10 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
-    
+
     EmitHelperWithArg(p, pAllocator, arg, target);
-    
-    END_DYNAMIC_HELPER_EMIT();    
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
@@ -1881,7 +1881,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(40);
-    
+
     // adr x8, <label>
     // ldp x0, x1, [x8] ; wback
     LoadRegPair(p, 0, 1, 16);
@@ -1892,7 +1892,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     p += 4;
     // br x12
     *(DWORD*)p = 0xd61f0180;
-    p += 4;     
+    p += 4;
     // label:
     // arg
     *(TADDR*)p = arg;
@@ -1904,7 +1904,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     *(TADDR*)p = target;
     p += 8;
 
-    END_DYNAMIC_HELPER_EMIT();      
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
@@ -1912,7 +1912,7 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
-    
+
     // mov x1, x0
     *(DWORD*)p = 0x91000001;
     p += 4;
@@ -1924,17 +1924,17 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
     // br x12
     *(DWORD*)p = 0xd61f0180;
-    p += 4;     
+    p += 4;
 
     // label:
     // arg
     *(TADDR*)p = arg;
-    p += 8; 
+    p += 8;
     // target
     *(TADDR*)p = target;
     p += 8;
-    
-    END_DYNAMIC_HELPER_EMIT();          
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
@@ -1942,11 +1942,11 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(4);
-    
+
     // br lr
     *(DWORD*)p = 0xd61f03c0;
     p += 4;
-    END_DYNAMIC_HELPER_EMIT();              
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
@@ -1954,11 +1954,11 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(16);
- 
+
     // ldr x0, <label>
     *(DWORD*)p = 0x58000040;
     p += 4;
-    
+
     // br lr
     *(DWORD*)p = 0xd61f03c0;
     p += 4;
@@ -1966,9 +1966,9 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
     // label:
     // arg
     *(TADDR*)p = arg;
-    p += 8; 
+    p += 8;
 
-    END_DYNAMIC_HELPER_EMIT();              
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
@@ -1976,7 +1976,7 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(24);
-    
+
     // ldr x0, <label>
     *(DWORD*)p = 0x58000080;
     p += 4;
@@ -1984,21 +1984,21 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
     // ldr x0, [x0]
     *(DWORD*)p = 0xf9400000;
     p += 4;
-    
+
     // add x0, x0, offset
     *(DWORD*)p = 0x91000000 | (offset << 10);
     p += 4;
-    
+
     // br lr
     *(DWORD*)p = 0xd61f03c0;
     p += 4;
-    
+
     // label:
     // arg
     *(TADDR*)p = arg;
-    p += 8; 
-    
-    END_DYNAMIC_HELPER_EMIT();              
+    p += 8;
+
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
@@ -2006,7 +2006,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
-    
+
     // adr x8, <label>
     // ldp x2, x12, [x8]
     LoadRegPair(p, 2, 12, 16);
@@ -2014,20 +2014,20 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     // br x12
     *(DWORD*)p = 0xd61f0180;
-    p += 4; 
+    p += 4;
 
     // padding to make 8 byte aligned
     *(DWORD*)p = 0xBADC0DF0; p += 4;
-    
+
     // label:
     // arg
     *(TADDR*)p = arg;
-    p += 8; 
+    p += 8;
 
     // target
     *(TADDR*)p = target;
     p += 8;
-    END_DYNAMIC_HELPER_EMIT();              
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
@@ -2035,19 +2035,19 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     STANDARD_VM_CONTRACT;
 
     BEGIN_DYNAMIC_HELPER_EMIT(40);
-    
+
     // adr x8, <label>
     // ldp x2, x3, [x8]; wback
     LoadRegPair(p, 2, 3, 16);
     p += 8;
-    
+
     // ldr x12, [x8]
     *(DWORD*)p = 0xf940010c;
     p += 4;
 
     // br x12
     *(DWORD*)p = 0xd61f0180;
-    p += 4;     
+    p += 4;
 
     // label:
     // arg
@@ -2059,7 +2059,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     // target
     *(TADDR*)p = target;
     p += 8;
-    END_DYNAMIC_HELPER_EMIT();              
+    END_DYNAMIC_HELPER_EMIT();
 }
 
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
@@ -2111,7 +2111,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         {
             codeSize += 4 ; /* ret */
         }
-        
+
         codeSize += indirectionsDataSize;
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
@@ -2119,11 +2119,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         if (pLookup->testForNull)
         {
             // mov x9, x0
-            *(DWORD*)p = 0x91000009; 
+            *(DWORD*)p = 0x91000009;
             p += 4;
         }
-        
-        // moving offset value wrt PC. Currently points to first indirection offset data. 
+
+        // moving offset value wrt PC. Currently points to first indirection offset data.
         uint dataOffset = codeSize - indirectionsDataSize - (pLookup->testForNull ? 4 : 0);
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
@@ -2135,7 +2135,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // ldr x0, [x0, x10]
                 *(DWORD*)p = 0xf86a6800;
                 p += 4;
-                
+
                 // move to next indirection offset data
                 dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
             }
@@ -2143,14 +2143,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             {
                 // offset must be 8 byte aligned
                 _ASSERTE((pLookup->offsets[i] & 0x7) == 0);
- 
+
                 // ldr x0, [x0, #(pLookup->offsets[i])]
                 *(DWORD*)p = 0xf9400000 | ( ((UINT32)pLookup->offsets[i]>>3) <<10 );
                 p += 4;
                 dataOffset -= 4; // subtract 4 as we have moved PC by 4
             }
         }
-        
+
         // No null test required
         if (!pLookup->testForNull)
         {
@@ -2174,8 +2174,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             // X1 <- pArgs
             // branch to helperAddress
             EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
-        }     
-        
+        }
+
         // datalabel:
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
@@ -2186,8 +2186,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 p += 4;
             }
         }
-        
-        END_DYNAMIC_HELPER_EMIT();        
+
+        END_DYNAMIC_HELPER_EMIT();
     }
 }
 #endif // FEATURE_READYTORUN

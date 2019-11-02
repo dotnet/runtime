@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacimpl.h
-// 
+//
 
 //
 // Central header file for external data access implementation.
@@ -39,12 +39,12 @@ extern CRITICAL_SECTION g_dacCritSec;
 // from ULONG32 to ULONG64 - it is incorrect.  Ideally we'd use some compiler tricks or static analysis
 // to help detect such errors (they are nefarious since 3/4GB addresses aren't well tested) .
 //
-// Note: We're in the process of switching the implementation over to CORDB_ADDRESS instead, which is also 
+// Note: We're in the process of switching the implementation over to CORDB_ADDRESS instead, which is also
 // 64 bits, but 0-extended.  This means that conversions between TADDR and CORDB_ADDRESS are simple and natural,
 // but as long as we have some legacy code, conversions involving CLRDATA_ADDRESS are a pain.  Eventually we
 // should eliminate CLRDATA_ADDRESS entirely from the implementation, but that will require moving SOS off of
 // the old DAC stuff etc.
-// 
+//
 // Here are the possible conversions:
 // TADDR -> CLRDATA_ADDRESS:         TO_CDADDR
 // CORDB_ADDRESS -> CLRDATA_ADDRESS: TO_CDADDR
@@ -52,7 +52,7 @@ extern CRITICAL_SECTION g_dacCritSec;
 // CORDB_ADDRESS -> TADDR:           CORDB_ADDRESS_TO_TADDR
 // TADDR -> CORDB_ADDRESS:           implicit
 // CLRDATA_ADDRESS -> CORDB_ADDRESS: CLRDATA_ADDRESS_TO_TADDR
-// 
+//
 #define TO_CDADDR(taddr) ((CLRDATA_ADDRESS)(LONG_PTR)(taddr))
 
 // Convert a CLRDATA_ADDRESS (64-bit unsigned sign-extended target address) to a TADDR
@@ -89,7 +89,7 @@ inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutT
     return S_OK;
 }
 
-// Convert a CORDB_ADDRESS (64-bit unsigned 0-extended target address) to a TADDR 
+// Convert a CORDB_ADDRESS (64-bit unsigned 0-extended target address) to a TADDR
 inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
 {
     SUPPORTS_DAC;
@@ -128,7 +128,7 @@ enum DAC_USAGE_TYPE
     DAC_PAL,
 };
 
-// mscordacwks's module handle 
+// mscordacwks's module handle
 extern HINSTANCE g_thisModule;
 
 class ReflectionModule;
@@ -140,9 +140,9 @@ struct DAC_MD_IMPORT
     IMDInternalImport* impl;   // Associated metadata interface
     bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
-    DAC_MD_IMPORT(TADDR peFile_, 
-        IMDInternalImport* impl_, 
-        bool isAlt_ = false, 
+    DAC_MD_IMPORT(TADDR peFile_,
+        IMDInternalImport* impl_,
+        bool isAlt_ = false,
         DAC_MD_IMPORT* next_ = NULL)
         : next(next_)
         , peFile(peFile_)
@@ -155,7 +155,7 @@ struct DAC_MD_IMPORT
 
 
 // This class maintains a cache of IMDInternalImport* and their corresponding
-// source (a PEFile* or a ReflectionModule*), as a singly-linked list of 
+// source (a PEFile* or a ReflectionModule*), as a singly-linked list of
 // DAC_MD_IMPORT nodes.  The cache is flushed whenever the process state changes
 // by calling its Flush() member function.
 class MDImportsCache
@@ -167,11 +167,11 @@ public:
     {}
 
     ~MDImportsCache()
-    { 
-        Flush(); 
+    {
+        Flush();
     }
 
-    FORCEINLINE 
+    FORCEINLINE
     IMDInternalImport* Get(TADDR key) const
     {
         SUPPORTS_DAC;
@@ -185,7 +185,7 @@ public:
         return NULL;
     }
 
-    FORCEINLINE 
+    FORCEINLINE
     DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl, bool isAlt)
     {
         SUPPORTS_DAC;
@@ -522,7 +522,7 @@ struct ProcessModIter
         m_nextDomain = true;
         m_curAssem = NULL;
     }
-    
+
     Assembly * NextAssem()
     {
         SUPPORTS_DAC;
@@ -620,18 +620,18 @@ struct DAC_INSTANCE
     ULONG32 sig:16;
     // DPTR or VPTR.  See code:DAC_USAGE_TYPE
     ULONG32 usage:2;
-    
-    // Marker that can be used to prevent reporting this memory to the callback 
+
+    // Marker that can be used to prevent reporting this memory to the callback
     // object (via ICLRDataEnumMemoryRegionsCallback:EnumMemoryRegion)
     // more than once. This bit is checked only by the DacEnumHost?PtrMem
-    // macros, so consistent use of those macros ensures that the memory is 
+    // macros, so consistent use of those macros ensures that the memory is
     // reported at most once
     ULONG32 enumMem:1;
 
     // Marker to prevent metadata gets reported to mini-dump
     ULONG32 noReport:1;
-    
-    // Marker to determine if EnumMemoryRegions has been called on 
+
+    // Marker to determine if EnumMemoryRegions has been called on
     // a method descriptor
     ULONG32 MDEnumed:1;
 
@@ -650,7 +650,7 @@ struct DAC_INSTANCE_PUSH
     ULONG32 numInst;
     ULONG64 instMemUsage;
 };
-    
+
 // The runtime will want the best access locality possible,
 // so it's likely that many instances will be clustered.
 // The hash function needs to spread near addresses across
@@ -708,7 +708,7 @@ private:
 
     DAC_INSTANCE_BLOCK* FindInstanceBlock(DAC_INSTANCE* inst);
     void FreeAllBlocks(bool fSaveBlock);
-    
+
     void InitEmpty(void)
     {
         m_blocks = NULL;
@@ -744,7 +744,7 @@ private:
 
 // The hashing function does a good job of distributing the entries across buckets. To handle a
 // SO on x86, we have under 250 entries in a bucket. A 4K block size allows 511 entries on x86 and
-// about half that on x64. On x64, the number of entries added to the hash table is significantly 
+// about half that on x64. On x64, the number of entries added to the hash table is significantly
 // smaller than on x86 (and the max recursion depth for default stack sizes is also far less), so
 // 4K is generally adequate.
 
@@ -762,17 +762,17 @@ private:
     HashInstanceKeyBlock* m_hash[DAC_INSTANCE_HASH_SIZE];
 #else //DAC_HASHTABLE
 
-    // We're going to use the STL unordered_map for our instance hash.  
-    // This has the benefit of scaling to different workloads appropriately (as opposed to having a 
+    // We're going to use the STL unordered_map for our instance hash.
+    // This has the benefit of scaling to different workloads appropriately (as opposed to having a
     // fixed number of buckets).
 
-    class DacHashCompare : public std::hash_compare<TADDR>       
+    class DacHashCompare : public std::hash_compare<TADDR>
     {
     public:
         // Custom hash function
-        // The default hash function uses a pseudo-randomizing function to get a random 
+        // The default hash function uses a pseudo-randomizing function to get a random
         // distribution.  In our case, we'd actually like a more even distribution to get
-        // better access locality (see comments for DAC_INSTANCE_HASH_BITS).  
+        // better access locality (see comments for DAC_INSTANCE_HASH_BITS).
         //
         // Also, when enumerating the hash during dump generation, clustering nearby addresses
         // together can have a significant positive impact on the performance of the minidump
@@ -800,7 +800,7 @@ private:
         //memory as the old code (buckets * number of entries in the old
         //blocks.)
         //disabled for now.  May tweak implementation later.  It turns out that
-        //having a large number of initial buckets is excellent for nidump, but it 
+        //having a large number of initial buckets is excellent for nidump, but it
         // is terrible for most other scenarios due to the cost of clearing them at
         // every Flush.  Once there is a better perf suite, we can tweak these values more.
         static const size_t min_buckets = DAC_INSTANCE_HASH_SIZE * 256;
@@ -1150,24 +1150,24 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetCCWInterfaces(CLRDATA_ADDRESS ccw, unsigned int count, struct DacpCOMInterfacePointerData interfaces[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetTLSIndex(ULONG *pIndex);
     virtual HRESULT STDMETHODCALLTYPE GetDacModuleHandle(HMODULE *phModule);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *paths, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *configFile, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *base, unsigned int *pNeeded);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pContext, HRESULT *pResult);
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetStackReferences(DWORD osThreadID, ISOSStackRefEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE GetRegisterName(int regNum, unsigned int count, __out_z __inout_ecount(count) WCHAR *buffer, unsigned int *pNeeded);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetHandleEnum(ISOSHandleEnum **ppHandleEnum);
     virtual HRESULT STDMETHODCALLTYPE GetHandleEnumForTypes(unsigned int types[], unsigned int count, ISOSHandleEnum **ppHandleEnum);
     virtual HRESULT STDMETHODCALLTYPE GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppHandleEnum);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetThreadAllocData(CLRDATA_ADDRESS thread, struct DacpAllocData *data);
     virtual HRESULT STDMETHODCALLTYPE GetHeapAllocData(unsigned int count, struct DacpGenerationAllocData *data, unsigned int *pNeeded);
 
@@ -1265,7 +1265,7 @@ public:
 
     // Get the MethodDesc for a function
     MethodDesc * FindLoadedMethodRefOrDef(Module* pModule, mdToken memberRef);
-    
+
 #ifndef FEATURE_PAL
     HRESULT GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBlock * pGM);
 #endif // FEATURE_PAL
@@ -1275,7 +1275,7 @@ public:
     HRESULT GetServerAllocData(unsigned int count, struct DacpGenerationAllocData *data, unsigned int *pNeeded);
     HRESULT ServerOomData(CLRDATA_ADDRESS addr, DacpOomData *oomData);
     HRESULT ServerGCInterestingInfoData(CLRDATA_ADDRESS addr, DacpGCInterestingInfoData *interestingInfoData);
-    HRESULT ServerGCHeapAnalyzeData(CLRDATA_ADDRESS heapAddr, 
+    HRESULT ServerGCHeapAnalyzeData(CLRDATA_ADDRESS heapAddr,
                                 DacpGcHeapAnalyzeData *analyzeData);
 
     //
@@ -1289,7 +1289,7 @@ public:
     // triage minidump functions
     HRESULT EnumMemoryRegionsWorkerMicroTriage(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemoryRegionsWorkerHeap(CLRDataEnumMemoryFlags flags);
-    
+
     HRESULT EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags, IXCLRDataStackWalk  *pStackWalk, Thread * pThread);
     HRESULT DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
@@ -1300,8 +1300,8 @@ public:
 #endif
 
     HRESULT EnumMemWriteDataSegment();
-    
-    // Custom Dump    
+
+    // Custom Dump
     HRESULT EnumMemoryRegionsWorkerCustom();
 
     // helper function for dump code
@@ -1327,7 +1327,7 @@ public:
                               bool* isAlternate);
 
     virtual
-    interface IMDInternalImport* GetMDImport(const PEFile* peFile, 
+    interface IMDInternalImport* GetMDImport(const PEFile* peFile,
                                              const ReflectionModule* reflectionModule,
                                              bool throwEx);
 
@@ -1362,15 +1362,15 @@ public:
     // Get the ICLRDataTarget3 instance, if any
     ICLRDataTarget3 * GetLegacyTarget3()        { return m_pLegacyTarget3; }
 
-    // 
+    //
     // Public Fields
     // Note that it would be nice if all of these were made private.  However, the visibility
     // model of the DAC implementation is that the public surface area is declared in daccess.h
     // (implemented in dacfn.cpp), and the private surface area (like ClrDataAccess) is declared
-    // in dacimpl.h which is only included by the DAC infrastructure.  Therefore the DAC 
+    // in dacimpl.h which is only included by the DAC infrastructure.  Therefore the DAC
     // infrastructure agressively uses these fields, and we don't get a huge amount of benefit from
     // reworking this model (since there is some form of encapsulation in place already).
-    // 
+    //
 
     // The underlying data target - always present (strong reference)
     ICorDebugDataTarget * m_pTarget;
@@ -1394,11 +1394,11 @@ public:
     void InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags);
 
     // Used during triage/mini-dump collection to populate the map of
-    // pointers to EE struct (MethodDesc* for now) to their corresponding 
+    // pointers to EE struct (MethodDesc* for now) to their corresponding
     // name.
     bool MdCacheAddEEName(TADDR taEEStruct, const SString& name);
 
-    // Used to mark the end point for the name caching. Will update streams 
+    // Used to mark the end point for the name caching. Will update streams
     // based on built caches
     void EnumStreams(IN CLRDataEnumMemoryFlags flags);
 
@@ -1523,12 +1523,12 @@ public:
     }
 
     virtual ~DefaultCOMImpl() {}
-    
+
     ULONG STDMETHODCALLTYPE AddRef()
     {
         return ++mRef;
     }
-    
+
     ULONG STDMETHODCALLTYPE Release()
     {
         ULONG res = mRef--;
@@ -1536,12 +1536,12 @@ public:
             delete this;
         return res;
     }
-    
+
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppObj)
     {
         if (ppObj == NULL)
             return E_INVALIDARG;
-        
+
         if (IsEqualIID(riid, IID_IUnknown))
         {
             AddRef();
@@ -1599,7 +1599,7 @@ struct HeapData
 
     CORDB_ADDRESS Gen0Start;
     CORDB_ADDRESS Gen0End;
-    
+
     CORDB_ADDRESS Gen1Start;
     size_t EphemeralSegment;
 
@@ -1612,7 +1612,7 @@ struct HeapData
 
 /* This cache is used to read data from the target process if the reads are known
  * to be sequential.  This will object will read one page of memory out of the
- * process at a time, aligned to the page boundary, to 
+ * process at a time, aligned to the page boundary, to
  */
 class LinearReadCache
 {
@@ -1653,7 +1653,7 @@ public:
 
         // If MoveToPage succeeds, we MUST be on the right page.
         _ASSERTE(addr >= mCurrPageStart);
-        
+
         // However, the amount of data requested may fall off of the page.  In that case,
         // fall back to MisalignedRead.
         CORDB_ADDRESS offset = addr - mCurrPageStart;
@@ -1746,14 +1746,14 @@ public:
     }
 
     HRESULT Reset(CORDB_ADDRESS start, CORDB_ADDRESS end);
-    
+
     static HRESULT InitHeapDataWks(HeapData *&pHeaps, size_t &count);
     static HRESULT InitHeapDataSvr(HeapData *&pHeaps, size_t &count);
 
     HRESULT GetHeapData(HeapData **ppHeapData, size_t *pNumHeaps);
 
     SegmentData *FindSegment(CORDB_ADDRESS obj);
-    
+
     HRESULT ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext);
 
 private:
@@ -1819,7 +1819,7 @@ struct SOSStackErrorList
 {
     SOSStackRefError error;
     SOSStackErrorList *pNext;
-    
+
     SOSStackErrorList()
         : pNext(0)
     {
@@ -1832,12 +1832,12 @@ class DacStackReferenceErrorEnum : public DefaultCOMImpl<ISOSStackRefErrorEnum, 
 public:
     DacStackReferenceErrorEnum(DacStackReferenceWalker *pEnum, SOSStackErrorList *pErrors);
     ~DacStackReferenceErrorEnum();
-    
+
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
     HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
     HRESULT STDMETHODCALLTYPE Next(unsigned int count, SOSStackRefError ref[], unsigned int *pFetched);
-    
+
 private:
     // The lifetime of the error list is tied to the enum, so we must addref/release it.
     DacStackReferenceWalker *mEnum;
@@ -1859,7 +1859,7 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
         TADDR sp, pc;
         bool stop;
         GCEnumCallback pEnumFunc;
-        
+
         DacScanContext()
             : pWalker(NULL), pFrame(0), sp(0), pc(0), stop(false), pEnumFunc(0)
         {
@@ -1872,7 +1872,7 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
         unsigned int count;               // The count of how many StackRefs were written to pData
         unsigned int size;                // The capacity of pData (in bytes)
         void *pData;                      // The overflow data
-        
+
         _StackRefChunkHead()
             : next(0), count(0), size(0), pData(0)
         {
@@ -1883,7 +1883,7 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
     typedef struct _StackRefChunk : public StackRefChunkHead
     {
         SOSStackRefData data[64];
-        
+
         _StackRefChunk()
         {
             pData = data;
@@ -1893,25 +1893,25 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
 public:
     DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID);
     virtual ~DacStackReferenceWalker();
-    
+
     HRESULT Init();
-    
+
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
     HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
     HRESULT STDMETHODCALLTYPE Next(unsigned int count,
                                    SOSStackRefData refs[],
                                    unsigned int *pFetched);
-   
+
    // Dac-Dbi Functions
    HRESULT Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched);
    Thread *GetThread() const
    {
         return mThread;
    }
-                                   
+
     HRESULT STDMETHODCALLTYPE EnumerateErrors(ISOSStackRefErrorEnum **ppEnum);
-                                   
+
 private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
     static void GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
@@ -1925,11 +1925,11 @@ private:
     StructType *GetNextObject(DacScanContext *ctx)
     {
         SUPPORTS_DAC;
-        
+
         // If we failed on a previous call (OOM) don't keep trying to allocate, it's not going to work.
         if (ctx->stop || !mCurr)
             return NULL;
-        
+
         // We've moved past the size of the current chunk.  We'll allocate a new chunk
         // and stuff the references there.  These are cleaned up by the destructor.
         if (mCurr->count >= mCurr->size/sizeof(StructType))
@@ -1947,10 +1947,10 @@ private:
                     return NULL;
                 }
             }
-            
+
             mCurr = mCurr->next;
         }
-        
+
         // Fill the current ref.
         StructType *pData = (StructType*)mCurr->pData;
         return &pData[mCurr->count++];
@@ -1962,12 +1962,12 @@ private:
     {
         _ASSERTE(mThread);
         _ASSERTE(!mEnumerated);
-        
+
         // If this is the first time we were called, fill local data structures.
         // This will fill out the user's handles as well.
         _ASSERTE(mCurr == NULL);
         _ASSERTE(mHead.next == NULL);
-        
+
         // Get the current thread's context and set that as the filter context
         if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
         {
@@ -1975,7 +1975,7 @@ private:
             mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
             mThread->SetProfilerFilterContext(&ctx);
         }
-        
+
         // Setup GCCONTEXT structs for the stackwalk.
         GCCONTEXT gcctx;
         DacScanContext dsc;
@@ -1983,14 +1983,14 @@ private:
         dsc.pEnumFunc = enumFunc;
         gcctx.f = promote;
         gcctx.sc = &dsc;
-        
-        // Put the user's array/count in the 
+
+        // Put the user's array/count in the
         mHead.size = count*sizeof(StructType);
         mHead.pData = refs;
         mHead.count = 0;
-        
+
         mCurr = &mHead;
-        
+
         // Walk the stack, set mEnumerated to true to ensure we don't do it again.
         unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1999,15 +1999,15 @@ private:
 
         mEnumerated = true;
         mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
-        
+
         // We have filled the user's array as much as we could.  If there's more data than
         // could fit, mHead.Next will contain a linked list of refs to enumerate.
         mCurr = mHead.next;
-        
+
         // Return how many we put in the user's array.
         return mHead.count;
     }
-    
+
     template <class IntType, class StructType, promote_func PromoteFunc, GCEnumCallback EnumFunc>
     HRESULT DoStackWalk(IntType count, StructType stackRefs[], IntType *pFetched)
     {
@@ -2019,7 +2019,7 @@ private:
             // This will fill out the user's handles as well.
             fetched = (IntType)WalkStack((unsigned int)count, stackRefs, PromoteFunc, EnumFunc);
         }
-        
+
         while (fetched < count)
         {
             if (mCurr == NULL)
@@ -2040,19 +2040,19 @@ private:
                 // data leftover.  Walk the linked-list of arrays copying them into the user's
                 // buffer until we have either exhausted the user's array or the leftover data.
                 IntType toCopy = count - fetched;  // Fill the user's buffer...
-                
+
                 // ...unless that would go past the bounds of the current chunk.
                 if (toCopy + mChunkIndex > mCurr->count)
                     toCopy = mCurr->count - mChunkIndex;
-                
+
                 memcpy(stackRefs+fetched, (StructType*)mCurr->pData+mChunkIndex, toCopy*sizeof(StructType));
                 mChunkIndex += toCopy;
                 fetched += toCopy;
             }
         }
-        
+
         *pFetched = fetched;
-        
+
         return hr;
     }
 
@@ -2060,20 +2060,20 @@ private:
     // Dac variables required for entering/leaving the dac.
     ClrDataAccess *mDac;
     ULONG32 m_instanceAge;
-    
+
     // Operational variables
     Thread *mThread;
     SOSStackErrorList *mErrors;
     bool mEnumerated;
-    
+
     // Storage variables
     StackRefChunkHead mHead;
     unsigned int mChunkIndex;
-    
+
     // Iterator variables
     StackRefChunkHead *mCurr;
     int mIteratorIndex;
-    
+
     // Heap.  Used to resolve interior pointers.
     DacHeapWalker mHeap;
 };
@@ -2089,7 +2089,7 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
         unsigned int Count;             // The count of how many handles were written to pData
         unsigned int Size;              // The capacity of pData
         void *pData;           // The overflow data
-        
+
         _HandleChunkHead()
             : Next(0), Count(0), Size(0), pData(0)
         {
@@ -2100,7 +2100,7 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
     typedef struct _HandleChunk : public HandleChunkHead
     {
         SOSHandleData Data[128];
-        
+
         _HandleChunk()
         {
             pData = Data;
@@ -2115,7 +2115,7 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
         HRESULT Result;             // HRESULT of the current enumeration
         CLRDATA_ADDRESS AppDomain;  // The AppDomain for the current bucket we are walking
         unsigned int Type;          // The type of handle we are currently walking
-        
+
         DacHandleWalkerParam(HandleChunk *curr)
             : Curr(curr), Result(S_OK), AppDomain(0), Type(0)
         {
@@ -2125,11 +2125,11 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
 public:
     DacHandleWalker();
     virtual ~DacHandleWalker();
-    
+
     HRESULT Init(ClrDataAccess *dac, UINT types[], UINT typeCount);
     HRESULT Init(ClrDataAccess *dac, UINT types[], UINT typeCount, int gen);
     HRESULT Init(UINT32 typemask);
-    
+
     // SOS functions
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
@@ -2137,20 +2137,20 @@ public:
     HRESULT STDMETHODCALLTYPE Next(unsigned int count,
                                    SOSHandleData handles[],
                                    unsigned int *pNeeded);
-   
+
    // Dac-Dbi Functions
    HRESULT Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched);
 private:
     static void CALLBACK EnumCallback(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM userParam, LPARAM type);
     static void GetRefCountedHandleInfo(
-        OBJECTREF oref, unsigned int uType, 
+        OBJECTREF oref, unsigned int uType,
         unsigned int *pRefCount, unsigned int *pJupiterRefCount, BOOL *pIsPegged, BOOL *pIsStrong);
     static UINT32 BuildTypemask(UINT types[], UINT typeCount);
 
 private:
     static void CALLBACK EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
     static void CALLBACK EnumCallbackDac(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
-    
+
     bool FetchMoreHandles(HANDLESCANPROC proc);
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
@@ -2161,10 +2161,10 @@ private:
     HRESULT DoHandleWalk(IntType celt, StructType handles[], IntType *pceltFetched)
     {
         SUPPORTS_DAC;
-        
+
         if (handles == NULL || pceltFetched == NULL)
             return E_POINTER;
-        
+
         HRESULT hr = S_OK;
         IntType fetched = 0;
         bool done = false;
@@ -2182,13 +2182,13 @@ private:
                 // FetchMoreHandles returned false (mMap == NULL), break.
                 if (mMap == NULL)
                     break;
-                
+
                 mHead.pData = handles+fetched;
                 mHead.Size = (celt - fetched)*sizeof(StructType);
-                
+
                 done = !FetchMoreHandles(EnumFunc);
                 fetched += mHead.Count;
-                
+
                 // Sanity check to make sure we haven't overflowed.  This should not happen.
                 _ASSERTE(fetched <= celt);
             }
@@ -2206,40 +2206,40 @@ private:
                 // data leftover.  Walk the linked-list of arrays copying them into the user's
                 // buffer until we have either exhausted the user's array or the leftover data.
                 unsigned int toCopy = celt - fetched;  // Fill the user's buffer...
-                
+
                 // ...unless that would go past the bounds of the current chunk.
                 if (toCopy + mChunkIndex > mCurr->Count)
                     toCopy = mCurr->Count - mChunkIndex;
-                
+
                 memcpy(handles+fetched, ((StructType*)(mCurr->pData))+mChunkIndex, toCopy*sizeof(StructType));
                 mChunkIndex += toCopy;
                 fetched += toCopy;
             }
         }
-        
+
         if (fetched < celt)
             hr = S_FALSE;
-            
+
         *pceltFetched = fetched;
-        
+
         return hr;
     }
-    
+
 private:
     // Dac variables required for entering/leaving the dac.
     ClrDataAccess *mDac;
     ULONG32 m_instanceAge;
-    
+
     // Handle table walking variables.
     dac_handle_table_map *mMap;
     int mIndex;
     UINT32 mTypeMask;
     int mGenerationFilter;
-    
+
     // Storage variables
     HandleChunk mHead;
     unsigned int mChunkIndex;
-    
+
     // Iterator variables
     HandleChunkHead *mCurr;
     int mIteratorIndex;
@@ -3068,7 +3068,7 @@ public:
         /* [size_is][out] */ BYTE *outBuffer);
 
     COR_ILMETHOD* GetIlMethod(void);
-    
+
     static HRESULT NewFromModule(ClrDataAccess* dac,
                                  Module* module,
                                  mdMethodDef token,
@@ -3575,11 +3575,11 @@ public:
                                  Thread* thread,
                                  ClrDataExceptionState** exception,
                                  IXCLRDataExceptionState** pubException);
-    
+
     PTR_CONTEXT          GetCurrentContextRecord();
     PTR_EXCEPTION_RECORD GetCurrentExceptionRecord();
 
-friend class ClrDataAccess;    
+friend class ClrDataAccess;
 private:
     LONG m_refs;
     ClrDataAccess* m_dac;
@@ -3747,7 +3747,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetNumLocations(
         /* [out] */ ULONG32* numLocs);
-    
+
     virtual HRESULT STDMETHODCALLTYPE GetLocationByIndex(
         /* [in] */ ULONG32 loc,
         /* [out] */ ULONG32* flags,
@@ -3953,7 +3953,7 @@ HRESULT GetServerHeaps(CLRDATA_ADDRESS pGCHeaps[], ICorDebugDataTarget* pTarget)
 // Assume Pentium CPU
 
 #define CCNT_OVERHEAD_32  8
-#define CCNT_OVERHEAD    13 
+#define CCNT_OVERHEAD    13
 
 #pragma warning( disable: 4035 )        /* Don't complain about lack of return value */
 
@@ -3967,7 +3967,7 @@ __asm   _emit   0x31    /* rdtsc */
 __inline unsigned GetCycleCount32 ()  // enough for about 40 seconds
 {
     LIMITED_METHOD_CONTRACT;
-    
+
 __asm   push    EDX
 __asm   _emit   0x0F
 __asm   _emit   0x31    /* rdtsc */
@@ -3984,7 +3984,7 @@ __asm   pop     EDX
 __inline unsigned __int64 GetCycleCount()
 {
     LIMITED_METHOD_CONTRACT;
-    
+
     LARGE_INTEGER qwTmp;
     QueryPerformanceCounter(&qwTmp);
     return qwTmp.QuadPart;

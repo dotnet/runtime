@@ -86,7 +86,7 @@ applies the following rules:
 1. When an argument is marked as containing an assignment using `GTF_ASG`, then we
 force all previous non-constant arguments to be evaluated into temps.  This is very
 conservative, but at this phase of the JIT it is rare to have an assignment subtree
-as part of an argument. 
+as part of an argument.
 2. When an argument is marked as containing a call using the `GTF_CALL` flag, then
 we force that argument and any previous argument that is marked with any of the
 `GTF_ALL_EFFECT` flags into temps.
@@ -131,7 +131,7 @@ Arguments that are marked with `needTmp == true`.
 1. We create an assignment using `gtNewTempAssign`. This assignment replaces
 the original argument in the `gtCallArgs` list.  After we create the assignment
 the argument is marked as `isTmp`.  The new assignment is marked with the
-`GTF_LATE_ARG` flag. 
+`GTF_LATE_ARG` flag.
 2. Arguments that are already marked with `isTmp` are treated similarly as
 above except we don't create an assignment for them.
 3. A `TYP_STRUCT` argument passed by value will have `isTmp` set to true

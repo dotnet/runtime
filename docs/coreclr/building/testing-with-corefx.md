@@ -107,7 +107,7 @@ the tests will be built but not run.
 If using `run-corefx-tests.py`, pass the argument `-no_run_tests`.
 
 After the tests are copied to the remote machine, you want to run them. Use one of the scripts
-[tests\scripts\run-corefx-tests.bat](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.bat) or 
+[tests\scripts\run-corefx-tests.bat](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.bat) or
 [tests\scripts\run-corefx-tests.sh](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.sh)
 to run all the tests (consult the scripts for proper usage). Or, run a single test as described below.
 
@@ -161,7 +161,7 @@ https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/$(MicrosoftPri
 where `MicrosoftPrivateCoreFxNETCoreAppVersion` is defined in `eng\Versions.props`. For example:
 
 ```
-https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview8.19326.15/Linux.arm64/netcoreapp/corefx-test-assets.xml       
+https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview8.19326.15/Linux.arm64/netcoreapp/corefx-test-assets.xml
 ```
 
 This file lists all the published test assets. You can download each one, unpack it, and
@@ -178,5 +178,5 @@ section should be used instead, if possible.
 # CoreFX test exclusions
 
 The CoreCLR CI system runs CoreFX tests against a just-built CoreCLR. If tests need to be
-disabled due to transitory breaking change, for instance, update the 
+disabled due to transitory breaking change, for instance, update the
 [test exclusion file](https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp).

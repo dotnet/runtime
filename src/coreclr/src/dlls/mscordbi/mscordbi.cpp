@@ -6,7 +6,7 @@
 //
 // COM+ Debugging Services -- Debugger Interface DLL
 //
-// Dll* routines for entry points, and support for COM framework.  
+// Dll* routines for entry points, and support for COM framework.
 //
 //*****************************************************************************
 #include "stdafx.h"

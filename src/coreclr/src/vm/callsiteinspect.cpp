@@ -412,7 +412,7 @@ void CallsiteInspect::PropagateOutParametersBackToCallsite(
 
         // Propagate the return value only if the call is not a constructor call
         // and the return type is non-void
-        if ((flags & CallsiteDetails::Ctor) == 0 
+        if ((flags & CallsiteDetails::Ctor) == 0
             && pSig->GetReturnType() != ELEMENT_TYPE_VOID)
         {
             if (argit.HasRetBuffArg())

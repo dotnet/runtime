@@ -24,9 +24,9 @@
 // Otherwise (eg. we're being used from a tool like SOS) there isn't much
 // we can rely on that is available everywhere.  In
 // several other tools we just take the recourse of disabling asserts,
-// we'll do the same here.  
+// we'll do the same here.
 // Ideally we'd have a collection of common utilities available evererywhere.
-#define _ASSERTE_SAFEMATH(a) 
+#define _ASSERTE_SAFEMATH(a)
 #endif
 #endif
 
@@ -159,12 +159,12 @@ inline bool DoubleFitsInIntType(double val)
 // http://msdn.microsoft.com/library/en-us/dncode/html/secure01142004.asp
 //
 // Modified to track an overflow bit instead of throwing exceptions.  In most
-// cases the Visual C++ optimizer (Whidbey beta1 - v14.00.40607) is able to 
+// cases the Visual C++ optimizer (Whidbey beta1 - v14.00.40607) is able to
 // optimize the bool away completely.
 // Note that using a sentinal value (IntMax for example) to represent overflow
 // actually results in poorer code-gen.
 //
-// This has also been simplified significantly to remove functionality we 
+// This has also been simplified significantly to remove functionality we
 // don't currently want (division, implicit conversions, many additional operators etc.)
 //
 // Example:
@@ -177,19 +177,19 @@ inline bool DoubleFitsInIntType(double val)
 //   or:
 //      UINT32 tmp, bufSize;
 //      if( !ClrSafeInt<UINT32>::multiply( elementCount, sizeof(void*), tmp ) ||
-//              !ClrSafeInt<UINT32>::addition( tmp, headerSize, bufSize ) ) 
+//              !ClrSafeInt<UINT32>::addition( tmp, headerSize, bufSize ) )
 //      { <overflow-error> }
 //      else { use bufSize }
-//      
+//
 //-----------------------------------------------------------------------------
 // TODO: Any way to prevent unintended instantiations?  This is only designed to
-//  work with unsigned integral types (signed types will work but we probably 
+//  work with unsigned integral types (signed types will work but we probably
 //  don't need signed support).
 template<typename T> class ClrSafeInt
 {
 public:
     // Default constructor - 0 value by default
-    ClrSafeInt() : 
+    ClrSafeInt() :
         m_value(0),
         m_overflow(false)
         COMMA_INDEBUG( m_checkedOverflow( false ) )
@@ -197,7 +197,7 @@ public:
     }
 
     // Value constructor
-    // This is explicit because otherwise it would be harder to 
+    // This is explicit because otherwise it would be harder to
     // differentiate between checked and unchecked usage of an operator.
     // I.e. si + x + y  vs. si + ( x + y )
     //
@@ -207,7 +207,7 @@ public:
     // be used:
     //      if (val.IsOverflow())
     //          val = ClrSafeInt<T>(some_value);
-    explicit ClrSafeInt( T v ) : 
+    explicit ClrSafeInt( T v ) :
         m_value(v),
         m_overflow(false)
         COMMA_INDEBUG( m_checkedOverflow( true ) )
@@ -248,20 +248,20 @@ public:
 
     // Note: compiler-generated copy constructor and assignment operator
     // are correct for our purposes.
-    
-    // Note: The MS compiler will sometimes silently perform value-destroying 
-    // conversions when calling the operators below.  
+
+    // Note: The MS compiler will sometimes silently perform value-destroying
+    // conversions when calling the operators below.
     // Eg. "ClrSafeInt<unsigned> s(0); s += int(-1);" will result in s
     // having the value 0xffffffff without generating a compile-time warning.
     // Narrowing conversions are generally level 4 warnings so may or may not
     // be visible.
     //
-    // In the original SafeInt class, all operators have an 
-    // additional overload that takes an arbitrary type U and then safe 
+    // In the original SafeInt class, all operators have an
+    // additional overload that takes an arbitrary type U and then safe
     // conversions are performed (resulting in overflow whenever the value
     // cannot be preserved).
-    // We could do the same thing, but currently don't because: 
-    //  - we don't believe there are common cases where this would result in a 
+    // We could do the same thing, but currently don't because:
+    //  - we don't believe there are common cases where this would result in a
     //    security hole.
     //  - the extra complexity isn't worth the benefits
     //  - it would prevent compiler warnings in the cases we do get warnings for.
@@ -277,8 +277,8 @@ public:
         return m_overflow;
     }
 
-    // Get the value of this integer.  
-    // Must only be called when IsOverflow()==false.  If this is called 
+    // Get the value of this integer.
+    // Must only be called when IsOverflow()==false.  If this is called
     // on overflow we'll assert in Debug and return 0 in release.
     inline T Value() const
     {
@@ -287,36 +287,36 @@ public:
         return m_value;
     }
 
-    // force the value into the overflow state.  
+    // force the value into the overflow state.
     inline void SetOverflow()
     {
         INDEBUG( this->m_checkedOverflow = false; )
         this->m_overflow = true;
         // incase someone manages to call Value in release mode - should be optimized out
-        this->m_value = 0;      
+        this->m_value = 0;
     }
 
-    
+
     //
     // OPERATORS
-    // 
+    //
 
     // Addition and multiplication.  Only permitted when both sides are explicitly
-    // wrapped inside of a ClrSafeInt and when the types match exactly.  
+    // wrapped inside of a ClrSafeInt and when the types match exactly.
     // If we permitted a RHS of type 'T', then there would be differences
-    // in correctness between mathematically equivalent expressions such as 
+    // in correctness between mathematically equivalent expressions such as
     // "si + x + y" and "si + ( x + y )".  Unfortunately, not permitting this
     // makes expressions involving constants tedius and ugly since the constants
-    // must be wrapped in ClrSafeInt instances.  If we become confident that 
+    // must be wrapped in ClrSafeInt instances.  If we become confident that
     // our tools (PreFast) will catch all integer overflows, then we can probably
     // safely add this.
     inline ClrSafeInt<T> operator +(ClrSafeInt<T> rhs) const
     {
         ClrSafeInt<T> result;       // value is initialized to 0
         if( this->m_overflow ||
-            rhs.m_overflow || 
+            rhs.m_overflow ||
             !addition( this->m_value, rhs.m_value, result.m_value ) )
-        {           
+        {
             result.m_overflow = true;
         }
 
@@ -327,9 +327,9 @@ public:
     {
         ClrSafeInt<T> result;       // value is initialized to 0
         if( this->m_overflow ||
-            rhs.m_overflow || 
+            rhs.m_overflow ||
             !subtraction( this->m_value, rhs.m_value, result.m_value ) )
-        {           
+        {
             result.m_overflow = true;
         }
 
@@ -340,12 +340,12 @@ public:
     {
         ClrSafeInt<T> result;       // value is initialized to 0
         if( this->m_overflow ||
-            rhs.m_overflow || 
+            rhs.m_overflow ||
             !multiply( this->m_value, rhs.m_value, result.m_value ) )
         {
             result.m_overflow = true;
         }
-        
+
         return result;
     }
 
@@ -355,7 +355,7 @@ public:
     inline ClrSafeInt<T>& operator +=(ClrSafeInt<T> rhs)
     {
         INDEBUG( this->m_checkedOverflow = false; )
-        if( this->m_overflow || 
+        if( this->m_overflow ||
             rhs.m_overflow ||
             !ClrSafeInt<T>::addition( this->m_value, rhs.m_value, this->m_value ) )
         {
@@ -378,7 +378,7 @@ public:
     inline ClrSafeInt<T>& operator *=(ClrSafeInt<T> rhs)
     {
         INDEBUG( this->m_checkedOverflow = false; )
-        if( this->m_overflow || 
+        if( this->m_overflow ||
             rhs.m_overflow ||
             !ClrSafeInt<T>::multiply( this->m_value, rhs.m_value, this->m_value ) )
         {
@@ -401,9 +401,9 @@ public:
 
     //
     // STATIC HELPER METHODS
-    //these compile down to something as efficient as macros and allow run-time testing 
+    //these compile down to something as efficient as macros and allow run-time testing
     //of type by the developer
-    // 
+    //
 
     template <typename U> static bool IsSigned(U)
     {
@@ -455,7 +455,7 @@ public:
     {
         _ASSERTE_SAFEMATH( IsPowerOf2( alignment ) );
         *this += (alignment - 1);
-        if( !this->m_overflow ) 
+        if( !this->m_overflow )
         {
             m_value &= ~(alignment - 1);
         }
@@ -465,7 +465,7 @@ public:
     // Arithmetic implementation functions
     //
 
-    //note - this looks complex, but most of the conditionals 
+    //note - this looks complex, but most of the conditionals
     //are constant and optimize away
     //for example, a signed 64-bit check collapses to:
 /*
@@ -541,11 +541,11 @@ public:
                 {
                     //mixed sign - this case is difficult
                     //test case is lhs * rhs < MinInt => overflow
-                    //if lhs < 0 (implies rhs > 0), 
+                    //if lhs < 0 (implies rhs > 0),
                     //lhs < MinInt/rhs is the correct test
-                    //else if lhs > 0 
+                    //else if lhs > 0
                     //rhs < MinInt/lhs is the correct test
-                    //avoid dividing MinInt by a negative number, 
+                    //avoid dividing MinInt by a negative number,
                     //because MinInt/-1 is a corner case
 
                     if(lhs < 0)
@@ -592,7 +592,7 @@ public:
 
                 //upper 33 bits must be the same
                 //most common case is likely that both are positive - test first
-                if( (tmp & 0xffffffff80000000LL) == 0 || 
+                if( (tmp & 0xffffffff80000000LL) == 0 ||
                     (tmp & 0xffffffff80000000LL) == 0xffffffff80000000LL)
                 {
                     //this is OK
@@ -602,7 +602,7 @@ public:
 
                 //overflow
                 return false;
-                
+
             }
             else
             {
@@ -684,14 +684,14 @@ public:
         if(IsSigned())
         {
             //test for +/- combo
-            if(!IsMixedSign(lhs, rhs)) 
+            if(!IsMixedSign(lhs, rhs))
             {
                 //either two negatives, or 2 positives
 #ifdef __GNUC__
                 // Workaround for GCC warning: "comparison is always
                 // false due to limited range of data type."
                 if (!(rhs == 0 || rhs > 0))
-#else                
+#else
                 if(rhs < 0)
 #endif // __GNUC__ else
                 {
@@ -721,7 +721,7 @@ public:
             if((T)(MaxInt() - lhs) < rhs)
             {
                 return false;
-                
+
             }
             result = lhs + rhs;
             return true;
@@ -766,7 +766,7 @@ public:
                     //or      -X < MinInt() + Y
                     //we do not have the same issues because abs(MinInt()) > MaxInt()
                     //tmp should be LTE lhs
-                    
+
                     //if(lhs < (T)(MinInt() + rhs)) // old test - leave in for clarity
                     if(tmp > lhs)
                     {
@@ -775,7 +775,7 @@ public:
                     //fall through to return value
                 }
             }
-            // else 
+            // else
             //both negative, or both positive
             //no possible overflow
             result = tmp;
@@ -809,10 +809,10 @@ private:
             testPow = testPow << 1;           // advance to next power of 2
             if( testPow <= 0 )
             {
-                return false;       // overflow 
+                return false;       // overflow
             }
         }
-        
+
         return( testPow == x );
     }
 
@@ -826,8 +826,8 @@ private:
     // True if overflow has been reached.  Once this is set, it cannot be cleared.
     bool m_overflow;
 
-    // In debug builds we verify that our caller checked the overflow bit before 
-    // accessing the value.  This flag is cleared on initialization, and whenever 
+    // In debug builds we verify that our caller checked the overflow bit before
+    // accessing the value.  This flag is cleared on initialization, and whenever
     // m_value or m_overflow changes, and set only when IsOverflow
     // is called.
     INDEBUG( mutable bool m_checkedOverflow; )
@@ -846,14 +846,14 @@ ClrSafeInt<T> AsClrSafeInt(ClrSafeInt<T> t)
     return t;
 }
 
-// Convenience safe-integer types.  Currently these are the only types 
+// Convenience safe-integer types.  Currently these are the only types
 // we are using ClrSafeInt with.  We may want to add others.
 // These type names are based on our standardized names in clrtypes.h
 typedef ClrSafeInt<UINT8> S_UINT8;
 typedef ClrSafeInt<UINT16> S_UINT16;
 //typedef ClrSafeInt<UINT32> S_UINT32;
 #define S_UINT32 ClrSafeInt<UINT32>
-typedef ClrSafeInt<UINT64> S_UINT64; 
+typedef ClrSafeInt<UINT64> S_UINT64;
 typedef ClrSafeInt<SIZE_T> S_SIZE_T;
 
  #endif // SAFEMATH_H_

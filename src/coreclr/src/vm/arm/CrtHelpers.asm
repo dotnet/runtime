@@ -27,12 +27,12 @@
 ; off optimization and it ends up being a wasteful implementation.
 ;
 ; Hence these assembly helpers.
-; 
+;
 ;EXTERN_C void __stdcall JIT_MemSet(void* _dest, int c, size_t count)
         LEAF_ENTRY JIT_MemSet
 
 ;
-;       The memset function sets the first count bytes of 
+;       The memset function sets the first count bytes of
 ;       dest to the character c (r1).
 ;
 ; Doesn't return a value
@@ -112,7 +112,7 @@ AlignHalf
 
         tst     r0, #3                                  ; skip directly to aligned if already aligned
         beq     DestAligned                             ; if 0, we're already aligned; go large
-        
+
 ByteLoop1
         subs    r2, r2, #1                              ; decrement byte counter
         ldrb    r3, [r1], #1                            ; copy one byte
@@ -129,12 +129,12 @@ DestAligned
         addne   r2, r2, #8                              ; if not, fix the byte counter (+= 8)
         bne     ByteLoop2                               ; and do all the rest with bytes
 
-QwordLoop        
+QwordLoop
         subs    r2, r2, #8                              ; decrement byte counter by 8
         ldm     r1!, {r3,r12}                           ; copy one qword
         stm     r0!, {r3,r12}                           ;
         bge     QwordLoop                               ; loop until the byte counter goes negative
-        
+
 AlignedFinished
         adds    r2, r2, #4				; add 4 to recover a potential >= 4-byte tail
         blt     AlignedFinished2
@@ -146,7 +146,7 @@ AlignedFinished2
 
 MaybeExitMemCpy
         beq     ExitMemCpy                              ; the remaining count
-        
+
 ByteLoop2
         subs    r2, r2, #1                              ; decrement the counter
         ldrb    r3, [r1], #1                            ; copy one byte

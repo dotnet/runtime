@@ -4,7 +4,7 @@
 //
 
 
-// 
+//
 // This file defines tables for references between VM and mscorlib.
 //
 // When compiling crossgen, this file is compiled with the FEATURE_XXX define settings matching the target.
@@ -223,10 +223,10 @@ enum _gsigc {
 //
 // There are 3 variations of the macros for Fields, Static Methods and Instance Methods.
 //
-// Each of them has 2 flavors: one for the fully baked signatures, and the other 
+// Each of them has 2 flavors: one for the fully baked signatures, and the other
 // for the signatures with unresolved type references
 //
-// The signatures with unresolved type references are marked with negative size, 
+// The signatures with unresolved type references are marked with negative size,
 // and the pointer to them is non-const because of it will be overwritten with
 // the pointer to the resolved signature at runtime.
 //
@@ -286,7 +286,7 @@ enum _gsigc {
 //
 // Make sure DEFINE_METASIG is used for signatures that do not reference other types
 //
-// counts number of type references in the signature and C_ASSERTs that 
+// counts number of type references in the signature and C_ASSERTs that
 // it is zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)            body
 #define DEFINE_METASIG_T(body)
@@ -299,10 +299,10 @@ enum _gsigc {
 #include "metasig.h"
 
 //
-// Make sure DEFINE_METASIG_T is used only for signatures that reference 
+// Make sure DEFINE_METASIG_T is used only for signatures that reference
 // other types.
 //
-// counts number of type references in the signature and C_ASSERTs that 
+// counts number of type references in the signature and C_ASSERTs that
 // it is non zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)
 #define DEFINE_METASIG_T(body)          body
@@ -340,11 +340,11 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
     #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)   { ns, c },
     #include "cortypeinfo.h"
     #undef TYPEINFO
-    
+
     #define DEFINE_CLASS(i,n,s)        { g_ ## n ## NS, # s },
     #include "namespace.h"
     #include "mscorlib.h"
-    
+
     // Include all exception types here that are defined in mscorlib.  Omit exceptions defined elsewhere.
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)

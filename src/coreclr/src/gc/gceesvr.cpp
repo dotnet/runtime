@@ -18,7 +18,7 @@
 #define SERVER_GC 1
 
 
-namespace SVR { 
+namespace SVR {
 #include "gcimpl.h"
 #include "gcee.cpp"
 }

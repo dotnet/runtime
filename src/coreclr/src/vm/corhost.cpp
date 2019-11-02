@@ -105,7 +105,7 @@ STDMETHODIMP CorHost2::Start()
 
     // Ensure that only one thread at a time gets in here
     DangerousNonHostedSpinLockHolder lockHolder(&lockOnlyOneToInvokeStart);
-        
+
     // To provide the complete semantic of Start/Stop in context of a given host, we check m_fStarted and let
     // them invoke the Start only if they have not already. Likewise, they can invoke the Stop method
     // only if they have invoked Start prior to that.
@@ -138,7 +138,7 @@ STDMETHODIMP CorHost2::Start()
         // choice. Now, CorBindToRuntimeEx results in CorHost2::CreateObject being invoked
         // that will set runtime hosted flag "g_fHostConfig |= CLRHOSTED".
         //
-        // For the case when managed code started without CLR hosting and MC++ does a 
+        // For the case when managed code started without CLR hosting and MC++ does a
         // CorBindToRuntimeEx, setting the CLR hosted flag is incorrect.
         //
         // Thus, before we attempt to start the runtime, we save the status of it being
@@ -160,7 +160,7 @@ STDMETHODIMP CorHost2::Start()
             // to repeatedly invoke Stop method (without corresponding Start method invocations).
             // This is to support scenarios like that of Office where they need to bring down
             // the CLR at any cost.
-            // 
+            //
             // So, if you want to do that, just make sure you are the first host to load the
             // specific version of CLR in memory AND start it.
             m_fFirstToLoadCLR = TRUE;
@@ -274,8 +274,8 @@ HRESULT CorHost2::GetCurrentAppDomainId(DWORD *pdwAppDomainId)
     if (!IsRuntimeActive())
     {
         return HOST_E_CLRNOTAVAILABLE;
-    }   
-    
+    }
+
     HRESULT hr = S_OK;
 
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -389,8 +389,8 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     if (!IsRuntimeActive())
     {
         return HOST_E_CLRNOTAVAILABLE;
-    }   
-   
+    }
+
     if(!pwzAssemblyPath)
         return E_POINTER;
 
@@ -492,8 +492,8 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
     if (!IsRuntimeActive())
     {
         return HOST_E_CLRNOTAVAILABLE;
-    }   
-   
+    }
+
     if(! (pwzAssemblyPath && pwzTypeName && pwzMethodName) )
         return E_POINTER;
 
@@ -590,7 +590,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     if (!IsRuntimeActive())
     {
         return HOST_E_CLRNOTAVAILABLE;
-    }       
+    }
 
     // Moved this here since no point validating the pointer
     // if the basic checks [above] fail
@@ -632,10 +632,10 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
 HRESULT CorHost2::_CreateAppDomain(
     LPCWSTR wszFriendlyName,
     DWORD  dwFlags,
-    LPCWSTR wszAppDomainManagerAssemblyName, 
-    LPCWSTR wszAppDomainManagerTypeName, 
-    int nProperties, 
-    LPCWSTR* pPropertyNames, 
+    LPCWSTR wszAppDomainManagerAssemblyName,
+    LPCWSTR wszAppDomainManagerTypeName,
+    int nProperties,
+    LPCWSTR* pPropertyNames,
     LPCWSTR* pPropertyValues,
     DWORD* pAppDomainID)
 {
@@ -796,8 +796,8 @@ HRESULT CorHost2::_CreateAppDomain(
 
 HRESULT CorHost2::_CreateDelegate(
     DWORD appDomainID,
-    LPCWSTR wszAssemblyName,     
-    LPCWSTR wszClassName,     
+    LPCWSTR wszAssemblyName,
+    LPCWSTR wszClassName,
     LPCWSTR wszMethodName,
     INT_PTR* fnPtr)
 {
@@ -822,13 +822,13 @@ HRESULT CorHost2::_CreateDelegate(
 
     if(wszAssemblyName == NULL)
         return E_INVALIDARG;
-    
+
     if(wszClassName == NULL)
         return E_INVALIDARG;
 
     if(wszMethodName == NULL)
         return E_INVALIDARG;
-    
+
     // This is currently supported in default domain only
     if (appDomainID != DefaultADID)
         return HOST_E_INVALIDOPERATION;
@@ -851,8 +851,8 @@ HRESULT CorHost2::_CreateDelegate(
 
         TypeHandle th=pAsm->GetLoader()->LoadTypeByNameThrowing(pAsm,NULL,szClassName);
         MethodDesc* pMD=NULL;
-    
-        if (!th.IsTypeDesc()) 
+
+        if (!th.IsTypeDesc())
         {
             pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), szMethodName, MemberLoader::FM_Unique);
             if (pMD == NULL)
@@ -867,7 +867,7 @@ HRESULT CorHost2::_CreateDelegate(
             }
         }
 
-        if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables()) 
+        if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables())
             ThrowHR(COR_E_MISSINGMETHOD);
 
         UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
@@ -884,11 +884,11 @@ HRESULT CorHost2::_CreateDelegate(
 HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR wszFriendlyName,
     DWORD  dwFlags,
-    LPCWSTR wszAppDomainManagerAssemblyName, 
-    LPCWSTR wszAppDomainManagerTypeName, 
-    int nProperties, 
-    LPCWSTR* pPropertyNames, 
-    LPCWSTR* pPropertyValues, 
+    LPCWSTR wszAppDomainManagerAssemblyName,
+    LPCWSTR wszAppDomainManagerTypeName,
+    int nProperties,
+    LPCWSTR* pPropertyNames,
+    LPCWSTR* pPropertyValues,
     DWORD* pAppDomainID)
 {
     WRAPPER_NO_CONTRACT;
@@ -896,18 +896,18 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     return _CreateAppDomain(
         wszFriendlyName,
         dwFlags,
-        wszAppDomainManagerAssemblyName, 
-        wszAppDomainManagerTypeName, 
-        nProperties, 
-        pPropertyNames, 
+        wszAppDomainManagerAssemblyName,
+        wszAppDomainManagerTypeName,
+        nProperties,
+        pPropertyNames,
         pPropertyValues,
         pAppDomainID);
 }
 
 HRESULT CorHost2::CreateDelegate(
     DWORD appDomainID,
-    LPCWSTR wszAssemblyName,     
-    LPCWSTR wszClassName,     
+    LPCWSTR wszAssemblyName,
+    LPCWSTR wszClassName,
     LPCWSTR wszMethodName,
     INT_PTR* fnPtr)
 {
@@ -1013,7 +1013,7 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
 
     HRESULT hr=S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
-    
+
     if (!m_fFirstToLoadCLR)
     {
         _ASSERTE(!"Not reachable");
@@ -1477,8 +1477,8 @@ void **CExecutionEngine::CheckThreadStateNoCreate(DWORD slot
     return pTlsInfo?pTlsInfo->data:NULL;
 }
 
-// Note: Sampling profilers also use this function to initialize TLS for a unmanaged 
-// sampling thread so that initialization can be done in advance to avoid deadlocks. 
+// Note: Sampling profilers also use this function to initialize TLS for a unmanaged
+// sampling thread so that initialization can be done in advance to avoid deadlocks.
 // See ProfToEEInterfaceImpl::InitializeCurrentThread for more details.
 void CExecutionEngine::SetupTLSForThread(Thread *pThread)
 {
@@ -1503,7 +1503,7 @@ void CExecutionEngine::SetupTLSForThread(Thread *pThread)
     ClrDebugState *pDebugState = ::GetClrDebugState();
 
     if (pThread)
-        pThread->m_pClrDebugState = pDebugState; 
+        pThread->m_pClrDebugState = pDebugState;
 #endif
 }
 
@@ -2095,25 +2095,25 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
 
    // Get the UEF installation details - we will use these to validate
    // that the calls to ClrVirtualProtect are not going to affect the UEF.
-   // 
-   // The OS UEF invocation mechanism was updated. When a UEF is setup,the OS captures 
+   //
+   // The OS UEF invocation mechanism was updated. When a UEF is setup,the OS captures
    // the following details about it:
    //  1) Protection of the pages in which the UEF lives
    //  2) The size of the region in which the UEF lives
    //  3) The region's Allocation Base
    //
-   //  The OS verifies details surrounding the UEF before invocation.  For security reasons 
+   //  The OS verifies details surrounding the UEF before invocation.  For security reasons
    //  the page protection cannot change between SetUnhandledExceptionFilter and invocation.
    //
    // Prior to this change, the UEF lived in a common section of code_Seg, along with
    // JIT_PatchedCode. Thus, their pages have the same protection, they live
    //  in the same region (and thus, its size is the same).
    //
-   // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1 and InitJitHelpers2, 
+   // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1 and InitJitHelpers2,
    // they perform some optimizations that result in the memory page protection being changed. When
    // the UEF is to be invoked, the OS does the check on the UEF's cached details against the current
    // memory pages. This check used to fail when on 64bit retail builds when JIT_PatchedCode was
-   // aligned after the UEF with a different memory page protection (post the optimizations by InitJitHelpers). 
+   // aligned after the UEF with a different memory page protection (post the optimizations by InitJitHelpers).
    // Thus, the UEF was never invoked.
    //
    // To circumvent this, we put the UEF in its own section in the code segment so that any modifications
@@ -2121,8 +2121,8 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
    // using the "#pragma code_seg" directives.
    //
    // Below, we double check that:
-   // 
-   // 1) the address being protected does not lie in the region of of the UEF. 
+   //
+   // 1) the address being protected does not lie in the region of of the UEF.
    // 2) the section after UEF is not having the same memory protection as UEF section.
    //
    // We assert if either of the two conditions above are true.
@@ -2160,18 +2160,18 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + GetOsPageSize() - 1)/GetOsPageSize());
 
                 BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (GetOsPageSize() * dwUEFSectionPageCount);
-                
+
                 // Ensure that the section following us is having different memory protection
                 MEMORY_BASIC_INFORMATION nextSectionInfo;
                 _ASSERTE(ClrVirtualQuery(pAddressOfFollowingSection, &nextSectionInfo, sizeof(nextSectionInfo)) != 0);
                 _ASSERTE(nextSectionInfo.Protect != uefInfo.Protect);
-                
+
                 // save the memory protection details
                 s_dwProtection = uefInfo.Protect;
 
                 // Get the end of the UEF section
                 BYTE* pEndOfUEFSectionBoundary = pAddressOfFollowingSection - 1;
-                
+
                 // Set the end of UEF section boundary
                 FastInterlockExchangePointer(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
             }
@@ -2193,7 +2193,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
 
             void* pEndOfRangeAddr = static_cast<BYTE*>(lpAddress)+dwSize-1;
 
-            _ASSERTE_MSG(((pEndOfRangeAddr < s_pStartOfUEFSection.Load()) || (lpAddress > s_pEndOfUEFSectionBoundary.Load())), 
+            _ASSERTE_MSG(((pEndOfRangeAddr < s_pStartOfUEFSection.Load()) || (lpAddress > s_pEndOfUEFSectionBoundary.Load())),
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
@@ -2314,8 +2314,8 @@ HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName
 
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 
-HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName, 
-                                                      LPCWSTR wszTypeName, 
+HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
+                                                      LPCWSTR wszTypeName,
                                                       LPCWSTR wszCodeBase,
                                                       IActivationFactory ** factory)
 {

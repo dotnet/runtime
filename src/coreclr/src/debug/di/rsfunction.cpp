@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: rsfunction.cpp
-// 
+//
 
 //
 //*****************************************************************************
@@ -21,13 +21,13 @@
 
 //-----------------------------------------------------------------------------
 // Constructor for CordbFunction class.
-// This represents an IL Function in the debuggee. 
-// CordbFunction is 1:1 with IL method bodies. 
+// This represents an IL Function in the debuggee.
+// CordbFunction is 1:1 with IL method bodies.
 //
 // Parameters:
 //   m - module containing this function. All functions live in a single module.
 //   funcMetadataToken - the metadata token for this function (scoped to the module).
-//   enCVersion - Enc Version number of this function (in sync with the module's 
+//   enCVersion - Enc Version number of this function (in sync with the module's
 //     EnC version). Each edit to a function means a whole new IL method body,
 //     and since CordbFunction is 1:1 with IL, that means a new CordbFunction instance.
 //-----------------------------------------------------------------------------
@@ -37,7 +37,7 @@ CordbFunction::CordbFunction(CordbModule * m,
   : CordbBase(m->GetProcess(), funcMetadataToken, enumCordbFunction), m_pModule(m), m_pClass(NULL),
     m_pILCode(NULL),
     m_nativeCode(NULL),
-    m_MDToken(funcMetadataToken),    
+    m_MDToken(funcMetadataToken),
     m_dwEnCVersionNumber(enCVersion),
     m_pPrevVersion(NULL),
     m_fIsNativeImpl(kUnknownImpl),
@@ -67,7 +67,7 @@ CordbFunction::CordbFunction(CordbModule * m,
 
 //-----------------------------------------------------------------------------
 // CordbFunction destructor
-// All external resources, including references counts, should have been 
+// All external resources, including references counts, should have been
 // released in Neuter(), so this should literally just delete memory or
 // or check that the object is already dead.
 //-----------------------------------------------------------------------------
@@ -84,10 +84,10 @@ CordbFunction::~CordbFunction()
 
 //-----------------------------------------------------------------------------
 // CordbFunction::Neuter
-//    Neuter releases all of the resources this object holds. CordbFunction 
+//    Neuter releases all of the resources this object holds. CordbFunction
 //    lives in a CordbModule, so Module neuter will neuter this.
 //    See CordbBase::Neuter for further semantics.
-// 
+//
 //-----------------------------------------------------------------------------
 void CordbFunction::Neuter()
 {
@@ -153,9 +153,9 @@ HRESULT CordbFunction::QueryInterface(REFIID id, void **pInterface)
 
 //-----------------------------------------------------------------------------
 // CordbFunction::GetModule
-// Public method (implements ICorDebugFunction::GetModule). 
-// Get the ICorDebugModule (external representation of a module) that this 
-// Function is contained in. All functions live in exactly 1 module. 
+// Public method (implements ICorDebugFunction::GetModule).
+// Get the ICorDebugModule (external representation of a module) that this
+// Function is contained in. All functions live in exactly 1 module.
 // This is related to the 'CordbModule* GetModule()' method which returns the
 // internal module representation for the containing module.
 //
@@ -183,7 +183,7 @@ HRESULT CordbFunction::GetModule(ICorDebugModule **ppModule)
 //-----------------------------------------------------------------------------
 // CordbFunction::GetClass
 // Public function to get ICorDebugClass that this function is in.
-// 
+//
 // Parameters:
 //     ppClass - out parameter holding which class this function lives in.
 //
@@ -229,8 +229,8 @@ LExit:
 // CordbFunction::GetToken
 // Public function to get the metadata token for this function.
 // This is a MethodDef, which is scoped to a module.
-// 
-// Parameters: 
+//
+// Parameters:
 //   pMemberDef - out parameter to hold token.
 //
 // Return values:
@@ -253,7 +253,7 @@ HRESULT CordbFunction::GetToken(mdMethodDef *pMemberDef)
 
 //-----------------------------------------------------------------------------
 // CordbFunction::GetILCode
-//  Public function to get an ICorDebugCode object for the IL code in 
+//  Public function to get an ICorDebugCode object for the IL code in
 //  this function.
 //  If we EnC, we get a new ICorDebugFunction, so the IL code & function
 //  should be 1:1.
@@ -290,18 +290,18 @@ HRESULT CordbFunction::GetILCode(ICorDebugCode ** ppCode)
 //-----------------------------------------------------------------------------
 // CordbFunction::GetNativeCode
 // Public API (ICorDebugFunction::GetNativeCode) to get the native code for
-// this function. 
+// this function.
 // Note that this gets a pretty much random version of the native code when the
 // function is a generic method that gets JITted more than once, e.g. for generics.
 // Use EnumerateNativeCode instead in that case.
 //
 // Parameters:
-//   ppCode - out parameter yeilding the native code object. 
+//   ppCode - out parameter yeilding the native code object.
 //
 // Returns:
 //   S_OK iff *ppCode is set.
 //   CORDBG_E_CODE_NOT_AVAILABLE if there is no native code. This is common
-//    if the function is not yet jitted. 
+//    if the function is not yet jitted.
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::GetNativeCode(ICorDebugCode **ppCode)
 {
@@ -319,7 +319,7 @@ HRESULT CordbFunction::GetNativeCode(ICorDebugCode **ppCode)
 
     // Generic methods may be jitted multiple times for different native instantiations,
     // and so have 1:n relationship between IL:Native. CordbFunction is 1:1 with IL,
-    // CordbNativeCode is 1:1 with native. 
+    // CordbNativeCode is 1:1 with native.
     // The interface here only lets us return 1 CordbNativeCode object, so we are
     // returning an arbitrary one
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
@@ -343,7 +343,7 @@ HRESULT CordbFunction::GetNativeCode(ICorDebugCode **ppCode)
 
 //-----------------------------------------------------------------------------
 // CordbFunction::GetCode
-// Internal method to get the IL code for this function. Each CordbFunction is 
+// Internal method to get the IL code for this function. Each CordbFunction is
 //  1:1 with IL, so there is a unique IL Code object to hand out.
 //
 // Parameters:
@@ -393,14 +393,14 @@ HRESULT CordbFunction::GetILCode(CordbILCode ** ppCode)
 //-----------------------------------------------------------------------------
 // CordbFunction::CreateBreakpoint
 //   Implements ICorDebugFunction::CreateBreakpoint
-//   Creates a breakpoint at IL offset 0 (which is after the prolog) of the function. 
-//   The function does not need to be jitted yet. 
-// 
+//   Creates a breakpoint at IL offset 0 (which is after the prolog) of the function.
+//   The function does not need to be jitted yet.
+//
 // Parameters:
 //    ppBreakpoint - out parameter for newly created breakpoint object.
 //
 // Return:
-//   S_OK - on success. Else error. 
+//   S_OK - on success. Else error.
 //----------------------------------------------------------------------------
 HRESULT CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint)
 {
@@ -417,7 +417,7 @@ HRESULT CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoi
     hr = GetILCode(&pCode);
 
     if (SUCCEEDED(hr))
-    {        
+    {
         hr = pCode->CreateBreakpoint(0, ppBreakpoint);
     }
 
@@ -441,7 +441,7 @@ void CordbFunction::MakeOld()
 
 //-----------------------------------------------------------------------------
 // CordbFunction::GetLocalVarSigToken
-// Public function (implements ICorDebugFunction::GetLocalVarSigToken) to 
+// Public function (implements ICorDebugFunction::GetLocalVarSigToken) to
 // get signature token.
 //
 // Parameters:
@@ -472,12 +472,12 @@ HRESULT CordbFunction::GetLocalVarSigToken(mdSignature *pmdSig)
 //-----------------------------------------------------------------------------
 // CordbFunction::GetCurrentVersionNumber
 //  Public method for ICorDebugFunction::GetCurrentVersionNumber.
-//   Gets the most recent (highest) EnC version number of this Function. 
+//   Gets the most recent (highest) EnC version number of this Function.
 //   See CordbModule for EnC version number semantics.
-// 
+//
 // Parameters
 //   pnCurrentVersion - out parameter to hold the version number.
-// 
+//
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
@@ -510,12 +510,12 @@ HRESULT CordbFunction::GetCurrentVersionNumber(ULONG32 *pnCurrentVersion)
 //-----------------------------------------------------------------------------
 // CordbFunction::GetVersionNumber
 //  Public method for ICorDebugFunction2::GetVersionNumber.
-//   Gets the EnC version number of this specific Function instance. 
+//   Gets the EnC version number of this specific Function instance.
 //   See CordbModule for EnC version number semantics.
-// 
+//
 // Parameters
 //   pnVersion - out parameter to hold the version number.
-// 
+//
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
@@ -537,7 +537,7 @@ HRESULT CordbFunction::GetVersionNumber(ULONG32 *pnVersion)
     _ASSERTE(*pnVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
 #else
     _ASSERTE(*pnVersion == CorDB_DEFAULT_ENC_FUNCTION_VERSION);
-#endif 
+#endif
 
     return S_OK;
 }
@@ -545,12 +545,12 @@ HRESULT CordbFunction::GetVersionNumber(ULONG32 *pnVersion)
 //-----------------------------------------------------------------------------
 // CordbFunction::GetVersionNumber
 //  Public method for ICorDebugFunction2::GetVersionNumber.
-//   Gets the EnC version number of this specific Function instance. 
+//   Gets the EnC version number of this specific Function instance.
 //   See CordbModule for EnC version number semantics.
-// 
+//
 // Parameters
 //   pnVersion - out parameter to hold the version number.
-// 
+//
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
@@ -579,10 +579,10 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
 // CordbFunction::CreateNativeBreakpoint
 //  Public method for ICorDebugFunction4::CreateNativeBreakpoint.
 //   Sets a breakpoint at native offset 0 for all native code versions of a method.
-// 
+//
 // Parameters
 //   pnVersion - out parameter to hold the version number.
-// 
+//
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
@@ -600,7 +600,7 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
     hr = GetILCode(&pCode);
 
     if (SUCCEEDED(hr))
-    {        
+    {
         hr = pCode->CreateNativeBreakpoint(ppBreakpoint);
     }
 
@@ -615,7 +615,7 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
 
 void CordbFunction::InitNativeImpl()
 {
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     // Bail now if we've already discovered that this function is implemented natively as part of the Runtime.
     if (m_fIsNativeImpl != kUnknownImpl)
@@ -653,14 +653,14 @@ void CordbFunction::InitNativeImpl()
 
         m_fIsNativeImpl = kNativeOnly;
     }
-    else 
+    else
     {
         m_fIsNativeImpl = kHasIL;
     }
 
 } // CordbFunction::GetProcessAndCheckForNativeImpl
 
-// Returns the function's ILCode and SigToken 
+// Returns the function's ILCode and SigToken
 // Arguments:
 //    Input: none (required info comes from various data members of this instance of CordbFunction
 //    Output (required):
@@ -669,14 +669,14 @@ void CordbFunction::InitNativeImpl()
 
 HRESULT CordbFunction::GetILCodeAndSigToken()
 {
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     CordbProcess * pProcess = m_pModule->GetProcess();
     HRESULT        hr = S_OK;
 
     EX_TRY
     {
-        
+
         // ensure that we're not trying to get information about a native-only function
         InitNativeImpl();
         if (m_fIsNativeImpl == kNativeOnly || m_fIsNativeImpl == kUnknownImpl)
@@ -689,14 +689,14 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
             // we haven't gotten the information previously
 
             _ASSERTE(pProcess != NULL);
-     
+
             // This target buffer and mdSignature might never have their values changed from the
-            // initial ones if the dump target is missing memory. TargetBuffer has a default 
+            // initial ones if the dump target is missing memory. TargetBuffer has a default
             // constructor to zero its data and localVarSigToken is explicitly inited.
             TargetBuffer codeInfo;
             mdSignature  localVarSigToken = mdSignatureNil;
             SIZE_T       currentEnCVersion;
-            
+
             {
                 RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
@@ -706,7 +706,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainFile(), 
+                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainFile(),
                                                             m_MDToken,
                                                             &codeInfo,
                                                             &localVarSigToken);
@@ -744,10 +744,10 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
 } // CordbFunction::GetILCodeAndSigToken
 
 
-// Get the metadata token for the class to which a function belongs. 
+// Get the metadata token for the class to which a function belongs.
 // Arguments:
 //    Input:
-//       funcMetadataToken - the metadata token for the method 
+//       funcMetadataToken - the metadata token for the method
 //    Output (required):
 //       classMetadataToken - the metadata token for the class to which the method belongs
 mdTypeDef CordbFunction::InitParentClassOfFunctionHelper(mdToken funcMetadataToken)
@@ -766,7 +766,7 @@ mdTypeDef CordbFunction::InitParentClassOfFunctionHelper(mdToken funcMetadataTok
 //    Output (required): none, but sets m_pClass
 HRESULT CordbFunction::InitParentClassOfFunction()
 {
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     CordbProcess * pProcess = m_pModule->GetProcess();
     (void)pProcess; //prevent "unused variable" error from GCC
@@ -774,7 +774,7 @@ HRESULT CordbFunction::InitParentClassOfFunction()
 
     EX_TRY
     {
-        
+
         // ensure that we're not trying to get information about a native-only function
         InitNativeImpl();
         if (m_fIsNativeImpl == kNativeOnly || m_fIsNativeImpl == kUnknownImpl)
@@ -823,14 +823,14 @@ HRESULT CordbFunction::InitParentClassOfFunction()
 
 HRESULT CordbFunction::InitNativeCodeInfo()
 {
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); 
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     CordbProcess * pProcess = m_pModule->GetProcess();
     HRESULT        hr = S_OK;
 
     EX_TRY
     {
-        
+
         // ensure that we're not trying to get information about a native-only function
         InitNativeImpl();
         if (m_fIsNativeImpl == kNativeOnly || m_fIsNativeImpl == kUnknownImpl)
@@ -839,11 +839,11 @@ HRESULT CordbFunction::InitNativeCodeInfo()
         }
 
         _ASSERTE(pProcess != NULL);
-     
+
         // storage for information retrieved from the DAC. This is cleared in the constructor, so it
         // won't contain garbage if we don't use the DAC to retrieve information we already got before.
-        NativeCodeFunctionData codeInfo;      
- 
+        NativeCodeFunctionData codeInfo;
+
         if (m_nativeCode == NULL)
         {
             // Get the native code information from the DAC
@@ -855,7 +855,7 @@ HRESULT CordbFunction::InitNativeCodeInfo()
         }
 
         // populate the m_nativeCode pointer with the code info we found
-        if (codeInfo.IsValid()) 
+        if (codeInfo.IsValid())
         {
             m_nativeCode.Assign(m_pModule->LookupOrCreateNativeCode(m_MDToken, codeInfo.vmNativeCodeMethodDescToken,
                 codeInfo.m_rgCodeRegions[kHot].pAddress));
@@ -868,14 +868,14 @@ HRESULT CordbFunction::InitNativeCodeInfo()
 
 //-----------------------------------------------------------------------------
 // CordbFunction::SetJMCStatus
-// Public method (implements ICorDebugFunction2::SetJMCStatus). 
+// Public method (implements ICorDebugFunction2::SetJMCStatus).
 // Set the JMC (eg, "User code" vs. "Non-user code") status of this function.
-// 
-// Parameters: 
+//
+// Parameters:
 //   fIsUserCode - true to set this Function to JMC, else False.
 //
 // Returns:
-//   S_OK if successfully updated JMC status. 
+//   S_OK if successfully updated JMC status.
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 {
@@ -894,7 +894,7 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 
     // Send an event to the LS to keep it updated.
 
-    // Validation - JMC Steppers don't have defined behavior if 
+    // Validation - JMC Steppers don't have defined behavior if
     // JMC method status gets toggled underneath them. However, we don't have
     // a good way of verifying which methods are of interest to a JMC stepper.
     // Having outstanding JMC steppers is dangerous here, but still can be
@@ -928,11 +928,11 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 // Get the JMC status of this function.
 //
 // Parameters:
-//   pfIsUserCode - out parameter describing whether this method is user code. 
+//   pfIsUserCode - out parameter describing whether this method is user code.
 //   true iff this function is user code, else false.
 //
 // Return:
-//   returns S_OK if *pfIsUserCode is set.   
+//   returns S_OK if *pfIsUserCode is set.
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::GetJMCStatus(BOOL * pfIsUserCode)
 {
@@ -1020,7 +1020,7 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
         {
             hr = GetModule()->GetMetaDataImporter()->GetMethodProps(m_MDToken, NULL, NULL, 0, NULL,
                                                            &methodAttr, &functionSignature, &size, NULL, NULL);
-        } 
+        }
         EX_CATCH_HRESULT(hr);
         IfFailRet(hr);
 
@@ -1044,7 +1044,7 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
             m_fIsStaticCached = isStatic;
             m_fCachedMethodValuesValid = TRUE;
         }
-        else 
+        else
         {
             // This is the Dynamic method case, so we can't cache. Just leave fields blank
             // and set out-parameters based off locals.
@@ -1052,7 +1052,7 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
             {
                 *pMethodSigParser = sigParser;
             }
-            
+
             if (pFunctionArgCount != NULL)
             {
                 *pFunctionArgCount = argCount;
@@ -1093,11 +1093,11 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
 
     //
     // We should never have a cached value for in a dynamic module.
-    // 
+    //
     CONSISTENCY_CHECK_MSGF(((GetModule()->IsDynamic() && !m_fCachedMethodValuesValid) ||
                             (!GetModule()->IsDynamic() && m_fCachedMethodValuesValid)),
                            ("No dynamic modules should be cached! Module=%p This=%p", GetModule(), this));
-    
+
     return hr;
 }
 
@@ -1105,17 +1105,17 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
 //-----------------------------------------------------------------------------
 // CordbFunction::GetArgumentType
 // Internal method. Given an 0-based IL argument number, return its type.
-// This can't access hidden parameters. 
+// This can't access hidden parameters.
 //
 // Parameters:
 //   dwIndex - 0-based index for IL argument number. For instance types,
 //           'this' argument is #0. For static types, first argument is #0.
-//   pInst - instantiation information if this is a generic function. Eg, 
+//   pInst - instantiation information if this is a generic function. Eg,
 //           if function is List<T>, inst describes T.
 //   ppResultType - out parameter, yields to CordbType of the argument.
 //
 // Return:
-//   S_OK on success. 
+//   S_OK on success.
 //
 HRESULT CordbFunction::GetArgumentType(DWORD dwIndex,
                                        const Instantiation * pInst,

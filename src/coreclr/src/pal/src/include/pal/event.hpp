@@ -44,7 +44,7 @@ namespace CorUnix
         HANDLE hEvent,
         BOOL fSetEvent
         );
-        
+
 }
 
 #endif //PAL_EVENT_H_

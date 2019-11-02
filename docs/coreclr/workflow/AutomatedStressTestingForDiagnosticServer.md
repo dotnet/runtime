@@ -1,4 +1,4 @@
-# AutoTrace: 
+# AutoTrace:
 
 > see: `src/vm/autotrace.h|cpp` for the code
 

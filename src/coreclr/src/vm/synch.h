@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// 
+//
 
 
 #ifndef __Synch_h__
@@ -94,7 +94,7 @@ private:
 
         // Several bits unused;
     };
-    
+
     Volatile<DWORD> m_dwFlags;
 
     BOOL IsAutoEvent() { LIMITED_METHOD_CONTRACT; return m_dwFlags & CLREVENT_FLAGS_AUTO_EVENT; }
@@ -153,7 +153,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     ~CLRSemaphore()
     {
         WRAPPER_NO_CONTRACT;
@@ -292,7 +292,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
     }
-    
+
     ~CLRMutex()
     {
         WRAPPER_NO_CONTRACT;

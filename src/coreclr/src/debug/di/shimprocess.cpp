@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ShimProcess.cpp
-// 
+//
 
 //
 // The V3 ICD debugging APIs have a lower abstraction level than V2.
@@ -13,7 +13,7 @@
 #include "stdafx.h"
 
 #include "safewrap.h"
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 #include "shimpriv.h"
@@ -39,17 +39,17 @@ ShimProcess::ShimProcess() :
     m_fIsInteropDebugging(false),
     m_fIsDisposed(false),
     m_loaderBPReceived(false)
-{   
+{
     m_ShimLock.Init("ShimLock", RSLock::cLockReentrant, RSLock::LL_SHIM_LOCK);
     m_ShimProcessDisposeLock.Init(
-        "ShimProcessDisposeLock", 
+        "ShimProcessDisposeLock",
         RSLock::cLockReentrant | RSLock::cLockNonDbgApi,
         RSLock::LL_SHIM_PROCESS_DISPOSE_LOCK);
     m_eventQueue.Init(&m_ShimLock);
     m_pShimCallback.Assign(new ShimProxyCallback(this)); // Throws
 
     m_fNeedFakeAttachEvents = false;
-    m_ContinueStatusChangedData.Clear();    
+    m_ContinueStatusChangedData.Clear();
 
     m_pShimStackWalkHashTable = new ShimStackWalkHashTable();
 
@@ -67,7 +67,7 @@ ShimProcess::ShimProcess() :
     if (m_terminatingEvent == NULL)
     {
         ThrowLastError();
-    } 
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -75,8 +75,8 @@ ShimProcess::ShimProcess() :
 // ShimProcess dtor. Invoked when reference count goes to 0.
 //
 // Assumptions:
-//    Dtors should not do any interesting work. If this object has been initialized, 
-//    then call Dispose() first.    
+//    Dtors should not do any interesting work. If this object has been initialized,
+//    then call Dispose() first.
 //
 //
 ShimProcess::~ShimProcess()
@@ -110,10 +110,10 @@ ShimProcess::~ShimProcess()
 //      pProcess - debuggee object to connect to. Maybe null if part of shutdown.
 //
 // Notes:
-//     This will take a strong reference to the process object. 
+//     This will take a strong reference to the process object.
 //     This is part of the initialization phase.
 //     This should only be called once.
-//    
+//
 //
 void ShimProcess::SetProcess(ICorDebugProcess * pProcess)
 {
@@ -128,7 +128,7 @@ void ShimProcess::SetProcess(ICorDebugProcess * pProcess)
     // Get the private shim hooks. This just exists to access private functionality that has not
     // yet been promoted to the ICorDebug interfaces.
     m_pProcess = static_cast<CordbProcess *>(pProcess);
-    
+
     if (pProcess != NULL)
     {
         // Verify that DataTarget + new process have the same pid?
@@ -150,13 +150,13 @@ void ShimProcess::SetProcess(ICorDebugProcess * pProcess)
 //    This is part of the initialization dance.
 //
 // Notes:
-//    Only call this once, during the initialization dance. 
+//    Only call this once, during the initialization dance.
 //
 HRESULT ShimProcess::InitializeDataTarget(const ProcessDescriptor * pProcessDescriptor)
 {
     _ASSERTE(m_pLiveDataTarget == NULL);
 
-    
+
     HRESULT hr = BuildPlatformSpecificDataTarget(GetMachineInfo(), pProcessDescriptor, &m_pLiveDataTarget);
     if (FAILED(hr))
     {
@@ -200,7 +200,7 @@ void ShimProcess::AddRef()
 // Release a reference.
 //
 // Notes:
-//     When ref goes to 0, object is deleted. 
+//     When ref goes to 0, object is deleted.
 //
 void ShimProcess::Release()
 {
@@ -213,7 +213,7 @@ void ShimProcess::Release()
 
 //---------------------------------------------------------------------------------------
 //
-// Dispose (Neuter) the object. 
+// Dispose (Neuter) the object.
 //
 //
 // Assumptions:
@@ -223,9 +223,9 @@ void ShimProcess::Release()
 // Notes:
 //    This will release all external resources, including getting the win32 event thread to exit.
 //    This can safely be called multiple times.
-//    
+//
 void ShimProcess::Dispose()
-{   
+{
     // Serialize Dispose with any other locked access to the shim.  This helps
     // protect against the debugger detaching while we're in the middle of
     // doing stuff on the ShimProcess
@@ -275,7 +275,7 @@ void ShimProcess::Dispose()
             // loop through all the entries in the hash table, remove them, and delete them
             for (DuplicateCreationEventsHashTable::Iterator pCurElem = m_pDupeEventsHashTable->Begin(),
                 pEndElem = m_pDupeEventsHashTable->End();
-                pCurElem != pEndElem; 
+                pCurElem != pEndElem;
             pCurElem++)
             {
                 DuplicateCreationEventEntry * pEntry = *pCurElem;
@@ -296,13 +296,13 @@ void ShimProcess::Dispose()
 //
 // Arguments:
 //    pEvent - debug event
-// 
-// Notes: 
+//
+// Notes:
 //    Some debug events introduce file handles that the debugger needs to track and
 //    close on other debug events. For example, the LoadDll,CreateProcess debug
 //    events both give back a file handle that the debugger must close. This is generally
-//    done on the corresponding UnloadDll/ExitProcess debug events. 
-// 
+//    done on the corresponding UnloadDll/ExitProcess debug events.
+//
 //    Since we won't use the file handles, we'll just close them as soon as we get them.
 //    That way, we don't need to remember any state.
 void ShimProcess::TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent)
@@ -340,7 +340,7 @@ void ShimProcess::TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent)
 //    parameter - thread proc parameter, an ICorDebugProcess*
 //
 // Returns
-//     0. 
+//     0.
 //
 // Notes:
 //    This is useful when the shim queued a fake managed event (such as Control+C)
@@ -348,7 +348,7 @@ void ShimProcess::TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent)
 //    @dbgtodo sync: this will likely change as we iron out the Synchronization feature crew.
 //
 //    We do this in a new thread proc to avoid thread restrictions:
-//    Can't call this on win32 event thread because that can't send the IPC event to 
+//    Can't call this on win32 event thread because that can't send the IPC event to
 //    make the aysnc-break request.
 //    Can't call this on the RCET because that can't send an async-break (see SendIPCEvent for details)
 //    So we just spin up a new thread to do the work.
@@ -382,16 +382,16 @@ DWORD WINAPI CallStopGoThreadProc(LPVOID parameter)
 //
 // Arguments:
 //  pEvent - IN event ot handle
-//  pdwContinueStatus - IN /OUT - continuation status for event. 
+//  pdwContinueStatus - IN /OUT - continuation status for event.
 //
 // Assumptions:
 //    Called when target is stopped. Caller still needs to Continue the debug event.
 //    This is called on the win32 event thread.
 //
 // Notes:
-//    Some native events require extra work before continuing. Eg, skip loader 
+//    Some native events require extra work before continuing. Eg, skip loader
 //    breakpoint, close certain handles, etc.
-//    This is only called in the manage-only case. In the interop-case, the 
+//    This is only called in the manage-only case. In the interop-case, the
 //    debugger will get and handle these native debug events.
 void ShimProcess::DefaultEventHandler(
     const DEBUG_EVENT * pEvent,
@@ -412,7 +412,7 @@ void ShimProcess::DefaultEventHandler(
     const EXCEPTION_RECORD * pRecord = NULL;
 
     if (IsExceptionEvent(pEvent, &fFirstChance, &pRecord))
-    {    
+    {
         DWORD dwThreadId = GetThreadId(pEvent);
 
         switch(pRecord->ExceptionCode)
@@ -424,7 +424,7 @@ void ShimProcess::DefaultEventHandler(
                     m_loaderBPReceived = true;
 
                     // Clear the loader breakpoint
-                    *pdwContinueStatus = DBG_CONTINUE;                 
+                    *pdwContinueStatus = DBG_CONTINUE;
 
                     // After loader-breakpoint, notify that managed attach can begin.
                     // This is done to trigger a synchronization. The shim
@@ -438,8 +438,8 @@ void ShimProcess::DefaultEventHandler(
             break;
 
         /*
-        // If we handle the Ctlr-C event here and send the notification to the debugger, then we may break pre-V4 
-        // behaviour because the debugger may handle the event and intercept the handlers registered in the debuggee 
+        // If we handle the Ctlr-C event here and send the notification to the debugger, then we may break pre-V4
+        // behaviour because the debugger may handle the event and intercept the handlers registered in the debuggee
         // process.  So don't handle the event here and let the debuggee process handle it instead.  See Dev10 issue
         // 846455 for more info.
         //
@@ -473,11 +473,11 @@ void ShimProcess::DefaultEventHandler(
         *pdwContinueStatus = DBG_CONTINUE;
         }
         break;
-        
+
 */
         }
 
-    
+
     }
 
 
@@ -488,7 +488,7 @@ void ShimProcess::DefaultEventHandler(
     }
 
     //
-    // File handles. 
+    // File handles.
     //
     TrackFileHandleForDebugEvent(pEvent);
 }
@@ -505,7 +505,7 @@ void ShimProcess::DefaultEventHandler(
 //
 // Notes:
 //    See code:ShimProcess::ContinueStatusChangedWorker for big picture.
-//    Continue status is changed from a data-target callback which invokes 
+//    Continue status is changed from a data-target callback which invokes
 //    code:ShimProcess::ContinueStatusChangedWorker.
 //    Call code:ShimProcess::ContinueStatusChangedData::Clear to clear the 'IsSet' bit.
 //
@@ -516,7 +516,7 @@ bool ShimProcess::ContinueStatusChangedData::IsSet()
 }
 
 //---------------------------------------------------------------------------------------
-// Clears the bit marking 
+// Clears the bit marking
 //
 // Assumptions:
 //    This is single-threaded, which is enforced by it only be called on the win32et.
@@ -541,7 +541,7 @@ void ShimProcess::ContinueStatusChangedData::Clear()
 //    dwContinueStatus - the new continue status.
 //
 // Notes:
-//    
+//
 
 // Static
 HRESULT ShimProcess::ContinueStatusChanged(void * pUserData, DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus)
@@ -563,9 +563,9 @@ HRESULT ShimProcess::ContinueStatusChanged(void * pUserData, DWORD dwThreadId, C
 //    For example, on windows, hijacking a thread at an unhandled exception would need to
 //    change the status to 'gh' (since continuing 2nd chance exception 'gn' will tear down the
 //    process and the hijack would never execute).
-//    
+//
 //    Such operations will invoke into the data-target (code:ICorDebugMutableDataTarget::ContinueStatusChanged)
-//    to notify the debugger that the continue status was changed. 
+//    to notify the debugger that the continue status was changed.
 //
 //    The shim only executes such operations on the win32-event thread in a small window between
 //    WaitForDebugEvent and Continue. Therefore, we know:
@@ -578,7 +578,7 @@ HRESULT ShimProcess::ContinueStatusChanged(void * pUserData, DWORD dwThreadId, C
 HRESULT ShimProcess::ContinueStatusChangedWorker(DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus)
 {
     // Should only be set once. This is only called on the win32 event thread, which protects against races.
-    _ASSERTE(IsWin32EventThread());    
+    _ASSERTE(IsWin32EventThread());
     _ASSERTE(!m_ContinueStatusChangedData.IsSet());
 
     m_ContinueStatusChangedData.m_dwThreadId = dwThreadId;
@@ -595,7 +595,7 @@ HRESULT ShimProcess::ContinueStatusChangedWorker(DWORD dwThreadId, CORDB_CONTINU
 // Add a duplicate creation event entry for the specified key.
 //
 // Arguments:
-//    pKey - the key of the entry to be added; this is expected to be an 
+//    pKey - the key of the entry to be added; this is expected to be an
 //           ICDProcess/ICDAppDomain/ICDThread/ICDAssembly/ICDModule
 //
 // Assumptions:
@@ -604,10 +604,10 @@ HRESULT ShimProcess::ContinueStatusChangedWorker(DWORD dwThreadId, CORDB_CONTINU
 // Notes:
 //    We have to keep track of which creation events we have sent already because some runtime data structures
 //    are discoverable through enumeration before they send their creation events.  As a result, we may have
-//    faked up a creation event for a data structure during attach, and then later on get another creation 
+//    faked up a creation event for a data structure during attach, and then later on get another creation
 //    event for the same data structure.  VS is not resilient in the face of multiple creation events for
 //    the same data structure.
-//    
+//
 //    Needless to say this is a problem in attach scenarios only.  However, keep in mind that for CoreCLR,
 //    launch really is early attach.  For early attach, we get three creation events up front: a create
 //    process, a create appdomain, and a create thread.
@@ -626,11 +626,11 @@ void ShimProcess::AddDuplicateCreationEvent(void * pKey)
 // Check whether the specified key exists in the hash table.  If so, remove it.
 //
 // Arguments:
-//    pKey - the key of the entry to check; this is expected to be an 
+//    pKey - the key of the entry to check; this is expected to be an
 //           ICDProcess/ICDAppDomain/ICDThread/ICDAssembly/ICDModule
 //
 // Return Value:
-//    Returns true if the entry exists.  The entry will have been removed because we can't have more than two 
+//    Returns true if the entry exists.  The entry will have been removed because we can't have more than two
 //    duplicates for any given event.
 //
 // Assumptions:
@@ -671,8 +671,8 @@ bool ShimProcess::RemoveDuplicateCreationEventIfPresent(void * pKey)
 // Returns:
 //    The CorDebugRecordFormat for the host architecture.
 //
-// Notes: 
-//   This corresponds to the definition EXCEPTION_RECORD on the host-architecture. 
+// Notes:
+//   This corresponds to the definition EXCEPTION_RECORD on the host-architecture.
 //   It can be passed into ICorDebugProcess4::Filter.
 CorDebugRecordFormat GetHostExceptionRecordFormat()
 {
@@ -685,25 +685,25 @@ CorDebugRecordFormat GetHostExceptionRecordFormat()
 
 //---------------------------------------------------------------------------------------
 // Main event handler for native debug events. Must also ensure Continue is called.
-// 
+//
 // Arguments:
 //   pEvent - debug event to handle
 //
 // Assumptions:
 //   Caller did a Flush() if needed.
-//  
+//
 // Notes:
 //   The main Handle native debug events.
 //   This must call back into ICD to let ICD filter the debug event (in case it's a managed notification).
-// 
-//   If we're interop-debugging (V2), then the debugger is expecting the debug events. In that case, 
-//   we go through the V2 interop-debugging logic to queue / dispatch the events. 
+//
+//   If we're interop-debugging (V2), then the debugger is expecting the debug events. In that case,
+//   we go through the V2 interop-debugging logic to queue / dispatch the events.
 //   If we're managed-only debugging, then the shim provides a default handler for the native debug.
 //   This includes some basic work (skipping the loader breakpoint, close certain handles, etc).
 //---------------------------------------------------------------------------------------
 HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
 {
-    _ASSERTE(IsWin32EventThread());  
+    _ASSERTE(IsWin32EventThread());
 
     //
     // If this is an exception event, then we need to feed it into the CLR.
@@ -717,7 +717,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
     // If true, we're continuing (unhandled) a 2nd-chance exception
     bool fExceptionGoingUnhandled = false;
 
-    // 
+    //
     const DWORD kDONTCARE = 0;
     DWORD dwContinueStatus = kDONTCARE;
 
@@ -734,10 +734,10 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             // target. The debuggee will exit once we continue (unless we are mixed-mode debugging), so alert now.
             // This assert could be our only warning of various catastrophic failures in the left-side.
             if (!dwFirstChance && (pRecord->ExceptionCode == STATUS_BREAKPOINT) && !m_fIsInteropDebugging)
-            {            
+            {
                 DWORD pid = (m_pLiveDataTarget == NULL) ? 0 : m_pLiveDataTarget->GetPid();
 
-                CONSISTENCY_CHECK_MSGF(false, 
+                CONSISTENCY_CHECK_MSGF(false,
                     ("Unhandled breakpoint exception in debuggee (pid=%d (0x%x)) on thread %d(0x%x)\n"
                     "This may mean there was an assert in the debuggee on that thread.\n"
                     "\n"
@@ -748,9 +748,9 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
         }
 #endif
 
-        // We pass the Shim's proxy callback object, which will just take the callbacks and queue them 
+        // We pass the Shim's proxy callback object, which will just take the callbacks and queue them
         // to an event-queue in the shim. When we get the sync-complete event, the shim
-        // will then drain the event queue and dispatch the events to the user's callback object.        
+        // will then drain the event queue and dispatch the events to the user's callback object.
         const DWORD dwFlags = dwFirstChance ? 1 : 0;
 
         m_ContinueStatusChangedData.Clear();
@@ -760,11 +760,11 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
         GetProcess()->QueryInterface(IID_ICorDebugProcess4, (void**) &pProcess4);
 
         HRESULT hrFilter =  pProcess4->Filter(
-            (const BYTE*) pRecord, 
+            (const BYTE*) pRecord,
             sizeof(EXCEPTION_RECORD),
             GetHostExceptionRecordFormat(),
-            dwFlags, 
-            dwThreadId, 
+            dwFlags,
+            dwThreadId,
             m_pShimCallback,
             &dwContinueStatus);
         if (FAILED(hrFilter))
@@ -795,7 +795,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
         }
     }
 
-    // Do standard event handling, including Handling loader-breakpoint, 
+    // Do standard event handling, including Handling loader-breakpoint,
     // and callback into CordbProcess for Attach if needed.
     HRESULT hrIgnore = S_OK;
     EX_TRY
@@ -803,23 +803,23 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
         // For NonClr notifications, allow extra processing.
         // This includes both non-exception events, and exception events that aren't
         // specific CLR debugging services notifications.
-        if (dwContinueStatus == kDONTCARE) 
+        if (dwContinueStatus == kDONTCARE)
         {
             if (m_fIsInteropDebugging)
-            {   
+            {
                 // Interop-debugging logic will handle the continue.
                 fContinueNow = false;
 #if defined(FEATURE_INTEROP_DEBUGGING)
                 // @dbgtodo interop: All the interop-debugging logic is still in CordbProcess.
                 // Call back into that. This will handle Continuing the debug event.
-                m_pProcess->HandleDebugEventForInteropDebugging(pEvent); 
+                m_pProcess->HandleDebugEventForInteropDebugging(pEvent);
 #else
                 _ASSERTE(!"Interop debugging not supported");
 #endif
             }
             else
-            {                    
-                dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;    
+            {
+                dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 
                 // For managed-only debugging, there's no user handler for native debug events,
                 // and so we still need to do some basic work on certain debug events.
@@ -841,8 +841,8 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
     if (fContinueNow)
     {
         BOOL fContinueOk = GetNativePipeline()->ContinueDebugEvent(
-            GetProcessId(pEvent), 
-            dwThreadId, 
+            GetProcessId(pEvent),
+            dwThreadId,
             dwContinueStatus);
         (void)fContinueOk; //prevent "unused variable" error from GCC
         SIMPLIFYING_ASSUMPTION(fContinueOk);
@@ -850,19 +850,19 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
         if (fExceptionGoingUnhandled)
         {
             _ASSERTE(dwContinueStatus == DBG_EXCEPTION_NOT_HANDLED);
-            // We just passed a 2nd-chance exception back to the OS which may have now invoked 
+            // We just passed a 2nd-chance exception back to the OS which may have now invoked
             // Windows error-reporting logic which suspended all threads in the target.  Since we're
             // still debugging and may want to break, inspect state and even detach (eg. to attach
             // a different sort of debugger that can handle the exception) we need to let our threads run.
             // Note that when WER auto-invokes a debugger it doesn't suspend threads, so it doesn't really
             // make sense for them to be suspended now when a debugger is already attached.
-            // A better solution may be to suspend this faulting thread before continuing the event, do an 
+            // A better solution may be to suspend this faulting thread before continuing the event, do an
             // async-break and give the debugger a notification of an unhandled exception.  But this will require
             // an ICorDebug API change, and also makes it harder to reliably get the WER dialog box once we're
             // ready for it.
             // Unfortunately we have to wait for WerFault.exe to start and actually suspend the threads, and
             // there doesn't appear to be any better way than to just sleep for a little here.  In practice 200ms
-            // seems like more than enough, but this is so uncommon of a scenario that a half-second delay 
+            // seems like more than enough, but this is so uncommon of a scenario that a half-second delay
             // (just to be safe) isn't a problem.
             // Provide an undocumented knob to turn this behavior off in the very rare case it's not what we want
             // (eg. we're trying to debug something that races with crashing / terminating the process on multiple
@@ -876,15 +876,15 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
                 SIMPLIFYING_ASSUMPTION_SUCCEEDED(hrIgnore);
             }
         }
-    }    
+    }
 
     return S_OK;
 }
 
 // Trivial accessor to get the event queue.
-ManagedEventQueue * ShimProcess::GetManagedEventQueue() 
+ManagedEventQueue * ShimProcess::GetManagedEventQueue()
 {
-    return &m_eventQueue; 
+    return &m_eventQueue;
 }
 
 // Combines GetManagedEventQueue() and Dequeue() into a single function
@@ -900,9 +900,9 @@ ManagedEvent * ShimProcess::DequeueManagedEvent()
 }
 
 // Trivial accessor to get Shim's proxy callback object.
-ShimProxyCallback * ShimProcess::GetShimCallback() 
+ShimProxyCallback * ShimProcess::GetShimCallback()
 {
-    return m_pShimCallback; 
+    return m_pShimCallback;
 }
 
 // Trivial accessor to get the ICDProcess for the debuggee.
@@ -931,7 +931,7 @@ INativeEventPipeline * ShimProcess::GetNativePipeline()
 // Trivial accessor to expose the W32ET thread to the CordbProcess so that it can emulate V2 behavior.
 // In V3, ICorDebug no longer owns the event thread and it does not own the event pipeline either.
 // The Win32 Event Thread is the only thread that can use the native pipeline
-// see code:ShimProcess::GetNativePipeline. 
+// see code:ShimProcess::GetNativePipeline.
 CordbWin32EventThread * ShimProcess::GetWin32EventThread()
 {
     return m_pWin32EventThread;
@@ -945,7 +945,7 @@ void ShimProcess::SetIsInteropDebugging(bool fIsInteropDebugging)
     m_fIsInteropDebugging = fIsInteropDebugging;
 }
 
-// Trivial accessor to check if we're interop-debugging. 
+// Trivial accessor to check if we're interop-debugging.
 // This affects how we handle native debug events.
 // The significant usage of this is in code:ShimProcess::HandleWin32DebugEvent
 bool ShimProcess::IsInteropDebugging()
@@ -955,7 +955,7 @@ bool ShimProcess::IsInteropDebugging()
 
 
 //---------------------------------------------------------------------------------------
-// Begin queueing the fake attach events. 
+// Begin queueing the fake attach events.
 //
 // Notes:
 //    See code:ShimProcess::QueueFakeAttachEvents for more about "fake attach events".
@@ -979,7 +979,7 @@ void ShimProcess::BeginQueueFakeAttachEvents()
 // Arguments:
 //   fRealCreateProcessEvent - true if the shim is about to dispatch a real create process event (as opposed
 //                             to one faked up by the shim itself)
-//   
+//
 // Notes:
 //    See code:ShimProcess::QueueFakeAttachEvents for details.
 void ShimProcess::QueueFakeAttachEventsIfNeeded(bool fRealCreateProcessEvent)
@@ -988,7 +988,7 @@ void ShimProcess::QueueFakeAttachEventsIfNeeded(bool fRealCreateProcessEvent)
     if (!m_fNeedFakeAttachEvents)
     {
         return;
-    }    
+    }
     m_fNeedFakeAttachEvents = false;
 
     // If the first event we get after attaching is a create process event, then this is an early attach
@@ -1006,14 +1006,14 @@ void ShimProcess::QueueFakeAttachEventsIfNeeded(bool fRealCreateProcessEvent)
 
 //---------------------------------------------------------------------------------------
 // Send fake Thread-create events for attach, using an arbitrary order.
-// 
+//
 // Returns:
 //    S_OK on success, else error.
-// 
+//
 // Notes:
 //    This sends fake thread-create events, ala V2 attach.
 //    See code:ShimProcess::QueueFakeAttachEvents for details
-//    
+//
 //    The order of thread creates is random and at the mercy of ICorDebugProcess::EnumerateThreads.
 //    Whidbey would send thread creates in the order of the OS's native thread
 //    list. Since Arrowhead no longer sends fake attach events, the shim simulates
@@ -1023,15 +1023,15 @@ void ShimProcess::QueueFakeAttachEventsIfNeeded(bool fRealCreateProcessEvent)
 //
 //    Compare to code:ShimProcess::QueueFakeThreadAttachEventsNativeOrder,
 //    which sends threads in the OS native thread create order.
-//    
+//
 HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
-{    
+{
     ICorDebugProcess * pProcess = GetProcess();
 
     RSExtSmartPtr<ICorDebugThreadEnum> pThreadEnum;
     RSExtSmartPtr<ICorDebugThread> pThread;
 
-    // V2 would only send create threads after a thread had run managed code. 
+    // V2 would only send create threads after a thread had run managed code.
     // V3 has a discovery model where Enumeration can find threads before they've run managed code.
     // So the emulation here may send some additional create-thread events that v2 didn't send.
     HRESULT hr = pProcess->EnumerateThreads(&pThreadEnum);
@@ -1042,12 +1042,12 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
     }
 
     ULONG cDummy;
-    
+
     while(SUCCEEDED(pThreadEnum->Next(1, &pThread, &cDummy)) && (pThread != NULL))
     {
         RSExtSmartPtr<ICorDebugAppDomain> pAppDomain;
         hr = pThread->GetAppDomain(&pAppDomain);
-        
+
         // Getting the appdomain shouldn't fail. If it does, we can't dispatch
         // this callback, but we can still dispatch the other thread creates.
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
@@ -1056,7 +1056,7 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
             GetShimCallback()->CreateThread(pAppDomain, pThread);
             AddDuplicateCreationEvent(pThread);
         }
-        pThread.Clear();        
+        pThread.Clear();
     }
 
     return S_OK;
@@ -1065,10 +1065,10 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
 //---------------------------------------------------------------------------------------
 // Send fake Thread-create events for attach, using the order of the OS native
 // thread list.
-// 
+//
 // Returns:
 //    S_OK on success, else error.
-// 
+//
 // Notes:
 //    This sends fake thread-create events, ala V2 attach.
 //    See code:ShimProcess::QueueFakeAttachEvents for details
@@ -1080,8 +1080,8 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
 //
 //    Compare to code:ShimProcess::QueueFakeThreadAttachEventsNoOrder, which
 //    sends the threads in an arbitrary order.
-HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder() 
-{ 
+HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
+{
 #ifdef FEATURE_CORESYSTEM
     _ASSERTE("NYI");
     return E_FAIL;
@@ -1096,25 +1096,25 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
         return hr;
     }
 
-    HANDLE hThreadSnap = INVALID_HANDLE_VALUE; 
-    THREADENTRY32 te32; 
+    HANDLE hThreadSnap = INVALID_HANDLE_VALUE;
+    THREADENTRY32 te32;
 
-    // Take a snapshot of all running threads  
-    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0); 
-    if (hThreadSnap == INVALID_HANDLE_VALUE) 
+    // Take a snapshot of all running threads
+    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (hThreadSnap == INVALID_HANDLE_VALUE)
     {
         hr = HRESULT_FROM_GetLastError();
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-        return hr; 
+        return hr;
     }
     // HandleHolder doesn't deal with INVALID_HANDLE_VALUE, so we only assign if we have a legal value.
     HandleHolder hSnapshotHolder(hThreadSnap);
 
-    // Fill in the size of the structure before using it. 
-    te32.dwSize = sizeof(THREADENTRY32); 
+    // Fill in the size of the structure before using it.
+    te32.dwSize = sizeof(THREADENTRY32);
 
     // Retrieve information about the first thread, and exit if unsuccessful
-    if (!Thread32First(hThreadSnap, &te32)) 
+    if (!Thread32First(hThreadSnap, &te32))
     {
         hr = HRESULT_FROM_GetLastError();
         return hr;
@@ -1123,10 +1123,10 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
     // Now walk the thread list of the system,
     // and display information about each thread
     // associated with the specified process
-    do 
-    { 
+    do
+    {
         if (te32.th32OwnerProcessID == dwProcessId)
-        {            
+        {
             RSExtSmartPtr<ICorDebugThread> pThread;
             pProcess->GetThread(te32.th32ThreadID, &pThread);
             if (pThread != NULL)
@@ -1149,7 +1149,7 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
                 }
             }
         }
-    } while(Thread32Next(hThreadSnap, &te32)); 
+    } while(Thread32Next(hThreadSnap, &te32));
 
 
     //fix for issue DevDiv2\DevDiv 77523 - threads are switched out in SQL don't get thread create notifications
@@ -1168,7 +1168,7 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
     }
 
     ULONG cDummy;
-    
+
     while(SUCCEEDED(pThreadEnum->Next(1, &pThread, &cDummy)) && (pThread != NULL))
     {
         RSExtSmartPtr<ICorDebugAppDomain> pAppDomain;
@@ -1184,7 +1184,7 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
             AddDuplicateCreationEvent(pThread);
             pThreadInternal->SetCreateEventQueued();
         }
-        pThread.Clear();        
+        pThread.Clear();
     }
 
 
@@ -1194,10 +1194,10 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
 
 //---------------------------------------------------------------------------------------
 // Queues the fake Assembly and Module load events
-// 
+//
 // Arguments:
-//   pAssembly - non-null, the assembly to queue. 
-//   
+//   pAssembly - non-null, the assembly to queue.
+//
 // Notes:
 //   Helper for code:ShimProcess::QueueFakeAttachEvents
 //   Queues create events for the assembly and for all modules within the
@@ -1252,19 +1252,19 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
     for(ULONG iModule = 0; iModule < countModules; iModule++)
     {
         ICorDebugModule * pModule = pModules[iModule];
-        
+
         GetShimCallback()->FakeLoadModule(pAppDomain, pModule);
         AddDuplicateCreationEvent(pModule);
 
         // V2 may send UpdatePdbStreams for certain modules (like dynamic or in-memory modules).
-        // We don't yet have this support for out-of-proc. 
-        // When the LoadModule event that we just queued is actually dispatched, it will 
+        // We don't yet have this support for out-of-proc.
+        // When the LoadModule event that we just queued is actually dispatched, it will
         // send an IPC event in-process that will collect the information and queue the event
         // at that time.
         // @dbgtodo : I don't think the above is true anymore - clean it up?
-        
+
         RSExtSmartPtr<IStream> pSymbolStream;
-        
+
         // ICorDebug has no public way to request raw symbols.  This is by-design because we
         // don't want people taking a dependency on a specific format (to give us the ability
         // to innovate for the RefEmit case).  So we must use a private hook here to get the
@@ -1293,25 +1293,25 @@ void ShimProcess::QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly)
 
 //---------------------------------------------------------------------------------------
 // Get an array of appdomains, sorted by increasing AppDomain ID
-// 
+//
 // Arguments:
 //    pProcess - process containing the appdomains
 //    ppAppDomains - array that this function will allocate to hold appdomains
 //    pCount - size of ppAppDomains array
-//    
+//
 // Assumptions:
 //    Caller must delete [] ppAppDomains
-//    
+//
 // Notes
 //   This is used as part of code:ShimProcess::QueueFakeAttachEvents.
 //   The fake attach events want appdomains in creation order. ICorDebug doesn't provide
-//   this ordering in the enumerators.  
-//   
+//   this ordering in the enumerators.
+//
 //   This returns the appdomains sorted in order of increasing AppDomain ID, since that's the best
 //   approximation of creation order that we have.
-//   @dbgtodo - determine if ICD will provide 
+//   @dbgtodo - determine if ICD will provide
 //   ordered enumerators
-//   
+//
 HRESULT GetSortedAppDomains(ICorDebugProcess * pProcess, RSExtSmartPtr<ICorDebugAppDomain> **ppAppDomains, ULONG * pCount)
 {
     _ASSERTE(ppAppDomains != NULL);
@@ -1321,7 +1321,7 @@ HRESULT GetSortedAppDomains(ICorDebugProcess * pProcess, RSExtSmartPtr<ICorDebug
 
     //
     // Find the size of the array to hold all the appdomains
-    // 
+    //
     hr = pProcess->EnumerateAppDomains(&pAppEnum);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     ULONG countAppDomains = 0;
@@ -1338,7 +1338,7 @@ HRESULT GetSortedAppDomains(ICorDebugProcess * pProcess, RSExtSmartPtr<ICorDebug
 
     //
     // Load all the appdomains into the array
-    // 
+    //
     ULONG countDummy;
     hr = pAppEnum->Next(countAppDomains, (ICorDebugAppDomain**) pAppDomains, &countDummy);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
@@ -1348,7 +1348,7 @@ HRESULT GetSortedAppDomains(ICorDebugProcess * pProcess, RSExtSmartPtr<ICorDebug
     // Now sort them based on appdomain ID.
     // We generally expect a very low number of appdomains (usually 1). So a n^2 sort shouldn't be a perf
     // problem here.
-    // 
+    //
     for(ULONG i = 0; i < countAppDomains; i++)
     {
         ULONG32 id1;
@@ -1396,7 +1396,7 @@ void ShimProcess::QueueFakeAttachEvents()
 
     // The fake CreateProcess is already queued. Start queuing the rest of the events.
     // The target is stopped (synchronized) this whole time.
-    // This will use the inspection API to look at the process and queue up the fake 
+    // This will use the inspection API to look at the process and queue up the fake
     // events that V2 would have sent in a similar situation. All of the callbacks to GetShimCallback()
     // just queue up the events. The event queue is then drained as the V2 debugger calls continue.
 
@@ -1406,7 +1406,7 @@ void ShimProcess::QueueFakeAttachEvents()
     //
     // First, Queue all the Fake AppDomains
     //
-    RSExtSmartPtr<ICorDebugAppDomain> * pAppDomains = NULL; 
+    RSExtSmartPtr<ICorDebugAppDomain> * pAppDomains = NULL;
     ULONG countAppDomains = 0;
 
     hr =  GetSortedAppDomains(pProcess, &pAppDomains, &countAppDomains);
@@ -1435,7 +1435,7 @@ void ShimProcess::QueueFakeAttachEvents()
         //
         // Send Assemblies. Must be in load order.
         //
-        
+
         RSExtSmartPtr<ICorDebugAssemblyEnum> pAssemblyEnum;
         hr = pAppDomain->EnumerateAssemblies(&pAssemblyEnum);
         if (FAILED(hr))
@@ -1458,16 +1458,16 @@ void ShimProcess::QueueFakeAttachEvents()
 
     delete [] pAppDomains;
 
-    
+
     // V2 would have a break in the callback queue at this point.
-    
-    // V2 would send all relevant ClassLoad events now. 
+
+    // V2 would send all relevant ClassLoad events now.
     //
     // That includes class loads for all modules that:
     //   - are dynamic
     //   - subscribed to class load events via ICorDebugModule::EnableClassLoadCallbacks.
     // We don't provide Class-loads in our emulation because:
-    // 1. "ClassLoad" doesn't actually mean anything here. 
+    // 1. "ClassLoad" doesn't actually mean anything here.
     // 2. We have no way of enumerating "loaded" classes in the CLR. We could use the metadata to enumerate
     //    all classes, but that's offers no value.
     // 3. ClassLoad is useful for dynamic modules to notify a debugger that the module changed and
@@ -1477,7 +1477,7 @@ void ShimProcess::QueueFakeAttachEvents()
     //
     // Third, Queue all Threads
     //
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)   
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)
     // Use OS thread enumeration facilities to ensure that the managed thread
     // thread order is the same as the corresponding native thread order.
     QueueFakeThreadAttachEventsNativeOrder();
@@ -1493,14 +1493,14 @@ void ShimProcess::QueueFakeAttachEvents()
 
     // For V2 jit-attach, the callback queue would also include the jit-attach event (Exception, UserBreak, MDA, etc).
     // This was explicitly in the same callback queue so that a debugger would drain it as part of draining the attach
-    // events. 
+    // events.
 
     // In V3, on normal attach, the VM just sends a Sync-complete event.
-    // On jit-attach, the VM sends the jit-attach event and then the sync-complete. 
-    // The shim just queues the fake attach events at the first event it gets from the left-side. 
+    // On jit-attach, the VM sends the jit-attach event and then the sync-complete.
+    // The shim just queues the fake attach events at the first event it gets from the left-side.
     // In jit-attach, the shim will queue the fake events right before it queues the jit-attach event,
     // thus keeping them in the same callback queue as V2 did.
-    
+
 }
 
 // Accessor for m_attached.
@@ -1508,47 +1508,47 @@ bool ShimProcess::GetAttached()
 {
     return m_attached;
 }
-// We need to know whether we are in the CreateProcess callback to be able to 
-// return the v2.0 hresults from code:CordbProcess::SetDesiredNGENCompilerFlags 
+// We need to know whether we are in the CreateProcess callback to be able to
+// return the v2.0 hresults from code:CordbProcess::SetDesiredNGENCompilerFlags
 // when we are using the shim.
-// 
+//
 // Expose m_fInCreateProcess
-bool ShimProcess::GetInCreateProcess() 
-{ 
-    return m_fInCreateProcess; 
+bool ShimProcess::GetInCreateProcess()
+{
+    return m_fInCreateProcess;
 }
 
-void ShimProcess::SetInCreateProcess(bool value) 
-{ 
-    m_fInCreateProcess = value; 
+void ShimProcess::SetInCreateProcess(bool value)
+{
+    m_fInCreateProcess = value;
 }
 
-// We need to know whether we are in the FakeLoadModule callback to be able to 
+// We need to know whether we are in the FakeLoadModule callback to be able to
 // return the v2.0 hresults from code:CordbModule::SetJITCompilerFlags when
 // we are using the shim.
-// 
+//
 // Expose m_fInLoadModule
-bool ShimProcess::GetInLoadModule() 
-{ 
-    return m_fInLoadModule; 
+bool ShimProcess::GetInLoadModule()
+{
+    return m_fInLoadModule;
 
 }
 
-void ShimProcess::SetInLoadModule(bool value) 
+void ShimProcess::SetInLoadModule(bool value)
 {
-    m_fInLoadModule = value; 
+    m_fInLoadModule = value;
 }
 
 // When we get a continue, we need to clear the flags indicating we're still in a callback
-void ShimProcess::NotifyOnContinue () 
-{ 
-    m_fInCreateProcess = false; 
-    m_fInLoadModule = false; 
+void ShimProcess::NotifyOnContinue ()
+{
+    m_fInCreateProcess = false;
+    m_fInLoadModule = false;
 }
 
 // The RS calls this function when the stack is about to be changed in any way, e.g. continue, SetIP, etc.
 void ShimProcess::NotifyOnStackInvalidate()
-{ 
+{
     ClearAllShimStackWalk();
 }
 
@@ -1556,7 +1556,7 @@ void ShimProcess::NotifyOnStackInvalidate()
 //
 // Filter HResults for ICorDebugProcess2::SetDesiredNGENCompilerFlags to emualte V2 error semantics.
 // Arguments:
-//    hr - V3 hresult 
+//    hr - V3 hresult
 //
 // Returns:
 //    hresult V2 would have returned in same situation.
@@ -1574,11 +1574,11 @@ HRESULT ShimProcess::FilterSetNgenHresult(HRESULT hr)
 }
 
 //---------------------------------------------------------------------------------------
-// Filter HRs for ICorDebugModule::EnableJITDebugging, ICorDebugModule2::SetJITCompilerFlags 
+// Filter HRs for ICorDebugModule::EnableJITDebugging, ICorDebugModule2::SetJITCompilerFlags
 // to emulate V2 error semantics
 //
 // Arguments:
-//    hr - V3 hresult 
+//    hr - V3 hresult
 //
 // Returns:
 //    hresult V2 would have returned in same situation.
@@ -1598,7 +1598,7 @@ HRESULT ShimProcess::FilterSetJitFlagsHresult(HRESULT hr)
 // ----------------------------------------------------------------------------
 // ShimProcess::LookupOrCreateShimStackWalk
 //
-// Description: 
+// Description:
 //    Find the ShimStackWalk associated with the specified ICDThread.  Create one if it's not found.
 //
 // Arguments:
@@ -1606,17 +1606,17 @@ HRESULT ShimProcess::FilterSetJitFlagsHresult(HRESULT hr)
 //
 // Return Value:
 //    Return the ShimStackWalk associated with the specified thread.
-//    
+//
 // Notes:
 //    The ShimStackWalks handed back by this function is only valid until the next time the stack is changed
-//    in any way.  In other words, the ShimStackWalks are valid until the next time 
+//    in any way.  In other words, the ShimStackWalks are valid until the next time
 //    code:CordbThread::CleanupStack or code:CordbThread::MarkStackFramesDirty is called.
-//    
+//
 //    ShimStackWalk and ICDThread have a 1:1 relationship.  Only one ShimStackWalk will be created for any
 //    given ICDThread.  So if two threads in the debugger are walking the same thread in the debuggee, they
 //    operate on the same ShimStackWalk.  This is ok because ShimStackWalks walk the stack at creation time,
 //    cache all the frames, and become read-only after creation.
-//    
+//
 //    Refer to code:ShimProcess::ClearAllShimStackWalk to see how ShimStackWalks are cleared.
 //
 
@@ -1644,7 +1644,7 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
             {
                 m_pShimStackWalkHashTable->Add(pNewSW);
                 pSW = pNewSW;
-                
+
                 // don't release the memory if all goes well
                 pNewSW.SuppressRelease();
             }
@@ -1661,9 +1661,9 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
 // ----------------------------------------------------------------------------
 // ShimProcess::ClearAllShimStackWalk
 //
-// Description: 
+// Description:
 //    Remove and delete all the entries in the hash table of ShimStackWalks.
-// 
+//
 // Notes:
 //    Refer to code:ShimProcess::LookupOrCreateShimStackWalk to see how ShimStackWalks are created.
 //
@@ -1675,7 +1675,7 @@ void ShimProcess::ClearAllShimStackWalk()
     // loop through all the entries in the hash table, remove them, and delete them
     for (ShimStackWalkHashTable::Iterator pCurElem = m_pShimStackWalkHashTable->Begin(),
                                           pEndElem = m_pShimStackWalkHashTable->End();
-         pCurElem != pEndElem; 
+         pCurElem != pEndElem;
          pCurElem++)
     {
         ShimStackWalk * pSW = *pCurElem;
@@ -1694,27 +1694,27 @@ void ShimProcess::ClearAllShimStackWalk()
 //    This may be called from within Filter, which means we may be on the win32-event-thread.
 //    This is called on all callbacks from the VM.
 //    This gives us a chance to queue fake-attach events. So call it before the Jit-attach
-//    event has been queued. 
+//    event has been queued.
 void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
-{    
+{
     CONTRACTL
     {
         THROWS;
     }
     CONTRACTL_END;
 
-    // For emulating the V2 case, we need to do additional initialization before dispatching the callback to the user.    
+    // For emulating the V2 case, we need to do additional initialization before dispatching the callback to the user.
     if (!m_fFirstManagedEvent)
     {
         // Remember that we're processing the first managed event so that we only call HandleFirstRCEvent() once
         m_fFirstManagedEvent = true;
 
         // This can fail with the incompatable version HR. The process has already been terminated if this
-        // is the case. This will dispatch an Error callback 
+        // is the case. This will dispatch an Error callback
         // If this fails, the process is in an undefined state.
         // @dbgtodo ipc-block: this will go away once we get rid
         // of the IPC block.
-        m_pProcess->FinishInitializeIPCChannel(); // throws on error       
+        m_pProcess->FinishInitializeIPCChannel(); // throws on error
     }
 
     {
@@ -1733,10 +1733,10 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 
 // ----------------------------------------------------------------------------
 // ShimProcess::GetCLRInstanceBaseAddress
-// Finds the base address of [core]clr.dll 
+// Finds the base address of [core]clr.dll
 // Arguments: none
 // Return value: returns the base address of [core]clr.dll if possible or NULL otherwise
-// 
+//
 CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 {
     CORDB_ADDRESS baseAddress = CORDB_ADDRESS(NULL);
@@ -1784,7 +1784,7 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 // ----------------------------------------------------------------------------
 // ShimProcess::FindLoadedCLR
 //
-// Description: 
+// Description:
 //    Look for any CLR loaded into the process.  If found, return the instance ID for it.
 //
 // Arguments:
@@ -1793,15 +1793,15 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 // Return Value:
 //    Returns S_OK if a CLR was found, and stores its instance ID in pClrInstanceId.
 //    Otherwise returns an error code.
-//    
+//
 // Notes:
 //    If there are multiple CLRs loaded in the process, the one chosen for the returned
 //    instance ID is unspecified.
-//    
+//
 HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
 {
     *pClrInstanceId = GetCLRInstanceBaseAddress();
-    
+
     if (*pClrInstanceId == 0)
     {
         return E_UNEXPECTED;
@@ -1849,9 +1849,9 @@ HMODULE ShimProcess::GetDacModule()
     // Dac Dll is named:
     //   mscordaccore.dll  <-- coreclr
     //   mscordacwks.dll   <-- desktop
-    PCWSTR eeFlavor = 
+    PCWSTR eeFlavor =
         W("mscordaccore.dll");
-    
+
 #endif // FEATURE_PAL
     wszAccessDllPath.Append(eeFlavor);
 
@@ -1878,7 +1878,7 @@ MachineInfo ShimProcess::GetMachineInfo()
     return m_machineInfo;
 }
 
-void ShimProcess::SetMarkAttachPendingEvent()  
+void ShimProcess::SetMarkAttachPendingEvent()
 {
     SetEvent(m_markAttachPendingEvent);
 }

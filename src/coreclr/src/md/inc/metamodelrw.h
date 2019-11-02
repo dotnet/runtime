@@ -4,7 +4,7 @@
 
 //*****************************************************************************
 // MetaModelRW.h -- header file for Read/Write compressed COM+ metadata.
-// 
+//
 
 //
 // Used by Emitters and by E&C.
@@ -32,7 +32,7 @@ struct IMDCustomDataSource;
 #endif
 
 // ENUM for marking bit
-enum 
+enum
 {
     InvalidMarkedBit            = 0x00000000,
     ModuleMarkedBit             = 0x00000001,
@@ -57,13 +57,13 @@ enum
 };
 
 // entry for marking UserString
-struct FilterUserStringEntry 
+struct FilterUserStringEntry
 {
     DWORD       m_tkString;
     bool        m_fMarked;
 };
 
-class FilterTable : public CDynArray<DWORD> 
+class FilterTable : public CDynArray<DWORD>
 {
 public:
     FilterTable() { m_daUserStringMarker = NULL; }
@@ -80,7 +80,7 @@ public:
     __checkReturn FORCEINLINE HRESULT MarkSignature(mdToken tk) { return MarkToken(tk, SignatureMarkedBit); }
     __checkReturn FORCEINLINE HRESULT MarkEvent(mdToken tk) { return MarkToken(tk, EventMarkedBit); }
     __checkReturn FORCEINLINE HRESULT MarkProperty(mdToken tk) { return MarkToken(tk, PropertyMarkedBit); }
-    __checkReturn FORCEINLINE HRESULT MarkMethodImpl(RID rid) 
+    __checkReturn FORCEINLINE HRESULT MarkMethodImpl(RID rid)
     {
         return MarkToken(TokenFromRid(rid, TBL_MethodImpl << 24), MethodImplMarkedBit);
     }
@@ -91,13 +91,13 @@ public:
     __checkReturn FORCEINLINE HRESULT MarkMethodSpec(mdToken tk) { return MarkToken(tk, MethodSpecMarkedBit); }
 
     // It may look inconsistent but it is because taht UserString an offset to the heap.
-    // We don't want to grow the FilterTable to the size of the UserString heap. 
+    // We don't want to grow the FilterTable to the size of the UserString heap.
     // So we use the heap's marking system instead...
     //
     __checkReturn HRESULT MarkUserString(mdString str);
 
     __checkReturn HRESULT MarkNewUserString(mdString str);
-    
+
     FORCEINLINE bool IsTypeRefMarked(mdToken tk)    { return IsTokenMarked(tk, TypeRefMarkedBit); }
     FORCEINLINE bool IsTypeDefMarked(mdToken tk) { return IsTokenMarked(tk, TypeDefMarkedBit); }
     FORCEINLINE bool IsFieldMarked(mdToken tk) { return IsTokenMarked(tk, FieldMarkedBit); }
@@ -109,7 +109,7 @@ public:
     FORCEINLINE bool IsSignatureMarked(mdToken tk) { return IsTokenMarked(tk, SignatureMarkedBit); }
     FORCEINLINE bool IsEventMarked(mdToken tk) { return IsTokenMarked(tk, EventMarkedBit); }
     FORCEINLINE bool IsPropertyMarked(mdToken tk) { return IsTokenMarked(tk, PropertyMarkedBit); }
-    FORCEINLINE bool IsMethodImplMarked(RID rid) 
+    FORCEINLINE bool IsMethodImplMarked(RID rid)
     {
         return IsTokenMarked(TokenFromRid(rid, TBL_MethodImpl << 24), MethodImplMarkedBit);
     }
@@ -135,7 +135,7 @@ private:
     bool            IsTokenMarked(mdToken tk, DWORD bitMarked);
     __checkReturn HRESULT         MarkToken(mdToken tk, DWORD bit);
     __checkReturn HRESULT         UnmarkToken(mdToken tk, DWORD bit);
-}; // class FilterTable : public CDynArray<DWORD> 
+}; // class FilterTable : public CDynArray<DWORD>
 
 class CMiniMdRW;
 
@@ -153,19 +153,19 @@ public:
     ULONG       m_ixTbl;                // Table this is a sorter for.
     ULONG       m_ixCol;                // Key column in the table.
     CMiniMdRW   *m_pMiniMd;             // The MiniMd with the data.
-    __checkReturn 
+    __checkReturn
     HRESULT Sort();
 private:
     mdToken     m_tkBuf;
-    __checkReturn 
+    __checkReturn
     HRESULT SortRange(int iLeft, int iRight);
 public:
-    __checkReturn 
+    __checkReturn
     HRESULT Compare(
         RID  iLeft,         // First item to compare.
         RID  iRight,        // Second item to compare.
         int *pnResult);     // -1, 0, or 1
-    
+
 private:
     FORCEINLINE void Swap(
         RID         iFirst,
@@ -256,47 +256,47 @@ public:
     CMiniMdRW();
     ~CMiniMdRW();
 
-    __checkReturn 
+    __checkReturn
     HRESULT InitNew();
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnMem(const void *pBuf, ULONG ulBufLen, int bReadOnly);
-    __checkReturn 
+    __checkReturn
     HRESULT PostInit(int iLevel);
-    __checkReturn 
+    __checkReturn
     HRESULT InitPoolOnMem(int iPool, void *pbData, ULONG cbData, int bReadOnly);
-    __checkReturn 
+    __checkReturn
     HRESULT InitOnRO(CMiniMd *pMd, int bReadOnly);
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     __checkReturn
     HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSouce);
 #endif
-    __checkReturn 
+    __checkReturn
     HRESULT ConvertToRW();
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetSaveSize(
-        CorSaveSize               fSave, 
-        UINT32                   *pcbSize, 
-        DWORD                    *pbCompressed, 
-        MetaDataReorderingOptions reorderingOptions = NoReordering, 
+        CorSaveSize               fSave,
+        UINT32                   *pcbSize,
+        DWORD                    *pbCompressed,
+        MetaDataReorderingOptions reorderingOptions = NoReordering,
         CorProfileData           *pProfileData = NULL);
     int IsPoolEmpty(int iPool);
-    __checkReturn 
+    __checkReturn
     HRESULT GetPoolSaveSize(int iPool, UINT32 *pcbSize);
 
-    __checkReturn 
+    __checkReturn
     HRESULT SaveTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions, CorProfileData *pProfileData);
-    __checkReturn 
+    __checkReturn
     HRESULT SavePoolToStream(int iPool, IStream *pIStream);
-    __checkReturn 
+    __checkReturn
     HRESULT SaveDone();
 
-    __checkReturn 
+    __checkReturn
     HRESULT SetHandler(IUnknown *pIUnk);
 
-    __checkReturn 
+    __checkReturn
     HRESULT SetOption(OptionValue *pOptionValue);
-    __checkReturn 
+    __checkReturn
     HRESULT GetOption(OptionValue *pOptionValue);
 
     static ULONG GetTableForToken(mdToken tkn);
@@ -308,7 +308,7 @@ public:
     FORCEINLINE static int IsRecId(ULONG ul) { return (ul & 0x80000000) != 0;}
 
     // Place in every API function before doing any allocations.
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT PreUpdate()
     {
         if (m_eGrow == eg_grow)
@@ -317,32 +317,32 @@ public:
         }
         return S_OK;
     }
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT AddRecord(
-        UINT32 nTableIndex, 
-        void **ppRow, 
+        UINT32 nTableIndex,
+        void **ppRow,
         RID   *pRid);
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT PutCol(ULONG ixTbl, ULONG ixCol, void *pRecord, ULONG uVal)
     {   _ASSERTE(ixTbl < TBL_COUNT); _ASSERTE(ixCol < m_TableDefs[ixTbl].m_cCols);
         return PutCol(m_TableDefs[ixTbl].m_pColDefs[ixCol], pRecord, uVal);
     } // HRESULT CMiniMdRW::PutCol()
-    __checkReturn 
+    __checkReturn
     HRESULT PutString(ULONG ixTbl, ULONG ixCol, void *pRecord, LPCSTR szString);
-    __checkReturn 
+    __checkReturn
     HRESULT PutStringW(ULONG ixTbl, ULONG ixCol, void *pRecord, LPCWSTR wszString);
-    __checkReturn 
+    __checkReturn
     HRESULT PutGuid(ULONG ixTbl, ULONG ixCol, void *pRecord, REFGUID guid);
-    __checkReturn 
+    __checkReturn
     HRESULT ChangeMvid(REFGUID newMvid);
-    __checkReturn 
+    __checkReturn
     HRESULT PutToken(ULONG ixTbl, ULONG ixCol, void *pRecord, mdToken tk);
-    __checkReturn 
+    __checkReturn
     HRESULT PutBlob(ULONG ixTbl, ULONG ixCol, void *pRecord, const void *pvData, ULONG cbData);
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT PutUserString(MetaData::DataBlob data, UINT32 *pnIndex)
     { return m_UserStringHeap.AddBlob(data, pnIndex); }
 
@@ -354,15 +354,15 @@ public:
     #define AddTblRecord(tbl) \
         __checkReturn HRESULT Add##tbl##Record(tbl##Rec **ppRow, RID *pnRowIndex)   \
         {   return AddRecord(TBL_##tbl, reinterpret_cast<void **>(ppRow), pnRowIndex); }
-    
+
     AddTblRecord(Module)
     AddTblRecord(TypeRef)
     __checkReturn HRESULT AddTypeDefRecord( // Specialized implementation.
-        TypeDefRec **ppRow, 
+        TypeDefRec **ppRow,
         RID         *pnRowIndex);
     AddTblRecord(Field)
     __checkReturn HRESULT AddMethodRecord(  // Specialized implementation.
-        MethodRec **ppRow, 
+        MethodRec **ppRow,
         RID        *pnRowIndex);
     AddTblRecord(Param)
     AddTblRecord(InterfaceImpl)
@@ -375,11 +375,11 @@ public:
     AddTblRecord(FieldLayout)
     AddTblRecord(StandAloneSig)
     __checkReturn HRESULT AddEventMapRecord(    // Specialized implementation.
-        EventMapRec **ppRow, 
+        EventMapRec **ppRow,
         RID          *pnRowIndex);
     AddTblRecord(Event)
     __checkReturn HRESULT AddPropertyMapRecord( // Specialized implementation.
-        PropertyMapRec **ppRow, 
+        PropertyMapRec **ppRow,
         RID             *pnRowIndex);
     AddTblRecord(Property)
     AddTblRecord(MethodSemantics)
@@ -421,14 +421,14 @@ public:
     __checkReturn HRESULT AddEventToEventMap(ULONG emd, RID ed);
 
     // does the MiniMdRW has the indirect tables, such as FieldPtr, MethodPtr
-    FORCEINLINE int HasIndirectTable(ULONG ix) 
+    FORCEINLINE int HasIndirectTable(ULONG ix)
     { if (g_PtrTableIxs[ix].m_ixtbl < TBL_COUNT) return GetCountRecs(g_PtrTableIxs[ix].m_ixtbl); return 0;}
 
     FORCEINLINE int IsVsMapValid(ULONG ixTbl)
     { _ASSERTE(ixTbl<TBL_COUNT); return (m_pVS[ixTbl] && m_pVS[ixTbl]->m_isMapValid); }
 
     // translate index returned by getMethodListOfTypeDef to a rid into Method table
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetMethodRid(ULONG index, ULONG *pRid)
     {
         HRESULT hr;
@@ -449,7 +449,7 @@ public:
     }
 
     // translate index returned by getFieldListOfTypeDef to a rid into Field table
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetFieldRid(ULONG index, ULONG *pRid)
     {
         HRESULT hr;
@@ -468,9 +468,9 @@ public:
         *pRid = 0;
         return hr;
     }
-    
+
     // translate index returned by getParamListOfMethod to a rid into Param table
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetParamRid(ULONG index, ULONG *pRid)
     {
         HRESULT hr;
@@ -489,9 +489,9 @@ public:
         *pRid = 0;
         return hr;
     }
-    
+
     // translate index returned by getEventListOfEventMap to a rid into Event table
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetEventRid(ULONG index, ULONG *pRid)
     {
         HRESULT hr;
@@ -510,9 +510,9 @@ public:
         *pRid = 0;
         return hr;
     }
-    
+
     // translate index returned by getPropertyListOfPropertyMap to a rid into Property table
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT GetPropertyRid(ULONG index, ULONG *pRid)
     {
         HRESULT hr;
@@ -533,32 +533,32 @@ public:
     }
 
     // Convert a pseudo-RID from a Virtual Sort into a real RID.
-    FORCEINLINE ULONG GetRidFromVirtualSort(ULONG ixTbl, ULONG index) 
+    FORCEINLINE ULONG GetRidFromVirtualSort(ULONG ixTbl, ULONG index)
     { return IsVsMapValid(ixTbl) ? *(m_pVS[ixTbl]->m_pMap->Get(index)) : index; }
 
     // Index returned by GetInterfaceImplForTypeDef. It could be index to VirtualSort table
     // or directly to InterfaceImpl
-    FORCEINLINE ULONG GetInterfaceImplRid(ULONG index) 
+    FORCEINLINE ULONG GetInterfaceImplRid(ULONG index)
     { return GetRidFromVirtualSort(TBL_InterfaceImpl, index); }
 
     // Index returned by GetGenericParamForToken. It could be index to VirtualSort table
     // or directly to GenericParam
-    FORCEINLINE ULONG GetGenericParamRid(ULONG index) 
+    FORCEINLINE ULONG GetGenericParamRid(ULONG index)
     { return GetRidFromVirtualSort(TBL_GenericParam, index); }
 
     // Index returned by GetGenericParamConstraintForToken. It could be index to VirtualSort table
     // or directly to GenericParamConstraint
-    FORCEINLINE ULONG GetGenericParamConstraintRid(ULONG index) 
+    FORCEINLINE ULONG GetGenericParamConstraintRid(ULONG index)
     { return GetRidFromVirtualSort(TBL_GenericParamConstraint, index); }
 
     // Index returned by GetDeclSecurityForToken. It could be index to VirtualSort table
     // or directly to DeclSecurity
-    FORCEINLINE ULONG GetDeclSecurityRid(ULONG index) 
+    FORCEINLINE ULONG GetDeclSecurityRid(ULONG index)
     { return GetRidFromVirtualSort(TBL_DeclSecurity, index); }
 
     // Index returned by GetCustomAttributeForToken. It could be index to VirtualSort table
     // or directly to CustomAttribute
-    FORCEINLINE ULONG GetCustomAttributeRid(ULONG index) 
+    FORCEINLINE ULONG GetCustomAttributeRid(ULONG index)
     { return GetRidFromVirtualSort(TBL_CustomAttribute, index); }
 
     // add method, field, property, event, param to the map table
@@ -580,7 +580,7 @@ public:
     // Function to reorganize the string pool based on IBC profile data (if available) and static analysis.
     // Throws on error.
     VOID OrganizeStringPool(CorProfileData *pProfileData);
-    
+
     // Result of hash search
     enum HashSearchResult
     {
@@ -588,16 +588,16 @@ public:
         NotFound,   // Item not found.
         NoTable     // Table hasn't been built.
     };
-    
+
     // Create MemberRef hash table.
-    __checkReturn 
+    __checkReturn
     HRESULT CreateMemberRefHash();
-    
+
     // Add a new MemberRef to the hash table.
-    __checkReturn 
+    __checkReturn
     HRESULT AddMemberRefToHash(             // Return code.
         mdMemberRef mr);                    // Token of new guy.
-    
+
     // If the hash is built, search for the item. Ignore token *ptkMemberRef.
     HashSearchResult FindMemberRefFromHash(
         mdToken         tkParent,       // Parent token.
@@ -609,7 +609,7 @@ public:
     //*************************************************************************
     // Check a given mr token to see if this one is a match.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT CompareMemberRefs(              // S_OK match, S_FALSE no match.
         mdMemberRef mr,                     // Token to check.
         mdToken     tkPar,                  // Parent token.
@@ -618,13 +618,13 @@ public:
         ULONG       cbSigBlob);             // Size of signature.
 
     // Add a new MemberDef to the hash table.
-    __checkReturn 
+    __checkReturn
     HRESULT AddMemberDefToHash(
         mdToken tkMember,   // Token of new guy. It can be MethodDef or FieldDef
         mdToken tkParent);  // Parent token.
 
     // Create MemberDef Hash
-    __checkReturn 
+    __checkReturn
     HRESULT CreateMemberDefHash();
 
     // If the hash is built, search for the item. Ignore token *ptkMember.
@@ -638,7 +638,7 @@ public:
     //*************************************************************************
     // Check a given Method/Field token to see if this one is a match.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT CompareMemberDefs(              // S_OK match, S_FALSE no match.
         mdToken     tkMember,               // Token to check. It can be MethodDef or FieldDef
         mdToken     tkParent,               // Parent token recorded in the hash entry
@@ -650,11 +650,11 @@ public:
     //*************************************************************************
     // Add a new CustomAttributes to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddCustomAttributesToHash(      // Return code.
-        mdCustomAttribute     cv)           // Token of new guy. 
+        mdCustomAttribute     cv)           // Token of new guy.
     { return GenericAddToHash(TBL_CustomAttribute, CustomAttributeRec::COL_Parent, RidFromToken(cv)); }
-    
+
     inline ULONG HashMemberRef(mdToken tkPar, LPCUTF8 szName)
     {
         ULONG l = HashBytes((const BYTE *) &tkPar, sizeof(mdToken)) + HashStringA(szName);
@@ -688,7 +688,7 @@ public:
     //*************************************************************************
     // Add a new FieldMarhsal Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddFieldMarshalToHash(          // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_FieldMarshal, FieldMarshalRec::COL_Parent, rid); }
@@ -696,7 +696,7 @@ public:
     //*************************************************************************
     // Add a new Constant Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddConstantToHash(              // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_Constant, ConstantRec::COL_Parent, rid); }
@@ -704,7 +704,7 @@ public:
     //*************************************************************************
     // Add a new MethodSemantics Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddMethodSemanticsToHash(       // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_MethodSemantics, MethodSemanticsRec::COL_Association, rid); }
@@ -712,7 +712,7 @@ public:
     //*************************************************************************
     // Add a new ClassLayout Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddClassLayoutToHash(           // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_ClassLayout, ClassLayoutRec::COL_Parent, rid); }
@@ -720,7 +720,7 @@ public:
     //*************************************************************************
     // Add a new FieldLayout Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddFieldLayoutToHash(           // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_FieldLayout, FieldLayoutRec::COL_Field, rid); }
@@ -728,7 +728,7 @@ public:
     //*************************************************************************
     // Add a new ImplMap Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddImplMapToHash(               // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_ImplMap, ImplMapRec::COL_MemberForwarded, rid); }
@@ -736,7 +736,7 @@ public:
     //*************************************************************************
     // Add a new FieldRVA Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddFieldRVAToHash(              // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_FieldRVA, FieldRVARec::COL_Field, rid); }
@@ -744,7 +744,7 @@ public:
     //*************************************************************************
     // Add a new nested class Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddNestedClassToHash(           // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_NestedClass, NestedClassRec::COL_NestedClass, rid); }
@@ -752,7 +752,7 @@ public:
     //*************************************************************************
     // Add a new MethodImpl Rid to the hash table.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddMethodImplToHash(           // Return code.
         RID         rid)                    // Token of new guy.
     { return GenericAddToHash(TBL_MethodImpl, MethodImplRec::COL_Class, rid); }
@@ -761,7 +761,7 @@ public:
     //*************************************************************************
     // Build a hash table for the specified table if the size exceed the thresholds.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GenericBuildHashTable(          // Return code.
         ULONG       ixTbl,                  // Table with hash
         ULONG       ixCol);                 // col that we hash.
@@ -769,7 +769,7 @@ public:
     //*************************************************************************
     // Add a rid from a table into a hash
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GenericAddToHash(               // Return code.
         ULONG       ixTbl,                  // Table with hash
         ULONG       ixCol,                  // col that we hash.
@@ -778,18 +778,18 @@ public:
     //*************************************************************************
     // Add a rid from a table into a hash
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GenericFindWithHash(                // Return code.
         ULONG       ixTbl,                  // Table with hash
         ULONG       ixCol,                  // col that we hash.
         mdToken     tkTarget,               // token to be find in the hash
         RID        *pFoundRid);
 
-    
+
     // look up hash table for tokenless tables.
     // They are constant, FieldMarshal, MethodSemantics, ClassLayout, FieldLayout, ImplMap, FieldRVA, NestedClass, and MethodImpl
     CLookUpHash * m_pLookUpHashs[TBL_COUNT];
-    
+
 #if !defined(DACCESS_COMPILE)
     MapSHash<UINT32, UINT32> m_StringPoolOffsetHash;
 #endif
@@ -797,7 +797,7 @@ public:
     //*************************************************************************
     // Hash for named items.
     //*************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT AddNamedItemToHash(             // Return code.
         ULONG       ixTbl,                  // Table with the new item.
         mdToken     tk,                     // Token of new guy.
@@ -810,7 +810,7 @@ public:
         mdToken   tkParent, // Token of parent, if any.
         mdToken * ptk);     // Return if found.
 
-    __checkReturn 
+    __checkReturn
     HRESULT CompareNamedItems(              // S_OK match, S_FALSE no match.
         ULONG       ixTbl,                  // Table with the item.
         mdToken     tk,                     // Token to check.
@@ -825,13 +825,13 @@ public:
     //*****************************************************************************
     // IMetaModelCommon - RW specific versions for some of the functions.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     virtual HRESULT CommonGetEnclosingClassOfTypeDef(
-        mdTypeDef  td, 
+        mdTypeDef  td,
         mdTypeDef *ptkEnclosingTypeDef)
     {
         _ASSERTE(ptkEnclosingTypeDef != NULL);
-        
+
         HRESULT hr;
         NestedClassRec *pRec;
         RID         iRec;
@@ -848,41 +848,41 @@ public:
         return S_OK;
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT CommonEnumCustomAttributeByName( // S_OK or error.
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         bool        fStopAtFirstFind,       // [IN] just find the first one
         HENUMInternal* phEnum);             // enumerator to fill up
 
-    __checkReturn 
+    __checkReturn
     HRESULT CommonGetCustomAttributeByNameEx( // S_OK or error.
         mdToken            tkObj,             // [IN] Object with Custom Attribute.
         LPCUTF8            szName,            // [IN] Name of desired Custom Attribute.
         mdCustomAttribute *ptkCA,             // [OUT] put custom attribute token here
         const void       **ppData,            // [OUT] Put pointer to data here.
         ULONG             *pcbData);          // [OUT] Put size of data here.
-    
+
     //*****************************************************************************
-    // Find helper for a constant. 
+    // Find helper for a constant.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindConstantHelper(         // return index to the constant table
         mdToken  tkParent,              // Parent token. Can be ParamDef, FieldDef, or Property.
         RID     *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a FieldMarshal. 
+    // Find helper for a FieldMarshal.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldMarshalHelper(     // return index to the field marshal table
         mdToken tkParent,               // Parent token. Can be a FieldDef or ParamDef.
         RID    *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a method semantics. 
+    // Find helper for a method semantics.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindMethodSemanticsHelper(      // return HRESULT
         mdToken     tkAssociate,            // Event or property token
         HENUMInternal *phEnum);             // fill in the enum
@@ -892,16 +892,16 @@ public:
     // This will look up methodsemantics based on its status!
     // Return CLDB_E_RECORD_NOTFOUND if cannot find the matching one
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindAssociateHelper(// return HRESULT
         mdToken     tkAssociate,            // Event or property token
         DWORD       dwSemantics,            // [IN] given a associate semantics(setter, getter, testdefault, reset)
         RID         *pRid);                 // [OUT] return matching row index here
 
     //*****************************************************************************
-    // Find helper for a MethodImpl. 
+    // Find helper for a MethodImpl.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindMethodImplHelper(// return HRESULT
         mdTypeDef   td,                     // TypeDef token for the Class.
         HENUMInternal *phEnum);             // fill in the enum
@@ -909,7 +909,7 @@ public:
     //*****************************************************************************
     // Find helper for a GenericParams
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindGenericParamHelper(         // Return HRESULT
         mdToken     tkOwner,                // Token for the GenericParams' owner
         HENUMInternal *phEnum);             // Fill in the enum.
@@ -917,121 +917,121 @@ public:
     //*****************************************************************************
     // Find helper for a Generic Constraints
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindGenericParamConstraintHelper(    // Return HRESULT
         mdGenericParam tkParam,             // Token for the GenericParam
         HENUMInternal *phEnum);             // Fill in the enum.
 
     //*****************************************************************************
-    // Find helper for a ClassLayout. 
+    // Find helper for a ClassLayout.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindClassLayoutHelper(      // return index to the ClassLayout table
         mdTypeDef tkParent,             // Parent token.
         RID      *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a FieldLayout. 
+    // Find helper for a FieldLayout.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldLayoutHelper(  // return index to the FieldLayout table
         mdFieldDef tkField,         // Token for the field.
         RID       *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a ImplMap. 
+    // Find helper for a ImplMap.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindImplMapHelper(  // return index to the constant table
         mdToken tk,             // Member forwarded token.
         RID    *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a FieldRVA. 
+    // Find helper for a FieldRVA.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindFieldRVAHelper(     // return index to the FieldRVA table
         mdFieldDef tkField,         // Token for the field.
         RID       *pFoundRid);
 
     //*****************************************************************************
-    // Find helper for a NestedClass. 
+    // Find helper for a NestedClass.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT FindNestedClassHelper(  // return index to the NestedClass table
         mdTypeDef tkClass,          // Token for the NestedClass.
         RID      *pFoundRid);
 
     //*****************************************************************************
-    // IMPORTANT!!!!!!!! Use these set of functions if you are dealing with RW rather 
+    // IMPORTANT!!!!!!!! Use these set of functions if you are dealing with RW rather
     // getInterfaceImplsForTypeDef, getDeclSecurityForToken, etc.
     // The following functions can deal with these tables when they are not sorted and
     // build the VirtualSort tables for quick lookup.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT GetInterfaceImplsForTypeDef(mdTypeDef td, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol( RidFromToken(td), m_pVS[TBL_InterfaceImpl], pRidStart, pRidEnd);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetGenericParamsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
-        return LookUpTableByCol( 
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)), 
+        return LookUpTableByCol(
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
             m_pVS[TBL_GenericParam], pRidStart, pRidEnd);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetGenericParamConstraintsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
-        return LookUpTableByCol( RidFromToken(tk), 
+        return LookUpTableByCol( RidFromToken(tk),
             m_pVS[TBL_GenericParamConstraint], pRidStart, pRidEnd);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetMethodSpecsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
-        return LookUpTableByCol( 
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)), 
+        return LookUpTableByCol(
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
             m_pVS[TBL_MethodSpec], pRidStart, pRidEnd);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetDeclSecurityForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
-        return LookUpTableByCol( 
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)), 
-            m_pVS[TBL_DeclSecurity], 
-            pRidStart, 
+        return LookUpTableByCol(
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)),
+            m_pVS[TBL_DeclSecurity],
+            pRidStart,
             pRidEnd);
     }
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetCustomAttributeForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
-        return LookUpTableByCol( 
+        return LookUpTableByCol(
             encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, lengthof(mdtHasCustomAttribute)),
-            m_pVS[TBL_CustomAttribute], 
-            pRidStart, 
+            m_pVS[TBL_CustomAttribute],
+            pRidStart,
             pRidEnd);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT GetUserString(ULONG nIndex, MetaData::DataBlob *pData)
     { return m_UserStringHeap.GetBlob(nIndex, pData); }
-    // Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string 
+    // Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string
     // in the heap.
     // Returns S_OK and fills the string (*pData) and the next index (*pnNextIndex).
     // Returns S_FALSE if the index (nIndex) is not valid user string index.
     // Returns error code otherwise.
     // Clears *pData and sets *pnNextIndex to 0 on error or S_FALSE.
-    __checkReturn 
+    __checkReturn
     HRESULT GetUserStringAndNextIndex(
-        UINT32              nIndex, 
-        MetaData::DataBlob *pData, 
+        UINT32              nIndex,
+        MetaData::DataBlob *pData,
         UINT32             *pnNextIndex);
-    
+
     FORCEINLINE int IsSorted(ULONG ixTbl) { return m_Schema.IsSorted(ixTbl);}
     FORCEINLINE int IsSortable(ULONG ixTbl) { return m_bSortable[ixTbl];}
     FORCEINLINE bool HasDelete() { return ((m_Schema.m_heaps & CMiniMdSchema::HAS_DELETE) ? true : false); }
@@ -1052,53 +1052,53 @@ protected:
 
     __checkReturn
     HRESULT GetHotMetadataTokensSearchAware(
-        CorProfileData *pProfileData, 
+        CorProfileData *pProfileData,
         ULONG ixTbl,
         ULONG *pResultCount,
-        mdToken *tokenBuffer, 
+        mdToken *tokenBuffer,
         ULONG maxCount);
 
-    __checkReturn 
+    __checkReturn
     HRESULT GetFullSaveSize(
-        CorSaveSize               fSave, 
-        UINT32                   *pcbSize, 
-        DWORD                    *pbCompressed, 
-        MetaDataReorderingOptions reorderingOptions = NoReordering, 
+        CorSaveSize               fSave,
+        UINT32                   *pcbSize,
+        DWORD                    *pbCompressed,
+        MetaDataReorderingOptions reorderingOptions = NoReordering,
         CorProfileData           *pProfileData = NULL);
-    __checkReturn 
+    __checkReturn
     HRESULT GetENCSaveSize(UINT32 *pcbSize);
-    __checkReturn 
+    __checkReturn
     HRESULT GetHotPoolsSaveSize(
-        UINT32                   *pcbSize, 
-        MetaDataReorderingOptions reorderingOptions, 
+        UINT32                   *pcbSize,
+        MetaDataReorderingOptions reorderingOptions,
         CorProfileData           *pProfileData);
 
-    __checkReturn 
+    __checkReturn
     HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData = NULL );
-    __checkReturn 
+    __checkReturn
     HRESULT SaveENCTablesToStream(IStream *pIStream);
-    __checkReturn 
+    __checkReturn
     HRESULT SaveHotPoolsToStream(
-        IStream                  *pStream, 
-        MetaDataReorderingOptions reorderingOptions, 
-        CorProfileData           *pProfileData, 
-        UINT32                   *pnPoolDirSize, 
+        IStream                  *pStream,
+        MetaDataReorderingOptions reorderingOptions,
+        CorProfileData           *pProfileData,
+        UINT32                   *pnPoolDirSize,
         UINT32                   *pnSavedPoolsSize);
-    __checkReturn 
+    __checkReturn
     HRESULT SaveHotPoolToStream(
-        IStream                 *pStream, 
-        CorProfileData          *pProfileData, 
-        MetaData::HotHeapWriter *pHotHeapWriter, 
+        IStream                 *pStream,
+        CorProfileData          *pProfileData,
+        MetaData::HotHeapWriter *pHotHeapWriter,
         UINT32                  *pnSavedSize);
-    
+
     // TO ELIMINATE:
-    __checkReturn 
+    __checkReturn
     HRESULT AddGuid(REFGUID pGuid, UINT32 *pnIndex)
     { return m_GuidHeap.AddGuid(&pGuid, pnIndex); }
-    
+
     // Allows putting into tables outside this MiniMd, specifically the temporary
     //  table used on save.
-    __checkReturn 
+    __checkReturn
     HRESULT PutCol(CMiniColDef ColDef, void *pRecord, ULONG uVal);
 
     // Returns TRUE if token (tk) is valid.
@@ -1114,17 +1114,17 @@ protected:
         // Base type doesn't know about user string blob (yet)
         return _IsValidTokenBase(tk);
     } // CMiniMdRW::_IsValidToken
-    
+
 #ifdef _DEBUG
     bool CanHaveCustomAttribute(ULONG ixTbl);
 #endif
-    
-    __checkReturn 
+
+    __checkReturn
     HRESULT ExpandTables();
-    __checkReturn 
+    __checkReturn
     HRESULT ExpandTableColumns(CMiniMdSchema &Schema, ULONG ixTbl);
 
-    __checkReturn 
+    __checkReturn
     HRESULT InitWithLargeTables();
 
     void ComputeGrowLimits(int bSmall=TRUE); // Set max, lim, based on param.
@@ -1142,22 +1142,22 @@ protected:
     // Table info.
     MetaData::TableRW m_Tables[TBL_COUNT];
     VirtualSort *m_pVS[TBL_COUNT];      // Virtual sorters, one per table, but sparse.
-    
+
     //*****************************************************************************
-    // look up a table by a col given col value is ulVal. 
+    // look up a table by a col given col value is ulVal.
     //*****************************************************************************
-    __checkReturn 
+    __checkReturn
     HRESULT LookUpTableByCol(
-        ULONG       ulVal, 
-        VirtualSort *pVSTable, 
-        RID         *pRidStart, 
+        ULONG       ulVal,
+        VirtualSort *pVSTable,
+        RID         *pRidStart,
         RID         *pRidEnd);
 
-    __checkReturn 
+    __checkReturn
     HRESULT Impl_SearchTableRW(ULONG ixTbl, ULONG ixCol, ULONG ulTarget, RID *pFoundRid);
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTable(ULONG ixTbl, CMiniColDef sColumn, ULONG ulTarget, RID *pRid);
-    __checkReturn 
+    __checkReturn
     virtual HRESULT vSearchTableNotGreater(ULONG ixTbl, CMiniColDef sColumn, ULONG ulTarget, RID *pRid);
 
     void SetSorted(ULONG ixTbl, int bSorted)
@@ -1171,47 +1171,47 @@ protected:
     MetaData::BlobHeapRW   m_BlobHeap;
     MetaData::BlobHeapRW   m_UserStringHeap;
     MetaData::GuidHeapRW   m_GuidHeap;
-    
+
     IMapToken  *m_pHandler;     // Remap handler.
     __checkReturn HRESULT MapToken(RID from, RID to, mdToken type);
-    
+
     ULONG m_cbSaveSize;         // Estimate of save size.
-    
+
     int m_fIsReadOnly : 1;      // Is this db read-only?
     int m_bPreSaveDone : 1;     // Has save optimization been done?
     int m_bSaveCompressed : 1;  // Can the data be saved as fully compressed?
     int m_bPostGSSMod : 1;      // true if a change was made post GetSaveSize.
-    
-    
+
+
     //*************************************************************************
     // Overridables -- must be provided in derived classes.
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, __out LPCSTR *pszString)
     { return m_StringHeap.GetString(nIndex, pszString); }
-    __checkReturn 
+    __checkReturn
     HRESULT Impl_GetStringW(ULONG ix, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer);
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetGuid(UINT32 nIndex, GUID *pTargetGuid)
     {
         HRESULT         hr;
         GUID UNALIGNED *pSourceGuid;
         IfFailRet(m_GuidHeap.GetGuid(
-            nIndex, 
+            nIndex,
             &pSourceGuid));
         // Add void* casts so that the compiler can't make assumptions about alignment.
         CopyMemory((void *)pTargetGuid, (void *)pSourceGuid, sizeof(GUID));
         SwapGuid(pTargetGuid);
         return S_OK;
     }
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetBlob(ULONG nIndex, __out MetaData::DataBlob *pData)
     { return m_BlobHeap.GetBlob(nIndex, pData); }
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT Impl_GetRow(
-                        UINT32 nTableIndex, 
-                        UINT32 nRowIndex, 
+                        UINT32 nTableIndex,
+                        UINT32 nRowIndex,
         __deref_out_opt BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
@@ -1219,49 +1219,49 @@ protected:
     }
 
     // Count of rows in tbl2, pointed to by the column in tbl.
-    __checkReturn 
+    __checkReturn
     HRESULT Impl_GetEndRidForColumn(
-        UINT32       nTableIndex, 
-        RID          nRowIndex, 
+        UINT32       nTableIndex,
+        RID          nRowIndex,
         CMiniColDef &def,                   // Column containing the RID into other table.
         UINT32       nTargetTableIndex,     // The other table.
         RID         *pEndRid);
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT Impl_SearchTable(ULONG ixTbl, CMiniColDef sColumn, ULONG ixCol, ULONG ulTarget, RID *pFoundRid)
     { return Impl_SearchTableRW(ixTbl, ixCol, ulTarget, pFoundRid); }
-    
-    FORCEINLINE int Impl_IsRo() 
+
+    FORCEINLINE int Impl_IsRo()
     { return 0; }
 
 
     //*************************************************************************
     enum {END_OF_TABLE = 0};
-    FORCEINLINE ULONG NewRecordPointerEndValue(ULONG ixTbl) 
+    FORCEINLINE ULONG NewRecordPointerEndValue(ULONG ixTbl)
     { if (HasIndirectTable(ixTbl)) return m_Schema.m_cRecs[ixTbl]+1; else return END_OF_TABLE; }
 
     __checkReturn HRESULT ConvertMarkerToEndOfTable(ULONG tblParent, ULONG colParent, ULONG ridChild, RID ridParent);
-    
+
     // Add a child row, adjust pointers in parent rows.
-    __checkReturn 
+    __checkReturn
     HRESULT AddChildRowIndirectForParent(
-        ULONG tblParent, 
-        ULONG colParent, 
-        ULONG tblChild, 
-        RID ridParent, 
+        ULONG tblParent,
+        ULONG colParent,
+        ULONG tblChild,
+        RID ridParent,
         void **ppRow);
-    
+
     // Update pointers in the parent table to reflect the addition of a child, if required
     // create the indirect table in which case don't update pointers.
-    __checkReturn 
+    __checkReturn
     HRESULT AddChildRowDirectForParent(ULONG tblParent, ULONG colParent, ULONG tblChild, RID ridParent);
 
     // Given a table id, create the corresponding indirect table.
-    __checkReturn 
+    __checkReturn
     HRESULT CreateIndirectTable(ULONG ixtbl, BOOL bOneLess = true);
 
     // If the last param is not added in the right sequence, fix it up.
-    __checkReturn 
+    __checkReturn
     HRESULT FixParamSequence(RID md);
 
 
@@ -1291,16 +1291,16 @@ protected:
 
 protected:
     UTSemReadWrite * dbg_m_pLock;
-    
+
 public:
     // Checks that MetaData is locked for write operation (if thread-safety is enabled and the lock exists)
     void Debug_CheckIsLockedForWrite();
-    
+
     void Debug_SetLock(UTSemReadWrite * pLock)
     {
         dbg_m_pLock = pLock;
     }
-    
+
 #endif //_DEBUG
 
 public:
@@ -1313,17 +1313,17 @@ public:
 
     __checkReturn HRESULT CalculateTypeRefToTypeDefMap();
 
-    FORCEINLINE TOKENMAP *GetTypeRefToTypeDefMap() 
+    FORCEINLINE TOKENMAP *GetTypeRefToTypeDefMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetTypeRefToTypeDefMap() : NULL; };
-    
-    FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap() 
+
+    FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetMemberRefToMemberDefMap() : NULL; };
-    
-    FORCEINLINE MDTOKENMAP *GetTokenMovementMap() 
+
+    FORCEINLINE MDTOKENMAP *GetTokenMovementMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetTokenMovementMap() : NULL; };
-    
+
     FORCEINLINE TokenRemapManager *GetTokenRemapManager() { return m_pTokenRemapManager; };
-    
+
     __checkReturn HRESULT InitTokenRemapManager();
 
     virtual ULONG vGetCol(ULONG ixTbl, ULONG ixCol, void *pRecord)
@@ -1356,8 +1356,8 @@ public:
     {
         return (m_OptionValue.m_UpdateMode & MDUpdateMask) == MDUpdateENC;
     }
-    
-    __checkReturn 
+
+    __checkReturn
     FORCEINLINE HRESULT UpdateENCLog(mdToken tk, CMiniMdRW::eDeltaFuncs funccode = CMiniMdRW::eDeltaFuncDefault)
     {
         if (IsENCOn())
@@ -1366,7 +1366,7 @@ public:
             return S_OK;
     }
 
-    __checkReturn 
+    __checkReturn
     FORCEINLINE HRESULT UpdateENCLog2(ULONG ixTbl, ULONG iRid, CMiniMdRW::eDeltaFuncs funccode = CMiniMdRW::eDeltaFuncDefault)
     {
         if (IsENCOn())
@@ -1379,11 +1379,11 @@ public:
 
 private:
     BOOL m_fMinimalDelta;
-    
-    // 
+
+    //
     // String heap reorganization
-    // 
-    
+    //
+
     // Check to see if it is safe to reorder the string pool.
     BOOL IsSafeToReorderStringPool();
     // Function to mark hot strings in the marks array based on the token information in profile data.
@@ -1400,11 +1400,11 @@ private:
     // Function to fill the given string pool with strings from the existing string pool using the mark array.
     // Throws on error.
     VOID CreateReorderedStringPool(
-        MetaData::StringHeapRW *pStringHeap, 
-        BYTE                   *pMarks, 
-        ULONG                   cbHeapSize, 
+        MetaData::StringHeapRW *pStringHeap,
+        BYTE                   *pMarks,
+        ULONG                   cbHeapSize,
         CorProfileData         *pProfileData);
-    
+
 public:
     BOOL IsMinimalDelta()
     {
@@ -1417,7 +1417,7 @@ public:
     // Unfortunately, we can't allow this to be set via the SetOption method anymore. In v1.0 and v1.1, this flag
     // could be set but would still result in generating full metadatas. We can't automatically start generating
     // true deltas for people... it could break them.
-    void EnableDeltaMetadataGeneration() 
+    void EnableDeltaMetadataGeneration()
     {
         _ASSERTE(m_OptionValue.m_UpdateMode == MDUpdateENC);
     }
@@ -1425,9 +1425,9 @@ public:
 
 protected:
     // Internal Helper functions for ENC log.
-    __checkReturn 
+    __checkReturn
     HRESULT UpdateENCLogHelper(mdToken tk, CMiniMdRW::eDeltaFuncs funccode);
-    __checkReturn 
+    __checkReturn
     HRESULT UpdateENCLogHelper2(ULONG ixTbl, ULONG iRid, CMiniMdRW::eDeltaFuncs funccode);
 
 protected:
@@ -1436,21 +1436,21 @@ protected:
 
     ULONGARRAY  *m_rENCRecs;    // Array of RIDs affected by ENC.
 
-    __checkReturn 
+    __checkReturn
     HRESULT ApplyRecordDelta(CMiniMdRW &mdDelta, ULONG ixTbl, void *pDelta, void *pRecord);
-    __checkReturn 
+    __checkReturn
     HRESULT ApplyTableDelta(CMiniMdRW &mdDelta, ULONG ixTbl, RID iRid, int fc);
-    __checkReturn 
+    __checkReturn
     HRESULT GetDeltaRecord(ULONG ixTbl, ULONG iRid, void **ppRecord);
-    __checkReturn 
+    __checkReturn
     HRESULT ApplyHeapDeltas(CMiniMdRW &mdDelta);
-    __checkReturn 
+    __checkReturn
     HRESULT ApplyHeapDeltasWithMinimalDelta(CMiniMdRW &mdDelta);
-    __checkReturn 
+    __checkReturn
     HRESULT ApplyHeapDeltasWithFullDelta(CMiniMdRW &mdDelta);
-    __checkReturn 
+    __checkReturn
     HRESULT StartENCMap();              // Call, on a delta MD, to prepare to access sparse rows.
-    __checkReturn 
+    __checkReturn
     HRESULT EndENCMap();                // Call, on a delta MD, when done with sparse rows.
 
 public:
@@ -1462,12 +1462,12 @@ public:
     // Returns new VirtualSort validity state in *pfIsTableVirtualSortValid.
     // Assumptions:
     //    Table's VirtualSort was valid before adding the record to the table.
-    //    The caller must ensure validity of VirtualSort by calling to 
-    //    IsTableVirtualSorted or by using the returned state from previous 
+    //    The caller must ensure validity of VirtualSort by calling to
+    //    IsTableVirtualSorted or by using the returned state from previous
     //    call to this method.
-    __checkReturn 
+    __checkReturn
     HRESULT ValidateVirtualSortAfterAddRecord(
-        ULONG  ixTbl, 
+        ULONG  ixTbl,
         bool * pfIsTableVirtualSortValid);
 
 }; // class CMiniMdRW : public CMiniMdTemplate<CMiniMdRW>

@@ -3632,7 +3632,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     LOG((LF_CORDB, LL_INFO1000, "D::SIP: In SetIP ==> fCanSetIPOnly:0x%x <==!\n", fCanSetIPOnly));
 
-    CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();    
+    CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
         CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
@@ -5469,7 +5469,7 @@ void Debugger::TrapAllRuntimeThreads()
                      !g_pEEInterface->IsPreemptiveGCDisabled());
     }
     CONTRACTL_END;
- 
+
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Only sync if RS requested it.
     if (!m_RSRequestedSync)
@@ -5987,7 +5987,7 @@ void Debugger::SuspendForGarbageCollectionStarted()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
+
     this->m_isGarbageCollectionEventsEnabledLatch = this->m_isGarbageCollectionEventsEnabled;
     this->m_willBlockOnGarbageCollectionEvent = this->m_isGarbageCollectionEventsEnabledLatch;
 }
@@ -6005,7 +6005,7 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     {
         return;
     }
-    this->m_isBlockedOnGarbageCollectionEvent = TRUE; 
+    this->m_isBlockedOnGarbageCollectionEvent = TRUE;
 
     Thread* pThread = GetThread();
 
@@ -6049,7 +6049,7 @@ void Debugger::ResumeForGarbageCollectionStarted()
         return;
 
     {
-        Debugger::DebuggerLockHolder dbgLockHolder(this);        
+        Debugger::DebuggerLockHolder dbgLockHolder(this);
 
         DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce1,
@@ -9279,8 +9279,8 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
 //
 // SuspendComplete is called when the last Runtime thread reaches a safe point in response to having its trap flags set.
 // This may be called on either the real helper thread or someone doing helper thread duty.
-// 
-// It could also be called for sending garbage collection events (see DebuggerRCThread::SendIPCEvent for more about the 
+//
+// It could also be called for sending garbage collection events (see DebuggerRCThread::SendIPCEvent for more about the
 // thread mode associated with the events)
 //
 BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
@@ -13094,7 +13094,7 @@ BOOL EnCSequencePointHelper::ShouldSetRemapBreakpoint(unsigned int offsetIndex)
 //-----------------------------------------------------------------------------
 // For each function that's EnC-ed, the EE will call either UpdateFunction
 // (if the function already is loaded + jitted) or AddFunction
-// 
+//
 // This is called before the EE updates the MethodDesc, so pMD does not yet
 // point to the version we'll be remapping to.
 //-----------------------------------------------------------------------------

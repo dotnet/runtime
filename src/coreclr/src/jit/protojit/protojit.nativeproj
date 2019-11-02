@@ -4,8 +4,8 @@
   <!--
       PROTO JIT: The purpose of this module is to provide an isolated environment to develop
       the RyuJIT backend without interfering with the development of the frontend.  The
-      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so 
-      it can be still consumed by the RyuJIT frontend separately maintaining the code stability 
+      idea is to fork codegen and registerfp, that way we leave the PUCLR backend intact so
+      it can be still consumed by the RyuJIT frontend separately maintaining the code stability
       of the PUCLR codegen.cpp logic.
 
       This module is meant to be a 'development' JIT, i.e. try to use the generated code by this JIT
@@ -21,7 +21,7 @@
     <!-- Set the output -->
 
     <OutputName>protojit</OutputName>
-    <StaticLinkJit>$(FeatureMergeJitAndEngine)</StaticLinkJit>    
+    <StaticLinkJit>$(FeatureMergeJitAndEngine)</StaticLinkJit>
     <FeatureMergeJitAndEngine>false</FeatureMergeJitAndEngine>
     <TargetType>DYNLINK</TargetType>
     <FileToMarkForSigning>$(BinariesDirectory)\protojit.dll</FileToMarkForSigning>

@@ -22,7 +22,7 @@ if (WIN32)
     endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 
     set_source_files_properties(${ASM_FILE} PROPERTIES COMPILE_OPTIONS "${ASM_OPTIONS}")
-    
+
     add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${ASM_FILE})
 
   endif()

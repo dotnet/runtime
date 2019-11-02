@@ -4,8 +4,8 @@
 //
 
 
-// 
-// 
+//
+//
 /*============================================================
 **
 ** Header:  Threads.inl
@@ -73,7 +73,7 @@ Frame* Thread::FindFrame(SIZE_T StackPointer)
 inline void Thread::SetThrowable(OBJECTREF pThrowable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags))
 {
     WRAPPER_NO_CONTRACT;
-    
+
     m_ExceptionState.SetThrowable(pThrowable DEBUG_ARG(stecFlags));
 }
 

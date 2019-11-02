@@ -8,7 +8,7 @@
 /* A simple, lightweight, character output stream, with very few
    external dependancies (like sprintf ... ) */
 
-/*  
+/*
    Date :  2/1/99 				*/
 /*****************************************************************/
 
@@ -46,7 +46,7 @@ OutString& OutString::operator<<(double d) {
 		d /= 10;
 		exponent++;
 		if (exponent > 500) {		// avoids a possible infinite loop
-            *this << "INF";		
+            *this << "INF";
 			return *this;
 		}
 	}
@@ -54,20 +54,20 @@ OutString& OutString::operator<<(double d) {
 		d *= 10;
 		--exponent;
 		if (exponent < -500) {		// avoids a possible infinite loop
-			*this << "0.0";		
+			*this << "0.0";
 			return *this;
 		}
 	}
 
 	// we now have a normalized d (between 1 and 10)
-	double delta = .5E-10;		
+	double delta = .5E-10;
 	d += delta;		// round to the precision we are displaying
 
 	unsigned trailingZeros = 0;
 	for(unsigned i = 0; i < 10; i++) {
 		int digit = (int) d;
 		d = (d - digit) * 10;		// ISSUE: does roundoff ever bite us here?
-	
+
 		if (digit == 0)		// defer printing traiing zeros
 			trailingZeros++;
 		else {
@@ -79,7 +79,7 @@ OutString& OutString::operator<<(double d) {
 		}
 		if (i == 0)
 			*this << '.';
-	
+
 	}
 	if (exponent != 0) {
 		*this << 'E';
@@ -110,11 +110,11 @@ OutString& OutString::dec(int i, size_t minWidth) {
 
 	if (i < 0)
 		*--ptr = '-';
-	
+
 	size_t len = &buff[11] - ptr; 	// length of string
 	if (len < minWidth)
 		pad(minWidth-len, ' ');
-	
+
 	*this << ptr;
 	return(*this);
 }
@@ -124,7 +124,7 @@ OutString& OutString::hex(unsigned __int64 i, int minWidth, unsigned flags) {
 
 	unsigned hi = unsigned(i >> 32);
 	unsigned low = unsigned(i);
-	
+
 	if (hi != 0) {
 		minWidth -= 8;
 		hex(hi, minWidth, flags);		// print upper bits
@@ -136,7 +136,7 @@ OutString& OutString::hex(unsigned __int64 i, int minWidth, unsigned flags) {
 
 /*****************************************************************/
 OutString& OutString::hex(unsigned i, int minWidth, unsigned flags) {
-	char buff[12];			// big enough for any number 
+	char buff[12];			// big enough for any number
 	char* ptr = &buff[11];
 	*ptr = 0;
 
@@ -162,7 +162,7 @@ OutString& OutString::hex(unsigned i, int minWidth, unsigned flags) {
 
 	if (len < (size_t)minWidth)
 		pad(minWidth-len, (flags & zeroFill) ? '0' : ' ');
-	
+
 	*this << ptr;
 	return(*this);
 }

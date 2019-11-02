@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 // File: Table.h
-// 
+//
 
-// 
+//
 // Class code:MetaData::Table represents a MetaData table.
-// 
+//
 // ======================================================================================
 
 #pragma once
@@ -18,29 +18,29 @@ namespace MetaData
 {
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // This class represents a read-only MetaData table (a continuous chunk of data).
-// 
+//
 class TableRO
 {
     friend class TableRW;
-    
+
 private:
-    // 
+    //
     // Private data
-    // 
-    
+    //
+
     BYTE *m_pData;
-    
+
 public:
-    // 
+    //
     // Initialization
-    // 
-    
-    __checkReturn 
+    //
+
+    __checkReturn
     inline HRESULT Initialize(
-        __range(2, UINT32_MAX) UINT32   cbRecordSize, 
-                               DataBlob sourceData, 
+        __range(2, UINT32_MAX) UINT32   cbRecordSize,
+                               DataBlob sourceData,
                                BOOL     fCopyData)
     {
         _ASSERTE(!fCopyData);
@@ -48,26 +48,26 @@ public:
         m_pData = sourceData.GetDataPointer();
         return S_OK;
     }
-    
+
     // Destroys the table and all its allocated data. Can run on uninitialized table.
     inline void Delete()
     {
         m_pData = NULL;
     }
-    
+
 public:
-    // 
+    //
     // Getters
-    // 
-    
-    __checkReturn 
+    //
+
+    __checkReturn
     inline HRESULT GetRecord(
-                        UINT32 nRowIndex, 
-        __deref_out_opt BYTE **ppRecord, 
-                        UINT32 cbRecordSize, 
-                        UINT32 cRecordCount, 
+                        UINT32 nRowIndex,
+        __deref_out_opt BYTE **ppRecord,
+                        UINT32 cbRecordSize,
+                        UINT32 cRecordCount,
 #ifdef FEATURE_PREJIT
-                        struct HotTablesDirectory *pHotTablesDirectory, 
+                        struct HotTablesDirectory *pHotTablesDirectory,
 #endif //FEATURE_PREJIT
                         UINT32 nTableIndex)
     {
@@ -81,16 +81,16 @@ public:
         if ((pHotTablesDirectory != NULL) && (pHotTablesDirectory->m_rgTableHeader_SignedOffset[nTableIndex] != 0))
         {
             HRESULT hr = HotTable::GetData(
-                nRowIndex, 
-                ppRecord, 
-                cbRecordSize, 
+                nRowIndex,
+                ppRecord,
+                cbRecordSize,
                 HotTable::GetTableHeader(pHotTablesDirectory, nTableIndex));
-            
+
             if (hr == S_OK)
             {
                 _ASSERTE(memcmp(
-                    *ppRecord, 
-                    m_pData + (nRowIndex - 1) * cbRecordSize, 
+                    *ppRecord,
+                    m_pData + (nRowIndex - 1) * cbRecordSize,
                     cbRecordSize) == 0);
                 return S_OK;
             }
@@ -105,77 +105,77 @@ public:
         *ppRecord = m_pData + (nRowIndex - 1) * cbRecordSize;
         return S_OK;
     } // TableRO::GetRecord
-    
+
 };  // class TableRO
 
 // --------------------------------------------------------------------------------------
-// 
+//
 // This class represents a read-write MetaData table.
-// 
+//
 class TableRW
 {
 private:
-    // 
+    //
     // Private data
-    // 
-    
+    //
+
     // The storage of table records.
     RecordPool m_RecordStorage;
-    
+
 public:
-    // 
+    //
     // Initialization
-    // 
-    
-    // Initializes (empty) table of record size (cbRecordSize) with new allocated data for cRecordCount 
+    //
+
+    // Initializes (empty) table of record size (cbRecordSize) with new allocated data for cRecordCount
     // records.
-    __checkReturn 
+    __checkReturn
     inline HRESULT InitializeEmpty_WithRecordCount(
-        __range(2, UINT32_MAX) UINT32 cbRecordSize, 
-        __range(0, UINT32_MAX) UINT32 cRecordCount 
+        __range(2, UINT32_MAX) UINT32 cbRecordSize,
+        __range(0, UINT32_MAX) UINT32 cRecordCount
         COMMA_INDEBUG_MD(      BOOL   debug_fIsReadWrite))
     {
         return m_RecordStorage.InitNew(cbRecordSize, cRecordCount);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     inline HRESULT Initialize(
-        __range(2, UINT32_MAX) UINT32   cbRecordSize, 
-                               DataBlob sourceData, 
+        __range(2, UINT32_MAX) UINT32   cbRecordSize,
+                               DataBlob sourceData,
                                BOOL     fCopyData)
     {
         return m_RecordStorage.InitOnMem(cbRecordSize, sourceData.GetDataPointer(), sourceData.GetSize(), !fCopyData);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     inline HRESULT InitializeFromTable(
-        const TableRO *pSourceTable, 
-        UINT32         cbRecordSize, 
-        UINT32         cRecordCount, 
+        const TableRO *pSourceTable,
+        UINT32         cbRecordSize,
+        UINT32         cRecordCount,
         BOOL           fCopyData)
     {
         return m_RecordStorage.InitOnMem(cbRecordSize, pSourceTable->m_pData, cbRecordSize * cRecordCount, !fCopyData);
     }
-    __checkReturn 
+    __checkReturn
     inline HRESULT InitializeFromTable(
-        const TableRW *pSourceTable, 
+        const TableRW *pSourceTable,
         BOOL           fCopyData)
     {
         _ASSERTE(fCopyData);
         return m_RecordStorage.ReplaceContents(const_cast<RecordPool *>(&pSourceTable->m_RecordStorage));
     }
-    
+
     // Destroys the table and all its allocated data. Can run on uninitialized table.
     inline void Delete()
     {
         return m_RecordStorage.Uninit();
     }
-    
+
 public:
-    // 
+    //
     // Getters
-    // 
-    
+    //
+
     inline UINT32 GetRecordCount() const
     {
         return const_cast<RecordPool &>(m_RecordStorage).Count();
@@ -184,60 +184,60 @@ public:
     {
         return m_RecordStorage.GetSaveSize(pcbSize);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     inline HRESULT GetRecord(
-                        UINT32 nIndex, 
+                        UINT32 nIndex,
         __deref_out_opt BYTE **ppRecord)
     {
         return m_RecordStorage.GetRecord(nIndex, ppRecord);
     }
-    
-    __checkReturn 
+
+    __checkReturn
     inline HRESULT SaveToStream(
         IStream *pStream) const
     {
         return const_cast<RecordPool &>(m_RecordStorage).PersistToStream(pStream);
     }
-    
+
 public:
-    // 
+    //
     // Setters
-    // 
-    
-    __checkReturn 
+    //
+
+    __checkReturn
     inline HRESULT AddRecord(
-        __out                        BYTE  **ppbRecord, 
+        __out                        BYTE  **ppbRecord,
         __out                        UINT32 *pnIndex)
     {
         return m_RecordStorage.AddRecord(ppbRecord, pnIndex);
     }
-    __checkReturn 
+    __checkReturn
     inline HRESULT InsertRecord(
-        UINT32 nIndex, 
+        UINT32 nIndex,
         BYTE **ppbRecord)
     {
         return m_RecordStorage.InsertRecord(nIndex, ppbRecord);
     }
-    
-    // Makes table data writable, i.e. copies them into newly allocated chunk of memory. The caller 
+
+    // Makes table data writable, i.e. copies them into newly allocated chunk of memory. The caller
     // guarantees that the table is not writable yet (otherwise this method asserts).
-    // 
+    //
     // Returns S_OK (even if the table is empty).
     // Returns METADATA_E_INTERNAL_ERROR error code if the table has more segments.
-    __checkReturn 
+    __checkReturn
     inline HRESULT MakeWritable()
     {
         return m_RecordStorage.ConvertToRW();
     }
-    
+
 #ifdef _DEBUG_METADATA
     // Sets table information for debugging.
     void Debug_SetTableInfo(const char *szTableName, UINT32 nTableIndex)
     {
     }
 #endif //_DEBUG_METADATA
-    
+
 };  // class TableRW
 
 };  // namespace MetaData

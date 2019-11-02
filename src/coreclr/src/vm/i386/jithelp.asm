@@ -8,7 +8,7 @@
 ; ***********************************************************************
 ;
 ;  *** NOTE:  If you make changes to this file, propagate the changes to
-;             jithelp.s in this directory                            
+;             jithelp.s in this directory
 
 ; This contains JITinterface routines that are 100% x86 assembly
 
@@ -58,7 +58,7 @@ EXTERN  g_highest_address:DWORD
 EXTERN  g_card_table:DWORD
 ifdef _DEBUG
 EXTERN  WriteBarrierAssert:PROC
-endif ; _DEBUG	
+endif ; _DEBUG
 EXTERN  JIT_InternalThrowFromHelper:PROC
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
@@ -71,7 +71,7 @@ EXTERN @JITutil_ChkCastInterface@8:PROC
 EXTERN @JITutil_IsInstanceOfAny@8:PROC
 EXTERN @JITutil_ChkCastAny@8:PROC
 
-ifdef WRITE_BARRIER_CHECK 
+ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
 g_GCShadow                      TEXTEQU <?g_GCShadow@@3PAEA>
 g_GCShadowEnd                   TEXTEQU <?g_GCShadowEnd@@3PAEA>
@@ -86,7 +86,7 @@ EXTERN _COMPlusEndCatch@20:PROC
 .XMM
 ; The following macro is needed because of a MASM issue with the
 ; movsd mnemonic
-; 
+;
 $movsd MACRO op1, op2
     LOCAL begin_movsd, end_movsd
 begin_movsd:
@@ -131,7 +131,7 @@ ENDM
 ; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
 ; anything here, you might need to change AdjustContextForWriteBarrier as well
 ; Note that beside the AV case, we might be unwinding inside the region where we have
-; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT 
+; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT
 WriteBarrierHelper MACRO rg
         ALIGN 4
 
@@ -171,27 +171,27 @@ ifdef _DEBUG
 endif ;_DEBUG
 
         ; in the !WRITE_BARRIER_CHECK case this will be the move for all
-        ; addresses in the GCHeap, addresses outside the GCHeap will get 
+        ; addresses in the GCHeap, addresses outside the GCHeap will get
         ; taken care of below at WriteBarrier_NotInHeap_&rg
 
 ifndef WRITE_BARRIER_CHECK
         mov     DWORD PTR [edx], rg
 endif
 
-ifdef WRITE_BARRIER_CHECK  
-        ; Test dest here so if it is bad AV would happen before we change register/stack 
+ifdef WRITE_BARRIER_CHECK
+        ; Test dest here so if it is bad AV would happen before we change register/stack
         ; status. This makes job of AdjustContextForWriteBarrier easier.
         cmp     [edx], 0
         ;; ALSO update the shadow GC heap if that is enabled
         ; Make ebp into the temporary src register. We need to do this so that we can use ecx
         ; in the calculation of the shadow GC address, but still have access to the src register
         push    ecx
-        push    ebp 
-        mov     ebp, rg  
-        
-        ; if g_GCShadow is 0, don't perform the check       
+        push    ebp
+        mov     ebp, rg
+
+        ; if g_GCShadow is 0, don't perform the check
         cmp     g_GCShadow, 0
-        je      WriteBarrier_NoShadow_&rg          
+        je      WriteBarrier_NoShadow_&rg
 
         mov     ecx, edx
         sub     ecx, g_lowest_address   ; U/V
@@ -200,8 +200,8 @@ ifdef WRITE_BARRIER_CHECK
         cmp     ecx, [g_GCShadowEnd]
         ja      WriteBarrier_NoShadow_&rg
 
-        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable 
-        ; mfence barriers on either side of these two writes to make sure that 
+        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
+        ; mfence barriers on either side of these two writes to make sure that
         ; they stay as close together as possible
 
         ; edx contains address in GC
@@ -212,17 +212,17 @@ ifdef WRITE_BARRIER_CHECK
         ;; the risk of a race that can occur here where the GC and ShadowGC don't match
         mov     DWORD PTR [edx], ebp
         mov     DWORD PTR [ecx], ebp
-        
+
         ;; We need a scratch register to verify the shadow heap.  We also need to
         ;; construct a memory barrier so that the write to the shadow heap happens
-        ;; before the read from the GC heap.  We can do both by using SUB/XCHG 
+        ;; before the read from the GC heap.  We can do both by using SUB/XCHG
         ;; rather than PUSH.
         ;;
         ;; TODO: Should be changed to a push if the mfence described above is added.
         ;;
         sub     esp, 4
         xchg    [esp], eax
-        
+
         ;; As part of our race avoidance (see above) we will now check whether the values
         ;; in the GC and ShadowGC match. There is a possibility that we're wrong here but
         ;; being overaggressive means we might mask a case where someone updates GC refs
@@ -238,7 +238,7 @@ WriteBarrier_CleanupShadowCheck_&rg:
         pop     eax
 
         jmp     WriteBarrier_ShadowCheckEnd_&rg
-        
+
 WriteBarrier_NoShadow_&rg:
         ; If we come here then we haven't written the value to the GC and need to.
         ;   ebp contains rg
@@ -259,7 +259,7 @@ endif
         cmp     BYTE PTR [edx], 0FFh
         jne     WriteBarrier_UpdateCardTable_&rg
         ret
-        
+
 WriteBarrier_UpdateCardTable_&rg:
         mov     BYTE PTR [edx], 0FFh
         ret
@@ -305,7 +305,7 @@ ByRefWriteBarrierHelper MACRO
 PUBLIC _JIT_ByRefWriteBarrier@0
 _JIT_ByRefWriteBarrier@0 PROC
         ;;test for dest in range
-        mov     ecx, [esi] 
+        mov     ecx, [esi]
         cmp     edi, g_lowest_address
         jb      ByRefWriteBarrier_NotInHeap
         cmp     edi, g_highest_address
@@ -317,15 +317,15 @@ ifndef WRITE_BARRIER_CHECK
 endif
 
 ifdef WRITE_BARRIER_CHECK
-        ; Test dest here so if it is bad AV would happen before we change register/stack 
+        ; Test dest here so if it is bad AV would happen before we change register/stack
         ; status. This makes job of AdjustContextForWriteBarrier easier.
         cmp     [edi], 0
 
         ;; ALSO update the shadow GC heap if that is enabled
-        
+
         ; use edx for address in GC Shadow,
-        push    edx      
-        
+        push    edx
+
         ;if g_GCShadow is 0, don't do the update
         cmp     g_GCShadow, 0
         je      ByRefWriteBarrier_NoShadow
@@ -337,8 +337,8 @@ ifdef WRITE_BARRIER_CHECK
         cmp     edx, [g_GCShadowEnd]
         ja      ByRefWriteBarrier_NoShadow
 
-        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable 
-        ; mfence barriers on either side of these two writes to make sure that 
+        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
+        ; mfence barriers on either side of these two writes to make sure that
         ; they stay as close together as possible
 
         ; edi contains address in GC
@@ -346,13 +346,13 @@ ifdef WRITE_BARRIER_CHECK
         ; ecx is the value to assign
 
         ;; When we're writing to the shadow GC heap we want to be careful to minimize
-        ;; the risk of a race that can occur here where the GC and ShadowGC don't match        
+        ;; the risk of a race that can occur here where the GC and ShadowGC don't match
         mov     DWORD PTR [edi], ecx
         mov     DWORD PTR [edx], ecx
 
         ;; We need a scratch register to verify the shadow heap.  We also need to
         ;; construct a memory barrier so that the write to the shadow heap happens
-        ;; before the read from the GC heap.  We can do both by using SUB/XCHG 
+        ;; before the read from the GC heap.  We can do both by using SUB/XCHG
         ;; rather than PUSH.
         ;;
         ;; TODO: Should be changed to a push if the mfence described above is added.
@@ -366,7 +366,7 @@ ifdef WRITE_BARRIER_CHECK
         ;; without going to a write barrier, but by its nature it will be indeterminant
         ;; and we will find real bugs whereas the current implementation is indeterminant
         ;; but only leads to investigations that find that this code is fundamentally flawed
-        
+
         mov     eax, [edi]
         cmp     [edx], eax
         je      ByRefWriteBarrier_CleanupShadowCheck
@@ -374,7 +374,7 @@ ifdef WRITE_BARRIER_CHECK
 ByRefWriteBarrier_CleanupShadowCheck:
         pop     eax
         jmp     ByRefWriteBarrier_ShadowCheckEnd
-        
+
 ByRefWriteBarrier_NoShadow:
         ; If we come here then we haven't written the value to the GC and need to.
         mov     DWORD PTR [edi], ecx
@@ -386,8 +386,8 @@ endif
         cmp     ecx, g_ephemeral_low
         jb      ByRefWriteBarrier_NotInEphemeral
         cmp     ecx, g_ephemeral_high
-        jae     ByRefWriteBarrier_NotInEphemeral 
-        
+        jae     ByRefWriteBarrier_NotInEphemeral
+
         mov     ecx, edi
         add     esi,4
         add     edi,4
@@ -400,7 +400,7 @@ endif
 ByRefWriteBarrier_UpdateCardTable:
         mov     byte ptr [ecx], 0FFh
         ret
-        
+
 ByRefWriteBarrier_NotInHeap:
         ; If it wasn't in the heap then we haven't updated the dst in memory yet
         mov     [edi],ecx
@@ -427,8 +427,8 @@ PUBLIC @JIT_&name&@8
 ENDM
 
 ; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
-; WriteBarrier functions so can determine if got AV in them. 
-; 
+; WriteBarrier functions so can determine if got AV in them.
+;
 PUBLIC _JIT_WriteBarrierGroup@0
 _JIT_WriteBarrierGroup@0 PROC
 ret
@@ -439,7 +439,7 @@ ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 ; we'll use C++ versions of these write barriers.
 UniversalWriteBarrierHelper <CheckedWriteBarrier>
 UniversalWriteBarrierHelper <WriteBarrier>
-endif 
+endif
 
 WriteBarrierHelper <EAX>
 WriteBarrierHelper <EBX>
@@ -640,7 +640,7 @@ JIT_LMul ENDP
 ;   converts a double to a long truncating toward zero (C semantics)
 ;   with check for overflow
 ;
-;       uses stdcall calling conventions 
+;       uses stdcall calling conventions
 ;
 PUBLIC JIT_Dbl2LngOvf
 JIT_Dbl2LngOvf PROC
@@ -669,7 +669,7 @@ JIT_Dbl2LngOvf ENDP
 ;Purpose:
 ;   converts a double to a long truncating toward zero (C semantics)
 ;
-;       uses stdcall calling conventions 
+;       uses stdcall calling conventions
 ;
 ;   note that changing the rounding mode is very expensive.  This
 ;   routine basiclly does the truncation sematics without changing
@@ -730,7 +730,7 @@ JIT_Dbl2Lng ENDP
 ;Purpose:
 ;   converts a double to a long truncating toward zero (C semantics)
 ;
-;	uses stdcall calling conventions 
+;	uses stdcall calling conventions
 ;
 ;   This code is faster on a P4 than the Dbl2Lng code above, but is
 ;   slower on a PIII.  Hence we choose this code when on a P4 or above.
@@ -746,7 +746,7 @@ arg1	equ	<[esp+0Ch]>
     movzx   eax, word ptr arg1      ; zero extend - wide
     or	ah, 0Ch                     ; turn on OE and DE flags
     mov	dword ptr [esp], eax        ; store new FPCW bits
-    fldcw   word ptr  [esp]         ; reload FPCW with new bits 
+    fldcw   word ptr  [esp]         ; reload FPCW with new bits
     fistp   qword ptr [esp]         ; convert
     mov	eax, dword ptr [esp]        ; reload FP result
     mov	edx, dword ptr [esp+4]      ;
@@ -763,7 +763,7 @@ JIT_Dbl2LngP4x87 ENDP
 ;Purpose:
 ;   converts a double to a long truncating toward zero (C semantics)
 ;
-;	uses stdcall calling conventions 
+;	uses stdcall calling conventions
 ;
 ;   This code is faster than the above P4 x87 code for Intel processors
 ;   equal or later than Core2 and Atom that have SSE3 support
@@ -780,7 +780,7 @@ arg1	equ	<[esp+0Ch]>
     fisttp qword ptr [esp]          ; convert
     mov eax, dword ptr [esp]        ; reload FP result
     mov edx, dword ptr [esp+4]
- 
+
     add esp, 8                      ; restore stack
 
     ret	8
@@ -793,7 +793,7 @@ JIT_Dbl2LngSSE3 ENDP
 ;Purpose:
 ;   converts a double to a long truncating toward zero (C semantics)
 ;
-;	uses stdcall calling conventions 
+;	uses stdcall calling conventions
 ;
 ;   This code is even faster than the P4 x87 code for Dbl2LongP4x87,
 ;   but only returns a 32 bit value (only good for int).
@@ -813,7 +813,7 @@ JIT_Dbl2IntSSE2 ENDP
 ; This is the small write barrier thunk we use when we know the
 ; ephemeral generation is higher in memory than older generations.
 ; The 0x0F0F0F0F values are bashed by the two functions above.
-; This the generic version - wherever the code says ECX, 
+; This the generic version - wherever the code says ECX,
 ; the specific register is patched later into a copy
 ; Note: do not replace ECX by EAX - there is a smaller encoding for
 ; the compares just for EAX, which won't work for other registers.
@@ -846,7 +846,7 @@ JIT_WriteBarrierReg_PreGrow ENDP
 ; This is the larger write barrier thunk we use when we know that older
 ; generations may be higher in memory than the ephemeral generation
 ; The 0x0F0F0F0F values are bashed by the two functions above.
-; This the generic version - wherever the code says ECX, 
+; This the generic version - wherever the code says ECX,
 ; the specific register is patched later into a copy
 ; Note: do not replace ECX by EAX - there is a smaller encoding for
 ; the compares just for EAX, which won't work for other registers.
@@ -874,7 +874,7 @@ WriteBarrierPost:
 JIT_WriteBarrierReg_PostGrow ENDP
 
 ;*********************************************************************/
-; 
+;
 
         ; a fake virtual stub dispatch register indirect callsite
         $nop3
@@ -924,7 +924,7 @@ endif
         ret                 ; return to m_ReturnAddress
 
 ;------------------------------------------------------------------------------
-; 
+;
 
 PUBLIC JIT_TailCall
 JIT_TailCall PROC
@@ -952,7 +952,7 @@ JIT_TailCall PROC
 ;   esp+8                   flags (1 = have callee saved regs, 2 = virtual stub dispatch)
 ;   esp+4                   target addr
 ;   esp+0                   retaddr
-;   
+;
 ;   If you change this function, make sure you update code:TailCallStubManager as well.
 
 RetAddr         equ 0
@@ -981,7 +981,7 @@ ifdef FEATURE_HIJACK
         ; Make sure that the EE does have the return address patched. So we can move it around.
         test    dword ptr [eax+Thread_m_State], TS_Hijacked_ASM
         jz      NoHijack
-        
+
         ; JIT_TailCallHelper(Thread *)
         push    eax
         call    JIT_TailCallHelper  ; this is __stdcall
@@ -998,7 +998,7 @@ endif
         ; <TODO>@TODO : esp based - doesnt work with localloc</TODO>
         test    edx, 1
         jz      NoCalleeSaveRegisters
-        
+
         mov     edi, dword ptr [ebp-4]              ; restore edi
         mov     esi, dword ptr [ebp-8]              ; restore esi
         mov     ebx, dword ptr [ebp-12]             ; restore ebx
@@ -1066,7 +1066,7 @@ JIT_TailCallLeave:
         ;----------------------------------------------------------------------
 VSDTailCall:
         ;----------------------------------------------------------------------
-        
+
         ; For the Virtual Stub Dispatch, we create a fake callsite to fool
         ; the callsite probes. In order to create the call site, we need to insert TailCallFrame
         ; if we do not have one already.
@@ -1083,18 +1083,18 @@ VSDTailCall:
         jz      VSDTailCallFrameInserted_DoSlideUpArgs ; There is an exiting TailCallFrame that can be reused
 
         ; try to allocate space for the frame / check whether there is enough space
-        ; If there is sufficient space, we will setup the frame and then slide 
+        ; If there is sufficient space, we will setup the frame and then slide
         ; the arguments up the stack. Else, we first need to slide the arguments
         ; down the stack to make space for the TailCallFrame
         sub     edi, (SIZEOF_GSCookie + SIZEOF_TailCallFrame)
         cmp     edi, esi
         jae     VSDSpaceForFrameChecked
 
-        ; There is not sufficient space to wedge in the TailCallFrame without 
+        ; There is not sufficient space to wedge in the TailCallFrame without
         ; overwriting the new arguments.
-        ; We need to allocate the extra space on the stack, 
+        ; We need to allocate the extra space on the stack,
         ; and slide down the new arguments
-        
+
         mov     eax, esi
         sub     eax, edi
         sub     esp, eax
@@ -1125,7 +1125,7 @@ VSDSpaceForFrameChecked:
 
         ; At this point, we have enough space on the stack for the TailCallFrame,
         ; and we may already have slided down the arguments
-        
+
         mov     eax, _s_gsCookie                ; GetProcessGSCookie()
         mov     dword ptr [edi], eax            ; set GSCookie
         mov     eax, _g_TailCallFrameVptr       ; vptr
@@ -1246,7 +1246,7 @@ fremloopd:
 ;------------------------------------------------------------------------------
 
 ; PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
-; 
+;
 
 _JIT_PatchedCodeStart@0 proc public
 ret

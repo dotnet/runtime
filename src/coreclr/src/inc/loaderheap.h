@@ -547,7 +547,7 @@ public:
         return RealAllocMemUnsafe_NoThrow(dwSize.Value() COMMA_INDEBUG(szFile) COMMA_INDEBUG(lineNum));
     }
 private:
-    
+
     TaggedMemAllocPtr RealAllocMemUnsafe(size_t dwSize
 #ifdef _DEBUG
                                   ,__in __in_z const char *szFile
@@ -557,7 +557,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-        
+
         void *pResult;
         TaggedMemAllocPtr tmap;
 

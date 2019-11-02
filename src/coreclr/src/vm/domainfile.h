@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // DomainFile.h
-// 
+//
 
 // --------------------------------------------------------------------------------
 
@@ -30,9 +30,9 @@ enum FileLoadLevel
     // These states are tracked by FileLoadLock
 
     // Note: This enum must match the static array fileLoadLevelName[]
-    //       which contains the printable names of the enum values 
+    //       which contains the printable names of the enum values
 
-    // Note that semantics here are description is the LAST step done, not what is 
+    // Note that semantics here are description is the LAST step done, not what is
     // currently being done.
 
     FILE_LOAD_CREATE,
@@ -156,11 +156,11 @@ class DomainFile
     FileLoadLevel GetLoadLevel() { LIMITED_METHOD_DAC_CONTRACT; return m_level; }
 
     // Error means that a permanent x-appdomain load error has occurred.
-    BOOL IsError() 
-    { 
-        LIMITED_METHOD_DAC_CONTRACT; 
+    BOOL IsError()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
         DACCOP_IGNORE(FieldAccess, "No marshalling required");
-        return m_pError != NULL; 
+        return m_pError != NULL;
     }
 
     // Loading means that the load is still being tracked by a FileLoadLock.
@@ -180,13 +180,13 @@ class DomainFile
     // the file via either enumeration or notification. As a result, this begins
     // returning TRUE just before the profiler is actually notified.  See
     // code:ProfilerFunctionEnum::Init#ProfilerEnumAssemblies
-    BOOL IsAvailableToProfilers() 
+    BOOL IsAvailableToProfilers()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return IsProfilerNotified(); // despite the name, this function returns TRUE just before we notify the profiler
     }
 
-    // CheckLoaded is appropriate for asserts that the assembly can be passively used.  
+    // CheckLoaded is appropriate for asserts that the assembly can be passively used.
     CHECK CheckLoaded();
 
     // CheckActivated is appropriate for asserts that the assembly can be actively used.  Note that
@@ -194,22 +194,22 @@ class DomainFile
     CHECK CheckActivated();
 
     // Ensure that an assembly has reached at least the IsLoaded state.  Throw if not.
-    void EnsureLoaded() 
-    { 
+    void EnsureLoaded()
+    {
         WRAPPER_NO_CONTRACT;
         return EnsureLoadLevel(FILE_LOADED);
     }
 
     // Ensure that an assembly has reached at least the IsActive state.  Throw if not.
     void EnsureActive()
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return EnsureLoadLevel(FILE_ACTIVE);
     }
 
     // Ensure that an assembly has reached at least the Allocated state.  Throw if not.
     void EnsureAllocated()
-    { 
+    {
         WRAPPER_NO_CONTRACT;
         return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
     }
@@ -239,7 +239,7 @@ class DomainFile
     CHECK CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK = TRUE) DAC_EMPTY_RET(CHECK::OK());
 
     // RequireLoadLevel throws an exception if the domain file isn't loaded enough.  Note
-    // that this is intolerant of deadlock related failures so is only really appropriate for 
+    // that this is intolerant of deadlock related failures so is only really appropriate for
     // checks inside the main loading loop.
     void RequireLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
 
@@ -251,9 +251,9 @@ class DomainFile
 
     // IsNotified means that the profiler API notification has been delivered
     BOOL IsProfilerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyflags & PROFILER_NOTIFIED; }
-    BOOL IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyflags & DEBUGGER_NOTIFIED; }	
-    BOOL ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return m_notifyflags & DEBUGGER_NEEDNOTIFICATION; }	
-	
+    BOOL IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyflags & DEBUGGER_NOTIFIED; }
+    BOOL ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return m_notifyflags & DEBUGGER_NEEDNOTIFICATION; }
+
 
     // ------------------------------------------------------------
     // Other public APIs
@@ -272,7 +272,7 @@ class DomainFile
     BOOL IsZapRequired(); // Are we absolutely required to use a native image?
 #endif
     // The format string is intentionally unicode to avoid globalization bugs
-#ifdef FEATURE_PREJIT    
+#ifdef FEATURE_PREJIT
     void ExternalLog(DWORD level, const WCHAR *fmt, ...);
     void ExternalLog(DWORD level, const char *msg);
 #endif
@@ -311,7 +311,7 @@ class DomainFile
     void EagerFixups();
     void VtableFixups();
     virtual void DeliverSyncEvents() = 0;
-    virtual void DeliverAsyncEvents() = 0;    
+    virtual void DeliverAsyncEvents() = 0;
     void FinishLoad();
     void Activate();
 #endif
@@ -346,7 +346,7 @@ class DomainFile
 
     PTR_AppDomain               m_pDomain;
     PTR_PEFile                  m_pFile;
-    PTR_PEFile                  m_pOriginalFile;  // keep file alive just in case someone is sitill using it. If this is not NULL then m_pFile contains reused file from the shared assembly   
+    PTR_PEFile                  m_pOriginalFile;  // keep file alive just in case someone is sitill using it. If this is not NULL then m_pFile contains reused file from the shared assembly
     PTR_Module                  m_pModule;
     FileLoadLevel               m_level;
     LOADERHANDLE                m_hExposedModuleObject;
@@ -364,7 +364,7 @@ class DomainFile
             Exception                   *m_pEx;
             HRESULT                     m_hr;
         };
- 
+
         public:
         void Throw()
         {
@@ -382,7 +382,7 @@ class DomainFile
             if (m_type==ExType_HR)
                 ThrowHR(m_hr);
             _ASSERTE(!"Bad exception type");
-            ThrowHR(E_UNEXPECTED);        
+            ThrowHR(E_UNEXPECTED);
         };
         ExInfo(Exception* pEx)
         {
@@ -390,7 +390,7 @@ class DomainFile
             m_type=ExType_ClrEx;
             m_pEx=pEx;
         };
-        
+
         void ConvertToHResult()
         {
             LIMITED_METHOD_CONTRACT;
@@ -409,12 +409,12 @@ class DomainFile
                 delete m_pEx;
         }
     }* m_pError;
-    
+
     void ReleaseManagedData()
     {
         if (m_pError)
             m_pError->ConvertToHResult();
-    };    
+    };
 
 #ifdef FEATURE_PREJIT
     // Lock-free enumeration of DomainFiles in an AppDomain.
@@ -423,7 +423,7 @@ public:
 private:
     void InsertIntoDomainFileWithNativeImageList();
 #endif // FEATURE_PREJIT
-    
+
     DWORD                    m_notifyflags;
     BOOL                        m_loading;
     // m_pDynamicMethodTable is used by the light code generation to allow method
@@ -469,7 +469,7 @@ enum ModuleIterationOption
 
     // include all modules, even those that are still in the process of loading (all m_level values)
     kModIterIncludeLoading               = 2,
-    
+
     // include only modules loaded just enough that profilers are notified of them.
     // (m_level >= FILE_LOAD_LOADLIBRARY).  See comment at code:DomainFile::IsAvailableToProfilers
     kModIterIncludeAvailableToProfilers  = 3,
@@ -560,10 +560,10 @@ public:
                 }
                 if (m_moduleIterationOption == kModIterIncludeLoading)
                     return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeLoaded) && 
+                if ((m_moduleIterationOption == kModIterIncludeLoaded) &&
                     GetDomainFile()->IsLoaded())
                     return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeAvailableToProfilers) && 
+                if ((m_moduleIterationOption == kModIterIncludeAvailableToProfilers) &&
                     GetDomainFile()->IsAvailableToProfilers())
                     return TRUE;
             }
@@ -605,7 +605,7 @@ public:
         }
     };
     friend class ModuleIterator;
-    
+
     ModuleIterator IterateModules(ModuleIterationOption moduleIterationOption)
     {
         WRAPPER_NO_CONTRACT;
@@ -681,9 +681,9 @@ public:
     void NotifyDebuggerUnload();
 
     inline BOOL IsCollectible();
-    // 
+    //
     //  GC API
-    // 
+    //
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 
@@ -715,7 +715,7 @@ private:
     void Allocate();
     void LoadSharers();
     void DeliverSyncEvents();
-    void DeliverAsyncEvents();    
+    void DeliverAsyncEvents();
 #endif
 
     void UpdatePEFile(PTR_PEFile pFile);

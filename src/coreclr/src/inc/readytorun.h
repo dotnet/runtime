@@ -79,7 +79,7 @@ enum ReadyToRunSectionType
 //
 // READYTORUN_IMPORT_SECTION describes image range with references to code or runtime data structures
 //
-// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry 
+// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry
 // vs. lazily initialized on first use; handles vs. code pointers, etc.
 //
 struct READYTORUN_IMPORT_SECTION
@@ -354,15 +354,15 @@ struct READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY
 
 struct READYTORUN_EXCEPTION_CLAUSE
 {
-    CorExceptionFlag    Flags;  
-    DWORD               TryStartPC;    
+    CorExceptionFlag    Flags;
+    DWORD               TryStartPC;
     DWORD               TryEndPC;
-    DWORD               HandlerStartPC;  
-    DWORD               HandlerEndPC;  
+    DWORD               HandlerStartPC;
+    DWORD               HandlerEndPC;
     union {
         mdToken         ClassToken;
         DWORD           FilterOffset;
-    };  
+    };
 };
 
 enum ReadyToRunRuntimeConstants : DWORD

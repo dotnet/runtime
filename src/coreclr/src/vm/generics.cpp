@@ -40,7 +40,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     }
     CONTRACT_END
 
-#if defined(FEATURE_SHARE_GENERIC_CODE)  
+#if defined(FEATURE_SHARE_GENERIC_CODE)
     CorElementType et = thGenericArg.GetSignatureCorElementType();
 
     // Note that generic variables do not share
@@ -50,7 +50,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 
     if (et == ELEMENT_TYPE_VALUETYPE)
     {
-        // Don't share structs. But sharability must be propagated through 
+        // Don't share structs. But sharability must be propagated through
         // them (i.e. struct<object> * shares with struct<string> *)
         RETURN(TypeHandle(thGenericArg.GetCanonicalMethodTable()));
     }
@@ -62,9 +62,9 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 #endif // FEATURE_SHARE_GENERIC_CODE
 }
 
- // Given the build-time ShareGenericCode setting, is the specified type 
+ // Given the build-time ShareGenericCode setting, is the specified type
 // representation-sharable as a type parameter to a generic type or method ?
-/* static */ BOOL ClassLoader::IsSharableInstantiation(Instantiation inst) 
+/* static */ BOOL ClassLoader::IsSharableInstantiation(Instantiation inst)
 {
     CONTRACTL
     {
@@ -118,7 +118,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     return TRUE;
 }
 
-#ifndef DACCESS_COMPILE 
+#ifndef DACCESS_COMPILE
 
 TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
                                                           LoadTypesFlag fLoadTypes/*=LoadTypes*/,
@@ -161,9 +161,9 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
 // copying the method table of the canonical instantiation
 //
 /* static */
-TypeHandle 
+TypeHandle
 ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
-    TypeKey         *pTypeKey, 
+    TypeKey         *pTypeKey,
     AllocMemTracker *pamTracker)
 {
     CONTRACT(TypeHandle)
@@ -192,7 +192,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         StackSString debugTypeKeyName;
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
-        
+
         StackScratchBuffer buf;
         if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8(buf)))
             CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8(buf)));
@@ -263,7 +263,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (wNumInterfaces != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
 
-    // NonVirtualSlots, DispatchMap and ModuleOverride multipurpose slots are used 
+    // NonVirtualSlots, DispatchMap and ModuleOverride multipurpose slots are used
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
@@ -314,7 +314,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     }
 
     BYTE* pMemory = (BYTE *) pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem( allocSize ));
-    
+
     // Head of MethodTable memory
     MethodTable *pMT = (MethodTable*) (pMemory + cbGC);
 
@@ -360,12 +360,12 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     pMT->m_wNumInterfaces = pOldMT->m_wNumInterfaces;
 
-#ifdef FEATURE_TYPEEQUIVALENCE 
+#ifdef FEATURE_TYPEEQUIVALENCE
     if (pMT->IsInterface() && !pMT->HasTypeEquivalence())
     {
         // fHasTypeEquivalence flag is "inherited" from generic arguments so we can quickly detect
         // types like IList<IFoo> where IFoo is an interface with the TypeIdentifierAttribute.
-        for (DWORD i = 0; i < ntypars; i++) 
+        for (DWORD i = 0; i < ntypars; i++)
         {
             if (inst[i].HasTypeEquivalence())
             {
@@ -380,13 +380,13 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     {
         // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
         // on an array object using a generic interface (such as IList<T>).
-        // Please read comments in IsArray block of code:MethodTable::FindDispatchImpl. 
-        // 
+        // Please read comments in IsArray block of code:MethodTable::FindDispatchImpl.
+        //
         // Arrays are special because we use the same method table (object[]) for all arrays of reference
-        // classes (eg string[]). This means that the method table for an array is not a complete description of 
-        // the type of the array and thus the target of if something list IList<T>::IndexOf can not be determined 
+        // classes (eg string[]). This means that the method table for an array is not a complete description of
+        // the type of the array and thus the target of if something list IList<T>::IndexOf can not be determined
         // simply by looking at the method table of T[] (which might be the method table of object[], if T is a
-        // reference type).   
+        // reference type).
         //
         // This is done to minimize MethodTables, but as a side-effect of this optimization,
         // we end up using a domain-shared type (object[]) with a domain-specific dispatch token.
@@ -403,11 +403,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         // and you have an array of B (B[]) then B[] implements IList<B> and IList<A>, but a dispatch
         // on an IList<A> reference results in a dispatch to SZArrayHelper<A> rather than
         // SZArrayHelper<B> (i.e., the variance implemention is not done like virtual methods).
-        //    
-        // For example If Sub inherits from Super inherits from Object, then 
+        //
+        // For example If Sub inherits from Super inherits from Object, then
         //     * Sub[] implements IList<Super>
         //     * Sub[] implements IList<Sub>
-        // 
+        //
         // And as a result we have the following mappings:
         //     * IList<Super>::IndexOf for Sub[] goes to SZArrayHelper<Super>::IndexOf
         //     * IList<Sub>::IndexOf for Sub[] goes to SZArrayHelper<Sub>::IndexOf
@@ -461,7 +461,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pMT->SetHasCCWTemplate();
     if (fHasGuidInfo)
         pMT->SetHasGuidInfo();
-#endif 
+#endif
 
     // Since we are fabricating a new MT based on an existing one, the per-inst info should
     // be non-null
@@ -530,9 +530,9 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     pMT->SetLoaderModule(pLoaderModule);
     pMT->SetLoaderAllocator(pAllocator);
-    
-    
-#ifdef _DEBUG 
+
+
+#ifdef _DEBUG
     // Name for debugging
     StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
@@ -540,17 +540,17 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8(debug_ClassNameBuffer);
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_szClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-    
+
     size_t len = safeLen.Value();
     char *debug_szClassName = (char *)pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(safeLen));
     strcpy_s(debug_szClassName, len, debug_szClassNameBuffer);
     pMT->SetDebugClassName(debug_szClassName);
-    
+
     // Debugging information
     if (pOldMT->Debug_HasInjectedInterfaceDuplicates())
         pMT->Debug_SetHasInjectedInterfaceDuplicates();
 #endif // _DEBUG
-    
+
     // <NICE>This logic is identical to logic in class.cpp.  Factor these out.</NICE>
     // No need to generate IDs for open types.   However
     // we still leave the optional member in the MethodTable holding the value -1 for the ID.
@@ -581,7 +581,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // performance degradation to justify the extra complexity.
 
     pMT->SetCl(pOldMT->GetCl());
-    
+
     // Check we've set up the flags correctly on the new method table
     _ASSERTE(!fContainsGenericVariables == !pMT->ContainsGenericVariables());
     _ASSERTE(!fHasGenericsStaticsInfo == !pMT->HasGenericsStaticsInfo());
@@ -593,26 +593,26 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 #endif
 
     LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replicated methodtable to create type %s\n", pMT->GetDebugClassName()));
-    
-#ifdef _DEBUG 
+
+#ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(debug_szClassName))
     {
-        LOG((LF_ALWAYS, LL_ALWAYS, 
-            "Method table summary for '%s' (instantiation):\n", 
+        LOG((LF_ALWAYS, LL_ALWAYS,
+            "Method table summary for '%s' (instantiation):\n",
             pMT->GetDebugClassName()));
         pMT->Debug_DumpInterfaceMap("Approximate");
     }
 #endif //_DEBUG
-    
+
 #ifdef FEATURE_PREJIT
     _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
 #endif //FEATURE_PREJIT
-    
+
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
     pMTWriteableData->SetIsRestoredForBuildMethodTable();
-    
+
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 
@@ -672,7 +672,7 @@ RecursionGraph::RecursionGraph(RecursionGraph *pPrev, TypeHandle thOwner)
 
     m_pPrev   = pPrev;
     m_thOwner = thOwner;
-    
+
     m_pNodes  = NULL;
 }
 
@@ -698,7 +698,7 @@ BOOL RecursionGraph::CheckForIllegalRecursion()
     MethodTable *pMT = m_thOwner.AsMethodTable();
 
     Instantiation inst = pMT->GetInstantiation();
-    
+
     // Initialize the node array.
     m_pNodes = new Node[inst.GetNumArgs()];
 
@@ -734,7 +734,7 @@ BOOL RecursionGraph::CheckForIllegalRecursion()
 
 // Returns TRUE iff the given type is already on the stack (in fact an analogue of
 // code:TypeHandleList::Exists).
-// 
+//
 // static
 BOOL RecursionGraph::HasSeenType(RecursionGraph *pDepGraph, TypeHandle thType)
 {
@@ -882,12 +882,12 @@ BOOL RecursionGraph::HasExpandingCycle(Node *pCurrentNode, Node *pStartNode, BOO
     pCurrentNode->SetVisited();
 
     ArrayList::Iterator iter = pCurrentNode->GetEdges()->Iterate();
-    while (iter.Next())  
+    while (iter.Next())
     {
         ULONG_PTR edge = (ULONG_PTR)iter.GetElement();
 
         BOOL fExpanding = (edge & Node::EDGE_EXPANDING_FLAG);
-        
+
         TypeVarTypeDesc *pToVar = (TypeVarTypeDesc *)(edge & ~Node::EDGE_EXPANDING_FLAG);
         unsigned int dwIndex = pToVar->GetIndex();
 
@@ -915,7 +915,7 @@ BOOL RecursionGraph::HasExpandingCycle(Node *pCurrentNode, Node *pStartNode, BOO
                 return TRUE;
         }
     }
-    
+
     pCurrentNode->ClearVisited();
 
     return FALSE;
@@ -967,7 +967,7 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-     
+
     PTR_VOID pExactGenericArgsToken = NULL;
 
     if (pRepMethod->AcquiresInstMethodTableFromThis())
@@ -980,13 +980,13 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
             );
         }
     }
-    else        
+    else
     {
         pExactGenericArgsToken = pParamTypeArg;
     }
 
-    return GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pRepMethod, pExactGenericArgsToken, 
-        pSpecificClass, pSpecificMethod);      
+    return GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pRepMethod, pExactGenericArgsToken,
+        pSpecificClass, pSpecificMethod);
 }
 
 BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
@@ -1043,8 +1043,8 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
         }
         else if (pRepMethod->AcquiresInstMethodTableFromThis())
         {
-            // The exact token might actually be a child class of the class containing 
-            // the specified function so walk up the parent chain to make sure we return 
+            // The exact token might actually be a child class of the class containing
+            // the specified function so walk up the parent chain to make sure we return
             // an exact instantiation of the CORRECT parent class.
             pMT = pMD->GetExactDeclaringType(dac_cast<PTR_MethodTable>(pExactGenericArgsToken));
             _ASSERTE(pMT != NULL);

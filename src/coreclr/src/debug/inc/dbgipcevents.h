@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 /* ------------------------------------------------------------------------- *
  * DbgIPCEvents.h -- header file for private Debugger data shared by various
-// 
+//
 
  *                   debugger components.
  * ------------------------------------------------------------------------- */
@@ -31,12 +31,12 @@
 // V3 additions to IPC protocol between LS and RS.
 //-----------------------------------------------------------------------------
 
-// Special Exception code for LS to communicate with RS. 
+// Special Exception code for LS to communicate with RS.
 // LS will raise this exception to communicate managed debug events to the RS.
 // Exception codes can't use bit 0x10000000, that's reserved by OS.
 #define CLRDBG_NOTIFICATION_EXCEPTION_CODE  ((DWORD) 0x04242420)
 
-// This is exception argument 0 included in debugger notification events. 
+// This is exception argument 0 included in debugger notification events.
 // The debugger uses this as a sanity check.
 // This could be very volatile data that changes between builds.
 #define CLRDBG_EXCEPTION_DATA_CHECKSUM ((DWORD) 0x31415927)
@@ -67,10 +67,10 @@ namespace EHijackReason
 //-----------------------------------------------------------------------------
 // Versioning note:
 // This file describes the IPC communication protocol between the LS (mscorwks)
-// and the RS (mscordbi). For Desktop builds, it is private and can change on a 
-// daily basis. The version of the LS will always match the version of the RS 
-// (but see the discussion of CoreCLR below). They are like a single conceptual 
-// DLL split across 2 processes. 
+// and the RS (mscordbi). For Desktop builds, it is private and can change on a
+// daily basis. The version of the LS will always match the version of the RS
+// (but see the discussion of CoreCLR below). They are like a single conceptual
+// DLL split across 2 processes.
 // The only restriction is that it should be flavor agnostic - so don't change
 // layout based off '#ifdef DEBUG'. This lets us drop a Debug flavor RS onto
 // a retail installation w/o any further installation woes. That's very useful
@@ -108,8 +108,8 @@ typedef enum
 
 //
 // The remaining data structures in this file can be shared between two processes and for network transport
-// based debugging this can mean two different platforms as well.  The two platforms that can share these 
-// data structures must have identical layouts for them (each field must lie at the same offset and have the 
+// based debugging this can mean two different platforms as well.  The two platforms that can share these
+// data structures must have identical layouts for them (each field must lie at the same offset and have the
 // same length). The MSLAYOUT macro should be applied to each structure to avoid any compiler packing differences.
 //
 
@@ -243,7 +243,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
     //.............................................................................
 
     RemoteHANDLE               m_leftSideUnmanagedWaitEvent;
-    
+
 
 
     // This is set immediately when the helper thread is created.
@@ -280,9 +280,9 @@ struct MSLAYOUT DebuggerIPCControlBlock
     // changing this!
     // Only initialized by the LS, opened by the RS.
     HRESULT Init(
-                 HANDLE rsea, 
-                 HANDLE rser, 
-                 HANDLE lsea, 
+                 HANDLE rsea,
+                 HANDLE rser,
+                 HANDLE lsea,
                  HANDLE lser,
                  HANDLE lsuwe
                 );
@@ -509,14 +509,14 @@ public:
     {
         RsPointer<T> t;
         t.m_data = 0;
-        return t;        
+        return t;
     }
 
     bool AllocHandle(CordbProcess *pProc, T* p)
-    {    
+    {
         // This will force validation.
         m_data = AllocCookie<T>(pProc, p);
-        return (m_data != 0);       
+        return (m_data != 0);
     }
 
     bool operator==(RsPointer<T> p) { return p.m_data == this->m_data; }
@@ -525,7 +525,7 @@ public:
     {
         return UnwrapCookie<T>(pProc, m_data);
     }
-    
+
 protected:
 };
 
@@ -589,7 +589,7 @@ public:
     T * UnWrap()
     {
         // If we wanted to validate the pointer, here's our chance.
-        return static_cast<T*>(m_ptr);        
+        return static_cast<T*>(m_ptr);
     }
 };
 
@@ -629,7 +629,7 @@ static_assert_no_msg(sizeof(void*) == sizeof(GeneralLsPointer));
 //-----------------------------------------------------------------------------
 // Definitions for Left-Side ptrs.
 // NOTE: Use VMPTR instead of LSPTR. Don't add new LSPTR types.
-// 
+//
 //-----------------------------------------------------------------------------
 
 
@@ -660,16 +660,16 @@ DEFINE_RSPTR_TYPE(CordbEval,               RSPTR_CORDBEVAL);
 
 
 //---------------------------------------------------------------------------------------
-// VMPTR_Base is the base type for an abstraction over pointers into the VM so 
-// that DBI can treat them as opaque handles. Classes will derive from it to 
+// VMPTR_Base is the base type for an abstraction over pointers into the VM so
+// that DBI can treat them as opaque handles. Classes will derive from it to
 // provide type-safe Target pointers, which ICD will view as opaque handles.
 //
-// Lifetimes:  
+// Lifetimes:
 //   VMPTR_ objects survive across flushing the DAC cache. Therefore, the underlying
 //   storage must be a target-pointer (and not a marshalled host pointer).
 //   The RS must ensure they're still in sync with the LS (eg, by
 //   tracking unload events).
-//  
+//
 //
 // Assumptions:
 //    These handles are TADDR pointers and must not require any cleanup from DAC/DBI.
@@ -679,12 +679,12 @@ DEFINE_RSPTR_TYPE(CordbEval,               RSPTR_CORDBEVAL);
 //  1. This helps enforce that DBI goes through the primitives interface
 //     for all access (and that it doesn't accidentally start calling
 //     dac-ized methods on the objects)
-//  2. This isolates DBI from VM headers. 
+//  2. This isolates DBI from VM headers.
 //  3. This isolates DBI from the dac implementation (of DAC_Ptr)
 //  4. This is distinct from LSPTR because LSPTRs are truly opaque handles, whereas VMPtrs
 //     move across VM, DAC, and DBI, exposing proper functionality in each component.
 //  5. VMPTRs are blittable because they are Target Addresses which act as opaque
-//     handles outside of the Target / Dac-marshaller.  
+//     handles outside of the Target / Dac-marshaller.
 //
 //---------------------------------------------------------------------------------------
 
@@ -693,7 +693,7 @@ template <typename TTargetPtr, typename TDacPtr>
 class MSLAYOUT VMPTR_Base
 {
     // Underlying pointer into Target address space.
-    // Target pointers are blittable. 
+    // Target pointers are blittable.
     // - In Target: can be used as normal local pointers.
     // - In DAC: must be marshalled to a host-pointer and then they can be used via DAC
     // - In RS: opaque handles.
@@ -706,7 +706,7 @@ public:
     // For DBI, VMPTRs are opaque handles.
     // But the DAC side is allowed to inspect the handles to get at the raw pointer.
 #if defined(ALLOW_VMPTR_ACCESS)
-    // 
+    //
     // Case 1: Using in DAcDbi implementation
     //
 
@@ -718,19 +718,19 @@ public:
     }
 
 
-    // This will initialize the handle to a given target-pointer. 
+    // This will initialize the handle to a given target-pointer.
     // We choose TADDR to make it explicit that it's a target pointer and avoid the risk
-    // of it accidentally getting marshalled to a host pointer. 
+    // of it accidentally getting marshalled to a host pointer.
     void SetDacTargetPtr(TADDR addr)
     {
         SUPPORTS_DAC;
         m_addr = addr;
     }
-    
+
     void SetHostPtr(const TTargetPtr * pObject)
     {
         SUPPORTS_DAC;
-        m_addr = PTR_HOST_TO_TADDR(pObject);        
+        m_addr = PTR_HOST_TO_TADDR(pObject);
     }
 
 
@@ -739,15 +739,15 @@ public:
     // Case 2: Used in Left-side. Can get/set from local pointers.
     //
 
-    // This will set initialize from a Target pointer. Since this is happening in the 
+    // This will set initialize from a Target pointer. Since this is happening in the
     // Left-side (Target), the pointer is local.
     // This is commonly used by the Left-side to create a VMPTR_ for a notification event.
-    void SetRawPtr(TTargetPtr * ptr) 
+    void SetRawPtr(TTargetPtr * ptr)
     {
         m_addr = reinterpret_cast<TADDR>(ptr);
     }
 
-    // This will get the raw underlying target pointer. 
+    // This will get the raw underlying target pointer.
     // This can be used by inproc Left-side code to unwrap a VMPTR (Eg, for a func-eval
     // hijack or in-proc worker threads)
     TTargetPtr * GetRawPtr()
@@ -790,7 +790,7 @@ public:
         return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>(m_addr));
     }
 #endif
-    
+
     //
     // Operators to emulate Pointer semantics.
     //
@@ -836,7 +836,7 @@ public:
 #endif
 
 // Declare VMPTRs.
-// The naming convention for instantiating a VMPTR is a 'vm' prefix. 
+// The naming convention for instantiating a VMPTR is a 'vm' prefix.
 //
 //           VM definition,         DAC definition,     pretty name for VMPTR
 DEFINE_VMPTR(class AppDomain,       PTR_AppDomain,      VMPTR_AppDomain);
@@ -851,16 +851,16 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 
 // DomainFile is a base-class for a CLR module, with app-domain affinity.
 // For domain-neutral modules (like mscorlib), there is a DomainFile instance
-// for each appdomain the module lives in. 
-// This is the canonical handle ICorDebug uses to a CLR module. 
+// for each appdomain the module lives in.
+// This is the canonical handle ICorDebug uses to a CLR module.
 DEFINE_VMPTR(class DomainFile,      PTR_DomainFile,     VMPTR_DomainFile);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
-// DomainAssembly derives from DomainFile and represents a manifest module. 
+// DomainAssembly derives from DomainFile and represents a manifest module.
 DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
 
-DEFINE_VMPTR(class PEFile,          PTR_PEFile,         VMPTR_PEFile); 
+DEFINE_VMPTR(class PEFile,          PTR_PEFile,         VMPTR_PEFile);
 DEFINE_VMPTR(class MethodDesc,      PTR_MethodDesc,     VMPTR_MethodDesc);
 DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 
@@ -868,9 +868,9 @@ DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 // when a GC occurs.
 DEFINE_VMPTR(struct OBJECTHANDLE__, TADDR,              VMPTR_OBJECTHANDLE);
 
-DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);   
+DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);
 
-// A VMPTR_Thread represents a thread that has entered the runtime at some point. 
+// A VMPTR_Thread represents a thread that has entered the runtime at some point.
 // It may or may not have executed managed code yet; and it may or may not have managed code
 // on its callstack.
 DEFINE_VMPTR(class Thread,          PTR_Thread,         VMPTR_Thread);
@@ -1340,8 +1340,8 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 //          generic code of some kind.
 // BOOL jsutAfterILThrow: indicates that code just threw a software exception and
 //          nativeOffset points to an instruction just after [call IL_Throw].
-//          This is being used to figure out a real offset of the exception origin.  
-//          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get 
+//          This is being used to figure out a real offset of the exception origin.
+//          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
 //          an address somewhere inside [call IL_Throw] instruction.
 // void *ilToNativeMapAddr etc.: If nativeCodeJITInfoToken is not NULL then these
 //          specify the table giving the mapping of IPs.
@@ -1423,7 +1423,7 @@ struct MSLAYOUT DebuggerIPCE_STRData
 
             // Indicates whether the managed method has any metadata.
             // Some dynamic methods such as IL stubs and LCG methods don't have any metadata.
-            // This is used only by the V3 stackwalker, not the V2 one, because we only 
+            // This is used only by the V3 stackwalker, not the V2 one, because we only
             // expose dynamic methods as real stack frames in V3.
             bool        fNoMetadata;
 
@@ -1743,12 +1743,12 @@ struct MSLAYOUT DebuggerIPCSecondChanceData
 //-----------------------------------------------------------------------------
 // This struct holds pointer from the LS and needs to copy to
 // the RS. We have to free the memory on the RS.
-// The transfer function is called when the RS first reads the event. At this point, 
+// The transfer function is called when the RS first reads the event. At this point,
 // the LS is stopped while sending the event. Thus the LS pointers only need to be
 // valid while the LS is in SendIPCEvent.
 //
 // Since this data is in an IPC/Marshallable block, it can't have any Ctors (holders)
-// in it. 
+// in it.
 //-----------------------------------------------------------------------------
 struct MSLAYOUT Ls_Rs_BaseBuffer
 {
@@ -1758,7 +1758,7 @@ protected:
     // ReadProcessMemory is really reading from its own process memory.
     //
     void CopyLSDataToRSWorker(ICorDebugDataTarget * pTargethProcess);
-    
+
     // retrieve the RS data and own it
     BYTE *TransferRSDataWorker()
     {
@@ -1767,7 +1767,7 @@ protected:
         return pbRS;
     }
 public:
-    
+
 
     void CleanUp()
     {
@@ -1795,14 +1795,14 @@ public:
 
 
 protected:
-    // Size of data in bytes 
+    // Size of data in bytes
     DWORD  m_cbSize;
 
     // If this is non-null, pointer into LS for buffer.
     // LS can free this after the debug event is continued.
     BYTE  *m_pbLS; // @dbgtodo  cross-plat- for cross-platform purposes, this should be a TADDR
 
-    // If this is non-null, pointer into RS for buffer. RS must then free this. 
+    // If this is non-null, pointer into RS for buffer. RS must then free this.
     // This buffer was copied from the LS (via CopyLSDataToRSWorker).
     BYTE  *m_pbRS;
 };
@@ -1813,8 +1813,8 @@ protected:
 struct MSLAYOUT Ls_Rs_ByteBuffer : public Ls_Rs_BaseBuffer
 {
 #ifdef RIGHT_SIDE_COMPILE
-    BYTE *GetRSPointer() 
-    { 
+    BYTE *GetRSPointer()
+    {
         return m_pbRS;
     }
 
@@ -1823,7 +1823,7 @@ struct MSLAYOUT Ls_Rs_ByteBuffer : public Ls_Rs_BaseBuffer
     {
         return TransferRSDataWorker();
     }
-#endif    
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -1847,7 +1847,7 @@ struct MSLAYOUT Ls_Rs_StringBuffer : public Ls_Rs_BaseBuffer
     {
         return reinterpret_cast<WCHAR*> (TransferRSDataWorker());
     }
-#endif  
+#endif
 };
 
 
@@ -1932,7 +1932,7 @@ struct MSLAYOUT DebuggerIPCEvent
             // Module whos metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
             VMPTR_DomainFile vmDomainFile;
-          
+
         } MetadataUpdateData;
 
         struct MSLAYOUT
@@ -1948,24 +1948,24 @@ struct MSLAYOUT DebuggerIPCEvent
 
 #ifdef TEST_DATA_CONSISTENCY
         // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and 
+        // the RS needs to inspect. See code:DataTest::TestDataSafety and
         // code:IDacDbiInterface::TestCrst for more information
         struct MSLAYOUT
         {
             // the lock to be tested
             VMPTR_Crst vmCrst;
-            // indicates whether the LS holds the lock 
+            // indicates whether the LS holds the lock
             bool       fOkToTake;
         } TestCrstData;
 
         // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and 
+        // the RS needs to inspect. See code:DataTest::TestDataSafety and
         // code:IDacDbiInterface::TestCrst for more information
         struct MSLAYOUT
         {
             // the lock to be tested
             VMPTR_SimpleRWLock vmRWLock;
-            // indicates whether the LS holds the lock  
+            // indicates whether the LS holds the lock
             bool               fOkToTake;
         } TestRWLockData;
 #endif // TEST_DATA_CONSISTENCY
@@ -1977,18 +1977,18 @@ struct MSLAYOUT DebuggerIPCEvent
             VMPTR_DomainFile vmDomainFile;
         }LoadModuleData;
 
-        
+
         struct MSLAYOUT
         {
             VMPTR_DomainFile vmDomainFile;
             LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
-        
-        // The given module's pdb has been updated. 
+
+        // The given module's pdb has been updated.
         // Queury PDB from OOP
         struct MSLAYOUT
-        {   
+        {
             VMPTR_DomainFile vmDomainFile;
         } UpdateModuleSymsData;
 
@@ -2077,7 +2077,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         // Apply an EnC edit
         struct MSLAYOUT
-        {            
+        {
             VMPTR_DomainFile vmDomainFile;      // Module to edit
             DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
             CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
@@ -2107,7 +2107,7 @@ struct MSLAYOUT DebuggerIPCEvent
         } UnloadClass;
 
         struct MSLAYOUT
-        {            
+        {
             VMPTR_DomainFile vmDomainFile;
             bool  flag;
         } SetClassLoad;
