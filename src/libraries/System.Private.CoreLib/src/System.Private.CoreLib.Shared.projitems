@@ -367,7 +367,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Memory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Fast.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MethodAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MidpointRounding.cs" />
@@ -419,7 +419,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Range.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ReadOnlySpan.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ReadOnlySpan.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ReadOnlyMemory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AmbiguousMatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Assembly.cs" />
@@ -696,7 +695,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
@@ -780,7 +778,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SerializableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Single.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Span.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Span.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.BinarySearch.cs" />
