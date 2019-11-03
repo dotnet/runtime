@@ -49,8 +49,6 @@ public:
     static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static void QCALLTYPE GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
-    static FCDECL1(Object*, CopyStackTrace, Object* pStackTraceUNSAFE);
-    static FCDECL1(Object*, CopyDynamicMethods, Object* pDynamicMethodsUNSAFE);
     static FCDECL3(VOID, GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
 
