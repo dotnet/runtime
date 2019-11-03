@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -52,23 +51,6 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<short> CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(Vector128<short> sourceValue)
-        {
-            Debug.Assert(Sse2.IsSupported);
-
-            Vector128<short> mask = CreateEscapingMask_UnsafeRelaxedJavaScriptEncoder(sourceValue);
-
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_ampersandMaskInt16));
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_apostropheMaskInt16));
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_plusSignMaskInt16));
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_lessThanSignMaskInt16));
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_greaterThanSignMaskInt16));
-            mask = Sse2.Or(mask, Sse2.CompareEqual(sourceValue, s_graveAccentMaskInt16));
-
-            return mask;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> CreateEscapingMask_DefaultJavaScriptEncoderBasicLatin(Vector128<sbyte> sourceValue)
         {
             Debug.Assert(Sse2.IsSupported);
@@ -103,13 +85,7 @@ namespace System.Text.Encodings.Web
         private static readonly Vector128<short> s_nullMaskInt16 = Vector128<short>.Zero;
         private static readonly Vector128<short> s_spaceMaskInt16 = Vector128.Create((short)' ');
         private static readonly Vector128<short> s_quotationMarkMaskInt16 = Vector128.Create((short)'"');
-        private static readonly Vector128<short> s_ampersandMaskInt16 = Vector128.Create((short)'&');
-        private static readonly Vector128<short> s_apostropheMaskInt16 = Vector128.Create((short)'\'');
-        private static readonly Vector128<short> s_plusSignMaskInt16 = Vector128.Create((short)'+');
-        private static readonly Vector128<short> s_lessThanSignMaskInt16 = Vector128.Create((short)'<');
-        private static readonly Vector128<short> s_greaterThanSignMaskInt16 = Vector128.Create((short)'>');
         private static readonly Vector128<short> s_reverseSolidusMaskInt16 = Vector128.Create((short)'\\');
-        private static readonly Vector128<short> s_graveAccentMaskInt16 = Vector128.Create((short)'`');
         private static readonly Vector128<short> s_tildeMaskInt16 = Vector128.Create((short)'~');
         private static readonly Vector128<short> s_maxAsciiCharacterMaskInt16 = Vector128.Create((short)0x7F); // Delete control character
 
