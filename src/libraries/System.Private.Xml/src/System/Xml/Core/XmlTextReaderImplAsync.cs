@@ -3037,7 +3037,7 @@ namespace System.Xml
 
             // the whole value is in buffer
 
-            ValueTask<(int, int, int, bool)> parseTextTask = ParseTextAsync(orChars);
+            ValueTask<(int, int, int, bool)> parseTextTask = ParseTextAsync(orChars).Preserve();
             bool fullValue = false;
             if (!parseTextTask.IsCompletedSuccessfully)
             {
