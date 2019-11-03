@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
 
                 int oldLength = oldItems.Length;
                 newItems = new ItemType[oldLength + 1];
-                Array.Copy(oldItems, 0, newItems, 0, lo);
+                Array.Copy(oldItems, newItems, lo);
                 newItems[lo] = newItem;
                 Array.Copy(oldItems, lo, newItems, lo + 1, oldLength - lo);
             }

@@ -287,7 +287,7 @@ namespace System.Globalization
             if (resultCount < len)
             {
                 int[] returnArray = new int[resultCount];
-                Array.Copy(result, 0, returnArray, 0, resultCount);
+                Array.Copy(result, returnArray, resultCount);
                 return returnArray;
             }
             return result;

@@ -727,7 +727,7 @@ namespace System.Collections.Generic
             Entry[] entries = new Entry[newSize];
 
             int count = _count;
-            Array.Copy(_entries, 0, entries, 0, count);
+            Array.Copy(_entries, entries, count);
 
             if (default(TKey)! == null && forceNewHashCodes) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
             {

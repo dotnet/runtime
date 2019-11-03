@@ -358,7 +358,7 @@ namespace System.Threading
                             // Create a new map of the same size that has all of the same pairs, with this new key/value pair
                             // overwriting the old.
                             var multi = new MultiElementAsyncLocalValueMap(_keyValues.Length);
-                            Array.Copy(_keyValues, 0, multi._keyValues, 0, _keyValues.Length);
+                            Array.Copy(_keyValues, multi._keyValues, _keyValues.Length);
                             multi._keyValues[i] = new KeyValuePair<IAsyncLocal, object?>(key, value);
                             return multi;
                         }
@@ -377,7 +377,7 @@ namespace System.Threading
                             // We have enough elements remaining to warrant a multi map.  Create a new one and copy all of the
                             // elements from this one, except the one to be removed.
                             var multi = new MultiElementAsyncLocalValueMap(_keyValues.Length - 1);
-                            if (i != 0) Array.Copy(_keyValues, 0, multi._keyValues, 0, i);
+                            if (i != 0) Array.Copy(_keyValues, multi._keyValues, i);
                             if (i != _keyValues.Length - 1) Array.Copy(_keyValues, i + 1, multi._keyValues, i, _keyValues.Length - i - 1);
                             return multi;
                         }
@@ -397,7 +397,7 @@ namespace System.Threading
                 if (_keyValues.Length < MaxMultiElements)
                 {
                     var multi = new MultiElementAsyncLocalValueMap(_keyValues.Length + 1);
-                    Array.Copy(_keyValues, 0, multi._keyValues, 0, _keyValues.Length);
+                    Array.Copy(_keyValues, multi._keyValues, _keyValues.Length);
                     multi._keyValues[_keyValues.Length] = new KeyValuePair<IAsyncLocal, object?>(key, value);
                     return multi;
                 }
