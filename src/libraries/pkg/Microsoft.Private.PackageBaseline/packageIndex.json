@@ -3002,6 +3002,11 @@
         "4.0.12.0": "4.3.0"
       }
     },
+    "System.Net.Quic": {
+      "InboxOn": {
+        "netcoreapp3.0": "4.2.1.0"
+      }
+    },
     "System.Net.Requests": {
       "StableVersions": [
         "3.9.0",
