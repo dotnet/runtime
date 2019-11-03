@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
