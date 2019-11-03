@@ -60,7 +60,7 @@ namespace System.Threading.Channels
             return new ValueTask<T>(t);
         }
 
-        internal static ValueTask<bool> QueueWaiter(ref AsyncOperation<bool>? tail, AsyncOperation<bool> waiter)
+        internal static void QueueWaiter(ref AsyncOperation<bool>? tail, AsyncOperation<bool> waiter)
         {
             AsyncOperation<bool>? c = tail;
             if (c == null)
@@ -73,7 +73,6 @@ namespace System.Threading.Channels
                 c.Next = waiter;
             }
             tail = waiter;
-            return waiter.ValueTaskOfT;
         }
 
         internal static void WakeUpWaiters(ref AsyncOperation<bool>? listTail, bool result, Exception? error = null)
