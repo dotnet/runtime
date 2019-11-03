@@ -9,7 +9,6 @@
     <Compile Include="System\Data\Common\DataTableMappingTest.cs" />
     <Compile Include="System\Data\Common\DbCommandTests.cs" />
     <Compile Include="System\Data\Common\DbConnectionTests.cs" />
-    <Compile Include="System\Data\Common\DbDataReaderTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Data\Common\DbExceptionTests.cs" />
     <Compile Include="DataProvider.cs" />
     <Compile Include="System\Data\Common\DataAdapterTest.cs" />
@@ -21,7 +20,8 @@
     <Compile Include="System\Data\Common\DbDataAdapterTest.cs" />
     <Compile Include="System\Data\Common\DbDataReaderMock.cs" />
     <Compile Include="System\Data\Common\DbDataReaderTest.cs" />
-    <Compile Include="System\Data\Common\DbProviderFactoryTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="System\Data\Common\DbProviderFactoriesTests.cs" />
+    <Compile Include="System\Data\Common\DbProviderFactoryTest.cs" />
     <Compile Include="System\Data\Common\DbTransactionTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatedEventArgsTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatingEventArgsTest.cs" />
@@ -111,15 +111,12 @@
     <Compile Include="System\Data\VersionNotFoundException.cs" />
     <Compile Include="System\Data\XmlDataLoaderTest.cs" />
     <Compile Include="System\Data\XmlDataReaderTest.cs" />
+    <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="System\Data\Common\DbProviderFactoriesTests.netcoreapp.cs" />
-    <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
   </ItemGroup>
 </Project>

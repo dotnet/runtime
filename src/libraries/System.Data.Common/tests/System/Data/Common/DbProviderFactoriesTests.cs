@@ -2,10 +2,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Data.Common;
 using System.Linq;
 using Xunit;
 
