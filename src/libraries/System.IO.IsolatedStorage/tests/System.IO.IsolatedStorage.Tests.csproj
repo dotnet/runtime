@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStreamTests.netcoreapp.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStreamTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32Unix.cs">

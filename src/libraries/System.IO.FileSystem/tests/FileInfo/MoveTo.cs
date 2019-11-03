@@ -6,11 +6,16 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class FileInfo_MoveTo : File_Move
+    public class FileInfo_MoveTo : File_Move
     {
         protected override void Move(string sourceFile, string destFile)
         {
             new FileInfo(sourceFile).MoveTo(destFile);
+        }
+
+        protected override void Move(string sourceFile, string destFile, bool overwrite)
+        {
+            new FileInfo(sourceFile).MoveTo(destFile, overwrite);
         }
 
         [Fact]

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class NullTests
+    public class NullTests
     {
         [Fact]
         public static async Task TestNullStream_Flush()
@@ -161,6 +161,42 @@ namespace System.IO.Tests
             output.WriteLine();
             output.Flush();
             output.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullStream_ReadWriteData))]
+        public void TestNullStream_ReadSpan(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null) return;
+
+            byte[] copy = buffer.ToArray();
+            Stream source = Stream.Null;
+
+            int read = source.Read(new Span<byte>(buffer, offset, count));
+            Assert.Equal(0, read);
+            Assert.Equal(copy, buffer); // Make sure Read doesn't modify the buffer
+            Assert.Equal(0, source.Position);
+        }
+
+        [Theory]
+        [MemberData(nameof(NullStream_ReadWriteData))]
+        public void TestNullStream_WriteSpan(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null) return;
+
+            byte[] copy = buffer.ToArray();
+            Stream source = Stream.Null;
+
+            source.Write(new Span<byte>(buffer, offset, count));
+            Assert.Equal(copy, buffer); // Make sure Write doesn't modify the buffer
+            Assert.Equal(0, source.Position);
+        }
+
+        [Fact]
+        public void DisposeAsync_Nop()
+        {
+            Assert.True(Stream.Null.DisposeAsync().IsCompletedSuccessfully);
+            Stream.Null.Write(new byte[42]); // still usable
         }
 
         public static IEnumerable<object[]> NullReaders

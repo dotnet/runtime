@@ -1118,7 +1118,7 @@ namespace System.IO.Compression
             return path;
         }
 
-        private sealed partial class DirectToArchiveWriterStream : Stream
+        private sealed class DirectToArchiveWriterStream : Stream
         {
             private long _position;
             private readonly CheckSumAndSizeWriteStream _crcSizeStream;
@@ -1221,6 +1221,26 @@ namespace System.IO.Compression
 
                 _crcSizeStream.Write(buffer, offset, count);
                 _position += count;
+            }
+
+            public override void Write(ReadOnlySpan<byte> source)
+            {
+                ThrowIfDisposed();
+                Debug.Assert(CanWrite);
+
+                // if we're not actually writing anything, we don't want to trigger the header
+                if (source.Length == 0)
+                    return;
+
+                if (!_everWritten)
+                {
+                    _everWritten = true;
+                    // write local header, we are good to go
+                    _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false);
+                }
+
+                _crcSizeStream.Write(source);
+                _position += source.Length;
             }
 
             public override void Flush()
