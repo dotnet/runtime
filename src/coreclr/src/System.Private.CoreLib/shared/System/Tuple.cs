@@ -1064,7 +1064,7 @@ namespace System
             ITupleInternal t = (ITupleInternal)m_Rest;
             if (t.Length >= 8) { return t.GetHashCode(comparer); }
 
-            // In this case, the rest memeber has less than 8 elements so we need to combine some our elements with the elements in rest
+            // In this case, the m_Rest member has fewer than 8 elements so we need to combine our elements with the elements in m_Rest.
             int k = 8 - t.Length;
             switch (k)
             {
