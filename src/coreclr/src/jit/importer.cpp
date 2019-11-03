@@ -1393,9 +1393,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // If one or both types are TYP_STRUCT (one may not yet be normalized), they are compatible
             // iff their handles are the same.
             // Otherwise, they are compatible if their types are the same.
-            bool typesAreCompatible = ((destType == TYP_STRUCT) || (asgType == TYP_STRUCT))
-                                          ? ((gtGetStructHandleIfPresent(destNode) == structHnd) && varTypeIsStruct(asgType))
-                                          : (destType == asgType);
+            bool typesAreCompatible =
+                ((destType == TYP_STRUCT) || (asgType == TYP_STRUCT))
+                    ? ((gtGetStructHandleIfPresent(destNode) == structHnd) && varTypeIsStruct(asgType))
+                    : (destType == asgType);
             if (typesAreCompatible)
             {
                 dest = destNode;
