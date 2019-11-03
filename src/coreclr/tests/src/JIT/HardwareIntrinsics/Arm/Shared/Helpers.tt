@@ -1,0 +1,78 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// This file is auto-generated from template file Helpers.tt
+// In order to make changes to this file, please update Helpers.tt
+// and run the following command from Developer Command Prompt for Visual Studio
+//   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
+
+using System;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    static class Helpers
+    {
+<#
+
+        string[] typeNames = { "sbyte", "short", "int" };
+        foreach (string typeName in typeNames)
+        {
+#>
+        public static <#= typeName #> CountLeadingSignBits(<#= typeName #> op1)
+        {
+            return (<#= typeName #>)(CountLeadingZeroBits((<#= typeName #>)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint" })
+        {
+#>
+        public static <#= typeName #> CountLeadingZeroBits(<#= typeName #> op1)
+        {
+            return (<#= typeName #>)(8 * sizeof(<#= typeName #>) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(<#= typeName #> op1)
+        {
+            for (int i = 8 * sizeof(<#= typeName #>) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string [] { "sbyte", "byte" })
+        {
+#>
+        public static <#= typeName #> BitCount(<#= typeName #> op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+    }
+#>
+    }
+}

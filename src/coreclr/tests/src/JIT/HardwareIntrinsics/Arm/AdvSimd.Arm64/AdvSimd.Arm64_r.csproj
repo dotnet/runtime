@@ -11,6 +11,7 @@
     <Compile Include="Abs.Vector128.Double.cs" />
     <Compile Include="Abs.Vector128.UInt64.cs" />
     <Compile Include="Program.AdvSimd.Arm64.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>
