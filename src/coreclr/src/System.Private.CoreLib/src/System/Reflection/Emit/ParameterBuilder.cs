@@ -60,7 +60,7 @@ namespace System.Reflection.Emit
             _attributes = attributes;
             ModuleBuilder module = _methodBuilder.GetModuleBuilder();
             _token = new ParameterToken(TypeBuilder.SetParamInfo(
-                        JitHelpers.GetQCallModuleOnStack(ref module),
+                        new QCallModule(ref module),
                         _methodBuilder.GetToken().Token,
                         sequence,
                         attributes,

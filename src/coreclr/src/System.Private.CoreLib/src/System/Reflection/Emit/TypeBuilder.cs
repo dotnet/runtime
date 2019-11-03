@@ -140,26 +140,26 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Static FCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
         #endregion
 
         #region Internal Static FCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetMethodIL(QCallModule module, int tk, bool isInitLocals,
             byte[]? body, int bodyLength,
             byte[] LocalSig, int sigLength,
@@ -167,7 +167,7 @@ namespace System.Reflection.Emit
             ExceptionHandler[]? exceptions, int numExceptions,
             int[]? tokenFixups, int numTokenFixups);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             byte[]? attr, int attrLength, bool toDisk, bool updateCompilerFlags);
 
@@ -182,44 +182,44 @@ namespace System.Reflection.Emit
                 Buffer.BlockCopy(attr, 0, localAttr, 0, attr.Length);
             }
 
-            DefineCustomAttribute(JitHelpers.GetQCallModuleOnStack(ref module), tkAssociate, tkConstructor,
+            DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
                 localAttr, (localAttr != null) ? localAttr.Length : 0, toDisk, updateCompilerFlags);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void DefineMethodSemantics(QCallModule module, int tkAssociation,
             MethodSemanticsAttributes semantics, int tkMethod);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
         #endregion
@@ -357,20 +357,20 @@ namespace System.Reflection.Emit
                     case CorElementType.ELEMENT_TYPE_U8:
                     case CorElementType.ELEMENT_TYPE_R8:
                         fixed (byte* pData = &value.GetRawData())
-                            SetConstantValue(JitHelpers.GetQCallModuleOnStack(ref module), tk, (int)corType, pData);
+                            SetConstantValue(new QCallModule(ref module), tk, (int)corType, pData);
                         break;
 
                     default:
                         if (type == typeof(string))
                         {
                             fixed (char* pString = (string)value)
-                                SetConstantValue(JitHelpers.GetQCallModuleOnStack(ref module), tk, (int)CorElementType.ELEMENT_TYPE_STRING, pString);
+                                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_STRING, pString);
                         }
                         else if (type == typeof(DateTime))
                         {
                             // date is a I8 representation
                             long ticks = ((DateTime)value).Ticks;
-                            SetConstantValue(JitHelpers.GetQCallModuleOnStack(ref module), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks);
+                            SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks);
                         }
                         else
                         {
@@ -385,7 +385,7 @@ namespace System.Reflection.Emit
                 // (See ECMA-335 II.15.4.1.4 "The .param directive" and II.22.9 "Constant" for details.)
                 // This is how the Roslyn compilers generally encode `default(TValueType)` default values.
 
-                SetConstantValue(JitHelpers.GetQCallModuleOnStack(ref module), tk, (int)CorElementType.ELEMENT_TYPE_CLASS, null);
+                SetConstantValue(new QCallModule(ref module), tk, (int)CorElementType.ELEMENT_TYPE_CLASS, null);
             }
         }
 
@@ -547,13 +547,13 @@ namespace System.Reflection.Emit
                 tkEnclosingType = enclosingType.m_tdType.Token;
             }
 
-            m_tdType = new TypeToken(DefineType(JitHelpers.GetQCallModuleOnStack(ref module),
+            m_tdType = new TypeToken(DefineType(new QCallModule(ref module),
                 fullname, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!));
 
             m_iPackingSize = iPackingSize;
             m_iTypeSize = iTypeSize;
             if ((m_iPackingSize != 0) || (m_iTypeSize != 0))
-                SetClassLayout(JitHelpers.GetQCallModuleOnStack(ref module), m_tdType.Token, m_iPackingSize, m_iTypeSize);
+                SetClassLayout(new QCallModule(ref module), m_tdType.Token, m_iPackingSize, m_iTypeSize);
 
             m_module.AddType(FullName!, this);
         }
@@ -641,15 +641,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
         #endregion
 
@@ -1205,7 +1205,7 @@ namespace System.Reflection.Emit
             MethodToken tkDecl = m_module.GetMethodTokenInternal(methodInfoDeclaration);
 
             ModuleBuilder module = m_module;
-            DefineMethodImpl(JitHelpers.GetQCallModuleOnStack(ref module), m_tdType.Token, tkBody.Token, tkDecl.Token);
+            DefineMethodImpl(new QCallModule(ref module), m_tdType.Token, tkBody.Token, tkDecl.Token);
         }
 
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, Type? returnType, Type[]? parameterTypes)
@@ -1422,7 +1422,7 @@ namespace System.Reflection.Emit
                 }
 
                 ModuleBuilder module = m_module;
-                SetPInvokeData(JitHelpers.GetQCallModuleOnStack(ref module),
+                SetPInvokeData(new QCallModule(ref module),
                     dllName,
                     importName,
                     token.Token,
@@ -1779,7 +1779,7 @@ namespace System.Reflection.Emit
             ModuleBuilder module = m_module;
 
             PropertyToken prToken = new PropertyToken(DefineProperty(
-                JitHelpers.GetQCallModuleOnStack(ref module),
+                new QCallModule(ref module),
                 m_tdType.Token,
                 name,
                 attributes,
@@ -1826,7 +1826,7 @@ namespace System.Reflection.Emit
             // Internal helpers to define property records
             ModuleBuilder module = m_module;
             evToken = new EventToken(DefineEvent(
-                JitHelpers.GetQCallModuleOnStack(ref module),
+                new QCallModule(ref module),
                 m_tdType.Token,
                 name,
                 attributes,
@@ -1910,7 +1910,7 @@ namespace System.Reflection.Emit
                 }
 
                 int declMember = m_declMeth == null ? m_DeclaringType!.m_tdType.Token : m_declMeth.GetToken().Token;
-                m_tdType = new TypeToken(DefineGenericParam(JitHelpers.GetQCallModuleOnStack(ref module),
+                m_tdType = new TypeToken(DefineGenericParam(new QCallModule(ref module),
                     m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints));
 
                 if (m_ca != null)
@@ -1930,7 +1930,7 @@ namespace System.Reflection.Emit
                 // Check for global typebuilder
                 if (((m_tdType.Token & 0x00FFFFFF) != 0) && ((tkParent & 0x00FFFFFF) != 0))
                 {
-                    SetParentType(JitHelpers.GetQCallModuleOnStack(ref module), m_tdType.Token, tkParent);
+                    SetParentType(new QCallModule(ref module), m_tdType.Token, tkParent);
                 }
 
                 if (m_inst != null)
@@ -2013,7 +2013,7 @@ namespace System.Reflection.Emit
                 ExceptionHandler[]? exceptions = meth.GetExceptionHandlers();
                 int[]? tokenFixups = meth.GetTokenFixups();
 
-                SetMethodIL(JitHelpers.GetQCallModuleOnStack(ref module), meth.GetToken().Token, meth.InitLocals,
+                SetMethodIL(new QCallModule(ref module), meth.GetToken().Token, meth.InitLocals,
                     body, (body != null) ? body.Length : 0,
                     localSig, sigLength, maxStack,
                     exceptions, (exceptions != null) ? exceptions.Length : 0,
@@ -2031,7 +2031,7 @@ namespace System.Reflection.Emit
 
             // Terminate the process.
             RuntimeType cls = null!;
-            TermCreateClass(JitHelpers.GetQCallModuleOnStack(ref module), m_tdType.Token, JitHelpers.GetObjectHandleOnStack(ref cls));
+            TermCreateClass(new QCallModule(ref module), m_tdType.Token, ObjectHandleOnStack.Create(ref cls));
 
             if (!m_isHiddenGlobalType)
             {
@@ -2101,7 +2101,7 @@ namespace System.Reflection.Emit
 
             TypeToken tkInterface = m_module.GetTypeTokenInternal(interfaceType);
             ModuleBuilder module = m_module;
-            AddInterfaceImpl(JitHelpers.GetQCallModuleOnStack(ref module), m_tdType.Token, tkInterface.Token);
+            AddInterfaceImpl(new QCallModule(ref module), m_tdType.Token, tkInterface.Token);
 
             m_typeInterfaces.Add(interfaceType);
         }

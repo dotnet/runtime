@@ -3030,7 +3030,7 @@ namespace System
             get
             {
                 RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(JitHelpers.GetQCallTypeHandleOnStack(ref thisType)) != Interop.BOOL.FALSE;
+                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
             }
         }
 
@@ -4248,10 +4248,10 @@ namespace System
     #region Library
     internal readonly unsafe struct MdUtf8String
     {
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.

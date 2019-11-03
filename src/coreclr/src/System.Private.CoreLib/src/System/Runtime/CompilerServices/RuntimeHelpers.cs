@@ -18,6 +18,9 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
+        // The special dll name to be used for DllImport of QCalls
+        internal const string QCall = "QCall";
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
@@ -71,7 +74,7 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void _CompileMethod(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -165,6 +168,22 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
+        }
+
+        [Intrinsic]
+        internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
+        {
+            // The body of this function will be replaced by the EE with unsafe code
+            // See getILIntrinsicImplementation for how this happens.
+            return x.Equals(y);
+        }
+
+        [Intrinsic]
+        internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
+        {
+            // The body of this function will be replaced by the EE with unsafe code
+            // See getILIntrinsicImplementation for how this happens.
+            return x.CompareTo(y);
         }
 
         internal static ref byte GetRawData(this object obj) =>

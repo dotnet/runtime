@@ -268,7 +268,7 @@ namespace System.Threading
 
         public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern Interop.BOOL YieldInternal();
 
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
@@ -314,7 +314,7 @@ namespace System.Threading
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -366,7 +366,7 @@ namespace System.Threading
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 
-        [DllImport(JitHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall)]
         private static extern ulong GetCurrentOSThreadId();
 
         /// <summary>
@@ -457,7 +457,7 @@ namespace System.Threading
 
         private static int s_optimalMaxSpinWaitsPerSpinIteration;
 
-        [DllImport(JitHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall)]
         private static extern int GetOptimalMaxSpinWaitsPerSpinIterationInternal();
 
         /// <summary>

@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
 {
     public static class AssemblyExtensions
     {
-        [DllImport(JitHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern unsafe bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 
@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
 
             RuntimeAssembly rtAsm = runtimeAssembly;
 
-            return InternalTryGetRawMetadata(JitHelpers.GetQCallAssemblyOnStack(ref rtAsm), ref blob, ref length);
+            return InternalTryGetRawMetadata(new QCallAssembly(ref rtAsm), ref blob, ref length);
         }
     }
 }

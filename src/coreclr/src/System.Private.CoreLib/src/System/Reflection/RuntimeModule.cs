@@ -14,16 +14,16 @@ namespace System.Reflection
         internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region FCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
-        [DllImport(JitHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall)]
         private static extern bool nIsTransientInternal(QCallModule module);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -366,7 +366,7 @@ namespace System.Reflection
         internal bool IsTransientInternal()
         {
             RuntimeModule thisAsLocal = this;
-            return RuntimeModule.nIsTransientInternal(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal));
+            return RuntimeModule.nIsTransientInternal(new QCallModule(ref thisAsLocal));
         }
 
         internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
@@ -425,7 +425,7 @@ namespace System.Reflection
             RuntimeType? retType = null;
             object? keepAlive = null;
             RuntimeModule thisAsLocal = this;
-            GetType(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal), className, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref retType), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
+            GetType(new QCallModule(ref thisAsLocal), className, throwOnError, ignoreCase, ObjectHandleOnStack.Create(ref retType), ObjectHandleOnStack.Create(ref keepAlive));
             GC.KeepAlive(keepAlive);
             return retType;
         }
@@ -434,7 +434,7 @@ namespace System.Reflection
         {
             string? fullyQualifiedName = null;
             RuntimeModule thisAsLocal = this;
-            GetFullyQualifiedName(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal), JitHelpers.GetStringHandleOnStack(ref fullyQualifiedName));
+            GetFullyQualifiedName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref fullyQualifiedName));
             return fullyQualifiedName!;
         }
 
@@ -498,7 +498,7 @@ namespace System.Reflection
             {
                 string? scopeName = null;
                 RuntimeModule thisAsLocal = this;
-                GetScopeName(JitHelpers.GetQCallModuleOnStack(ref thisAsLocal), JitHelpers.GetStringHandleOnStack(ref scopeName));
+                GetScopeName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref scopeName));
                 return scopeName!;
             }
         }

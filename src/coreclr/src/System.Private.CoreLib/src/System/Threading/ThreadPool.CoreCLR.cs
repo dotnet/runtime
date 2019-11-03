@@ -256,7 +256,7 @@ namespace System.Threading
         /// </remarks>
         public static long CompletedWorkItemCount => GetCompletedWorkItemCount();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern long GetCompletedWorkItemCount();
 
         private static extern long PendingUnmanagedWorkItemCount
@@ -297,7 +297,7 @@ namespace System.Threading
             return registeredWaitHandle;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern Interop.BOOL RequestWorkerThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -358,7 +358,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void NotifyWorkItemProgressNative();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InitializeVMTp(ref bool enableWorkerTracking);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

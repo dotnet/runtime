@@ -17,7 +17,7 @@ namespace System
     internal class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _ReleaseTypeNameParser(IntPtr pTypeNameParser);
         #endregion
 
@@ -37,19 +37,19 @@ namespace System
     internal sealed class TypeNameParser : IDisposable
     {
         #region QCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 
@@ -297,7 +297,7 @@ namespace System
         private static SafeTypeNameParserHandle? CreateTypeNameParser(string typeName, bool throwOnError)
         {
             SafeTypeNameParserHandle? retHandle = null;
-            _CreateTypeNameParser(typeName, JitHelpers.GetObjectHandleOnStack(ref retHandle), throwOnError);
+            _CreateTypeNameParser(typeName, ObjectHandleOnStack.Create(ref retHandle), throwOnError);
 
             return retHandle;
         }
@@ -305,7 +305,7 @@ namespace System
         private string[]? GetNames()
         {
             string[]? names = null;
-            _GetNames(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref names));
+            _GetNames(m_NativeParser, ObjectHandleOnStack.Create(ref names));
 
             return names;
         }
@@ -313,7 +313,7 @@ namespace System
         private SafeTypeNameParserHandle[]? GetTypeArguments()
         {
             SafeTypeNameParserHandle[]? arguments = null;
-            _GetTypeArguments(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref arguments));
+            _GetTypeArguments(m_NativeParser, ObjectHandleOnStack.Create(ref arguments));
 
             return arguments;
         }
@@ -321,7 +321,7 @@ namespace System
         private int[]? GetModifiers()
         {
             int[]? modifiers = null;
-            _GetModifiers(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref modifiers));
+            _GetModifiers(m_NativeParser, ObjectHandleOnStack.Create(ref modifiers));
 
             return modifiers;
         }
@@ -329,7 +329,7 @@ namespace System
         private string GetAssemblyName()
         {
             string? assemblyName = null;
-            _GetAssemblyName(m_NativeParser, JitHelpers.GetStringHandleOnStack(ref assemblyName));
+            _GetAssemblyName(m_NativeParser, new StringHandleOnStack(ref assemblyName));
 
             return assemblyName!;
         }

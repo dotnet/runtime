@@ -34,13 +34,13 @@ namespace System
             }
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __ZeroMemory(void* b, nuint byteLength);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)

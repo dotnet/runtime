@@ -13,7 +13,7 @@ namespace System
         // Cache the value in readonly static that can be optimized out by the JIT
         internal static readonly bool IsUap = IsAppXProcess() != Interop.BOOL.FALSE;
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern Interop.BOOL IsAppXProcess();
 #endif
     }

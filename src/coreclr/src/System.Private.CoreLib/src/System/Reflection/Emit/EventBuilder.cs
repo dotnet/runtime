@@ -57,7 +57,7 @@ namespace System.Reflection.Emit
             m_type.ThrowIfCreated();
             ModuleBuilder module = m_module;
             TypeBuilder.DefineMethodSemantics(
-                JitHelpers.GetQCallModuleOnStack(ref module),
+                new QCallModule(ref module),
                 m_evToken.Token,
                 semantics,
                 mdBuilder.GetToken().Token);

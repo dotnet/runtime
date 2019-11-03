@@ -179,7 +179,7 @@ namespace System.Runtime.InteropServices
             GC.KeepAlive(rmi);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -234,13 +234,13 @@ namespace System.Runtime.InteropServices
 
             if (m is RuntimeModule rtModule)
             {
-                return GetHINSTANCE(JitHelpers.GetQCallModuleOnStack(ref rtModule));
+                return GetHINSTANCE(new QCallModule(ref rtModule));
             }
 
             return (IntPtr)(-1);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr GetHINSTANCE(QCallModule m);
 
 #endif // FEATURE_COMINTEROP

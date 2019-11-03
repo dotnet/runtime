@@ -384,11 +384,11 @@ namespace System
         internal static string GetMessageFromNativeResources(ExceptionMessageKind kind)
         {
             string? retMesg = null;
-            GetMessageFromNativeResources(kind, JitHelpers.GetStringHandleOnStack(ref retMesg));
+            GetMessageFromNativeResources(kind, new StringHandleOnStack(ref retMesg));
             return retMesg!;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
 
         internal readonly struct DispatchState

@@ -41,13 +41,13 @@ namespace System
                     _className ??= SR.IO_UnknownFileName;
 
                     string? format = null;
-                    GetTypeLoadExceptionMessage(_resourceId, JitHelpers.GetStringHandleOnStack(ref format));
+                    GetTypeLoadExceptionMessage(_resourceId, new StringHandleOnStack(ref format));
                     _message = string.Format(format!, _className, _assemblyName, _messageArg);
                 }
             }
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
     }
 }

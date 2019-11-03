@@ -236,7 +236,7 @@ namespace System.Threading
         /// </summary>
         public static long LockContentionCount => GetLockContentionCount();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern long GetLockContentionCount();
     }
 }

@@ -70,7 +70,7 @@ namespace System.Threading
             return createSynchronizationContextDelegate(dispatcher);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Interface)]
         private static extern object? GetWinRTDispatcherForCurrentThread();
     }
