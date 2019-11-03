@@ -13,6 +13,7 @@
     <Compile Include="InverseMixColumns.Vector128.Byte.cs" />
     <Compile Include="MixColumns.Vector128.Byte.cs" />
     <Compile Include="Program.Aes.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

@@ -13,6 +13,7 @@
     <Compile Include="LeadingZeroCount.Int64.cs" />
     <Compile Include="LeadingZeroCount.UInt64.cs" />
     <Compile Include="Program.ArmBase.Arm64.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>
