@@ -27,7 +27,8 @@ class ArrayNative
 public:
     static FCDECL1(void, Initialize, ArrayBase* pArray);
 
-    static FCDECL6(void, ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable);
+    static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
+    static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);
 
     // This method will create a new array of type type, with zero lower
     // bounds and rank.
@@ -51,18 +52,14 @@ private:
     enum AssignArrayEnum
     {
         AssignWrongType,
-        AssignWillWork,
         AssignMustCast,
         AssignBoxValueClassOrPrimitive,
         AssignUnboxValueClass,
         AssignPrimitiveWiden,
-        AssignDontKnow,
     };
 
     // The following functions are all helpers for ArrayCopy
-    static AssignArrayEnum CanAssignArrayTypeNoGC(const BASEARRAYREF pSrc, const BASEARRAYREF pDest);
     static AssignArrayEnum CanAssignArrayType(const BASEARRAYREF pSrc, const BASEARRAYREF pDest);
-    static void ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
     static void CastCheckEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
     static void BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
     static void UnBoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
