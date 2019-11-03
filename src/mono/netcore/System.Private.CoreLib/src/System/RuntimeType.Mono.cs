@@ -1863,6 +1863,7 @@ namespace System
             // ,+*&*[]\ in the identifier portions of the names
             // have been escaped with a leading backslash (\)
             public string full_name;
+            public bool default_ctor_cached;
             public RuntimeConstructorInfo default_ctor;
         }
 
@@ -1875,18 +1876,21 @@ namespace System
 		internal RuntimeConstructorInfo GetDefaultConstructor ()
 		{
 			var cache = Cache;
-			RuntimeConstructorInfo ctor = cache.default_ctor;
+			RuntimeConstructorInfo ctor = null;
 
-			if (ctor == null) {
-				var ctors = GetConstructors (BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+			if (Volatile.Read (ref cache.default_ctor_cached))
+				return cache.default_ctor;
 
-				for (int i = 0; i < ctors.Length; ++i) {
-					if (ctors [i].GetParametersCount () == 0) {
-						cache.default_ctor = ctor = (RuntimeConstructorInfo) ctors [i];
-						break;
-					}
-				}
-			}
+			var ctors = GetConstructorCandidates (
+				null,
+				BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
+				Array.Empty<Type> (), false);
+
+			if (ctors.Count == 1)
+				cache.default_ctor = ctor = (RuntimeConstructorInfo) ctors [0];						
+
+			// Note down even if we found no constructors
+			Volatile.Write (ref cache.default_ctor_cached, true);
 
 			return ctor;
 		}
