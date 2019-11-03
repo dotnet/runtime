@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class StreamDisposeAsyncTests
+    public class StreamDisposeAsyncTests
     {
         [Fact]
         public async Task DisposeAsync_MultipleDisposalSuccessful()

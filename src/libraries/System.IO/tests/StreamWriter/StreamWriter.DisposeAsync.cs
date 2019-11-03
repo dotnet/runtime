@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class StreamWriterTests
+    public class StreamWriterTests
     {
 
         [Fact]

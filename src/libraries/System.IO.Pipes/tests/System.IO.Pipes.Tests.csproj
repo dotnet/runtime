@@ -55,16 +55,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
     </Compile>
-    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.cs" />
-    <Compile Include="PipeTest.Read.netcoreapp.cs" />
-    <Compile Include="PipeTest.Write.netcoreapp.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.Windows.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Windows.cs" />
     <Compile Include="InteropTest.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
     <Compile Include="InteropTest.Windows.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.Unix.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
     <Compile Include="InteropTest.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />

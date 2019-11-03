@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    internal sealed partial class PositionPreservingWriteOnlyStreamWrapper : Stream
+    internal sealed class PositionPreservingWriteOnlyStreamWrapper : Stream
     {
         private readonly Stream _stream;
         private long _position;
@@ -36,6 +36,12 @@ namespace System.IO.Compression
             _stream.Write(buffer, offset, count);
         }
 
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            _position += buffer.Length;
+            _stream.Write(buffer);
+        }
+
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             _position += count;
@@ -54,6 +60,12 @@ namespace System.IO.Compression
         {
             _position += count;
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            _position += buffer.Length;
+            return _stream.WriteAsync(buffer, cancellationToken);
         }
 
         public override bool CanTimeout => _stream.CanTimeout;

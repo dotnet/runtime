@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.IO.Tests
 {
-    public partial class BinaryWriter_DisposeAsync
+    public class BinaryWriter_DisposeAsync
     {
         [Fact]
         public void DisposeAsync_CanInvokeMultipleTimes()

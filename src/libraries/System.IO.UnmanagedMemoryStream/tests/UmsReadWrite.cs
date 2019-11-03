@@ -350,4 +350,20 @@ namespace System.IO.Tests
             }
         }
     }
+
+    public sealed class SpanUmsReadWriteTests : UmsReadWriteTests
+    {
+        protected override int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+            stream.Read(new Span<byte>(array, offset, count));
+        protected override void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+            stream.Write(new Span<byte>(array, offset, count));
+    }
+
+    public sealed class MemoryUmsReadWriteTests : UmsReadWriteTests
+    {
+        protected override int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+            stream.ReadAsync(new Memory<byte>(array, offset, count)).GetAwaiter().GetResult();
+        protected override void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+            stream.WriteAsync(new Memory<byte>(array, offset, count)).GetAwaiter().GetResult();
+    }
 }

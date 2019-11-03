@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    public partial class IsolatedStorageFileStreamTests : IsoStorageTest
+    public class IsolatedStorageFileStreamTests : IsoStorageTest
     {
         [Theory, MemberData(nameof(ValidStores))]
         public async Task DisposeAsync_MultipleInvokes_Idempotent(PresetScopes scope)
