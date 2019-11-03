@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tracing
             else if (eventSourceIndex >= CounterGroup.s_counterGroups.Length)
             {
                 WeakReference<CounterGroup>[] newCounterGroups = new WeakReference<CounterGroup>[eventSourceIndex + 1];
-                Array.Copy(CounterGroup.s_counterGroups, 0, newCounterGroups, 0, CounterGroup.s_counterGroups.Length);
+                Array.Copy(CounterGroup.s_counterGroups, newCounterGroups, CounterGroup.s_counterGroups.Length);
                 CounterGroup.s_counterGroups = newCounterGroups;
             }
         }

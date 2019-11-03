@@ -268,7 +268,7 @@ namespace System.Reflection
 
             ParameterInfo[] ret = new ParameterInfo[numParams];
 
-            Array.Copy(indexParams, 0, ret, 0, numParams);
+            Array.Copy(indexParams, ret, numParams);
 
             return ret;
         }

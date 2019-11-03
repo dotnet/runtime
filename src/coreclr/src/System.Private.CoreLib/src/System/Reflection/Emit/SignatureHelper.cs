@@ -857,7 +857,7 @@ namespace System.Reflection.Emit
             if (m_signature.Length > m_currSig)
             {
                 byte[] temp = new byte[m_currSig];
-                Array.Copy(m_signature, 0, temp, 0, m_currSig);
+                Array.Copy(m_signature, temp, m_currSig);
                 m_signature = temp;
             }
 

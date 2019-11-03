@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 m_parameterTypes = new Type[parameterTypes.Length];
-                Array.Copy(parameterTypes, 0, m_parameterTypes, 0, parameterTypes.Length);
+                Array.Copy(parameterTypes, m_parameterTypes, parameterTypes.Length);
             }
             else
             {
