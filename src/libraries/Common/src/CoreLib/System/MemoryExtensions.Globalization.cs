@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,16 +6,25 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-using Internal.Runtime.CompilerServices;
+using System.Text;
 
 namespace System
 {
-    /// <summary>
-    /// Extension methods for Span{T}, Memory{T}, and friends.
-    /// </summary>
     public static partial class MemoryExtensions
     {
+        /// <summary>
+        /// Indicates whether the specified span contains only white-space characters.
+        /// </summary>
+        public static bool IsWhiteSpace(this ReadOnlySpan<char> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsWhiteSpace(span[i]))
+                    return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
         /// <param name="span">The source span.</param>
@@ -383,244 +392,25 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new span over the portion of the target array.
+        /// Returns an enumeration of <see cref="Rune"/> from the provided span.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this T[]? array, int start)
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
+        public static SpanRuneEnumerator EnumerateRunes(this ReadOnlySpan<char> span)
         {
-            if (array == null)
-            {
-                if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                return default;
-            }
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
-                ThrowHelper.ThrowArrayTypeMismatchException();
-            if ((uint)start > (uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), start), array.Length - start);
+            return new SpanRuneEnumerator(span);
         }
 
         /// <summary>
-        /// Creates a new span over the portion of the target array.
+        /// Returns an enumeration of <see cref="Rune"/> from the provided span.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this T[]? array, Index startIndex)
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
+        public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
         {
-            if (array == null)
-            {
-                if (!startIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-                return default;
-            }
-
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
-                ThrowHelper.ThrowArrayTypeMismatchException();
-
-            int actualIndex = startIndex.GetOffset(array.Length);
-            if ((uint)actualIndex > (uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), actualIndex), array.Length - actualIndex);
-        }
-
-        /// <summary>
-        /// Creates a new span over the portion of the target array.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this T[]? array, Range range)
-        {
-            if (array == null)
-            {
-                Index startIndex = range.Start;
-                Index endIndex = range.End;
-
-                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-                return default;
-            }
-
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
-                ThrowHelper.ThrowArrayTypeMismatchException();
-
-            (int start, int length) = range.GetOffsetAndLength(array.Length);
-            return new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), start), length);
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string? text)
-        {
-            if (text == null)
-                return default;
-
-            return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string? text, int start)
-        {
-            if (text == null)
-            {
-                if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-            if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), text.Length - start);
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string? text, int start, int length)
-        {
-            if (text == null)
-            {
-                if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-#if BIT64
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
-
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), length);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
-        /// <param name="text">The target string.</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlyMemory<char> AsMemory(this string? text)
-        {
-            if (text == null)
-                return default;
-
-            return new ReadOnlyMemory<char>(text, 0, text.Length);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
-        /// </exception>
-        public static ReadOnlyMemory<char> AsMemory(this string? text, int start)
-        {
-            if (text == null)
-            {
-                if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-            if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-
-            return new ReadOnlyMemory<char>(text, start, text.Length - start);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="startIndex">The index at which to begin this slice.</param>
-        public static ReadOnlyMemory<char> AsMemory(this string? text, Index startIndex)
-        {
-            if (text == null)
-            {
-                if (!startIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-
-                return default;
-            }
-
-            int actualIndex = startIndex.GetOffset(text.Length);
-            if ((uint)actualIndex > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new ReadOnlyMemory<char>(text, actualIndex, text.Length - actualIndex);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
-        /// </exception>
-        public static ReadOnlyMemory<char> AsMemory(this string? text, int start, int length)
-        {
-            if (text == null)
-            {
-                if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-#if BIT64
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
-
-            return new ReadOnlyMemory<char>(text, start, length);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
-        public static ReadOnlyMemory<char> AsMemory(this string? text, Range range)
-        {
-            if (text == null)
-            {
-                Index startIndex = range.Start;
-                Index endIndex = range.End;
-
-                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-
-                return default;
-            }
-
-            (int start, int length) = range.GetOffsetAndLength(text.Length);
-            return new ReadOnlyMemory<char>(text, start, length);
+            return new SpanRuneEnumerator(span);
         }
     }
 }
