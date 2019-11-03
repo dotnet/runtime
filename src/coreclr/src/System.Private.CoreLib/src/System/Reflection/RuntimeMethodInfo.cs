@@ -303,7 +303,7 @@ namespace System.Reflection
 
             ParameterInfo[] ret = new ParameterInfo[parameters.Length];
 
-            Array.Copy(parameters, 0, ret, 0, parameters.Length);
+            Array.Copy(parameters, ret, parameters.Length);
 
             return ret;
         }

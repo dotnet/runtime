@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 IntPtr[] newTable = new IntPtr[newSize];
-                Array.Copy(m_innerTable, 0, newTable, 0, m_innerTable.Length);
+                Array.Copy(m_innerTable, newTable, m_innerTable.Length);
                 Volatile.Write(ref m_innerTable, newTable);
             }
 

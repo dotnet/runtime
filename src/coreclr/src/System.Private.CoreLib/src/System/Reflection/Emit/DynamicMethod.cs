@@ -613,7 +613,7 @@ namespace System.Reflection.Emit
             {
                 ParameterInfo[] privateParameters = LoadParameters();
                 ParameterInfo[] parameters = new ParameterInfo[privateParameters.Length];
-                Array.Copy(privateParameters, 0, parameters, 0, privateParameters.Length);
+                Array.Copy(privateParameters, parameters, privateParameters.Length);
                 return parameters;
             }
 

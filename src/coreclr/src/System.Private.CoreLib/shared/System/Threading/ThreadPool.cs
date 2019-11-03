@@ -63,7 +63,7 @@ namespace System.Threading
                     Debug.Assert(Array.IndexOf(oldQueues, queue) == -1);
 
                     var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
-                    Array.Copy(oldQueues, 0, newQueues, 0, oldQueues.Length);
+                    Array.Copy(oldQueues, newQueues, oldQueues.Length);
                     newQueues[^1] = queue;
                     if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
                     {
@@ -97,11 +97,11 @@ namespace System.Threading
                     }
                     else if (pos == oldQueues.Length - 1)
                     {
-                        Array.Copy(oldQueues, 0, newQueues, 0, newQueues.Length);
+                        Array.Copy(oldQueues, newQueues, newQueues.Length);
                     }
                     else
                     {
-                        Array.Copy(oldQueues, 0, newQueues, 0, pos);
+                        Array.Copy(oldQueues, newQueues, pos);
                         Array.Copy(oldQueues, pos + 1, newQueues, pos, newQueues.Length - pos);
                     }
 

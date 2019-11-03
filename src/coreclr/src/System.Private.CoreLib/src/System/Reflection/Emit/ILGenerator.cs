@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
             Debug.Assert(incoming != null);
 
             T[] temp = new T[requiredSize];
-            Array.Copy(incoming, 0, temp, 0, incoming.Length);
+            Array.Copy(incoming, temp, incoming.Length);
             return temp;
         }
 
@@ -208,7 +208,7 @@ namespace System.Reflection.Emit
             byte[] newBytes = new byte[m_length];
 
             // Copy the data from the old array
-            Array.Copy(m_ILStream, 0, newBytes, 0, m_length);
+            Array.Copy(m_ILStream, newBytes, m_length);
 
             // Do the fixups.
             // This involves iterating over all of the labels and
@@ -253,7 +253,7 @@ namespace System.Reflection.Emit
             }
 
             var temp = new __ExceptionInfo[m_exceptionCount];
-            Array.Copy(m_exceptions, 0, temp, 0, m_exceptionCount);
+            Array.Copy(m_exceptions, temp, m_exceptionCount);
             SortExceptions(temp);
             return temp;
         }
@@ -270,7 +270,7 @@ namespace System.Reflection.Emit
         private void IncreaseCapacity(int size)
         {
             byte[] temp = new byte[Math.Max(m_ILStream.Length * 2, m_length + size)];
-            Array.Copy(m_ILStream, 0, temp, 0, m_ILStream.Length);
+            Array.Copy(m_ILStream, temp, m_ILStream.Length);
             m_ILStream = temp;
         }
 
@@ -355,7 +355,7 @@ namespace System.Reflection.Emit
             }
 
             int[] narrowTokens = new int[m_RelocFixupCount];
-            Array.Copy(m_RelocFixupList, 0, narrowTokens, 0, m_RelocFixupCount);
+            Array.Copy(m_RelocFixupList, narrowTokens, m_RelocFixupCount);
             return narrowTokens;
         }
         #endregion
@@ -1593,15 +1593,15 @@ namespace System.Reflection.Emit
                 // It would probably be simpler to just use Lists here.
                 int newSize = checked(m_iCount * 2);
                 int[] temp = new int[newSize];
-                Array.Copy(m_iOffsets, 0, temp, 0, m_iCount);
+                Array.Copy(m_iOffsets, temp, m_iCount);
                 m_iOffsets = temp;
 
                 ScopeAction[] tempSA = new ScopeAction[newSize];
-                Array.Copy(m_ScopeActions, 0, tempSA, 0, m_iCount);
+                Array.Copy(m_ScopeActions, tempSA, m_iCount);
                 m_ScopeActions = tempSA;
 
                 LocalSymInfo[] tempLSI = new LocalSymInfo[newSize];
-                Array.Copy(m_localSymInfos, 0, tempLSI, 0, m_iCount);
+                Array.Copy(m_localSymInfos, tempLSI, m_iCount);
                 m_localSymInfos = tempLSI;
             }
         }
@@ -1700,7 +1700,7 @@ namespace System.Reflection.Emit
             {
                 // the arrays are full. Enlarge the arrays
                 REDocument[] temp = new REDocument[m_DocumentCount * 2];
-                Array.Copy(m_Documents, 0, temp, 0, m_DocumentCount);
+                Array.Copy(m_Documents, temp, m_DocumentCount);
                 m_Documents = temp;
             }
         }
@@ -1770,23 +1770,23 @@ namespace System.Reflection.Emit
                 // It would probably be simpler to just use Lists here
                 int newSize = checked(m_iLineNumberCount * 2);
                 int[] temp = new int[newSize];
-                Array.Copy(m_iOffsets, 0, temp, 0, m_iLineNumberCount);
+                Array.Copy(m_iOffsets, temp, m_iLineNumberCount);
                 m_iOffsets = temp;
 
                 temp = new int[newSize];
-                Array.Copy(m_iLines, 0, temp, 0, m_iLineNumberCount);
+                Array.Copy(m_iLines, temp, m_iLineNumberCount);
                 m_iLines = temp;
 
                 temp = new int[newSize];
-                Array.Copy(m_iColumns, 0, temp, 0, m_iLineNumberCount);
+                Array.Copy(m_iColumns, temp, m_iLineNumberCount);
                 m_iColumns = temp;
 
                 temp = new int[newSize];
-                Array.Copy(m_iEndLines, 0, temp, 0, m_iLineNumberCount);
+                Array.Copy(m_iEndLines, temp, m_iLineNumberCount);
                 m_iEndLines = temp;
 
                 temp = new int[newSize];
-                Array.Copy(m_iEndColumns, 0, temp, 0, m_iLineNumberCount);
+                Array.Copy(m_iEndColumns, temp, m_iLineNumberCount);
                 m_iEndColumns = temp;
             }
         }
@@ -1797,19 +1797,19 @@ namespace System.Reflection.Emit
                 return;
             // reduce the array size to be exact
             int[] iOffsetsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iOffsets, 0, iOffsetsTemp, 0, m_iLineNumberCount);
+            Array.Copy(m_iOffsets, iOffsetsTemp, m_iLineNumberCount);
 
             int[] iLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iLines, 0, iLinesTemp, 0, m_iLineNumberCount);
+            Array.Copy(m_iLines, iLinesTemp, m_iLineNumberCount);
 
             int[] iColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iColumns, 0, iColumnsTemp, 0, m_iLineNumberCount);
+            Array.Copy(m_iColumns, iColumnsTemp, m_iLineNumberCount);
 
             int[] iEndLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndLines, 0, iEndLinesTemp, 0, m_iLineNumberCount);
+            Array.Copy(m_iEndLines, iEndLinesTemp, m_iLineNumberCount);
 
             int[] iEndColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndColumns, 0, iEndColumnsTemp, 0, m_iLineNumberCount);
+            Array.Copy(m_iEndColumns, iEndColumnsTemp, m_iLineNumberCount);
 
             symWriter.DefineSequencePoints(m_document, iOffsetsTemp, iLinesTemp, iColumnsTemp, iEndLinesTemp, iEndColumnsTemp);
         }

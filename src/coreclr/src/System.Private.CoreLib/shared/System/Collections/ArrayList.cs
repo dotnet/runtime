@@ -106,7 +106,7 @@ namespace System.Collections
                         object[] newItems = new object[value];
                         if (_size > 0)
                         {
-                            Array.Copy(_items, 0, newItems, 0, _size);
+                            Array.Copy(_items, newItems, _size);
                         }
                         _items = newItems;
                     }
@@ -248,7 +248,7 @@ namespace System.Collections
             ArrayList la = new ArrayList(_size);
             la._size = _size;
             la._version = _version;
-            Array.Copy(_items, 0, la._items, 0, _size);
+            Array.Copy(_items, la._items, _size);
             return la;
         }
 
@@ -714,7 +714,7 @@ namespace System.Collections
                 return Array.Empty<object>();
 
             object?[] array = new object[_size];
-            Array.Copy(_items, 0, array, 0, _size);
+            Array.Copy(_items, array, _size);
             return array;
         }
 
@@ -729,7 +729,7 @@ namespace System.Collections
                 throw new ArgumentNullException(nameof(type));
 
             Array array = Array.CreateInstance(type, _size);
-            Array.Copy(_items, 0, array, 0, _size);
+            Array.Copy(_items, array, _size);
             return array;
         }
 
