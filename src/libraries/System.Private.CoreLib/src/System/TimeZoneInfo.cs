@@ -1459,7 +1459,7 @@ namespace System
                     {
                         ambiguousStartModified = ambiguousStart.AddYears(1);
                         ambiguousEndModified = ambiguousEnd.AddYears(1);
-                        isAmbiguousLocalDst = (time >= ambiguousStart && time < ambiguousEnd);
+                        isAmbiguousLocalDst = (time >= ambiguousStartModified && time < ambiguousEndModified);
                     }
                     catch (ArgumentOutOfRangeException) { }
 
@@ -1469,7 +1469,7 @@ namespace System
                         {
                             ambiguousStartModified = ambiguousStart.AddYears(-1);
                             ambiguousEndModified = ambiguousEnd.AddYears(-1);
-                            isAmbiguousLocalDst = (time >= ambiguousStart && time < ambiguousEnd);
+                            isAmbiguousLocalDst = (time >= ambiguousStartModified && time < ambiguousEndModified);
                         }
                         catch (ArgumentOutOfRangeException) { }
                     }
