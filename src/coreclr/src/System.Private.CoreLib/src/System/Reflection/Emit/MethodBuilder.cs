@@ -668,14 +668,14 @@ namespace System.Reflection.Emit
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out sigLength);
             ModuleBuilder module = m_module;
 
-            int token = TypeBuilder.DefineMethod(JitHelpers.GetQCallModuleOnStack(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);
+            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);
             m_tkMethod = new MethodToken(token);
 
             if (m_inst != null)
                 foreach (GenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
-            TypeBuilder.SetMethodImpl(JitHelpers.GetQCallModuleOnStack(ref module), token, m_dwMethodImplFlags);
+            TypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
 
             return m_tkMethod;
         }
@@ -760,7 +760,7 @@ namespace System.Reflection.Emit
             m_canBeRuntimeImpl = true;
 
             ModuleBuilder module = m_module;
-            TypeBuilder.SetMethodImpl(JitHelpers.GetQCallModuleOnStack(ref module), MetadataTokenInternal, attributes);
+            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataTokenInternal, attributes);
         }
 
         public ILGenerator GetILGenerator()

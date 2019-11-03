@@ -144,7 +144,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _MemoryBarrierProcessWide();
 
         public static void MemoryBarrierProcessWide()

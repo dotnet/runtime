@@ -6985,114 +6985,6 @@ correctly (but slower) if the IL intrinsics are removed.
 
 *********************************************************************/
 
-bool getILIntrinsicImplementation(MethodDesc * ftn,
-                                  CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__JIT_HELPERS));
-
-    mdMethodDef tk = ftn->GetMemberDef();
-
-    // Compare tokens to cover all generic instantiations
-    // The body of the first method is simply ret Arg0. The second one first casts the arg to I4.
-
-    if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__ENUM_EQUALS)->GetMemberDef())
-    {
-        // Normally we would follow the above pattern and unconditionally replace the IL,
-        // relying on generic type constraints to guarantee that it will only ever be instantiated
-        // on the type/size of argument we expect.
-        //
-        // However C#/CLR does not support restricting a generic type to be an Enum, so the best
-        // we can do is constrain it to be a value type.  This is fine for run time, since we only
-        // ever create instantiations on 4 byte or less Enums. But during NGen we may compile instantiations
-        // on other value types (to be specific, every value type instatiation of EqualityComparer
-        // because of its TypeDependencyAttribute; here again we would like to restrict this to
-        // 4 byte or less Enums but cannot).
-        //
-        // This IL is invalid for those instantiations, and replacing it would lead to all sorts of
-        // errors at NGen time.  So we only replace it for instantiations where it would be valid,
-        // leaving the others, which we should never execute, with the C# implementation of throwing.
-
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_I1 ||
-            et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I8 ||
-            et == ELEMENT_TYPE_U8)
-        {
-            static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-            methInfo->ILCode = const_cast<BYTE*>(ilcode);
-            methInfo->ILCodeSize = sizeof(ilcode);
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
-    {
-        // The the comment above on why this is is not an unconditional replacement.  This case handles
-        // Enums backed by 8 byte values.
-
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_I1 ||
-            et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I8 ||
-            et == ELEMENT_TYPE_U8)
-        {
-            static BYTE ilcode[8][9];
-
-            TypeHandle thUnderlyingType = MscorlibBinder::GetElementType(et);
-
-            TypeHandle thIComparable = TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&thUnderlyingType, 1));
-
-            MethodDesc * pCompareToMD = thUnderlyingType.AsMethodTable()->GetMethodDescForInterfaceMethod(
-                thIComparable, MscorlibBinder::GetMethod(METHOD__ICOMPARABLEGENERIC__COMPARE_TO), TRUE /* throwOnConflict */);
-
-            // Call CompareTo method on the primitive type
-            int tokCompareTo = pCompareToMD->GetMemberDef();
-
-            unsigned int index = (et - ELEMENT_TYPE_I1);
-            _ASSERTE(index < _countof(ilcode));
-
-            ilcode[index][0] = CEE_LDARGA_S;
-            ilcode[index][1] = 0;
-            ilcode[index][2] = CEE_LDARG_1;
-            ilcode[index][3] = CEE_CALL;
-            ilcode[index][4] = (BYTE)(tokCompareTo);
-            ilcode[index][5] = (BYTE)(tokCompareTo >> 8);
-            ilcode[index][6] = (BYTE)(tokCompareTo >> 16);
-            ilcode[index][7] = (BYTE)(tokCompareTo >> 24);
-            ilcode[index][8] = CEE_RET;
-
-            methInfo->ILCode = const_cast<BYTE*>(ilcode[index]);
-            methInfo->ILCodeSize = sizeof(ilcode[index]);
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
                                            CORINFO_METHOD_INFO * methInfo)
 {
@@ -7595,6 +7487,99 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
+    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
+    {
+        // Normally we would follow the above pattern and unconditionally replace the IL,
+        // relying on generic type constraints to guarantee that it will only ever be instantiated
+        // on the type/size of argument we expect.
+        //
+        // However C#/CLR does not support restricting a generic type to be an Enum, so the best
+        // we can do is constrain it to be a value type.  This is fine for run time, since we only
+        // ever create instantiations on 4 byte or less Enums. But during NGen we may compile instantiations
+        // on other value types (to be specific, every value type instatiation of EqualityComparer
+        // because of its TypeDependencyAttribute; here again we would like to restrict this to
+        // 4 byte or less Enums but cannot).
+        //
+        // This IL is invalid for those instantiations, and replacing it would lead to all sorts of
+        // errors at NGen time.  So we only replace it for instantiations where it would be valid,
+        // leaving the others, which we should never execute, with the C# implementation of throwing.
+
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(inst.GetNumArgs() == 1);
+        CorElementType et = inst[0].GetVerifierCorElementType();
+        if (et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_U2 ||
+            et == ELEMENT_TYPE_I1 ||
+            et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I8 ||
+            et == ELEMENT_TYPE_U8)
+        {
+            static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
+            methInfo->ILCode = const_cast<BYTE*>(ilcode);
+            methInfo->ILCodeSize = sizeof(ilcode);
+            methInfo->maxStack = 2;
+            methInfo->EHcount = 0;
+            methInfo->options = (CorInfoOptions)0;
+            return true;
+        }
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
+    {
+        // The the comment above on why this is is not an unconditional replacement.  This case handles
+        // Enums backed by 8 byte values.
+
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(inst.GetNumArgs() == 1);
+        CorElementType et = inst[0].GetVerifierCorElementType();
+        if (et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_U2 ||
+            et == ELEMENT_TYPE_I1 ||
+            et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I8 ||
+            et == ELEMENT_TYPE_U8)
+        {
+            static BYTE ilcode[8][9];
+
+            TypeHandle thUnderlyingType = MscorlibBinder::GetElementType(et);
+
+            TypeHandle thIComparable = TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&thUnderlyingType, 1));
+
+            MethodDesc* pCompareToMD = thUnderlyingType.AsMethodTable()->GetMethodDescForInterfaceMethod(
+                thIComparable, MscorlibBinder::GetMethod(METHOD__ICOMPARABLEGENERIC__COMPARE_TO), TRUE /* throwOnConflict */);
+
+            // Call CompareTo method on the primitive type
+            int tokCompareTo = pCompareToMD->GetMemberDef();
+
+            unsigned int index = (et - ELEMENT_TYPE_I1);
+            _ASSERTE(index < _countof(ilcode));
+
+            ilcode[index][0] = CEE_LDARGA_S;
+            ilcode[index][1] = 0;
+            ilcode[index][2] = CEE_LDARG_1;
+            ilcode[index][3] = CEE_CALL;
+            ilcode[index][4] = (BYTE)(tokCompareTo);
+            ilcode[index][5] = (BYTE)(tokCompareTo >> 8);
+            ilcode[index][6] = (BYTE)(tokCompareTo >> 16);
+            ilcode[index][7] = (BYTE)(tokCompareTo >> 24);
+            ilcode[index][8] = CEE_RET;
+
+            methInfo->ILCode = const_cast<BYTE*>(ilcode[index]);
+            methInfo->ILCodeSize = sizeof(ilcode[index]);
+            methInfo->maxStack = 2;
+            methInfo->EHcount = 0;
+            methInfo->options = (CorInfoOptions)0;
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -7664,11 +7649,7 @@ getMethodInfoHelper(
 
         if (ftn->IsJitIntrinsic())
         {
-            if (MscorlibBinder::IsClass(pMT, CLASS__JIT_HELPERS))
-            {
-                fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
-            }
-            else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
+            if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
             }

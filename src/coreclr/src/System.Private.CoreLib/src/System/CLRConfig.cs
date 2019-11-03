@@ -51,7 +51,7 @@ namespace System
             return defaultValue;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
 }

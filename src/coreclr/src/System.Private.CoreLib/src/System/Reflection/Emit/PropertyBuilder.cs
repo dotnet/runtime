@@ -83,7 +83,7 @@ namespace System.Reflection.Emit
             m_containingType.ThrowIfCreated();
             ModuleBuilder module = m_moduleBuilder;
             TypeBuilder.DefineMethodSemantics(
-                JitHelpers.GetQCallModuleOnStack(ref module),
+                new QCallModule(ref module),
                 m_prToken.Token,
                 semantics,
                 mdBuilder.GetToken().Token);

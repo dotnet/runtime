@@ -39,10 +39,10 @@ namespace System.Diagnostics.Tracing
             return null;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool IsEventSourceLoggingEnabled();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };

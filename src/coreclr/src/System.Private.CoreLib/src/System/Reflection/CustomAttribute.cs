@@ -1387,10 +1387,10 @@ namespace System.Reflection
 
             RuntimeTypeHandle attributeTypeHandle = attributeType.TypeHandle;
 
-            bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(JitHelpers.GetQCallTypeHandleOnStack(ref attributeTypeHandle),
+            bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(new QCallTypeHandle(ref attributeTypeHandle),
                                                                     ctorWithParameters != null ? ctorWithParameters.Value : RuntimeMethodHandleInternal.EmptyHandle,
-                                                                    JitHelpers.GetQCallTypeHandleOnStack(ref parentTypeHandle),
-                                                                    JitHelpers.GetQCallModuleOnStack(ref decoratedModule)) != Interop.BOOL.FALSE;
+                                                                    new QCallTypeHandle(ref parentTypeHandle),
+                                                                    new QCallModule(ref decoratedModule)) != Interop.BOOL.FALSE;
 
             GC.KeepAlive(ctorWithParameters);
             return result;

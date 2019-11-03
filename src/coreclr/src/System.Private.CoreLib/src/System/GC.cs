@@ -78,10 +78,10 @@ namespace System
                                     fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int _EndNoGCRegion();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -90,10 +90,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern long GetTotalMemory();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _Collect(int generation, int mode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -111,10 +111,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _AddMemoryPressure(ulong bytesAllocated);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
@@ -281,7 +281,7 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()
@@ -344,10 +344,10 @@ namespace System
             return newSize;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

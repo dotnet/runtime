@@ -707,10 +707,8 @@ DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,        
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_SZ_ARRAY_DATA,   GetRawSzArrayData,  NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, NoSig)
-
-DEFINE_CLASS(JIT_HELPERS,           CompilerServices,       JitHelpers)
-DEFINE_METHOD(JIT_HELPERS,          ENUM_EQUALS,            EnumEquals, NoSig)
-DEFINE_METHOD(JIT_HELPERS,          ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)

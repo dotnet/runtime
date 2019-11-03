@@ -687,7 +687,7 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [DllImport(JitHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

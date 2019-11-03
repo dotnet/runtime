@@ -19,33 +19,33 @@ namespace System.Reflection.Emit
         }
 
         #region QCalls
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr CreateTypeNameBuilder();
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void ReleaseTypeNameBuilder(IntPtr pAQN);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void OpenGenericArguments(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void CloseGenericArguments(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void OpenGenericArgument(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void CloseGenericArgument(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddName(IntPtr tnb, string name);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddPointer(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddByRef(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddSzArray(IntPtr tnb);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddArray(IntPtr tnb, int rank);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void AddAssemblySpec(IntPtr tnb, string assemblySpec);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void ToString(IntPtr tnb, StringHandleOnStack retString);
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void Clear(IntPtr tnb);
         #endregion
 
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit
         private void AddSzArray() { AddSzArray(m_typeNameBuilder); }
         private void AddArray(int rank) { AddArray(m_typeNameBuilder, rank); }
         private void AddAssemblySpec(string assemblySpec) { AddAssemblySpec(m_typeNameBuilder, assemblySpec); }
-        public override string? ToString() { string? ret = null; ToString(m_typeNameBuilder, JitHelpers.GetStringHandleOnStack(ref ret)); return ret; }
+        public override string? ToString() { string? ret = null; ToString(m_typeNameBuilder, new StringHandleOnStack(ref ret)); return ret; }
         private void Clear() { Clear(m_typeNameBuilder); }
         #endregion
     }
