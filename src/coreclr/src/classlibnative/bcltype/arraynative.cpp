@@ -129,95 +129,71 @@ FCIMPL1(void, ArrayNative::Initialize, ArrayBase* array)
 FCIMPLEND
 
 
-
-
-
-
-    // Returns an enum saying whether you can copy an array of srcType into destType.
-ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAYREF pSrc, const BASEARRAYREF pDest)
+    // Returns whether you can directly copy an array of srcType into destType.
+FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(pDest != NULL);
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
-    // The next 50 lines are a little tricky.  Change them with great care.
-    //
+    _ASSERTE(pSrc != NULL);
+    _ASSERTE(pDst != NULL);
 
-    // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
-    // we do not need to call GetArrayElementTypeHandle().
-    MethodTable *pSrcMT = pSrc->GetMethodTable();
-    MethodTable *pDestMT = pDest->GetMethodTable();
-    if (pSrcMT == pDestMT)
-        return AssignWillWork;
+    // This case is expected to be handled by the fast path
+    _ASSERTE(pSrc->GetMethodTable() != pDst->GetMethodTable());
 
-    TypeHandle srcTH = pSrcMT->GetApproxArrayElementTypeHandle();
-    TypeHandle destTH = pDestMT->GetApproxArrayElementTypeHandle();
+    TypeHandle srcTH = pSrc->GetMethodTable()->GetApproxArrayElementTypeHandle();
+    TypeHandle destTH = pDst->GetMethodTable()->GetApproxArrayElementTypeHandle();
     if (srcTH == destTH) // This check kicks for different array kind or dimensions
-        return AssignWillWork;
+        FC_RETURN_BOOL(true);
 
-    // Value class boxing
-    if (srcTH.IsValueType() && !destTH.IsValueType())
+    if (srcTH.IsValueType())
     {
-        switch (srcTH.CanCastToCached(destTH))
+        // Value class boxing
+        if (!destTH.IsValueType())
+            FC_RETURN_BOOL(false);
+
+        const CorElementType srcElType = srcTH.GetVerifierCorElementType();
+        const CorElementType destElType = destTH.GetVerifierCorElementType();
+        _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
+        _ASSERTE(destElType < ELEMENT_TYPE_MAX);
+
+        // Copying primitives from one type to another
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
         {
-        case TypeHandle::CanCast : return AssignBoxValueClassOrPrimitive;
-        case TypeHandle::CannotCast : return AssignWrongType;
-        default : return AssignDontKnow;
+            if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
+                FC_RETURN_BOOL(true);
         }
     }
-
-    // Value class unboxing.
-    if (!srcTH.IsValueType() && destTH.IsValueType())
+    else
     {
-        if (srcTH.CanCastToCached(destTH) == TypeHandle::CanCast)
-            return AssignUnboxValueClass;
-        else if (destTH.CanCastToCached(srcTH) == TypeHandle::CanCast)   // V extends IV. Copying from IV to V, or Object to V.
-            return AssignUnboxValueClass;
-        else
-            return AssignDontKnow;
+        // Value class unboxing
+        if (destTH.IsValueType())
+            FC_RETURN_BOOL(false);
     }
 
-    const CorElementType srcElType = srcTH.GetVerifierCorElementType();
-    const CorElementType destElType = destTH.GetVerifierCorElementType();
-    _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
-    _ASSERTE(destElType < ELEMENT_TYPE_MAX);
-
-    // Copying primitives from one type to another
-    if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
+    TypeHandle::CastResult r = srcTH.CanCastToCached(destTH);
+    if (r != TypeHandle::MaybeCast)
     {
-        if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
-            return AssignWillWork;
-
-        if (InvokeUtil::CanPrimitiveWiden(destElType, srcElType))
-            return AssignPrimitiveWiden;
-        else
-            return AssignWrongType;
+        FC_RETURN_BOOL(r);
     }
 
-    // dest Object extends src
-    if (srcTH.CanCastToCached(destTH) == TypeHandle::CanCast)
-        return AssignWillWork;
+    struct
+    {
+        OBJECTREF   src;
+        OBJECTREF   dst;
+    } gc;
 
-    // src Object extends dest
-    if (destTH.CanCastToCached(srcTH) == TypeHandle::CanCast)
-        return AssignMustCast;
+    gc.src = ObjectToOBJECTREF(pSrc);
+    gc.dst = ObjectToOBJECTREF(pDst);
 
-    // class X extends/implements src and implements dest.
-    if (destTH.IsInterface() && srcElType != ELEMENT_TYPE_VALUETYPE)
-        return AssignMustCast;
+    BOOL iRetVal = FALSE;
 
-    // class X implements src and extends/implements dest
-    if (srcTH.IsInterface() && destElType != ELEMENT_TYPE_VALUETYPE)
-        return AssignMustCast;
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    iRetVal = srcTH.CanCastTo(destTH);
+    HELPER_METHOD_FRAME_END();
 
-    return AssignDontKnow;
+    FC_RETURN_BOOL(iRetVal);
 }
+FCIMPLEND
 
 
 // Returns an enum saying whether you can copy an array of srcType into destType.
@@ -233,21 +209,16 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     }
     CONTRACTL_END;
 
-    // The next 50 lines are a little tricky.  Change them with great care.
-    //
-
     // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
     // we do not need to call GetArrayElementTypeHandle().
     MethodTable *pSrcMT = pSrc->GetMethodTable();
     MethodTable *pDestMT = pDest->GetMethodTable();
-    if (pSrcMT == pDestMT)
-        return AssignWillWork;
+    _ASSERTE(pSrcMT != pDestMT); // Handled by fast path
 
     TypeHandle srcTH = pSrcMT->GetApproxArrayElementTypeHandle();
     TypeHandle destTH = pDestMT->GetApproxArrayElementTypeHandle();
-    if (srcTH == destTH) // This check kicks for different array kind or dimensions
-        return AssignWillWork;
-
+    _ASSERTE(srcTH != destTH);  // Handled by fast path
+    
     // Value class boxing
     if (srcTH.IsValueType() && !destTH.IsValueType())
     {
@@ -276,8 +247,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     // Copying primitives from one type to another
     if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
     {
-        if (srcElType == destElType)
-            return AssignWillWork;
+        _ASSERTE(srcElType != destElType); // Handled by fast path
         if (InvokeUtil::CanPrimitiveWiden(destElType, srcElType))
             return AssignPrimitiveWiden;
         else
@@ -285,8 +255,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     }
 
     // dest Object extends src
-    if (srcTH.CanCastTo(destTH))
-        return AssignWillWork;
+    _ASSERTE(!srcTH.CanCastTo(destTH)); // Handled by fast path
 
     // src Object extends dest
     if (destTH.CanCastTo(srcTH))
@@ -766,38 +735,7 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
     }
 }
 
-void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(srcIndex >= 0);
-        PRECONDITION(pDest != NULL);
-        PRECONDITION(length > 0);
-    }
-    CONTRACTL_END;
-
-    BYTE *src = (BYTE*)pSrc->GetDataPtr();
-    BYTE *dst = (BYTE*)pDest->GetDataPtr();
-    SIZE_T size = pSrc->GetComponentSize();
-
-    src += srcIndex * size;
-    dst += destIndex * size;
-
-    if (pDest->GetMethodTable()->ContainsPointers())
-    {
-        memmoveGCRefs(dst, src, length * size);
-    }
-    else
-    {
-        memmove(dst, src, length * size);
-    }
-}
-
-FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable)
+FCIMPL5(void, ArrayNative::CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength)
 {
     FCALL_CONTRACT;
 
@@ -807,115 +745,50 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
         BASEARRAYREF pDst;
     } gc;
 
-    gc.pSrc = (BASEARRAYREF)m_pSrc;
-    gc.pDst = (BASEARRAYREF)m_pDst;
-
-    //
-    // creating a HelperMethodFrame is quite expensive,
-    // so we want to delay this for the most common case which doesn't trigger a GC.
-    // FCThrow is needed to throw an exception without a HelperMethodFrame
-    //
+    gc.pSrc = (BASEARRAYREF)pSrc;
+    gc.pDst = (BASEARRAYREF)pDst;
 
     // cannot pass null for source or destination
-    if (gc.pSrc == NULL || gc.pDst == NULL) {
-        FCThrowArgumentNullVoid(gc.pSrc==NULL ? W("sourceArray") : W("destinationArray"));
-    }
+    _ASSERTE(gc.pSrc != NULL && gc.pDst != NULL);
 
     // source and destination must be arrays
     _ASSERTE(gc.pSrc->GetMethodTable()->IsArray());
     _ASSERTE(gc.pDst->GetMethodTable()->IsArray());
 
-    // Equal method tables should imply equal rank
-    _ASSERTE(!(gc.pSrc->GetMethodTable() == gc.pDst->GetMethodTable() && gc.pSrc->GetRank() != gc.pDst->GetRank()));
+    _ASSERTE(gc.pSrc->GetRank() == gc.pDst->GetRank());
 
-    // Which enables us to avoid touching the EEClass in simple cases
-    if (gc.pSrc->GetMethodTable() != gc.pDst->GetMethodTable() && gc.pSrc->GetRank() != gc.pDst->GetRank()) {
-        FCThrowResVoid(kRankException, W("Rank_MustMatch"));
-    }
-
-    g_IBCLogger.LogMethodTableAccess(gc.pSrc->GetMethodTable());
-    g_IBCLogger.LogMethodTableAccess(gc.pDst->GetMethodTable());
-
-    int srcLB = gc.pSrc->GetLowerBoundsPtr()[0];
-    int destLB = gc.pDst->GetLowerBoundsPtr()[0];
     // array bounds checking
-    const unsigned int srcLen = gc.pSrc->GetNumComponents();
-    const unsigned int destLen = gc.pDst->GetNumComponents();
-    if (m_iLength < 0)
-        FCThrowArgumentOutOfRangeVoid(W("length"), W("ArgumentOutOfRange_NeedNonNegNum"));
-
-    if (m_iSrcIndex < srcLB || (m_iSrcIndex - srcLB < 0))
-        FCThrowArgumentOutOfRangeVoid(W("sourceIndex"), W("ArgumentOutOfRange_ArrayLB"));
-
-    if (m_iDstIndex < destLB || (m_iDstIndex - destLB < 0))
-        FCThrowArgumentOutOfRangeVoid(W("destinationIndex"), W("ArgumentOutOfRange_ArrayLB"));
-
-    if ((DWORD)(m_iSrcIndex - srcLB + m_iLength) > srcLen)
-        FCThrowArgumentVoid(W("sourceArray"), W("Arg_LongerThanSrcArray"));
-
-    if ((DWORD)(m_iDstIndex - destLB + m_iLength) > destLen)
-        FCThrowArgumentVoid(W("destinationArray"), W("Arg_LongerThanDestArray"));
-
-    int r = 0;
-
-    // Small perf optimization - we copy from one portion of an array back to
-    // itself a lot when resizing collections, etc.  The cost of doing the type
-    // checking is significant for copying small numbers of bytes (~half of the time
-    // for copying 1 byte within one array from element 0 to element 1).
-    if (gc.pSrc == gc.pDst)
-        r = AssignWillWork;
-    else
-        r = CanAssignArrayTypeNoGC(gc.pSrc, gc.pDst);
-
-    if (r == AssignWrongType) {
-        FCThrowResVoid(kArrayTypeMismatchException, W("ArrayTypeMismatch_CantAssignType"));
-    }
-
-    if (r == AssignWillWork) {
-        if (m_iLength > 0)
-            ArrayCopyNoTypeCheck(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
-
-        FC_GC_POLL();
-        return;
-    }
+    _ASSERTE(iLength >= 0);
+    _ASSERTE(iSrcIndex >= 0);
+    _ASSERTE(iDstIndex >= 0);
+    _ASSERTE((DWORD)(iSrcIndex + iLength) <= gc.pSrc->GetNumComponents());
+    _ASSERTE((DWORD)(iDstIndex + iLength) <= gc.pDst->GetNumComponents());
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-    if (r == AssignDontKnow)
-    {
-        r = CanAssignArrayType(gc.pSrc, gc.pDst);
-    }
-    CONSISTENCY_CHECK(r != AssignDontKnow);
 
-    // If we were called from Array.ConstrainedCopy, ensure that the array copy
-    // is guaranteed to succeed.
-    if (reliable && r != AssignWillWork)
-        COMPlusThrow(kArrayTypeMismatchException, W("ArrayTypeMismatch_ConstrainedCopy"));
+    int r = CanAssignArrayType(gc.pSrc, gc.pDst);
 
     if (r == AssignWrongType)
         COMPlusThrow(kArrayTypeMismatchException, W("ArrayTypeMismatch_CantAssignType"));
 
-    if (m_iLength > 0)
+    if (iLength > 0)
     {
         switch (r)
         {
-            case AssignWillWork:
-                ArrayCopyNoTypeCheck(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
-                break;
-
             case AssignUnboxValueClass:
-                UnBoxEachElement(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
+                UnBoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
                 break;
 
             case AssignBoxValueClassOrPrimitive:
-                BoxEachElement(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
+                BoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
                 break;
 
             case AssignMustCast:
-                CastCheckEachElement(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
+                CastCheckEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
                 break;
 
             case AssignPrimitiveWiden:
-                PrimitiveWiden(gc.pSrc, m_iSrcIndex - srcLB, gc.pDst, m_iDstIndex - destLB, m_iLength);
+                PrimitiveWiden(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
                 break;
 
             default:

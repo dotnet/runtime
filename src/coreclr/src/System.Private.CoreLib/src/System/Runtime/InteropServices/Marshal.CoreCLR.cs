@@ -193,7 +193,7 @@ namespace System.Runtime.InteropServices
         /// structure contains pointers to allocated blocks and "fDeleteOld" is
         /// true, this routine will call DestroyStructure() first.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
         private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
