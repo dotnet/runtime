@@ -1387,11 +1387,19 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         GenTree* destNode = destAddr->gtGetOp1();
         // If the actual destination is a local, or already a block node, or is a node that
         // will be morphed, don't insert an OBJ(ADDR) if it already has the right type.
-        CORINFO_CLASS_HANDLE destClass = gtGetStructHandleIfPresent(destNode);
-        if ((destClass == structHnd) && (destNode->TypeGet() == asgType) &&
-            ((destNode->gtOper == GT_INDEX) || destNode->OperIsBlk() || (destNode->OperGet() == GT_LCL_VAR)))
+        if ((destNode->gtOper == GT_INDEX) || destNode->OperIsBlk() || (destNode->OperGet() == GT_LCL_VAR))
         {
-            dest = destNode;
+            var_types destType = destNode->TypeGet();
+            // If one or both types are TYP_STRUCT (one may not yet be normalized), they are compatible
+            // iff their handles are the same.
+            // Otherwise, they are compatible if their types are the same.
+            bool typesAreCompatible = ((destType == TYP_STRUCT) || (asgType == TYP_STRUCT))
+                                          ? ((gtGetStructHandleIfPresent(destNode) == structHnd) && varTypeIsStruct(asgType))
+                                          : (destType == asgType);
+            if (typesAreCompatible)
+            {
+                dest = destNode;
+            }
         }
     }
 
