@@ -24,7 +24,7 @@ namespace System
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
-            _watsonBuckets = info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
+            _watsonBuckets = (byte[]?)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
             // If we are constructing a new exception after a cross-appdomain call...
             if (context.State == StreamingContextStates.CrossAppDomain)
@@ -248,58 +248,27 @@ namespace System
         private static extern void PrepareForForeignExceptionRaise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetStackTracesDeepCopy(Exception exception, out object currentStackTrace, out object dynamicMethodArray);
+        private static extern void GetStackTracesDeepCopy(Exception exception, out byte[]? currentStackTrace, out object[]? dynamicMethodArray);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SaveStackTracesFromDeepCopy(Exception exception, object? currentStackTrace, object? dynamicMethodArray);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object CopyStackTrace(object currentStackTrace);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object CopyDynamicMethods(object currentDynamicMethods);
+        internal static extern void SaveStackTracesFromDeepCopy(Exception exception, byte[]? currentStackTrace, object[]? dynamicMethodArray);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
-
-        internal static object? DeepCopyStackTrace(object? currentStackTrace)
-        {
-            if (currentStackTrace != null)
-            {
-                return CopyStackTrace(currentStackTrace);
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        internal static object? DeepCopyDynamicMethods(object? currentDynamicMethods)
-        {
-            if (currentDynamicMethods != null)
-            {
-                return CopyDynamicMethods(currentDynamicMethods);
-            }
-            else
-            {
-                return null;
-            }
-        }
 
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
         // exception, just before the exception is "rethrown".
         internal void RestoreDispatchState(in DispatchState dispatchState)
         {
-            bool fCanProcessException = !IsImmutableAgileException(this);
             // Restore only for non-preallocated exceptions
-            if (fCanProcessException)
+            if (!IsImmutableAgileException(this))
             {
                 // When restoring back the fields, we again create a copy and set reference to them
                 // in the exception object. This will ensure that when this exception is thrown and these
                 // fields are modified, then EDI's references remain intact.
                 //
-                object? stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
-                object? dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
+                byte[]? stackTraceCopy = (byte[]?)dispatchState.StackTrace?.Clone();
+                object[]? dynamicMethodsCopy = (object[]?)dispatchState.DynamicMethods?.Clone();
 
                 // Watson buckets and remoteStackTraceString fields are captured and restored without any locks. It is possible for them to
                 // get out of sync without violating overall integrity of the system.
@@ -323,8 +292,8 @@ namespace System
         private IDictionary? _data;
         private readonly Exception? _innerException;
         private string? _helpURL;
-        private object? _stackTrace;
-        private object? _watsonBuckets;
+        private byte[]? _stackTrace;
+        private byte[]? _watsonBuckets;
         private string? _stackTraceString; // Needed for serialization.
         private string? _remoteStackTraceString;
 #pragma warning disable CA1823, 414  // Fields are not used from managed.
@@ -332,7 +301,7 @@ namespace System
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
         // unless a System.Resolver object roots it.
-        private readonly object? _dynamicMethods;
+        private readonly object[]? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
@@ -393,18 +362,18 @@ namespace System
 
         internal readonly struct DispatchState
         {
-            public readonly object? StackTrace;
-            public readonly object? DynamicMethods;
+            public readonly byte[]? StackTrace;
+            public readonly object[]? DynamicMethods;
             public readonly string? RemoteStackTrace;
             public readonly UIntPtr IpForWatsonBuckets;
-            public readonly object? WatsonBuckets;
+            public readonly byte[]? WatsonBuckets;
 
             public DispatchState(
-                object? stackTrace,
-                object? dynamicMethods,
+                byte[]? stackTrace,
+                object[]? dynamicMethods,
                 string? remoteStackTrace,
                 UIntPtr ipForWatsonBuckets,
-                object? watsonBuckets)
+                byte[]? watsonBuckets)
             {
                 StackTrace = stackTrace;
                 DynamicMethods = dynamicMethods;
@@ -416,7 +385,7 @@ namespace System
 
         internal DispatchState CaptureDispatchState()
         {
-            GetStackTracesDeepCopy(this, out object? stackTrace, out object? dynamicMethods);
+            GetStackTracesDeepCopy(this, out byte[]? stackTrace, out object[]? dynamicMethods);
 
             return new DispatchState(stackTrace, dynamicMethods,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

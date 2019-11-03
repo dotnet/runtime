@@ -76,11 +76,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *
  */
 
-// <TODO>
-// @TODO:  #define COW         0x04
-// @TODO: MOO, MOO - no, not bovine, really Copy On Write bit for StringBuffer, requires 8 byte align MT
-// @TODL: which we don't have yet</TODO>
-
 class MethodTable;
 class Thread;
 class BaseDomain;
