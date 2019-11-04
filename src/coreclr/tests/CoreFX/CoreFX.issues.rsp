@@ -38,6 +38,9 @@
 -noclass System.Tests.Utf8StringTests
 -noclass System.Text.Tests.Utf8SpanTests
 
+# Missing OOB dependencies
+-nonamespace System.Net.Quic.Tests
+
 # System.Net.Tests are known for their instability
 -nonamespace System.Net.Http.Functional.Tests
 -nonamespace System.Net.Sockets.Tests
