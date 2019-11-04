@@ -7,6 +7,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Mono;
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System
 {
@@ -48,24 +54,27 @@ namespace System
 			}
 		}
 
-		public static void Clear (Array array, int index, int length)
+		public static unsafe void Clear (Array array, int index, int length)
 		{
 			if (array == null)
-				ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-			if (length < 0)
-				ThrowHelper.ThrowIndexOutOfRangeException();
+				ThrowHelper.ThrowArgumentNullException (ExceptionArgument.array);
 
-			int low = array!.GetLowerBound (0);
-			if (index < low)
-				ThrowHelper.ThrowIndexOutOfRangeException();
+			int lowerBound = array.GetLowerBound (0);
+			int elementSize = array.GetElementSize ();
+			nuint numComponents = (nuint) Unsafe.As<RawData> (array).Count;
 
-			index = index - low;
+			int offset = index - lowerBound;
 
-			// re-ordered to avoid possible integer overflow
-			if (index > array.Length - length)
-				ThrowHelper.ThrowIndexOutOfRangeException();
+			if (index < lowerBound || offset < 0 || length < 0 || (uint) (offset + length) > numComponents)
+				ThrowHelper.ThrowIndexOutOfRangeException ();
 
-			ClearInternal (array, index, length);
+			ref byte ptr = ref Unsafe.AddByteOffset (ref array.GetRawSzArrayData(), (uint) offset * (nuint) elementSize);
+			nuint byteLength = (uint) length * (nuint) elementSize;
+
+			if (RuntimeHelpers.ObjectHasReferences (array))
+				SpanHelpers.ClearWithReferences (ref Unsafe.As<byte, IntPtr> (ref ptr), byteLength / (uint)sizeof (IntPtr));
+			else
+				SpanHelpers.ClearWithoutReferences (ref ptr, byteLength);
 		}
 
 		public static void ConstrainedCopy (Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
@@ -485,9 +494,6 @@ namespace System
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static void ClearInternal (Array a, int index, int count);
-
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static bool CanChangePrimitive (Type srcType, Type dstType, bool reliable);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -499,6 +505,7 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public extern int GetLength (int dimension);
 
+		[Intrinsic] // when dimension is `0` constant
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public extern int GetLowerBound (int dimension);
 

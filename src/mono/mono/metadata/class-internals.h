@@ -334,7 +334,8 @@ typedef gpointer MonoRuntimeGenericContext;
 
 typedef enum {
 	/* array or string */
-	MONO_VT_FLAG_ARRAY_OR_STRING = (1 << 0)
+	MONO_VT_FLAG_ARRAY_OR_STRING = (1 << 0),
+	MONO_VT_FLAG_HAS_REFERENCES = (1 << 1)
 } MonoVTableFlags;
 
 /* the interface_offsets array is stored in memory before this struct */

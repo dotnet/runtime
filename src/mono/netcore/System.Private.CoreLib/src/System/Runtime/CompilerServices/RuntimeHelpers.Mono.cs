@@ -112,9 +112,15 @@ namespace System.Runtime.CompilerServices
 		}
 
 		[Intrinsic]
-		internal static unsafe bool ObjectHasComponentSize (object obj)
+		internal static bool ObjectHasComponentSize (object obj)
 		{
 			throw new NotImplementedException ();
+		}
+
+		[Intrinsic]
+		internal static bool ObjectHasReferences (object obj)
+		{
+			return RuntimeTypeHandle.HasReferences (obj.GetType () as RuntimeType);
 		}
 
 		static object GetUninitializedObjectInternal (Type type)
