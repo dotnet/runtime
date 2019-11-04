@@ -14,9 +14,9 @@ jobs:
 #
 # Checkout repository
 #
-- template: /eng/checkout-job.yml
+- template: ../checkout-job.yml
 
-- template: /eng/platform-matrix.yml
+- template: ../platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: checked
@@ -24,7 +24,7 @@ jobs:
     jobParameters:
       testGroup: gcstress0x3-gcstress0xc
 
-- template: /eng/platform-matrix.yml
+- template: ../platform-matrix.yml
   parameters:
     jobTemplate: test-job.yml
     buildConfig: checked

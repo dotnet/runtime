@@ -25,7 +25,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/xplat-job.yml
+- template: xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -55,45 +55,6 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
-    - name: coreClrRepoRoot
-      value: $(Build.SourcesDirectory)
-
-    - name: binTestsPath
-      value: $(coreClrRepoRoot)/bin/tests
-
-    - name: testRootFolderPath
-      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
-
-    - name: nativeRootFolderPath
-      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
-
-    - name: buildProductArtifactName
-      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: buildProductRootFolderPath
-      value: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
-
-    - name: testArtifactName
-      value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
-
-    - name: testNativeArtifactName
-      value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: testNativeRootFolderPath
-      value: $(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)
-
-    - name: testBuildRootFolderPath
-      value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
-
-    - name: testBuildArtifactName
-      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: microsoftNetSdkIlFolderPath
-      value: $(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il
-      
-    - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
-
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: archiveExtension
         value: '.zip'
@@ -103,6 +64,8 @@ jobs:
         value: ''
       - name: scriptExt
         value: '.cmd'
+      - name: dir
+        value: '\'
 
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: archiveExtension
@@ -113,6 +76,50 @@ jobs:
         value: gz
       - name: scriptExt
         value: '.sh'
+      - name: dir
+        value: '/'
+
+    - name: coreClrRepoRoot
+      value: '$(Build.SourcesDirectory)'
+
+    - name: coreClrRepoRootDir
+      value: '$(coreClrRepoRoot)$(dir)'
+
+    - name: binTestsPath
+      value: '$(coreClrRepoRoot)/bin/tests'
+
+    - name: testRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: nativeRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: buildProductArtifactName
+      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: '$(coreClrRepoRoot)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testArtifactName
+      value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: testNativeRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: microsoftNetSdkIlFolderPath
+      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+      
+    - name: microsoftNetSdkIlArtifactName
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - name: priorityArg
       value: ''

@@ -21,7 +21,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: job.yml
   parameters:
 
     name: ${{ parameters.name }}
@@ -165,7 +165,7 @@ jobs:
       clean: true
 
     # Download the GIT repository
-    - template: /eng/download-artifact-step.yml
+    - template: download-artifact-step.yml
       parameters:
         displayName: 'GIT repository'
         downloadFolder: $(Build.SourcesDirectory)/download/

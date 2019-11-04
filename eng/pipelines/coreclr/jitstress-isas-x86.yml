@@ -14,9 +14,9 @@ jobs:
 #
 # Checkout repository
 #
-- template: /eng/checkout-job.yml
+- template: ../checkout-job.yml
 
-- template: /eng/platform-matrix.yml
+- template: ../platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: checked
@@ -28,7 +28,7 @@ jobs:
     jobParameters:
       testGroup: jitstress-isas-x86
 
-- template: /eng/platform-matrix.yml
+- template: ../platform-matrix.yml
   parameters:
     jobTemplate: build-test-job.yml
     buildConfig: checked
@@ -41,7 +41,7 @@ jobs:
     jobParameters:
       testGroup: jitstress-isas-x86
 
-- template: /eng/platform-matrix.yml
+- template: ../platform-matrix.yml
   parameters:
     jobTemplate: run-test-job.yml
     buildConfig: checked
