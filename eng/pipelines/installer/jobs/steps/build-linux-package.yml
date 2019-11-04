@@ -24,7 +24,7 @@ steps:
     df -h
     $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
       --ci \
-      /p:Subset=Installer \
+      --subset Installers \
       /p:UsePrebuiltPortableBinariesForInstallers=true \
       $(PackagePortableBitsArgs) \
       /p:GenerateProjectInstallers=true \
