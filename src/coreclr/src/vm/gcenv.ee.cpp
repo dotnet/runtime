@@ -369,31 +369,23 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = ::GetThread();
-    if (pThread)
-    {
-        return !!pThread->PreemptiveGCDisabled();
-    }
-
-    return false;
+    
+    return (pThread && pThread->PreemptiveGCDisabled());
 }
 
 bool GCToEEInterface::EnablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
 
-    bool bToggleGC = false;
     Thread* pThread = ::GetThread();
 
-    if (pThread)
+    if (pThread && pThread->PreemptiveGCDisabled())
     {
-        bToggleGC = !!pThread->PreemptiveGCDisabled();
-        if (bToggleGC)
-        {
-            pThread->EnablePreemptiveGC();
-        }
+        pThread->EnablePreemptiveGC();
+        return true;
     }
 
-    return bToggleGC;
+    return false;
 }
 
 void GCToEEInterface::DisablePreemptiveGC()

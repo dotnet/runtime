@@ -1422,7 +1422,7 @@ CMiniMdRW::InitOnMem(
         int         iCol;
 
         // Look at all the tables, or until mixed sizes are discovered.
-        for (i=0; i<(int)m_TblCount && fMixed == false; i++)
+        for (i=0; i<(int)m_TblCount && !fMixed; i++)
         {   // Look at all the columns of the table.
             pCols = m_TableDefs[i].m_pColDefs;
             for (iCol = 0; iCol < m_TableDefs[i].m_cCols && !fMixed; iCol++)
@@ -1430,15 +1430,13 @@ CMiniMdRW::InitOnMem(
                 if (!IsFixedType(m_TableDefs[i].m_pColDefs[iCol].m_Type))
                 {   // If this is the first non-fixed size column...
                     if (iSize == 0)
-                    {   // remember it's size.
+                    {   // remember its size.
                         iSize = m_TableDefs[i].m_pColDefs[iCol].m_cbColumn;
                     }
-                    else
-                    {   // Not first non-fixed size, so if a different size...
-                        if (iSize != m_TableDefs[i].m_pColDefs[iCol].m_cbColumn)
-                        {   // ...the table has mixed column sizes.
-                            fMixed = true;
-                        }
+                    else if (iSize != m_TableDefs[i].m_pColDefs[iCol].m_cbColumn)
+                    {   // Not first non-fixed size, so if a different size
+                        //  the table has mixed column sizes.
+                        fMixed = true;
                     }
                 }
             }
@@ -1449,18 +1447,15 @@ CMiniMdRW::InitOnMem(
             IfFailGo(ExpandTables());
             ComputeGrowLimits(FALSE /* ! small*/);
         }
+        else if (iSize == 2)
+        {
+            // small schema
+            ComputeGrowLimits(TRUE /* small */);
+        }
         else
         {
-            if (iSize == 2)
-            {
-                // small schema
-                ComputeGrowLimits(TRUE /* small */);
-            }
-            else
-            {
-                // large schema
-                ComputeGrowLimits(FALSE /* ! small */);
-            }
+            // large schema
+            ComputeGrowLimits(FALSE /* ! small */);
         }
     }
     else
