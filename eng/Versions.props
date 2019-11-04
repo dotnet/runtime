@@ -50,8 +50,8 @@
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19552.2</MicrosoftNETCoreILAsmVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRVersion>5.0.0-alpha1.19551.1</MicrosoftNETCoreRuntimeCoreCLRVersion>
-    <MicrosoftNETSdkILVersion>5.0.0-alpha1.19551.1</MicrosoftNETSdkILVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRVersion>5.0.0-alpha1.19525.1</MicrosoftNETCoreRuntimeCoreCLRVersion>
+    <MicrosoftNETSdkILVersion>5.0.0-alpha1.19552.2</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <MicrosoftNETCorePlatformsVersion>5.0.0-alpha.1.19551.5</MicrosoftNETCorePlatformsVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha.1.19551.5</MicrosoftPrivateCoreFxNETCoreAppVersion>
