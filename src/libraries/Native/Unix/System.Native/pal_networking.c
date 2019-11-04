@@ -50,10 +50,8 @@
 #elif HAVE_SENDFILE_6
 #include <sys/uio.h>
 #endif
-#if !HAVE_IN_PKTINFO
 #if HAVE_GETIFADDRS
 #include <ifaddrs.h>
-#endif
 #endif
 #if HAVE_LINUX_CAN_H
 #include <linux/can.h>
@@ -219,6 +217,8 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
 #endif
         case EAI_FAMILY:
             return GetAddrInfoErrorFlags_EAI_FAMILY;
+        case EAI_MEMORY:
+            return GetAddrInfoErrorFlags_EAI_MEMORY;
         case EAI_NONAME:
 #ifdef EAI_NODATA
         case EAI_NODATA:
@@ -230,6 +230,29 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
     return -1;
 }
 
+static int32_t CopySockAddrToIPAddress(sockaddr* addr, sa_family_t family, IPAddress* ipAddress)
+{
+    if (family == AF_INET)
+    {
+        struct sockaddr_in* inetSockAddr = (struct sockaddr_in*)addr;
+
+        ConvertInAddrToByteArray(ipAddress->Address, NUM_BYTES_IN_IPV4_ADDRESS, &inetSockAddr->sin_addr);
+        ipAddress->IsIPv6 = 0;
+        return 0;
+    }
+    else if (family == AF_INET6)
+    {
+        struct sockaddr_in6* inet6SockAddr = (struct sockaddr_in6*)addr;
+
+        ConvertIn6AddrToByteArray(ipAddress->Address, NUM_BYTES_IN_IPV6_ADDRESS, &inet6SockAddr->sin6_addr);
+        ipAddress->IsIPv6 = 1;
+        ipAddress->ScopeId = inet6SockAddr->sin6_scope_id;
+        return 0;
+    }
+
+    return -1;
+}
+
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry)
 {
     if (address == NULL || entry == NULL)
@@ -237,13 +260,19 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
+    int32_t ret = GetAddrInfoErrorFlags_EAI_SUCCESS;
+
+    struct addrinfo* info = NULL;
+#if HAVE_GETIFADDRS
+    struct ifaddrs* addrs = NULL;
+#endif
+
     // Get all address families and the canonical name
     struct addrinfo hint;
     memset(&hint, 0, sizeof(struct addrinfo));
     hint.ai_family = AF_UNSPEC;
     hint.ai_flags = AI_CANONNAME;
 
-    struct addrinfo* info = NULL;
     int result = getaddrinfo((const char*)address, NULL, &hint, &info);
     if (result != 0)
     {
@@ -252,8 +281,8 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
 
     entry->CanonicalName = NULL;
     entry->Aliases = NULL;
-    entry->AddressListHandle = info;
-    entry->IPAddressCount = 0;    
+    entry->IPAddressList = NULL;
+    entry->IPAddressCount = 0;
 
     // Find the canonical name for this host (if any) and count the number of IP end points.
     for (struct addrinfo* ai = info; ai != NULL; ai = ai->ai_next)
@@ -261,7 +290,12 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
         // If we haven't found a canonical name yet and this addrinfo has one, copy it
         if ((entry->CanonicalName == NULL) && (ai->ai_canonname != NULL))
         {
-            entry->CanonicalName = (uint8_t*)ai->ai_canonname;
+            entry->CanonicalName = (uint8_t*)strdup(ai->ai_canonname);
+            if (entry->CanonicalName == NULL)
+            {
+                ret = ConvertGetAddrInfoAndGetNameInfoErrorsToPal(EAI_MEMORY);
+                goto cleanup;
+            }
         }
 
         if (ai->ai_family == AF_INET || ai->ai_family == AF_INET6)
@@ -270,64 +304,144 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
         }
     }
 
-    return GetAddrInfoErrorFlags_EAI_SUCCESS;
-}
+#if HAVE_GETIFADDRS
+    char name[_POSIX_HOST_NAME_MAX];
+    result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, IPAddress* endPoint)
-{
-    assert(info != NULL);
-    assert(endPoint != NULL);
+    bool includeIPv4Loopback = true;
+    bool includeIPv6Loopback = true;
 
-    for (struct addrinfo* ai = *info; ai != NULL; ai = ai->ai_next)
+    if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
-        switch (ai->ai_family)
+        // Get all interface addresses if the host name corresponds to the local host.
+        result = getifaddrs(&addrs);
+
+        // If getifaddrs fails, just skip it, the data are not crucial for the result.
+        if (result == 0)
         {
-            case AF_INET:
+            // Count the number of IP end points.
+            for (struct ifaddrs* ifa = addrs; ifa != NULL; ifa = ifa->ifa_next)
             {
-                struct sockaddr_in* inetSockAddr = (struct sockaddr_in*)ai->ai_addr;
+                if (ifa->ifa_addr == NULL)
+                {
+                    continue;
+                }
 
-                ConvertInAddrToByteArray(endPoint->Address, NUM_BYTES_IN_IPV4_ADDRESS, &inetSockAddr->sin_addr);
-                endPoint->IsIPv6 = 0;
-                break;
+                // Skip the interface if it isn't UP.
+                if ((ifa->ifa_flags & IFF_UP) == 0)
+                {
+                    continue;
+                }
+
+                if (ifa->ifa_addr->sa_family == AF_INET)
+                {
+                    // Remember if there's at least one non-loopback address for IPv4, so that they will be skipped.
+                    if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
+                    {
+                        includeIPv4Loopback = false;
+                    }
+
+                    entry->IPAddressCount++;
+                }
+                else if (ifa->ifa_addr->sa_family == AF_INET6)
+                {
+                    // Remember if there's at least one non-loopback address for IPv6, so that they will be skipped.
+                    if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
+                    {
+                        includeIPv6Loopback = false;
+                    }
+
+                    entry->IPAddressCount++;
+                }
             }
+        }
+    }
+#endif
 
-            case AF_INET6:
-            {
-                struct sockaddr_in6* inet6SockAddr = (struct sockaddr_in6*)ai->ai_addr;
-
-                ConvertIn6AddrToByteArray(endPoint->Address, NUM_BYTES_IN_IPV6_ADDRESS, &inet6SockAddr->sin6_addr);
-                endPoint->IsIPv6 = 1;
-                endPoint->ScopeId = inet6SockAddr->sin6_scope_id;
-                break;
-            }
-
-            default:
-                // Skip non-IPv4 and non-IPv6 addresses
-                continue;
+    if (entry->IPAddressCount > 0)
+    {
+        entry->IPAddressList = (IPAddress*)calloc((size_t)entry->IPAddressCount, sizeof(IPAddress));
+        if (entry->IPAddressList == NULL)
+        {
+            ret = ConvertGetAddrInfoAndGetNameInfoErrorsToPal(EAI_MEMORY);
+            goto cleanup;
         }
 
-        *info = ai->ai_next;
-        return GetAddrInfoErrorFlags_EAI_SUCCESS;
+        IPAddress* ipAddressList = entry->IPAddressList;
+
+        for (struct addrinfo* ai = info; ai != NULL; ai = ai->ai_next)
+        {
+            if (CopySockAddrToIPAddress(ai->ai_addr, (sa_family_t)ai->ai_family, ipAddressList) == 0)
+            {
+                ++ipAddressList;
+            }
+        }
+
+#if HAVE_GETIFADDRS
+        if (addrs != NULL)
+        {
+            for (struct ifaddrs* ifa = addrs; ifa != NULL; ifa = ifa->ifa_next)
+            {
+                if (ifa->ifa_addr == NULL)
+                {
+                    continue;
+                }
+
+                // Skip the interface if it isn't UP.
+                if ((ifa->ifa_flags & IFF_UP) == 0)
+                {
+                    continue;
+                }
+
+                // Skip loopback addresses if at least one interface has non-loopback one.
+                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) || 
+                    (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
+                {
+                    entry->IPAddressCount--;
+                    continue;
+                }
+
+                if (CopySockAddrToIPAddress(ifa->ifa_addr, ifa->ifa_addr->sa_family, ipAddressList) == 0)
+                {
+                    ++ipAddressList;
+                }
+            }
+        }
+#endif
     }
 
-    return GetAddrInfoErrorFlags_EAI_NOMORE;
-}
-
-int32_t SystemNative_GetNextIPAddress(const HostEntry* hostEntry, struct addrinfo** addressListHandle, IPAddress* endPoint)
-{
-    if (hostEntry == NULL || addressListHandle == NULL || endPoint == NULL)
+cleanup:
+    if (info != NULL)
     {
-        return GetAddrInfoErrorFlags_EAI_BADARG;
+        freeaddrinfo(info);
     }
-    
-    return GetNextIPAddressFromAddrInfo(addressListHandle, endPoint);    
+
+#if HAVE_GETIFADDRS
+    if (addrs != NULL)
+    {
+        freeifaddrs(addrs);
+    }
+#endif
+
+    // If the returned code is not success, the FreeHostEntry will not be called from the managed code.
+    if (ret != GetAddrInfoErrorFlags_EAI_SUCCESS)
+    {
+        SystemNative_FreeHostEntry(entry);
+    }
+
+    return ret;
 }
 
 void SystemNative_FreeHostEntry(HostEntry* entry)
 {
     if (entry != NULL)
-    {                
-        freeaddrinfo(entry->AddressListHandle);                        
+    {
+        free(entry->CanonicalName);
+        free(entry->IPAddressList);
+
+        entry->CanonicalName = NULL;
+        entry->IPAddressList = NULL;
+        entry->IPAddressCount = 0;
     }
 }
 
