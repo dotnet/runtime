@@ -560,6 +560,12 @@
                         <map value="0x2" message="$(string.RuntimePublisher.TypeFlags.Finalizable)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.TypeFlags.ExternallyImplementedCOMObject)"/>
                         <map value="0x8" message="$(string.RuntimePublisher.TypeFlags.Array)"/>
+                        <map value="0x100" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit0)"/>
+                        <map value="0x200" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit1)"/>
+                        <map value="0x400" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit2)"/>
+                        <map value="0x800" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit3)"/>
+                        <map value="0x1000" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit4)"/>
+                        <map value="0x2000" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit5)"/>
                     </bitMap>
                     <bitMap name="GCRootFlagsMap">
                       <map value="0x1" message="$(string.RuntimePublisher.GCRootFlags.Pinning)"/>
@@ -7012,6 +7018,12 @@
                 <string id="RuntimePublisher.TypeFlags.Finalizable" value="Finalizable"/>
                 <string id="RuntimePublisher.TypeFlags.ExternallyImplementedCOMObject" value="ExternallyImplementedCOMObject"/>
                 <string id="RuntimePublisher.TypeFlags.Array" value="Array"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit0" value="ArrayRankBit0"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit1" value="ArrayRankBit1"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit2" value="ArrayRankBit2"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit3" value="ArrayRankBit3"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit4" value="ArrayRankBit4"/>
+                <string id="RuntimePublisher.TypeFlags.ArrayRankBit5" value="ArrayRankBit5"/>
                 <string id="RuntimePublisher.GCRootFlags.Pinning" value="Pinning"/>
                 <string id="RuntimePublisher.GCRootFlags.WeakRef" value="WeakRef"/>
                 <string id="RuntimePublisher.GCRootFlags.Interior" value="Interior"/>

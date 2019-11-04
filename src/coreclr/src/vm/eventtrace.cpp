@@ -1778,7 +1778,20 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     {
         // Normal typedesc array
         pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
-
+        if (pVal->fixedSizedData.CorElementType == ELEMENT_TYPE_ARRAY)
+        {
+            // Multidimensional arrays set the rank bits, SzArrays do not set the rank bits
+            unsigned rank = th.AsArray()->GetRank();
+            if (rank < kEtwTypeFlagsArrayRankMax)
+            {
+                // Only ranks less than kEtwTypeFlagsArrayRankMax are supported. 
+                // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the 
+                // number of ranks the type loader will support
+                rank <<= kEtwTypeFlagsArrayRankShift;
+                _ASSERTE((rank & kEtwTypeFlagsArrayRankMask) == rank);
+                pVal->fixedSizedData.Flags |= rank;
+            }
+        }
         // Fetch TypeHandle of array elements
         fSucceeded = FALSE;
         EX_TRY
@@ -1895,10 +1908,16 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     int cbVal = pVal->GetByteCountInEvent();
     if (cbVal > kMaxBytesTypeValues)
     {
-        // This type is apparently so huge, it's too big to squeeze into an event, even
-        // if it were the only type batched in the whole event.  Bail
-        _ASSERTE(!"Type too big to log via ETW");
-        return -1;
+        pVal->sName.Clear();
+        cbVal = pVal->GetByteCountInEvent();
+
+        if (cbVal > kMaxBytesTypeValues)
+        {
+            // This type is apparently so huge, it's too big to squeeze into an event, even
+            // if it were the only type batched in the whole event.  Bail
+            _ASSERTE(!"Type too big to log via ETW");
+            return -1;
+        }
     }
 
     if (m_nBulkTypeValueByteCount + cbVal > kMaxBytesTypeValues)
