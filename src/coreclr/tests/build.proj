@@ -54,7 +54,7 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
+      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(RepoRoot)\.dotnet\</DotnetCliPath>
       <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
       <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
       <_ConfigurationProperties>/p:__BuildOS=$(__BuildOS) /p:__BuildArch=$(__BuildArch) /p:__BuildType=$(__BuildType)</_ConfigurationProperties>

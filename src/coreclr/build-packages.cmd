@@ -2,6 +2,10 @@
 setlocal EnableDelayedExpansion
 
 set "__ProjectDir=%~dp0"
+set "__RepoRootDir=%~dp0..\..\"
+
+rem Remove after repo consolidation
+if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
 
 set "__args=%*"
 set processedArgs=
@@ -33,8 +37,8 @@ if [!processedArgs!]==[] (
 
 :ArgsDone
 
-set logFile=%__ProjectDir%bin\Logs\build-packages.binlog
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%eng\common\build.ps1"^
+set logFile=%__RepoRootDir%bin\Logs\build-packages.binlog
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%eng\common\build.ps1"^
   -r -b -projects %__ProjectDir%src\.nuget\packages.builds^
   -verbosity minimal /bl:%logFile% /nodeReuse:false^
   /p:__BuildOS=Windows_NT^
