@@ -319,6 +319,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(42344)]
         [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
