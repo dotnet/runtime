@@ -758,6 +758,11 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, byte* pHasSideEffects = null)
         {
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+            MetadataType metadataType = type as MetadataType;
+            if (metadataType != null && metadataType.IsAbstract)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
 
             if (pHasSideEffects != null)
             {
