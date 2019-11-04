@@ -147,7 +147,7 @@
       <Link>Interop\Unix\System.Native\Interop.HostEntries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPAddress.cs">
-      <Link>Interop\Unix\System.Native\Interop.HostEntries.cs</Link>
+      <Link>Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Socket.cs">
       <Link>Interop\Unix\System.Native\Interop.Socket.cs</Link>

@@ -38,6 +38,8 @@ namespace System.Net
                     return SocketError.AddressFamilyNotSupported;
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME:
                     return SocketError.HostNotFound;
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
+                    throw new OutOfMemoryException();
                 default:
                     Debug.Fail("Unexpected error: " + error.ToString());
                     return SocketError.SocketError;
@@ -73,16 +75,12 @@ namespace System.Net
                     var nativeAddresses = new Interop.Sys.IPAddress[hostEntry.IPAddressCount];
                     int nativeAddressCount = 0;
 
-                    Interop.Sys.addrinfo* addressListHandle = hostEntry.AddressListHandle;
+                    Interop.Sys.IPAddress* addressHandle = hostEntry.IPAddressList;
                     for (int i = 0; i < hostEntry.IPAddressCount; i++)
                     {
-                        Interop.Sys.IPAddress nativeIPAddress = default;
-                        int err = Interop.Sys.GetNextIPAddress(&hostEntry, &addressListHandle, &nativeIPAddress);
-                        Debug.Assert(err == 0);
-
-                        if (Array.IndexOf(nativeAddresses, nativeIPAddress, 0, nativeAddressCount) == -1)
+                        if (Array.IndexOf(nativeAddresses, addressHandle[i], 0, nativeAddressCount) == -1)
                         {
-                            nativeAddresses[nativeAddressCount++] = nativeIPAddress;
+                            nativeAddresses[nativeAddressCount++] = addressHandle[i];
                         }
                     }
 
