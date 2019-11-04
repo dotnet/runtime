@@ -6432,7 +6432,7 @@ common_vcall:
 				if (flag & PROFILING_FLAG)
 					MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, prof_ctx));
 				g_free (prof_ctx);
-			} else if ((flag && PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
+			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
 				MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, NULL));
 			}
 			MINT_IN_BREAK;
@@ -6468,7 +6468,7 @@ common_vcall:
 				if (flag & PROFILING_FLAG)
 					MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
 				g_free (prof_ctx);
-			} else if ((flag && PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
+			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
 				MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, NULL));
 			}
 
