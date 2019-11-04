@@ -491,5 +491,82 @@ namespace System.IO.Tests
 
             return newWatcher;
         }
+
+        internal readonly struct FiredEvent
+        {
+            public FiredEvent(WatcherChangeTypes eventType, string dir1, string dir2 = "") => (EventType, Dir1, Dir2) = (eventType, dir1, dir2);
+
+            public readonly WatcherChangeTypes EventType;
+            public readonly string Dir1;
+            public readonly string Dir2;
+
+            public override bool Equals(object obj) => obj is FiredEvent evt && Equals(evt);
+
+            public bool Equals(FiredEvent other) => EventType == other.EventType &&
+                Dir1 == other.Dir1 &&
+                Dir2 == other.Dir2;
+
+
+            public override int GetHashCode() => EventType.GetHashCode() ^ Dir1.GetHashCode() ^ Dir2.GetHashCode();
+
+            public override string ToString() => $"{EventType} {Dir1} {Dir2}";
+
+        }
+
+        // Observe until an expected count of events is triggered, otherwise fail. Return all collected events.
+        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
+        {
+            using var eventsOccured = new AutoResetEvent(false);
+            var eventsOrrures = 0;
+
+            var events = new List<FiredEvent>();
+
+            ErrorEventArgs error = null;
+
+            FileSystemEventHandler fileWatcherEvent = (_, e) => AddEvent(e.ChangeType, e.FullPath);
+            RenamedEventHandler renameWatcherEvent = (_, e) => AddEvent(e.ChangeType, e.FullPath, e.OldFullPath);
+            ErrorEventHandler errorHandler = (_, e) => error ??= e ?? new ErrorEventArgs(null);
+
+            watcher.Changed += fileWatcherEvent;
+            watcher.Created += fileWatcherEvent;
+            watcher.Deleted += fileWatcherEvent;
+            watcher.Renamed += renameWatcherEvent;
+            watcher.Error += errorHandler;
+
+            bool raisingEvent = watcher.EnableRaisingEvents;
+            watcher.EnableRaisingEvents = true;
+
+            try
+            {
+                action();
+                eventsOccured.WaitOne(new TimeSpan(0, 0, 5));
+            }
+            finally
+            {
+                watcher.Changed -= fileWatcherEvent;
+                watcher.Created -= fileWatcherEvent;
+                watcher.Deleted -= fileWatcherEvent;
+                watcher.Renamed -= renameWatcherEvent;
+                watcher.Error -= errorHandler;
+                watcher.EnableRaisingEvents = raisingEvent;
+            }
+
+            if (error != null)
+            {
+                Assert.False(true, $"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
+            }
+            Assert.True(eventsOrrures == expectedEvents, $"Expected events ({expectedEvents}) count doesn't match triggered events count ({eventsOrrures}):{Environment.NewLine}{String.Join(Environment.NewLine, events)}");
+
+            return events;
+
+            void AddEvent(WatcherChangeTypes eventType, string dir1, string dir2 = "")
+            {
+                events.Add(new FiredEvent(eventType, dir1, dir2));
+                if (Interlocked.Increment(ref eventsOrrures) == expectedEvents)
+                {
+                    eventsOccured.Set();
+                }
+            }
+        }
     }
 }
