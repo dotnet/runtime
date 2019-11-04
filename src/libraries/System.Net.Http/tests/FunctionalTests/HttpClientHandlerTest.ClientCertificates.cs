@@ -122,36 +122,24 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new LoopbackServer.Options { UseSsl = true };
 
-            X509Certificate2 GetClientCertificate(int certIndex)
+            X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
             {
-                X509Certificate2 cert = null;
+                // This is a valid client cert since it has an EKU with a ClientAuthentication OID.
+                1 => Configuration.Certificates.GetClientCertificate(),
 
-                // Get client certificate. RemoteInvoke doesn't allow easy marshaling of complex types.
-                // So we have to select the certificate at this point in the test execution.
-                if (certIndex == 1)
-                {
-                    // This is a valid client cert since it has an EKU with a ClientAuthentication OID.
-                    cert = Configuration.Certificates.GetClientCertificate();
-                }
-                else if (certIndex == 2)
-                {
-                    // This is a valid client cert since it has no EKU thus all usages are permitted.
-                    cert = Configuration.Certificates.GetNoEKUCertificate();
-                }
-                else if (certIndex == 3)
-                {
-                    // This is an invalid client cert since it has an EKU but is missing ClientAuthentication OID.
-                    cert = Configuration.Certificates.GetServerCertificate();
-                }
+                // This is a valid client cert since it has no EKU thus all usages are permitted.
+                2 => Configuration.Certificates.GetNoEKUCertificate(),
 
-                return cert;
-            }
+                // This is an invalid client cert since it has an EKU but is missing ClientAuthentication OID.
+                3 => Configuration.Certificates.GetServerCertificate(),
+                _ => null
+            };
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (X509Certificate2 cert = GetClientCertificate(certIndex))
-                using (HttpClient client = CreateHttpClientWithCert(cert))
-                
+                using X509Certificate2 cert = GetClientCertificate(certIndex);
+                using HttpClient client = CreateHttpClientWithCert(cert);
+
                 await TestHelper.WhenAllCompletedOrAnyFailed(
                     client.GetStringAsync(url),
                     server.AcceptConnectionAsync(async connection =>
