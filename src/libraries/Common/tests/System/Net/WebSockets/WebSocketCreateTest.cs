@@ -43,6 +43,12 @@ namespace System.Net.WebSockets.Tests
         [MemberData(nameof(EchoServers))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                // https://github.com/dotnet/corefx/issues/42339
+                return;
+            }
+
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 bool secure = echoUri.Scheme == "wss";
@@ -151,6 +157,12 @@ namespace System.Net.WebSockets.Tests
         [MemberData(nameof(EchoServersAndBoolean))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                // https://github.com/dotnet/corefx/issues/42339
+                return;
+            }
+
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 bool secure = echoUri.Scheme == "wss";
