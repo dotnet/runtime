@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -506,13 +507,46 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsync_Precanceled_ThrowsException()
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
-            using (var sr = new StreamReader(new MemoryStream()))
+            Func<StreamReader, CancellationToken, Task<int>> func = method switch
             {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sr.ReadAsync(Memory<char>.Empty, new CancellationToken(true)).AsTask());
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sr.ReadBlockAsync(Memory<char>.Empty, new CancellationToken(true)).AsTask());
+                0 => (sr, ct) => sr.ReadAsync(new char[1], ct).AsTask(),
+                1 => (sr, ct) => sr.ReadBlockAsync(new char[1], ct).AsTask(),
+                _ => throw new Exception("unknown mode")
+            };
+
+            string pipeName = Guid.NewGuid().ToString("N");
+            using (var serverStream = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (var clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous))
+            {
+                await Task.WhenAll(
+                    serverStream.WaitForConnectionAsync(),
+                    clientStream.ConnectAsync());
+
+                using (var sr = new StreamReader(clientStream))
+                {
+                    var cts = new CancellationTokenSource();
+
+                    if (precanceled)
+                    {
+                        cts.Cancel();
+                    }
+
+                    Task<int> t = func(sr, cts.Token);
+
+                    if (!precanceled)
+                    {
+                        cts.Cancel();
+                    }
+
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                }
             }
         }
 
