@@ -21,6 +21,12 @@ namespace System
             Assert.Equal(expectedMessage, Assert.Throws<T>(action).Message);
         }
 
+        public static void ThrowsContains<T>(Action action, string expectedMessageContent)
+            where T : Exception
+        {
+            Assert.Contains(expectedMessageContent, Assert.Throws<T>(action).Message);
+        }
+
         public static void Throws<T>(string netCoreParamName, string netFxParamName, Action action)
             where T : ArgumentException
         {
