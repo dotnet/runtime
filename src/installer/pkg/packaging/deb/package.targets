@@ -13,7 +13,7 @@
                             BuildDebs;"
           Condition="'$(BuildDebPackage)'=='true'" />
 
-  <Target Name="GenerateRuntimeDebs" 
+  <Target Name="GenerateRuntimeDebs"
           DependsOnTargets="
             GetInstallerBrandingNames;
             GenerateSharedHostDeb;
@@ -32,7 +32,7 @@
       <DebPackageVersion>$(HostPackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <DebFile>$(SharedHostInstallerFile)</DebFile>
-      <ManPagesDir>$(RepoRoot)Documentation/manpages</ManPagesDir>
+      <ManPagesDir>$(RepoRoot)docs/installer/manpages</ManPagesDir>
       <ConfigJsonName>dotnet-sharedhost-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
@@ -181,7 +181,7 @@
   </Target>
 
   <Target Name="GenerateSharedFrameworkDeb">
-  
+
     <PropertyGroup>
       <DebPackageName>$(SharedFxDebPkgName)</DebPackageName>
       <DebPackageVersion>$(RuntimePackageVersion)</DebPackageVersion>
@@ -273,7 +273,7 @@
           UseHardlinksIfPossible="False" />
 
   </Target>
-  
+
   <Target Name="GenerateRuntimeDependenciesDeb">
     <PropertyGroup>
       <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
