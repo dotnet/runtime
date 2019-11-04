@@ -26,12 +26,12 @@ jobs:
     - task: NuGetAuthenticate@0
 
   - script: >-
-      $(Build.SourcesDirectory)/build.sh --ci --restore --build
+      $(Build.SourcesDirectory)/installer.sh --ci --restore --build
       /p:OfficialBuildId=$(OfficialBuildId)
       /p:StripSymbols=true
       $(CommonMSBuildArgs)
 
-      $(Build.SourcesDirectory)/build.sh --ci --test
+      $(Build.SourcesDirectory)/installer.sh --ci --test
       /p:OfficialBuildId=$(OfficialBuildId)
       /p:StripSymbols=true
       $(CommonMSBuildArgs)
