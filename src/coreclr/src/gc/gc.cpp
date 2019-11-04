@@ -19982,6 +19982,7 @@ gc_heap::background_mark_simple (uint8_t* o THREAD_NUMBER_DCL)
                 background_mark_simple1 (o THREAD_NUMBER_ARG);
             }
         }
+        allow_fgc();
     }
 }
 
