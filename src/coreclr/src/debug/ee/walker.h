@@ -207,12 +207,12 @@ public:
         Walker::Init(ip, pregisters);
     }
     void Decode();
-    static void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, InstructionAttribute * pInstrAttrib)
+    static void DecodeInstructionForPatchSkip(const BYTE *address, InstructionAttribute * pInstrAttrib)
     {
         pInstrAttrib->Reset();
     }
-    static BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context,const PRD_TYPE& opcode, PCODE& offset, WALK_TYPE& walk);
-    static BOOL  NativeWalker::DecodeCallInst(const PRD_TYPE& opcode, int& RegNum, WALK_TYPE& walk);
+    static BOOL  DecodePCRelativeBranchInst(PT_CONTEXT context,const PRD_TYPE& opcode, PCODE& offset, WALK_TYPE& walk);
+    static BOOL  DecodeCallInst(const PRD_TYPE& opcode, int& RegNum, WALK_TYPE& walk);
     static BYTE* SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context, SharedPatchBypassBuffer * m_pSharedPatchBypassBuffer, const BYTE *address, PRD_TYPE opcode);
 
 };

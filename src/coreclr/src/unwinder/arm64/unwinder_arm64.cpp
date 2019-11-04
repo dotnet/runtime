@@ -251,7 +251,7 @@ Return Value:
             Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpsr);
             Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-            if (Fpcr != -1 && Fpsr != -1) {
+            if (Fpcr != (ULONG)-1 && Fpsr != (ULONG)-1) {
 
                 ContextRecord->Fpcr = Fpcr;
                 ContextRecord->Fpsr = Fpsr;

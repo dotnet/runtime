@@ -218,7 +218,7 @@ struct ResolveHolder
 
 #define Dataregionbase  _pCounter
 #define DATA_OFFSET(_fieldHigh) (DWORD)((offsetof(ResolveStub, _fieldHigh ) - offsetof(ResolveStub, Dataregionbase)) & 0xffffffff)
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint[n]))) & 0xffffffff)
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint) + sizeof(ResolveStub::_resolveEntryPoint) * n)) & 0xffffffff)
 
          //ldr x12, [x0,#Object.m_pMethTab ] ; methodTable from object in x0
          _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_DWORD; //0xF940000C
@@ -229,7 +229,8 @@ struct ResolveHolder
          _stub._resolveEntryPoint[n++] = 0x8B4C3189;
 
          //;;adr x10, #Dataregionbase of ResolveStub
-         _stub._resolveEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         _stub._resolveEntryPoint[n] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         n++;
 
          //w13- this._hashedToken
          //ldr w13, [x10 + DATA_OFFSET(_hashedToken)]
@@ -317,13 +318,14 @@ struct ResolveHolder
          // }
 
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _slowEntryPoint[n]))) & 0xffffffff )
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _slowEntryPoint) + sizeof(ResolveStub::_slowEntryPoint) * n)) & 0xffffffff )
          n = 0;
          // ;;slowEntryPoint:
          // ;;fall through to the slow case
 
          //;;adr x10, #Dataregionbase
-         _stub._slowEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         _stub._slowEntryPoint[n] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         n++;
 
          //ldr x12, [x10 , DATA_OFFSET(_token)]
          offset=DATA_OFFSET(_token);
@@ -347,12 +349,13 @@ struct ResolveHolder
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint[n]))) & 0xffffffff)
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(ResolveStub::_failEntryPoint) * n)) & 0xffffffff)
          n = 0;
 
          //;;failEntryPoint
          //;;adr x10, #Dataregionbase
-         _stub._failEntryPoint[n++] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         _stub._failEntryPoint[n] = 0x1000000A | ARM64EncodeHelpers::ADR_PATCH(PC_REL_OFFSET(Dataregionbase));
+         n++;
 
          //
          //ldr x13, [x10]
@@ -476,7 +479,7 @@ struct VTableCallHolder
         return 8 + indirectionsCodeSize + indirectionsDataSize + 4;
     }
 
-    static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
+    static VTableCallHolder* FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
 
 private:
     // VTableCallStub follows here. It is dynamically sized on allocation because it could
