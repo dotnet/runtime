@@ -110,21 +110,19 @@ namespace System.Diagnostics
         /// </summary>
         internal static ProcessInfo CreateProcessInfo(int pid, ReusableTextReader reusableReader = null)
         {
-            if (reusableReader == null)
+            reusableReader ??= new ReusableTextReader();
+            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat, reusableReader))
             {
-                reusableReader = new ReusableTextReader();
+                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status, reusableReader);
+                return CreateProcessInfo(ref stat, ref status, reusableReader);
             }
-
-            Interop.procfs.ParsedStat stat;
-            return Interop.procfs.TryReadStatFile(pid, out stat, reusableReader) ?
-                CreateProcessInfo(ref stat, reusableReader) :
-                null;
+            return null;
         }
 
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ReusableTextReader reusableReader, string processName = null)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, ReusableTextReader reusableReader, string processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -133,10 +131,14 @@ namespace System.Diagnostics
                 ProcessId = pid,
                 ProcessName = processName ?? Process.GetUntruncatedProcessName(ref procFsStat) ?? string.Empty,
                 BasePriority = (int)procFsStat.nice,
-                VirtualBytes = (long)procFsStat.vsize,
-                WorkingSet = procFsStat.rss * Environment.SystemPageSize,
                 SessionId = procFsStat.session,
-
+                PoolPagedBytes = (long)procFsStatus.VmSwap,
+                VirtualBytes = (long)procFsStatus.VmSize,
+                VirtualBytesPeak = (long)procFsStatus.VmPeak,
+                WorkingSetPeak = (long)procFsStatus.VmHWM,
+                WorkingSet = (long)procFsStatus.VmRSS,
+                PageFileBytes = (long)procFsStatus.VmSwap,
+                PrivateBytes = (long)procFsStatus.VmData,
                 // We don't currently fill in the other values.
                 // A few of these could probably be filled in from getrusage,
                 // but only for the current process or its children, not for
