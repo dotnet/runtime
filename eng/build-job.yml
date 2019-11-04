@@ -19,6 +19,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
@@ -97,11 +98,11 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: sh eng/install-native-dependencies.sh $(osGroup)
+      - script: sh $(coreClrRepoRoot)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
-      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
     # Install internal tools on official builds
@@ -126,18 +127,18 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRoot)\build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
         displayName: Build product
 
     # Build native test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)/build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
         displayName: Build native test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)\build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(priorityArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(priorityArg)
         displayName: Build native test components
 
     # Sign on Windows
@@ -155,7 +156,7 @@ jobs:
         condition: always()
 
     # Publish product output directory for consumption by tests.
-    - template: /eng/upload-artifact-step.yml
+    - template: upload-artifact-step.yml
       parameters:
         rootFolder: $(buildProductRootFolderPath)
         includeRootFolder: false
@@ -166,7 +167,7 @@ jobs:
         displayName: 'product build'
 
     # Publish test native components for consumption by test execution.
-    - template: /eng/upload-artifact-step.yml
+    - template: upload-artifact-step.yml
       parameters:
         rootFolder: $(testNativeRootFolderPath)
         includeRootFolder: false
@@ -177,7 +178,7 @@ jobs:
         displayName: 'native test components'
 
     # Publish test build root for consumption by test execution.
-    - template: /eng/upload-artifact-step.yml
+    - template: upload-artifact-step.yml
       parameters:
         rootFolder: $(testBuildRootFolderPath)
         includeRootFolder: false
@@ -197,16 +198,16 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)/build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
+      - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
         displayName: Build packages
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)\build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
+      - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
         displayName: Build packages
 
     # Publish official build
     - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/bin/Logs/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
+        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/bin/Logs/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
@@ -226,7 +227,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
-        artifactName: ${{ format('BuildLogs_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        pathtoPublish: $(coreClrRepoRoot)/bin/Logs
+        artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

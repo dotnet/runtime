@@ -62,7 +62,7 @@ jobs:
     steps:
 
     # Download product build
-    - template: /eng/download-artifact-step.yml
+    - template: download-artifact-step.yml
       parameters:
         downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)

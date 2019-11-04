@@ -63,16 +63,16 @@ jobs:
 
     # Install test build dependencies
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: sh eng/install-native-dependencies.sh $(osGroup)
+      - script: sh $(coreClrRepoRootDir)eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install correct cmake version
-      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+      - script: $(coreClrRepoRootDir)eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
 
     # Download product binaries directory
-    - template: /eng/download-artifact-step.yml
+    - template: download-artifact-step.yml
       parameters:
         downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)
@@ -83,15 +83,15 @@ jobs:
 
     # Build managed test components
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)/build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
         displayName: Build managed test components
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRoot)\build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
         displayName: Build managed test components
 
 
     # Zip and publish managed test components
-    - template: /eng/upload-artifact-step.yml
+    - template: upload-artifact-step.yml
       parameters:
         rootFolder: $(testRootFolderPath)
         includeRootFolder: false
@@ -104,7 +104,7 @@ jobs:
 
     # Publish .packages/microsoft.net.sdk.il needed for traversing
     # test projects during the copynativeonly command in run test job.
-    - template: /eng/upload-artifact-step.yml
+    - template: upload-artifact-step.yml
       parameters:
         rootFolder: $(microsoftNetSdkIlFolderPath)
         includeRootFolder: false
@@ -119,7 +119,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
-        artifactName: ${{ format('TestBuildLogs_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.testGroup) }}
+        pathtoPublish: $(coreClrRepoRoot)/bin/Logs
+        artifactName: 'TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

@@ -68,9 +68,14 @@ jobs:
 
     - name: crossgenArg
       value: ''
+    - name: LogNamePrefix
+      value: TestRunLogs
+
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
         value: 'crossgen'
+      - name: LogNamePrefix
+        value: TestRunLogs_R2R
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
@@ -91,7 +96,7 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/download-artifact-step.yml
+      - template: download-artifact-step.yml
         parameters:
           downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testRootFolderPath)'
@@ -102,7 +107,7 @@ jobs:
 
     # Download and unzip test build tree
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/download-artifact-step.yml
+      - template: download-artifact-step.yml
         parameters:
           downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testBuildRootFolderPath)'
@@ -113,7 +118,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: /eng/download-artifact-step.yml
+    - template: download-artifact-step.yml
       parameters:
         downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)
@@ -125,7 +130,7 @@ jobs:
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/download-artifact-step.yml
+      - template: download-artifact-step.yml
         parameters:
           downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
@@ -136,7 +141,7 @@ jobs:
 
     # Download and unzip native test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/download-artifact-step.yml
+      - template: download-artifact-step.yml
         parameters:
           downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testNativeRootFolderPath)'
@@ -151,41 +156,38 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(coreClrRepoRoot)/build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
-          displayName: Copy native test components to test output folder
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(coreClrRepoRoot)\build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
-          displayName: Copy native test components to test output folder
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
+        displayName: Copy native test components to test output folder
 
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./build-test.sh skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+        - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
           displayName: Generate test host
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: build-test.cmd skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(priorityArg)
+        - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(priorityArg)
           displayName: Generate test host
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./build-test.sh skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+        - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
           displayName: Crossgen framework assemblies
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: build-test.cmd skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(priorityArg)
+        - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(priorityArg)
           displayName: Crossgen framework assemblies
 
 
     # Send tests to Helix
-    - template: /eng/send-to-helix-step.yml
+    - template: send-to-helix-step.yml
       parameters:
         displayName: Send tests to Helix
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
+        coreClrRepoRoot: $(coreClrRepoRoot)
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -253,9 +255,9 @@ jobs:
 
         # Choose which tests to send to Helix: CoreFX or CoreCLR.
         ${{ if eq(parameters.corefxTests, true) }}:
-          helixProjectArguments: 'eng/helixcorefxtests.proj'
+          helixProjectArguments: '$(coreClrRepoRoot)/eng/helixcorefxtests.proj'
         ${{ if ne(parameters.corefxTests, true) }}:
-          helixProjectArguments: 'tests/src/helixpublishwitharcade.proj'
+          helixProjectArguments: '$(coreClrRepoRoot)/tests/src/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
@@ -376,7 +378,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
-        artifactName: ${{ format('TestRunLogs_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.managedTestBuildOsGroup, parameters.managedTestBuildOsSubgroup, parameters.testGroup) }}
+        pathtoPublish: $(coreClrRepoRoot)/bin/Logs
+        artifactName: '$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
