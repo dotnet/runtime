@@ -67,7 +67,7 @@ usage()
 
 initTargetDistroRid()
 {
-    source init-distro-rid.sh
+    source ${__ProjectDir}/init-distro-rid.sh
 
     local passedRootfsDir=""
 
@@ -143,7 +143,7 @@ restore_optdata()
     local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
     if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
-        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs
         local exit_code=$?
@@ -160,7 +160,7 @@ restore_optdata()
         local IbcDataPackagePathOutputFile="${__IntermediatesDir}/ibcoptdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${PgoDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
@@ -170,7 +170,7 @@ restore_optdata()
         __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
 
         # Writes into ${IbcDataPackagePathOutputFile}
-        "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${IbcDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get IBC data package path."
@@ -235,7 +235,7 @@ build_native()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs $__ProjectRoot/eng/empty.csproj \
+            "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $__ProjectRoot/eng/empty.csproj \
                                                    /p:NativeVersionFile=$__versionSourceFile \
                                                    /t:GenerateNativeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -431,7 +431,7 @@ build_CoreLib()
         __ExtraBuildArgs="$__ExtraBuildArgs /p:BuildManagedTools=true"
     fi
 
-    "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
                                            /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -444,7 +444,7 @@ build_CoreLib()
         exit $exit_code
     fi
 
-    "$__ProjectRoot/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -538,7 +538,7 @@ generate_NugetPackages()
     echo "ROOTFS_DIR is "$ROOTFS_DIR
     # Build the packages
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    $__ProjectRoot/eng/common/build.sh -r -b -projects $__SourceDir/.nuget/packages.builds \
+    $__RepoRootDir/eng/common/build.sh -r -b -projects $__SourceDir/.nuget/packages.builds \
                                        -verbosity minimal -bl:$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog \
                                        /p:PortableBuild=true \
                                        /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:__DoCrossArchBuild=$__CrossBuild \
@@ -560,8 +560,17 @@ echo "Commencing CoreCLR Repo build"
 #
 # Set the default arguments for build
 
-# Obtain the location of the bash script to figure out where the root of the repo is.
+# Obtain the location of the bash script to figure out where the root of the subrepo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Some paths are relative to the main repo root
+__RepoRootDir="${__ProjectRoot}/../.."
+
+# BEGIN SECTION to remove after repo consolidation
+if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
+  __RepoRootDir=${__ProjectRoot}
+fi
+# END SECTION to remove after repo consolidation
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)

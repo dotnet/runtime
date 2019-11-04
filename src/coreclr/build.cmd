@@ -33,8 +33,9 @@ set ghprbCommentBody=
 ::      __BuildType         -- default: Debug
 ::      __BuildOS           -- default: Windows_NT
 ::      __ProjectDir        -- default: directory of the dir.props file
+::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __SourceDir         -- default: %__ProjectDir%\src\
-::      __RootBinDir        -- default: %__ProjectDir%\bin\
+::      __RootBinDir        -- default: %__ProjectDir%\artifacts\
 ::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
 ::      __PackagesBinDir    -- default: %__BinDir%\.nuget
@@ -50,6 +51,11 @@ set __BuildOS=Windows_NT
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
+set "__RepoRootDir=%__ProjectDir%\..\.."
+
+rem Remove after repo consolidation
+if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
+
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__ProjectDir%\bin"
@@ -367,7 +373,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     %__ProjectDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
@@ -385,7 +391,7 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
@@ -398,7 +404,7 @@ set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 set IbcDataPackagePathOutputFile="%__IntermediatesDir%\ibcoptdatapath.txt"
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -412,7 +418,7 @@ if not exist "!PgoDataPackagePathOutputFile!" (
 
 set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpIbcDataPackagePath /nologo %__CommonMSBuildArgs% /p:IbcDataPackagePathOutputFile="!IbcDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -628,7 +634,7 @@ if %__BuildCoreLib% EQU 1 (
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
         set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
@@ -641,7 +647,7 @@ if %__BuildCoreLib% EQU 1 (
         )
 
         REM Disable warnAsError to work around VS bug (948084) where ucrt lib path is not set properly, resulting in CS1668
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj -warnAsError:0^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
@@ -673,7 +679,7 @@ if %__BuildCoreLib% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
         set IbcMergePackagePathOutputFile="%__IntermediatesDir%\ibcmergepath.txt"
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
             "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackagePath /nologo %__CommonMSBuildArgs% /p:IbcMergePackagePathOutputFile="!IbcMergePackagePathOutputFile!"
 
         if not !errorlevel! == 0 (
@@ -871,7 +877,7 @@ if %__BuildPackages% EQU 1 (
 
     REM The conditions as to what to build are captured in the builds file.
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\build.ps1"^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
         -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^

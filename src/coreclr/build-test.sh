@@ -4,7 +4,7 @@ __PortableBuild=1
 
 initTargetDistroRid()
 {
-    source init-distro-rid.sh
+    source ${__ProjectDir}/init-distro-rid.sh
 
     # Only pass ROOTFS_DIR if cross is specified.
     if (( ${__CrossBuild} == 1 )); then
@@ -431,7 +431,7 @@ build_MSBuild_projects()
             buildArgs+=("/p:__SkipPackageRestore=true");
 
             # Disable warnAsError - coreclr issue 19922
-            nextCommand="\"$__ProjectRoot/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
+            nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
             echo "Building step '$stepName' testGroupToBuild=$testGroupToBuild via $nextCommand"
             eval $nextCommand
 
@@ -463,7 +463,7 @@ build_MSBuild_projects()
         buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
         # Disable warnAsError - coreclr issue 19922
-        nextCommand="\"$__ProjectRoot/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
+        nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
         echo "Building step '$stepName' via $nextCommand"
         eval $nextCommand
 
@@ -505,7 +505,7 @@ build_native_projects()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            $__ProjectRoot/eng/common/msbuild.sh $__ProjectRoot/eng/empty.csproj \
+            $__RepoRootDir/eng/common/msbuild.sh $__ProjectRoot/eng/empty.csproj \
                                                  /p:NativeVersionFile=$__versionSourceFile \
                                                  /t:GenerateNativeVersionFile /restore \
                                                  $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -605,6 +605,13 @@ usage()
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+__RepoRootDir=${__ProjectRoot}/../..
+
+# BEGIN SECTION to remove after repo consolidation
+if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
+  __RepoRootDir=${__ProjectRoot}
+fi
+# END SECTION to remove after repo consolidation
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
