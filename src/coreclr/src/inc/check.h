@@ -15,6 +15,7 @@
 
 #include "static_assert.h"
 #include "daccess.h"
+#include "unreachable.h"
 
 #ifdef _DEBUG
 
@@ -556,19 +557,6 @@ CHECK CheckValue(TYPENAME &val)
 #define UNREACHABLE_MSG_RET(_message) UNREACHABLE_MSG(_message)
 
 #endif // __llvm__ else
-
-#if defined(_MSC_VER) || defined(_PREFIX_)
-#if defined(_TARGET_AMD64_)
-// Empty methods that consist of UNREACHABLE() result in a zero-sized declspec(noreturn) method
-// which causes the pdb file to make the next method declspec(noreturn) as well, thus breaking BBT
-// Remove when we get a VC compiler that fixes VSW 449170
-# define __UNREACHABLE() DebugBreak(); __assume(0);
-#else
-# define __UNREACHABLE() __assume(0)
-#endif
-#else
-#define __UNREACHABLE() __builtin_unreachable()
-#endif
 
 #ifdef _DEBUG_IMPL
 

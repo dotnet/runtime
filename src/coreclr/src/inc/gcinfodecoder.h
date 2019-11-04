@@ -138,12 +138,6 @@ inline BOOL IS_ALIGNED( void* val, size_t alignment )
 
 #endif
 
-// Stuff from check.h:
-
-#ifndef UNREACHABLE
-#define UNREACHABLE() __assume(0)
-#endif
-
 // Stuff from eetwain.h:
 
 #ifndef _EETWAIN_H
