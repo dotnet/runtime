@@ -31,5 +31,5 @@ steps:
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
       ${{ parameters.outputRidArg }} \
-      /bl:msbuild.${{ parameters.distroRid }}.installers.binlog
+      /bl:/root/runtime/artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
