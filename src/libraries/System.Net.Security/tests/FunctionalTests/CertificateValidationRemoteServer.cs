@@ -19,6 +19,12 @@ namespace System.Net.Security.Tests
         [OuterLoop("Uses external servers")]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok()
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                // https://github.com/dotnet/corefx/issues/42339
+                return;
+            }
+
             using (var client = new TcpClient(AddressFamily.InterNetwork))
             {
                 await client.ConnectAsync(Configuration.Security.TlsServer.IdnHost, Configuration.Security.TlsServer.Port);
