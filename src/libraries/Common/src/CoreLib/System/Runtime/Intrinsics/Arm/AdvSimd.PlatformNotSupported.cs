@@ -51,6 +51,30 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x8_t vrbit_u8 (uint8x8_t a)
+            ///   A64: RBIT Vd.8B, Vn.8B
+            /// </summary>
+            public static Vector64<byte> ReverseElementBits(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x8_t vrbit_s8 (int8x8_t a)
+            ///   A64: RBIT Vd.8B, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> ReverseElementBits(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vrbitq_u8 (uint8x16_t a)
+            ///   A64: RBIT Vd.16B, Vn.16B
+            /// </summary>
+            public static Vector128<byte> ReverseElementBits(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vrbitq_s8 (int8x16_t a)
+            ///   A64: RBIT Vd.16B, Vn.16B
+            /// </summary>
+            public static Vector128<sbyte> ReverseElementBits(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>

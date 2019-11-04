@@ -43,6 +43,16 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: CLZ Xd, Xn
             /// </summary>
             public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
+
+            /// <summary>
+            ///   A64: RBIT Xd, Xn
+            /// </summary>
+            public static long ReverseElementBits(long value) => ReverseElementBits(value);
+
+            /// <summary>
+            ///   A64: RBIT Xd, Xn
+            /// </summary>
+            public static ulong ReverseElementBits(ulong value) => ReverseElementBits(value);
         }
 
         /// <summary>
@@ -56,5 +66,17 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CLZ Wd, Wn
         /// </summary>
         public static int LeadingZeroCount(uint value) => LeadingZeroCount(value);
+
+        /// <summary>
+        ///   A32: RBIT Rd, Rm
+        ///   A64: RBIT Wd, Wn
+        /// </summary>
+        public static int ReverseElementBits(int value) => ReverseElementBits(value);
+
+        /// <summary>
+        ///   A32: RBIT Rd, Rm
+        ///   A64: RBIT Wd, Wn
+        /// </summary>
+        public static uint ReverseElementBits(uint value) => ReverseElementBits(value);
     }
 }

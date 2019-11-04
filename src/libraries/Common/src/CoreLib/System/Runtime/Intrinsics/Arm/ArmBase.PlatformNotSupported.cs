@@ -42,6 +42,16 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: CLZ Xd, Xn
             /// </summary>
             public static int LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: RBIT Xd, Xn
+            /// </summary>
+            public static int ReverseElementBits(long value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: RBIT Xd, Xn
+            /// </summary>
+            public static int ReverseElementBits(ulong value) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -55,5 +65,17 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CLZ Wd, Wn
         /// </summary>
         public static int LeadingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A32: RBIT Rd, Rm
+        ///   A64: RBIT Wd, Wn
+        /// </summary>
+        public static int ReverseElementBits(int value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A32: RBIT Rd, Rm
+        ///   A64: RBIT Wd, Wn
+        /// </summary>
+        public static int ReverseElementBits(uint value) { throw new PlatformNotSupportedException(); }
     }
 }
