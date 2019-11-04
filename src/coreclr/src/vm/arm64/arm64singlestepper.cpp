@@ -206,7 +206,7 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
     //     single instruction into the redirect buffer for execution followed by a breakpoint (once we regain
     //     control in the breakpoint fixup logic we can then reset the PC to its proper location.
 
-    int idxNextInstruction = 0;
+    unsigned int idxNextInstruction = 0;
 
     if (TryEmulate(pCtx, opcode, false))
     {

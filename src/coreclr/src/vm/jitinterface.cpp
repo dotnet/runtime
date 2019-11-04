@@ -11674,7 +11674,7 @@ void CEEJitInfo::recordRelocation(void * location,
             _ASSERTE(addlDelta == 0);
 
             // Write the 12 bits page offset into location.
-            INT32 imm12 = (INT32)target & 0xFFFLL;
+            INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
             PutArm64Rel12((UINT32 *)location, imm12);
         }
         break;
