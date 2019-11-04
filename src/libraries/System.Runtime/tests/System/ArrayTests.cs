@@ -1319,6 +1319,25 @@ namespace System.Tests
             Assert.Equal(expected, destinationArrayClone);
         }
 
+        [OuterLoop] // Allocates large array
+        [Fact]
+        public static void Copy_LargeMultiDimensionalArray()
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (IntPtr.Size != sizeof(long))
+            {
+                return;
+            }
+
+            short[,] a = new short[2, 2_000_000_000];
+            a[1, 1] = 42;
+            Array.Copy(a, 1, a, Int32.MaxValue, 2);
+            Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
+
+            Array.Clear(a, Int32.MaxValue - 1, 3);
+            Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+        }
+
         [Fact]
         public static void Copy_NullSourceArray_ThrowsArgumentNullException()
         {
