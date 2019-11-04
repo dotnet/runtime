@@ -392,8 +392,6 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst);
 
 		t = ctx->method_inst->type_argv [0];
-		if (mini_is_gsharedvt_variable_type (t))
-			return NULL;
 		if (ctx->method_inst->type_argc == 2) {
 			dreg = alloc_preg (cfg);
 			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
@@ -401,6 +399,8 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->klass = mono_get_object_class ();
 			return ins;
 		} else if (ctx->method_inst->type_argc == 1) {
+			if (mini_is_gsharedvt_variable_type (t))
+				return NULL;
 			// Casts the given object to the specified type, performs no dynamic type checking.
 			g_assert (fsig->param_count == 1);
 			g_assert (fsig->params [0]->type == MONO_TYPE_OBJECT);
