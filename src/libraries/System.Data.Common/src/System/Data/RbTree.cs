@@ -161,9 +161,9 @@ namespace System.Data
             {
                 // no free position found, increase pageTable size
                 TreePage[] newPageTable = new TreePage[_pageTable.Length * 2];
-                Array.Copy(_pageTable, 0, newPageTable, 0, _pageTable.Length);
+                Array.Copy(_pageTable, newPageTable, _pageTable.Length);
                 int[] newPageTableMap = new int[(newPageTable.Length + TreePage.slotLineSize - 1) / TreePage.slotLineSize];
-                Array.Copy(_pageTableMap, 0, newPageTableMap, 0, _pageTableMap.Length);
+                Array.Copy(_pageTableMap, newPageTableMap, _pageTableMap.Length);
 
                 _nextFreePageLine = _pageTableMap.Length;
                 freePageIndex = _pageTable.Length;

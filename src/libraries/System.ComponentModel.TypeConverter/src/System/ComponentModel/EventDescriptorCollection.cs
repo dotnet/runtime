@@ -131,7 +131,7 @@ namespace System.ComponentModel
                 if (_events != null)
                 {
                     EventDescriptor[] newEvents = new EventDescriptor[Count];
-                    Array.Copy(_events, 0, newEvents, 0, Count);
+                    Array.Copy(_events, newEvents, Count);
                     _events = newEvents;
                 }
             }
@@ -161,7 +161,7 @@ namespace System.ComponentModel
 
             int newSize = Math.Max(sizeNeeded, _events.Length * 2);
             EventDescriptor[] newEvents = new EventDescriptor[newSize];
-            Array.Copy(_events, 0, newEvents, 0, Count);
+            Array.Copy(_events, newEvents, Count);
             _events = newEvents;
         }
 

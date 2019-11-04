@@ -334,7 +334,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             if (_elementCount == _elements.Length)
             {
                 ElementEntry[] newElements = new ElementEntry[_elements.Length * 2];
-                Array.Copy(_elements, 0, newElements, 0, _elementCount);
+                Array.Copy(_elements, newElements, _elementCount);
                 _elements = newElements;
             }
             _elements[_elementCount++].Set(prefix, localName);
@@ -1110,7 +1110,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             if (_count == _list.Length)
             {
                 AttributeEntry[] newList = new AttributeEntry[_list.Length * 2];
-                Array.Copy(_list, 0, newList, 0, _count);
+                Array.Copy(_list, newList, _count);
                 _list = newList;
             }
 

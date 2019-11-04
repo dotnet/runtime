@@ -113,7 +113,7 @@ namespace System.Runtime.Serialization
                 }
 
                 ObjectHolder[] temp = new ObjectHolder[newSize];
-                Array.Copy(_objects, 0, temp, 0, _objects.Length);
+                Array.Copy(_objects, temp, _objects.Length);
                 _objects = temp;
             }
 
@@ -288,7 +288,7 @@ namespace System.Runtime.Serialization
                 if ((currentFieldIndex + 1) >= fieldsTemp.Length)
                 {
                     var temp = new FieldInfo[fieldsTemp.Length * 2];
-                    Array.Copy(fieldsTemp, 0, temp, 0, fieldsTemp.Length);
+                    Array.Copy(fieldsTemp, temp, fieldsTemp.Length);
                     fieldsTemp = temp;
                 }
 
@@ -1418,7 +1418,7 @@ namespace System.Runtime.Serialization
             }
 
             FixupHolder[] temp = new FixupHolder[newLength];
-            Array.Copy(_values, 0, temp, 0, _count);
+            Array.Copy(_values, temp, _count);
             _values = temp;
         }
     }
@@ -1502,7 +1502,7 @@ namespace System.Runtime.Serialization
             }
 
             long[] temp = new long[newLength];
-            Array.Copy(_values, 0, temp, 0, _count);
+            Array.Copy(_values, temp, _count);
             _values = temp;
         }
     }
@@ -1545,7 +1545,7 @@ namespace System.Runtime.Serialization
             }
 
             ObjectHolder[] temp = new ObjectHolder[newLength];
-            Array.Copy(_values, 0, temp, 0, _count);
+            Array.Copy(_values, temp, _count);
             _values = temp;
         }
 

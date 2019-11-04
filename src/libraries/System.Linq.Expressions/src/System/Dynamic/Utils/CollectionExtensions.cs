@@ -45,7 +45,7 @@ namespace System.Dynamic.Utils
         public static T[] RemoveLast<T>(this T[] array)
         {
             T[] result = new T[array.Length - 1];
-            Array.Copy(array, 0, result, 0, result.Length);
+            Array.Copy(array, result, result.Length);
             return result;
         }
 

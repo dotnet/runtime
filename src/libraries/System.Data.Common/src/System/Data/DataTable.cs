@@ -3352,7 +3352,7 @@ namespace System.Data
             Debug.Assert(key.HasValue);
             IndexField[] indexDesc = key.GetIndexDesc();
             IndexField[] newIndexDesc = new IndexField[indexDesc.Length];
-            Array.Copy(indexDesc, 0, newIndexDesc, 0, indexDesc.Length);
+            Array.Copy(indexDesc, newIndexDesc, indexDesc.Length);
             return newIndexDesc;
         }
 

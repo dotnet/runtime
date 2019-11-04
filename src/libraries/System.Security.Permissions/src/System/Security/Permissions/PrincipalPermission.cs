@@ -189,7 +189,7 @@ namespace System.Security.Permissions
             }
 
             IDRole[] idrolesArray = new IDRole[_idArray.Length + operand._idArray.Length];
-            Array.Copy(_idArray, 0, idrolesArray, 0, _idArray.Length);
+            Array.Copy(_idArray, idrolesArray, _idArray.Length);
             Array.Copy(operand._idArray, 0, idrolesArray, _idArray.Length, operand._idArray.Length);
 
             return new PrincipalPermission(idrolesArray);

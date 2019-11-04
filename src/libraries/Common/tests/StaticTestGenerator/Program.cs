@@ -497,7 +497,7 @@ namespace StaticTestGenerator
                 else if (arguments.Length < parameters.Length)
                 {
                     var newArguments = new object[parameters.Length];
-                    Array.Copy(arguments, 0, newArguments, 0, arguments.Length);
+                    Array.Copy(arguments, newArguments, arguments.Length);
                     for (int i = arguments.Length; i < parameters.Length; i++)
                     {
                         if (parameters[i].HasDefaultValue)

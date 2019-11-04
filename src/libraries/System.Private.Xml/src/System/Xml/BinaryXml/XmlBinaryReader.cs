@@ -1899,7 +1899,7 @@ namespace System.Xml
             if (symNum == symtable.Length)
             {
                 string[] n = new string[checked(symNum * 2)];
-                System.Array.Copy(symtable, 0, n, 0, symNum);
+                System.Array.Copy(symtable, n, symNum);
                 _symbolTables.symtable = symtable = n;
             }
             symtable[symNum] = _xnt.Add(txt);
@@ -1915,7 +1915,7 @@ namespace System.Xml
             if (qnameNum == qnametable.Length)
             {
                 QName[] n = new QName[checked(qnameNum * 2)];
-                System.Array.Copy(qnametable, 0, n, 0, qnameNum);
+                System.Array.Copy(qnametable, n, qnameNum);
                 _symbolTables.qnametable = qnametable = n;
             }
             string[] symtable = _symbolTables.symtable;
@@ -2418,7 +2418,7 @@ namespace System.Xml
             int newcount = _elementStack.Length * 2;
             ElemInfo[] n = new ElemInfo[newcount];
 
-            System.Array.Copy(_elementStack, 0, n, 0, _elementStack.Length);
+            System.Array.Copy(_elementStack, n, _elementStack.Length);
             _elementStack = n;
         }
 
@@ -2427,7 +2427,7 @@ namespace System.Xml
             int newcount = _attributes.Length * 2;
             AttrInfo[] n = new AttrInfo[newcount];
 
-            System.Array.Copy(_attributes, 0, n, 0, _attrCount);
+            System.Array.Copy(_attributes, n, _attrCount);
             _attributes = n;
         }
 

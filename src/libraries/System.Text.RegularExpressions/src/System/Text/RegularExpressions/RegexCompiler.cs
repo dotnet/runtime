@@ -160,7 +160,7 @@ namespace System.Text.RegularExpressions
             {
                 BacktrackNote[] newnotes = new BacktrackNote[_notes == null ? 16 : _notes.Length * 2];
                 if (_notes != null)
-                    System.Array.Copy(_notes, 0, newnotes, 0, _notecount);
+                    System.Array.Copy(_notes, newnotes, _notecount);
                 _notes = newnotes;
             }
 

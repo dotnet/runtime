@@ -40,7 +40,7 @@ internal partial class Interop
 
                 Entry[] newCache = new Entry[cache.Length + 1];
                 Entry newEntry = new Entry(hashAlgorithmId, flags, safeBCryptAlgorithmHandle);
-                Array.Copy(cache, 0, newCache, 0, cache.Length);
+                Array.Copy(cache, newCache, cache.Length);
                 newCache[newCache.Length - 1] = newEntry;
 
                 // Atomically overwrite the cache with our new cache. It's possible some other thread raced to add a new entry with us - if so, one of the new entries

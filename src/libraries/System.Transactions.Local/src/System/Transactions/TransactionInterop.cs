@@ -294,7 +294,7 @@ namespace System.Transactions
             }
 
             byte[] propagationTokenCopy = new byte[propagationToken.Length];
-            Array.Copy(propagationToken, 0, propagationTokenCopy, 0, propagationToken.Length);
+            Array.Copy(propagationToken, propagationTokenCopy, propagationToken.Length);
 
             return DistributedTransactionManager.GetDistributedTransactionFromTransmitterPropagationToken(propagationTokenCopy);
         }

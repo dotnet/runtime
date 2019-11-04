@@ -392,7 +392,7 @@ namespace System.Xml.Serialization
                 if (_elements == null)
                     return null;
                 _sortedElements = new ElementAccessor[_elements.Length];
-                Array.Copy(_elements, 0, _sortedElements, 0, _elements.Length);
+                Array.Copy(_elements, _sortedElements, _elements.Length);
                 AccessorMapping.SortMostToLeastDerived(_sortedElements);
                 return _sortedElements;
             }
@@ -784,7 +784,7 @@ namespace System.Xml.Serialization
                 if (_elements == null)
                     return null;
                 _sortedElements = new ElementAccessor[_elements.Length];
-                Array.Copy(_elements, 0, _sortedElements, 0, _elements.Length);
+                Array.Copy(_elements, _sortedElements, _elements.Length);
                 SortMostToLeastDerived(_sortedElements);
                 return _sortedElements;
             }

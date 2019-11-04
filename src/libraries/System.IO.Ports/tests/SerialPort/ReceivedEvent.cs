@@ -428,7 +428,7 @@ namespace System.IO.Ports.Tests
                     if ((_bytesRead.Length - _numBytesRead) < com.BytesToRead)
                     {
                         byte[] tempByteArray = new byte[Math.Max(_bytesRead.Length * 2, _bytesRead.Length + com.BytesToRead)];
-                        Array.Copy(_bytesRead, 0, tempByteArray, 0, _numBytesRead);
+                        Array.Copy(_bytesRead, tempByteArray, _numBytesRead);
                         _bytesRead = tempByteArray;
                     }
 

@@ -448,7 +448,7 @@ namespace System.IO.Ports.Tests
                 //[] Fill the buffer up then read in all but one of the chars
                 var expectedChars = new char[charXmitBuffer.Length - 1];
                 var charRcvBuffer = new char[charXmitBuffer.Length - 1];
-                Array.Copy(charXmitBuffer, 0, expectedChars, 0, charXmitBuffer.Length - 1);
+                Array.Copy(charXmitBuffer, expectedChars, charXmitBuffer.Length - 1);
 
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
                 TCSupport.WaitForPredicate(() => com1.BytesToRead == charXmitBuffer.Length, 2000,
@@ -635,7 +635,7 @@ namespace System.IO.Ports.Tests
 
                 char[] actualChars = new char[charXmitBuffer.Length];
 
-                Array.Copy(charRcvBuffer, 0, actualChars, 0, result);
+                Array.Copy(charRcvBuffer, actualChars, result);
                 result = com1.Read(actualChars, actualChars.Length - 2, 2);
 
                 Assert.Equal(2, result);
@@ -654,7 +654,7 @@ namespace System.IO.Ports.Tests
 
                 actualChars = new char[charXmitBuffer.Length];
 
-                Array.Copy(charRcvBuffer, 0, actualChars, 0, result);
+                Array.Copy(charRcvBuffer, actualChars, result);
                 result = com1.Read(actualChars, actualChars.Length - 2, 2);
 
                 Assert.Equal(2, result);
@@ -783,7 +783,7 @@ namespace System.IO.Ports.Tests
             char[] expectedChars = new char[com1.Encoding.GetCharCount(bytesToWrite, 0, bytesToWrite.Length) * 2];
             char[] encodedChars = com1.Encoding.GetChars(bytesToWrite, 0, bytesToWrite.Length);
 
-            Array.Copy(encodedChars, 0, expectedChars, 0, bytesToWrite.Length);
+            Array.Copy(encodedChars, expectedChars, bytesToWrite.Length);
             Array.Copy(encodedChars, 0, expectedChars, encodedChars.Length, encodedChars.Length);
 
             BufferData(com1, com2, bytesToWrite);

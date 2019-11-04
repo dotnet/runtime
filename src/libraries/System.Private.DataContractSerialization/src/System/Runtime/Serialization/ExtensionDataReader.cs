@@ -465,7 +465,7 @@ namespace System.Runtime.Serialization
             else if (_elements.Length == _depth)
             {
                 ElementData[] newElements = new ElementData[_elements.Length * 2];
-                Array.Copy(_elements, 0, newElements, 0, _elements.Length);
+                Array.Copy(_elements, newElements, _elements.Length);
                 _elements = newElements;
             }
         }
@@ -549,7 +549,7 @@ namespace System.Runtime.Serialization
             else if (attributes.Length == attributeCount)
             {
                 AttributeData[] newAttributes = new AttributeData[attributes.Length * 2];
-                Array.Copy(attributes, 0, newAttributes, 0, attributes.Length);
+                Array.Copy(attributes, newAttributes, attributes.Length);
                 attributes = newAttributes;
             }
         }

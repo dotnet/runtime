@@ -1602,7 +1602,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -1647,7 +1647,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -1695,7 +1695,7 @@ namespace System.Numerics.Tests
             }
             while (Util.AnyEqual(values1, values2));
 
-            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Array.Copy(values1, values2, Vector<T>.Count / 2);
             Vector<T> vec1 = new Vector<T>(values1);
             Vector<T> vec2 = new Vector<T>(values2);
 

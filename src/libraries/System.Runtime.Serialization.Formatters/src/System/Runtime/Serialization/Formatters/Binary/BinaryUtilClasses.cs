@@ -177,7 +177,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             int size = _objects.Length * 2;
             object[] newItems = new object[size];
-            Array.Copy(_objects, 0, newItems, 0, _objects.Length);
+            Array.Copy(_objects, newItems, _objects.Length);
             _objects = newItems;
         }
 
@@ -261,14 +261,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     int size = Math.Max(_negObjects.Length * 2, (-index) + 1);
                     object[] newItems = new object[size];
-                    Array.Copy(_negObjects, 0, newItems, 0, _negObjects.Length);
+                    Array.Copy(_negObjects, newItems, _negObjects.Length);
                     _negObjects = newItems;
                 }
                 else
                 {
                     int size = Math.Max(_objects.Length * 2, index + 1);
                     object[] newItems = new object[size];
-                    Array.Copy(_objects, 0, newItems, 0, _objects.Length);
+                    Array.Copy(_objects, newItems, _objects.Length);
                     _objects = newItems;
                 }
             }
@@ -338,14 +338,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     int size = Math.Max(_negObjects.Length * 2, (-index) + 1);
                     int[] newItems = new int[size];
-                    Array.Copy(_negObjects, 0, newItems, 0, _negObjects.Length);
+                    Array.Copy(_negObjects, newItems, _negObjects.Length);
                     _negObjects = newItems;
                 }
                 else
                 {
                     int size = Math.Max(_objects.Length * 2, index + 1);
                     int[] newItems = new int[size];
-                    Array.Copy(_objects, 0, newItems, 0, _objects.Length);
+                    Array.Copy(_objects, newItems, _objects.Length);
                     _objects = newItems;
                 }
             }

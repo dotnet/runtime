@@ -51,7 +51,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Copy the elements from this array and the item
             // to a new array that's returned.
             var newArray = new T[_array.Length + 1];
-            Array.Copy(_array, 0, newArray, 0, _array.Length);
+            Array.Copy(_array, newArray, _array.Length);
             newArray[newArray.Length - 1] = item;
             return new ImmutableArray<T>(newArray);
         }
@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Otherwise, copy the other elements to a new array that's returned.
             var newArray = new T[_array.Length - 1];
-            Array.Copy(_array, 0, newArray, 0, index);
+            Array.Copy(_array, newArray, index);
             Array.Copy(_array, index + 1, newArray, index, _array.Length - index - 1);
             return new ImmutableArray<T>(newArray);
         }

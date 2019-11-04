@@ -657,7 +657,7 @@ namespace System.Xml
             if (attIndex >= _attributeEvents.Length - 1)
             { //reached capacity of array, Need to increase capacity to twice the initial
                 ValidatingReaderNodeData[] newAttributeEvents = new ValidatingReaderNodeData[_attributeEvents.Length * 2];
-                Array.Copy(_attributeEvents, 0, newAttributeEvents, 0, _attributeEvents.Length);
+                Array.Copy(_attributeEvents, newAttributeEvents, _attributeEvents.Length);
                 _attributeEvents = newAttributeEvents;
             }
             attInfo = _attributeEvents[attIndex];
@@ -682,7 +682,7 @@ namespace System.Xml
             if (_contentIndex >= _contentEvents.Length - 1)
             { //reached capacity of array, Need to increase capacity to twice the initial
                 ValidatingReaderNodeData[] newContentEvents = new ValidatingReaderNodeData[_contentEvents.Length * 2];
-                Array.Copy(_contentEvents, 0, newContentEvents, 0, _contentEvents.Length);
+                Array.Copy(_contentEvents, newContentEvents, _contentEvents.Length);
                 _contentEvents = newContentEvents;
             }
             contentInfo = _contentEvents[_contentIndex];

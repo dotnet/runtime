@@ -157,7 +157,7 @@ namespace System.Collections
             }
 
             m_array = new int[values.Length];
-            Array.Copy(values, 0, m_array, 0, values.Length);
+            Array.Copy(values, m_array, values.Length);
             m_length = values.Length * BitsPerInt32;
 
             _version = 0;
@@ -181,7 +181,7 @@ namespace System.Collections
 
             Debug.Assert(bits.m_array.Length <= arrayLength);
 
-            Array.Copy(bits.m_array, 0, m_array, 0, arrayLength);
+            Array.Copy(bits.m_array, m_array, arrayLength);
             m_length = bits.m_length;
 
             _version = bits._version;

@@ -354,7 +354,7 @@ namespace System.IO.Ports.Tests
                 else
                 {
                     expectedChars = new char[xmitChars.Length];
-                    Array.Copy(xmitChars, 0, expectedChars, 0, expectedChars.Length);
+                    Array.Copy(xmitChars, expectedChars, expectedChars.Length);
                 }
 
                 expectedBytes = com1.Encoding.GetBytes(expectedChars);

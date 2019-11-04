@@ -477,7 +477,7 @@ namespace System.Linq.Parallel
                         // If it's not the last phase, we just bulk propagate the keys and values.
                         if (!isLastPhase && leftCount > 0)
                         {
-                            Array.Copy(myValues, 0, mergedValues, 0, leftCount);
+                            Array.Copy(myValues, mergedValues, leftCount);
                         }
 
                         // And now just wait for the second half.  We never reuse the same barrier across multiple

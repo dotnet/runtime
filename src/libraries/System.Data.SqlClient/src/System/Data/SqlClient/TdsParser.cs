@@ -3894,7 +3894,7 @@ namespace System.Data.SqlClient
                 else
                 {
                     MultiPartTableName[] newTables = new MultiPartTableName[tables.Length + 1];
-                    Array.Copy(tables, 0, newTables, 0, tables.Length);
+                    Array.Copy(tables, newTables, tables.Length);
                     newTables[tables.Length] = mpt;
                     tables = newTables;
                 }

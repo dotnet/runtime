@@ -142,7 +142,7 @@ namespace System.ComponentModel
                 if (_properties != null)
                 {
                     PropertyDescriptor[] newProps = new PropertyDescriptor[Count];
-                    Array.Copy(_properties, 0, newProps, 0, Count);
+                    Array.Copy(_properties, newProps, Count);
                     _properties = newProps;
                 }
             }
@@ -172,7 +172,7 @@ namespace System.ComponentModel
 
             int newSize = Math.Max(sizeNeeded, _properties.Length * 2);
             PropertyDescriptor[] newProps = new PropertyDescriptor[newSize];
-            Array.Copy(_properties, 0, newProps, 0, Count);
+            Array.Copy(_properties, newProps, Count);
             _properties = newProps;
         }
 
@@ -400,7 +400,7 @@ namespace System.ComponentModel
             if (_properties.Length != Count)
             {
                 PropertyDescriptor[] enumProps = new PropertyDescriptor[Count];
-                Array.Copy(_properties, 0, enumProps, 0, Count);
+                Array.Copy(_properties, enumProps, Count);
                 return enumProps.GetEnumerator();
             }
             return _properties.GetEnumerator();
@@ -531,7 +531,7 @@ namespace System.ComponentModel
                 if (_properties.Length != Count)
                 {
                     PropertyDescriptor[] newProps = new PropertyDescriptor[Count];
-                    Array.Copy(_properties, 0, newProps, 0, Count);
+                    Array.Copy(_properties, newProps, Count);
                     return newProps;
                 }
                 else

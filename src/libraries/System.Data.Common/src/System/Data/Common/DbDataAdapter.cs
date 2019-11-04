@@ -1286,7 +1286,7 @@ namespace System.Data.Common
                                 if (commandCount < rowBatch.Length)
                                 {
                                     finalRowBatch = new DataRow[commandCount];
-                                    Array.Copy(rowBatch, 0, finalRowBatch, 0, commandCount);
+                                    Array.Copy(rowBatch, finalRowBatch, commandCount);
                                 }
                                 rowUpdatedEvent.AdapterInit(finalRowBatch);
 

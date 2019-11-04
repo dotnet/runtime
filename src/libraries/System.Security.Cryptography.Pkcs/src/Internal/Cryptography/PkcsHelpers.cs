@@ -107,7 +107,7 @@ namespace Internal.Cryptography
 
             if (idx != 0)
             {
-                Array.Copy(arr, 0, tmp, 0, idx);
+                Array.Copy(arr, tmp, idx);
             }
 
             if (idx < tmp.Length)

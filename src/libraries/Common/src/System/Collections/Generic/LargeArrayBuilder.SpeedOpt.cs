@@ -308,7 +308,7 @@ namespace System.Collections.Generic
                 int nextCapacity = Math.Min(_count == 0 ? StartingCapacity : _count * 2, _maxCapacity);
 
                 _current = new T[nextCapacity];
-                Array.Copy(_first, 0, _current, 0, _count);
+                Array.Copy(_first, _current, _count);
                 _first = _current;
             }
             else

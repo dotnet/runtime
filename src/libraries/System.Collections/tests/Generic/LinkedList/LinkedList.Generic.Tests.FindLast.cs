@@ -85,7 +85,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.FindLast(tailItems[0])); //"Err_8548ajia Expected FindLast to return false with an non null item not in the collection size=16"
             Assert.Null(linkedList.FindLast(default(T))); //"Err_3108qoa Expected FindLast to return false with an null item not in the collection size=16"
             T[] tempItems = new T[headItems.Length + headItems.Length];
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             Array.Copy(headItems, 0, tempItems, headItems.Length, headItems.Length);
             VerifyFindLastDuplicates(linkedList, tempItems);
 
@@ -109,7 +109,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.FindLast(CreateT(seed++))); //"Err_78585ajhed Expected FindLast to return false with an non null item not in the collection default(T) in the middle"
 
             tempItems = new T[headItems.Length + prependDefaultTailItems.Length];
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             Array.Copy(prependDefaultTailItems, 0, tempItems, headItems.Length, prependDefaultTailItems.Length);
 
             VerifyFindLast(linkedList, tempItems);

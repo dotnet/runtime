@@ -66,7 +66,7 @@ namespace System.Collections.Tests
             linkedList.AddLast(headItems[1]);
 
             tempItems = new T[headItems.Length];
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             Array.Reverse(tempItems, 1, headItems.Length - 1);
 
             for (int i = 2; i < arraySize; ++i)
@@ -129,7 +129,7 @@ namespace System.Collections.Tests
                 linkedList.AddBefore(linkedList.First, tailItems[i]);
 
             T[] tempItems2 = new T[tailItemsReverse.Length + tempItems.Length];
-            Array.Copy(tailItemsReverse, 0, tempItems2, 0, tailItemsReverse.Length);
+            Array.Copy(tailItemsReverse, tempItems2, tailItemsReverse.Length);
             Array.Copy(tempItems, 0, tempItems2, tailItemsReverse.Length, tempItems.Length);
 
             InitialItems_Tests(linkedList, tempItems2);
@@ -174,7 +174,7 @@ namespace System.Collections.Tests
             }
 
             tempItems = new T[headItemsReverse.Length + tailItems.Length];
-            Array.Copy(headItemsReverse, 0, tempItems, 0, headItemsReverse.Length);
+            Array.Copy(headItemsReverse, tempItems, headItemsReverse.Length);
             Array.Copy(tailItems, 0, tempItems, headItemsReverse.Length, tailItems.Length);
 
             InitialItems_Tests(linkedList, tempItems);
@@ -266,7 +266,7 @@ namespace System.Collections.Tests
             linkedList.AddFirst(headItems[0]);
             linkedList.AddLast(headItems[1]);
             tempItems = new T[headItems.Length];
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             Array.Reverse(tempItems, 1, headItems.Length - 1);
 
             for (int i = 2; i < arraySize; ++i)
@@ -328,7 +328,7 @@ namespace System.Collections.Tests
                 linkedList.AddBefore(linkedList.First, new LinkedListNode<T>(tailItems[i]));
 
             T[] tempItems2 = new T[tailItemsReverse.Length + tempItems.Length];
-            Array.Copy(tailItemsReverse, 0, tempItems2, 0, tailItemsReverse.Length);
+            Array.Copy(tailItemsReverse, tempItems2, tailItemsReverse.Length);
             Array.Copy(tempItems, 0, tempItems2, tailItemsReverse.Length, tempItems.Length);
 
             InitialItems_Tests(linkedList, tempItems2);
@@ -373,7 +373,7 @@ namespace System.Collections.Tests
             }
 
             tempItems = new T[headItemsReverse.Length + tailItems.Length];
-            Array.Copy(headItemsReverse, 0, tempItems, 0, headItemsReverse.Length);
+            Array.Copy(headItemsReverse, tempItems, headItemsReverse.Length);
             Array.Copy(tailItems, 0, tempItems, headItemsReverse.Length, tailItems.Length);
 
             InitialItems_Tests(linkedList, tempItems);

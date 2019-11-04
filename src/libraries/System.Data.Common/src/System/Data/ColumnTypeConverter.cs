@@ -139,7 +139,7 @@ namespace System.Data
                 if (s_types != null)
                 {
                     objTypes = new object[s_types.Length];
-                    Array.Copy(s_types, 0, objTypes, 0, s_types.Length);
+                    Array.Copy(s_types, objTypes, s_types.Length);
                 }
                 else
                 {

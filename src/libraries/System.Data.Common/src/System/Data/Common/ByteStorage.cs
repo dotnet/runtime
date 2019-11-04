@@ -236,7 +236,7 @@ namespace System.Data.Common
             byte[] newValues = new byte[capacity];
             if (null != _values)
             {
-                Array.Copy(_values, 0, newValues, 0, Math.Min(capacity, _values.Length));
+                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }
             _values = newValues;
             base.SetCapacity(capacity);

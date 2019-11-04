@@ -1007,7 +1007,7 @@ namespace System.ComponentModel
                     if (eventCount != events.Length)
                     {
                         EventDescriptor[] newEvents = new EventDescriptor[eventCount];
-                        Array.Copy(events, 0, newEvents, 0, eventCount);
+                        Array.Copy(events, newEvents, eventCount);
                         events = newEvents;
                     }
 
@@ -1196,7 +1196,7 @@ namespace System.ComponentModel
                     if (propertyCount != properties.Length)
                     {
                         PropertyDescriptor[] newProperties = new PropertyDescriptor[propertyCount];
-                        Array.Copy(properties, 0, newProperties, 0, propertyCount);
+                        Array.Copy(properties, newProperties, propertyCount);
                         properties = newProperties;
                     }
 

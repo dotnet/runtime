@@ -57,7 +57,7 @@ namespace System.ComponentModel
                     if (_sites.Length == _siteCount)
                     {
                         ISite[] newSites = new ISite[_siteCount * 2];
-                        Array.Copy(_sites, 0, newSites, 0, _siteCount);
+                        Array.Copy(_sites, newSites, _siteCount);
                         _sites = newSites;
                     }
                 }

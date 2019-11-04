@@ -557,7 +557,7 @@ namespace System.Collections.Immutable
 
             // defensive copy
             var tmp = new T[items.Length];
-            Array.Copy(items, 0, tmp, 0, items.Length);
+            Array.Copy(items, tmp, items.Length);
             return new ImmutableArray<T>(tmp);
         }
     }

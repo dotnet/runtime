@@ -559,7 +559,7 @@ namespace System.Xml
             else if (currentIndex >= _nodeSequenceToValidate.Length - 1)
             { //reached capacity of array, Need to increase capacity to twice the initial
                 XmlNode[] newNodeSequence = new XmlNode[_nodeSequenceToValidate.Length * 2];
-                Array.Copy(_nodeSequenceToValidate, 0, newNodeSequence, 0, _nodeSequenceToValidate.Length);
+                Array.Copy(_nodeSequenceToValidate, newNodeSequence, _nodeSequenceToValidate.Length);
                 _nodeSequenceToValidate = newNodeSequence;
             }
         }

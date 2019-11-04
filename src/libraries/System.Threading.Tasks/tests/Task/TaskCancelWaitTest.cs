@@ -480,7 +480,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             {
                 string[] temp = new string[options.Length - 1];
                 int excludeIndex = index + 1;
-                Array.Copy(options, 0, temp, 0, index);
+                Array.Copy(options, temp, index);
                 int leftToCopy = options.Length - excludeIndex;
                 Array.Copy(options, excludeIndex, temp, index, leftToCopy);
 

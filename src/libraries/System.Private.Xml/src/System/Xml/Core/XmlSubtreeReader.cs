@@ -1295,7 +1295,7 @@ namespace System.Xml
             if (index == _nsAttributes.Length)
             {
                 NodeData[] newNsAttrs = new NodeData[_nsAttributes.Length * 2];
-                Array.Copy(_nsAttributes, 0, newNsAttrs, 0, index);
+                Array.Copy(_nsAttributes, newNsAttrs, index);
                 _nsAttributes = newNsAttrs;
             }
 

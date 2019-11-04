@@ -166,8 +166,8 @@ namespace System.Diagnostics
                                 {
                                     int[] adjustedCounterIndexes = new int[index3];
                                     int[] adjustedHelpIndexes = new int[index3];
-                                    Array.Copy(newCategoryEntry.CounterIndexes, 0, adjustedCounterIndexes, 0, index3);
-                                    Array.Copy(newCategoryEntry.HelpIndexes, 0, adjustedHelpIndexes, 0, index3);
+                                    Array.Copy(newCategoryEntry.CounterIndexes, adjustedCounterIndexes, index3);
+                                    Array.Copy(newCategoryEntry.HelpIndexes, adjustedHelpIndexes, index3);
                                     newCategoryEntry.CounterIndexes = adjustedCounterIndexes;
                                     newCategoryEntry.HelpIndexes = adjustedHelpIndexes;
                                 }
@@ -894,7 +894,7 @@ namespace System.Diagnostics
             if (index2 < counters.Length)
             {
                 string[] adjustedCounters = new string[index2];
-                Array.Copy(counters, 0, adjustedCounters, 0, index2);
+                Array.Copy(counters, adjustedCounters, index2);
                 counters = adjustedCounters;
             }
 

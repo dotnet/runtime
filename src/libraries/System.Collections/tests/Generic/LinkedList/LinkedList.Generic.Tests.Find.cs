@@ -76,7 +76,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.Find(tailItems[0])); //"Err_8548ajia Expected Find to return false with an non null item not in the collection size=16"
             Assert.Null(linkedList.Find(default(T))); //"Err_3108qoa Expected Find to return false with an null item not in the collection size=16"
             T[] tempItems = new T[headItems.Length + headItems.Length];
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             Array.Copy(headItems, 0, tempItems, headItems.Length, headItems.Length);
             VerifyFindDuplicates(linkedList, tempItems);
 
@@ -111,7 +111,7 @@ namespace System.Collections.Tests
             Array.Copy(tailItems, 0, tempItems, 1, tailItems.Length);
 
             T[] tempItems2 = new T[headItems.Length + tempItems.Length];
-            Array.Copy(headItems, 0, tempItems2, 0, headItems.Length);
+            Array.Copy(headItems, tempItems2, headItems.Length);
             Array.Copy(tempItems, 0, tempItems2, headItems.Length, tempItems.Length);
 
             VerifyFind(linkedList, tempItems2);
@@ -125,7 +125,7 @@ namespace System.Collections.Tests
             Assert.Null(linkedList.Find(tailItems[0])); //"Err_208089ajdi Expected Find to return false with an non null item not in the collection default(T) at the end"
             tempItems = new T[headItems.Length + 1];
             tempItems[headItems.Length] = default(T);
-            Array.Copy(headItems, 0, tempItems, 0, headItems.Length);
+            Array.Copy(headItems, tempItems, headItems.Length);
             VerifyFind(linkedList, tempItems);
         }
     }

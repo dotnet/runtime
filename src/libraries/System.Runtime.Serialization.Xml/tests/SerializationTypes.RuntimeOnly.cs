@@ -3917,7 +3917,7 @@ public class ImplementDictionary : IDictionary
         public ImplementDictionaryEnumerator(ImplementDictionary sd)
         {
             _items = new DictionaryEntry[sd.Count];
-            Array.Copy(sd._items, 0, _items, 0, sd.Count);
+            Array.Copy(sd._items, _items, sd.Count);
         }
 
         public object Current { get { ValidateIndex(); return _items[_index]; } }

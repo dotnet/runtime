@@ -37,7 +37,7 @@ namespace System.Data
             DataRow[] newRows = _table.NewRowArray(_recordCapacity);
             if (_rows != null)
             {
-                Array.Copy(_rows, 0, newRows, 0, Math.Min(_lastFreeRecord, _rows.Length));
+                Array.Copy(_rows, newRows, Math.Min(_lastFreeRecord, _rows.Length));
             }
             _rows = newRows;
         }

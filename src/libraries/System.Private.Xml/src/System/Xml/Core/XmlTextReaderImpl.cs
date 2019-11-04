@@ -7736,7 +7736,7 @@ namespace System.Xml
             if (nodeIndex >= _nodes.Length - 1)
             {
                 NodeData[] newNodes = new NodeData[_nodes.Length * 2];
-                Array.Copy(_nodes, 0, newNodes, 0, _nodes.Length);
+                Array.Copy(_nodes, newNodes, _nodes.Length);
                 _nodes = newNodes;
             }
             Debug.Assert(nodeIndex < _nodes.Length);
@@ -8190,7 +8190,7 @@ namespace System.Xml
             else if (_parsingStatesStackTop + 1 == _parsingStatesStack.Length)
             {
                 ParsingState[] newParsingStateStack = new ParsingState[_parsingStatesStack.Length * 2];
-                Array.Copy(_parsingStatesStack, 0, newParsingStateStack, 0, _parsingStatesStack.Length);
+                Array.Copy(_parsingStatesStack, newParsingStateStack, _parsingStatesStack.Length);
                 _parsingStatesStack = newParsingStateStack;
             }
             _parsingStatesStackTop++;
