@@ -11,8 +11,8 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
-    <!-- For arm64 we set a 30min timeout temporarily until we split up slow test assemblies. -->
-    <TimeoutInSeconds Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'">1800</TimeoutInSeconds>
+    <!-- For arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
+    <TimeoutInSeconds Condition="'$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
     
