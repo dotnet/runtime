@@ -19,13 +19,6 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientHandlerTestBase
     {
-        public bool CanTestCertificates =>
-            Capability.IsTrustedRootCertificateInstalled() &&
-            (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
-
-        public bool CanTestClientCertificates =>
-            CanTestCertificates && BackendSupportsCustomCertificateHandling;
-
         public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -104,69 +97,69 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> SelectClientCertificateForRemoteServer_MemberData()
+        private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
-            yield return new object[] { 1, HttpStatusCode.OK };
-            yield return new object[] { 2, HttpStatusCode.OK };
-            yield return new object[] { 3, HttpStatusCode.Forbidden };
-        }
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            Assert.NotNull(cert);
+            handler.ClientCertificates.Add(cert);
+            Assert.True(handler.ClientCertificates.Contains(cert));
 
-        [OuterLoop("Uses external server")]
+            return CreateHttpClient(handler);
+        }
+            
         [Theory]
-        [MemberData(nameof(SelectClientCertificateForRemoteServer_MemberData))]
-        public void Manual_SelectClientCertificateForRemoteServer_ServerOnlyReceivesValidClientCert(
-            int certIndex, HttpStatusCode expectedStatusCode)
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(3, false)]
+        public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
-            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
+            if (!BackendSupportsCustomCertificateHandling || IsCurlHandler) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
-                _output.WriteLine($"Skipping {nameof(Manual_SelectClientCertificateForRemoteServer_ServerOnlyReceivesValidClientCert)}()");
+                _output.WriteLine($"Skipping {nameof(Manual_CertificateOnlySentWhenValid_Success)}()");
                 return;
             }
 
-            string useSocketsHttpHandlerString = UseSocketsHttpHandler.ToString();
-            string useHttp2String = UseHttp2.ToString();
-            X509Certificate2 clientCert = null;
+            var options = new LoopbackServer.Options { UseSsl = true };
 
-            // Get client certificate. RemoteInvoke doesn't allow easy marshaling of complex types.
-            // So we have to select the certificate at this point in the test execution.
-            if (certIndex == 1)
+            X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
             {
                 // This is a valid client cert since it has an EKU with a ClientAuthentication OID.
-                clientCert = Configuration.Certificates.GetClientCertificate();
-            }
-            else if (certIndex == 2)
-            {
+                1 => Configuration.Certificates.GetClientCertificate(),
+
                 // This is a valid client cert since it has no EKU thus all usages are permitted.
-                clientCert = Configuration.Certificates.GetNoEKUCertificate();
-            }
-            else if (certIndex == 3)
-            {
+                2 => Configuration.Certificates.GetNoEKUCertificate(),
+
                 // This is an invalid client cert since it has an EKU but is missing ClientAuthentication OID.
-                clientCert = Configuration.Certificates.GetServerCertificate();
-            }
+                3 => Configuration.Certificates.GetServerCertificate(),
+                _ => null
+            };
 
-            Assert.NotNull(clientCert);
-
-            HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
-            handler.ClientCertificates.Add(clientCert);
-            using (HttpClient client = CreateHttpClient(handler, useHttp2String))
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                var request = new HttpRequestMessage();
-                request.RequestUri = new Uri(Configuration.Http.EchoClientCertificateRemoteServer);
+                using X509Certificate2 cert = GetClientCertificate(certIndex);
+                using HttpClient client = CreateHttpClientWithCert(cert);
 
-                // Issue #35239. Force HTTP/1.1.
-                request.Version = new Version(1,1);
-                HttpResponseMessage response = client.SendAsync(request).GetAwaiter().GetResult(); // need a 4-arg overload of RemoteInvoke that returns a Task
-                Assert.Equal(expectedStatusCode, response.StatusCode);
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    client.GetStringAsync(url),
+                    server.AcceptConnectionAsync(async connection =>
+                    {
+                        SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
+                        if (serverExpectsClientCertificate)
+                        {
+                            _output.WriteLine(
+                                "Client cert: {0}",
+                                ((X509Certificate2)sslStream.RemoteCertificate).GetNameInfo(X509NameType.SimpleName, false));
+                            Assert.Equal(cert, sslStream.RemoteCertificate);
+                        }
+                        else
+                        {
+                            Assert.Null(sslStream.RemoteCertificate);
+                        }
 
-                if (expectedStatusCode == HttpStatusCode.OK)
-                {
-                    string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult(); // need a 4-arg overload of RemoteInvoke that returns a Task
-                    byte[] bytes = Convert.FromBase64String(body);
-                    var receivedCert = new X509Certificate2(bytes);
-                    Assert.Equal(clientCert, receivedCert);
-                }
-            }
+                        await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
+                    }));
+            }, options);
         }
 
         [OuterLoop("Uses GC and waits for finalizers")]
@@ -185,15 +178,6 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new LoopbackServer.Options { UseSsl = true };
 
-            HttpClient CreateClient(X509Certificate2 cert)
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                handler.ClientCertificates.Add(cert);
-                Assert.True(handler.ClientCertificates.Contains(cert));
-                return CreateHttpClient(handler);
-            }
-
             async Task MakeAndValidateRequest(HttpClient client, LoopbackServer server, Uri url, X509Certificate2 cert)
             {
                 await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -201,13 +185,7 @@ namespace System.Net.Http.Functional.Tests
                     server.AcceptConnectionAsync(async connection =>
                     {
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
-
-                        // We can't do Assert.Equal(cert, sslStream.RemoteCertificate) because
-                        // on .NET Framework sslStream.RemoteCertificate is always an X509Certificate
-                        // object which is not equal to the X509Certificate2 object we use in the tests.
-                        // So, we'll just compare a few properties to make sure it's the right certificate.
-                        Assert.Equal(cert.Subject, sslStream.RemoteCertificate.Subject);
-                        Assert.Equal(cert.Issuer, sslStream.RemoteCertificate.Issuer);
+                        Assert.Equal(cert, sslStream.RemoteCertificate);
 
                         await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
                     }));
@@ -219,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (reuseClient)
                     {
-                        using (HttpClient client = CreateClient(cert))
+                        using (HttpClient client = CreateHttpClientWithCert(cert))
                         {
                             for (int i = 0; i < numberOfRequests; i++)
                             {
@@ -234,7 +212,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         for (int i = 0; i < numberOfRequests; i++)
                         {
-                            using (HttpClient client = CreateClient(cert))
+                            using (HttpClient client = CreateHttpClientWithCert(cert))
                             {
                                 await MakeAndValidateRequest(client, server, url, cert);
                             }
