@@ -71,6 +71,9 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 GENERATE_GET_CLASS_WITH_CACHE (valuetype, "System", "ValueType")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (handleref, "System.Runtime.InteropServices", "HandleRef")
 
+#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
+#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
+
 // define to print types whenever custom modifiers are appended during inflation
 #undef DEBUG_INFLATE_CMODS
 
@@ -6384,4 +6387,35 @@ retry:
 
 	g_assert (result != NULL);
 	return result;
+}
+
+gboolean
+mono_method_is_constructor (MonoMethod *method)
+{
+	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
+			!(method->flags & CTOR_INVALID_FLAGS) &&
+			!strcmp (".ctor", method->name));
+}
+
+gboolean
+mono_class_has_default_constructor (MonoClass *klass, gboolean public_only)
+{
+	MonoMethod *method;
+	int i;
+
+	mono_class_setup_methods (klass);
+	if (mono_class_has_failure (klass))
+		return FALSE;
+
+	int mcount = mono_class_get_method_count (klass);
+	MonoMethod **klass_methods = m_class_get_methods (klass);
+	for (i = 0; i < mcount; ++i) {
+		method = klass_methods [i];
+		if (mono_method_is_constructor (method) &&
+			mono_method_signature_internal (method) &&
+			mono_method_signature_internal (method)->param_count == 0 &&
+			(!public_only || (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
+			return TRUE;
+	}
+	return FALSE;
 }

@@ -38,9 +38,6 @@
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
 static gboolean verify_all = FALSE;
 
-#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
-#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
-
 /*
  * Set the desired level of checks for the verfier.
  * 
@@ -55,37 +52,6 @@ void
 mono_verifier_enable_verify_all ()
 {
 	verify_all = TRUE;
-}
-
-static gboolean
-mono_method_is_constructor (MonoMethod *method)
-{
-	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
-			!(method->flags & CTOR_INVALID_FLAGS) &&
-			!strcmp (".ctor", method->name));
-}
-
-static gboolean
-mono_class_has_default_constructor (MonoClass *klass)
-{
-	MonoMethod *method;
-	int i;
-
-	mono_class_setup_methods (klass);
-	if (mono_class_has_failure (klass))
-		return FALSE;
-
-	int mcount = mono_class_get_method_count (klass);
-	MonoMethod **klass_methods = m_class_get_methods (klass);
-	for (i = 0; i < mcount; ++i) {
-		method = klass_methods [i];
-		if (mono_method_is_constructor (method) &&
-			mono_method_signature_internal (method) &&
-			mono_method_signature_internal (method)->param_count == 0 &&
-			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
-			return TRUE;
-	}
-	return FALSE;
 }
 
 /*
@@ -152,7 +118,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && m_class_is_valuetype (paramClass))
 			return FALSE;
 
-		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && !mono_class_has_default_constructor (paramClass))
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && !mono_class_has_default_constructor (paramClass, TRUE))
 			return FALSE;
 
 		if (!param_info->constraints)

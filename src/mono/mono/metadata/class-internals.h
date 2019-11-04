@@ -1498,6 +1498,12 @@ mono_class_init_checked (MonoClass *klass, MonoError *error);
 MONO_LLVM_INTERNAL MonoType*
 mono_class_enum_basetype_internal (MonoClass *klass);
 
+gboolean
+mono_method_is_constructor (MonoMethod *method);
+
+gboolean
+mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
+
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"
 
