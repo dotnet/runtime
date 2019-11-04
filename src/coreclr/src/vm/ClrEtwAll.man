@@ -81,6 +81,8 @@
                              message="$(string.RuntimePublisher.CompilationKeywordMessage)" symbol="CLR_COMPILATION_KEYWORD" />
                     <keyword name="CompilationDiagnosticKeyword" mask="0x2000000000"
                              message="$(string.RuntimePublisher.CompilationDiagnosticKeywordMessage)" symbol="CLR_COMPILATIONDIAGNOSTIC_KEYWORD" />
+                    <keyword name="MethodDiagnosticKeyword" mask="0x4000000000"
+                             message="$(string.RuntimePublisher.MethodDiagnosticKeywordMessage)" symbol="CLR_METHODDIAGNOSTIC_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -216,6 +218,7 @@
                             <opcode name="MethodDCEnd" message="$(string.RuntimePublisher.MethodDCEndOpcodeMessage)" symbol="CLR_METHOD_METHODDCEND_OPCODE" value="36"> </opcode>
                             <opcode name="MethodLoadVerbose" message="$(string.RuntimePublisher.MethodLoadVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODLOADVERBOSE_OPCODE" value="37"> </opcode>
                             <opcode name="MethodUnloadVerbose" message="$(string.RuntimePublisher.MethodUnloadVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODUNLOADVERBOSE_OPCODE" value="38"> </opcode>
+                            <opcode name="MethodDetails" message="$(string.RuntimePublisher.MethodDetailsOpcodeMessage)" symbol="CLR_METHODDETAILS_OPCODE" value="43"> </opcode>
                             <!-- The following 2 opcodes are now defunct -->
                             <opcode name="MethodDCStartVerbose" message="$(string.RuntimePublisher.MethodDCStartVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCSTARTVERBOSE_OPCODE" value="39"> </opcode>
                             <opcode name="MethodDCEndVerbose" message="$(string.RuntimePublisher.MethodDCEndVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCENDVERBOSE_OPCODE" value="40"> </opcode>
@@ -1674,6 +1677,24 @@
                         </UserData>
                     </template>
 
+                    <template tid="MethodDetails">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="TypeParameterCount" inType="win:UInt32" />
+                        <data name="LoaderModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeParameters" count="TypeParameterCount"  inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <MethodDetails xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <TypeID> %2 </TypeID>
+                                <MethodToken> %3 </MethodToken>
+                                <TypeParameterCount> %4 </TypeParameterCount>
+                                <LoaderModuleID> %5 </LoaderModuleID>
+                            </MethodDetails>
+                        </UserData>
+                    </template>
+
                     <template tid="MethodLoadUnload">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -2974,6 +2995,12 @@
                            opcode="Running"
                            symbol="ThreadRunning"
                            message="$(string.RuntimePublisher.ThreadRunningEventMessage)"/>
+                    <event value="72" version="0" level="win:Informational"  template="MethodDetails"
+                           keywords="MethodDiagnosticKeyword"
+                           task="CLRMethod"
+                           opcode="MethodDetails"
+                           symbol="MethodDetails"
+                           message="$(string.RuntimePublisher.MethodDetailsEventMessage)"/>
 
                     <!-- CLR Exception events -->
                     <event value="80" version="0" level="win:Informational"
@@ -6609,6 +6636,7 @@
                 <string id="RuntimePublisher.ThreadPoolIOPackEventMessage" value="WorkID=%1;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.ThreadCreatingEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.ThreadRunningEventMessage" value="ID=%1;%nClrInstanceID=%s" />
+                <string id="RuntimePublisher.MethodDetailsEventMessage" value="MethodID=%1;%TypeID=%2;MethodToken=%3;TypeParameterCount=%4;LoaderModuleID=%5" />
                 <string id="RuntimePublisher.ExceptionExceptionThrownEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ExceptionExceptionThrown_V1EventMessage" value="ExceptionType=%1;%nExceptionMessage=%2;%nExceptionEIP=%3;%nExceptionHRESULT=%4;%nExceptionFlags=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.ExceptionExceptionHandlingEventMessage" value="EntryEIP=%1;%nMethodID=%2;%nMethodName=%3;%nClrInstanceID=%4" />
@@ -7154,7 +7182,7 @@
                 <string id="RuntimePublisher.EventSourceKeywordMessage" value="EventSource" />
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
-
+                <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7219,6 +7247,7 @@
                 <string id="RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage" value="GlobalHeapHistory" />
                 <string id="RuntimePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="RuntimePublisher.BulkTypeOpcodeMessage" value="BulkType" />
+                <string id="RuntimePublisher.MethodDetailsOpcodeMessage" value="MethodDetails" />
                 <string id="RuntimePublisher.MethodLoadOpcodeMessage" value="Load" />
                 <string id="RuntimePublisher.MethodUnloadOpcodeMessage" value="Unload" />
                 <string id="RuntimePublisher.MethodLoadVerboseOpcodeMessage" value="LoadVerbose" />

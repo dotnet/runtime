@@ -245,6 +245,8 @@ noclrinstanceid:CLRMethod:::MethodDCEndVerboseV2
 noclrinstanceid:CLRMethod:::DCStartCompleteV2
 noclrinstanceid:CLRMethod:::DCEndCompleteV2
 nomac:CLRMethod:::MethodILToNativeMap
+nostack:CLRMethod:::MethodDetails
+noclrinstanceid:CLRMethod:::MethodDetails
 
 ###############
 # Loader events
