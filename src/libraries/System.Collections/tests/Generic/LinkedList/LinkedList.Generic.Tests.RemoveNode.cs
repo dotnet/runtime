@@ -150,7 +150,7 @@ namespace System.Collections.Tests
             {
                 linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
                 T[] expectedItems = new T[i];
-                Array.Copy(headItems, 0, expectedItems, 0, i);
+                Array.Copy(headItems, expectedItems, i);
                 InitialItems_Tests(linkedList, expectedItems);
             }
 

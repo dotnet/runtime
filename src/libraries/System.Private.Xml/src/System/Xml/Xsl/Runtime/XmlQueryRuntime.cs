@@ -960,7 +960,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // Resize array
                 ArrayList[] indexesNew = new ArrayList[indexId + 4];
-                Array.Copy(_indexes, 0, indexesNew, 0, _indexes.Length);
+                Array.Copy(_indexes, indexesNew, _indexes.Length);
                 _indexes = indexesNew;
             }
 

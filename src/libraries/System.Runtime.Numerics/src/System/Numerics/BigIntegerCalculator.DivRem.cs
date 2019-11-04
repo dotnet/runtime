@@ -319,7 +319,7 @@ namespace System.Numerics
             Debug.Assert(value.Length != 0);
 
             uint[] bits = new uint[value.Length];
-            Array.Copy(value, 0, bits, 0, bits.Length);
+            Array.Copy(value, bits, bits.Length);
             return bits;
         }
 

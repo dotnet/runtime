@@ -40,7 +40,7 @@ namespace Tests.Collections
         public static T[] RemoveAt<T>(this T[] array, int removeIndex)
         {
             var ret = new T[array.Length - 1];
-            Array.Copy(array, 0, ret, 0, removeIndex);
+            Array.Copy(array, ret, removeIndex);
             Array.Copy(
                 array,
                 removeIndex + 1,

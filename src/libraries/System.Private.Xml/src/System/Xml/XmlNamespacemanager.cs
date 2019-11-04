@@ -153,7 +153,7 @@ namespace System.Xml
             if (_lastDecl == _nsdecls.Length - 1)
             {
                 NamespaceDeclaration[] newNsdecls = new NamespaceDeclaration[_nsdecls.Length * 2];
-                Array.Copy(_nsdecls, 0, newNsdecls, 0, _nsdecls.Length);
+                Array.Copy(_nsdecls, newNsdecls, _nsdecls.Length);
                 _nsdecls = newNsdecls;
             }
 

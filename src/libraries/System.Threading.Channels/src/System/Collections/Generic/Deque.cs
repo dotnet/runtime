@@ -108,7 +108,7 @@ namespace System.Collections.Generic
 
             if (_head == 0)
             {
-                Array.Copy(_array, 0, newArray, 0, _size);
+                Array.Copy(_array, newArray, _size);
             }
             else
             {

@@ -108,7 +108,7 @@ namespace System.ComponentModel
             if (actualCount < newArray.Length)
             {
                 attributes = new Attribute[actualCount];
-                Array.Copy(newArray, 0, attributes, 0, actualCount);
+                Array.Copy(newArray, attributes, actualCount);
             }
             else
             {

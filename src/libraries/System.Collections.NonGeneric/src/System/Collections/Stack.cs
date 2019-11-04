@@ -91,7 +91,7 @@ namespace System.Collections
         {
             Stack s = new Stack(_size);
             s._size = _size;
-            Array.Copy(_array, 0, s._array, 0, _size);
+            Array.Copy(_array, s._array, _size);
             s._version = _version;
             return s;
         }
@@ -183,7 +183,7 @@ namespace System.Collections
             if (_size == _array.Length)
             {
                 object[] newArray = new object[2 * _array.Length];
-                Array.Copy(_array, 0, newArray, 0, _size);
+                Array.Copy(_array, newArray, _size);
                 _array = newArray;
             }
             _array[_size++] = obj;

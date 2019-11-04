@@ -142,7 +142,7 @@ namespace System.Data
             {
                 int newCapacity = Math.Min(_count * 2, column.Table.Columns.Count);
                 var biggerList = new ColumnError[newCapacity];
-                Array.Copy(_errorList, 0, biggerList, 0, _count);
+                Array.Copy(_errorList, biggerList, _count);
                 _errorList = biggerList;
             }
             return _count;

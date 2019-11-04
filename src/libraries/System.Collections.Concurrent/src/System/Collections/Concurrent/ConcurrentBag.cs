@@ -796,7 +796,7 @@ namespace System.Collections.Concurrent
                             int headIdx = head & _mask;
                             if (headIdx == 0)
                             {
-                                Array.Copy(_array, 0, newArray, 0, _array.Length);
+                                Array.Copy(_array, newArray, _array.Length);
                             }
                             else
                             {

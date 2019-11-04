@@ -7288,7 +7288,7 @@ namespace System.Tests
             for (int i = 0; i < input.Length; i++)
             {
                 var remainder = new T[input.Length - 1];
-                Array.Copy(input, 0, remainder, 0, i);
+                Array.Copy(input, remainder, i);
                 Array.Copy(input, i + 1, remainder, i, input.Length - i - 1);
                 foreach (T[] output in Permute(remainder))
                 {

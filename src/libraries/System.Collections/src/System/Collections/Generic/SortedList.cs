@@ -243,8 +243,8 @@ namespace System.Collections.Generic
                         TValue[] newValues = new TValue[value];
                         if (_size > 0)
                         {
-                            Array.Copy(keys, 0, newKeys, 0, _size);
-                            Array.Copy(values, 0, newValues, 0, _size);
+                            Array.Copy(keys, newKeys, _size);
+                            Array.Copy(values, newValues, _size);
                         }
                         keys = newKeys;
                         values = newValues;

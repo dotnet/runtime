@@ -38,7 +38,7 @@ namespace System.Xml
                 object[] newstack = new object[_size + _growthRate];
                 if (_used > 0)
                 {
-                    System.Array.Copy(_stack, 0, newstack, 0, _used);
+                    System.Array.Copy(_stack, newstack, _used);
                 }
                 _stack = newstack;
                 _size += _growthRate;

@@ -292,7 +292,7 @@ namespace System.Diagnostics
                 break;
             }
             int[] ids = new int[size / 4];
-            Array.Copy(processIds, 0, ids, 0, ids.Length);
+            Array.Copy(processIds, ids, ids.Length);
             return ids;
         }
 

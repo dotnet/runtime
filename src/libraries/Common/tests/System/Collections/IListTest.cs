@@ -477,7 +477,7 @@ namespace Tests.Collections
                     items = new object[sizeWithNull];
                     list.Add(null);
                     items[sizeWithNull/2] = null;
-                    Array.Copy(tempItems, 0, items, 0, sizeWithNull/2);
+                    Array.Copy(tempItems, items, sizeWithNull/2);
                     Array.Copy(
                         tempItems,
                         sizeWithNull/2,
@@ -567,7 +567,7 @@ namespace Tests.Collections
                     list.AddRange(tempItems);
                     list.AddRange(tempItems);
 
-                    Array.Copy(tempItems, 0, items, 0, 16);
+                    Array.Copy(tempItems, items, 16);
                     Array.Copy(tempItems, 0, items, 16, 16);
                 }
                 CollectionAssert.Equal(items, list);
@@ -1311,7 +1311,7 @@ namespace Tests.Collections
             {
                 object newObject = GenerateItem();
                 list.Insert(i, newObject);
-                Array.Copy(items, 0, tempItems, 0, i);
+                Array.Copy(items, tempItems, i);
                 tempItems[i] = newObject;
                 Array.Copy(items, i, tempItems, i + 1, items.Length - i);
                 CollectionAssert.Equal(tempItems, list);
@@ -1533,7 +1533,7 @@ namespace Tests.Collections
             IList list = GetList(null);
             object[] tempItems = GenerateItems(16);
             list.AddRange(tempItems);
-            Array.Copy(tempItems, 0, items, 0, 11);
+            Array.Copy(tempItems, items, 11);
             Array.Copy(tempItems, 12, items, 11, 4);
             list.Insert(8, null);
             list.Remove(tempItems[11]);

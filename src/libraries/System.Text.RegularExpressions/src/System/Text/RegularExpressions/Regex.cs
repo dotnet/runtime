@@ -315,7 +315,7 @@ namespace System.Text.RegularExpressions
             else
             {
                 result = new string[capslist.Length];
-                Array.Copy(capslist, 0, result, 0, capslist.Length);
+                Array.Copy(capslist, result, capslist.Length);
             }
 
             return result;

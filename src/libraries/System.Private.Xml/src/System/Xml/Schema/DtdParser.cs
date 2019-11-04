@@ -1449,7 +1449,7 @@ namespace System.Xml
                         else if (_condSectionEntityIds.Length == _condSectionDepth)
                         {
                             int[] tmp = new int[_condSectionEntityIds.Length * 2];
-                            Array.Copy(_condSectionEntityIds, 0, tmp, 0, _condSectionEntityIds.Length);
+                            Array.Copy(_condSectionEntityIds, tmp, _condSectionEntityIds.Length);
                             _condSectionEntityIds = tmp;
                         }
                         _condSectionEntityIds[_condSectionDepth] = csEntityId;

@@ -214,8 +214,8 @@ namespace System.Collections
                         object[] newValues = new object[value];
                         if (_size > 0)
                         {
-                            Array.Copy(keys, 0, newKeys, 0, _size);
-                            Array.Copy(values, 0, newValues, 0, _size);
+                            Array.Copy(keys, newKeys, _size);
+                            Array.Copy(values, newValues, _size);
                         }
                         keys = newKeys;
                         values = newValues;
@@ -301,8 +301,8 @@ namespace System.Collections
         public virtual object Clone()
         {
             SortedList sl = new SortedList(_size);
-            Array.Copy(keys, 0, sl.keys, 0, _size);
-            Array.Copy(values, 0, sl.values, 0, _size);
+            Array.Copy(keys, sl.keys, _size);
+            Array.Copy(values, sl.values, _size);
             sl._size = _size;
             sl.version = version;
             sl.comparer = comparer;

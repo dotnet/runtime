@@ -192,7 +192,7 @@ namespace System.Text.RegularExpressions
 
                         if (i == 0)
                         {
-                            Array.Copy(NegativeASCII, 0, newarray, 0, 128);
+                            Array.Copy(NegativeASCII, newarray, 128);
                             NegativeASCII = newarray;
                         }
 

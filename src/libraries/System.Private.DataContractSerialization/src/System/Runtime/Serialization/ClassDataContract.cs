@@ -446,7 +446,7 @@ namespace System.Runtime.Serialization
             int baseChildElementNamespaceCount = (baseChildElementNamespaces != null) ? baseChildElementNamespaces.Length : 0;
             XmlDictionaryString[] childElementNamespaces = new XmlDictionaryString[Members.Count + baseChildElementNamespaceCount];
             if (baseChildElementNamespaceCount > 0)
-                Array.Copy(baseChildElementNamespaces, 0, childElementNamespaces, 0, baseChildElementNamespaces.Length);
+                Array.Copy(baseChildElementNamespaces, childElementNamespaces, baseChildElementNamespaces.Length);
 
             XmlDictionary dictionary = new XmlDictionary();
             for (int i = 0; i < this.Members.Count; i++)
@@ -802,12 +802,12 @@ namespace System.Runtime.Serialization
                     {
                         baseMemberCount = BaseContract.MemberNames.Length;
                         MemberNames = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNames, 0, MemberNames, 0, baseMemberCount);
+                        Array.Copy(BaseContract.MemberNames, MemberNames, baseMemberCount);
                         MemberNamespaces = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNamespaces, 0, MemberNamespaces, 0, baseMemberCount);
+                        Array.Copy(BaseContract.MemberNamespaces, MemberNamespaces, baseMemberCount);
                         baseContractCount = BaseContract.ContractNamespaces.Length;
                         ContractNamespaces = new XmlDictionaryString[1 + baseContractCount];
-                        Array.Copy(BaseContract.ContractNamespaces, 0, ContractNamespaces, 0, baseContractCount);
+                        Array.Copy(BaseContract.ContractNamespaces, ContractNamespaces, baseContractCount);
                     }
                     ContractNamespaces[baseContractCount] = Namespace;
                     for (int i = 0; i < Members.Count; i++)

@@ -85,7 +85,7 @@ namespace System.Collections.Tests
                 linkedList.RemoveLast();
                 int length = arraySize - i - 1;
                 T[] expectedItems = new T[length];
-                Array.Copy(headItems, 0, expectedItems, 0, length);
+                Array.Copy(headItems, expectedItems, length);
                 InitialItems_Tests(linkedList, expectedItems);
             }
 

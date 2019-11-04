@@ -2180,7 +2180,7 @@ namespace System.Xml
             if (attIndex >= _attributePSVINodes.Length - 1)
             { //reached capacity of PSVIInfo array, Need to increase capacity to twice the initial
                 AttributePSVIInfo[] newPSVINodes = new AttributePSVIInfo[_attributePSVINodes.Length * 2];
-                Array.Copy(_attributePSVINodes, 0, newPSVINodes, 0, _attributePSVINodes.Length);
+                Array.Copy(_attributePSVINodes, newPSVINodes, _attributePSVINodes.Length);
                 _attributePSVINodes = newPSVINodes;
             }
             attInfo = _attributePSVINodes[attIndex];

@@ -578,7 +578,7 @@ namespace Microsoft.SqlServer.Server
                     {    // dynamic expansion
                         char[] data = new char[Math.Max(ndataIndex + length, 2 * cchars)];
                         Debug.Assert(CharsLength < int.MaxValue);
-                        Array.Copy((char[])_object, 0, data, 0, (int)CharsLength);
+                        Array.Copy((char[])_object, data, (int)CharsLength);
                         _object = data;
                     }
                     CharsLength = ndataIndex + length;

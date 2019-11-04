@@ -95,7 +95,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 newRules = new T[newLength];
-                Array.Copy(rules, 0, newRules, 0, InsertPosition);
+                Array.Copy(rules, newRules, InsertPosition);
             }
 
             newRules[InsertPosition] = item;

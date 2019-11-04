@@ -3016,7 +3016,7 @@ namespace System.Reflection.Metadata.Tests
 
             // copy unobfuscated to obfuscated, leaving room for 4 bytes of data right before the module table.
             byte[] obfuscated = new byte[unobfuscated.Length + sizeOfExtraData];
-            Array.Copy(unobfuscated, 0, obfuscated, 0, offsetToModuleTable);
+            Array.Copy(unobfuscated, obfuscated, offsetToModuleTable);
             Array.Copy(unobfuscated, offsetToModuleTable, obfuscated, offsetToModuleTable + sizeOfExtraData, unobfuscated.Length - offsetToModuleTable);
 
             fixed (byte* ptr = obfuscated)

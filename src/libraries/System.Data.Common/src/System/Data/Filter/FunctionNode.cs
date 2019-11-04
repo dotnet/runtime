@@ -68,7 +68,7 @@ namespace System.Data
             else if (_argumentCount == _arguments.Length)
             {
                 ExpressionNode[] bigger = new ExpressionNode[_argumentCount * 2];
-                Array.Copy(_arguments, 0, bigger, 0, _argumentCount);
+                Array.Copy(_arguments, bigger, _argumentCount);
                 _arguments = bigger;
             }
             _arguments[_argumentCount++] = argument;

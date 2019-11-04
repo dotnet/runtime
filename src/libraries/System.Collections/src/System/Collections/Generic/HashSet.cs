@@ -1185,7 +1185,7 @@ namespace System.Collections.Generic
             Slot[] newSlots = new Slot[newSize];
             if (_slots != null)
             {
-                Array.Copy(_slots, 0, newSlots, 0, _lastIndex);
+                Array.Copy(_slots, newSlots, _lastIndex);
             }
 
             int[] newBuckets = new int[newSize];

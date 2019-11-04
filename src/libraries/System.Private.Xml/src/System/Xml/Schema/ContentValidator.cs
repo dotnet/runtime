@@ -1995,7 +1995,7 @@ namespace System.Xml.Schema
                         {
                             newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
                         }
-                        Array.Copy(rposInfo.rangeCounters, 0, newRPosInfo.rangeCounters, 0, rposInfo.rangeCounters.Length);
+                        Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                         decimal count = ++newRPosInfo.rangeCounters[lrNode.Pos];
 
                         if (count == lrNode.Max)
@@ -2022,7 +2022,7 @@ namespace System.Xml.Schema
                             {
                                 newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
                             }
-                            Array.Copy(rposInfo.rangeCounters, 0, newRPosInfo.rangeCounters, 0, rposInfo.rangeCounters.Length);
+                            Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                             newRPosInfo.curpos = _followpos[cPos];
                             newRPosInfo.rangeCounters[lrNode.Pos] = 0;
                             runningPositions[j] = newRPosInfo;

@@ -874,7 +874,7 @@ namespace SerializationTestTypes
                             {
                                 int baseTypesCount = baseContract.MemberNames.Length;
                                 memberNames = new string[baseTypesCount + 1][];
-                                Array.Copy(baseContract.MemberNames, 0, memberNames, 0, baseTypesCount);
+                                Array.Copy(baseContract.MemberNames, memberNames, baseTypesCount);
                             }
                             string[] declaredMemberNames = new string[Members.Count];
                             for (int i = 0; i < Members.Count; i++)

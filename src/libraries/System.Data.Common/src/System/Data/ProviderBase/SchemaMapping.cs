@@ -518,7 +518,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(rgcol != null, "invalid call to ResizeArray");
             Debug.Assert(len <= rgcol.Length, "invalid len passed to ResizeArray");
             var tmp = new DataColumn[len];
-            Array.Copy(rgcol, 0, tmp, 0, len);
+            Array.Copy(rgcol, tmp, len);
             return tmp;
         }
 

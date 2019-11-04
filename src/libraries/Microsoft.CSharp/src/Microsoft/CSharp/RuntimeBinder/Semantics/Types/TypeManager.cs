@@ -211,7 +211,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (src != dst)
                     {
                         CType[] dsts = new CType[srcs.Length];
-                        Array.Copy(srcs, 0, dsts, 0, i);
+                        Array.Copy(srcs, dsts, i);
                         dsts[i] = dst;
                         while (++i < srcs.Length)
                         {

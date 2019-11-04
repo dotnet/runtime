@@ -287,7 +287,7 @@ namespace System.Web.Util
             if (decodedBytesCount < decodedBytes.Length)
             {
                 byte[] newDecodedBytes = new byte[decodedBytesCount];
-                Array.Copy(decodedBytes, 0, newDecodedBytes, 0, decodedBytesCount);
+                Array.Copy(decodedBytes, newDecodedBytes, decodedBytesCount);
                 decodedBytes = newDecodedBytes;
             }
 

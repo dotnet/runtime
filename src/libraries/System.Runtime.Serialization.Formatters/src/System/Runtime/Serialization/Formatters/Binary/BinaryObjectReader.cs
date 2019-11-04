@@ -505,7 +505,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                             pr._rectangularMap[i] = 0;
                         }
                     }
-                    Array.Copy(pr._rectangularMap, 0, pr._indexMap, 0, pr._rank);
+                    Array.Copy(pr._rectangularMap, pr._indexMap, pr._rank);
                     break;
                 }
             }
@@ -552,7 +552,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     // Object not instantiated
                     // Array fixup manager
                     int[] fixupIndex = new int[objectPr._rank];
-                    Array.Copy(objectPr._indexMap, 0, fixupIndex, 0, objectPr._rank);
+                    Array.Copy(objectPr._indexMap, fixupIndex, objectPr._rank);
 
                     _objectManager.RecordArrayElementFixup(objectPr._objectId, fixupIndex, pr._idRef);
                 }

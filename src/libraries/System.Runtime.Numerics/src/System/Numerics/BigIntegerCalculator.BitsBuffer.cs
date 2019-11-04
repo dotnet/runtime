@@ -41,7 +41,7 @@ namespace System.Numerics
                 _bits = new uint[size];
                 _length = ActualLength(value);
 
-                Array.Copy(value, 0, _bits, 0, _length);
+                Array.Copy(value, _bits, _length);
             }
 
             public unsafe void MultiplySelf(ref BitsBuffer value,

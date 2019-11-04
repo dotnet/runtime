@@ -477,7 +477,7 @@ namespace System.Collections.Tests
             Assert.Equal(expectedValue, node.Value); //"Err_823902jaied Node.Value"
 
             T[] expected = new T[linkedListValues.Length + 1];
-            Array.Copy(linkedListValues, 0, expected, 0, linkedListValues.Length);
+            Array.Copy(linkedListValues, expected, linkedListValues.Length);
             expected[linkedListValues.Length] = expectedValue;
 
             InitialItems_Tests(linkedList, expected);

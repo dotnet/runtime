@@ -87,7 +87,7 @@ namespace System.ComponentModel
                     {
                         Attribute[] baseArray = ReflectGetAttributes(baseType);
                         Attribute[] temp = new Attribute[attrArray.Length + baseArray.Length];
-                        Array.Copy(attrArray, 0, temp, 0, attrArray.Length);
+                        Array.Copy(attrArray, temp, attrArray.Length);
                         Array.Copy(baseArray, 0, temp, attrArray.Length, baseArray.Length);
                         attrArray = temp;
                         baseType = baseType.BaseType;
@@ -110,7 +110,7 @@ namespace System.ComponentModel
                             if (ifaceAttrs.Count > 0)
                             {
                                 Attribute[] temp = new Attribute[attrArray.Length + ifaceAttrs.Count];
-                                Array.Copy(attrArray, 0, temp, 0, attrArray.Length);
+                                Array.Copy(attrArray, temp, attrArray.Length);
                                 ifaceAttrs.CopyTo(temp, attrArray.Length);
                                 attrArray = temp;
                             }

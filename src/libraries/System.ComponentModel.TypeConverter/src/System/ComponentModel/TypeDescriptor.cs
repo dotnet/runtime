@@ -2770,7 +2770,7 @@ namespace System.ComponentModel
                     if (actualCount < newArray.Length)
                     {
                         finalAttr = new Attribute[actualCount];
-                        Array.Copy(newArray, 0, finalAttr, 0, actualCount);
+                        Array.Copy(newArray, finalAttr, actualCount);
                     }
                     else
                     {

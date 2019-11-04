@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
                         T[] newItems = new T[value];
                         if (_size > 0)
                         {
-                            Array.Copy(_items, 0, newItems, 0, _size);
+                            Array.Copy(_items, newItems, _size);
                         }
                         _items = newItems;
                     }
@@ -432,7 +432,7 @@ namespace System.Runtime.CompilerServices
         public T[] ToArray()
         {
             T[] array = new T[_size];
-            Array.Copy(_items, 0, array, 0, _size);
+            Array.Copy(_items, array, _size);
             return array;
         }
 

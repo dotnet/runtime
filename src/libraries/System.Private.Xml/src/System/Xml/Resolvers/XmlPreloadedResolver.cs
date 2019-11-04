@@ -351,7 +351,7 @@ namespace System.Xml.Resolvers
                 }
                 int size = checked((int)ms.Position);
                 byte[] bytes = new byte[size];
-                Array.Copy(ms.ToArray(), 0, bytes, 0, size);
+                Array.Copy(ms.ToArray(), bytes, size);
                 Add(uri, new ByteArrayChunk(bytes));
             }
         }

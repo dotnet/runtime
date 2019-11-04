@@ -444,7 +444,7 @@ namespace System.Numerics
                     {
                         _sign = -1;
                         _bits = new uint[len];
-                        Array.Copy(val, 0, _bits, 0, len);
+                        Array.Copy(val, _bits, len);
                     }
                     else
                     {
@@ -500,7 +500,7 @@ namespace System.Numerics
             {
                 _sign = negative ? -1 : +1;
                 _bits = new uint[len];
-                Array.Copy(value, 0, _bits, 0, len);
+                Array.Copy(value, _bits, len);
             }
             AssertValid();
         }
@@ -558,7 +558,7 @@ namespace System.Numerics
                 {
                     _sign = +1;
                     _bits = new uint[dwordCount];
-                    Array.Copy(value, 0, _bits, 0, dwordCount);
+                    Array.Copy(value, _bits, dwordCount);
                 }
                 // No trimming is possible.  Assign value directly to _bits.
                 else
@@ -600,7 +600,7 @@ namespace System.Numerics
             {
                 _sign = -1;
                 _bits = new uint[len];
-                Array.Copy(value, 0, _bits, 0, len);
+                Array.Copy(value, _bits, len);
             }
             // No trimming is possible.  Assign value directly to _bits.
             else
@@ -1449,7 +1449,7 @@ namespace System.Numerics
             bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             uint[] trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(dwords, 0, trimmed, 0, msb + 1);
+            Array.Copy(dwords, trimmed, msb + 1);
 
             if (needExtraByte) trimmed[trimmed.Length - 1] = highDWord;
             return trimmed;

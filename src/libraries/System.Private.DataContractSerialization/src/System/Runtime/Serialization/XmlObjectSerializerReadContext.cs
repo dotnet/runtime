@@ -494,7 +494,7 @@ namespace System.Runtime.Serialization
                 }
                 int newSize = (index < int.MaxValue / 2) ? index * 2 : int.MaxValue;
                 T[] newArray = new T[newSize];
-                Array.Copy(array, 0, newArray, 0, array.Length);
+                Array.Copy(array, newArray, array.Length);
                 array = newArray;
             }
             return array;
@@ -509,7 +509,7 @@ namespace System.Runtime.Serialization
             if (size != array.Length)
             {
                 T[] newArray = new T[size];
-                Array.Copy(array, 0, newArray, 0, size);
+                Array.Copy(array, newArray, size);
                 array = newArray;
             }
             return array;

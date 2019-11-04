@@ -533,7 +533,7 @@ namespace System.IO.Ports.Tests
             char[] expectedChars = new char[com1.Encoding.GetCharCount(bytesToWrite, 0, bytesToWrite.Length) * 2];
             char[] encodedChars = com1.Encoding.GetChars(bytesToWrite, 0, bytesToWrite.Length);
 
-            Array.Copy(encodedChars, 0, expectedChars, 0, bytesToWrite.Length);
+            Array.Copy(encodedChars, expectedChars, bytesToWrite.Length);
             Array.Copy(encodedChars, 0, expectedChars, encodedChars.Length, encodedChars.Length);
 
             BufferData(com1, com2, bytesToWrite);

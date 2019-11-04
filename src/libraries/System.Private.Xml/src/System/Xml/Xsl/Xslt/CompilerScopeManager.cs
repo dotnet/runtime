@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.Xslt
             if (++_lastRecord == _records.Length)
             {
                 ScopeRecord[] newRecords = new ScopeRecord[_lastRecord * 2];
-                Array.Copy(_records, 0, newRecords, 0, _lastRecord);
+                Array.Copy(_records, newRecords, _lastRecord);
                 _records = newRecords;
             }
             // reset scope count:

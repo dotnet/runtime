@@ -112,7 +112,7 @@ namespace System.Collections.Generic
                 // Avoid a bit of overhead (method call, some branches, extra codegen)
                 // which would be incurred by using Array.Resize
                 result = new T[_count];
-                Array.Copy(_array, 0, result, 0, _count);
+                Array.Copy(_array, result, _count);
             }
 
 #if DEBUG
@@ -156,7 +156,7 @@ namespace System.Collections.Generic
             T[] next = new T[nextCapacity];
             if (_count > 0)
             {
-                Array.Copy(_array!, 0, next, 0, _count);
+                Array.Copy(_array!, next, _count);
             }
             _array = next;
         }

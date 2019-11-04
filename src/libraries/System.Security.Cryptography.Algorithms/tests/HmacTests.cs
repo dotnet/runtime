@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             if (truncateSize != -1)
             {
                 byte[] tmp = new byte[truncateSize];
-                Array.Copy(computedDigest, 0, tmp, 0, truncateSize);
+                Array.Copy(computedDigest, tmp, truncateSize);
                 computedDigest = tmp;
             }
 

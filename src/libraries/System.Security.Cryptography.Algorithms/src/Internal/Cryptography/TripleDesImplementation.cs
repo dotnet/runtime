@@ -69,7 +69,7 @@ namespace Internal.Cryptography
                 // Some platforms do not support Two-Key Triple DES, so manually support it here.
                 // Two-Key Triple DES contains two 8-byte keys {K1}{K2} with {K1} appended to make {K1}{K2}{K1}.
                 byte[] newkey = new byte[24];
-                Array.Copy(rgbKey, 0, newkey, 0, 16);
+                Array.Copy(rgbKey, newkey, 16);
                 Array.Copy(rgbKey, 0, newkey, 16, 8);
                 rgbKey = newkey;
             }

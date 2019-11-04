@@ -83,7 +83,7 @@ namespace System.Xml.Xsl.Runtime
             if (_pos >= _keys.Length)
             {
                 XmlSortKey[] keysNew = new XmlSortKey[_pos * 2];
-                Array.Copy(_keys, 0, keysNew, 0, _keys.Length);
+                Array.Copy(_keys, keysNew, _keys.Length);
                 _keys = keysNew;
             }
             _keys[_pos] = null;

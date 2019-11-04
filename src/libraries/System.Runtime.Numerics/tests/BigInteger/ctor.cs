@@ -1060,7 +1060,7 @@ namespace System.Numerics.Tests
                 tempBigInteger = bigInteger - (new BigInteger(tempByteArray));
 
                 tempByteArray = new byte[8];
-                Array.Copy(value, 0, tempByteArray, 0, 8);
+                Array.Copy(value, tempByteArray, 8);
 
                 if (!(((tempByteArray[7] & 0x80) == 0) ^ isNeg))
                 {
@@ -1092,7 +1092,7 @@ namespace System.Numerics.Tests
                 tempBigInteger = bigInteger - (new BigInteger(tempByteArray));
 
                 tempByteArray = new byte[8];
-                Array.Copy(value, 0, tempByteArray, 0, 8);
+                Array.Copy(value, tempByteArray, 8);
 
                 if ((tempByteArray[7] & 0x80) != 0)
                 {
