@@ -201,25 +201,9 @@ namespace System.Data.Tests
             Assert.Equal(count - 1, tbcol.Count);
             DataTable tbl = null;
             /* removing a null reference. must generate an Exception */
-            try
-            {
-                tbcol.Remove(tbl);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => tbcol.Remove(tbl));
             /* removing a table that is not there in collection */
-            try
-            {
-                tbcol.Remove(new DataTable("newTable"));
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => tbcol.Remove(new DataTable("newTable")));
         }
         [Fact]
         public void Clear()
@@ -287,16 +271,9 @@ namespace System.Data.Tests
             tbcol2.Add(_tables[1]);
             tbcol3 = tbcol1;
 
-            Assert.True(tbcol1.Equals(tbcol1));
-            Assert.True(tbcol1.Equals(tbcol3));
-            Assert.True(tbcol3.Equals(tbcol1));
+            Assert.Same(tbcol1, tbcol3);
 
-            Assert.False(tbcol1.Equals(tbcol2));
-            Assert.False(tbcol2.Equals(tbcol1));
-
-            Assert.True(object.Equals(tbcol1, tbcol3));
-            Assert.True(object.Equals(tbcol1, tbcol1));
-            Assert.False(object.Equals(tbcol1, tbcol2));
+            Assert.NotSame(tbcol1, tbcol2);
         }
         [Fact]
         public void IndexOf()
@@ -324,22 +301,9 @@ namespace System.Data.Tests
             tbcol.Add(_tables[0]);
             tbcol.Add("table1");
 
-            try
-            {
-                tbcol.RemoveAt(-1);
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-            }
-            try
-            {
-                tbcol.RemoveAt(101);
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-            }
+            Assert.Throws<IndexOutOfRangeException>(() => tbcol.RemoveAt(-1));
+
+            Assert.Throws<IndexOutOfRangeException>(() => tbcol.RemoveAt(101));
             tbcol.RemoveAt(1);
             Assert.Equal(1, tbcol.Count);
             tbcol.RemoveAt(0);

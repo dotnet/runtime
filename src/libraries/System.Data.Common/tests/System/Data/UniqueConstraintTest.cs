@@ -108,15 +108,15 @@ namespace System.Data.Tests
         [Fact]
         public void Unique()
         {
-            UniqueConstraint U = new UniqueConstraint(_table.Columns[0]);
+            UniqueConstraint u = new UniqueConstraint(_table.Columns[0]);
             Assert.False(_table.Columns[0].Unique);
 
-            U = new UniqueConstraint(new DataColumn[] { _table.Columns[0], _table.Columns[1] });
+            u = new UniqueConstraint(new DataColumn[] { _table.Columns[0], _table.Columns[1] });
             Assert.False(_table.Columns[0].Unique);
             Assert.False(_table.Columns[1].Unique);
             Assert.False(_table.Columns[2].Unique);
 
-            _table.Constraints.Add(U);
+            _table.Constraints.Add(u);
             Assert.False(_table.Columns[0].Unique);
             Assert.False(_table.Columns[1].Unique);
             Assert.False(_table.Columns[2].Unique);

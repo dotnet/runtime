@@ -34,7 +34,6 @@ namespace System.Data.Tests
     {
         private DataSet _dataset;
         private DataTable _tblparent, _tblchild;
-        private DataRelation _relation;
 
         public DataRelationCollectionTest()
         {
@@ -221,14 +220,8 @@ namespace System.Data.Tests
             DataRelationCollection drcol1 = newds.Relations;
             DataRelationCollection drcol2 = _dataset.Relations;
 
-            Assert.True(drcol.Equals(drcol));
-            Assert.True(drcol.Equals(drcol2));
-
-            Assert.False(drcol1.Equals(drcol));
-            Assert.False(drcol.Equals(drcol1));
-
-            Assert.True(object.Equals(drcol, drcol2));
-            Assert.False(object.Equals(drcol, drcol1));
+            Assert.Same(drcol, drcol2);
+            Assert.NotSame(drcol1, drcol);
         }
 
         [Fact]
@@ -304,22 +297,8 @@ namespace System.Data.Tests
             drcol.Add(dr1);
             drcol.Add(dr2);
 
-            try
-            {
-                drcol.RemoveAt(-1);
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-            }
-            try
-            {
-                drcol.RemoveAt(101);
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-            }
+            Assert.Throws<IndexOutOfRangeException>(() => drcol.RemoveAt(-1));
+            Assert.Throws<IndexOutOfRangeException>(() => drcol.RemoveAt(101));
 
             drcol.RemoveAt(1);
             Assert.False(drcol.Contains(dr2.RelationName));

@@ -26,9 +26,7 @@
 
 using System.Text;
 using System.IO;
-using System.Diagnostics;
 using System.Xml;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Globalization;
 using Microsoft.DotNet.RemoteExecutor;
@@ -207,7 +205,7 @@ namespace System.Data.Tests
             Assert.Equal(DataProvider.GetDSSchema(ds), DataProvider.GetDSSchema(dsTarget));
 
             // Clone 2
-            Assert.False(dsTarget.GetXml() == ds.GetXml());
+            Assert.NotEqual(dsTarget.GetXml(), ds.GetXml());
         }
 
         [Fact]
@@ -230,7 +228,7 @@ namespace System.Data.Tests
             Assert.Equal(DataProvider.GetDSSchema(ds), DataProvider.GetDSSchema(dsTarget));
 
             // Copy 2
-            Assert.True(dsTarget.GetXml() == ds.GetXml());
+            Assert.Equal(dsTarget.GetXml(), ds.GetXml());
         }
 
         [Fact]
@@ -270,17 +268,9 @@ namespace System.Data.Tests
             ds.Tables[0].PrimaryKey = new DataColumn[] { ds.Tables[0].Columns[0] };
             ds.EnforceConstraints = false;
             ds.Tables[0].Rows.Add(new object[] { null });
-            try
-            {
-                ds.EnforceConstraints = true;
-                Assert.False(true);
-            }
-            catch (ConstraintException e)
-            {
-                // Never premise English.
-                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " +
-                //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
-            }
+
+            // Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.
+            Assert.Throws<ConstraintException>(() => ds.EnforceConstraints = true);
         }
 
         [Fact]
@@ -293,17 +283,9 @@ namespace System.Data.Tests
 
             ds.EnforceConstraints = false;
             ds.Tables[0].Rows.Add(new object[] { null });
-            try
-            {
-                ds.EnforceConstraints = true;
-                Assert.False(true);
-            }
-            catch (ConstraintException e)
-            {
-                // Never premise English.
-                //Assert.Equal ("Failed to enable constraints. One or more rows contain values " +
-                //        "violating non-null, unique, or foreign-key constraints.", e.Message, "#2");
-            }
+
+            // Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.
+            Assert.Throws<ConstraintException>(() => ds.EnforceConstraints = true);
         }
 
         [Fact]
@@ -320,7 +302,7 @@ namespace System.Data.Tests
             ds.Tables[0].Rows.Add(dr);
 
             // GetChanges 2
-            Assert.True(ds.GetChanges() != null);
+            Assert.NotNull(ds.GetChanges());
 
             // GetChanges 3
             Assert.Equal(dr.ItemArray, ds.GetChanges().Tables[0].Rows[0].ItemArray);
@@ -1068,7 +1050,7 @@ namespace System.Data.Tests
 
             DataRow[] drArr = new DataRow[3];
             //Update row
-            string OldValue = dt.Select("ParentId=1")[0][1].ToString();
+            string oldValue = dt.Select("ParentId=1")[0][1].ToString();
             drArr[0] = dt.Select("ParentId=1")[0];
             drArr[0][1] = "NewValue";
             //delete rows
@@ -1245,7 +1227,7 @@ namespace System.Data.Tests
 
             //SomeTable - new table
             // Merge - new table
-            Assert.True(dsTarget.Tables["SomeTable"] != null);
+            Assert.NotNull(dsTarget.Tables["SomeTable"]);
         }
 
         [Fact]
@@ -1487,7 +1469,7 @@ namespace System.Data.Tests
 
             ds1.Tables[1].Constraints.Add("fk", ds1.Tables[0].Columns[0], ds1.Tables[1].Columns[0]);
 
-            // No Exceptions shud be thrown
+            // No Exceptions should be thrown
             ds.Merge(ds1);
             Assert.Equal(1, table2.Constraints.Count);
         }
@@ -1510,7 +1492,7 @@ namespace System.Data.Tests
             table2.Constraints.Add("fk", pcol, ccol);
             ds1.Tables[1].Constraints.Add("fk", ds1.Tables[0].Columns["col2"], ds1.Tables[1].Columns["col2"]);
 
-            // No Exceptions shud be thrown
+            // No Exceptions should be thrown
             ds.Merge(ds1);
             Assert.Equal(2, table2.Constraints.Count);
             Assert.Equal("Constraint1", table2.Constraints[1].ConstraintName);
@@ -1666,42 +1648,31 @@ namespace System.Data.Tests
             table1.Columns.Add("col1", typeof(int));
             table2.Columns.Add("col1", typeof(int));
 
-            try
+            Assert.Throws<DataException>(() =>
             {
                 DataSet ds1 = ds.Copy();
                 DataSet ds2 = ds.Copy();
                 ds2.Tables[0].Constraints.Add("uc", ds2.Tables[0].Columns[0], false);
                 ds1.Merge(ds2, true, MissingSchemaAction.Error);
-                Assert.False(true);
-            }
-            catch (DataException e)
-            {
-            }
+            });
 
-            try
+            //"This constraint cannot be added since ForeignKey doesn't belong to table table1."
+            Assert.ThrowsAny<DataException>(() =>
             {
                 DataSet ds1 = ds.Copy();
                 DataSet ds2 = ds.Copy();
                 ds2.Tables[0].Constraints.Add("fk", ds2.Tables[0].Columns[0], ds2.Tables[1].Columns[0]);
                 ds1.Tables[0].Constraints.Add("uc", ds1.Tables[0].Columns[0], false);
                 ds1.Merge(ds2, true, MissingSchemaAction.Error);
-                Assert.False(true);
-            }
-            catch (DataException e)
-            {
-            }
+            });
 
-            try
+            Assert.Throws<ArgumentException>(() =>
             {
                 DataSet ds1 = ds.Copy();
                 DataSet ds2 = ds.Copy();
                 ds2.Relations.Add("rel", ds2.Tables[0].Columns[0], ds2.Tables[1].Columns[0], false);
                 ds1.Merge(ds2, true, MissingSchemaAction.Error);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-            }
+            });
         }
 
         [Fact]
@@ -1771,7 +1742,7 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Tables["Parent"].Columns["Indentity"].AutoIncrement, ds.Tables["Parent"].Columns["Indentity"].AutoIncrement);
 
             // check Indentity column - DefaultValue
-            Assert.True(dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
+            Assert.Equal(DBNull.Value, dsTarget.Tables["Child"].Columns["String1"].DefaultValue);
 
             // check remove colum
             Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
@@ -1822,7 +1793,7 @@ namespace System.Data.Tests
             Assert.Equal(dsTarget.Tables["Parent"].Columns["Indentity"].AutoIncrement, ds.Tables["Parent"].Columns["Indentity"].AutoIncrement);
 
             // check Indentity column - DefaultValue
-            Assert.True(dsTarget.Tables["Child"].Columns["String1"].DefaultValue == DBNull.Value);
+            Assert.Equal(DBNull.Value, dsTarget.Tables["Child"].Columns["String1"].DefaultValue);
 
             // check remove colum
             Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
@@ -2891,12 +2862,12 @@ namespace System.Data.Tests
         public void ShouldSerializeTables()
         {
             // DataSet ShouldSerializeTables
-            newDataSet1 ds = new newDataSet1();
+            NewDataSet1 ds = new NewDataSet1();
 
             Assert.True(ds.testMethod());
         }
 
-        private class newDataSet1 : DataSet
+        private class NewDataSet1 : DataSet
         {
             public bool testMethod()
             {
@@ -2978,34 +2949,29 @@ namespace System.Data.Tests
             finally
             {
                 sw.Close();
+                sr.Close();
             }
         }
 
         [Fact]
-        public void ctor()
+        public void Ctor()
         {
-            DataSet ds;
-
             // ctor
-            ds = new DataSet();
-            Assert.True(ds != null);
+            DataSet ds = new DataSet();
         }
 
         [Fact]
-        public void ctor_ByDataSetName()
+        public void Ctor_ByDataSetName()
         {
-            DataSet ds = null;
-
             // ctor
-            ds = new DataSet("NewDataSet");
-            Assert.True(ds != null);
+            DataSet ds = new DataSet("NewDataSet");
 
             // ctor - name
             Assert.Equal("NewDataSet", ds.DataSetName);
         }
 
         [Fact]
-        public void extendedProperties()
+        public void ExtendedProperties()
         {
             var ds = new DataSet();
             PropertyCollection pc;
@@ -3013,7 +2979,7 @@ namespace System.Data.Tests
             pc = ds.ExtendedProperties;
 
             // Checking ExtendedProperties default
-            Assert.True(pc != null);
+            Assert.NotNull(pc);
 
             // Checking ExtendedProperties count
             Assert.Equal(0, pc.Count);
@@ -3024,15 +2990,8 @@ namespace System.Data.Tests
         {
             DataSet ds = new DataSet();
             Assert.Equal(SchemaSerializationMode.IncludeSchema, ds.SchemaSerializationMode);
-            try
-            {
-                ds.SchemaSerializationMode = SchemaSerializationMode.ExcludeSchema;
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                //ok
-            }
+
+            Assert.Throws<InvalidOperationException>(() => ds.SchemaSerializationMode = SchemaSerializationMode.ExcludeSchema);
         }
 
         ///<?xml version="1.0" encoding="utf-16"?>
@@ -3410,12 +3369,7 @@ namespace System.Data.Tests
             ds.Tables.Add(new DataTable());
             ds.Tables[0].Columns.Add(new DataColumn("id", typeof(string)));
 
-            try
-            {
-                ds.Merge(dataSet, true, MissingSchemaAction.Add);
-                Assert.False(true);
-            }
-            catch (DataException e) { }
+            Assert.Throws<DataException>(() => ds.Merge(dataSet, true, MissingSchemaAction.Add));
 
             ds = new DataSet();
             ds.Tables.Add(new DataTable());

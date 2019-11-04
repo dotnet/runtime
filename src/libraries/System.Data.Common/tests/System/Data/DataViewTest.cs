@@ -38,7 +38,8 @@ namespace System.Data.Tests
         private DataTable _dataTable;
         private DataView _dataView;
         private Random _rndm;
-        private int _seed,_rowCount;
+        private const int Seed = 123;
+        private int _rowCount;
         private ListChangedEventArgs _listChangedArgs;
         private TextWriter _eventWriter;
 
@@ -60,9 +61,8 @@ namespace System.Data.Tests
             _dataTable.Columns.Add(_dc3);
             _dataTable.Columns.Add(_dc4);
             DataRow dr;
-            _seed = 123;
             _rowCount = 5;
-            _rndm = new Random(_seed);
+            _rndm = new Random(Seed);
             for (int i = 1; i <= _rowCount; i++)
             {
                 dr = _dataTable.NewRow();
@@ -355,14 +355,8 @@ namespace System.Data.Tests
             Assert.Equal(3, dataView[3][0]);
 
             s = "Ascending sorting 5: ";
-            try
-            {
-                dataView.Sort = "itemId \tASC";
-                Assert.True(false);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-            }
+
+            Assert.Throws<IndexOutOfRangeException>(() => dataView.Sort = "itemId \tASC");
 
             s = "Descending sorting : ";
             dataView.Sort = "itemId DESC";
@@ -630,7 +624,7 @@ namespace System.Data.Tests
                 DataView TestView = new DataView(_dataTable);
                 TestView.Delete(0);
                 DataRow r = TestView.Table.Rows[0];
-                Assert.True(!((string)r["itemId"] == "item 1"));
+                Assert.NotEqual("item 1", (string)r["itemId"]);
             });
         }
 

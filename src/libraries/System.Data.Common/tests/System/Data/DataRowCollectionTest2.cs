@@ -42,7 +42,7 @@ namespace System.Data.Tests
             int index = 0;
             foreach (DataRow dr in dt.Rows)
             {
-                Assert.Equal(dr, arr[index]);
+                Assert.Same(dr, arr[index]);
                 index++;
             }
         }
@@ -66,7 +66,7 @@ namespace System.Data.Tests
             int index = 0;
             while (myEnumerator.MoveNext())
             {
-                Assert.Equal(dt.Rows[index], (DataRow)myEnumerator.Current);
+                Assert.Same(dt.Rows[index], (DataRow)myEnumerator.Current);
                 index++;
             }
             Assert.Equal(index, dt.Rows.Count);
@@ -432,7 +432,7 @@ namespace System.Data.Tests
 
             foreach (DataRow dr in dt.Rows)
             {
-                Assert.Equal(dr, dt.Rows[index]);
+                Assert.Same(dr, dt.Rows[index]);
                 index++;
             }
         }

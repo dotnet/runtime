@@ -26,8 +26,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
+using System.Linq;
 
 using Xunit;
 
@@ -35,7 +34,7 @@ namespace System.Data.Tests
 {
     public class DataTableTest2
     {
-        private bool _EventTriggered;
+        private bool _eventTriggered;
         private bool _eventRaised;
         private bool _eventValues;
 
@@ -197,21 +196,21 @@ namespace System.Data.Tests
 
             dt.ColumnChanged += new DataColumnChangeEventHandler(Column_Changed);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // ColumnChanged - EventTriggered
             dt.Rows[0][1] = "NewValue";
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             dt.ColumnChanged -= new DataColumnChangeEventHandler(Column_Changed);
             // ColumnChanged - NO EventTriggered
             dt.Rows[0][1] = "VeryNewValue";
-            Assert.False(_EventTriggered);
+            Assert.False(_eventTriggered);
         }
 
         private void Column_Changed(object sender, DataColumnChangeEventArgs e)
         {
-            _EventTriggered = true;
+            _eventTriggered = true;
         }
 
         [Fact]
@@ -221,21 +220,21 @@ namespace System.Data.Tests
 
             dt.ColumnChanging += new DataColumnChangeEventHandler(Column_Changeding);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // ColumnChanged - EventTriggered
             dt.Rows[0][1] = "NewValue";
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             dt.ColumnChanging -= new DataColumnChangeEventHandler(Column_Changeding);
             // ColumnChanged - NO EventTriggered
             dt.Rows[0][1] = "VeryNewValue";
-            Assert.False(_EventTriggered);
+            Assert.False(_eventTriggered);
         }
 
         private void Column_Changeding(object sender, DataColumnChangeEventArgs e)
         {
-            _EventTriggered = true;
+            _eventTriggered = true;
         }
 
         [Fact]
@@ -253,28 +252,18 @@ namespace System.Data.Tests
             dtParent.Columns.Add(new DataColumn("test"));
             Assert.Equal(8, dcl.Count);
 
-            try
-            {
-                tmp = dtParent.Columns["TEST"];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // The given name 'TEST' matches at least two
-                // names in the collection object with different
-                // cases, but does not match either of them with
-                // the same case
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "TEST" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => dtParent.Columns["TEST"]);
+            // The given name 'TEST' matches at least two
+            // names in the collection object with different
+            // cases, but does not match either of them with
+            // the same case
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "TEST" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact]
@@ -287,9 +276,8 @@ namespace System.Data.Tests
             long iExSum = 0;
             foreach (DataRow dr in drArr)
                 iExSum += (int)dr["ChildId"];
-            object objCompute = null;
             // Compute - sum values
-            objCompute = dt.Compute("Sum(ChildId)", "ParentId=1");
+            object objCompute = dt.Compute("Sum(ChildId)", "ParentId=1");
             Assert.Equal(long.Parse(objCompute.ToString()), long.Parse(iExSum.ToString()));
 
             // Compute - sum type
@@ -419,20 +407,12 @@ namespace System.Data.Tests
             dt.BeginLoadData();
             dt.LoadDataRow(new object[] { null, "A", "B" }, false);
 
-            try
-            {
-                dt.EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Failed to enable constraints. One or more rows
-                // contain values violating non-null, unique, or
-                // foreign-key constraints
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+            ConstraintException ex = Assert.Throws<ConstraintException>(() => dt.EndLoadData());
+            // Failed to enable constraints. One or more rows
+            // contain values violating non-null, unique, or
+            // foreign-key constraints
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact] // LoadDataRow (Object [], Boolean)
@@ -475,20 +455,12 @@ namespace System.Data.Tests
             table.LoadDataRow(new object[] { 1, 1 }, false);
             table.LoadDataRow(new object[] { 1, 10 }, false);
 
-            try
-            {
-                table.EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Failed to enable constraints. One or more rows
-                // contain values violating non-null, unique, or
-                // foreign-key constraints
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+            ConstraintException ex = Assert.Throws<ConstraintException>(() => table.EndLoadData());
+            // Failed to enable constraints. One or more rows
+            // contain values violating non-null, unique, or
+            // foreign-key constraints
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
@@ -732,16 +704,6 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void GetType()
-        {
-            DataTable dt = DataProvider.CreateParentDataTable();
-            Type tmpType = typeof(DataTable);
-
-            // GetType
-            Assert.Equal(tmpType, dt.GetType());
-        }
-
-        [Fact]
         public void HasErrors()
         {
             DataTable dtParent;
@@ -918,27 +880,13 @@ namespace System.Data.Tests
             Assert.False(_eventRaised);
             _eventRaised = false;
             _eventValues = false;
-            dt.ColumnChanged += new DataColumnChangeEventHandler(OnColumnChanged_Handler);
+            dt.ColumnChanged += new DataColumnChangeEventHandler(DataColumnChangeHandler);
             dt.OnColumnChanged_Test();
             // OnColumnChanged Event 2
             Assert.True(_eventRaised);
             // OnColumnChanged Values
             Assert.True(_eventValues);
-            dt.ColumnChanged -= new DataColumnChangeEventHandler(OnColumnChanged_Handler);
-        }
-
-        private void OnColumnChanged_Handler(object sender, DataColumnChangeEventArgs e)
-        {
-            DataTable dt = (DataTable)sender;
-            if ((e.Column.Equals(dt.Columns["Value"])) && (e.Row.Equals(dt.Rows[0])) && (e.ProposedValue.Equals("NewValue")))
-            {
-                _eventValues = true;
-            }
-            else
-            {
-                _eventValues = false;
-            }
-            _eventRaised = true;
+            dt.ColumnChanged -= new DataColumnChangeEventHandler(DataColumnChangeHandler);
         }
 
         [Fact]
@@ -952,26 +900,19 @@ namespace System.Data.Tests
             Assert.False(_eventRaised);
             _eventRaised = false;
             _eventValues = false;
-            dt.ColumnChanging += new DataColumnChangeEventHandler(OnColumnChanging_Handler);
+            dt.ColumnChanging += new DataColumnChangeEventHandler(DataColumnChangeHandler);
             dt.OnColumnChanging_Test();
             // OnColumnChanging Event 2
             Assert.True(_eventRaised);
             // OnColumnChanging Values
             Assert.True(_eventValues);
-            dt.ColumnChanging -= new DataColumnChangeEventHandler(OnColumnChanging_Handler);
+            dt.ColumnChanging -= new DataColumnChangeEventHandler(DataColumnChangeHandler);
         }
 
-        private void OnColumnChanging_Handler(object sender, DataColumnChangeEventArgs e)
+        private void DataColumnChangeHandler(object sender, DataColumnChangeEventArgs e)
         {
             DataTable dt = (DataTable)sender;
-            if ((e.Column.Equals(dt.Columns["Value"])) && (e.Row.Equals(dt.Rows[0])) && (e.ProposedValue.Equals("NewValue")))
-            {
-                _eventValues = true;
-            }
-            else
-            {
-                _eventValues = false;
-            }
+            _eventValues = e.Column.Equals(dt.Columns["Value"]) && e.Row.Equals(dt.Rows[0]) && e.ProposedValue.Equals("NewValue");
             _eventRaised = true;
         }
 
@@ -1083,34 +1024,34 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
 
-            dt.RowChanged += new DataRowChangeEventHandler(Row_Changed);
+            dt.RowChanged += new DataRowChangeEventHandler(RowChangeHandler);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanged - 1
             dt.Rows[0][1] = "NewValue";
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanged - 2
             dt.Rows[0].BeginEdit();
             dt.Rows[0][1] = "NewValue";
-            Assert.False(_EventTriggered);
+            Assert.False(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanged - 3
             dt.Rows[0].EndEdit();
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
-            dt.RowChanged -= new DataRowChangeEventHandler(Row_Changed);
+            _eventTriggered = false;
+            dt.RowChanged -= new DataRowChangeEventHandler(RowChangeHandler);
             // RowChanged - 4
             dt.Rows[0][1] = "NewValue A";
-            Assert.False(_EventTriggered);
+            Assert.False(_eventTriggered);
         }
 
-        private void Row_Changed(object sender, DataRowChangeEventArgs e)
+        private void RowChangeHandler(object sender, DataRowChangeEventArgs e)
         {
-            _EventTriggered = true;
+            _eventTriggered = true;
         }
 
         [Fact]
@@ -1118,34 +1059,29 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
 
-            dt.RowChanging += new DataRowChangeEventHandler(Row_Changing);
+            dt.RowChanging += new DataRowChangeEventHandler(RowChangeHandler);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanging - 1
             dt.Rows[0][1] = "NewValue";
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanging - 2
             dt.Rows[0].BeginEdit();
             dt.Rows[0][1] = "NewValue";
-            Assert.False(_EventTriggered);
+            Assert.False(_eventTriggered);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowChanging - 3
             dt.Rows[0].EndEdit();
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
-            dt.RowChanging -= new DataRowChangeEventHandler(Row_Changing);
+            _eventTriggered = false;
+            dt.RowChanging -= new DataRowChangeEventHandler(RowChangeHandler);
             // RowChanging - 4
             dt.Rows[0][1] = "NewValue A";
-            Assert.False(_EventTriggered);
-        }
-
-        private void Row_Changing(object sender, DataRowChangeEventArgs e)
-        {
-            _EventTriggered = true;
+            Assert.False(_eventTriggered);
         }
 
         [Fact]
@@ -1153,23 +1089,18 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
 
-            dt.RowDeleted += new DataRowChangeEventHandler(Row_Deleted);
+            dt.RowDeleted += new DataRowChangeEventHandler(RowChangeHandler);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowDeleted - 1
             dt.Rows[0].Delete();
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
-            dt.RowDeleted -= new DataRowChangeEventHandler(Row_Deleted);
+            _eventTriggered = false;
+            dt.RowDeleted -= new DataRowChangeEventHandler(RowChangeHandler);
             // RowDeleted - 2
             dt.Rows[1].Delete();
-            Assert.False(_EventTriggered);
-        }
-
-        private void Row_Deleted(object sender, DataRowChangeEventArgs e)
-        {
-            _EventTriggered = true;
+            Assert.False(_eventTriggered);
         }
 
         [Fact]
@@ -1177,23 +1108,18 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
 
-            dt.RowDeleting += new DataRowChangeEventHandler(Row_Deleting);
+            dt.RowDeleting += new DataRowChangeEventHandler(RowChangeHandler);
 
-            _EventTriggered = false;
+            _eventTriggered = false;
             // RowDeleting - 1
             dt.Rows[0].Delete();
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
 
-            _EventTriggered = false;
-            dt.RowDeleting -= new DataRowChangeEventHandler(Row_Deleting);
+            _eventTriggered = false;
+            dt.RowDeleting -= new DataRowChangeEventHandler(RowChangeHandler);
             // RowDeleting - 2
             dt.Rows[1].Delete();
-            Assert.False(_EventTriggered);
-        }
-
-        private void Row_Deleting(object sender, DataRowChangeEventArgs e)
-        {
-            _EventTriggered = true;
+            Assert.False(_eventTriggered);
         }
 
         [Fact]
@@ -1302,7 +1228,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildId+ParentId >= 4
             drSelect = dt.Select("ChildId+ParentId >= 4");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
             al.Clear();
@@ -1313,7 +1239,7 @@ namespace System.Data.Tests
             }
             // Select_S - ChildId-ParentId) * -1  <> 0
             drSelect = dt.Select("(ChildId-ParentId) * -1  <> 0");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
             al.Clear();
@@ -1322,7 +1248,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildDouble < ParentId % 4
             drSelect = dt.Select("ChildDouble < ParentId % 4");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
             al.Clear();
@@ -1331,7 +1257,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildDouble in (10,20,25)
             drSelect = dt.Select("ChildDouble in (10,20,25)");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
             al.Clear();
@@ -1350,7 +1276,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - [Column#] <= 0
             drSelect = dt.Select("[Column#] <= 0 ");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
             //-------------------------------------------------------------
             al.Clear();
             foreach (DataRow dr in dt.Rows)
@@ -1358,7 +1284,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - [Column#] <= 0
             drSelect = dt.Select("[Column#] <= 0");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
             al.Clear();
@@ -1367,7 +1293,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildDateTime > #12/12/2000#
             drSelect = dt.Select("ChildDateTime > #12/12/2000# ");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
 
@@ -1377,7 +1303,7 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildDateTime > #1/12/1999 12:06:30 PM#
             drSelect = dt.Select("ChildDateTime > #1/12/1999 12:06:30 PM#  ");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
             //-------------------------------------------------------------
 
@@ -1387,18 +1313,8 @@ namespace System.Data.Tests
                     al.Add(dr);
             // Select_S - ChildDateTime >= #12/3/2005 5:06:30 PM# or ChildDateTime <= #11/3/1980#
             drSelect = dt.Select("ChildDateTime >= #12/3/2005 5:06:30 PM# or ChildDateTime <= #11/3/1980#  ");
-            CompareUnSorted(drSelect, al.ToArray());
+            CompareUnsorted(drSelect, al.ToArray());
 
-#if LATER
-            //-------------------------------------------------------------
-            al.Clear();
-            foreach (DataRow dr in dt.Rows)
-                if (dr["ChildDouble"].ToString().Length > 10)
-                    al.Add(dr);
-                // Select_S - Len(Convert(ChildDouble,'System.String')) > 10
-                drSelect = dt.Select ("Len(Convert(ChildDouble,'System.String')) > 10");
-                Assert.Equal (al.ToArray(), drSelect);
-#endif
             //-------------------------------------------------------------
             al.Clear();
             foreach (DataRow dr in dt.Rows)
@@ -1420,18 +1336,10 @@ namespace System.Data.Tests
             //-------------------------------------------------------------
             al.Clear();
             // Select_S - Relation not exists, Exception
-            try
-            {
-                drSelect = dt.Select("Parent.ParentId = ChildId");
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException ex)
-            {
-                // Cannot find relation 0
-                Assert.Equal(typeof(IndexOutOfRangeException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+            IndexOutOfRangeException ex = Assert.Throws<IndexOutOfRangeException>(() => dt.Select("Parent.ParentId = ChildId"));
+            // Cannot find relation 0
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
             //-------------------------------------------------------------
             al.Clear();
             ds.Relations.Add(new DataRelation("ParentChild", ds.Tables[0].Columns[0], ds.Tables[1].Columns[0]));
@@ -1443,21 +1351,7 @@ namespace System.Data.Tests
             Assert.Equal(al.ToArray(), drSelect);
         }
 
-        private void CompareUnSorted(Array a, Array b)
-        {
-            string msg = string.Format("Failed while comparing(Array a ={0} ({1}), Array b = {2} ({3}))]", a.ToString(), a.GetType().FullName, b.ToString(), b.GetType().FullName);
-            foreach (object item in a)
-            {
-                if (Array.IndexOf(b, item) < 0) //b does not contain the current item.
-                    Assert.False(true);
-            }
-
-            foreach (object item in b)
-            {
-                if (Array.IndexOf(a, item) < 0) //a does not contain the current item.
-                    Assert.False(true);
-            }
-        }
+        private void CompareUnsorted<T>(T[] a, T[] b) => Assert.Equal(a.Union(b).Count(), a.Intersect(b).Count());
 
         [Fact]
         public void Select_ByFilterDataViewRowState()
@@ -1496,7 +1390,7 @@ namespace System.Data.Tests
 
         private DataRow[] GetResultRows(DataTable dt, DataRowState State)
         {
-            ArrayList al = new ArrayList();
+            List<DataRow> al = new List<DataRow>();
             DataRowVersion drVer = DataRowVersion.Current;
 
             //From MSDN -    The row the default version for the current DataRowState.
@@ -1518,7 +1412,7 @@ namespace System.Data.Tests
                 if (dr.HasVersion(drVer) && ((int)dr["ParentId", drVer] == 1) && ((dr.RowState & State) > 0))
                     al.Add(dr);
             }
-            DataRow[] result = (DataRow[])al.ToArray((typeof(DataRow)));
+            DataRow[] result = al.ToArray();
             return result;
         }
 
@@ -1560,20 +1454,17 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ctor()
+        public void Ctor()
         {
             DataTable dt = new DataTable();
-            Assert.NotNull(dt);
         }
 
         [Fact]
-        public void ctor_ByName()
+        public void Ctor_ByName()
         {
             string sName = "MyName";
 
             DataTable dt = new DataTable(sName);
-
-            Assert.NotNull(dt);
             Assert.Equal(sName, dt.TableName);
         }
 
@@ -1633,24 +1524,15 @@ namespace System.Data.Tests
             DataTable dt = DataProvider.CreateParentDataTable();
             dt.Columns[0].AllowDBNull = false;
 
-            try
-            {
-                //if BeginLoadData has not been called, an exception will be throw
-                dt.LoadDataRow(new object[] { null, "A", "B" }, false);
-                Assert.False(true);
-            }
-            catch (NoNullAllowedException ex)
-            {
-                // Column 'ParentId' does not allow nulls
-                Assert.Equal(typeof(NoNullAllowedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "ParentId" + @"[\p{Pf}\p{Po}]", ex.Message);
-            }
+            //if BeginLoadData has not been called, an exception will be thrown
+            NoNullAllowedException ex = Assert.Throws<NoNullAllowedException>(() => dt.LoadDataRow(new object[] { null, "A", "B" }, false));
+            // Column 'ParentId' does not allow nulls
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "ParentId" + @"[\p{Pf}\p{Po}]", ex.Message);
 
             DataTable dt1 = DataProvider.CreateUniqueConstraint();
 
@@ -1660,47 +1542,29 @@ namespace System.Data.Tests
             dr[0] = 3;
             dt1.Rows.Add(dr);
 
-            try
-            {
-                dt1.EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Failed to enable constraints. One or more rows
-                // contain values violating non-null, unique, or
-                // foreign-key constraints
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                Assert.Equal(2, dt1.GetErrors().Length);
-                Assert.True(dt1.GetErrors()[0].RowError.Length > 10);
-                Assert.True(dt1.GetErrors()[1].RowError.Length > 10);
-            }
+            ConstraintException ex2 = Assert.Throws<ConstraintException>(() => dt1.EndLoadData());
+            // Failed to enable constraints. One or more rows
+            // contain values violating non-null, unique, or
+            // foreign-key constraints
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal(2, dt1.GetErrors().Length);
+            Assert.True(dt1.GetErrors()[0].RowError.Length > 10);
+            Assert.True(dt1.GetErrors()[1].RowError.Length > 10);
 
             DataSet ds = DataProvider.CreateForeignConstraint();
             ds.Tables[0].BeginLoadData();
             ds.Tables[0].Rows[0][0] = 10; //Foreign constraint violation
 
-            try
-            {
-                ds.Tables[0].EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Failed to enable constraints. One or more
-                // rows contain values violating non-null,
-                // unique, or foreign-key constraints
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                Assert.Equal(3, ds.Tables[1].GetErrors().Length);
-                for (int index = 0; index < 3; index++)
-                    Assert.True(ds.Tables[1].GetErrors()[index].RowError.Length > 10);
-            }
+            ConstraintException ex3 = Assert.Throws<ConstraintException>(() => ds.Tables[0].EndLoadData());
+            // Failed to enable constraints. One or more
+            // rows contain values violating non-null,
+            // unique, or foreign-key constraints
+            Assert.Null(ex3.InnerException);
+            Assert.NotNull(ex3.Message);
+            Assert.Equal(3, ds.Tables[1].GetErrors().Length);
+            for (int index = 0; index < 3; index++)
+                Assert.True(ds.Tables[1].GetErrors()[index].RowError.Length > 10);
         }
 
         private DataRowAction _drExpectedAction;
@@ -1715,7 +1579,7 @@ namespace System.Data.Tests
 
             Assert.False(_eventRaised);
 
-            dt.RowChanged += new DataRowChangeEventHandler(OnRowChanged_Handler);
+            dt.RowChanged += new DataRowChangeEventHandler(RowChangeHandler2);
             foreach (int i in Enum.GetValues(typeof(DataRowAction)))
             {
                 _eventRaised = false;
@@ -1726,10 +1590,10 @@ namespace System.Data.Tests
                 Assert.True(_eventRaised);
                 Assert.True(_eventValues);
             }
-            dt.RowChanged -= new DataRowChangeEventHandler(OnRowChanged_Handler);
+            dt.RowChanged -= new DataRowChangeEventHandler(RowChangeHandler2);
         }
 
-        private void OnRowChanged_Handler(object sender, DataRowChangeEventArgs e)
+        private void RowChangeHandler2(object sender, DataRowChangeEventArgs e)
         {
             DataTable dt = (DataTable)sender;
             if (dt.Rows[0].Equals(e.Row) && e.Action == _drExpectedAction)
@@ -1747,7 +1611,7 @@ namespace System.Data.Tests
 
             Assert.False(_eventRaised);
 
-            dt.RowChanging += new DataRowChangeEventHandler(OnRowChanging_Handler);
+            dt.RowChanging += new DataRowChangeEventHandler(RowChangeHandler2);
             foreach (int i in Enum.GetValues(typeof(DataRowAction)))
             {
                 _eventRaised = false;
@@ -1758,15 +1622,7 @@ namespace System.Data.Tests
                 Assert.True(_eventRaised);
                 Assert.True(_eventValues);
             }
-            dt.RowChanging -= new DataRowChangeEventHandler(OnRowChanging_Handler);
-        }
-
-        private void OnRowChanging_Handler(object sender, DataRowChangeEventArgs e)
-        {
-            DataTable dt = (DataTable)sender;
-            if (dt.Rows[0].Equals(e.Row) && e.Action == _drExpectedAction)
-                _eventValues = true;
-            _eventRaised = true;
+            dt.RowChanging -= new DataRowChangeEventHandler(RowChangeHandler2);
         }
 
         [Fact]
@@ -1779,7 +1635,7 @@ namespace System.Data.Tests
 
             Assert.False(_eventRaised);
 
-            dt.RowDeleted += new DataRowChangeEventHandler(OnRowDeleted_Handler);
+            dt.RowDeleted += new DataRowChangeEventHandler(RowChangeHandler2);
             foreach (int i in Enum.GetValues(typeof(DataRowAction)))
             {
                 _eventRaised = false;
@@ -1790,16 +1646,9 @@ namespace System.Data.Tests
                 Assert.True(_eventRaised);
                 Assert.True(_eventValues);
             }
-            dt.RowDeleted -= new DataRowChangeEventHandler(OnRowDeleted_Handler);
+            dt.RowDeleted -= new DataRowChangeEventHandler(RowChangeHandler2);
         }
 
-        private void OnRowDeleted_Handler(object sender, DataRowChangeEventArgs e)
-        {
-            DataTable dt = (DataTable)sender;
-            if (dt.Rows[0].Equals(e.Row) && e.Action == _drExpectedAction)
-                _eventValues = true;
-            _eventRaised = true;
-        }
 
         [Fact]
         public void OnRowDeleting()
@@ -1811,7 +1660,7 @@ namespace System.Data.Tests
 
             Assert.False(_eventRaised);
 
-            dt.RowDeleting += new DataRowChangeEventHandler(OnRowDeleting_Handler);
+            dt.RowDeleting += new DataRowChangeEventHandler(RowChangeHandler2);
             foreach (int i in Enum.GetValues(typeof(DataRowAction)))
             {
                 _eventRaised = false;
@@ -1822,7 +1671,7 @@ namespace System.Data.Tests
                 Assert.True(_eventRaised);
                 Assert.True(_eventValues);
             }
-            dt.RowDeleting -= new DataRowChangeEventHandler(OnRowDeleting_Handler);
+            dt.RowDeleting -= new DataRowChangeEventHandler(RowChangeHandler2);
         }
 
         [Fact]
@@ -1858,20 +1707,12 @@ namespace System.Data.Tests
             UniqueConstraint uc = new UniqueConstraint(string.Empty, new string[] { "col1" }, true);
             table.Constraints.AddRange(new Constraint[] { uc });
 
-            try
-            {
-                table.EndInit();
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Cannot add primary key constraint since primary
-                // key is already set for the table
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => table.EndInit());
+            // Cannot add primary key constraint since primary
+            // key is already set for the table
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact]
@@ -1898,19 +1739,11 @@ namespace System.Data.Tests
             DataColumn col1 = table.Columns.Add("col1", typeof(int));
             table.PrimaryKey = new DataColumn[] { col1 };
 
-            try
-            {
-                table.PrimaryKey = new DataColumn[] { new DataColumn("col2", typeof(int)) };
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                //  Column must belong to a table
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => table.PrimaryKey = new DataColumn[] { new DataColumn("col2", typeof(int)) });
+            //  Column must belong to a table
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Null(ex.ParamName);
 
             Assert.Equal("col1", table.PrimaryKey[0].ColumnName);
         }
@@ -2056,6 +1889,7 @@ namespace System.Data.Tests
                 if ((int)dr["ChildId"] == 1 && dr["String1"].ToString() == "1-String1")
                     al.Add(dr);
             }
+
             //al.Reverse();
             al.Sort(new DataRowsComparer("ParentId", "Desc"));
 
@@ -2070,6 +1904,7 @@ namespace System.Data.Tests
                 if (dr["String1"].ToString().Length < 4)
                     al.Add(dr);
             }
+
             //al.Reverse();
             al.Sort(new DataRowsComparer("ParentId", "Desc"));
 
@@ -2082,19 +1917,11 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             //Select - parse sort string checking 1");
-            try
-            {
-                dt.Select(dt.Columns[0].ColumnName, dt.Columns[0].ColumnName + "1");
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException ex)
-            {
-                // Cannot find column ParentId1
-                Assert.Equal(typeof(IndexOutOfRangeException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("ParentId1") != -1);
-            }
+            IndexOutOfRangeException ex = Assert.Throws<IndexOutOfRangeException>(() => dt.Select(dt.Columns[0].ColumnName, dt.Columns[0].ColumnName + "1"));
+            // Cannot find column ParentId1
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("ParentId1", ex.Message);
         }
 
         [Fact]
@@ -2112,21 +1939,14 @@ namespace System.Data.Tests
             for (int i = 0; i < 5; ++i)
                 table.Rows.Add(new object[] { i });
 
-            try
-            {
-                table.Select("col1*10");
-                Assert.False(true);
-            }
-            catch (EvaluateException ex)
-            {
-                // Filter expression 'col1*10' does not evaluate
-                // to a Boolean term
-                Assert.Equal(typeof(EvaluateException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                //Assert.True (ex.Message.IndexOf ("'col1*10'") != -1);
-                //Assert.True (ex.Message.IndexOf ("Boolean") != -1);
-            }
+            EvaluateException ex = Assert.Throws<EvaluateException>(() => table.Select("col1*10"));
+            // Filter expression 'col1*10' does not evaluate
+            // to a Boolean term
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+
+            Assert.Contains("'col1*10'", ex.Message);
+            Assert.Contains("Boolean", ex.Message);
         }
 
         [Fact]
@@ -2140,21 +1960,13 @@ namespace System.Data.Tests
                 table.Rows.Add(new object[] { i });
 
             DataRow[] result;
-            try
-            {
-                result = table.Select("col1");
-                Assert.False(true);
-            }
-            catch (EvaluateException ex)
-            {
-                // Filter expression 'col1' does not evaluate to
-                // a Boolean term
-                Assert.Equal(typeof(EvaluateException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                //Assert.True (ex.Message.IndexOf ("'col1'") != -1);
-                //Assert.True (ex.Message.IndexOf ("Boolean") != -1);
-            }
+            EvaluateException ex = Assert.Throws<EvaluateException>(() => table.Select("col1"));
+            // Filter expression 'col1' does not evaluate to
+            // a Boolean term
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("'col1'", ex.Message);
+            Assert.Contains("Boolean", ex.Message);
 
             //col2 is a boolean expression, and a null value translates to
             //false.
@@ -2244,16 +2056,9 @@ Assert.False(true);
             table2.Columns["col_datetime"].DateTimeMode = DataSetDateTime.Unspecified;
 
             table3 = table1.Clone();
-            try
-            {
-                table3.Merge(table2);
-                Assert.False(true);
-            }
-            catch (DataException)
-            {
-                // <target>.col_datetime and <source>.col_datetime
-                // have conflicting properties: DataType property mismatch.
-            }
+            // <target>.col_datetime and <source>.col_datetime
+            // have conflicting properties: DataType property mismatch.
+            Assert.Throws<DataException>(() => table3.Merge(table2));
 
             table1.Columns["col_datetime"].DateTimeMode = DataSetDateTime.Unspecified;
             table2.Columns["col_datetime"].DateTimeMode = DataSetDateTime.UnspecifiedLocal;
@@ -2298,13 +2103,13 @@ Assert.False(true);
 
         internal class DataRowsComparer : IComparer<DataRow>
         {
-            private string _columnName;
-            private string _direction;
+            private readonly string _columnName;
+            private readonly string _direction;
 
             public DataRowsComparer(string columnName, string direction)
             {
                 _columnName = columnName;
-                if (direction.ToLower() != "asc" && direction.ToLower() != "desc")
+                if (direction.Equals("asc", StringComparison.OrdinalIgnoreCase) && direction.Equals("desc", StringComparison.OrdinalIgnoreCase))
                     throw new ArgumentException("Direction can only be one of: 'asc' or 'desc'");
                 _direction = direction;
             }
@@ -2317,7 +2122,7 @@ Assert.False(true);
                 int compareResult = Comparer.Default.Compare(objX, objY);
 
                 //If we are comparing desc we need to reverse the result.
-                if (_direction.ToLower() == "desc")
+                if (_direction.Equals("desc", StringComparison.OrdinalIgnoreCase))
                     compareResult = -compareResult;
 
                 return compareResult;

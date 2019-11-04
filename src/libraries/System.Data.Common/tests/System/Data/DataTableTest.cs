@@ -46,10 +46,8 @@ namespace System.Data.Tests
     {
         public DataTableTest()
         {
-            MyDataTable.count = 0;
+            MyDataTable.Count = 0;
         }
-
-        private string _EOL = Environment.NewLine;
 
         [Fact]
         public void Ctor()
@@ -79,257 +77,241 @@ namespace System.Data.Tests
         [Fact]
         public void Select()
         {
-            DataSet Set = new DataSet();
-            DataTable Mom = new DataTable("Mom");
-            DataTable Child = new DataTable("Child");
-            Set.Tables.Add(Mom);
-            Set.Tables.Add(Child);
+            DataSet set = new DataSet();
+            DataTable mom = new DataTable("Mom");
+            DataTable child = new DataTable("Child");
+            set.Tables.Add(mom);
+            set.Tables.Add(child);
 
-            DataColumn Col = new DataColumn("Name");
-            DataColumn Col2 = new DataColumn("ChildName");
-            Mom.Columns.Add(Col);
-            Mom.Columns.Add(Col2);
+            DataColumn col = new DataColumn("Name");
+            DataColumn col2 = new DataColumn("ChildName");
+            mom.Columns.Add(col);
+            mom.Columns.Add(col2);
 
-            DataColumn Col3 = new DataColumn("Name");
-            DataColumn Col4 = new DataColumn("Age");
-            Col4.DataType = typeof(short);
-            Child.Columns.Add(Col3);
-            Child.Columns.Add(Col4);
+            DataColumn col3 = new DataColumn("Name");
+            DataColumn col4 = new DataColumn("Age");
+            col4.DataType = typeof(short);
+            child.Columns.Add(col3);
+            child.Columns.Add(col4);
 
-            DataRelation Relation = new DataRelation("Rel", Mom.Columns[1], Child.Columns[0]);
-            Set.Relations.Add(Relation);
+            DataRelation relation = new DataRelation("Rel", mom.Columns[1], child.Columns[0]);
+            set.Relations.Add(relation);
 
-            DataRow Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Nick";
-            Mom.Rows.Add(Row);
+            DataRow row = mom.NewRow();
+            row[0] = "Laura";
+            row[1] = "Nick";
+            mom.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Dick";
-            Mom.Rows.Add(Row);
+            row = mom.NewRow();
+            row[0] = "Laura";
+            row[1] = "Dick";
+            mom.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Mick";
-            Mom.Rows.Add(Row);
+            row = mom.NewRow();
+            row[0] = "Laura";
+            row[1] = "Mick";
+            mom.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Jack";
-            Mom.Rows.Add(Row);
+            row = mom.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Jack";
+            mom.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Mack";
-            Mom.Rows.Add(Row);
+            row = mom.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Mack";
+            mom.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "'Jhon O'' Collenal'";
-            Row[1] = "Pack";
-            Mom.Rows.Add(Row);
+            row = mom.NewRow();
+            row[0] = "'Jhon O'' Collenal'";
+            row[1] = "Pack";
+            mom.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Nick";
-            Row[1] = 15;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Nick";
+            row[1] = 15;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Dick";
-            Row[1] = 25;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Dick";
+            row[1] = 25;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mick";
-            Row[1] = 35;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mick";
+            row[1] = 35;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Jack";
-            Row[1] = 10;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Jack";
+            row[1] = 10;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 19;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 19;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 99;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 99;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Pack";
-            Row[1] = 66;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Pack";
+            row[1] = 66;
+            child.Rows.Add(row);
 
-            DataRow[] Rows = Mom.Select("Name = 'Teresa'");
-            Assert.Equal(2, Rows.Length);
+            DataRow[] rows = mom.Select("Name = 'Teresa'");
+            Assert.Equal(2, rows.Length);
 
             // test with apos escaped
-            Rows = Mom.Select("Name = '''Jhon O'''' Collenal'''");
-            Assert.Equal(1, Rows.Length);
+            rows = mom.Select("Name = '''Jhon O'''' Collenal'''");
+            Assert.Equal(1, rows.Length);
 
-            Rows = Mom.Select("Name = 'Teresa' and ChildName = 'Nick'");
-            Assert.Equal(0, Rows.Length);
+            rows = mom.Select("Name = 'Teresa' and ChildName = 'Nick'");
+            Assert.Equal(0, rows.Length);
 
-            Rows = Mom.Select("Name = 'Teresa' and ChildName = 'Jack'");
-            Assert.Equal(1, Rows.Length);
+            rows = mom.Select("Name = 'Teresa' and ChildName = 'Jack'");
+            Assert.Equal(1, rows.Length);
 
-            Rows = Mom.Select("Name = 'Teresa' and ChildName <> 'Jack'");
-            Assert.Equal("Mack", Rows[0][1]);
+            rows = mom.Select("Name = 'Teresa' and ChildName <> 'Jack'");
+            Assert.Equal("Mack", rows[0][1]);
 
-            Rows = Mom.Select("Name = 'Teresa' or ChildName <> 'Jack'");
-            Assert.Equal(6, Rows.Length);
+            rows = mom.Select("Name = 'Teresa' or ChildName <> 'Jack'");
+            Assert.Equal(6, rows.Length);
 
-            Rows = Child.Select("age = 20 - 1");
-            Assert.Equal(1, Rows.Length);
+            rows = child.Select("age = 20 - 1");
+            Assert.Equal(1, rows.Length);
 
-            Rows = Child.Select("age <= 20");
-            Assert.Equal(3, Rows.Length);
+            rows = child.Select("age <= 20");
+            Assert.Equal(3, rows.Length);
 
-            Rows = Child.Select("age >= 20");
-            Assert.Equal(4, Rows.Length);
+            rows = child.Select("age >= 20");
+            Assert.Equal(4, rows.Length);
 
-            Rows = Child.Select("age >= 20 and name = 'Mack' or name = 'Nick'");
-            Assert.Equal(2, Rows.Length);
+            rows = child.Select("age >= 20 and name = 'Mack' or name = 'Nick'");
+            Assert.Equal(2, rows.Length);
 
-            Rows = Child.Select("age >= 20 and (name = 'Mack' or name = 'Nick')");
-            Assert.Equal(1, Rows.Length);
-            Assert.Equal("Mack", Rows[0][0]);
+            rows = child.Select("age >= 20 and (name = 'Mack' or name = 'Nick')");
+            Assert.Equal(1, rows.Length);
+            Assert.Equal("Mack", rows[0][0]);
 
-            Rows = Child.Select("not (Name = 'Jack')");
-            Assert.Equal(6, Rows.Length);
+            rows = child.Select("not (Name = 'Jack')");
+            Assert.Equal(6, rows.Length);
         }
 
         [Fact]
         public void Select2()
         {
-            DataSet Set = new DataSet();
-            DataTable Child = new DataTable("Child");
+            DataSet set = new DataSet();
+            DataTable child = new DataTable("Child");
 
-            Set.Tables.Add(Child);
+            set.Tables.Add(child);
 
-            DataColumn Col3 = new DataColumn("Name");
-            DataColumn Col4 = new DataColumn("Age");
-            Col4.DataType = typeof(short);
-            Child.Columns.Add(Col3);
-            Child.Columns.Add(Col4);
+            DataColumn col3 = new DataColumn("Name");
+            DataColumn col4 = new DataColumn("Age");
+            col4.DataType = typeof(short);
+            child.Columns.Add(col3);
+            child.Columns.Add(col4);
 
-            DataRow Row = Child.NewRow();
-            Row[0] = "Nick";
-            Row[1] = 15;
-            Child.Rows.Add(Row);
+            DataRow row = child.NewRow();
+            row[0] = "Nick";
+            row[1] = 15;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Dick";
-            Row[1] = 25;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Dick";
+            row[1] = 25;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mick";
-            Row[1] = 35;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mick";
+            row[1] = 35;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Jack";
-            Row[1] = 10;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Jack";
+            row[1] = 10;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 19;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 19;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 99;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 99;
+            child.Rows.Add(row);
 
-            DataRow[] Rows = Child.Select("age >= 20", "age DESC");
-            Assert.Equal(3, Rows.Length);
-            Assert.Equal("Mack", Rows[0][0]);
-            Assert.Equal("Mick", Rows[1][0]);
-            Assert.Equal("Dick", Rows[2][0]);
+            DataRow[] rows = child.Select("age >= 20", "age DESC");
+            Assert.Equal(3, rows.Length);
+            Assert.Equal("Mack", rows[0][0]);
+            Assert.Equal("Mick", rows[1][0]);
+            Assert.Equal("Dick", rows[2][0]);
 
-            Rows = Child.Select("age >= 20", "age asc");
-            Assert.Equal(3, Rows.Length);
-            Assert.Equal("Dick", Rows[0][0]);
-            Assert.Equal("Mick", Rows[1][0]);
-            Assert.Equal("Mack", Rows[2][0]);
+            rows = child.Select("age >= 20", "age asc");
+            Assert.Equal(3, rows.Length);
+            Assert.Equal("Dick", rows[0][0]);
+            Assert.Equal("Mick", rows[1][0]);
+            Assert.Equal("Mack", rows[2][0]);
 
-            Rows = Child.Select("age >= 20", "name asc");
-            Assert.Equal(3, Rows.Length);
-            Assert.Equal("Dick", Rows[0][0]);
-            Assert.Equal("Mack", Rows[1][0]);
-            Assert.Equal("Mick", Rows[2][0]);
+            rows = child.Select("age >= 20", "name asc");
+            Assert.Equal(3, rows.Length);
+            Assert.Equal("Dick", rows[0][0]);
+            Assert.Equal("Mack", rows[1][0]);
+            Assert.Equal("Mick", rows[2][0]);
 
-            Rows = Child.Select("age >= 20", "name desc");
-            Assert.Equal(3, Rows.Length);
-            Assert.Equal("Mick", Rows[0][0]);
-            Assert.Equal("Mack", Rows[1][0]);
-            Assert.Equal("Dick", Rows[2][0]);
+            rows = child.Select("age >= 20", "name desc");
+            Assert.Equal(3, rows.Length);
+            Assert.Equal("Mick", rows[0][0]);
+            Assert.Equal("Mack", rows[1][0]);
+            Assert.Equal("Dick", rows[2][0]);
         }
 
         [Fact]
         public void SelectParsing()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = 1;
-            Row[2] = 1;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = 1;
+            row[2] = 1;
+            t.Rows.Add(row);
 
-            Assert.Equal(12, T.Select("age<=10").Length);
+            Assert.Equal(12, t.Select("age<=10").Length);
 
-            Assert.Equal(12, T.Select("age\n\t<\n\t=\t\n10").Length);
+            Assert.Equal(12, t.Select("age\n\t<\n\t=\t\n10").Length);
 
-            try
-            {
-                T.Select("name = 1human ");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException e)
-            {
-                // missing operand after 'human' operand
-                Assert.Equal(typeof(SyntaxErrorException), e.GetType());
-            }
+            // missing operand after 'human' operand
+            Assert.Throws<SyntaxErrorException>(() => t.Select("name = 1human "));
 
-            try
-            {
-                T.Select("name = 1");
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                // Cannot perform '=' operation between string and Int32
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-            }
+            // Cannot perform '=' operation between string and Int32
+            Assert.Throws<EvaluateException>(() => t.Select("name = 1"));
 
-            Assert.Equal(1, T.Select("age = '13'").Length);
+            Assert.Equal(1, t.Select("age = '13'").Length);
         }
 
         [Fact]
@@ -349,42 +331,43 @@ namespace System.Data.Tests
         [Fact]
         public void SelectOperators()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = 1;
-            Row[2] = 1;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = 1;
+            row[2] = 1;
+            t.Rows.Add(row);
 
-            Assert.Equal(11, T.Select("age < 10").Length);
-            Assert.Equal(12, T.Select("age <= 10").Length);
-            Assert.Equal(12, T.Select("age< =10").Length);
-            Assert.Equal(89, T.Select("age > 10").Length);
-            Assert.Equal(90, T.Select("age >= 10").Length);
-            Assert.Equal(100, T.Select("age <> 10").Length);
-            Assert.Equal(3, T.Select("name < 'human10'").Length);
-            Assert.Equal(3, T.Select("id < '10'").Length);
+            Assert.Equal(11, t.Select("age < 10").Length);
+            Assert.Equal(12, t.Select("age <= 10").Length);
+            Assert.Equal(12, t.Select("age< =10").Length);
+            Assert.Equal(89, t.Select("age > 10").Length);
+            Assert.Equal(90, t.Select("age >= 10").Length);
+            Assert.Equal(100, t.Select("age <> 10").Length);
+            Assert.Equal(3, t.Select("name < 'human10'").Length);
+            Assert.Equal(3, t.Select("id < '10'").Length);
+
             // FIXME: Somebody explain how this can be possible.
             // it seems that it is no matter between 10 - 30. The
             // result is always 25 :-P
@@ -414,289 +397,256 @@ namespace System.Data.Tests
         [Fact]
         public void SelectExceptions()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
 
             for (int i = 0; i < 100; i++)
             {
-                DataRow Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                DataRow row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
 
-            try
-            {
-                T.Select("name = human1");
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                // column name human not found
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-            }
+            // column name human not found
+            Assert.Throws<EvaluateException>(() => t.Select("name = human1"));
 
-            Assert.Equal(1, T.Select("id = '12'").Length);
-            Assert.Equal(1, T.Select("id = 12").Length);
+            Assert.Equal(1, t.Select("id = '12'").Length);
+            Assert.Equal(1, t.Select("id = 12").Length);
 
-            try
-            {
-                T.Select("id = 1k3");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException e)
-            {
-                // no operands after k3 operator
-                Assert.Equal(typeof(SyntaxErrorException), e.GetType());
-            }
+            // no operands after k3 operator
+            Assert.Throws<SyntaxErrorException>(() => t.Select("id = 1k3"));
         }
 
         [Fact]
         public void SelectStringOperators()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = 1;
-            Row[2] = 1;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = 1;
+            row[2] = 1;
+            t.Rows.Add(row);
 
-            Assert.Equal(1, T.Select("name = 'human' + 1").Length);
+            Assert.Equal(1, t.Select("name = 'human' + 1").Length);
 
-            Assert.Equal("human1", T.Select("name = 'human' + 1")[0]["name"]);
-            Assert.Equal(1, T.Select("name = 'human' + '1'").Length);
-            Assert.Equal("human1", T.Select("name = 'human' + '1'")[0]["name"]);
-            Assert.Equal(1, T.Select("name = 'human' + 1 + 2").Length);
-            Assert.Equal("human12", T.Select("name = 'human' + '1' + '2'")[0]["name"]);
+            Assert.Equal("human1", t.Select("name = 'human' + 1")[0]["name"]);
+            Assert.Equal(1, t.Select("name = 'human' + '1'").Length);
+            Assert.Equal("human1", t.Select("name = 'human' + '1'")[0]["name"]);
+            Assert.Equal(1, t.Select("name = 'human' + 1 + 2").Length);
+            Assert.Equal("human12", t.Select("name = 'human' + '1' + '2'")[0]["name"]);
 
-            Assert.Equal(1, T.Select("name = 'huMAn' + 1").Length);
+            Assert.Equal(1, t.Select("name = 'huMAn' + 1").Length);
 
-            Set.CaseSensitive = true;
-            Assert.Equal(0, T.Select("name = 'huMAn' + 1").Length);
+            set.CaseSensitive = true;
+            Assert.Equal(0, t.Select("name = 'huMAn' + 1").Length);
 
-            T.CaseSensitive = false;
-            Assert.Equal(1, T.Select("name = 'huMAn' + 1").Length);
+            t.CaseSensitive = false;
+            Assert.Equal(1, t.Select("name = 'huMAn' + 1").Length);
 
-            T.CaseSensitive = true;
-            Assert.Equal(0, T.Select("name = 'huMAn' + 1").Length);
+            t.CaseSensitive = true;
+            Assert.Equal(0, t.Select("name = 'huMAn' + 1").Length);
 
-            Set.CaseSensitive = false;
-            Assert.Equal(0, T.Select("name = 'huMAn' + 1").Length);
+            set.CaseSensitive = false;
+            Assert.Equal(0, t.Select("name = 'huMAn' + 1").Length);
 
-            T.CaseSensitive = false;
-            Assert.Equal(1, T.Select("name = 'huMAn' + 1").Length);
+            t.CaseSensitive = false;
+            Assert.Equal(1, t.Select("name = 'huMAn' + 1").Length);
 
-            Assert.Equal(0, T.Select("name = 'human1*'").Length);
-            Assert.Equal(11, T.Select("name like 'human1*'").Length);
-            Assert.Equal(11, T.Select("name like 'human1%'").Length);
+            Assert.Equal(0, t.Select("name = 'human1*'").Length);
+            Assert.Equal(11, t.Select("name like 'human1*'").Length);
+            Assert.Equal(11, t.Select("name like 'human1%'").Length);
 
-            try
-            {
-                Assert.Equal(11, T.Select("name like 'h*an1'").Length);
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                // 'h*an1' is invalid
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-            }
+            // 'h*an1' is invalid
+            Assert.Throws<EvaluateException>(() => t.Select("name like 'h*an1'"));
+            // 'h%an1' is invalid
+            Assert.Throws<EvaluateException>(() => t.Select("name like 'h%an1'"));
 
-            try
-            {
-                Assert.Equal(11, T.Select("name like 'h%an1'").Length);
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                // 'h%an1' is invalid
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-            }
-
-            Assert.Equal(0, T.Select("name like 'h[%]an'").Length);
-            Assert.Equal(1, T.Select("name like 'h[*]an'").Length);
+            Assert.Equal(0, t.Select("name like 'h[%]an'").Length);
+            Assert.Equal(1, t.Select("name like 'h[*]an'").Length);
         }
 
         [Fact]
         public void SelectAggregates()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
-            DataRow Row = null;
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
+            DataRow row = null;
 
             for (int i = 0; i < 1000; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
 
-            Assert.Equal(1000, T.Select("Sum(age) > 10").Length);
-            Assert.Equal(1000, T.Select("avg(age) = 499").Length);
-            Assert.Equal(1000, T.Select("min(age) = 0").Length);
-            Assert.Equal(1000, T.Select("max(age) = 999").Length);
-            Assert.Equal(1000, T.Select("count(age) = 1000").Length);
-            Assert.Equal(1000, T.Select("stdev(age) > 287 and stdev(age) < 289").Length);
-            Assert.Equal(1000, T.Select("var(age) < 83417 and var(age) > 83416").Length);
+            Assert.Equal(1000, t.Select("Sum(age) > 10").Length);
+            Assert.Equal(1000, t.Select("avg(age) = 499").Length);
+            Assert.Equal(1000, t.Select("min(age) = 0").Length);
+            Assert.Equal(1000, t.Select("max(age) = 999").Length);
+            Assert.Equal(1000, t.Select("count(age) = 1000").Length);
+            Assert.Equal(1000, t.Select("stdev(age) > 287 and stdev(age) < 289").Length);
+            Assert.Equal(1000, t.Select("var(age) < 83417 and var(age) > 83416").Length);
         }
 
         [Fact]
         public void SelectFunctions()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            T.Columns.Add(C);
-            DataRow Row = null;
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            t.Columns.Add(c);
+            DataRow row = null;
 
             for (int i = 0; i < 1000; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "human" + "test";
-            Row[1] = DBNull.Value;
-            Row[2] = DBNull.Value;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "human" + "test";
+            row[1] = DBNull.Value;
+            row[2] = DBNull.Value;
+            t.Rows.Add(row);
 
-            Assert.Equal(25, T.Select("age = 5*5")[0]["age"]);
-            Assert.Equal(901, T.Select("len(name) > 7").Length);
-            Assert.Equal(125, T.Select("age = 5*5*5 AND len(name)>7")[0]["age"]);
-            Assert.Equal(1, T.Select("isnull(id, 'test') = 'test'").Length);
-            Assert.Equal(1000, T.Select("iif(id = '56', 'test', 'false') = 'false'").Length);
-            Assert.Equal(1, T.Select("iif(id = '56', 'test', 'false') = 'test'").Length);
-            Assert.Equal(9, T.Select("substring(id, 2, 3) = '23'").Length);
-            Assert.Equal("123", T.Select("substring(id, 2, 3) = '23'")[0]["id"]);
-            Assert.Equal("423", T.Select("substring(id, 2, 3) = '23'")[3]["id"]);
-            Assert.Equal("923", T.Select("substring(id, 2, 3) = '23'")[8]["id"]);
+            Assert.Equal(25, t.Select("age = 5*5")[0]["age"]);
+            Assert.Equal(901, t.Select("len(name) > 7").Length);
+            Assert.Equal(125, t.Select("age = 5*5*5 AND len(name)>7")[0]["age"]);
+            Assert.Equal(1, t.Select("isnull(id, 'test') = 'test'").Length);
+            Assert.Equal(1000, t.Select("iif(id = '56', 'test', 'false') = 'false'").Length);
+            Assert.Equal(1, t.Select("iif(id = '56', 'test', 'false') = 'test'").Length);
+            Assert.Equal(9, t.Select("substring(id, 2, 3) = '23'").Length);
+            Assert.Equal("123", t.Select("substring(id, 2, 3) = '23'")[0]["id"]);
+            Assert.Equal("423", t.Select("substring(id, 2, 3) = '23'")[3]["id"]);
+            Assert.Equal("923", t.Select("substring(id, 2, 3) = '23'")[8]["id"]);
         }
 
         [Fact]
         public void SelectRelations()
         {
-            DataSet Set = new DataSet();
-            DataTable Mom = new DataTable("Mom");
-            DataTable Child = new DataTable("Child");
+            DataSet set = new DataSet();
+            DataTable m = new DataTable("Mom");
+            DataTable child = new DataTable("Child");
 
-            Set.Tables.Add(Mom);
-            Set.Tables.Add(Child);
+            set.Tables.Add(m);
+            set.Tables.Add(child);
 
-            DataColumn Col = new DataColumn("Name");
-            DataColumn Col2 = new DataColumn("ChildName");
-            Mom.Columns.Add(Col);
-            Mom.Columns.Add(Col2);
+            DataColumn col = new DataColumn("Name");
+            DataColumn col2 = new DataColumn("ChildName");
+            m.Columns.Add(col);
+            m.Columns.Add(col2);
 
-            DataColumn Col3 = new DataColumn("Name");
-            DataColumn Col4 = new DataColumn("Age");
-            Col4.DataType = typeof(short);
-            Child.Columns.Add(Col3);
-            Child.Columns.Add(Col4);
+            DataColumn col3 = new DataColumn("Name");
+            DataColumn col4 = new DataColumn("Age");
+            col4.DataType = typeof(short);
+            child.Columns.Add(col3);
+            child.Columns.Add(col4);
 
-            DataRelation Relation = new DataRelation("Rel", Mom.Columns[1], Child.Columns[0]);
-            Set.Relations.Add(Relation);
+            DataRelation r = new DataRelation("Rel", m.Columns[1], child.Columns[0]);
+            set.Relations.Add(r);
 
-            DataRow Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Nick";
-            Mom.Rows.Add(Row);
+            DataRow row = m.NewRow();
+            row[0] = "Laura";
+            row[1] = "Nick";
+            m.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Dick";
-            Mom.Rows.Add(Row);
+            row = m.NewRow();
+            row[0] = "Laura";
+            row[1] = "Dick";
+            m.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Mick";
-            Mom.Rows.Add(Row);
+            row = m.NewRow();
+            row[0] = "Laura";
+            row[1] = "Mick";
+            m.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Jack";
-            Mom.Rows.Add(Row);
+            row = m.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Jack";
+            m.Rows.Add(row);
 
-            Row = Mom.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Mack";
-            Mom.Rows.Add(Row);
+            row = m.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Mack";
+            m.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Nick";
-            Row[1] = 15;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Nick";
+            row[1] = 15;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Dick";
-            Row[1] = 25;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Dick";
+            row[1] = 25;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mick";
-            Row[1] = 35;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mick";
+            row[1] = 35;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Jack";
-            Row[1] = 10;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Jack";
+            row[1] = 10;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 19;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 19;
+            child.Rows.Add(row);
 
-            Row = Child.NewRow();
-            Row[0] = "Mack";
-            Row[1] = 99;
-            Child.Rows.Add(Row);
+            row = child.NewRow();
+            row[0] = "Mack";
+            row[1] = 99;
+            child.Rows.Add(row);
 
-            DataRow[] Rows = Child.Select("name = Parent.Childname");
-            Assert.Equal(6, Rows.Length);
-            Rows = Child.Select("Parent.childname = 'Jack'");
-            Assert.Equal(1, Rows.Length);
+            DataRow[] rows = child.Select("name = Parent.Childname");
+            Assert.Equal(6, rows.Length);
+            rows = child.Select("Parent.childname = 'Jack'");
+            Assert.Equal(1, rows.Length);
 
             /*
             try {
@@ -708,73 +658,56 @@ Assert.False(true);
             }
             */
 
-            Rows = Child.Select("Parent.name = 'Laura'");
-            Assert.Equal(3, Rows.Length);
+            rows = child.Select("Parent.name = 'Laura'");
+            Assert.Equal(3, rows.Length);
 
             DataTable Parent2 = new DataTable("Parent2");
-            Col = new DataColumn("Name");
-            Col2 = new DataColumn("ChildName");
+            col = new DataColumn("Name");
+            col2 = new DataColumn("ChildName");
 
-            Parent2.Columns.Add(Col);
-            Parent2.Columns.Add(Col2);
-            Set.Tables.Add(Parent2);
+            Parent2.Columns.Add(col);
+            Parent2.Columns.Add(col2);
+            set.Tables.Add(Parent2);
 
-            Row = Parent2.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Nick";
-            Parent2.Rows.Add(Row);
+            row = Parent2.NewRow();
+            row[0] = "Laura";
+            row[1] = "Nick";
+            Parent2.Rows.Add(row);
 
-            Row = Parent2.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Dick";
-            Parent2.Rows.Add(Row);
+            row = Parent2.NewRow();
+            row[0] = "Laura";
+            row[1] = "Dick";
+            Parent2.Rows.Add(row);
 
-            Row = Parent2.NewRow();
-            Row[0] = "Laura";
-            Row[1] = "Mick";
-            Parent2.Rows.Add(Row);
+            row = Parent2.NewRow();
+            row[0] = "Laura";
+            row[1] = "Mick";
+            Parent2.Rows.Add(row);
 
-            Row = Parent2.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Jack";
-            Parent2.Rows.Add(Row);
+            row = Parent2.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Jack";
+            Parent2.Rows.Add(row);
 
-            Row = Parent2.NewRow();
-            Row[0] = "Teresa";
-            Row[1] = "Mack";
-            Parent2.Rows.Add(Row);
+            row = Parent2.NewRow();
+            row[0] = "Teresa";
+            row[1] = "Mack";
+            Parent2.Rows.Add(row);
 
-            Relation = new DataRelation("Rel2", Parent2.Columns[1], Child.Columns[0]);
-            Set.Relations.Add(Relation);
+            r = new DataRelation("Rel2", Parent2.Columns[1], child.Columns[0]);
+            set.Relations.Add(r);
 
-            try
-            {
-                Rows = Child.Select("Parent.ChildName = 'Jack'");
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-                // Do not compare exception messages!
-                //Assert.Equal ("The table [Child] involved in more than one relation. You must explicitly mention a relation name in the expression 'parent.[ChildName]'.", e.Message);
-            }
+            // The table [Child] involved in more than one relation. You must explicitly mention a relation name in the expression 'parent.[ChildName]'
+            Assert.Throws<EvaluateException>(() => child.Select("Parent.ChildName = 'Jack'"));
 
-            Rows = Child.Select("Parent(rel).ChildName = 'Jack'");
-            Assert.Equal(1, Rows.Length);
+            rows = child.Select("Parent(rel).ChildName = 'Jack'");
+            Assert.Equal(1, rows.Length);
 
-            Rows = Child.Select("Parent(Rel2).ChildName = 'Jack'");
-            Assert.Equal(1, Rows.Length);
+            rows = child.Select("Parent(Rel2).ChildName = 'Jack'");
+            Assert.Equal(1, rows.Length);
 
-            try
-            {
-                Mom.Select("Parent.name  = 'John'");
-            }
-            catch (IndexOutOfRangeException e)
-            {
-                Assert.Equal(typeof(IndexOutOfRangeException), e.GetType());
-                // Do not compare exception messages!
-                //Assert.Equal ("Cannot find relation 0.", e.Message);
-            }
+            // Cannot find relation 0.
+            Assert.Throws<IndexOutOfRangeException>(() => m.Select("Parent.name  = 'John'"));
         }
 
         [Fact]
@@ -826,32 +759,14 @@ Assert.False(true);
 
             Col = new DataColumn("failed");
 
-            try
-            {
-                dt.PrimaryKey = new DataColumn[] { Col };
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-                // Never expect English message
-                // Assert.Equal ("Column must belong to a table.", e.Message);
-            }
+            // Column must belong to a table.
+            Assert.Throws<ArgumentException>(() => dt.PrimaryKey = new DataColumn[] { Col });
 
             DataTable dt2 = new DataTable();
             dt2.Columns.Add();
 
-            try
-            {
-                dt.PrimaryKey = new DataColumn[] { dt2.Columns[0] };
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-                // Never expect English message
-                // Assert.Equal ("PrimaryKey columns do not belong to this table.", e.Message);
-            }
+            // PrimaryKey columns do not belong to this table.
+            Assert.Throws<ArgumentException>(() => dt.PrimaryKey = new DataColumn[] { dt2.Columns[0] });
 
             Assert.Equal(0, dt.Constraints.Count);
 
@@ -1135,14 +1050,7 @@ Assert.False(true);
             object[] row2 = { 143, "Hij" };
             DataRow newRow2 = table.LoadDataRow(row2, true);
 
-            try
-            {
-                table.EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException)
-            {
-            }
+            Assert.Throws<ConstraintException>(() => table.EndLoadData());
         }
 
         [Fact]
@@ -1180,14 +1088,7 @@ Assert.False(true);
             table.AcceptChanges();
             changesTable = table.GetChanges();
 
-            try
-            {
-                int cnt = changesTable.Rows.Count;
-                Assert.False(true);
-            }
-            catch (NullReferenceException)
-            {
-            }
+            Assert.Null(changesTable);
 
             //Testing RejectChanges
             row = table.NewRow();
@@ -1234,25 +1135,19 @@ Assert.False(true);
             target.ImportRow(src.Rows[2]);     // import 3rd row
             target.ImportRow(src.Rows[3]);     // import 4th row
 
-            try
-            {
-                target.ImportRow(src.Rows[2]); // import 3rd row again
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Column 'id' is constrained to be unique.
-                // Value '3' is already present
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
+            // import 3rd row again
+            ConstraintException ex = Assert.Throws<ConstraintException>(() => target.ImportRow(src.Rows[2]));
+            // Column 'id' is constrained to be unique.
+            // Value '3' is already present
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "id" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "3" + @"[\p{Pf}\p{Po}]", ex.Message);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "id" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "3" + @"[\p{Pf}\p{Po}]", ex.Message);
-            }
+
 
             // check row states
             Assert.Equal(src.Rows[0].RowState, target.Rows[0].RowState);
@@ -1342,25 +1237,16 @@ Assert.False(true);
             Assert.Equal(2, table.Rows.Count);
             Assert.Equal(DataRowState.Deleted, table.Rows[1].RowState);
 
-            try
-            {
-                table.RejectChanges();
-                Assert.False(true);
-            }
-            catch (ConstraintException ex)
-            {
-                // Column 'col' is constrained to be unique.
-                // Value '1' is already present
-                Assert.Equal(typeof(ConstraintException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "col" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "1" + @"[\p{Pf}\p{Po}]", ex.Message);
-            }
+            ConstraintException ex = Assert.Throws<ConstraintException>(() => table.RejectChanges());
+            // Column 'col' is constrained to be unique.
+            // Value '1' is already present
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "col" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "1" + @"[\p{Pf}\p{Po}]", ex.Message);
         }
 
         [Fact]
@@ -1425,15 +1311,7 @@ Assert.False(true);
 
                     if (invalid.Contains(Tuple.Create(types[a], types[b])))
                     {
-                        try
-                        {
-                            dt2.ImportRow(r1);
-                            Assert.False(true);
-                        }
-                        catch /*(ArgumentException)*/
-                        {
-                            continue;
-                        }
+                        Assert.Throws<ArgumentException>(() => dt2.ImportRow(r1));
                     }
                     else
                     {
@@ -1478,14 +1356,7 @@ Assert.False(true);
 
             Assert.Equal(2, table.Rows.Count);
             Assert.Equal(1, table.ChildRelations.Count);
-            try
-            {
-                table.Reset();
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => table.Reset());
 
             Assert.Equal(0, table.Rows.Count);
             Assert.Equal(0, table.ChildRelations.Count);
@@ -1529,7 +1400,7 @@ Assert.False(true);
             Assert.True(_tableClearedEventFired);
 
             DataRow r = table.Rows.Find(1);
-            Assert.True(r == null);
+            Assert.Null(r);
 
             // try adding new row. indexes should have cleared
             table.Rows.Add(new object[] { 2, "mono 2" });
@@ -1573,69 +1444,69 @@ Assert.False(true);
             dt1.Rows.Add(dr1);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer);
-            string TextString = writer.ToString();
-            string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            string textString = writer.ToString();
+            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            <xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            </xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        </xs:element>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      </xs:choice>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", TextString);
+            Assert.Equal("</xs:schema>", textString);
         }
 
         [Fact]
@@ -1662,85 +1533,85 @@ Assert.False(true);
             ds.Relations.Add(rel);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer);
-            string TextString = writer.ToString();
-            string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            string textString = writer.ToString();
+            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            <xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            </xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        </xs:element>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      </xs:choice>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:unique name=\"Constraint1\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:selector xpath=\".//TestWriteXmlSchema\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:field xpath=\"Col1\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:unique>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", TextString);
+            Assert.Equal("</xs:schema>", textString);
         }
 
         [Fact]
@@ -1767,133 +1638,133 @@ Assert.False(true);
             ds.Relations.Add(rel);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer, true);
-            string TextString = writer.ToString();
-            string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            string textString = writer.ToString();
+            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            <xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            </xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        </xs:element>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        <xs:element name=\"HelloWorld\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            <xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"T1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("              <xs:element name=\"T2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("            </xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("          </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("        </xs:element>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      </xs:choice>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:unique name=\"Constraint1\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:selector xpath=\".//TestWriteXmlSchema\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:field xpath=\"Col1\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:unique>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    <xs:keyref name=\"Relation1\" refer=\"Constraint1\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:selector xpath=\".//HelloWorld\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("      <xs:field xpath=\"T1\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("    </xs:keyref>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+            textString = textString.Substring(textString.IndexOf('\n') + 1);
             Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", TextString);
+            Assert.Equal("</xs:schema>", textString);
         }
 
         [Fact]
@@ -1940,15 +1811,7 @@ Assert.False(true);
             dt.Constraints.Add(new UniqueConstraint(dt.Columns[0]));
             dt.Rows.Add(new object[] { 1, 3 });
             dt.Rows.Add(new object[] { DBNull.Value, 3 });
-
-            try
-            {
-                dt.PrimaryKey = new DataColumn[] { dt.Columns[0] };
-                Assert.False(true);
-            }
-            catch (DataException)
-            {
-            }
+            Assert.Throws<DataException>(() => dt.PrimaryKey = new DataColumn[] { dt.Columns[0] });
         }
 
         [Fact]
@@ -1961,14 +1824,7 @@ Assert.False(true);
             dt.PrimaryKey = new DataColumn[] { dt.Columns[0] };
             dt.Rows.Add(new object[] { 1, 3 });
 
-            try
-            {
-                dt.Rows.Add(new object[] { DBNull.Value, 3 });
-                Assert.False(true);
-            }
-            catch (NoNullAllowedException)
-            {
-            }
+            Assert.Throws<NoNullAllowedException>(() => dt.Rows.Add(new object[] { DBNull.Value, 3 }));
         }
 
         [Fact]
@@ -2028,7 +1884,7 @@ Assert.False(true);
         {
             MyDataTable dt1 = new MyDataTable();
             MyDataTable dt = (MyDataTable)(dt1.Clone());
-            Assert.Equal(2, MyDataTable.count);
+            Assert.Equal(2, MyDataTable.Count);
         }
 
         private DataRowAction _rowActionChanging = DataRowAction.Nothing;
@@ -2143,7 +1999,7 @@ Assert.False(true);
         }
 
         private DataTable _dt;
-        private void localSetup()
+        private void LocalSetup()
         {
             _dt = new DataTable("test");
             _dt.Columns.Add("id", typeof(int));
@@ -2162,7 +2018,7 @@ Assert.False(true);
         [Fact]
         public void CreateDataReader1()
         {
-            localSetup();
+            LocalSetup();
             DataTableReader dtr = _dt.CreateDataReader();
             Assert.True(dtr.HasRows);
             Assert.Equal(_dt.Columns.Count, dtr.FieldCount);
@@ -2180,7 +2036,7 @@ Assert.False(true);
         [Fact]
         public void CreateDataReader2()
         {
-            localSetup();
+            LocalSetup();
             DataTableReader dtr = _dt.CreateDataReader();
             Assert.True(dtr.HasRows);
             Assert.Equal(_dt.Columns.Count, dtr.FieldCount);
@@ -2202,7 +2058,7 @@ Assert.False(true);
         [Fact]
         public void Load_Basic()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadBasic");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2228,7 +2084,7 @@ Assert.False(true);
         [Fact]
         public void Load_NoSchema()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadNoSchema");
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr);
@@ -2242,29 +2098,29 @@ Assert.False(true);
             Assert.Equal("mono 3", dtLoad.Rows[2][1]);
         }
 
-        internal struct fillErrorStruct
+        internal struct FillErrorStruct
         {
-            internal string error;
-            internal string tableName;
-            internal int rowKey;
-            internal bool contFlag;
+            internal string _error;
+            internal string _tableName;
+            internal int _rowKey;
+            internal bool _contFlag;
 
             internal void init(string tbl, int row, bool cont, string err)
             {
-                tableName = tbl;
-                rowKey = row;
-                contFlag = cont;
-                error = err;
+                _tableName = tbl;
+                _rowKey = row;
+                _contFlag = cont;
+                _error = err;
             }
         }
-        private fillErrorStruct[] _fillErr = new fillErrorStruct[3];
+        private FillErrorStruct[] _fillErr = new FillErrorStruct[3];
         private int _fillErrCounter;
-        private void fillErrorHandler(object sender, FillErrorEventArgs e)
+        private void FillErrorHandler(object sender, FillErrorEventArgs e)
         {
-            e.Continue = _fillErr[_fillErrCounter].contFlag;
-            Assert.Equal(_fillErr[_fillErrCounter].tableName, e.DataTable.TableName);
+            e.Continue = _fillErr[_fillErrCounter]._contFlag;
+            Assert.Equal(_fillErr[_fillErrCounter]._tableName, e.DataTable.TableName);
             //Assert.Equal (fillErr[fillErrCounter].rowKey, e.Values[0]);
-            Assert.Equal(_fillErr[_fillErrCounter].contFlag, e.Continue);
+            Assert.Equal(_fillErr[_fillErrCounter]._contFlag, e.Continue);
             //Assert.Equal (fillErr[fillErrCounter].error, e.Errors.Message);
             _fillErrCounter++;
         }
@@ -2272,18 +2128,11 @@ Assert.False(true);
         [Fact]
         public void Load_Incompatible()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadIncompatible");
             dtLoad.Columns.Add("name", typeof(double));
             DataTableReader dtr = _dt.CreateDataReader();
-            try
-            {
-                dtLoad.Load(dtr);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => dtLoad.Load(dtr));
         }
         [Fact]
         // Load doesn't have a third overload in System.Data
@@ -2297,11 +2146,11 @@ Assert.False(true);
                 "Input string was not in a correct format.Couldn't store <mono 2> in name Column.  Expected type is Double.");
             _fillErr[2].init("LoadIncompatible", 3, true,
                 "Input string was not in a correct format.Couldn't store <mono 3> in name Column.  Expected type is Double.");
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadIncompatible");
             dtLoad.Columns.Add("name", typeof(double));
             DataTableReader dtr = _dt.CreateDataReader();
-            dtLoad.Load(dtr, LoadOption.PreserveChanges, fillErrorHandler);
+            dtLoad.Load(dtr, LoadOption.PreserveChanges, FillErrorHandler);
         }
 
         [Fact]
@@ -2312,24 +2161,17 @@ Assert.False(true);
             _fillErrCounter = 0;
             _fillErr[0].init("LoadIncompatible", 1, false,
                 "Input string was not in a correct format.Couldn't store <mono 1> in name Column.  Expected type is Double.");
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadIncompatible");
             dtLoad.Columns.Add("name", typeof(double));
             DataTableReader dtr = _dt.CreateDataReader();
-            try
-            {
-                dtLoad.Load(dtr, LoadOption.PreserveChanges, fillErrorHandler);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => dtLoad.Load(dtr, LoadOption.PreserveChanges, FillErrorHandler));
         }
 
         [Fact]
         public void Load_ExtraColsEqualVal()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadExtraCols");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.PrimaryKey = new DataColumn[] { dtLoad.Columns["id"] };
@@ -2352,7 +2194,7 @@ Assert.False(true);
         [Fact]
         public void Load_ExtraColsNonEqualVal()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadExtraCols");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.PrimaryKey = new DataColumn[] { dtLoad.Columns["id"] };
@@ -2378,7 +2220,7 @@ Assert.False(true);
         [Fact]
         public void Load_MissingColsNonNullable()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadMissingCols");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2390,20 +2232,13 @@ Assert.False(true);
             dtLoad.Rows.Add(new object[] { 6, "mono 6", "miss6" });
             dtLoad.AcceptChanges();
             DataTableReader dtr = _dt.CreateDataReader();
-            try
-            {
-                dtLoad.Load(dtr);
-                Assert.False(true);
-            }
-            catch (ConstraintException)
-            {
-            }
+            Assert.Throws<ConstraintException>(() => dtLoad.Load(dtr));
         }
 
         [Fact]
         public void Load_MissingColsDefault()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadMissingCols");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2442,7 +2277,7 @@ Assert.False(true);
         [Fact]
         public void Load_MissingColsNullable()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadMissingCols");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2468,13 +2303,13 @@ Assert.False(true);
             Assert.Equal("miss6", dtLoad.Rows[2][2]);
             Assert.Equal(1, dtLoad.Rows[3][0]);
             Assert.Equal("mono 1", dtLoad.Rows[3][1]);
-            //Assert.Null (dtLoad.Rows[3][2]);
+            //Assert.Null(dtLoad.Rows[3][2]);
             Assert.Equal(2, dtLoad.Rows[4][0]);
             Assert.Equal("mono 2", dtLoad.Rows[4][1]);
-            //Assert.Null (dtLoad.Rows[4][2]);
+            //Assert.Null(dtLoad.Rows[4][2]);
             Assert.Equal(3, dtLoad.Rows[5][0]);
             Assert.Equal("mono 3", dtLoad.Rows[5][1]);
-            //Assert.Null (dtLoad.Rows[5][2]);
+            //Assert.Null(dtLoad.Rows[5][2]);
         }
 
         private DataTable setupRowState()
@@ -2538,7 +2373,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStateChangesDefault()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             _dt.Rows.Add(new object[] { 5, "mono 5" });
             _dt.AcceptChanges();
@@ -2577,7 +2412,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStateChangesDefaultDelete()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2590,20 +2425,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[2][1, DataRowVersion.Current]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[2][1, DataRowVersion.Current]);
         }
 
         [Fact]
         public void Load_RowStatePreserveChanges()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             _dt.Rows.Add(new object[] { 5, "mono 5" });
             _dt.AcceptChanges();
@@ -2642,7 +2470,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStatePreserveChangesDelete()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2655,20 +2483,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr, LoadOption.PreserveChanges);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[2][1, DataRowVersion.Current]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[2][1, DataRowVersion.Current]);
         }
 
         [Fact]
         public void Load_RowStateOverwriteChanges()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             _dt.Rows.Add(new object[] { 5, "mono 5" });
             _dt.AcceptChanges();
@@ -2708,7 +2529,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStateUpsert()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             _dt.Rows.Add(new object[] { 5, "mono 5" });
             _dt.AcceptChanges();
@@ -2751,7 +2572,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStateUpsertDuplicateKey1()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
@@ -2788,7 +2609,7 @@ Assert.False(true);
         [Fact]
         public void Load_RowStateUpsertDuplicateKey2()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
@@ -2803,20 +2624,13 @@ Assert.False(true);
             dtLoad.Load(dtr, LoadOption.Upsert);
             dtLoad.AcceptChanges();
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[4][1]);
-                Assert.False(true);
-            }
-            catch (IndexOutOfRangeException)
-            {
-            }
+            Assert.Throws<IndexOutOfRangeException>(() => dtLoad.Rows[4][1]);
         }
 
         [Fact]
         public void Load_RowStateUpsertDelete1()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2829,20 +2643,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr, LoadOption.Upsert);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[2][1, DataRowVersion.Current]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[2][1, DataRowVersion.Current]);
         }
 
         [Fact]
         public void Load_RowStateUpsertDelete2()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -2855,20 +2662,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr, LoadOption.Upsert);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[3][1, DataRowVersion.Original]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[3][1, DataRowVersion.Original]);
         }
 
         [Fact]
         public void Load_RowStateUpsertAdd()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
@@ -2885,20 +2685,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr, LoadOption.Upsert);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[3][1, DataRowVersion.Original]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[3][1, DataRowVersion.Original]);
         }
 
         [Fact]
         public void Load_RowStateUpsertUnpresent()
         {
-            localSetup();
+            LocalSetup();
             _dt.Rows.Add(new object[] { 4, "mono 4" });
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
@@ -2911,20 +2704,13 @@ Assert.False(true);
             DataTableReader dtr = _dt.CreateDataReader();
             dtLoad.Load(dtr, LoadOption.Upsert);
 
-            try
-            {
-                Assert.Equal(" ", dtLoad.Rows[3][1, DataRowVersion.Original]);
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException)
-            {
-            }
+            Assert.Throws<VersionNotFoundException>(() => dtLoad.Rows[3][1, DataRowVersion.Original]);
         }
 
         [Fact]
         public void Load_RowStateUpsertUnchangedEqualVal()
         {
-            localSetup();
+            LocalSetup();
             DataTable dtLoad = new DataTable("LoadRowStateChanges");
             dtLoad.Columns.Add("id", typeof(int));
             dtLoad.Columns.Add("name", typeof(string));
@@ -3335,75 +3121,74 @@ Assert.False(true);
                 TextWriter writer = new StringWriter();
                 ds.Tables[0].WriteXmlSchema(writer);
 
-                string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
-                //string TextString = writer.ToString ();
+                string textString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
 
-                string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 // Looks like whoever added this test depended on English culture, which is wrong.
                 Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" msdata:MainDataTable=\"Region\" name=\"Root\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("    <xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("        <xs:element name=\"Region\">", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("          <xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("            <xs:sequence>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("            </xs:sequence>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("          </xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("        </xs:element>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("      </xs:choice>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("    </xs:complexType>", substring);
 
-                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
+                textString = textString.Substring(textString.IndexOf('\n') + 1);
                 Assert.Equal("  </xs:element>", substring);
 
-                Assert.Equal("</xs:schema>", TextString);
+                Assert.Equal("</xs:schema>", textString);
             }
         }
 
@@ -3505,7 +3290,6 @@ Assert.False(true);
             string result = sw.ToString();
 
             Assert.Equal(xmlschema.Replace("\r\n", "\n"), result.Replace("\r\n", "\n"));
-            //Assert.Equal (xmlschema, result.Replace ("\r\n");
         }
 
         [Fact]
@@ -3907,14 +3691,8 @@ Assert.False(true);
         {
             MemoryStream ms = new MemoryStream();
             DataTable dtr = new DataTable();
-            try
-            {
-                dtr.ReadXmlSchema(ms);
-                Assert.False(true);
-            }
-            catch (XmlException)
-            {
-            }
+
+            Assert.Throws<XmlException>(() => dtr.ReadXmlSchema(ms));
         }
 
         [Fact]
@@ -3922,28 +3700,15 @@ Assert.False(true);
         {
             DataTable dtw = new DataTable();
             MemoryStream ms = new MemoryStream();
-            try
-            {
-                dtw.WriteXmlSchema(ms);
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+
+            Assert.Throws<InvalidOperationException>(() => dtw.WriteXmlSchema(ms));
         }
 
         [Fact]
         public void ReadWriteXmlSchemaExp_NoFileName()
         {
             DataTable dtw = new DataTable();
-            try
-            {
-                dtw.WriteXmlSchema(string.Empty);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => dtw.WriteXmlSchema(string.Empty));
         }
 
         [Fact]
@@ -3954,26 +3719,18 @@ Assert.False(true);
             dtw.WriteXmlSchema(writer1);
             DataTable dtr = new DataTable("Table2");
             StringReader reader1 = new StringReader(writer1.ToString());
-            try
-            {
-                dtr.ReadXmlSchema(reader1);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+
+            Assert.Throws<ArgumentException>(() => dtr.ReadXmlSchema(reader1));
         }
 
         [Fact]
         public void ReadXmlSchemeWithoutScheme()
         {
             const string xml = @"<CustomElement />";
-            using (var s = new StringReader(xml))
-            {
-                DataTable dt = new DataTable();
-                dt.ReadXmlSchema(s);
-                Assert.Equal("", dt.TableName);
-            }
+            using var s = new StringReader(xml);
+            DataTable dt = new DataTable();
+            dt.ReadXmlSchema(s);
+            Assert.Equal("", dt.TableName);
         }
 
         [Fact]
@@ -3996,12 +3753,10 @@ Assert.False(true);
                     </xs:element>
                   </xs:schema>
                 </CustomElement>";
-            using (var s = new StringReader(xml))
-            {
-                DataTable dt = new DataTable();
-                dt.ReadXmlSchema(s);
-                Assert.Equal("row", dt.TableName);
-            }
+            using var s = new StringReader(xml);
+            DataTable dt = new DataTable();
+            dt.ReadXmlSchema(s);
+            Assert.Equal("row", dt.TableName);
         }
 
         [Fact]
@@ -4013,11 +3768,9 @@ Assert.False(true);
                 </CustomElement>";
             AssertExtensions.Throws<ArgumentException>(null, () =>
             {
-                using (var s = new StringReader(xml))
-                {
-                    DataTable dt = new DataTable();
-                    dt.ReadXmlSchema(s);
-                }
+                using var s = new StringReader(xml);
+                DataTable dt = new DataTable();
+                dt.ReadXmlSchema(s);
             });
         }
 
@@ -4026,11 +3779,11 @@ Assert.False(true);
 
     public class MyDataTable : DataTable
     {
-        public static int count;
+        public static int Count;
 
         public MyDataTable()
         {
-            count++;
+            Count++;
         }
     }
 
@@ -4067,7 +3820,6 @@ Assert.False(true);
                                 DateTime.Now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
             Assert.Equal(2, dv.Count);
-
         }
 
         [Fact]

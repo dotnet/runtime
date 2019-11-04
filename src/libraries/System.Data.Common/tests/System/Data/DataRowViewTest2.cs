@@ -25,7 +25,6 @@
 
 using Xunit;
 
-
 namespace System.Data.Tests
 {
     public class DataRowViewTest2
@@ -102,7 +101,7 @@ namespace System.Data.Tests
             DataView dvTmp2 = dvParent[3].CreateChildView(drel);
 
             // ChildView != null
-            Assert.True(dvTmp1 != null);
+            Assert.NotNull(dvTmp1);
 
             // Child view table = ChildTable
             Assert.Equal(dtChild, dvTmp1.Table);
@@ -134,7 +133,7 @@ namespace System.Data.Tests
             DataView dvTmp2 = dvParent[3].CreateChildView("ParentChild");
 
             // ChildView != null
-            Assert.True(dvTmp1 != null);
+            Assert.NotNull(dvTmp1);
 
             // Child view table = ChildTable
             Assert.Equal(dtChild, dvTmp1.Table);
@@ -166,12 +165,12 @@ namespace System.Data.Tests
             // check that the DataRowView still has the same DataView
             dv.Table = null;
 
-            Assert.True(drv1.DataView == dv);
+            Assert.Same(drv1.DataView, dv);
 
             //check that the DataRowView has a new DataView
             // check that the DataRowView has a new DataView
             dv = new DataView();
-            Assert.True(drv1.DataView.Equals(dv));
+            Assert.Equal(drv1.DataView, dv);
         }
 
         [Fact]
@@ -181,16 +180,16 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             DataRowView drv = dv[0];
-            int TableRowsCount = dt.Rows.Count;
-            int ViewRowCount = dv.Count;
+            int tableRowsCount = dt.Rows.Count;
+            int viewRowCount = dv.Count;
 
             // DataView Count
             drv.Delete();
-            Assert.Equal(dv.Count, ViewRowCount - 1);
+            Assert.Equal(viewRowCount - 1, dv.Count);
 
             //the table count should stay the same until EndEdit is invoked
             // Table Count
-            Assert.Equal(TableRowsCount, dt.Rows.Count);
+            Assert.Equal(tableRowsCount, dt.Rows.Count);
 
             // DataRowState deleted
             Assert.Equal(DataRowState.Deleted, drv.Row.RowState);

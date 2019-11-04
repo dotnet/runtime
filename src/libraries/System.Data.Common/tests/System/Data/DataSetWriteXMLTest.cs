@@ -35,21 +35,21 @@ namespace System.Data.Tests
                 </Table>
             </NewDataSet>";
             DataSet ds = new DataSet();
-            System.IO.StringReader xmlSR = new System.IO.StringReader(sampleXml);
+            StringReader xmlSR = new StringReader(sampleXml);
 
             ds.ReadXml(xmlSR, XmlReadMode.ReadSchema);
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            Text.StringBuilder sb = new System.Text.StringBuilder();
 
-            using (System.Xml.XmlWriter xw = System.Xml.XmlWriter.Create(sb, new System.Xml.XmlWriterSettings() { }))
+            using (XmlWriter xw = XmlWriter.Create(sb, new XmlWriterSettings() { }))
             {
-                ds.WriteXml(xw, System.Data.XmlWriteMode.WriteSchema);
+                ds.WriteXml(xw, XmlWriteMode.WriteSchema);
             }
             Assert.Equal(@"ServerName", ds.Tables[0].Columns[0].ColumnName);
             Assert.Equal(@"MACHINENAME", ds.Tables[0].Rows[0].Field<string>(ds.Tables[0].Columns[0]));
 
-            using (System.IO.StringWriter sw = new System.IO.StringWriter(sb))
+            using (StringWriter sw = new StringWriter(sb))
             {
-                ds.WriteXml(sw, System.Data.XmlWriteMode.WriteSchema);
+                ds.WriteXml(sw, XmlWriteMode.WriteSchema);
             }
             Assert.Equal(@"ServerName", ds.Tables[0].Columns[0].ColumnName);
             Assert.Equal(@"MACHINENAME", ds.Tables[0].Rows[0].Field<string>(ds.Tables[0].Columns[0]));

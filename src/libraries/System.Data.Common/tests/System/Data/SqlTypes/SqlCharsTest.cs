@@ -39,47 +39,17 @@ namespace System.Data.Tests.SqlTypes
         public void SqlCharsItem()
         {
             SqlChars chars = new SqlChars();
-            try
-            {
-                Assert.Equal(0, chars[0]);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars[0]);
+
             char[] b = null;
             chars = new SqlChars(b);
-            try
-            {
-                Assert.Equal(0, chars[0]);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars[0]);
+
             b = new char[10];
             chars = new SqlChars(b);
             Assert.Equal(0, chars[0]);
-            try
-            {
-                Assert.Equal(0, chars[-1]);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-            }
-            try
-            {
-                Assert.Equal(0, chars[10]);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => chars[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => chars[10]);
         }
 
         [Fact]
@@ -87,25 +57,11 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b = null;
             SqlChars chars = new SqlChars();
-            try
-            {
-                Assert.Equal(0, chars.Length);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars.Length);
+
             chars = new SqlChars(b);
-            try
-            {
-                Assert.Equal(0, chars.Length);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars.Length);
+
             b = new char[10];
             chars = new SqlChars(b);
             Assert.Equal(10, chars.Length);
@@ -127,7 +83,6 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void SqlCharsNull()
         {
-            char[] b = null;
             SqlChars chars = SqlChars.Null;
             Assert.True(chars.IsNull);
         }
@@ -137,25 +92,11 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b = null;
             SqlChars chars = new SqlChars();
-            try
-            {
-                Assert.Equal(StorageState.Buffer, chars.Storage);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars.Storage);
+
             chars = new SqlChars(b);
-            try
-            {
-                Assert.Equal(StorageState.Buffer, chars.Storage);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars.Storage);
+
             b = new char[10];
             chars = new SqlChars(b);
             Assert.Equal(StorageState.Buffer, chars.Storage);
@@ -178,35 +119,12 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b1 = new char[10];
             SqlChars chars = new SqlChars();
-            try
-            {
-                chars.SetLength(20);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlTypeException), ex.GetType());
-            }
+            Assert.Throws<SqlTypeException>(() => chars.SetLength(20));
+
             chars = new SqlChars(b1);
             Assert.Equal(10, chars.Length);
-            try
-            {
-                chars.SetLength(-1);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-            }
-            try
-            {
-                chars.SetLength(11);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => chars.SetLength(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => chars.SetLength(11));
             chars.SetLength(2);
             Assert.Equal(2, chars.Length);
         }
@@ -218,15 +136,7 @@ namespace System.Data.Tests.SqlTypes
             SqlChars chars = new SqlChars(b1);
             Assert.Equal(10, chars.Length);
             chars.SetNull();
-            try
-            {
-                Assert.Equal(10, chars.Length);
-                Assert.False(true);
-            }
-            catch (Exception ex)
-            {
-                Assert.Equal(typeof(SqlNullValueException), ex.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => chars.Length);
             Assert.True(chars.IsNull);
         }
 

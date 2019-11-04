@@ -22,7 +22,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Data.SqlTypes;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -60,14 +59,7 @@ namespace System.Data.Tests.SqlTypes
             SqlXml xmlSql = new SqlXml((Stream)null);
             Assert.True(xmlSql.IsNull);
 
-            try
-            {
-                string value = xmlSql.Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException)
-            {
-            }
+            Assert.Throws<SqlNullValueException>(() => xmlSql.Value);
         }
 
         [Fact] // .ctor (XmlReader)
@@ -97,14 +89,7 @@ namespace System.Data.Tests.SqlTypes
             SqlXml xmlSql = new SqlXml((XmlReader)null);
             Assert.True(xmlSql.IsNull);
 
-            try
-            {
-                string value = xmlSql.Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException)
-            {
-            }
+            Assert.Throws<SqlNullValueException>(() => xmlSql.Value);
         }
 
         [Fact]
@@ -163,42 +148,24 @@ namespace System.Data.Tests.SqlTypes
         public void SqlXml_fromZeroLengthXmlReader_CreateReaderTest()
         {
             XmlReader rdr = new XmlTextReader(new StringReader(string.Empty));
-            try
-            {
-                new SqlXml(rdr);
-                Assert.False(true);
-            }
-            catch (XmlException)
-            {
-            }
+
+            Assert.Throws<XmlException>(() => new SqlXml(rdr));
         }
 
         [Fact]
         public void CreateReader_Stream_Null()
         {
             SqlXml xmlSql = new SqlXml((Stream)null);
-            try
-            {
-                xmlSql.CreateReader();
-                Assert.False(true);
-            }
-            catch (SqlNullValueException)
-            {
-            }
+
+            Assert.Throws<SqlNullValueException>(() => xmlSql.CreateReader());
         }
 
         [Fact]
         public void CreateReader_XmlReader_Null()
         {
             SqlXml xmlSql = new SqlXml((XmlReader)null);
-            try
-            {
-                xmlSql.CreateReader();
-                Assert.False(true);
-            }
-            catch (SqlNullValueException)
-            {
-            }
+
+            Assert.Throws<SqlNullValueException>(() => xmlSql.CreateReader());
         }
     }
 }

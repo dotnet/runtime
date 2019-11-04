@@ -215,213 +215,163 @@ namespace System.Data.Tests
         [Fact]
         public void AddExceptions()
         {
-            DataTable Table = new DataTable("test_table");
-            DataTable Table2 = new DataTable("test_table2");
-            DataColumnCollection Cols = Table.Columns;
-            DataColumn C = null;
+            DataTable table = new DataTable("test_table");
+            DataTable table2 = new DataTable("test_table2");
+            DataColumnCollection cols = table.Columns;
+            DataColumn c = null;
 
-            try
-            {
-                Cols.Add(C);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => cols.Add(c));
 
-            C = new DataColumn("test");
-            Cols.Add(C);
+            c = new DataColumn("test");
+            cols.Add(c);
 
-            try
-            {
-                Cols.Add(C);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                //                Assert.Equal (typeof (ArgumentException), e.GetType ());
-                //                Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
-            }
+            // Column 'test' already belongs to this or another DataTable.
+            Assert.Throws<ArgumentException>(() => cols.Add(c));
 
-            try
-            {
-                Table2.Columns.Add(C);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                //                Assert.Equal (typeof (ArgumentException), e.GetType ());
-                //                Assert.Equal ("Column 'test' already belongs to this or another DataTable.", e.Message);
-            }
+            // Column 'test' already belongs to this or another DataTable.
+            Assert.Throws<ArgumentException>(() => table2.Columns.Add(c));
 
-            DataColumn C2 = new DataColumn("test");
+            DataColumn c2 = new DataColumn("test");
 
-            try
-            {
-                Cols.Add(C2);
-                Assert.False(true);
-            }
-            catch (DuplicateNameException e)
-            {
-                //                Assert.Equal (typeof (DuplicateNameException), e.GetType ());
-                //                Assert.Equal ("A DataColumn named 'test' already belongs to this DataTable.", e.Message);
-            }
+            // A DataColumn named 'test' already belongs to this DataTable.
+            Assert.Throws<DuplicateNameException>(() => cols.Add(c2));
 
-            try
-            {
-                Cols.Add("test2", typeof(string), "substring ('fdsafewq', 2)");
-                Assert.False(true);
-            }
-            catch (InvalidExpressionException e)
-            {
-                //                Assert.True (e is InvalidExpressionException);
-                //                Assert.Equal ("Expression 'substring ('fdsafewq', 2)' is invalid.", e.Message);
-            }
+            // EvaluateException : Invalid number of arguments: function substring().
+            Assert.ThrowsAny<InvalidExpressionException>(() => cols.Add("test2", typeof(string), "substring ('fdsafewq', 2)"));
         }
 
         [Fact]
         public void AddRange()
         {
-            DataTable Table = new DataTable("test_table");
-            DataTable Table2 = new DataTable("test_table2");
-            DataColumnCollection Cols = Table.Columns;
-            DataColumn C = null;
-            DataColumn[] ColArray = new DataColumn[2];
+            DataTable table = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
+            DataColumn c = null;
+            DataColumn[] colArray = new DataColumn[2];
 
-            C = new DataColumn("test1");
-            ColArray[0] = C;
+            c = new DataColumn("test1");
+            colArray[0] = c;
 
-            C = new DataColumn("test2");
-            C.AllowDBNull = false;
-            C.Caption = "Test_caption";
-            C.DataType = typeof(XmlReader);
-            ColArray[1] = C;
+            c = new DataColumn("test2");
+            c.AllowDBNull = false;
+            c.Caption = "Test_caption";
+            c.DataType = typeof(XmlReader);
+            colArray[1] = c;
 
-            Cols.AddRange(ColArray);
+            cols.AddRange(colArray);
 
-            C = Cols[0];
-            Assert.True(C.AllowDBNull);
-            Assert.False(C.AutoIncrement);
-            Assert.Equal(0L, C.AutoIncrementSeed);
-            Assert.Equal(1L, C.AutoIncrementStep);
-            Assert.Equal("test1", C.Caption);
-            Assert.Equal("Element", C.ColumnMapping.ToString());
-            Assert.Equal("test1", C.ColumnName);
-            Assert.Null(C.Container);
-            Assert.Equal(typeof(string), C.DataType);
-            Assert.Equal(DBNull.Value, C.DefaultValue);
-            Assert.False(C.DesignMode);
-            Assert.Equal("", C.Expression);
-            Assert.Equal(0, C.ExtendedProperties.Count);
-            Assert.Equal(-1, C.MaxLength);
-            Assert.Equal("", C.Namespace);
-            Assert.Equal(0, C.Ordinal);
-            Assert.Equal("", C.Prefix);
-            Assert.False(C.ReadOnly);
-            Assert.Null(C.Site);
-            Assert.Equal("test_table", C.Table.TableName);
-            Assert.Equal("test1", C.ToString());
-            Assert.False(C.Unique);
+            c = cols[0];
+            Assert.True(c.AllowDBNull);
+            Assert.False(c.AutoIncrement);
+            Assert.Equal(0L, c.AutoIncrementSeed);
+            Assert.Equal(1L, c.AutoIncrementStep);
+            Assert.Equal("test1", c.Caption);
+            Assert.Equal("Element", c.ColumnMapping.ToString());
+            Assert.Equal("test1", c.ColumnName);
+            Assert.Null(c.Container);
+            Assert.Equal(typeof(string), c.DataType);
+            Assert.Equal(DBNull.Value, c.DefaultValue);
+            Assert.False(c.DesignMode);
+            Assert.Equal("", c.Expression);
+            Assert.Equal(0, c.ExtendedProperties.Count);
+            Assert.Equal(-1, c.MaxLength);
+            Assert.Equal("", c.Namespace);
+            Assert.Equal(0, c.Ordinal);
+            Assert.Equal("", c.Prefix);
+            Assert.False(c.ReadOnly);
+            Assert.Null(c.Site);
+            Assert.Equal("test_table", c.Table.TableName);
+            Assert.Equal("test1", c.ToString());
+            Assert.False(c.Unique);
 
-            C = Cols[1];
-            Assert.False(C.AllowDBNull);
-            Assert.False(C.AutoIncrement);
-            Assert.Equal(0L, C.AutoIncrementSeed);
-            Assert.Equal(1L, C.AutoIncrementStep);
-            Assert.Equal("Test_caption", C.Caption);
-            Assert.Equal("Element", C.ColumnMapping.ToString());
-            Assert.Equal("test2", C.ColumnName);
-            Assert.Null(C.Container);
-            Assert.Equal(typeof(XmlReader), C.DataType);
-            Assert.Equal(DBNull.Value, C.DefaultValue);
-            Assert.False(C.DesignMode);
-            Assert.Equal("", C.Expression);
-            Assert.Equal(0, C.ExtendedProperties.Count);
-            Assert.Equal(-1, C.MaxLength);
-            Assert.Equal("", C.Namespace);
-            Assert.Equal(1, C.Ordinal);
-            Assert.Equal("", C.Prefix);
-            Assert.False(C.ReadOnly);
-            Assert.Null(C.Site);
-            Assert.Equal("test_table", C.Table.TableName);
-            Assert.Equal("test2", C.ToString());
-            Assert.False(C.Unique);
+            c = cols[1];
+            Assert.False(c.AllowDBNull);
+            Assert.False(c.AutoIncrement);
+            Assert.Equal(0L, c.AutoIncrementSeed);
+            Assert.Equal(1L, c.AutoIncrementStep);
+            Assert.Equal("Test_caption", c.Caption);
+            Assert.Equal("Element", c.ColumnMapping.ToString());
+            Assert.Equal("test2", c.ColumnName);
+            Assert.Null(c.Container);
+            Assert.Equal(typeof(XmlReader), c.DataType);
+            Assert.Equal(DBNull.Value, c.DefaultValue);
+            Assert.False(c.DesignMode);
+            Assert.Equal("", c.Expression);
+            Assert.Equal(0, c.ExtendedProperties.Count);
+            Assert.Equal(-1, c.MaxLength);
+            Assert.Equal("", c.Namespace);
+            Assert.Equal(1, c.Ordinal);
+            Assert.Equal("", c.Prefix);
+            Assert.False(c.ReadOnly);
+            Assert.Null(c.Site);
+            Assert.Equal("test_table", c.Table.TableName);
+            Assert.Equal("test2", c.ToString());
+            Assert.False(c.Unique);
         }
 
         [Fact]
         public void CanRemove()
         {
-            DataTable Table = new DataTable("test_table");
-            DataTable Table2 = new DataTable("test_table_2");
-            DataColumnCollection Cols = Table.Columns;
-            DataColumn C = new DataColumn("test1");
-            Cols.Add();
+            DataTable table = new DataTable("test_table");
+            DataTable table2 = new DataTable("test_table_2");
+            DataColumnCollection cols = table.Columns;
+            DataColumn c = new DataColumn("test1");
+            cols.Add();
 
             // MSDN says that if C doesn't belong to Cols
             // Exception is thrown.
-            Assert.False(Cols.CanRemove(C));
+            Assert.False(cols.CanRemove(c));
 
-            Cols.Add(C);
-            Assert.True(Cols.CanRemove(C));
+            cols.Add(c);
+            Assert.True(cols.CanRemove(c));
 
-            C = new DataColumn();
-            C.Expression = "test1 + 2";
-            Cols.Add(C);
+            c = new DataColumn();
+            c.Expression = "test1 + 2";
+            cols.Add(c);
 
-            C = Cols["test2"];
-            Assert.False(Cols.CanRemove(C));
+            c = cols["test2"];
+            Assert.False(cols.CanRemove(c));
 
-            C = new DataColumn("t");
-            Table2.Columns.Add(C);
-            DataColumnCollection Cols2 = Table2.Columns;
-            Assert.True(Cols2.CanRemove(C));
+            c = new DataColumn("t");
+            table2.Columns.Add(c);
+            DataColumnCollection Cols2 = table2.Columns;
+            Assert.True(Cols2.CanRemove(c));
 
             DataSet Set = new DataSet();
-            Set.Tables.Add(Table);
-            Set.Tables.Add(Table2);
-            DataRelation Rel = new DataRelation("Rel", Table.Columns[0], Table2.Columns[0]);
+            Set.Tables.Add(table);
+            Set.Tables.Add(table2);
+            DataRelation Rel = new DataRelation("Rel", table.Columns[0], table2.Columns[0]);
             Set.Relations.Add(Rel);
 
-            Assert.False(Cols2.CanRemove(C));
-            Assert.False(Cols.CanRemove(null));
+            Assert.False(Cols2.CanRemove(c));
+            Assert.False(cols.CanRemove(null));
         }
 
         [Fact]
         public void Clear()
         {
-            DataTable Table = new DataTable("test_table");
-            DataTable Table2 = new DataTable("test_table2");
-            DataSet Set = new DataSet();
-            Set.Tables.Add(Table);
-            Set.Tables.Add(Table2);
-            DataColumnCollection Cols = Table.Columns;
-            DataColumnCollection Cols2 = Table2.Columns;
+            DataTable table = new DataTable("test_table");
+            DataTable table2 = new DataTable("test_table2");
+            DataSet set = new DataSet();
+            set.Tables.Add(table);
+            set.Tables.Add(table2);
+            DataColumnCollection cols = table.Columns;
+            DataColumnCollection cols2 = table2.Columns;
 
-            Cols.Add();
-            Cols.Add("testi");
+            cols.Add();
+            cols.Add("testi");
 
-            Cols.Clear();
-            Assert.Equal(0, Cols.Count);
+            cols.Clear();
+            Assert.Equal(0, cols.Count);
 
-            Cols.Add();
-            Cols.Add("testi");
-            Cols2.Add();
-            Cols2.Add();
+            cols.Add();
+            cols.Add("testi");
+            cols2.Add();
+            cols2.Add();
 
-            DataRelation Rel = new DataRelation("Rel", Cols[0], Cols2[0]);
-            Set.Relations.Add(Rel);
-            try
-            {
-                Cols.Clear();
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Cannot remove this column, because it is part of the parent key for relationship Rel.", e.Message);
-            }
+            DataRelation rel = new DataRelation("Rel", cols[0], cols2[0]);
+            set.Relations.Add(rel);
+            // Cannot remove this column, because it is part of the parent key for relationship Rel.
+            Assert.Throws<ArgumentException>(() => cols.Clear());
         }
 
         [Fact]
@@ -439,35 +389,35 @@ namespace System.Data.Tests
         [Fact]
         public void Contains()
         {
-            DataTable Table = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
+            DataTable table = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
 
-            Cols.Add("test");
-            Cols.Add("tesT2");
+            cols.Add("test");
+            cols.Add("tesT2");
 
-            Assert.True(Cols.Contains("test"));
-            Assert.False(Cols.Contains("_test"));
-            Assert.True(Cols.Contains("TEST"));
-            Table.CaseSensitive = true;
-            Assert.True(Cols.Contains("TEST"));
-            Assert.True(Cols.Contains("test2"));
-            Assert.False(Cols.Contains("_test2"));
-            Assert.True(Cols.Contains("TEST2"));
+            Assert.True(cols.Contains("test"));
+            Assert.False(cols.Contains("_test"));
+            Assert.True(cols.Contains("TEST"));
+            table.CaseSensitive = true;
+            Assert.True(cols.Contains("TEST"));
+            Assert.True(cols.Contains("test2"));
+            Assert.False(cols.Contains("_test2"));
+            Assert.True(cols.Contains("TEST2"));
         }
 
         [Fact]
         public void CopyTo()
         {
-            DataTable Table = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
+            DataTable table = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
 
-            Cols.Add("test");
-            Cols.Add("test2");
-            Cols.Add("test3");
-            Cols.Add("test4");
+            cols.Add("test");
+            cols.Add("test2");
+            cols.Add("test3");
+            cols.Add("test4");
 
             DataColumn[] array = new DataColumn[4];
-            Cols.CopyTo(array, 0);
+            cols.CopyTo(array, 0);
             Assert.Equal(4, array.Length);
             Assert.Equal("test", array[0].ColumnName);
             Assert.Equal("test2", array[1].ColumnName);
@@ -475,7 +425,7 @@ namespace System.Data.Tests
             Assert.Equal("test4", array[3].ColumnName);
 
             array = new DataColumn[6];
-            Cols.CopyTo(array, 2);
+            cols.CopyTo(array, 2);
             Assert.Equal(6, array.Length);
             Assert.Equal("test", array[2].ColumnName);
             Assert.Equal("test2", array[3].ColumnName);
@@ -488,118 +438,87 @@ namespace System.Data.Tests
         [Fact]
         public void Equals()
         {
-            DataTable Table = new DataTable("test_table");
-            DataTable Table2 = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
-            DataColumnCollection Cols2 = Table2.Columns;
+            DataTable table = new DataTable("test_table");
+            DataTable table2 = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
+            DataColumnCollection cols2 = table2.Columns;
 
-            Assert.False(Cols.Equals(Cols2));
-            Assert.False(Cols2.Equals(Cols));
-            Assert.False(object.Equals(Cols, Cols2));
-            Assert.True(Cols.Equals(Cols));
-            Assert.True(Cols2.Equals(Cols2));
-            Assert.True(object.Equals(Cols2, Cols2));
+            Assert.False(cols.Equals(cols2));
+            Assert.False(cols2.Equals(cols));
         }
 
         [Fact]
         public void IndexOf()
         {
-            DataTable Table = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
+            DataTable table = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
 
-            Cols.Add("test");
-            Cols.Add("test2");
-            Cols.Add("test3");
-            Cols.Add("test4");
+            cols.Add("test");
+            cols.Add("test2");
+            cols.Add("test3");
+            cols.Add("test4");
 
-            Assert.Equal(0, Cols.IndexOf("test"));
-            Assert.Equal(1, Cols.IndexOf("TEST2"));
-            Table.CaseSensitive = true;
-            Assert.Equal(1, Cols.IndexOf("TEST2"));
+            Assert.Equal(0, cols.IndexOf("test"));
+            Assert.Equal(1, cols.IndexOf("TEST2"));
+            table.CaseSensitive = true;
+            Assert.Equal(1, cols.IndexOf("TEST2"));
 
-            Assert.Equal(3, Cols.IndexOf(Cols[3]));
+            Assert.Equal(3, cols.IndexOf(cols[3]));
             DataColumn C = new DataColumn("error");
-            Assert.Equal(-1, Cols.IndexOf(C));
-            Assert.Equal(-1, Cols.IndexOf("_error_"));
+            Assert.Equal(-1, cols.IndexOf(C));
+            Assert.Equal(-1, cols.IndexOf("_error_"));
         }
 
         [Fact]
         public void Remove()
         {
-            DataTable Table = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
+            DataTable table = new DataTable("test_table");
+            DataColumnCollection cols = table.Columns;
 
-            Cols.Add("test");
-            Cols.Add("test2");
-            Cols.Add("test3");
-            Cols.Add("test4");
+            cols.Add("test");
+            cols.Add("test2");
+            cols.Add("test3");
+            cols.Add("test4");
 
-            Assert.Equal(4, Cols.Count);
-            Cols.Remove("test2");
-            Assert.Equal(3, Cols.Count);
-            Cols.Remove("TEST3");
-            Assert.Equal(2, Cols.Count);
+            Assert.Equal(4, cols.Count);
+            cols.Remove("test2");
+            Assert.Equal(3, cols.Count);
+            cols.Remove("TEST3");
+            Assert.Equal(2, cols.Count);
 
-            try
-            {
-                Cols.Remove("_test_");
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Column '_test_' does not belong to table test_table.", e.Message);
-            }
+            // Column '_test_' does not belong to table test_table.
+            Assert.Throws<ArgumentException>(() => cols.Remove("_test_"));
 
-            Cols.Add();
-            Cols.Add();
-            Cols.Add();
-            Cols.Add();
+            cols.Add();
+            cols.Add();
+            cols.Add();
+            cols.Add();
 
-            Assert.Equal(6, Cols.Count);
-            Cols.Remove(Cols[0]);
-            Cols.Remove(Cols[0]);
-            Assert.Equal(4, Cols.Count);
-            Assert.Equal("Column1", Cols[0].ColumnName);
+            Assert.Equal(6, cols.Count);
+            cols.Remove(cols[0]);
+            cols.Remove(cols[0]);
+            Assert.Equal(4, cols.Count);
+            Assert.Equal("Column1", cols[0].ColumnName);
 
-            try
-            {
-                Cols.Remove(new DataColumn("Column10"));
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Cannot remove a column that doesn't belong to this table.", e.Message);
-            }
+            // Cannot remove a column that doesn't belong to this table.
+            Assert.Throws<ArgumentException>(() => cols.Remove(new DataColumn("Column10")));
 
-            Cols.Add();
-            Cols.Add();
-            Cols.Add();
-            Cols.Add();
+            cols.Add();
+            cols.Add();
+            cols.Add();
+            cols.Add();
 
-            Assert.Equal(8, Cols.Count);
-            Cols.RemoveAt(7);
-            Cols.RemoveAt(1);
-            Cols.RemoveAt(0);
-            Cols.RemoveAt(0);
-            Assert.Equal(4, Cols.Count);
-            Assert.Equal("Column4", Cols[0].ColumnName);
-            Assert.Equal("Column5", Cols[1].ColumnName);
+            Assert.Equal(8, cols.Count);
+            cols.RemoveAt(7);
+            cols.RemoveAt(1);
+            cols.RemoveAt(0);
+            cols.RemoveAt(0);
+            Assert.Equal(4, cols.Count);
+            Assert.Equal("Column4", cols[0].ColumnName);
+            Assert.Equal("Column5", cols[1].ColumnName);
 
-            try
-            {
-                Cols.RemoveAt(10);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(IndexOutOfRangeException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Cannot find column 10.", e.Message);
-            }
+            // Cannot find column 10.
+            Assert.Throws<IndexOutOfRangeException>(() => cols.RemoveAt(10));
         }
 
         [Fact]
@@ -616,25 +535,12 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ToStringTest()
-        {
-            DataTable Table = new DataTable("test_table");
-            DataColumnCollection Cols = Table.Columns;
-
-            Cols.Add("test");
-            Cols.Add("test2");
-            Cols.Add("test3");
-            Assert.Equal("System.Data.DataColumnCollection", Cols.ToString());
-        }
-
-        [Fact]
         public void CaseSensitiveIndexOfTest()
         {
             DataTable dt = new DataTable("TestCaseSensitiveIndexOf");
             dt.Columns.Add("nom_colonne1", typeof(string));
             dt.Columns.Add("NOM_COLONNE1", typeof(string));
             dt.Columns.Remove("nom_colonne1");
-            int i = dt.Columns.IndexOf("nom_colonne1");
             Assert.Equal(0, dt.Columns.IndexOf("nom_colonne1"));
         }
     }

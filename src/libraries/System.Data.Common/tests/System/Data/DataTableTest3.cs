@@ -24,7 +24,6 @@
 //
 
 using System.IO;
-using System.Text.RegularExpressions;
 
 using Xunit;
 
@@ -32,7 +31,7 @@ namespace System.Data.Tests
 {
     public class DataTableTest3 : IDisposable
     {
-        private string _tempFile;
+        private readonly string _tempFile;
         private DataSet _dataSet;
         private DataTable _parentTable;
         private DataTable _childTable;
@@ -488,20 +487,10 @@ namespace System.Data.Tests
             _dataSet.Tables.Remove(_parentTable);
             _parentTable.TableName = string.Empty;
 
-            using (FileStream stream = new FileStream(_tempFile, FileMode.Create))
-            {
-                try
-                {
-                    _parentTable.WriteXmlSchema(stream);
-                    Assert.False(true);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    Assert.Equal(typeof(InvalidOperationException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                }
-            }
+            using FileStream stream = new FileStream(_tempFile, FileMode.Create);
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => _parentTable.WriteXmlSchema(stream));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
@@ -634,26 +623,16 @@ namespace System.Data.Tests
 
             using (FileStream stream = new FileStream(_tempFile, FileMode.Open))
             {
-                try
-                {
-                    table.ReadXmlSchema(stream);
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // DataTable 'Table1' does not match
-                    // to any DataTable in source
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-
-                    // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                    // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                    // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                    Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                    Assert.Null(ex.ParamName);
-                }
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => table.ReadXmlSchema(stream));
+                // DataTable 'Table1' does not match
+                // to any DataTable in source
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
+                Assert.Null(ex.ParamName);
             }
         }
 
@@ -662,19 +641,11 @@ namespace System.Data.Tests
         {
             DataTable table = new DataTable();
 
-            try
-            {
-                table.ReadXmlSchema(string.Empty);
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // The URL cannot be empty
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                //Assert.Equal ("url", ex.ParamName);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => table.ReadXmlSchema(string.Empty));
+            // The URL cannot be empty
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            //Assert.Equal ("url", ex.ParamName);
         }
 
         [Fact]

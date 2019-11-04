@@ -111,21 +111,18 @@ namespace System.Data.Tests
                 foreach (var aggregation in aggregations)
                 {
                     var resultType = type;
-
                     // BUG? sum(Column) is always promoted to SqlInt64
                     if (aggregation.Operator == "sum" && (type == typeof(SqlByte) || type == typeof(SqlInt16) || type == typeof(SqlInt32)))
                         resultType = typeof(SqlInt64);
 
                     if (aggregation.Operator == "count" && (type == typeof(SqlByte) || type == typeof(SqlInt16)))
                         resultType = typeof(SqlInt32);
-
                     // BUG? sum(SqlMoney) yields SqlDecimal, but SqlDecimal can't be converted to SqlMoney
                     if (aggregation.Operator == "sum" && type == typeof(SqlMoney))
                         resultType = typeof(SqlDecimal);
 
                     yield return new object[] { type, aggregation.Operator + "(Child.Data)", ChangeType(aggregation.Result, resultType) };
                 }
-
                 // BUG? Var() for SQL types can't convert to System.Double, but StDev can
                 if (type.Namespace == "System.Data.SqlTypes")
                     yield return new object[] { type, "Var(Child.Data)", new SqlDouble(110.0 / 3) };
@@ -202,7 +199,6 @@ namespace System.Data.Tests
                 foreach (var equation in comparisonEquations)
                 {
                     yield return new object[] { type, type, typeof(SqlBoolean), equation.Expression, operand1, operand2,  new SqlBoolean(equation.Result) };
-
                     // BUG? Result type of comparison of two SQL types (when one operard is Null) is the type itself, not SqlBoolean.
                     yield return new object[] { type, type, type, equation.Expression, operand1, sqlNull, sqlNull };
                 }

@@ -30,7 +30,7 @@ namespace System.Data.Tests
 {
     public class InRowChangingEventExceptionTest
     {
-        private bool _EventTriggered = false;
+        private bool _eventTriggered = false;
         [Fact]
         public void Generate()
         {
@@ -41,7 +41,7 @@ namespace System.Data.Tests
 
             //this event must be raised in order to test the exception
             // RowChanging - Event raised
-            Assert.True(_EventTriggered);
+            Assert.True(_eventTriggered);
         }
 
         private void Row_Changing(object sender, DataRowChangeEventArgs e)
@@ -51,7 +51,7 @@ namespace System.Data.Tests
             {
                 e.Row.EndEdit(); //can't invoke EndEdit while in ChangingEvent
             });
-            _EventTriggered = true;
+            _eventTriggered = true;
         }
     }
 }

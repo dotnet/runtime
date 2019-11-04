@@ -42,11 +42,11 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Create()
         {
-            SqlDouble Test = new SqlDouble(34.87);
-            Assert.Equal(34.87D, Test.Value);
+            SqlDouble test = new SqlDouble(34.87);
+            Assert.Equal(34.87D, test.Value);
 
-            Test = new SqlDouble(-9000.6543);
-            Assert.Equal(-9000.6543D, Test.Value);
+            test = new SqlDouble(-9000.6543);
+            Assert.Equal(-9000.6543D, test.Value);
         }
 
         // Test public fields
@@ -63,12 +63,12 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            SqlDouble Test5443 = new SqlDouble(5443e12);
-            SqlDouble Test1 = new SqlDouble(1);
+            SqlDouble test5443 = new SqlDouble(5443e12);
+            SqlDouble test1 = new SqlDouble(1);
 
             Assert.True(SqlDouble.Null.IsNull);
-            Assert.Equal(5443e12, Test5443.Value);
-            Assert.Equal(1, Test1.Value);
+            Assert.Equal(5443e12, test5443.Value);
+            Assert.Equal(1, test1.Value);
         }
 
         // PUBLIC METHODS
@@ -76,340 +76,202 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticMethods()
         {
-            SqlDouble Test0 = new SqlDouble(0);
-            SqlDouble Test1 = new SqlDouble(15E+108);
-            SqlDouble Test2 = new SqlDouble(-65E+64);
-            SqlDouble Test3 = new SqlDouble(5E+64);
-            SqlDouble Test4 = new SqlDouble(5E+108);
-            SqlDouble TestMax = new SqlDouble(SqlDouble.MaxValue.Value);
+            SqlDouble test0 = new SqlDouble(0);
+            SqlDouble test1 = new SqlDouble(15E+108);
+            SqlDouble test2 = new SqlDouble(-65E+64);
+            SqlDouble test3 = new SqlDouble(5E+64);
+            SqlDouble test4 = new SqlDouble(5E+108);
+            SqlDouble testMax = new SqlDouble(SqlDouble.MaxValue.Value);
 
             // Add()
-            Assert.Equal(15E+108, SqlDouble.Add(Test1, Test0).Value);
-            Assert.Equal(1.5E+109, SqlDouble.Add(Test1, Test2).Value);
+            Assert.Equal(15E+108, SqlDouble.Add(test1, test0).Value);
+            Assert.Equal(1.5E+109, SqlDouble.Add(test1, test2).Value);
 
-            try
-            {
-                SqlDouble test = SqlDouble.Add(SqlDouble.MaxValue, SqlDouble.MaxValue);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.Add(SqlDouble.MaxValue, SqlDouble.MaxValue));
 
             // Divide()
-            Assert.Equal(3, SqlDouble.Divide(Test1, Test4));
-            Assert.Equal(-13d, SqlDouble.Divide(Test2, Test3).Value);
+            Assert.Equal(3, SqlDouble.Divide(test1, test4));
+            Assert.Equal(-13d, SqlDouble.Divide(test2, test3).Value);
 
-            try
-            {
-                SqlDouble test = SqlDouble.Divide(Test1, Test0).Value;
-                Assert.False(true);
-            }
-            catch (DivideByZeroException e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => SqlDouble.Divide(test1, test0).Value);
 
             // Multiply()
-            Assert.Equal(75E+216, SqlDouble.Multiply(Test1, Test4).Value);
-            Assert.Equal(0, SqlDouble.Multiply(Test1, Test0).Value);
+            Assert.Equal(75E+216, SqlDouble.Multiply(test1, test4).Value);
+            Assert.Equal(0, SqlDouble.Multiply(test1, test0).Value);
 
-            try
-            {
-                SqlDouble test = SqlDouble.Multiply(TestMax, Test1);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.Multiply(testMax, test1));
 
 
             // Subtract()
-            Assert.Equal(1.5E+109, SqlDouble.Subtract(Test1, Test3).Value);
+            Assert.Equal(1.5E+109, SqlDouble.Subtract(test1, test3).Value);
 
-            try
-            {
-                SqlDouble test = SqlDouble.Subtract(SqlDouble.MinValue, SqlDouble.MaxValue);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.Subtract(SqlDouble.MinValue, SqlDouble.MaxValue));
         }
 
         [Fact]
         public void CompareTo()
         {
-            SqlDouble Test1 = new SqlDouble(4e64);
-            SqlDouble Test11 = new SqlDouble(4e64);
-            SqlDouble Test2 = new SqlDouble(-9e34);
-            SqlDouble Test3 = new SqlDouble(10000);
-            SqlString TestString = new SqlString("This is a test");
+            SqlDouble test1 = new SqlDouble(4e64);
+            SqlDouble test11 = new SqlDouble(4e64);
+            SqlDouble test2 = new SqlDouble(-9e34);
+            SqlDouble test3 = new SqlDouble(10000);
+            SqlString testString = new SqlString("This is a test");
 
-            Assert.True(Test1.CompareTo(Test3) > 0);
-            Assert.True(Test2.CompareTo(Test3) < 0);
-            Assert.True(Test1.CompareTo(Test11) == 0);
-            Assert.True(Test11.CompareTo(SqlDouble.Null) > 0);
+            Assert.True(test1.CompareTo(test3) > 0);
+            Assert.True(test2.CompareTo(test3) < 0);
+            Assert.True(test1.CompareTo(test11) == 0);
+            Assert.True(test11.CompareTo(SqlDouble.Null) > 0);
 
-            try
-            {
-                Test1.CompareTo(TestString);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => test1.CompareTo(testString));
         }
 
         [Fact]
         public void EqualsMethods()
         {
-            SqlDouble Test0 = new SqlDouble(0);
-            SqlDouble Test1 = new SqlDouble(1.58e30);
-            SqlDouble Test2 = new SqlDouble(1.8e180);
-            SqlDouble Test22 = new SqlDouble(1.8e180);
+            SqlDouble test0 = new SqlDouble(0);
+            SqlDouble test1 = new SqlDouble(1.58e30);
+            SqlDouble test2 = new SqlDouble(1.8e180);
+            SqlDouble test22 = new SqlDouble(1.8e180);
 
-            Assert.True(!Test0.Equals(Test1));
-            Assert.True(!Test1.Equals(Test2));
-            Assert.True(!Test2.Equals(new SqlString("TEST")));
-            Assert.True(Test2.Equals(Test22));
+            Assert.False(test0.Equals(test1));
+            Assert.False(test1.Equals(test2));
+            Assert.False(test2.Equals(new SqlString("TEST")));
+            Assert.True(test2.Equals(test22));
 
             // Static Equals()-method
-            Assert.True(SqlDouble.Equals(Test2, Test22).Value);
-            Assert.True(!SqlDouble.Equals(Test1, Test2).Value);
-        }
-
-        [Fact]
-        public void GetHashCodeTest()
-        {
-            SqlDouble Test15 = new SqlDouble(15);
-
-            // FIXME: Better way to test HashCode
-            Assert.Equal(Test15.GetHashCode(), Test15.GetHashCode());
-        }
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            SqlDouble Test = new SqlDouble(84);
-            Assert.Equal("System.Data.SqlTypes.SqlDouble", Test.GetType().ToString());
-            Assert.Equal("System.Double", Test.Value.GetType().ToString());
+            Assert.True(SqlDouble.Equals(test2, test22).Value);
+            Assert.False(SqlDouble.Equals(test1, test2).Value);
         }
 
         [Fact]
         public void Greaters()
         {
-            SqlDouble Test1 = new SqlDouble(1e100);
-            SqlDouble Test11 = new SqlDouble(1e100);
-            SqlDouble Test2 = new SqlDouble(64e164);
+            SqlDouble test1 = new SqlDouble(1e100);
+            SqlDouble test11 = new SqlDouble(1e100);
+            SqlDouble test2 = new SqlDouble(64e164);
 
             // GreateThan ()
-            Assert.True(!SqlDouble.GreaterThan(Test1, Test2).Value);
-            Assert.True(SqlDouble.GreaterThan(Test2, Test1).Value);
-            Assert.True(!SqlDouble.GreaterThan(Test1, Test11).Value);
+            Assert.False(SqlDouble.GreaterThan(test1, test2).Value);
+            Assert.True(SqlDouble.GreaterThan(test2, test1).Value);
+            Assert.False(SqlDouble.GreaterThan(test1, test11).Value);
 
             // GreaterTharOrEqual ()
-            Assert.True(!SqlDouble.GreaterThanOrEqual(Test1, Test2).Value);
-            Assert.True(SqlDouble.GreaterThanOrEqual(Test2, Test1).Value);
-            Assert.True(SqlDouble.GreaterThanOrEqual(Test1, Test11).Value);
+            Assert.False(SqlDouble.GreaterThanOrEqual(test1, test2).Value);
+            Assert.True(SqlDouble.GreaterThanOrEqual(test2, test1).Value);
+            Assert.True(SqlDouble.GreaterThanOrEqual(test1, test11).Value);
         }
 
         [Fact]
         public void Lessers()
         {
-            SqlDouble Test1 = new SqlDouble(1.8e100);
-            SqlDouble Test11 = new SqlDouble(1.8e100);
-            SqlDouble Test2 = new SqlDouble(64e164);
+            SqlDouble test1 = new SqlDouble(1.8e100);
+            SqlDouble test11 = new SqlDouble(1.8e100);
+            SqlDouble test2 = new SqlDouble(64e164);
 
             // LessThan()
-            Assert.True(!SqlDouble.LessThan(Test1, Test11).Value);
-            Assert.True(!SqlDouble.LessThan(Test2, Test1).Value);
-            Assert.True(SqlDouble.LessThan(Test11, Test2).Value);
+            Assert.False(SqlDouble.LessThan(test1, test11).Value);
+            Assert.False(SqlDouble.LessThan(test2, test1).Value);
+            Assert.True(SqlDouble.LessThan(test11, test2).Value);
 
             // LessThanOrEqual ()
-            Assert.True(SqlDouble.LessThanOrEqual(Test1, Test2).Value);
-            Assert.True(!SqlDouble.LessThanOrEqual(Test2, Test1).Value);
-            Assert.True(SqlDouble.LessThanOrEqual(Test11, Test1).Value);
-            Assert.True(SqlDouble.LessThanOrEqual(Test11, SqlDouble.Null).IsNull);
+            Assert.True(SqlDouble.LessThanOrEqual(test1, test2).Value);
+            Assert.False(SqlDouble.LessThanOrEqual(test2, test1).Value);
+            Assert.True(SqlDouble.LessThanOrEqual(test11, test1).Value);
+            Assert.True(SqlDouble.LessThanOrEqual(test11, SqlDouble.Null).IsNull);
         }
 
         [Fact]
         public void NotEquals()
         {
-            SqlDouble Test1 = new SqlDouble(1280000000001);
-            SqlDouble Test2 = new SqlDouble(128e10);
-            SqlDouble Test22 = new SqlDouble(128e10);
+            SqlDouble test1 = new SqlDouble(1280000000001);
+            SqlDouble test2 = new SqlDouble(128e10);
+            SqlDouble test22 = new SqlDouble(128e10);
 
-            Assert.True(SqlDouble.NotEquals(Test1, Test2).Value);
-            Assert.True(SqlDouble.NotEquals(Test2, Test1).Value);
-            Assert.True(SqlDouble.NotEquals(Test22, Test1).Value);
-            Assert.True(!SqlDouble.NotEquals(Test22, Test2).Value);
-            Assert.True(!SqlDouble.NotEquals(Test2, Test22).Value);
-            Assert.True(SqlDouble.NotEquals(SqlDouble.Null, Test22).IsNull);
-            Assert.True(SqlDouble.NotEquals(SqlDouble.Null, Test22).IsNull);
+            Assert.True(SqlDouble.NotEquals(test1, test2).Value);
+            Assert.True(SqlDouble.NotEquals(test2, test1).Value);
+            Assert.True(SqlDouble.NotEquals(test22, test1).Value);
+            Assert.False(SqlDouble.NotEquals(test22, test2).Value);
+            Assert.False(SqlDouble.NotEquals(test2, test22).Value);
+            Assert.True(SqlDouble.NotEquals(SqlDouble.Null, test22).IsNull);
+            Assert.True(SqlDouble.NotEquals(SqlDouble.Null, test22).IsNull);
         }
 
         [Fact]
         public void Parse()
         {
-            try
-            {
-                SqlDouble.Parse(null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => SqlDouble.Parse(null));
 
-            try
-            {
-                SqlDouble.Parse("not-a-number");
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => SqlDouble.Parse("not-a-number"));
 
-            try
-            {
-                SqlDouble.Parse("9e400");
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
-
+            Assert.Throws<OverflowException>(() => SqlDouble.Parse("9e400"));
             Assert.Equal(150, SqlDouble.Parse("150").Value);
         }
 
         [Fact]
         public void Conversions()
         {
-            SqlDouble Test0 = new SqlDouble(0);
-            SqlDouble Test1 = new SqlDouble(250);
-            SqlDouble Test2 = new SqlDouble(64e64);
-            SqlDouble Test3 = new SqlDouble(64e164);
+            SqlDouble test0 = new SqlDouble(0);
+            SqlDouble test1 = new SqlDouble(250);
+            SqlDouble test2 = new SqlDouble(64e64);
+            SqlDouble test3 = new SqlDouble(64e164);
             SqlDouble TestNull = SqlDouble.Null;
 
             // ToSqlBoolean ()
-            Assert.True(Test1.ToSqlBoolean().Value);
-            Assert.True(!Test0.ToSqlBoolean().Value);
+            Assert.True(test1.ToSqlBoolean().Value);
+            Assert.False(test0.ToSqlBoolean().Value);
             Assert.True(TestNull.ToSqlBoolean().IsNull);
 
             // ToSqlByte ()
-            Assert.Equal((byte)250, Test1.ToSqlByte().Value);
-            Assert.Equal((byte)0, Test0.ToSqlByte().Value);
+            Assert.Equal((byte)250, test1.ToSqlByte().Value);
+            Assert.Equal((byte)0, test0.ToSqlByte().Value);
 
-            try
-            {
-                SqlByte b = (byte)Test2.ToSqlByte();
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlByte());
 
             // ToSqlDecimal ()
-            Assert.Equal(250.00000000000000M, Test1.ToSqlDecimal().Value);
-            Assert.Equal(0, Test0.ToSqlDecimal().Value);
+            Assert.Equal(250M, test1.ToSqlDecimal().Value);
+            Assert.Equal(0, test0.ToSqlDecimal().Value);
 
-            try
-            {
-                SqlDecimal test = Test3.ToSqlDecimal().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test3.ToSqlDecimal());
 
             // ToSqlInt16 ()
-            Assert.Equal((short)250, Test1.ToSqlInt16().Value);
-            Assert.Equal((short)0, Test0.ToSqlInt16().Value);
+            Assert.Equal((short)250, test1.ToSqlInt16().Value);
+            Assert.Equal((short)0, test0.ToSqlInt16().Value);
 
-            try
-            {
-                SqlInt16 test = Test2.ToSqlInt16().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlInt16());
 
             // ToSqlInt32 ()
-            Assert.Equal(250, Test1.ToSqlInt32().Value);
-            Assert.Equal(0, Test0.ToSqlInt32().Value);
+            Assert.Equal(250, test1.ToSqlInt32().Value);
+            Assert.Equal(0, test0.ToSqlInt32().Value);
 
-            try
-            {
-                SqlInt32 test = Test2.ToSqlInt32().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlInt32());
 
             // ToSqlInt64 ()
-            Assert.Equal(250, Test1.ToSqlInt64().Value);
-            Assert.Equal(0, Test0.ToSqlInt64().Value);
+            Assert.Equal(250, test1.ToSqlInt64().Value);
+            Assert.Equal(0, test0.ToSqlInt64().Value);
 
-            try
-            {
-                SqlInt64 test = Test2.ToSqlInt64().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlInt64());
 
             // ToSqlMoney ()
-            Assert.Equal(250.0000M, Test1.ToSqlMoney().Value);
-            Assert.Equal(0, Test0.ToSqlMoney().Value);
+            Assert.Equal(250M, test1.ToSqlMoney().Value);
+            Assert.Equal(0, test0.ToSqlMoney().Value);
 
-            try
-            {
-                SqlMoney test = Test2.ToSqlMoney().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlMoney());
 
             // ToSqlSingle ()
-            Assert.Equal(250, Test1.ToSqlSingle().Value);
-            Assert.Equal(0, Test0.ToSqlSingle().Value);
+            Assert.Equal(250, test1.ToSqlSingle().Value);
+            Assert.Equal(0, test0.ToSqlSingle().Value);
 
-            try
-            {
-                SqlSingle test = Test2.ToSqlSingle().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlSingle());
 
             // ToSqlString ()
-            Assert.Equal(250.ToString(), Test1.ToSqlString().Value);
-            Assert.Equal(0.ToString(), Test0.ToSqlString().Value);
-            Assert.Equal(6.4E+65.ToString(), Test2.ToSqlString().Value);
+            Assert.Equal(250.ToString(), test1.ToSqlString().Value);
+            Assert.Equal(0.ToString(), test0.ToSqlString().Value);
+            Assert.Equal(6.4E+65.ToString(), test2.ToSqlString().Value);
 
             // ToString ()
-            Assert.Equal(250.ToString(), Test1.ToString());
-            Assert.Equal(0.ToString(), Test0.ToString());
-            Assert.Equal(6.4E+65.ToString(), Test2.ToString());
+            Assert.Equal(250.ToString(), test1.ToString());
+            Assert.Equal(0.ToString(), test0.ToString());
+            Assert.Equal(6.4E+65.ToString(), test2.ToString());
         }
 
         // OPERATORS
@@ -417,170 +279,129 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticOperators()
         {
-            SqlDouble Test0 = new SqlDouble(0);
-            SqlDouble Test1 = new SqlDouble(24E+100);
-            SqlDouble Test2 = new SqlDouble(64E+164);
-            SqlDouble Test3 = new SqlDouble(12E+100);
-            SqlDouble Test4 = new SqlDouble(1E+10);
-            SqlDouble Test5 = new SqlDouble(2E+10);
+            SqlDouble test0 = new SqlDouble(0);
+            SqlDouble test1 = new SqlDouble(24E+100);
+            SqlDouble test3 = new SqlDouble(12E+100);
+            SqlDouble test4 = new SqlDouble(1E+10);
+            SqlDouble test5 = new SqlDouble(2E+10);
 
             // "+"-operator
-            Assert.Equal(3E+10, Test4 + Test5);
+            Assert.Equal(3E+10, test4 + test5);
 
-            try
-            {
-                SqlDouble test = SqlDouble.MaxValue + SqlDouble.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.MaxValue + SqlDouble.MaxValue);
 
             // "/"-operator
-            Assert.Equal(2, Test1 / Test3);
+            Assert.Equal(2, test1 / test3);
 
-            try
-            {
-                SqlDouble test = Test3 / Test0;
-                Assert.False(true);
-            }
-            catch (DivideByZeroException e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => test3 / test0);
 
             // "*"-operator
-            Assert.Equal(2e20, Test4 * Test5);
+            Assert.Equal(2e20, test4 * test5);
 
-            try
-            {
-                SqlDouble test = SqlDouble.MaxValue * Test1;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.MaxValue * test1);
 
             // "-"-operator
-            Assert.Equal(12e100, Test1 - Test3);
+            Assert.Equal(12e100, test1 - test3);
 
-            try
-            {
-                SqlDouble test = SqlDouble.MinValue - SqlDouble.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDouble.MinValue - SqlDouble.MaxValue);
         }
 
         [Fact]
         public void ThanOrEqualOperators()
         {
-            SqlDouble Test1 = new SqlDouble(1E+164);
-            SqlDouble Test2 = new SqlDouble(9.7E+100);
-            SqlDouble Test22 = new SqlDouble(9.7E+100);
-            SqlDouble Test3 = new SqlDouble(2E+200);
+            SqlDouble test1 = new SqlDouble(1E+164);
+            SqlDouble test2 = new SqlDouble(9.7E+100);
+            SqlDouble test22 = new SqlDouble(9.7E+100);
+            SqlDouble test3 = new SqlDouble(2E+200);
 
             // == -operator
-            Assert.True((Test2 == Test22).Value);
-            Assert.True(!(Test1 == Test2).Value);
-            Assert.True((Test1 == SqlDouble.Null).IsNull);
+            Assert.True((test2 == test22).Value);
+            Assert.False((test1 == test2).Value);
+            Assert.True((test1 == SqlDouble.Null).IsNull);
 
             // != -operator
-            Assert.True(!(Test2 != Test22).Value);
-            Assert.True((Test2 != Test3).Value);
-            Assert.True((Test1 != Test3).Value);
-            Assert.True((Test1 != SqlDouble.Null).IsNull);
+            Assert.False((test2 != test22).Value);
+            Assert.True((test2 != test3).Value);
+            Assert.True((test1 != test3).Value);
+            Assert.True((test1 != SqlDouble.Null).IsNull);
 
             // > -operator
-            Assert.True((Test1 > Test2).Value);
-            Assert.True(!(Test1 > Test3).Value);
-            Assert.True(!(Test2 > Test22).Value);
-            Assert.True((Test1 > SqlDouble.Null).IsNull);
+            Assert.True((test1 > test2).Value);
+            Assert.False((test1 > test3).Value);
+            Assert.False((test2 > test22).Value);
+            Assert.True((test1 > SqlDouble.Null).IsNull);
 
             // >=  -operator
-            Assert.True(!(Test1 >= Test3).Value);
-            Assert.True((Test3 >= Test1).Value);
-            Assert.True((Test2 >= Test22).Value);
-            Assert.True((Test1 >= SqlDouble.Null).IsNull);
+            Assert.False((test1 >= test3).Value);
+            Assert.True((test3 >= test1).Value);
+            Assert.True((test2 >= test22).Value);
+            Assert.True((test1 >= SqlDouble.Null).IsNull);
 
             // < -operator
-            Assert.True(!(Test1 < Test2).Value);
-            Assert.True((Test1 < Test3).Value);
-            Assert.True(!(Test2 < Test22).Value);
-            Assert.True((Test1 < SqlDouble.Null).IsNull);
+            Assert.False((test1 < test2).Value);
+            Assert.True((test1 < test3).Value);
+            Assert.False((test2 < test22).Value);
+            Assert.True((test1 < SqlDouble.Null).IsNull);
 
             // <= -operator
-            Assert.True((Test1 <= Test3).Value);
-            Assert.True(!(Test3 <= Test1).Value);
-            Assert.True((Test2 <= Test22).Value);
-            Assert.True((Test1 <= SqlDouble.Null).IsNull);
+            Assert.True((test1 <= test3).Value);
+            Assert.False((test3 <= test1).Value);
+            Assert.True((test2 <= test22).Value);
+            Assert.True((test1 <= SqlDouble.Null).IsNull);
         }
 
         [Fact]
         public void UnaryNegation()
         {
-            SqlDouble Test = new SqlDouble(2000000001);
-            SqlDouble TestNeg = new SqlDouble(-3000);
+            SqlDouble test = new SqlDouble(2000000001);
+            SqlDouble testNeg = new SqlDouble(-3000);
 
-            SqlDouble Result = -Test;
-            Assert.Equal(-2000000001, Result.Value);
+            SqlDouble result = -test;
+            Assert.Equal(-2000000001, result.Value);
 
-            Result = -TestNeg;
-            Assert.Equal(3000, Result.Value);
+            result = -testNeg;
+            Assert.Equal(3000, result.Value);
         }
 
         [Fact]
         public void SqlBooleanToSqlDouble()
         {
-            SqlBoolean TestBoolean = new SqlBoolean(true);
-            SqlDouble Result;
+            SqlBoolean testBoolean = new SqlBoolean(true);
+            SqlDouble result;
 
-            Result = (SqlDouble)TestBoolean;
+            result = (SqlDouble)testBoolean;
 
-            Assert.Equal(1, Result.Value);
+            Assert.Equal(1, result.Value);
 
-            Result = (SqlDouble)SqlBoolean.Null;
-            Assert.True(Result.IsNull);
+            result = (SqlDouble)SqlBoolean.Null;
+            Assert.True(result.IsNull);
         }
 
         [Fact]
         public void SqlDoubleToDouble()
         {
-            SqlDouble Test = new SqlDouble(12e12);
-            double Result = (double)Test;
-            Assert.Equal(12e12, Result);
+            SqlDouble test = new SqlDouble(12e12);
+            double result = (double)test;
+            Assert.Equal(12e12, result);
         }
 
         [Fact]
         public void SqlStringToSqlDouble()
         {
-            SqlString TestString = new SqlString("Test string");
-            SqlString TestString100 = new SqlString("100");
+            SqlString testString = new SqlString("Test string");
+            SqlString testString100 = new SqlString("100");
 
-            Assert.Equal(100, ((SqlDouble)TestString100).Value);
+            Assert.Equal(100, ((SqlDouble)testString100).Value);
 
-            try
-            {
-                SqlDouble test = (SqlDouble)TestString;
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => (SqlDouble)testString);
         }
 
         [Fact]
         public void DoubleToSqlDouble()
         {
-            double Test1 = 5e64;
-            SqlDouble Result = Test1;
-            Assert.Equal(5e64, Result.Value);
+            double test1 = 5e64;
+            SqlDouble result = test1;
+            Assert.Equal(5e64, result.Value);
         }
 
         [Fact]
@@ -672,15 +493,9 @@ namespace System.Data.Tests.SqlTypes
             ReadWriteXmlTestInternal(xml1, test1, "BA01");
             ReadWriteXmlTestInternal(xml2, test2, "BA02");
 
-            try
-            {
-                ReadWriteXmlTestInternal(xml3, test3, "BA03");
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                Assert.Equal(typeof(FormatException), e.InnerException.GetType());
-            }
+            InvalidOperationException ex =
+                Assert.Throws<InvalidOperationException>(() => ReadWriteXmlTestInternal(xml3, test3, "BA03"));
+            Assert.Equal(typeof(FormatException), ex.InnerException.GetType());
         }
     }
 }

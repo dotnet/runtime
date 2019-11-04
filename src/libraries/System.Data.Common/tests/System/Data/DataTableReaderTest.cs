@@ -320,8 +320,7 @@ namespace System.Data.Tests
                 {
                     reader.Read();
                     reader.Close();
-                    int i = (int)reader[0];
-                    i++; // to suppress warning
+                    _ = (int)reader[0];
                 }
                 finally
                 {
@@ -339,8 +338,7 @@ namespace System.Data.Tests
                 DataTableReader reader = new DataTableReader(_dt);
                 try
                 {
-                    int i = (int)reader[0];
-                    i++; // to suppress warning
+                    _ = (int)reader[0];
                 }
                 finally
                 {
@@ -359,8 +357,7 @@ namespace System.Data.Tests
                 try
                 {
                     reader.Read();
-                    int i = (int)reader[90]; // kidding, ;-)
-                    i++; // to suppress warning
+                    _ = (int)reader[90]; // kidding, ;-)
                 }
                 finally
                 {
@@ -527,13 +524,8 @@ namespace System.Data.Tests
                 reader.Read(); // first row
                 reader.Read(); // second row
                 _dt.Clear();
-                try
-                {
-                    int i = (int)reader[0];
-                    i++; // suppress warning
-                    Assert.False(true);
-                }
-                catch (RowNotInTableException) { }
+                
+                Assert.Throws<RowNotInTableException>(() => (int)reader[0]);
 
                 // clear and add test
                 reader.Close();
@@ -753,32 +745,16 @@ namespace System.Data.Tests
             Assert.Equal(1, rdr.GetSchemaTable().Rows.Count);
 
             table.Columns[0].ColumnName = "newcol1";
-            try
-            {
-                rdr.GetSchemaTable();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-                // Never premise English.
-                //Assert.Equal ("Schema of current DataTable '" + table.TableName +
-                //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
-            }
+
+            // Schema of current DataTable '' in DataTableReader has changed, DataTableReader is invalid.
+            Assert.Throws<InvalidOperationException>(() => rdr.GetSchemaTable());
 
             rdr = table.CreateDataReader();
             rdr.GetSchemaTable(); //no exception
             table.Columns.Add("col2");
-            try
-            {
-                rdr.GetSchemaTable();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-                // Never premise English.
-                //Assert.Equal ("Schema of current DataTable '" + table.TableName +
-                //        "' in DataTableReader has changed, DataTableReader is invalid.", e.Message, "#1");
-            }
+
+            // Schema of current DataTable '' in DataTableReader has changed, DataTableReader is invalid.
+            Assert.Throws<InvalidOperationException>(() => rdr.GetSchemaTable());
         }
 
         [Fact]
@@ -817,17 +793,8 @@ namespace System.Data.Tests
 
             rdr.Read();
 
-            try
-            {
-                rdr.GetChars(1, 0, null, 0, 10);
-                Assert.False(true);
-            }
-            catch (InvalidCastException e)
-            {
-                // Never premise English.
-                //Assert.Equal ("Unable to cast object of type 'System.String'" +
-                //    " to type 'System.Char[]'.", e.Message, "#1");
-            }
+            // Unable to cast object of type 'System.String' to type 'System.Char[]'.
+            Assert.Throws<InvalidCastException>(() => rdr.GetChars(1, 0, null, 0, 10));
             char[] char_arr = null;
             long len = 0;
 

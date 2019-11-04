@@ -103,12 +103,14 @@ namespace System.Data.Tests
         [Fact]
         public void Ctor_ArgumentsRoundtrip()
         {
+            const int COR_E_DataConstraint = unchecked((int)0x8013192a);
+
             var innerException = new Exception("inner exception");
 
             var e = new ConstraintException("test", innerException);
             Assert.Equal("test", e.Message);
             Assert.Same(innerException, e.InnerException);
-            Assert.Equal(-2146232022, e.HResult);
+            Assert.Equal(COR_E_DataConstraint, e.HResult);
         }
     }
 }

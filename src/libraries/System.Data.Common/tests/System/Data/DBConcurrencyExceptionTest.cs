@@ -55,7 +55,7 @@ namespace System.Data.Tests
             dbce = new DBConcurrencyException(null);
             Assert.Null(dbce.InnerException);
             Assert.NotNull(dbce.Message);
-            Assert.True(dbce.Message.IndexOf(typeof(DBConcurrencyException).FullName) != -1);
+            Assert.Contains(typeof(DBConcurrencyException).FullName, dbce.Message);
             Assert.Null(dbce.Row);
 
             Assert.Equal(0, dbce.RowCount);
@@ -82,7 +82,7 @@ namespace System.Data.Tests
 
             dbce = new DBConcurrencyException(null, inner);
             Assert.Same(inner, dbce.InnerException);
-            Assert.True(dbce.Message.IndexOf(typeof(DBConcurrencyException).FullName) != -1);
+            Assert.Contains(typeof(DBConcurrencyException).FullName, dbce.Message);
             Assert.Null(dbce.Row);
             Assert.Equal(0, dbce.RowCount);
 
@@ -100,7 +100,7 @@ namespace System.Data.Tests
 
             dbce = new DBConcurrencyException(null, null);
             Assert.Null(dbce.InnerException);
-            Assert.True(dbce.Message.IndexOf(typeof(DBConcurrencyException).FullName) != -1);
+            Assert.Contains(typeof(DBConcurrencyException).FullName, dbce.Message);
             Assert.Null(dbce.Row);
             Assert.Equal(0, dbce.RowCount);
         }
@@ -126,7 +126,7 @@ namespace System.Data.Tests
             rows = new DataRow[] { rowB, rowA, null };
             dbce = new DBConcurrencyException(null, inner, rows);
             Assert.Same(inner, dbce.InnerException);
-            Assert.True(dbce.Message.IndexOf(typeof(DBConcurrencyException).FullName) != -1);
+            Assert.Contains(typeof(DBConcurrencyException).FullName, dbce.Message);
             Assert.Same(rowB, dbce.Row);
             Assert.Equal(3, dbce.RowCount);
 
@@ -154,7 +154,7 @@ namespace System.Data.Tests
             rows = null;
             dbce = new DBConcurrencyException(null, null, rows);
             Assert.Null(dbce.InnerException);
-            Assert.True(dbce.Message.IndexOf(typeof(DBConcurrencyException).FullName) != -1);
+            Assert.Contains(typeof(DBConcurrencyException).FullName, dbce.Message);
             Assert.Null(dbce.Row);
             Assert.Equal(0, dbce.RowCount);
         }
