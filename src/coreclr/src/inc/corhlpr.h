@@ -21,6 +21,7 @@
 #include "cor.h"
 #include "corhdr.h"
 #include "corerror.h"
+#include "unreachable.h"
 
 // This header is consumed both within the runtime and externally. In the former
 // case we need to wrap memory allocations, in the latter there is no
@@ -43,6 +44,7 @@ inline void DECLSPEC_NORETURN THROW_OUT_OF_MEMORY()
 static inline void DECLSPEC_NORETURN __CorHlprThrowOOM()
 {
     RaiseException(STATUS_NO_MEMORY, 0, 0, NULL);
+    __UNREACHABLE();
 }
 static inline BYTE *__CorHlprNewThrows(size_t bytes)
 {
