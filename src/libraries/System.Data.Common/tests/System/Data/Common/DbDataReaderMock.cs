@@ -41,12 +41,7 @@ namespace System.Data.Tests.Common
 
         public DbDataReaderMock(DataTable testData)
         {
-            if (testData == null)
-            {
-                throw new ArgumentNullException(nameof(testData));
-            }
-
-            _testDataTable = testData;
+            _testDataTable = testData ?? throw new ArgumentNullException(nameof(testData));
         }
 
         public override void Close()

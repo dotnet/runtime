@@ -53,47 +53,30 @@ namespace System.Data.Tests.Common
                 get { return IsolationLevel.RepeatableRead; }
             }
 
-            public bool IsCommitted
-            {
-                get { return _isCommitted; }
-            }
+            public bool IsCommitted { get; private set; }
 
-            public bool IsRolledback
-            {
-                get { return _isRolledback; }
-            }
+            public bool IsRolledback { get; private set; }
 
-            public bool IsDisposed
-            {
-                get { return _isDisposed; }
-            }
+            public bool IsDisposed { get; private set; }
 
-            public bool Disposing
-            {
-                get { return _disposing; }
-            }
+            public bool Disposing { get; private set; }
 
             public override void Commit()
             {
-                _isCommitted = true;
+                IsCommitted = true;
             }
 
             public override void Rollback()
             {
-                _isRolledback = true;
+                IsRolledback = true;
             }
 
             protected override void Dispose(bool disposing)
             {
-                _isDisposed = true;
-                _disposing = disposing;
+                IsDisposed = true;
+                Disposing = disposing;
                 base.Dispose(disposing);
             }
-
-            private bool _isCommitted;
-            private bool _isRolledback;
-            private bool _isDisposed;
-            private bool _disposing;
         }
     }
 }

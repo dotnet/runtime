@@ -23,11 +23,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
-
 
 using Xunit;
 
@@ -36,13 +35,7 @@ namespace System.Data.Tests
     public class DataRowTest2
     {
         private bool _rowChanged;
-        private ArrayList _eventsFired;
-
-        public DataRowTest2()
-        {
-            _rowChanged = false;
-            _eventsFired = new ArrayList();
-        }
+        private List<EventInfo> _eventsFired = new List<EventInfo>();
 
         [Fact]
         public void AcceptChanges()
@@ -75,7 +68,7 @@ namespace System.Data.Tests
             myRow.CancelEdit();
 
             // DataRow CancelEdit
-            Assert.True((int)myRow[0] == 1);
+            Assert.Equal(1, (int)myRow[0]);
         }
 
         [Fact]
@@ -707,26 +700,6 @@ namespace System.Data.Tests
             */
         }
 
-        private void CheckRowVersion(DataRow dr)
-        {
-            if (dr.HasVersion(DataRowVersion.Current)) Console.WriteLine("Has " + DataRowVersion.Current.ToString());
-            if (dr.HasVersion(DataRowVersion.Default)) Console.WriteLine("Has " + DataRowVersion.Default.ToString());
-            if (dr.HasVersion(DataRowVersion.Original)) Console.WriteLine("Has " + DataRowVersion.Original.ToString());
-            if (dr.HasVersion(DataRowVersion.Proposed)) Console.WriteLine("Has " + DataRowVersion.Proposed.ToString());
-        }
-
-        [Fact]
-        public new void GetType()
-        {
-            Type myType;
-            DataTable dt = new DataTable();
-            DataRow dr = dt.NewRow();
-            myType = typeof(DataRow);
-
-            // GetType
-            Assert.Equal(typeof(DataRow), myType);
-        }
-
         [Fact]
         public void HasErrors()
         {
@@ -966,42 +939,42 @@ namespace System.Data.Tests
             Assert.Equal(addressC, dr[dc0]);
             Assert.Same(personA, dr[dc1]);
 
-            evt = (EventInfo)_eventsFired[0];
+            evt = _eventsFired[0];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Equal(addressC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[1];
+            evt = _eventsFired[1];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Equal(addressC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[2];
+            evt = _eventsFired[2];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Equal(personC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[1], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[3];
+            evt = _eventsFired[3];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Equal(personC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[1], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[4];
+            evt = _eventsFired[4];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Equal(addressB, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[5];
+            evt = _eventsFired[5];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
@@ -1037,64 +1010,37 @@ namespace System.Data.Tests
             dtA.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dtA.Rows[0];
 
-            try
-            {
-                object value = dr[dcB1];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
+            ArgumentException ex1 = Assert.Throws<ArgumentException>(() => dr[dcB1]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex1.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex1.Message);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
-
-            try
-            {
-                object value = dr[new DataColumn("ZZZ")];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "ZZZ" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
+            ArgumentException ex2 = Assert.Throws<ArgumentException>(() => dr[new DataColumn("ZZZ")]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "ZZZ" + @"[\p{Pf}\p{Po}]", ex2.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex2.Message);
 
             dtA.Columns.Remove(dcA2);
 
-            try
-            {
-                object value = dr[dcA2];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col1" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
+            ArgumentException ex3 = Assert.Throws<ArgumentException>(() => dr[dcA2]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex3.InnerException);
+            Assert.NotNull(ex3.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col1" + @"[\p{Pf}\p{Po}]", ex3.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex3.Message);
         }
 
         [Fact] // Object this [DataColumn]
@@ -1118,31 +1064,15 @@ namespace System.Data.Tests
             dt.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[(DataColumn)null];
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("column", ex.ParamName);
-            }
+            ArgumentNullException ex1 = Assert.Throws<ArgumentNullException>(() => dr[(DataColumn)null]);
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Equal("column", ex1.ParamName);
 
-            try
-            {
-                dr[(DataColumn)null] = personB;
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("column", ex.ParamName);
-            }
+            ArgumentNullException ex2 = Assert.Throws<ArgumentNullException>(() => dr[(DataColumn)null] = personB);
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal("column", ex2.ParamName);
 
             Assert.Equal(0, _eventsFired.Count);
         }
@@ -1177,25 +1107,17 @@ namespace System.Data.Tests
 
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                dr[dc0] = null;
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Cannot set Column 'Col0' to be null.
-                // Please use DBNull instead
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => dr[dc0] = null);
+            // Cannot set Column 'Col0' to be null.
+            // Please use DBNull instead
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
-            }
 
             Assert.Equal(1, _eventsFired.Count);
             Assert.Equal(addressA, dr[dc0]);
@@ -1265,14 +1187,14 @@ namespace System.Data.Tests
 
             int index = 0;
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Null(colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
@@ -1280,77 +1202,77 @@ namespace System.Data.Tests
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Null(colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Same(DBNull.Value, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc0, colChangeArgs.Column);
             Assert.Same(DBNull.Value, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Same(personC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Same(personC, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Same(DBNull.Value, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc1, colChangeArgs.Column);
             Assert.Same(DBNull.Value, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc2, colChangeArgs.Column);
             Assert.Null(colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc2, colChangeArgs.Column);
             Assert.Null(colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanging", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc2, colChangeArgs.Column);
             Assert.Same(DBNull.Value, colChangeArgs.ProposedValue);
             Assert.Same(dt.Rows[0], colChangeArgs.Row);
 
-            evt = (EventInfo)_eventsFired[index++];
+            evt = _eventsFired[index++];
             Assert.Equal("ColumnChanged", evt.Name);
             colChangeArgs = (DataColumnChangeEventArgs)evt.Args;
             Assert.Same(dc2, colChangeArgs.Column);
@@ -1431,25 +1353,16 @@ namespace System.Data.Tests
 
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                dr[0] = null;
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Cannot set Column 'Col0' to be null.
-                // Please use DBNull instead
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => dr[0] = null);
+            // Cannot set Column 'Col0' to be null.
+            // Please use DBNull instead
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
 
             Assert.Equal(addressA, dr[0]);
             Assert.False(dr.IsNull(0));
@@ -1559,47 +1472,27 @@ namespace System.Data.Tests
 
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[string.Empty];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                //  Column '' does not belong to table Persons
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
+            ArgumentException ex1 = Assert.Throws<ArgumentException>(() => dr[string.Empty]);
+            //  Column '' does not belong to table Persons
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "" + @"[\p{Pf}\p{Po}]", ex1.Message);
+            Assert.Matches(@"\b" + "Persons" + @"\b", ex1.Message);
+            Assert.Null(ex1.ParamName);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "Persons" + @"\b", ex.Message);
-
-                Assert.Null(ex.ParamName);
-            }
-
-            try
-            {
-                dr[string.Empty] = personB;
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column '' does not belong to table Persons
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "Persons" + @"\b", ex.Message);
-
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex2 = Assert.Throws<ArgumentException>(() => dr[string.Empty] = personB);
+            // Column '' does not belong to table Persons
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "" + @"[\p{Pf}\p{Po}]", ex2.Message);
+            Assert.Matches(@"\b" + "Persons" + @"\b", ex2.Message);
+            Assert.Null(ex2.ParamName);
         }
 
         [Fact] // Object this [String]
@@ -1619,31 +1512,15 @@ namespace System.Data.Tests
 
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[(string)null];
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("name", ex.ParamName);
-            }
+            ArgumentNullException ex1 = Assert.Throws<ArgumentNullException>(() => dr[(string)null]);
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Equal("name", ex1.ParamName);
 
-            try
-            {
-                dr[(string)null] = personB;
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("name", ex.ParamName);
-            }
+            ArgumentNullException ex2 = Assert.Throws<ArgumentNullException>(() => dr[(string)null] = personB);
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal("name", ex2.ParamName);
         }
 
         [Fact] // Object this [String]
@@ -1667,25 +1544,16 @@ namespace System.Data.Tests
 
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                dr["Col0"] = null;
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Cannot set Column 'Col0' to be null.
-                // Please use DBNull instead
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => dr["Col0"] = null);
+            // Cannot set Column 'Col0' to be null.
+            // Please use DBNull instead
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Matches(@"\b" + "DBNull" + @"\b", ex.Message);
 
             Assert.Equal(addressA, dr["Col0"]);
             Assert.False(dr.IsNull("Col0"));
@@ -1745,84 +1613,84 @@ namespace System.Data.Tests
             dr = dt.Rows[0];
             Assert.Equal(addressA, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressA, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personA, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personA, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
 
             dr = dt.Rows[1];
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personB, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personB, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
 
             dr = dt.Rows[0];
             dr[dc0] = addressC;
             Assert.Equal(addressC, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressC, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personA, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personA, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
 
             dr = dt.Rows[1];
             dr.BeginEdit();
             dr[dc1] = personC;
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Proposed]);
             Assert.Same(personB, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personC, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
             Assert.Same(personC, dr[dc1, DataRowVersion.Proposed]);
             dr.EndEdit();
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personC, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personC, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
             dr.AcceptChanges();
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Default]);
             Assert.Equal(addressB, dr[dc0, DataRowVersion.Original]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personC, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personC, dr[dc1, DataRowVersion.Default]);
             Assert.Equal(personC, dr[dc1, DataRowVersion.Original]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
 
             dr = dt.Rows[0];
             dr.BeginEdit();
             dr[dc0] = addressA;
             Assert.Equal(addressC, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressA, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
             Assert.Equal(addressA, dr[dc0, DataRowVersion.Proposed]);
             Assert.Same(personA, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personA, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
             Assert.Same(personA, dr[dc1, DataRowVersion.Proposed]);
             dr.CancelEdit();
             Assert.Equal(addressC, dr[dc0, DataRowVersion.Current]);
             Assert.Equal(addressC, dr[dc0, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc0, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc0, DataRowVersion.Original);
+            AssertNotFound(dr, dc0, DataRowVersion.Proposed);
             Assert.Same(personA, dr[dc1, DataRowVersion.Current]);
             Assert.Same(personA, dr[dc1, DataRowVersion.Default]);
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Original));
-            Assert.True(AssertNotFound(dr, dc1, DataRowVersion.Proposed));
+            AssertNotFound(dr, dc1, DataRowVersion.Original);
+            AssertNotFound(dr, dc1, DataRowVersion.Proposed);
         }
 
         [Fact]
@@ -1846,64 +1714,37 @@ namespace System.Data.Tests
             dtA.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dtA.Rows[0];
 
-            try
-            {
-                object value = dr[dcB1, DataRowVersion.Default];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
+            ArgumentException ex1 = Assert.Throws<ArgumentException>(() => dr[dcB1, DataRowVersion.Default]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex1.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex1.Message);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col0" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
-
-            try
-            {
-                object value = dr[new DataColumn("ZZZ"), DataRowVersion.Default];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "ZZZ" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
+            ArgumentException ex2 = Assert.Throws<ArgumentException>(() => dr[new DataColumn("ZZZ"), DataRowVersion.Default]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "ZZZ" + @"[\p{Pf}\p{Po}]", ex2.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex2.Message);
 
             dtA.Columns.Remove(dcA2);
 
-            try
-            {
-                object value = dr[dcA2, DataRowVersion.Default];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Column 'Col0' does not belong to table TableA
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col1" + @"[\p{Pf}\p{Po}]", ex.Message);
-                Assert.Matches(@"\b" + "TableA" + @"\b", ex.Message);
-            }
+            ArgumentException ex3 = Assert.Throws<ArgumentException>(() => dr[dcA2, DataRowVersion.Default]);
+            // Column 'Col0' does not belong to table TableA
+            Assert.Null(ex3.InnerException);
+            Assert.NotNull(ex3.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Col1" + @"[\p{Pf}\p{Po}]", ex3.Message);
+            Assert.Matches(@"\b" + "TableA" + @"\b", ex3.Message);
         }
 
         [Fact] // Object this [DataColumn, DataRowVersion]
@@ -1922,18 +1763,10 @@ namespace System.Data.Tests
             dt.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[(DataColumn)null, DataRowVersion.Default];
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("column", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => dr[(DataColumn)null, DataRowVersion.Default]);
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("column", ex.ParamName);
         }
 
         [Fact] // Object this [DataColumn, DataRowVersion]
@@ -1947,27 +1780,17 @@ namespace System.Data.Tests
 
             Person personA = new Person("Miguel");
             Address addressA = new Address("X", 5);
-            Person personB = new Person("Chris");
 
             dt.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[dc0, (DataRowVersion)666];
-                Assert.False(true);
-            }
-            catch (DataException ex)
-            {
-                // Version must be Original, Current, or Proposed
-                Assert.Equal(typeof(DataException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Original") != -1);
-                Assert.True(ex.Message.IndexOf("Current") != -1);
-                Assert.True(ex.Message.IndexOf("Proposed") != -1);
-                Assert.False(ex.Message.IndexOf("Default") != -1);
-            }
+            DataException ex = Assert.Throws<DataException>(() => dr[dc0, (DataRowVersion)666]);
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("Original", ex.Message);
+            Assert.Contains("Current", ex.Message);
+            Assert.Contains("Proposed", ex.Message);
+            Assert.DoesNotContain("Default", ex.Message);
         }
 
         [Fact] // Object this [DataColumn, DataRowVersion]
@@ -1981,38 +1804,21 @@ namespace System.Data.Tests
 
             Person personA = new Person("Miguel");
             Address addressA = new Address("X", 5);
-            Person personB = new Person("Chris");
 
             dt.Rows.Add(new object[] { addressA, personA });
             DataRow dr = dt.Rows[0];
 
-            try
-            {
-                object value = dr[dc0, DataRowVersion.Original];
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException ex)
-            {
-                // There is no Original data to access
-                Assert.Equal(typeof(VersionNotFoundException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Original") != -1);
-            }
+            VersionNotFoundException ex1 = Assert.Throws<VersionNotFoundException>(() => dr[dc0, DataRowVersion.Original]);
+            // There is no Original data to access
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Contains("Original", ex1.Message);
 
-            try
-            {
-                object value = dr[dc0, DataRowVersion.Proposed];
-                Assert.False(true);
-            }
-            catch (VersionNotFoundException ex)
-            {
-                // There is no Proposed data to access
-                Assert.Equal(typeof(VersionNotFoundException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("Proposed") != -1);
-            }
+            VersionNotFoundException ex2 = Assert.Throws<VersionNotFoundException>(() => dr[dc0, DataRowVersion.Proposed]);
+            // There is no Proposed data to access
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Contains("Proposed", ex2.Message);
         }
 
         [Fact]
@@ -2099,13 +1905,11 @@ namespace System.Data.Tests
             dt.Rows.Add(new object[] { 1234 });
             DataRow dr = dt.Rows[0];
 
-            #region --- assignment  ----
             // IsNull_S 1
             Assert.False(dr.IsNull("Col0"));
 
             // IsNull_S 2
             Assert.True(dr.IsNull("Col1"));
-            #endregion
 
             // IsNull_S 1
             MemoryStream st = new MemoryStream();
@@ -2117,15 +1921,12 @@ namespace System.Data.Tests
             st.Position = 0;
             var ds = new DataSet();
             ds.ReadXml(st);
-            //  Here we add the expression column
+            // Here we add the expression column
             ds.Tables[0].Columns.Add("ValueListValueMember", typeof(object), "EmployeeNo");
 
             foreach (DataRow row in ds.Tables[0].Rows)
             {
-                if (row.IsNull("ValueListValueMember") == true)
-                    Assert.Equal("Failed", "SubTest");
-                else
-                    Assert.Equal("Passed", "Passed");
+                Assert.False(row.IsNull("ValueListValueMember"));
             }
         }
 
@@ -2135,18 +1936,18 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
 
             // add the row, with the value in the column
-            DataColumn staticColumn = table.Columns.Add("static", typeof(string), null); // static
+            table.Columns.Add("static", typeof(string), null); // static
             DataRow row = table.Rows.Add("the value");
             Assert.False(row.IsNull("static"));
             Assert.Equal("the value", row["static"]);
 
             // add the first derived column
-            DataColumn firstColumn = table.Columns.Add("first", typeof(string), "static"); // first -> static
+            table.Columns.Add("first", typeof(string), "static"); // first -> static
             Assert.False(row.IsNull("first"));
             Assert.Equal("the value", row["first"]);
 
             // add the second level of related
-            DataColumn secondColumn = table.Columns.Add("second", typeof(string), "first"); // second -> first -> static
+            table.Columns.Add("second", typeof(string), "first"); // second -> first -> static
             Assert.False(row.IsNull("second"));
             Assert.Equal("the value", row["second"]);
         }
@@ -2157,38 +1958,14 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
 
             // add the row, with the value in the column
-            DataColumn staticColumn = table.Columns.Add("static", typeof(string), null);
+            table.Columns.Add("static", typeof(string), null);
             DataRow row = table.Rows.Add("the value");
 
-            try
-            {
-                row.IsNull((string)null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-                // do nothing as null columns aren't allowed
-            }
+            Assert.Throws<ArgumentNullException>(() => row.IsNull((string)null));
 
-            try
-            {
-                row.IsNull("");
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-                // do nothing as we can't find a col with no name
-            }
+            Assert.Throws<ArgumentException>(() => row.IsNull(""));
 
-            try
-            {
-                row.IsNull(null, DataRowVersion.Default);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-                // do nothing as null columns aren't allowed
-            }
+            Assert.Throws<ArgumentNullException>(() => row.IsNull(null, DataRowVersion.Default));
         }
 
         [Fact]
@@ -2231,14 +2008,15 @@ namespace System.Data.Tests
             //  testMore();
         }
 
-        /*public void testMore()
+        [Fact]
+        public void TestMore()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             dt.Rows[0].BeginEdit();
             dt.Rows[0][0] = 10;
             dt.Rows[0].EndEdit();
             dt.AcceptChanges();
-        }*/
+        }
 
         [Fact]
         public void RejectChanges()
@@ -2398,7 +2176,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void testMore()
+        public void TestMore2()
         {
             DataSet ds = DataProvider.CreateForeignConstraint();
             DataRow drParent = ds.Tables[0].Rows[0];
@@ -2407,7 +2185,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void test()
+        public void Test()
         {
             // test SetParentRow
             DataTable parent = DataProvider.CreateParentDataTable();
@@ -2463,24 +2241,12 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void ToString()
-        {
-            DataRow dr;
-            DataTable dtParent;
-            dtParent = DataProvider.CreateParentDataTable();
-            dr = dtParent.Rows[0];
-
-            // ToString
-            Assert.StartsWith("system.data.datarow", dr.ToString().ToLower());
-        }
-
-        [Fact]
         public void DataRow_RowError()
         {
             DataTable dt = new DataTable("myTable");
             DataRow dr = dt.NewRow();
 
-            Assert.Equal(dr.RowError, string.Empty);
+            Assert.Equal(string.Empty, dr.RowError);
 
             dr.RowError = "Err";
             Assert.Equal("Err", dr.RowError);
@@ -2490,28 +2256,28 @@ namespace System.Data.Tests
         public void DataRow_RowError2()
         {
             Assert.Throws<ConstraintException>(() =>
-           {
-               DataTable dt1 = DataProvider.CreateUniqueConstraint();
+            {
+                DataTable dt1 = DataProvider.CreateUniqueConstraint();
 
-               dt1.BeginLoadData();
+                dt1.BeginLoadData();
 
-               DataRow dr = dt1.NewRow();
-               dr[0] = 3;
-               dt1.Rows.Add(dr);
-               dt1.EndLoadData();
-           });
+                DataRow dr = dt1.NewRow();
+                dr[0] = 3;
+                dt1.Rows.Add(dr);
+                dt1.EndLoadData();
+            });
         }
 
         [Fact]
         public void DataRow_RowError3()
         {
             Assert.Throws<ConstraintException>(() =>
-           {
-               DataSet ds = DataProvider.CreateForeignConstraint();
-               ds.Tables[0].BeginLoadData();
-               ds.Tables[0].Rows[0][0] = 10;
-               ds.Tables[0].EndLoadData(); //Foreign constraint violation
-           });
+            {
+                DataSet ds = DataProvider.CreateForeignConstraint();
+                ds.Tables[0].BeginLoadData();
+                ds.Tables[0].Rows[0][0] = 10;
+                ds.Tables[0].EndLoadData(); //Foreign constraint violation
+            });
         }
 
         [Fact]
@@ -2527,12 +2293,7 @@ namespace System.Data.Tests
             table.BeginLoadData();
             table.Rows.Add(new object[] { null, 1, 1 });
             table.Rows.Add(new object[] { 1, 1, 1 });
-            try
-            {
-                table.EndLoadData();
-                Assert.False(true);
-            }
-            catch (ConstraintException) { }
+            Assert.Throws<ConstraintException>(() => table.EndLoadData());
             Assert.True(table.HasErrors);
             DataRow[] rows = table.GetErrors();
 
@@ -2765,7 +2526,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void bug78885()
+        public void Bug78885()
         {
             DataSet ds = new DataSet();
             DataTable t = ds.Tables.Add("table");
@@ -2806,14 +2567,7 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
 
             DataRow row = table.NewRow();
-            try
-            {
-                row.SetAdded();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => row.SetAdded());
 
             table.Columns.Add("col1", typeof(int));
             table.Columns.Add("col2", typeof(int));
@@ -2821,27 +2575,13 @@ namespace System.Data.Tests
 
             row = table.Rows.Add(new object[] { 1, 2, 3 });
             Assert.Equal(DataRowState.Added, row.RowState);
-            try
-            {
-                row.SetAdded();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => row.SetAdded());
             Assert.Equal(DataRowState.Added, row.RowState);
 
             row.AcceptChanges();
             row[0] = 10;
             Assert.Equal(DataRowState.Modified, row.RowState);
-            try
-            {
-                row.SetAdded();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => row.SetAdded());
 
             row.AcceptChanges();
             Assert.Equal(DataRowState.Unchanged, row.RowState);
@@ -2870,11 +2610,7 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
 
             DataRow row = table.NewRow();
-            try
-            {
-                row.SetModified();
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => row.SetModified());
 
             table.Columns.Add("col1", typeof(int));
             table.Columns.Add("col2", typeof(int));
@@ -2882,30 +2618,12 @@ namespace System.Data.Tests
 
             row = table.Rows.Add(new object[] { 1, 2, 3 });
             Assert.Equal(DataRowState.Added, row.RowState);
-            try
-            {
-                row.SetModified();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                // Never premise English.
-                //Assert.Equal (SetAddedModified_ErrMsg, e.Message);
-            }
+            Assert.Throws<InvalidOperationException>(() => row.SetModified());
 
             row.AcceptChanges();
             row[0] = 10;
             Assert.Equal(DataRowState.Modified, row.RowState);
-            try
-            {
-                row.SetModified();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                // Never premise English.
-                //Assert.Equal (SetAddedModified_ErrMsg, e.Message);
-            }
+            Assert.Throws<InvalidOperationException>(() => row.SetModified());
 
             row.AcceptChanges();
             Assert.Equal(DataRowState.Unchanged, row.RowState);
@@ -2975,35 +2693,18 @@ namespace System.Data.Tests
         {
             public EventInfo(string name, EventArgs args)
             {
-                _name = name;
-                _args = args;
+                Name = name;
+                Args = args;
             }
 
-            public string Name
-            {
-                get { return _name; }
-            }
+            public string Name { get; }
 
-            public EventArgs Args
-            {
-                get { return _args; }
-            }
-
-            private readonly string _name;
-            private readonly EventArgs _args;
+            public EventArgs Args { get; }
         }
 
-        private static bool AssertNotFound(DataRow rc, DataColumn dc, DataRowVersion version)
+        private static void AssertNotFound(DataRow rc, DataColumn dc, DataRowVersion version)
         {
-            try
-            {
-                object value = rc[dc, version];
-                return false;
-            }
-            catch (VersionNotFoundException)
-            {
-                return true;
-            }
+            Assert.Throws<VersionNotFoundException>(() => rc[dc, version]);
         }
 
         private class Person

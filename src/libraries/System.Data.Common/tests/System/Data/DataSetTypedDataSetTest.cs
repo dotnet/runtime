@@ -48,7 +48,6 @@ namespace System.Data.Tests
             myTypedDataSet ds = null;
             DataSet unTypedDs = new DataSet();
             ds = new myTypedDataSet();
-            Assert.False(ds == null);
             Assert.Equal(typeof(myTypedDataSet), ds.GetType());
 
             // fill dataset
@@ -641,7 +640,7 @@ namespace System.Data.Tests
             //Create New Row using NewTableNameRow, check row != null
             myTypedDataSet.OrdersRow drOrders = null;
             drOrders = tblOrders.NewOrdersRow();
-            Assert.False(drOrders == null);
+            Assert.NotNull(drOrders);
 
             //Create New Row using NewTableNameRow, check row state
             Assert.Equal(DataRowState.Detached, drOrders.RowState);
@@ -732,12 +731,12 @@ namespace System.Data.Tests
 
             //check relations
             //ChildTableRow has property ParentTableRow
-            myTypedDataSet.OrdersRow dr1 = ds.Order_Details[0].OrdersRow;
-            DataRow dr2 = ds.Order_Details[0].GetParentRow(ds.Relations[0]);
+            myTypedDataSet.OrdersRow dr1 = ds.OrderDetails[0].OrdersRow;
+            DataRow dr2 = ds.OrderDetails[0].GetParentRow(ds.Relations[0]);
             Assert.Equal(dr1, dr2);
 
             //ParentTableRow has property ChildTableRow
-            myTypedDataSet.Order_DetailsRow[] drArr1 = ds.Orders[0].GetOrder_DetailsRows();
+            myTypedDataSet.OrderDetailsRow[] drArr1 = ds.Orders[0].GetOrderDetailsRows();
             DataRow[] drArr2 = ds.Orders[0].GetChildRows(ds.Relations[0]);
             Assert.Equal(drArr1, drArr2);
 
@@ -813,10 +812,6 @@ namespace System.Data.Tests
         [ToolboxItem(true)]
         public class myTypedDataSet : DataSet
         {
-            private Order_DetailsDataTable _tableOrder_Details;
-
-            private OrdersDataTable _tableOrders;
-
             private DataRelation _relationOrdersOrder_x0020_Details;
 
             public myTypedDataSet()
@@ -836,7 +831,7 @@ namespace System.Data.Tests
                     ds.ReadXmlSchema(new XmlTextReader(new StringReader(strSchema)));
                     if ((ds.Tables["Order Details"] != null))
                     {
-                        Tables.Add(new Order_DetailsDataTable(ds.Tables["Order Details"]));
+                        Tables.Add(new OrderDetailsDataTable(ds.Tables["Order Details"]));
                     }
                     if ((ds.Tables["Orders"] != null))
                     {
@@ -863,23 +858,11 @@ namespace System.Data.Tests
 
             [Browsable(false)]
             [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Content)]
-            public Order_DetailsDataTable Order_Details
-            {
-                get
-                {
-                    return _tableOrder_Details;
-                }
-            }
+            public OrderDetailsDataTable OrderDetails { get; private set; }
 
             [Browsable(false)]
             [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Content)]
-            public OrdersDataTable Orders
-            {
-                get
-                {
-                    return _tableOrders;
-                }
-            }
+            public OrdersDataTable Orders { get; private set; }
 
             public override DataSet Clone()
             {
@@ -905,7 +888,7 @@ namespace System.Data.Tests
                 ds.ReadXml(reader);
                 if ((ds.Tables["Order Details"] != null))
                 {
-                    Tables.Add(new Order_DetailsDataTable(ds.Tables["Order Details"]));
+                    Tables.Add(new OrderDetailsDataTable(ds.Tables["Order Details"]));
                 }
                 if ((ds.Tables["Orders"] != null))
                 {
@@ -931,15 +914,15 @@ namespace System.Data.Tests
 
             internal void InitVars()
             {
-                _tableOrder_Details = ((Order_DetailsDataTable)(Tables["Order Details"]));
-                if ((_tableOrder_Details != null))
+                OrderDetails = ((OrderDetailsDataTable)(Tables["Order Details"]));
+                if ((OrderDetails != null))
                 {
-                    _tableOrder_Details.InitVars();
+                    OrderDetails.InitVars();
                 }
-                _tableOrders = ((OrdersDataTable)(Tables["Orders"]));
-                if ((_tableOrders != null))
+                Orders = ((OrdersDataTable)(Tables["Orders"]));
+                if ((Orders != null))
                 {
-                    _tableOrders.InitVars();
+                    Orders.InitVars();
                 }
                 _relationOrdersOrder_x0020_Details = Relations["OrdersOrder_x0020_Details"];
             }
@@ -952,21 +935,19 @@ namespace System.Data.Tests
                 Locale = new CultureInfo("en-US");
                 CaseSensitive = false;
                 EnforceConstraints = true;
-                _tableOrder_Details = new Order_DetailsDataTable();
-                Tables.Add(_tableOrder_Details);
-                _tableOrders = new OrdersDataTable();
-                Tables.Add(_tableOrders);
+                OrderDetails = new OrderDetailsDataTable();
+                Tables.Add(OrderDetails);
+                Orders = new OrdersDataTable();
+                Tables.Add(Orders);
                 ForeignKeyConstraint fkc;
-                fkc = new ForeignKeyConstraint("OrdersOrder_x0020_Details", new DataColumn[] {
-                                                                                                 _tableOrders.OrderIDColumn}, new DataColumn[] {
-                                                                                                                                                       _tableOrder_Details.OrderIDColumn});
-                _tableOrder_Details.Constraints.Add(fkc);
+                fkc = new ForeignKeyConstraint("OrdersOrder_x0020_Details",
+                    new DataColumn[] { Orders.OrderIDColumn}, new DataColumn[] { OrderDetails.OrderIDColumn });
+                OrderDetails.Constraints.Add(fkc);
                 fkc.AcceptRejectRule = AcceptRejectRule.None;
                 fkc.DeleteRule = Rule.Cascade;
                 fkc.UpdateRule = Rule.Cascade;
-                _relationOrdersOrder_x0020_Details = new DataRelation("OrdersOrder_x0020_Details", new DataColumn[] {
-                                                                                                                            _tableOrders.OrderIDColumn}, new DataColumn[] {
-                                                                                                                                                                                  _tableOrder_Details.OrderIDColumn}, false);
+                _relationOrdersOrder_x0020_Details = new DataRelation("OrdersOrder_x0020_Details",
+                    new DataColumn[] { Orders.OrderIDColumn }, new DataColumn[] { OrderDetails.OrderIDColumn }, false);
                 Relations.Add(_relationOrdersOrder_x0020_Details);
             }
 
@@ -988,29 +969,19 @@ namespace System.Data.Tests
                 }
             }
 
-            public delegate void Order_DetailsRowChangeEventHandler(object sender, Order_DetailsRowChangeEvent e);
+            public delegate void OrderDetailsRowChangeEventHandler(object sender, OrderDetailsRowChangeEvent e);
 
             public delegate void OrdersRowChangeEventHandler(object sender, OrdersRowChangeEvent e);
 
-            public class Order_DetailsDataTable : DataTable, IEnumerable
+            public class OrderDetailsDataTable : DataTable, IEnumerable
             {
-                private DataColumn _columnOrderID;
-
-                private DataColumn _columnProductID;
-
-                private DataColumn _columnUnitPrice;
-
-                private DataColumn _columnQuantity;
-
-                private DataColumn _columnDiscount;
-
-                internal Order_DetailsDataTable() :
+                internal OrderDetailsDataTable() :
                     base("Order Details")
                 {
                     InitClass();
                 }
 
-                internal Order_DetailsDataTable(DataTable table) :
+                internal OrderDetailsDataTable(DataTable table) :
                     base(table.TableName)
                 {
                     if ((table.CaseSensitive != table.DataSet.CaseSensitive))
@@ -1039,85 +1010,53 @@ namespace System.Data.Tests
                     }
                 }
 
-                internal DataColumn OrderIDColumn
+                internal DataColumn OrderIDColumn { get; private set; }
+
+                internal DataColumn ProductIDColumn { get; private set; }
+
+                internal DataColumn UnitPriceColumn { get; private set; }
+
+                internal DataColumn QuantityColumn { get; private set; }
+
+                internal DataColumn DiscountColumn { get; private set; }
+
+                public OrderDetailsRow this[int index]
                 {
                     get
                     {
-                        return _columnOrderID;
+                        return ((OrderDetailsRow)(Rows[index]));
                     }
                 }
 
-                internal DataColumn ProductIDColumn
-                {
-                    get
-                    {
-                        return _columnProductID;
-                    }
-                }
+                public event OrderDetailsRowChangeEventHandler OrderDetailsRowChanged;
 
-                internal DataColumn UnitPriceColumn
-                {
-                    get
-                    {
-                        return _columnUnitPrice;
-                    }
-                }
+                public event OrderDetailsRowChangeEventHandler OrderDetailsRowChanging;
 
-                internal DataColumn QuantityColumn
-                {
-                    get
-                    {
-                        return _columnQuantity;
-                    }
-                }
+                public event OrderDetailsRowChangeEventHandler OrderDetailsRowDeleted;
 
-                internal DataColumn DiscountColumn
-                {
-                    get
-                    {
-                        return _columnDiscount;
-                    }
-                }
+                public event OrderDetailsRowChangeEventHandler OrderDetailsRowDeleting;
 
-                public Order_DetailsRow this[int index]
-                {
-                    get
-                    {
-                        return ((Order_DetailsRow)(Rows[index]));
-                    }
-                }
-
-                public event Order_DetailsRowChangeEventHandler Order_DetailsRowChanged;
-
-                public event Order_DetailsRowChangeEventHandler Order_DetailsRowChanging;
-
-                public event Order_DetailsRowChangeEventHandler Order_DetailsRowDeleted;
-
-                public event Order_DetailsRowChangeEventHandler Order_DetailsRowDeleting;
-
-                public void AddOrder_DetailsRow(Order_DetailsRow row)
+                public void AddOrder_DetailsRow(OrderDetailsRow row)
                 {
                     Rows.Add(row);
                 }
 
-                public Order_DetailsRow AddOrder_DetailsRow(OrdersRow parentOrdersRowByOrdersOrder_x0020_Details, int ProductID, decimal UnitPrice, short Quantity, string Discount)
+                public OrderDetailsRow AddOrder_DetailsRow(OrdersRow parentOrdersRowByOrdersOrder_x0020_Details, int ProductID, decimal UnitPrice, short Quantity, string Discount)
                 {
-                    Order_DetailsRow rowOrder_DetailsRow = ((Order_DetailsRow)(NewRow()));
-                    rowOrder_DetailsRow.ItemArray = new object[] {
+                    OrderDetailsRow rowOrderDetailsRow = ((OrderDetailsRow)(NewRow()));
+                    rowOrderDetailsRow.ItemArray = new object[] {
                                                                      parentOrdersRowByOrdersOrder_x0020_Details[0],
                                                                      ProductID,
                                                                      UnitPrice,
                                                                      Quantity,
                                                                      Discount};
-                    Rows.Add(rowOrder_DetailsRow);
-                    return rowOrder_DetailsRow;
+                    Rows.Add(rowOrderDetailsRow);
+                    return rowOrderDetailsRow;
                 }
 
-                public Order_DetailsRow FindByOrderIDProductID(int OrderID, int ProductID)
+                public OrderDetailsRow FindByOrderIDProductID(int OrderID, int ProductID)
                 {
-                    return ((Order_DetailsRow)(Rows.Find(new object[] {
-                                                                               OrderID,
-                                                                               ProductID})));
+                    return (OrderDetailsRow)Rows.Find(new object[] { OrderID, ProductID });
                 }
 
                 public IEnumerator GetEnumerator()
@@ -1127,123 +1066,123 @@ namespace System.Data.Tests
 
                 public override DataTable Clone()
                 {
-                    Order_DetailsDataTable cln = ((Order_DetailsDataTable)(base.Clone()));
+                    OrderDetailsDataTable cln = ((OrderDetailsDataTable)(base.Clone()));
                     cln.InitVars();
                     return cln;
                 }
 
                 protected override DataTable CreateInstance()
                 {
-                    return new Order_DetailsDataTable();
+                    return new OrderDetailsDataTable();
                 }
 
                 internal void InitVars()
                 {
-                    _columnOrderID = Columns["OrderID"];
-                    _columnProductID = Columns["ProductID"];
-                    _columnUnitPrice = Columns["UnitPrice"];
-                    _columnQuantity = Columns["Quantity"];
-                    _columnDiscount = Columns["Discount"];
+                    OrderIDColumn = Columns["OrderID"];
+                    ProductIDColumn = Columns["ProductID"];
+                    UnitPriceColumn = Columns["UnitPrice"];
+                    QuantityColumn = Columns["Quantity"];
+                    DiscountColumn = Columns["Discount"];
                 }
 
                 private void InitClass()
                 {
-                    _columnOrderID = new DataColumn("OrderID", typeof(int), null, MappingType.Element);
-                    Columns.Add(_columnOrderID);
-                    _columnProductID = new DataColumn("ProductID", typeof(int), null, MappingType.Element);
-                    Columns.Add(_columnProductID);
-                    _columnUnitPrice = new DataColumn("UnitPrice", typeof(decimal), null, MappingType.Element);
-                    Columns.Add(_columnUnitPrice);
-                    _columnQuantity = new DataColumn("Quantity", typeof(short), null, MappingType.Element);
-                    Columns.Add(_columnQuantity);
-                    _columnDiscount = new DataColumn("Discount", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnDiscount);
+                    OrderIDColumn = new DataColumn("OrderID", typeof(int), null, MappingType.Element);
+                    Columns.Add(OrderIDColumn);
+                    ProductIDColumn = new DataColumn("ProductID", typeof(int), null, MappingType.Element);
+                    Columns.Add(ProductIDColumn);
+                    UnitPriceColumn = new DataColumn("UnitPrice", typeof(decimal), null, MappingType.Element);
+                    Columns.Add(UnitPriceColumn);
+                    QuantityColumn = new DataColumn("Quantity", typeof(short), null, MappingType.Element);
+                    Columns.Add(QuantityColumn);
+                    DiscountColumn = new DataColumn("Discount", typeof(string), null, MappingType.Element);
+                    Columns.Add(DiscountColumn);
                     Constraints.Add(new UniqueConstraint("Constraint1", new DataColumn[] {
-                                                                                                  _columnOrderID,
-                                                                                                  _columnProductID}, true));
-                    _columnOrderID.AllowDBNull = false;
-                    _columnProductID.AllowDBNull = false;
-                    _columnUnitPrice.AllowDBNull = false;
-                    _columnQuantity.AllowDBNull = false;
-                    _columnDiscount.ReadOnly = true;
+                                                                                                  OrderIDColumn,
+                                                                                                  ProductIDColumn}, true));
+                    OrderIDColumn.AllowDBNull = false;
+                    ProductIDColumn.AllowDBNull = false;
+                    UnitPriceColumn.AllowDBNull = false;
+                    QuantityColumn.AllowDBNull = false;
+                    DiscountColumn.ReadOnly = true;
                 }
 
-                public Order_DetailsRow NewOrder_DetailsRow()
+                public OrderDetailsRow NewOrder_DetailsRow()
                 {
-                    return ((Order_DetailsRow)(NewRow()));
+                    return ((OrderDetailsRow)(NewRow()));
                 }
 
                 protected override DataRow NewRowFromBuilder(DataRowBuilder builder)
                 {
-                    return new Order_DetailsRow(builder);
+                    return new OrderDetailsRow(builder);
                 }
 
                 protected override Type GetRowType()
                 {
-                    return typeof(Order_DetailsRow);
+                    return typeof(OrderDetailsRow);
                 }
 
                 protected override void OnRowChanged(DataRowChangeEventArgs e)
                 {
                     base.OnRowChanged(e);
-                    if ((Order_DetailsRowChanged != null))
+                    if ((OrderDetailsRowChanged != null))
                     {
-                        Order_DetailsRowChanged(this, new Order_DetailsRowChangeEvent(((Order_DetailsRow)(e.Row)), e.Action));
+                        OrderDetailsRowChanged(this, new OrderDetailsRowChangeEvent(((OrderDetailsRow)(e.Row)), e.Action));
                     }
                 }
 
                 protected override void OnRowChanging(DataRowChangeEventArgs e)
                 {
                     base.OnRowChanging(e);
-                    if ((Order_DetailsRowChanging != null))
+                    if ((OrderDetailsRowChanging != null))
                     {
-                        Order_DetailsRowChanging(this, new Order_DetailsRowChangeEvent(((Order_DetailsRow)(e.Row)), e.Action));
+                        OrderDetailsRowChanging(this, new OrderDetailsRowChangeEvent(((OrderDetailsRow)(e.Row)), e.Action));
                     }
                 }
 
                 protected override void OnRowDeleted(DataRowChangeEventArgs e)
                 {
                     base.OnRowDeleted(e);
-                    if ((Order_DetailsRowDeleted != null))
+                    if ((OrderDetailsRowDeleted != null))
                     {
-                        Order_DetailsRowDeleted(this, new Order_DetailsRowChangeEvent(((Order_DetailsRow)(e.Row)), e.Action));
+                        OrderDetailsRowDeleted(this, new OrderDetailsRowChangeEvent(((OrderDetailsRow)(e.Row)), e.Action));
                     }
                 }
 
                 protected override void OnRowDeleting(DataRowChangeEventArgs e)
                 {
                     base.OnRowDeleting(e);
-                    if ((Order_DetailsRowDeleting != null))
+                    if ((OrderDetailsRowDeleting != null))
                     {
-                        Order_DetailsRowDeleting(this, new Order_DetailsRowChangeEvent(((Order_DetailsRow)(e.Row)), e.Action));
+                        OrderDetailsRowDeleting(this, new OrderDetailsRowChangeEvent(((OrderDetailsRow)(e.Row)), e.Action));
                     }
                 }
 
-                public void RemoveOrder_DetailsRow(Order_DetailsRow row)
+                public void RemoveOrder_DetailsRow(OrderDetailsRow row)
                 {
                     Rows.Remove(row);
                 }
             }
 
-            public class Order_DetailsRow : DataRow
+            public class OrderDetailsRow : DataRow
             {
-                private Order_DetailsDataTable _tableOrder_Details;
+                private OrderDetailsDataTable _tableOrderDetails;
 
-                internal Order_DetailsRow(DataRowBuilder rb) :
+                internal OrderDetailsRow(DataRowBuilder rb) :
                     base(rb)
                 {
-                    _tableOrder_Details = ((Order_DetailsDataTable)(Table));
+                    _tableOrderDetails = ((OrderDetailsDataTable)(Table));
                 }
 
                 public int OrderID
                 {
                     get
                     {
-                        return ((int)(this[_tableOrder_Details.OrderIDColumn]));
+                        return ((int)(this[_tableOrderDetails.OrderIDColumn]));
                     }
                     set
                     {
-                        this[_tableOrder_Details.OrderIDColumn] = value;
+                        this[_tableOrderDetails.OrderIDColumn] = value;
                     }
                 }
 
@@ -1251,11 +1190,11 @@ namespace System.Data.Tests
                 {
                     get
                     {
-                        return ((int)(this[_tableOrder_Details.ProductIDColumn]));
+                        return ((int)(this[_tableOrderDetails.ProductIDColumn]));
                     }
                     set
                     {
-                        this[_tableOrder_Details.ProductIDColumn] = value;
+                        this[_tableOrderDetails.ProductIDColumn] = value;
                     }
                 }
 
@@ -1263,11 +1202,11 @@ namespace System.Data.Tests
                 {
                     get
                     {
-                        return ((decimal)(this[_tableOrder_Details.UnitPriceColumn]));
+                        return ((decimal)(this[_tableOrderDetails.UnitPriceColumn]));
                     }
                     set
                     {
-                        this[_tableOrder_Details.UnitPriceColumn] = value;
+                        this[_tableOrderDetails.UnitPriceColumn] = value;
                     }
                 }
 
@@ -1275,11 +1214,11 @@ namespace System.Data.Tests
                 {
                     get
                     {
-                        return ((short)(this[_tableOrder_Details.QuantityColumn]));
+                        return ((short)(this[_tableOrderDetails.QuantityColumn]));
                     }
                     set
                     {
-                        this[_tableOrder_Details.QuantityColumn] = value;
+                        this[_tableOrderDetails.QuantityColumn] = value;
                     }
                 }
 
@@ -1289,7 +1228,7 @@ namespace System.Data.Tests
                     {
                         try
                         {
-                            return ((string)(this[_tableOrder_Details.DiscountColumn]));
+                            return ((string)(this[_tableOrderDetails.DiscountColumn]));
                         }
                         catch (InvalidCastException e)
                         {
@@ -1298,7 +1237,7 @@ namespace System.Data.Tests
                     }
                     set
                     {
-                        this[_tableOrder_Details.DiscountColumn] = value;
+                        this[_tableOrderDetails.DiscountColumn] = value;
                     }
                 }
 
@@ -1316,74 +1255,30 @@ namespace System.Data.Tests
 
                 public bool IsDiscountNull()
                 {
-                    return IsNull(_tableOrder_Details.DiscountColumn);
+                    return IsNull(_tableOrderDetails.DiscountColumn);
                 }
 
                 public void SetDiscountNull()
                 {
-                    this[_tableOrder_Details.DiscountColumn] = DBNull.Value;
+                    this[_tableOrderDetails.DiscountColumn] = DBNull.Value;
                 }
             }
 
-            public class Order_DetailsRowChangeEvent : EventArgs
+            public class OrderDetailsRowChangeEvent : EventArgs
             {
-                private Order_DetailsRow _eventRow;
-
-                private DataRowAction _eventAction;
-
-                public Order_DetailsRowChangeEvent(Order_DetailsRow row, DataRowAction action)
+                public OrderDetailsRowChangeEvent(OrderDetailsRow row, DataRowAction action)
                 {
-                    _eventRow = row;
-                    _eventAction = action;
+                    Row = row;
+                    Action = action;
                 }
 
-                public Order_DetailsRow Row
-                {
-                    get
-                    {
-                        return _eventRow;
-                    }
-                }
+                public OrderDetailsRow Row { get; }
 
-                public DataRowAction Action
-                {
-                    get
-                    {
-                        return _eventAction;
-                    }
-                }
+                public DataRowAction Action { get; }
             }
 
             public class OrdersDataTable : DataTable, IEnumerable
             {
-                private DataColumn _columnOrderID;
-
-                private DataColumn _columnCustomerID;
-
-                private DataColumn _columnEmployeeID;
-
-                private DataColumn _columnOrderDate;
-
-                private DataColumn _columnRequiredDate;
-
-                private DataColumn _columnShippedDate;
-
-                private DataColumn _columnShipVia;
-
-                private DataColumn _columnFreight;
-
-                private DataColumn _columnShipName;
-
-                private DataColumn _columnShipAddress;
-
-                private DataColumn _columnShipCity;
-
-                private DataColumn _columnShipRegion;
-
-                private DataColumn _columnShipPostalCode;
-
-                private DataColumn _columnShipCountry;
-
                 internal OrdersDataTable() :
                     base("Orders")
                 {
@@ -1419,117 +1314,33 @@ namespace System.Data.Tests
                     }
                 }
 
-                internal DataColumn OrderIDColumn
-                {
-                    get
-                    {
-                        return _columnOrderID;
-                    }
-                }
+                internal DataColumn OrderIDColumn { get; private set; }
 
-                internal DataColumn CustomerIDColumn
-                {
-                    get
-                    {
-                        return _columnCustomerID;
-                    }
-                }
+                internal DataColumn CustomerIDColumn { get; private set; }
 
-                internal DataColumn EmployeeIDColumn
-                {
-                    get
-                    {
-                        return _columnEmployeeID;
-                    }
-                }
+                internal DataColumn EmployeeIDColumn { get; private set; }
 
-                internal DataColumn OrderDateColumn
-                {
-                    get
-                    {
-                        return _columnOrderDate;
-                    }
-                }
+                internal DataColumn OrderDateColumn { get; private set; }
 
-                internal DataColumn RequiredDateColumn
-                {
-                    get
-                    {
-                        return _columnRequiredDate;
-                    }
-                }
+                internal DataColumn RequiredDateColumn { get; private set; }
 
-                internal DataColumn ShippedDateColumn
-                {
-                    get
-                    {
-                        return _columnShippedDate;
-                    }
-                }
+                internal DataColumn ShippedDateColumn { get; private set; }
 
-                internal DataColumn ShipViaColumn
-                {
-                    get
-                    {
-                        return _columnShipVia;
-                    }
-                }
+                internal DataColumn ShipViaColumn { get; private set; }
 
-                internal DataColumn FreightColumn
-                {
-                    get
-                    {
-                        return _columnFreight;
-                    }
-                }
+                internal DataColumn FreightColumn { get; private set; }
 
-                internal DataColumn ShipNameColumn
-                {
-                    get
-                    {
-                        return _columnShipName;
-                    }
-                }
+                internal DataColumn ShipNameColumn { get; private set; }
 
-                internal DataColumn ShipAddressColumn
-                {
-                    get
-                    {
-                        return _columnShipAddress;
-                    }
-                }
+                internal DataColumn ShipAddressColumn { get; private set; }
 
-                internal DataColumn ShipCityColumn
-                {
-                    get
-                    {
-                        return _columnShipCity;
-                    }
-                }
+                internal DataColumn ShipCityColumn { get; private set; }
 
-                internal DataColumn ShipRegionColumn
-                {
-                    get
-                    {
-                        return _columnShipRegion;
-                    }
-                }
+                internal DataColumn ShipRegionColumn { get; private set; }
 
-                internal DataColumn ShipPostalCodeColumn
-                {
-                    get
-                    {
-                        return _columnShipPostalCode;
-                    }
-                }
+                internal DataColumn ShipPostalCodeColumn { get; private set; }
 
-                internal DataColumn ShipCountryColumn
-                {
-                    get
-                    {
-                        return _columnShipCountry;
-                    }
-                }
+                internal DataColumn ShipCountryColumn { get; private set; }
 
                 public OrdersRow this[int index]
                 {
@@ -1599,58 +1410,58 @@ namespace System.Data.Tests
 
                 internal void InitVars()
                 {
-                    _columnOrderID = Columns["OrderID"];
-                    _columnCustomerID = Columns["CustomerID"];
-                    _columnEmployeeID = Columns["EmployeeID"];
-                    _columnOrderDate = Columns["OrderDate"];
-                    _columnRequiredDate = Columns["RequiredDate"];
-                    _columnShippedDate = Columns["ShippedDate"];
-                    _columnShipVia = Columns["ShipVia"];
-                    _columnFreight = Columns["Freight"];
-                    _columnShipName = Columns["ShipName"];
-                    _columnShipAddress = Columns["ShipAddress"];
-                    _columnShipCity = Columns["ShipCity"];
-                    _columnShipRegion = Columns["ShipRegion"];
-                    _columnShipPostalCode = Columns["ShipPostalCode"];
-                    _columnShipCountry = Columns["ShipCountry"];
+                    OrderIDColumn = Columns["OrderID"];
+                    CustomerIDColumn = Columns["CustomerID"];
+                    EmployeeIDColumn = Columns["EmployeeID"];
+                    OrderDateColumn = Columns["OrderDate"];
+                    RequiredDateColumn = Columns["RequiredDate"];
+                    ShippedDateColumn = Columns["ShippedDate"];
+                    ShipViaColumn = Columns["ShipVia"];
+                    FreightColumn = Columns["Freight"];
+                    ShipNameColumn = Columns["ShipName"];
+                    ShipAddressColumn = Columns["ShipAddress"];
+                    ShipCityColumn = Columns["ShipCity"];
+                    ShipRegionColumn = Columns["ShipRegion"];
+                    ShipPostalCodeColumn = Columns["ShipPostalCode"];
+                    ShipCountryColumn = Columns["ShipCountry"];
                 }
 
                 private void InitClass()
                 {
-                    _columnOrderID = new DataColumn("OrderID", typeof(int), null, MappingType.Element);
-                    Columns.Add(_columnOrderID);
-                    _columnCustomerID = new DataColumn("CustomerID", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnCustomerID);
-                    _columnEmployeeID = new DataColumn("EmployeeID", typeof(int), null, MappingType.Element);
-                    Columns.Add(_columnEmployeeID);
-                    _columnOrderDate = new DataColumn("OrderDate", typeof(DateTime), null, MappingType.Element);
-                    Columns.Add(_columnOrderDate);
-                    _columnRequiredDate = new DataColumn("RequiredDate", typeof(DateTime), null, MappingType.Element);
-                    Columns.Add(_columnRequiredDate);
-                    _columnShippedDate = new DataColumn("ShippedDate", typeof(DateTime), null, MappingType.Element);
-                    Columns.Add(_columnShippedDate);
-                    _columnShipVia = new DataColumn("ShipVia", typeof(int), null, MappingType.Element);
-                    Columns.Add(_columnShipVia);
-                    _columnFreight = new DataColumn("Freight", typeof(decimal), null, MappingType.Element);
-                    Columns.Add(_columnFreight);
-                    _columnShipName = new DataColumn("ShipName", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipName);
-                    _columnShipAddress = new DataColumn("ShipAddress", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipAddress);
-                    _columnShipCity = new DataColumn("ShipCity", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipCity);
-                    _columnShipRegion = new DataColumn("ShipRegion", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipRegion);
-                    _columnShipPostalCode = new DataColumn("ShipPostalCode", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipPostalCode);
-                    _columnShipCountry = new DataColumn("ShipCountry", typeof(string), null, MappingType.Element);
-                    Columns.Add(_columnShipCountry);
+                    OrderIDColumn = new DataColumn("OrderID", typeof(int), null, MappingType.Element);
+                    Columns.Add(OrderIDColumn);
+                    CustomerIDColumn = new DataColumn("CustomerID", typeof(string), null, MappingType.Element);
+                    Columns.Add(CustomerIDColumn);
+                    EmployeeIDColumn = new DataColumn("EmployeeID", typeof(int), null, MappingType.Element);
+                    Columns.Add(EmployeeIDColumn);
+                    OrderDateColumn = new DataColumn("OrderDate", typeof(DateTime), null, MappingType.Element);
+                    Columns.Add(OrderDateColumn);
+                    RequiredDateColumn = new DataColumn("RequiredDate", typeof(DateTime), null, MappingType.Element);
+                    Columns.Add(RequiredDateColumn);
+                    ShippedDateColumn = new DataColumn("ShippedDate", typeof(DateTime), null, MappingType.Element);
+                    Columns.Add(ShippedDateColumn);
+                    ShipViaColumn = new DataColumn("ShipVia", typeof(int), null, MappingType.Element);
+                    Columns.Add(ShipViaColumn);
+                    FreightColumn = new DataColumn("Freight", typeof(decimal), null, MappingType.Element);
+                    Columns.Add(FreightColumn);
+                    ShipNameColumn = new DataColumn("ShipName", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipNameColumn);
+                    ShipAddressColumn = new DataColumn("ShipAddress", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipAddressColumn);
+                    ShipCityColumn = new DataColumn("ShipCity", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipCityColumn);
+                    ShipRegionColumn = new DataColumn("ShipRegion", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipRegionColumn);
+                    ShipPostalCodeColumn = new DataColumn("ShipPostalCode", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipPostalCodeColumn);
+                    ShipCountryColumn = new DataColumn("ShipCountry", typeof(string), null, MappingType.Element);
+                    Columns.Add(ShipCountryColumn);
                     Constraints.Add(new UniqueConstraint("Constraint1", new DataColumn[] {
-                                                                                                  _columnOrderID}, true));
-                    _columnOrderID.AutoIncrement = true;
-                    _columnOrderID.AllowDBNull = false;
-                    _columnOrderID.ReadOnly = true;
-                    _columnOrderID.Unique = true;
+                                                                                                  OrderIDColumn}, true));
+                    OrderIDColumn.AutoIncrement = true;
+                    OrderIDColumn.AllowDBNull = false;
+                    OrderIDColumn.ReadOnly = true;
+                    OrderIDColumn.Unique = true;
                 }
 
                 public OrdersRow NewOrdersRow()
@@ -2109,39 +1920,23 @@ namespace System.Data.Tests
                     this[_tableOrders.ShipCountryColumn] = DBNull.Value;
                 }
 
-                public Order_DetailsRow[] GetOrder_DetailsRows()
+                public OrderDetailsRow[] GetOrderDetailsRows()
                 {
-                    return ((Order_DetailsRow[])(GetChildRows(Table.ChildRelations["OrdersOrder_x0020_Details"])));
+                    return ((OrderDetailsRow[])(GetChildRows(Table.ChildRelations["OrdersOrder_x0020_Details"])));
                 }
             }
 
             public class OrdersRowChangeEvent : EventArgs
             {
-                private OrdersRow _eventRow;
-
-                private DataRowAction _eventAction;
-
                 public OrdersRowChangeEvent(OrdersRow row, DataRowAction action)
                 {
-                    _eventRow = row;
-                    _eventAction = action;
+                    Row = row;
+                    Action = action;
                 }
 
-                public OrdersRow Row
-                {
-                    get
-                    {
-                        return _eventRow;
-                    }
-                }
+                public OrdersRow Row { get; }
 
-                public DataRowAction Action
-                {
-                    get
-                    {
-                        return _eventAction;
-                    }
-                }
+                public DataRowAction Action { get; }
             }
         }
     }

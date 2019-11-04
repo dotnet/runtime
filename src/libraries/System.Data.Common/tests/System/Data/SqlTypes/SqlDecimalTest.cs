@@ -57,73 +57,36 @@ namespace System.Data.Tests.SqlTypes
         public void Create()
         {
             // SqlDecimal (decimal)
-            SqlDecimal Test = new SqlDecimal(30.3098m);
-            Assert.Equal((decimal)30.3098, Test.Value);
-
-            try
-            {
-                decimal d = decimal.MaxValue;
-                SqlDecimal test = new SqlDecimal(d + 1);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            SqlDecimal test = new SqlDecimal(30.3098m);
+            Assert.Equal((decimal)30.3098, test.Value);
 
             // SqlDecimal (double)
-            Test = new SqlDecimal(10E+10d);
-            Assert.Equal(100000000000.00000m, Test.Value);
+            test = new SqlDecimal(1E11d);
+            Assert.Equal(1E11m, test.Value);
 
-            try
-            {
-                SqlDecimal test = new SqlDecimal(10E+200d);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => new SqlDecimal(1E201d));
 
             // SqlDecimal (int)
-            Test = new SqlDecimal(-1);
-            Assert.Equal(-1m, Test.Value);
+            test = new SqlDecimal(-1);
+            Assert.Equal(-1m, test.Value);
 
             // SqlDecimal (long)
-            Test = new SqlDecimal((long)(-99999));
-            Assert.Equal(-99999m, Test.Value);
+            test = new SqlDecimal((long)-99999);
+            Assert.Equal(-99999m, test.Value);
 
             // SqlDecimal (byte, byte, bool. int[]
-            Test = new SqlDecimal(10, 3, false, new int[4] { 200, 1, 0, 0 });
-            Assert.Equal(-4294967.496m, Test.Value);
+            test = new SqlDecimal(10, 3, false, new int[] { 200, 1, 0, 0 });
+            Assert.Equal(-4294967.496m, test.Value);
 
-            try
-            {
-                Test = new SqlDecimal(100, 100, false,
-                    new int[4] {int.MaxValue,
-                    int.MaxValue, int.MaxValue,
-                    int.MaxValue});
-                Assert.False(true);
-            }
-            catch (SqlTypeException)
-            {
-            }
+            Assert.Throws<SqlTypeException>(() => 
+                new SqlDecimal(100, 100, false, new int[4] { int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue }));
 
-            // sqlDecimal (byte, byte, bool, int, int, int, int)
-            Test = new SqlDecimal(12, 2, true, 100, 100, 0, 0);
-            Assert.Equal(4294967297.00m, Test.Value);
+            // SqlDecimal (byte, byte, bool, int, int, int, int)
+            test = new SqlDecimal(12, 2, true, 100, 100, 0, 0);
+            Assert.Equal(4294967297.00m, test.Value);
 
-            try
-            {
-                Test = new SqlDecimal(100, 100, false,
-                    int.MaxValue,
-                    int.MaxValue, int.MaxValue,
-                    int.MaxValue);
-                Assert.False(true);
-            }
-            catch (SqlTypeException)
-            {
-            }
+            Assert.Throws<SqlTypeException>(() =>
+                new SqlDecimal(100, 100, false, int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue));
         }
 
         // Test public fields
@@ -138,7 +101,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Equal(1262177448, SqlDecimal.MinValue.Data[3]);
             Assert.True(SqlDecimal.Null.IsNull);
-            Assert.True(!_test1.IsNull);
+            Assert.False(_test1.IsNull);
         }
 
         // Test properties
@@ -153,7 +116,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.True(SqlDecimal.Null.IsNull);
             Assert.True(_test1.IsPositive);
-            Assert.True(!_test4.IsPositive);
+            Assert.False(_test4.IsPositive);
             Assert.Equal((byte)8, _test1.Precision);
             Assert.Equal((byte)2, _test2.Scale);
             Assert.Equal(6464.6464m, _test1.Value);
@@ -180,53 +143,31 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(-2006m, SqlDecimal.Add(_test4, test2));
             Assert.Equal(8000.00m, SqlDecimal.Add(test2, _test3));
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.Add(SqlDecimal.MaxValue, SqlDecimal.MaxValue);
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.Add(SqlDecimal.MaxValue, SqlDecimal.MaxValue));
 
             Assert.Equal(6465m, SqlDecimal.Ceiling(_test1));
             Assert.Equal(SqlDecimal.Null, SqlDecimal.Ceiling(SqlDecimal.Null));
 
-            // Divide() => Notworking
-            /*
-            Assert.Equal ((SqlDecimal)(-1077.441066m), SqlDecimal.Divide (Test1, Test4));
-            Assert.Equal (1.54687501546m, SqlDecimal.Divide (Test2, Test1).Value);
+            // Divide
+            Assert.Equal(-1077.441066m, SqlDecimal.Divide(_test1, _test4));
+            Assert.Equal(1.54687501546m, SqlDecimal.Divide(_test2, _test1).Value, 9);
 
-            try {
-                SqlDecimal test = SqlDecimal.Divide(Test1, new SqlDecimal(0)).Value;
-Assert.False(true);
-            } catch (DivideByZeroException e) {
-                Assert.Equal (typeof (DivideByZeroException), e.GetType ());
-            }
-            */
+            Assert.Throws<DivideByZeroException>(() => SqlDecimal.Divide(_test1, new SqlDecimal(0)));
 
             Assert.Equal(6464m, SqlDecimal.Floor(_test1));
 
             // Multiply()
             SqlDecimal Test;
             SqlDecimal test1 = new SqlDecimal(2m);
-            Assert.Equal(64646464.000000m, SqlDecimal.Multiply(_test1, _test2).Value);
+            Assert.Equal(64646464m, SqlDecimal.Multiply(_test1, _test2).Value);
             Assert.Equal(-38787.8784m, SqlDecimal.Multiply(_test1, _test4).Value);
             Test = SqlDecimal.Multiply(_test5, test1);
             Assert.Equal("158456325028528675187087900670", Test.ToString());
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.Multiply(SqlDecimal.MaxValue, _test1);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.Multiply(SqlDecimal.MaxValue, _test1));
 
-            // Power => NotWorking
-            //Assert.Equal ((SqlDecimal)41791653.0770m, SqlDecimal.Power (Test1, 2));
+            // Power
+            Assert.Equal(41791653.0770m, SqlDecimal.Power(_test1, 2));
 
             // Round
             Assert.Equal(6464.65m, SqlDecimal.Round(_test1, 2));
@@ -236,15 +177,7 @@ Assert.False(true);
             Assert.Equal(10006.00m, SqlDecimal.Subtract(_test3, _test4).Value);
             Assert.Equal("99999999920771837485735662406456049664", SqlDecimal.Subtract(SqlDecimal.MaxValue, decimal.MaxValue).ToString());
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.Subtract(SqlDecimal.MinValue, SqlDecimal.MaxValue);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.Subtract(SqlDecimal.MinValue, SqlDecimal.MaxValue));
 
             Assert.Equal(1, SqlDecimal.Sign(_test1));
             Assert.Equal(new SqlInt32(-1), SqlDecimal.Sign(_test4));
@@ -258,14 +191,8 @@ Assert.False(true);
             Assert.Equal(6464.64.ToString(), SqlDecimal.AdjustScale(_test1, -2, false).Value.ToString());
             Assert.Equal(10000.000000000000m.ToString(), SqlDecimal.AdjustScale(_test2, 10, false).Value.ToString());
             Assert.Equal("79228162514264337593543950335.00", SqlDecimal.AdjustScale(_test5, 2, false).ToString());
-            try
-            {
-                SqlDecimal test = SqlDecimal.AdjustScale(_test1, -5, false);
-                Assert.False(true);
-            }
-            catch (SqlTruncateException)
-            {
-            }
+
+            Assert.Throws<SqlTruncateException>(() => SqlDecimal.AdjustScale(_test1, -5, false));
         }
 
         [Fact]
@@ -273,15 +200,7 @@ Assert.False(true);
         {
             Assert.Equal(new SqlDecimal(6464.6m).Value, SqlDecimal.ConvertToPrecScale(_test1, 5, 1).Value);
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.ConvertToPrecScale(_test1, 6, 4);
-                Assert.False(true);
-            }
-            catch (SqlTruncateException e)
-            {
-                Assert.Equal(typeof(SqlTruncateException), e.GetType());
-            }
+            Assert.Throws<SqlTruncateException>(() => SqlDecimal.ConvertToPrecScale(_test1, 6, 4));
 
             Assert.Equal("10000.00", SqlDecimal.ConvertToPrecScale(_test2, 7, 2).ToSqlString());
 
@@ -296,64 +215,40 @@ Assert.False(true);
 
             Assert.True(_test1.CompareTo(_test3) < 0);
             Assert.True(_test2.CompareTo(_test1) > 0);
-            Assert.True(_test2.CompareTo(_test3) == 0);
+            Assert.Equal(0, _test2.CompareTo(_test3));
             Assert.True(_test4.CompareTo(SqlDecimal.Null) > 0);
 
-            try
-            {
-                _test1.CompareTo(TestString);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => _test1.CompareTo(TestString));
         }
 
         [Fact]
         public void EqualsMethods()
         {
-            Assert.True(!_test1.Equals(_test2));
-            Assert.True(!_test2.Equals(new SqlString("TEST")));
+            Assert.False(_test1.Equals(_test2));
+            Assert.False(_test2.Equals(new SqlString("TEST")));
             Assert.True(_test2.Equals(_test3));
 
             // Static Equals()-method
             Assert.True(SqlDecimal.Equals(_test2, _test2).Value);
-            Assert.True(!SqlDecimal.Equals(_test1, _test2).Value);
+            Assert.False(SqlDecimal.Equals(_test1, _test2).Value);
 
             // NotEquals
             Assert.True(SqlDecimal.NotEquals(_test1, _test2).Value);
             Assert.True(SqlDecimal.NotEquals(_test4, _test1).Value);
-            Assert.True(!SqlDecimal.NotEquals(_test2, _test3).Value);
+            Assert.False(SqlDecimal.NotEquals(_test2, _test3).Value);
             Assert.True(SqlDecimal.NotEquals(SqlDecimal.Null, _test3).IsNull);
-        }
-
-        /* Don't do such environment-dependent test. It will never succeed under Portable.NET and MS.NET
-        [Fact]
-        public void GetHashCodeTest()
-        {
-            // FIXME: Better way to test HashCode
-            Assert.Equal (-1281249885, Test1.GetHashCode ());
-        }
-        */
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            Assert.Equal("System.Data.SqlTypes.SqlDecimal", _test1.GetType().ToString());
-            Assert.Equal("System.Decimal", _test1.Value.GetType().ToString());
         }
 
         [Fact]
         public void Greaters()
         {
-            // GreateThan ()
-            Assert.True(!SqlDecimal.GreaterThan(_test1, _test2).Value);
+            // GreaterThan ()
+            Assert.False(SqlDecimal.GreaterThan(_test1, _test2).Value);
             Assert.True(SqlDecimal.GreaterThan(_test2, _test1).Value);
-            Assert.True(!SqlDecimal.GreaterThan(_test2, _test3).Value);
+            Assert.False(SqlDecimal.GreaterThan(_test2, _test3).Value);
 
-            // GreaterTharOrEqual ()
-            Assert.True(!SqlDecimal.GreaterThanOrEqual(_test1, _test2).Value);
+            // GreaterThanOrEqual ()
+            Assert.False(SqlDecimal.GreaterThanOrEqual(_test1, _test2).Value);
             Assert.True(SqlDecimal.GreaterThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlDecimal.GreaterThanOrEqual(_test2, _test3).Value);
         }
@@ -362,13 +257,13 @@ Assert.False(true);
         public void Lessers()
         {
             // LessThan()
-            Assert.True(!SqlDecimal.LessThan(_test3, _test2).Value);
-            Assert.True(!SqlDecimal.LessThan(_test2, _test1).Value);
+            Assert.False(SqlDecimal.LessThan(_test3, _test2).Value);
+            Assert.False(SqlDecimal.LessThan(_test2, _test1).Value);
             Assert.True(SqlDecimal.LessThan(_test1, _test2).Value);
 
             // LessThanOrEqual ()
             Assert.True(SqlDecimal.LessThanOrEqual(_test1, _test2).Value);
-            Assert.True(!SqlDecimal.LessThanOrEqual(_test2, _test1).Value);
+            Assert.False(SqlDecimal.LessThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlDecimal.LessThanOrEqual(_test2, _test3).Value);
             Assert.True(SqlDecimal.LessThanOrEqual(_test1, SqlDecimal.Null).IsNull);
         }
@@ -382,26 +277,18 @@ Assert.False(true);
             // ToSqlBoolean ()
             Assert.Equal(new SqlBoolean(1), _test1.ToSqlBoolean());
 
-            SqlDecimal Test = new SqlDecimal(0);
-            Assert.True(!Test.ToSqlBoolean().Value);
+            SqlDecimal test = new SqlDecimal(0);
+            Assert.False(test.ToSqlBoolean().Value);
 
-            Test = new SqlDecimal(0);
-            Assert.True(!Test.ToSqlBoolean().Value);
+            test = new SqlDecimal(0);
+            Assert.False(test.ToSqlBoolean().Value);
             Assert.True(SqlDecimal.Null.ToSqlBoolean().IsNull);
 
             // ToSqlByte ()
-            Test = new SqlDecimal(250);
-            Assert.Equal((byte)250, Test.ToSqlByte().Value);
+            test = new SqlDecimal(250);
+            Assert.Equal((byte)250, test.ToSqlByte().Value);
 
-            try
-            {
-                SqlByte b = (byte)_test2.ToSqlByte();
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => (byte)_test2.ToSqlByte());
 
             // ToSqlDouble ()
             Assert.Equal(6464.6464, _test1.ToSqlDouble());
@@ -409,32 +296,15 @@ Assert.False(true);
             // ToSqlInt16 ()
             Assert.Equal((short)1, new SqlDecimal(1).ToSqlInt16().Value);
 
-            try
-            {
-                SqlInt16 test = SqlDecimal.MaxValue.ToSqlInt16().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
-
-            // ToSqlInt32 ()
+            Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue.ToSqlInt16().Value);
+            // ToSqlInt32 () 
             // 6464.6464 --> 64646464 ??? with windows
             // MS.NET seems to return the first 32 bit integer (i.e.
             // Data [0]) but we don't have to follow such stupidity.
             //            Assert.Equal ((int)64646464, Test1.ToSqlInt32 ().Value);
             //            Assert.Equal ((int)1212, new SqlDecimal(12.12m).ToSqlInt32 ().Value);
 
-            try
-            {
-                SqlInt32 test = SqlDecimal.MaxValue.ToSqlInt32().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue.ToSqlInt32().Value);
 
             // ToSqlInt64 ()
             Assert.Equal(6464, _test1.ToSqlInt64().Value);
@@ -442,15 +312,7 @@ Assert.False(true);
             // ToSqlMoney ()
             Assert.Equal((decimal)6464.6464, _test1.ToSqlMoney().Value);
 
-            try
-            {
-                SqlMoney test = SqlDecimal.MaxValue.ToSqlMoney().Value;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue.ToSqlMoney().Value);
 
             // ToSqlSingle ()
             Assert.Equal((float)6464.6464, _test1.ToSqlSingle().Value);
@@ -468,7 +330,6 @@ Assert.False(true);
         [Fact]
         public void Truncate()
         {
-            // NOT WORKING
             Assert.Equal(new SqlDecimal(6464.6400m).Value, SqlDecimal.Truncate(_test1, 2).Value);
             Assert.Equal(6464.6400m, SqlDecimal.Truncate(_test1, 2).Value);
         }
@@ -487,25 +348,12 @@ Assert.False(true);
             Assert.Equal(-2006m, _test4 + test2);
             Assert.Equal(8000.00m, test2 + _test3);
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.MaxValue + SqlDecimal.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException) { }
+            Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue + SqlDecimal.MaxValue);
 
             // "/"-operator => NotWorking
             //Assert.Equal ((SqlDecimal)1.54687501546m, Test2 / Test1);
 
-            try
-            {
-                SqlDecimal test = _test3 / new SqlDecimal(0);
-                Assert.False(true);
-            }
-            catch (DivideByZeroException e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => SqlDecimal.MaxValue / new SqlDecimal(0));
 
             // "*"-operator
             Assert.Equal(64646464.000000m, _test1 * _test2);
@@ -513,29 +361,13 @@ Assert.False(true);
             SqlDecimal Test = _test5 * (new SqlDecimal(2m));
             Assert.Equal("158456325028528675187087900670", Test.ToString());
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.MaxValue * _test1;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue * _test1);
 
             // "-"-operator
             Assert.Equal(3535.3536m, _test2 - _test1);
             Assert.Equal(-10006.00m, _test4 - _test3);
 
-            try
-            {
-                SqlDecimal test = SqlDecimal.MinValue - SqlDecimal.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlDecimal.MinValue - SqlDecimal.MaxValue);
 
             Assert.Equal(SqlDecimal.Null, SqlDecimal.Null + _test1);
         }
@@ -549,12 +381,12 @@ Assert.False(true);
 
             // == -operator
             Assert.True((_test2 == _test3).Value);
-            Assert.True(!(_test1 == _test2).Value);
+            Assert.False((_test1 == _test2).Value);
             Assert.True((_test1 == SqlDecimal.Null).IsNull);
             Assert.False((pval == nval).Value);
 
             // != -operator
-            Assert.True(!(_test2 != _test3).Value);
+            Assert.False((_test2 != _test3).Value);
             Assert.True((_test1 != _test3).Value);
             Assert.True((_test4 != _test3).Value);
             Assert.True((_test1 != SqlDecimal.Null).IsNull);
@@ -562,28 +394,28 @@ Assert.False(true);
 
             // > -operator
             Assert.True((_test2 > _test1).Value);
-            Assert.True(!(_test1 > _test3).Value);
-            Assert.True(!(_test2 > _test3).Value);
+            Assert.False((_test1 > _test3).Value);
+            Assert.False((_test2 > _test3).Value);
             Assert.True((_test1 > SqlDecimal.Null).IsNull);
             Assert.False((nval > val).Value);
 
             // >=  -operator
-            Assert.True(!(_test1 >= _test3).Value);
+            Assert.False((_test1 >= _test3).Value);
             Assert.True((_test3 >= _test1).Value);
             Assert.True((_test2 >= _test3).Value);
             Assert.True((_test1 >= SqlDecimal.Null).IsNull);
             Assert.False((nval > val).Value);
 
             // < -operator
-            Assert.True(!(_test2 < _test1).Value);
+            Assert.False((_test2 < _test1).Value);
             Assert.True((_test1 < _test3).Value);
-            Assert.True(!(_test2 < _test3).Value);
+            Assert.False((_test2 < _test3).Value);
             Assert.True((_test1 < SqlDecimal.Null).IsNull);
             Assert.False((val < nval).Value);
 
             // <= -operator
             Assert.True((_test1 <= _test3).Value);
-            Assert.True(!(_test3 <= _test1).Value);
+            Assert.False((_test3 <= _test1).Value);
             Assert.True((_test2 <= _test3).Value);
             Assert.True((_test1 <= SqlDecimal.Null).IsNull);
             Assert.False((val <= nval).Value);
@@ -600,15 +432,15 @@ Assert.False(true);
         [Fact]
         public void SqlBooleanToSqlDecimal()
         {
-            SqlBoolean TestBoolean = new SqlBoolean(true);
-            SqlDecimal Result;
+            SqlBoolean testBoolean = new SqlBoolean(true);
+            SqlDecimal result;
 
-            Result = (SqlDecimal)TestBoolean;
+            result = (SqlDecimal)testBoolean;
 
-            Assert.Equal(1m, Result.Value);
+            Assert.Equal(1m, result.Value);
 
-            Result = (SqlDecimal)SqlBoolean.Null;
-            Assert.True(Result.IsNull);
+            result = (SqlDecimal)SqlBoolean.Null;
+            Assert.True(result.IsNull);
             Assert.Equal(SqlDecimal.Null, (SqlDecimal)SqlBoolean.Null);
         }
 
@@ -621,25 +453,17 @@ Assert.False(true);
         [Fact]
         public void SqlDoubleToSqlDecimal()
         {
-            SqlDouble Test = new SqlDouble(12E+10);
-            Assert.Equal(120000000000.00000m, ((SqlDecimal)Test).Value);
+            SqlDouble test = new SqlDouble(12E+10);
+            Assert.Equal(120000000000m, ((SqlDecimal)test).Value);
         }
 
         [Fact]
         public void SqlSingleToSqlDecimal()
         {
-            SqlSingle Test = new SqlSingle(1E+9);
-            Assert.Equal(1000000000.0000000m, ((SqlDecimal)Test).Value);
+            SqlSingle test = new SqlSingle(1E+9);
+            Assert.Equal(1000000000m, ((SqlDecimal)test).Value);
 
-            try
-            {
-                SqlDecimal test = (SqlDecimal)SqlSingle.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => (SqlDecimal)SqlSingle.MaxValue);
         }
 
         [Fact]
@@ -650,25 +474,9 @@ Assert.False(true);
 
             Assert.Equal(100m, ((SqlDecimal)TestString100).Value);
 
-            try
-            {
-                SqlDecimal test = (SqlDecimal)TestString;
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => (SqlDecimal)TestString);
 
-            try
-            {
-                SqlDecimal test = (SqlDecimal)new SqlString("9E+100");
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => (SqlDecimal)new SqlString("9E+100"));
         }
 
         [Fact]
@@ -768,15 +576,9 @@ Assert.False(true);
             ReadWriteXmlTestInternal(xml1, test1, "BA01");
             ReadWriteXmlTestInternal(xml2, test2, "BA02");
 
-            try
-            {
-                ReadWriteXmlTestInternal(xml3, test3, "BA03");
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                Assert.Equal(typeof(FormatException), e.InnerException.GetType());
-            }
+            InvalidOperationException ex =
+                Assert.Throws<InvalidOperationException>(() => ReadWriteXmlTestInternal(xml3, test3, "BA03"));
+            Assert.Equal(typeof(FormatException), ex.InnerException.GetType());
         }
     }
 }

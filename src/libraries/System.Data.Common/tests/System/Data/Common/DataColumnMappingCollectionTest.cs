@@ -164,7 +164,6 @@ namespace System.Data.Tests.Common
                 eq = _columnMapCollection[i].Equals(colcops[i]);
                 Assert.True(eq);
             }
-            colcops = null;
             colcops = new DataColumnMapping[7];
             _columnMapCollection.CopyTo(colcops, 2);
             for (int i = 0; i < 5; i++)
@@ -176,42 +175,6 @@ namespace System.Data.Tests.Common
             Assert.False(eq);
             eq = _columnMapCollection[0].Equals(colcops[1]);
             Assert.False(eq);
-        }
-
-        [Fact]
-        public void Equals()
-        {
-            //            DataColumnMappingCollection collect2=new DataColumnMappingCollection();
-            _columnMapCollection.AddRange(_cols);
-            //            collect2.AddRange(cols);
-            DataColumnMappingCollection copy1;
-            copy1 = _columnMapCollection;
-
-            //            Assert.Equal (false, columnMapCollection.Equals(collect2));
-            Assert.True(_columnMapCollection.Equals(copy1));
-            //            Assert.Equal (false, collect2.Equals(columnMapCollection));
-            Assert.True(copy1.Equals(_columnMapCollection));
-            //            Assert.Equal (false, collect2.Equals(copy1));
-            Assert.True(copy1.Equals(_columnMapCollection));
-            Assert.True(_columnMapCollection.Equals(_columnMapCollection));
-            //            Assert.Equal (true, collect2.Equals(collect2));
-            Assert.True(copy1.Equals(copy1));
-
-            //            Assert.Equal (false, Object.Equals(collect2, columnMapCollection));
-            Assert.True(object.Equals(copy1, _columnMapCollection));
-            //            Assert.Equal (false, Object.Equals(columnMapCollection, collect2));
-            Assert.True(object.Equals(_columnMapCollection, copy1));
-            //            Assert.Equal (false, Object.Equals(copy1, collect2));
-            Assert.True(object.Equals(_columnMapCollection, copy1));
-            Assert.True(object.Equals(_columnMapCollection, _columnMapCollection));
-            //            Assert.Equal (true, Object.Equals(collect2, collect2));
-            Assert.True(object.Equals(copy1, copy1));
-            //            Assert.Equal (false, Object.Equals(columnMapCollection, collect2));
-            Assert.True(object.Equals(_columnMapCollection, copy1));
-            //            Assert.Equal (false, Object.Equals(collect2, columnMapCollection));
-            Assert.True(object.Equals(copy1, _columnMapCollection));
-            //            Assert.Equal (false, Object.Equals(collect2, copy1));
-            Assert.True(object.Equals(copy1, _columnMapCollection));
         }
 
         [Fact]

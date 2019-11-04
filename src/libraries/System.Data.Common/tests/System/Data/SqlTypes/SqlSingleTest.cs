@@ -28,7 +28,6 @@
 using Xunit;
 using System.Xml;
 using System.Data.SqlTypes;
-using System.Globalization;
 
 namespace System.Data.Tests.SqlTypes
 {
@@ -38,14 +37,14 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Create()
         {
-            SqlSingle Test = new SqlSingle((float)34.87);
-            SqlSingle Test2 = 45.2f;
+            SqlSingle test = new SqlSingle((float)34.87);
+            SqlSingle test2 = 45.2f;
 
-            Assert.Equal(34.87f, Test.Value);
-            Assert.Equal(45.2f, Test2.Value);
+            Assert.Equal(34.87f, test.Value);
+            Assert.Equal(45.2f, test2.Value);
 
-            Test = new SqlSingle(-9000.6543);
-            Assert.Equal(-9000.6543f, Test.Value);
+            test = new SqlSingle(-9000.6543);
+            Assert.Equal(-9000.6543f, test.Value);
         }
 
         // Test public fields
@@ -62,12 +61,12 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            SqlSingle Test = new SqlSingle(5443e12f);
-            SqlSingle Test1 = new SqlSingle(1);
+            SqlSingle test = new SqlSingle(5443e12f);
+            SqlSingle test1 = new SqlSingle(1);
 
             Assert.True(SqlSingle.Null.IsNull);
-            Assert.Equal(5443e12f, Test.Value);
-            Assert.Equal(1, Test1.Value);
+            Assert.Equal(5443e12f, test.Value);
+            Assert.Equal(1, test1.Value);
         }
 
         // PUBLIC METHODS
@@ -75,217 +74,143 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticMethods()
         {
-            SqlSingle Test0 = new SqlSingle(0);
-            SqlSingle Test1 = new SqlSingle(15E+18);
-            SqlSingle Test2 = new SqlSingle(-65E+6);
-            SqlSingle Test3 = new SqlSingle(5E+30);
-            SqlSingle Test4 = new SqlSingle(5E+18);
-            SqlSingle TestMax = new SqlSingle(SqlSingle.MaxValue.Value);
+            SqlSingle test0 = new SqlSingle(0);
+            SqlSingle test1 = new SqlSingle(15E+18);
+            SqlSingle test2 = new SqlSingle(-65E+6);
+            SqlSingle test3 = new SqlSingle(5E+30);
+            SqlSingle test4 = new SqlSingle(5E+18);
+            SqlSingle testMax = new SqlSingle(SqlSingle.MaxValue.Value);
 
             // Add()
-            Assert.Equal(15E+18f, SqlSingle.Add(Test1, Test0).Value);
-            Assert.Equal(1.5E+19f, SqlSingle.Add(Test1, Test2).Value);
+            Assert.Equal(15E+18f, SqlSingle.Add(test1, test0).Value);
+            Assert.Equal(1.5E+19f, SqlSingle.Add(test1, test2).Value);
 
-            try
-            {
-                SqlSingle test = SqlSingle.Add(SqlSingle.MaxValue,
-             SqlSingle.MaxValue);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.Add(SqlSingle.MaxValue, SqlSingle.MaxValue));
 
             // Divide()
-            Assert.Equal(3, SqlSingle.Divide(Test1, Test4));
-            Assert.Equal(-1.3E-23f, SqlSingle.Divide(Test2, Test3).Value);
+            Assert.Equal(3, SqlSingle.Divide(test1, test4));
+            Assert.Equal(-1.3E-23f, SqlSingle.Divide(test2, test3).Value);
 
-            try
-            {
-                SqlSingle test = SqlSingle.Divide(Test1, Test0).Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+
+            Assert.Throws<DivideByZeroException>(() => SqlSingle.Divide(test1, test0));
 
             // Multiply()
-            Assert.Equal((float)(7.5E+37), SqlSingle.Multiply(Test1, Test4).Value);
-            Assert.Equal(0, SqlSingle.Multiply(Test1, Test0).Value);
+            Assert.Equal((float)(7.5E+37), SqlSingle.Multiply(test1, test4).Value);
+            Assert.Equal(0, SqlSingle.Multiply(test1, test0).Value);
 
-            try
-            {
-                SqlSingle test = SqlSingle.Multiply(TestMax, Test1);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
-
+            Assert.Throws<OverflowException>(() => SqlSingle.Multiply(testMax, test1));
 
             // Subtract()
-            Assert.Equal((float)(-5E+30), SqlSingle.Subtract(Test1, Test3).Value);
+            Assert.Equal((float)(-5E+30), SqlSingle.Subtract(test1, test3).Value);
 
-            try
-            {
-                SqlSingle test = SqlSingle.Subtract(
-    SqlSingle.MinValue, SqlSingle.MaxValue);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.Subtract(SqlSingle.MinValue, SqlSingle.MaxValue));
         }
 
         [Fact]
         public void CompareTo()
         {
-            SqlSingle Test1 = new SqlSingle(4E+30);
-            SqlSingle Test11 = new SqlSingle(4E+30);
-            SqlSingle Test2 = new SqlSingle(-9E+30);
-            SqlSingle Test3 = new SqlSingle(10000);
-            SqlString TestString = new SqlString("This is a test");
+            SqlSingle test1 = new SqlSingle(4E+30);
+            SqlSingle test11 = new SqlSingle(4E+30);
+            SqlSingle test2 = new SqlSingle(-9E+30);
+            SqlSingle test3 = new SqlSingle(10000);
+            SqlString testString = new SqlString("This is a test");
 
-            Assert.True(Test1.CompareTo(Test3) > 0);
-            Assert.True(Test2.CompareTo(Test3) < 0);
-            Assert.True(Test1.CompareTo(Test11) == 0);
-            Assert.True(Test11.CompareTo(SqlSingle.Null) > 0);
+            Assert.True(test1.CompareTo(test3) > 0);
+            Assert.True(test2.CompareTo(test3) < 0);
+            Assert.Equal(0, test1.CompareTo(test11));
+            Assert.True(test11.CompareTo(SqlSingle.Null) > 0);
 
-            try
-            {
-                Test1.CompareTo(TestString);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => test1.CompareTo(testString));
         }
 
         [Fact]
         public void EqualsMethods()
         {
-            SqlSingle Test0 = new SqlSingle(0);
-            SqlSingle Test1 = new SqlSingle(1.58e30);
-            SqlSingle Test2 = new SqlSingle(1.8e32);
-            SqlSingle Test22 = new SqlSingle(1.8e32);
+            SqlSingle test0 = new SqlSingle(0);
+            SqlSingle test1 = new SqlSingle(1.58e30);
+            SqlSingle test2 = new SqlSingle(1.8e32);
+            SqlSingle test22 = new SqlSingle(1.8e32);
 
-            Assert.True(!Test0.Equals(Test1));
-            Assert.True(!Test1.Equals(Test2));
-            Assert.True(!Test2.Equals(new SqlString("TEST")));
-            Assert.True(Test2.Equals(Test22));
+            Assert.False(test0.Equals(test1));
+            Assert.False(test1.Equals(test2));
+            Assert.False(test2.Equals(new SqlString("TEST")));
+            Assert.True(test2.Equals(test22));
 
             // Static Equals()-method
-            Assert.True(SqlSingle.Equals(Test2, Test22).Value);
-            Assert.True(!SqlSingle.Equals(Test1, Test2).Value);
+            Assert.True(SqlSingle.Equals(test2, test22).Value);
+            Assert.False(SqlSingle.Equals(test1, test2).Value);
         }
 
         [Fact]
         public void GetHashCodeTest()
         {
-            SqlSingle Test15 = new SqlSingle(15);
+            SqlSingle test15 = new SqlSingle(15);
 
             // FIXME: Better way to test HashCode
-            Assert.Equal(Test15.GetHashCode(), Test15.GetHashCode());
-        }
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            SqlSingle Test = new SqlSingle(84);
-            Assert.Equal("System.Data.SqlTypes.SqlSingle", Test.GetType().ToString());
-            Assert.Equal("System.Single", Test.Value.GetType().ToString());
+            Assert.Equal(test15.GetHashCode(), test15.GetHashCode());
         }
 
         [Fact]
         public void Greaters()
         {
-            SqlSingle Test1 = new SqlSingle(1e10);
-            SqlSingle Test11 = new SqlSingle(1e10);
-            SqlSingle Test2 = new SqlSingle(64e14);
+            SqlSingle test1 = new SqlSingle(1e10);
+            SqlSingle test11 = new SqlSingle(1e10);
+            SqlSingle test2 = new SqlSingle(64e14);
 
             // GreateThan ()
-            Assert.True(!SqlSingle.GreaterThan(Test1, Test2).Value);
-            Assert.True(SqlSingle.GreaterThan(Test2, Test1).Value);
-            Assert.True(!SqlSingle.GreaterThan(Test1, Test11).Value);
+            Assert.False(SqlSingle.GreaterThan(test1, test2).Value);
+            Assert.True(SqlSingle.GreaterThan(test2, test1).Value);
+            Assert.False(SqlSingle.GreaterThan(test1, test11).Value);
 
             // GreaterTharOrEqual ()
-            Assert.True(!SqlSingle.GreaterThanOrEqual(Test1, Test2).Value);
-            Assert.True(SqlSingle.GreaterThanOrEqual(Test2, Test1).Value);
-            Assert.True(SqlSingle.GreaterThanOrEqual(Test1, Test11).Value);
+            Assert.False(SqlSingle.GreaterThanOrEqual(test1, test2).Value);
+            Assert.True(SqlSingle.GreaterThanOrEqual(test2, test1).Value);
+            Assert.True(SqlSingle.GreaterThanOrEqual(test1, test11).Value);
         }
 
         [Fact]
         public void Lessers()
         {
-            SqlSingle Test1 = new SqlSingle(1.8e10);
-            SqlSingle Test11 = new SqlSingle(1.8e10);
-            SqlSingle Test2 = new SqlSingle(64e14);
+            SqlSingle test1 = new SqlSingle(1.8e10);
+            SqlSingle test11 = new SqlSingle(1.8e10);
+            SqlSingle test2 = new SqlSingle(64e14);
 
             // LessThan()
-            Assert.True(!SqlSingle.LessThan(Test1, Test11).Value);
-            Assert.True(!SqlSingle.LessThan(Test2, Test1).Value);
-            Assert.True(SqlSingle.LessThan(Test11, Test2).Value);
+            Assert.False(SqlSingle.LessThan(test1, test11).Value);
+            Assert.False(SqlSingle.LessThan(test2, test1).Value);
+            Assert.True(SqlSingle.LessThan(test11, test2).Value);
 
             // LessThanOrEqual ()
-            Assert.True(SqlSingle.LessThanOrEqual(Test1, Test2).Value);
-            Assert.True(!SqlSingle.LessThanOrEqual(Test2, Test1).Value);
-            Assert.True(SqlSingle.LessThanOrEqual(Test11, Test1).Value);
-            Assert.True(SqlSingle.LessThanOrEqual(Test11, SqlSingle.Null).IsNull);
+            Assert.True(SqlSingle.LessThanOrEqual(test1, test2).Value);
+            Assert.False(SqlSingle.LessThanOrEqual(test2, test1).Value);
+            Assert.True(SqlSingle.LessThanOrEqual(test11, test1).Value);
+            Assert.True(SqlSingle.LessThanOrEqual(test11, SqlSingle.Null).IsNull);
         }
 
         [Fact]
         public void NotEquals()
         {
-            SqlSingle Test1 = new SqlSingle(12800000000001);
-            SqlSingle Test2 = new SqlSingle(128e10);
-            SqlSingle Test22 = new SqlSingle(128e10);
+            SqlSingle test1 = new SqlSingle(12800000000001);
+            SqlSingle test2 = new SqlSingle(128e10);
+            SqlSingle test22 = new SqlSingle(128e10);
 
-            Assert.True(SqlSingle.NotEquals(Test1, Test2).Value);
-            Assert.True(SqlSingle.NotEquals(Test2, Test1).Value);
-            Assert.True(SqlSingle.NotEquals(Test22, Test1).Value);
-            Assert.True(!SqlSingle.NotEquals(Test22, Test2).Value);
-            Assert.True(!SqlSingle.NotEquals(Test2, Test22).Value);
-            Assert.True(SqlSingle.NotEquals(SqlSingle.Null, Test22).IsNull);
-            Assert.True(SqlSingle.NotEquals(SqlSingle.Null, Test22).IsNull);
+            Assert.True(SqlSingle.NotEquals(test1, test2).Value);
+            Assert.True(SqlSingle.NotEquals(test2, test1).Value);
+            Assert.True(SqlSingle.NotEquals(test22, test1).Value);
+            Assert.False(SqlSingle.NotEquals(test22, test2).Value);
+            Assert.False(SqlSingle.NotEquals(test2, test22).Value);
+            Assert.True(SqlSingle.NotEquals(SqlSingle.Null, test22).IsNull);
+            Assert.True(SqlSingle.NotEquals(SqlSingle.Null, test22).IsNull);
         }
 
         [Fact]
         public void Parse()
         {
-            try
-            {
-                SqlSingle.Parse(null);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => SqlSingle.Parse(null));
 
-            try
-            {
-                SqlSingle.Parse("not-a-number");
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => SqlSingle.Parse("not-a-number"));
 
-            try
-            {
-                SqlSingle.Parse("9e44");
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.Parse("9e44"));
 
             Assert.Equal(150, SqlSingle.Parse("150").Value);
         }
@@ -293,111 +218,63 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Conversions()
         {
-            SqlSingle Test0 = new SqlSingle(0);
-            SqlSingle Test1 = new SqlSingle(250);
-            SqlSingle Test2 = new SqlSingle(64E+16);
-            SqlSingle Test3 = new SqlSingle(64E+30);
+            SqlSingle test0 = new SqlSingle(0);
+            SqlSingle test1 = new SqlSingle(250);
+            SqlSingle test2 = new SqlSingle(64E+16);
+            SqlSingle test3 = new SqlSingle(64E+30);
             SqlSingle TestNull = SqlSingle.Null;
 
             // ToSqlBoolean ()
-            Assert.True(Test1.ToSqlBoolean().Value);
-            Assert.True(!Test0.ToSqlBoolean().Value);
+            Assert.True(test1.ToSqlBoolean().Value);
+            Assert.False(test0.ToSqlBoolean().Value);
             Assert.True(TestNull.ToSqlBoolean().IsNull);
 
             // ToSqlByte ()
-            Assert.Equal((byte)250, Test1.ToSqlByte().Value);
-            Assert.Equal((byte)0, Test0.ToSqlByte().Value);
+            Assert.Equal((byte)250, test1.ToSqlByte().Value);
+            Assert.Equal((byte)0, test0.ToSqlByte().Value);
 
-            try
-            {
-                SqlByte b = (byte)Test2.ToSqlByte();
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlByte());
 
             // ToSqlDecimal ()
-            Assert.Equal(250.00000000000000M, Test1.ToSqlDecimal().Value);
-            Assert.Equal(0, Test0.ToSqlDecimal().Value);
+            Assert.Equal(250M, test1.ToSqlDecimal().Value);
+            Assert.Equal(0, test0.ToSqlDecimal().Value);
 
-            try
-            {
-                SqlDecimal test = Test3.ToSqlDecimal().Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test3.ToSqlDecimal().Value);
 
             // ToSqlInt16 ()
-            Assert.Equal((short)250, Test1.ToSqlInt16().Value);
-            Assert.Equal((short)0, Test0.ToSqlInt16().Value);
+            Assert.Equal((short)250, test1.ToSqlInt16().Value);
+            Assert.Equal((short)0, test0.ToSqlInt16().Value);
 
-            try
-            {
-                SqlInt16 test = Test2.ToSqlInt16().Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlInt16());
 
             // ToSqlInt32 ()
-            Assert.Equal(250, Test1.ToSqlInt32().Value);
-            Assert.Equal(0, Test0.ToSqlInt32().Value);
+            Assert.Equal(250, test1.ToSqlInt32().Value);
+            Assert.Equal(0, test0.ToSqlInt32().Value);
 
-            try
-            {
-                SqlInt32 test = Test2.ToSqlInt32().Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlInt32());
 
             // ToSqlInt64 ()
-            Assert.Equal(250, Test1.ToSqlInt64().Value);
-            Assert.Equal(0, Test0.ToSqlInt64().Value);
+            Assert.Equal(250, test1.ToSqlInt64().Value);
+            Assert.Equal(0, test0.ToSqlInt64().Value);
 
-            try
-            {
-                SqlInt64 test = Test3.ToSqlInt64().Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test3.ToSqlInt64());
 
             // ToSqlMoney ()
-            Assert.Equal(250.0000M, Test1.ToSqlMoney().Value);
-            Assert.Equal(0, Test0.ToSqlMoney().Value);
+            Assert.Equal(250.0000M, test1.ToSqlMoney().Value);
+            Assert.Equal(0, test0.ToSqlMoney().Value);
 
-            try
-            {
-                SqlMoney test = Test3.ToSqlMoney().Value;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test2.ToSqlMoney());
 
 
             // ToSqlString ()
-            Assert.Equal(250.ToString(), Test1.ToSqlString().Value);
-            Assert.Equal(0.ToString(), Test0.ToSqlString().Value);
-            Assert.Equal(6.4E+17.ToString(), Test2.ToSqlString().Value);
+            Assert.Equal(250.ToString(), test1.ToSqlString().Value);
+            Assert.Equal(0.ToString(), test0.ToSqlString().Value);
+            Assert.Equal(6.4E+17.ToString(), test2.ToSqlString().Value);
 
             // ToString ()
-            Assert.Equal(250.ToString(), Test1.ToString());
-            Assert.Equal(0.ToString(), Test0.ToString());
-            Assert.Equal(6.4E+17.ToString(), Test2.ToString());
+            Assert.Equal(250.ToString(), test1.ToString());
+            Assert.Equal(0.ToString(), test0.ToString());
+            Assert.Equal(6.4E+17.ToString(), test2.ToString());
         }
 
         // OPERATORS
@@ -405,220 +282,170 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticOperators()
         {
-            SqlSingle Test0 = new SqlSingle(0);
-            SqlSingle Test1 = new SqlSingle(24E+11);
-            SqlSingle Test2 = new SqlSingle(64E+32);
-            SqlSingle Test3 = new SqlSingle(12E+11);
-            SqlSingle Test4 = new SqlSingle(1E+10);
-            SqlSingle Test5 = new SqlSingle(2E+10);
+            SqlSingle test0 = new SqlSingle(0);
+            SqlSingle test1 = new SqlSingle(24E+11);
+            SqlSingle test2 = new SqlSingle(12E+11);
+            SqlSingle test3 = new SqlSingle(1E+10);
+            SqlSingle test4 = new SqlSingle(2E+10);
 
             // "+"-operator
-            Assert.Equal((SqlSingle)3E+10, Test4 + Test5);
+            Assert.Equal((SqlSingle)3E+10, test3 + test4);
 
-            try
-            {
-                SqlSingle test = SqlSingle.MaxValue + SqlSingle.MaxValue;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
-
-            try
-            {
-                SqlSingle test = SqlSingle.MaxValue + SqlSingle.MaxValue;
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.MaxValue + SqlSingle.MaxValue);
 
             // "/"-operator
-            Assert.Equal(2, Test1 / Test3);
+            Assert.Equal(2, test1 / test2);
 
-            try
-            {
-                SqlSingle test = Test3 / Test0;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => test2 / test0);
 
             // "*"-operator
-            Assert.Equal((SqlSingle)2E+20, Test4 * Test5);
+            Assert.Equal((SqlSingle)2E+20, test3 * test4);
 
-            try
-            {
-                SqlSingle test = SqlSingle.MaxValue * Test1;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.MaxValue * test1);
 
             // "-"-operator
-            Assert.Equal((SqlSingle)12e11, Test1 - Test3);
+            Assert.Equal((SqlSingle)12e11, test1 - test2);
 
-            try
-            {
-                SqlSingle test = SqlSingle.MinValue - SqlSingle.MaxValue;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlSingle.MinValue - SqlSingle.MaxValue);
         }
 
         [Fact]
         public void ThanOrEqualOperators()
         {
-            SqlSingle Test1 = new SqlSingle(1.0E+14f);
-            SqlSingle Test2 = new SqlSingle(9.7E+11);
-            SqlSingle Test22 = new SqlSingle(9.7E+11);
-            SqlSingle Test3 = new SqlSingle(2.0E+22f);
+            SqlSingle test1 = new SqlSingle(1.0E+14f);
+            SqlSingle test2 = new SqlSingle(9.7E+11);
+            SqlSingle test22 = new SqlSingle(9.7E+11);
+            SqlSingle test3 = new SqlSingle(2.0E+22f);
 
             // == -operator
-            Assert.True((Test2 == Test22).Value);
-            Assert.True(!(Test1 == Test2).Value);
-            Assert.True((Test1 == SqlSingle.Null).IsNull);
+            Assert.True((test2 == test22).Value);
+            Assert.False((test1 == test2).Value);
+            Assert.True((test1 == SqlSingle.Null).IsNull);
 
             // != -operator
-            Assert.True(!(Test2 != Test22).Value);
-            Assert.True((Test2 != Test3).Value);
-            Assert.True((Test1 != Test3).Value);
-            Assert.True((Test1 != SqlSingle.Null).IsNull);
+            Assert.False((test2 != test22).Value);
+            Assert.True((test2 != test3).Value);
+            Assert.True((test1 != test3).Value);
+            Assert.True((test1 != SqlSingle.Null).IsNull);
 
             // > -operator
-            Assert.True((Test1 > Test2).Value);
-            Assert.True(!(Test1 > Test3).Value);
-            Assert.True(!(Test2 > Test22).Value);
-            Assert.True((Test1 > SqlSingle.Null).IsNull);
+            Assert.True((test1 > test2).Value);
+            Assert.False((test1 > test3).Value);
+            Assert.False((test2 > test22).Value);
+            Assert.True((test1 > SqlSingle.Null).IsNull);
 
             // >=  -operator
-            Assert.True(!(Test1 >= Test3).Value);
-            Assert.True((Test3 >= Test1).Value);
-            Assert.True((Test2 >= Test22).Value);
-            Assert.True((Test1 >= SqlSingle.Null).IsNull);
+            Assert.False((test1 >= test3).Value);
+            Assert.True((test3 >= test1).Value);
+            Assert.True((test2 >= test22).Value);
+            Assert.True((test1 >= SqlSingle.Null).IsNull);
 
             // < -operator
-            Assert.True(!(Test1 < Test2).Value);
-            Assert.True((Test1 < Test3).Value);
-            Assert.True(!(Test2 < Test22).Value);
-            Assert.True((Test1 < SqlSingle.Null).IsNull);
+            Assert.False((test1 < test2).Value);
+            Assert.True((test1 < test3).Value);
+            Assert.False((test2 < test22).Value);
+            Assert.True((test1 < SqlSingle.Null).IsNull);
 
             // <= -operator
-            Assert.True((Test1 <= Test3).Value);
-            Assert.True(!(Test3 <= Test1).Value);
-            Assert.True((Test2 <= Test22).Value);
-            Assert.True((Test1 <= SqlSingle.Null).IsNull);
+            Assert.True((test1 <= test3).Value);
+            Assert.False((test3 <= test1).Value);
+            Assert.True((test2 <= test22).Value);
+            Assert.True((test1 <= SqlSingle.Null).IsNull);
         }
 
         [Fact]
         public void UnaryNegation()
         {
-            SqlSingle Test = new SqlSingle(2000000001);
-            SqlSingle TestNeg = new SqlSingle(-3000);
+            SqlSingle test = new SqlSingle(2000000001);
+            SqlSingle testNeg = new SqlSingle(-3000);
 
-            SqlSingle Result = -Test;
-            Assert.Equal(-2000000001, Result.Value);
+            SqlSingle result = -test;
+            Assert.Equal(-2000000001, result.Value);
 
-            Result = -TestNeg;
-            Assert.Equal(3000, Result.Value);
+            result = -testNeg;
+            Assert.Equal(3000, result.Value);
         }
 
         [Fact]
         public void SqlBooleanToSqlSingle()
         {
-            SqlBoolean TestBoolean = new SqlBoolean(true);
-            SqlSingle Result;
+            SqlBoolean testBoolean = new SqlBoolean(true);
+            SqlSingle result;
 
-            Result = (SqlSingle)TestBoolean;
+            result = (SqlSingle)testBoolean;
 
-            Assert.Equal(1, Result.Value);
+            Assert.Equal(1, result.Value);
 
-            Result = (SqlSingle)SqlBoolean.Null;
-            Assert.True(Result.IsNull);
+            result = (SqlSingle)SqlBoolean.Null;
+            Assert.True(result.IsNull);
         }
 
         [Fact]
         public void SqlDoubleToSqlSingle()
         {
-            SqlDouble Test = new SqlDouble(12e12);
-            SqlSingle TestSqlSingle = (SqlSingle)Test;
-            Assert.Equal(12e12f, TestSqlSingle.Value);
+            SqlDouble test = new SqlDouble(12e12);
+            SqlSingle testSqlSingle = (SqlSingle)test;
+            Assert.Equal(12e12f, testSqlSingle.Value);
         }
 
         [Fact]
         public void SqlSingleToSingle()
         {
-            SqlSingle Test = new SqlSingle(12e12);
-            float Result = (float)Test;
-            Assert.Equal(12e12f, Result);
+            SqlSingle test = new SqlSingle(12e12);
+            float result = (float)test;
+            Assert.Equal(12e12f, result);
         }
 
         [Fact]
         public void SqlStringToSqlSingle()
         {
-            SqlString TestString = new SqlString("Test string");
-            SqlString TestString100 = new SqlString("100");
+            SqlString testString = new SqlString("Test string");
+            SqlString testString100 = new SqlString("100");
 
-            Assert.Equal(100, ((SqlSingle)TestString100).Value);
+            Assert.Equal(100, ((SqlSingle)testString100).Value);
 
-            try
-            {
-                SqlSingle test = (SqlSingle)TestString;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => (SqlSingle)testString);
         }
 
         [Fact]
         public void ByteToSqlSingle()
         {
-            short TestShort = 14;
-            Assert.Equal(14, ((SqlSingle)TestShort).Value);
+            short testShort = 14;
+            Assert.Equal(14, ((SqlSingle)testShort).Value);
         }
 
         [Fact]
         public void SqlDecimalToSqlSingle()
         {
-            SqlDecimal TestDecimal64 = new SqlDecimal(64);
+            SqlDecimal testDecimal64 = new SqlDecimal(64);
 
-            Assert.Equal(64, ((SqlSingle)TestDecimal64).Value);
+            Assert.Equal(64, ((SqlSingle)testDecimal64).Value);
             Assert.Equal(SqlSingle.Null, SqlDecimal.Null);
         }
 
         [Fact]
         public void SqlIntToSqlSingle()
         {
-            SqlInt16 Test64 = new SqlInt16(64);
-            SqlInt32 Test640 = new SqlInt32(640);
-            SqlInt64 Test64000 = new SqlInt64(64000);
-            Assert.Equal(64, ((SqlSingle)Test64).Value);
-            Assert.Equal(640, ((SqlSingle)Test640).Value);
-            Assert.Equal(64000, ((SqlSingle)Test64000).Value);
+            SqlInt16 test64 = new SqlInt16(64);
+            SqlInt32 test640 = new SqlInt32(640);
+            SqlInt64 test64000 = new SqlInt64(64000);
+            Assert.Equal(64, ((SqlSingle)test64).Value);
+            Assert.Equal(640, ((SqlSingle)test640).Value);
+            Assert.Equal(64000, ((SqlSingle)test64000).Value);
         }
 
         [Fact]
         public void SqlMoneyToSqlSingle()
         {
-            SqlMoney TestMoney64 = new SqlMoney(64);
-            Assert.Equal(64, ((SqlSingle)TestMoney64).Value);
+            SqlMoney testMoney64 = new SqlMoney(64);
+            Assert.Equal(64, ((SqlSingle)testMoney64).Value);
         }
 
         [Fact]
         public void SingleToSqlSingle()
         {
-            float TestSingle64 = 64;
-            Assert.Equal(64, ((SqlSingle)TestSingle64).Value);
+            float testSingle64 = 64;
+            Assert.Equal(64, ((SqlSingle)testSingle64).Value);
         }
         [Fact]
         public void GetXsdTypeTest()

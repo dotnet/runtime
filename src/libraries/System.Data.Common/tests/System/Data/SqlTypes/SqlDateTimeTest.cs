@@ -28,7 +28,6 @@
 using Xunit;
 using System.Xml;
 using System.Data.SqlTypes;
-using System.Globalization;
 
 namespace System.Data.Tests.SqlTypes
 {
@@ -60,53 +59,45 @@ namespace System.Data.Tests.SqlTypes
         public void Create()
         {
             // SqlDateTime (DateTime)
-            SqlDateTime CTest = new SqlDateTime(
+            SqlDateTime cTest = new SqlDateTime(
                 new DateTime(2002, 5, 19, 3, 34, 0));
-            Assert.Equal(2002, CTest.Value.Year);
+            Assert.Equal(2002, cTest.Value.Year);
 
             // SqlDateTime (int, int)
-            CTest = new SqlDateTime(0, 0);
+            cTest = new SqlDateTime(0, 0);
 
             // SqlDateTime (int, int, int)
-            Assert.Equal(1900, CTest.Value.Year);
-            Assert.Equal(1, CTest.Value.Month);
-            Assert.Equal(1, CTest.Value.Day);
-            Assert.Equal(0, CTest.Value.Hour);
+            Assert.Equal(1900, cTest.Value.Year);
+            Assert.Equal(1, cTest.Value.Month);
+            Assert.Equal(1, cTest.Value.Day);
+            Assert.Equal(0, cTest.Value.Hour);
 
             // SqlDateTime (int, int, int, int, int, int)
-            CTest = new SqlDateTime(5000, 12, 31);
-            Assert.Equal(5000, CTest.Value.Year);
-            Assert.Equal(12, CTest.Value.Month);
-            Assert.Equal(31, CTest.Value.Day);
+            cTest = new SqlDateTime(5000, 12, 31);
+            Assert.Equal(5000, cTest.Value.Year);
+            Assert.Equal(12, cTest.Value.Month);
+            Assert.Equal(31, cTest.Value.Day);
 
             // SqlDateTime (int, int, int, int, int, int, double)
-            CTest = new SqlDateTime(1978, 5, 19, 3, 34, 0);
-            Assert.Equal(1978, CTest.Value.Year);
-            Assert.Equal(5, CTest.Value.Month);
-            Assert.Equal(19, CTest.Value.Day);
-            Assert.Equal(3, CTest.Value.Hour);
-            Assert.Equal(34, CTest.Value.Minute);
-            Assert.Equal(0, CTest.Value.Second);
+            cTest = new SqlDateTime(1978, 5, 19, 3, 34, 0);
+            Assert.Equal(1978, cTest.Value.Year);
+            Assert.Equal(5, cTest.Value.Month);
+            Assert.Equal(19, cTest.Value.Day);
+            Assert.Equal(3, cTest.Value.Hour);
+            Assert.Equal(34, cTest.Value.Minute);
+            Assert.Equal(0, cTest.Value.Second);
 
-            try
-            {
-                CTest = new SqlDateTime(10000, 12, 31);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(SqlTypeException), e.GetType());
-            }
+            Assert.Throws<SqlTypeException>(() => new SqlDateTime(10000, 12, 31));
 
             // SqlDateTime (int, int, int, int, int, int, int)
-            CTest = new SqlDateTime(1978, 5, 19, 3, 34, 0, 12);
-            Assert.Equal(1978, CTest.Value.Year);
-            Assert.Equal(5, CTest.Value.Month);
-            Assert.Equal(19, CTest.Value.Day);
-            Assert.Equal(3, CTest.Value.Hour);
-            Assert.Equal(34, CTest.Value.Minute);
-            Assert.Equal(0, CTest.Value.Second);
-            Assert.Equal(0, CTest.Value.Millisecond);
+            cTest = new SqlDateTime(1978, 5, 19, 3, 34, 0, 12);
+            Assert.Equal(1978, cTest.Value.Year);
+            Assert.Equal(5, cTest.Value.Month);
+            Assert.Equal(19, cTest.Value.Day);
+            Assert.Equal(3, cTest.Value.Hour);
+            Assert.Equal(34, cTest.Value.Minute);
+            Assert.Equal(0, cTest.Value.Second);
+            Assert.Equal(0, cTest.Value.Millisecond);
         }
 
         // Test public fields
@@ -149,32 +140,16 @@ namespace System.Data.Tests.SqlTypes
             // DayTicks
             Assert.Equal(37546, _test1.DayTicks);
 
-            try
-            {
-                int test = SqlDateTime.Null.DayTicks;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => SqlDateTime.Null.DayTicks);
 
             // IsNull
             Assert.True(SqlDateTime.Null.IsNull);
-            Assert.True(!_test2.IsNull);
+            Assert.False(_test2.IsNull);
 
             // TimeTicks
             Assert.Equal(10440000, _test1.TimeTicks);
 
-            try
-            {
-                int test = SqlDateTime.Null.TimeTicks;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            Assert.Throws<SqlNullValueException>(() => SqlDateTime.Null.TimeTicks);
 
             // Value
             Assert.Equal(2003, _test2.Value.Year);
@@ -186,34 +161,26 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void CompareTo()
         {
-            SqlString TestString = new SqlString("This is a test");
+            SqlString testString = new SqlString("This is a test");
 
             Assert.True(_test1.CompareTo(_test3) < 0);
             Assert.True(_test2.CompareTo(_test1) > 0);
-            Assert.True(_test2.CompareTo(_test3) == 0);
+            Assert.Equal(0, _test2.CompareTo(_test3));
             Assert.True(_test1.CompareTo(SqlDateTime.Null) > 0);
 
-            try
-            {
-                _test1.CompareTo(TestString);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => _test1.CompareTo(testString));
         }
 
         [Fact]
         public void EqualsMethods()
         {
-            Assert.True(!_test1.Equals(_test2));
-            Assert.True(!_test2.Equals(new SqlString("TEST")));
+            Assert.False(_test1.Equals(_test2));
+            Assert.False(_test2.Equals(new SqlString("TEST")));
             Assert.True(_test2.Equals(_test3));
 
             // Static Equals()-method
             Assert.True(SqlDateTime.Equals(_test2, _test3).Value);
-            Assert.True(!SqlDateTime.Equals(_test1, _test2).Value);
+            Assert.False(SqlDateTime.Equals(_test1, _test2).Value);
         }
 
         [Fact]
@@ -221,26 +188,19 @@ namespace System.Data.Tests.SqlTypes
         {
             // FIXME: Better way to test HashCode
             Assert.Equal(_test1.GetHashCode(), _test1.GetHashCode());
-            Assert.True(_test2.GetHashCode() != _test1.GetHashCode());
-        }
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            Assert.Equal("System.Data.SqlTypes.SqlDateTime", _test1.GetType().ToString());
-            Assert.Equal("System.DateTime", _test1.Value.GetType().ToString());
+            Assert.NotEqual(_test2.GetHashCode(), _test1.GetHashCode());
         }
 
         [Fact]
         public void Greaters()
         {
             // GreateThan ()
-            Assert.True(!SqlDateTime.GreaterThan(_test1, _test2).Value);
+            Assert.False(SqlDateTime.GreaterThan(_test1, _test2).Value);
             Assert.True(SqlDateTime.GreaterThan(_test2, _test1).Value);
-            Assert.True(!SqlDateTime.GreaterThan(_test2, _test3).Value);
+            Assert.False(SqlDateTime.GreaterThan(_test2, _test3).Value);
 
             // GreaterTharOrEqual ()
-            Assert.True(!SqlDateTime.GreaterThanOrEqual(_test1, _test2).Value);
+            Assert.False(SqlDateTime.GreaterThanOrEqual(_test1, _test2).Value);
             Assert.True(SqlDateTime.GreaterThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlDateTime.GreaterThanOrEqual(_test2, _test3).Value);
         }
@@ -249,13 +209,13 @@ namespace System.Data.Tests.SqlTypes
         public void Lessers()
         {
             // LessThan()
-            Assert.True(!SqlDateTime.LessThan(_test2, _test3).Value);
-            Assert.True(!SqlDateTime.LessThan(_test2, _test1).Value);
+            Assert.False(SqlDateTime.LessThan(_test2, _test3).Value);
+            Assert.False(SqlDateTime.LessThan(_test2, _test1).Value);
             Assert.True(SqlDateTime.LessThan(_test1, _test3).Value);
 
             // LessThanOrEqual ()
             Assert.True(SqlDateTime.LessThanOrEqual(_test1, _test2).Value);
-            Assert.True(!SqlDateTime.LessThanOrEqual(_test2, _test1).Value);
+            Assert.False(SqlDateTime.LessThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlDateTime.LessThanOrEqual(_test3, _test2).Value);
             Assert.True(SqlDateTime.LessThanOrEqual(_test1, SqlDateTime.Null).IsNull);
         }
@@ -265,46 +225,22 @@ namespace System.Data.Tests.SqlTypes
         {
             Assert.True(SqlDateTime.NotEquals(_test1, _test2).Value);
             Assert.True(SqlDateTime.NotEquals(_test3, _test1).Value);
-            Assert.True(!SqlDateTime.NotEquals(_test2, _test3).Value);
+            Assert.False(SqlDateTime.NotEquals(_test2, _test3).Value);
             Assert.True(SqlDateTime.NotEquals(SqlDateTime.Null, _test2).IsNull);
         }
 
         [Fact]
         public void Parse()
         {
-            try
-            {
-                SqlDateTime.Parse(null);
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => SqlDateTime.Parse(null));
 
-            try
-            {
-                SqlDateTime.Parse("not-a-number");
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => SqlDateTime.Parse("not-a-number"));
 
             SqlDateTime t1 = SqlDateTime.Parse("02/25/2002");
             Assert.Equal(_myTicks[0], t1.Value.Ticks);
 
-            try
-            {
-                t1 = SqlDateTime.Parse("2002-02-25");
-            }
-            catch (Exception e)
-            {
-                Assert.False(true);
-            }
-
             // Thanks for Martin Baulig for these (DateTimeTest.cs)
+            t1 = SqlDateTime.Parse("2002-02-25");
             Assert.Equal(_myTicks[0], t1.Value.Ticks);
             t1 = SqlDateTime.Parse("Monday, 25 February 2002");
             Assert.Equal(_myTicks[0], t1.Value.Ticks);
@@ -371,46 +307,30 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticOperators()
         {
-            TimeSpan TestSpan = new TimeSpan(20, 1, 20, 20);
-            SqlDateTime ResultDateTime;
+            TimeSpan testSpan = new TimeSpan(20, 1, 20, 20);
+            SqlDateTime resultDateTime;
 
             // "+"-operator
-            ResultDateTime = _test1 + TestSpan;
-            Assert.Equal(2002, ResultDateTime.Value.Year);
-            Assert.Equal(8, ResultDateTime.Value.Day);
-            Assert.Equal(11, ResultDateTime.Value.Hour);
-            Assert.Equal(0, ResultDateTime.Value.Minute);
-            Assert.Equal(20, ResultDateTime.Value.Second);
-            Assert.True((SqlDateTime.Null + TestSpan).IsNull);
+            resultDateTime = _test1 + testSpan;
+            Assert.Equal(2002, resultDateTime.Value.Year);
+            Assert.Equal(8, resultDateTime.Value.Day);
+            Assert.Equal(11, resultDateTime.Value.Hour);
+            Assert.Equal(0, resultDateTime.Value.Minute);
+            Assert.Equal(20, resultDateTime.Value.Second);
+            Assert.True((SqlDateTime.Null + testSpan).IsNull);
 
-            try
-            {
-                ResultDateTime = SqlDateTime.MaxValue + TestSpan;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(ArgumentOutOfRangeException), e.GetType());
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => SqlDateTime.MaxValue + testSpan);
 
             // "-"-operator
-            ResultDateTime = _test1 - TestSpan;
-            Assert.Equal(2002, ResultDateTime.Value.Year);
-            Assert.Equal(29, ResultDateTime.Value.Day);
-            Assert.Equal(8, ResultDateTime.Value.Hour);
-            Assert.Equal(19, ResultDateTime.Value.Minute);
-            Assert.Equal(40, ResultDateTime.Value.Second);
-            Assert.True((SqlDateTime.Null - TestSpan).IsNull);
+            resultDateTime = _test1 - testSpan;
+            Assert.Equal(2002, resultDateTime.Value.Year);
+            Assert.Equal(29, resultDateTime.Value.Day);
+            Assert.Equal(8, resultDateTime.Value.Hour);
+            Assert.Equal(19, resultDateTime.Value.Minute);
+            Assert.Equal(40, resultDateTime.Value.Second);
+            Assert.True((SqlDateTime.Null - testSpan).IsNull);
 
-            try
-            {
-                ResultDateTime = SqlDateTime.MinValue - TestSpan;
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(SqlTypeException), e.GetType());
-            }
+            Assert.Throws<SqlTypeException>(() => SqlDateTime.MinValue - testSpan);
         }
 
         [Fact]
@@ -418,34 +338,34 @@ namespace System.Data.Tests.SqlTypes
         {
             // == -operator
             Assert.True((_test2 == _test3).Value);
-            Assert.True(!(_test1 == _test2).Value);
+            Assert.False((_test1 == _test2).Value);
             Assert.True((_test1 == SqlDateTime.Null).IsNull);
 
             // != -operator
-            Assert.True(!(_test2 != _test3).Value);
+            Assert.False((_test2 != _test3).Value);
             Assert.True((_test1 != _test3).Value);
             Assert.True((_test1 != SqlDateTime.Null).IsNull);
 
             // > -operator
             Assert.True((_test2 > _test1).Value);
-            Assert.True(!(_test3 > _test2).Value);
+            Assert.False((_test3 > _test2).Value);
             Assert.True((_test1 > SqlDateTime.Null).IsNull);
 
             // >=  -operator
-            Assert.True(!(_test1 >= _test3).Value);
+            Assert.False((_test1 >= _test3).Value);
             Assert.True((_test3 >= _test1).Value);
             Assert.True((_test2 >= _test3).Value);
             Assert.True((_test1 >= SqlDateTime.Null).IsNull);
 
             // < -operator
-            Assert.True(!(_test2 < _test1).Value);
+            Assert.False((_test2 < _test1).Value);
             Assert.True((_test1 < _test3).Value);
-            Assert.True(!(_test2 < _test3).Value);
+            Assert.False((_test2 < _test3).Value);
             Assert.True((_test1 < SqlDateTime.Null).IsNull);
 
             // <= -operator
             Assert.True((_test1 <= _test3).Value);
-            Assert.True(!(_test3 <= _test1).Value);
+            Assert.False((_test3 <= _test1).Value);
             Assert.True((_test2 <= _test3).Value);
             Assert.True((_test1 <= SqlDateTime.Null).IsNull);
         }
@@ -465,8 +385,8 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void SqlStringToSqlDateTime()
         {
-            SqlString TestString = new SqlString("02/25/2002");
-            SqlDateTime t1 = (SqlDateTime)TestString;
+            SqlString testString = new SqlString("02/25/2002");
+            SqlDateTime t1 = (SqlDateTime)testString;
 
             Assert.Equal(_myTicks[0], t1.Value.Ticks);
 
@@ -536,14 +456,14 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void DateTimeToSqlDateTime()
         {
-            DateTime DateTimeTest = new DateTime(2002, 10, 19, 11, 53, 4);
-            SqlDateTime Result = DateTimeTest;
-            Assert.Equal(2002, Result.Value.Year);
-            Assert.Equal(10, Result.Value.Month);
-            Assert.Equal(19, Result.Value.Day);
-            Assert.Equal(11, Result.Value.Hour);
-            Assert.Equal(53, Result.Value.Minute);
-            Assert.Equal(4, Result.Value.Second);
+            DateTime dateTimeTest = new DateTime(2002, 10, 19, 11, 53, 4);
+            SqlDateTime result = dateTimeTest;
+            Assert.Equal(2002, result.Value.Year);
+            Assert.Equal(10, result.Value.Month);
+            Assert.Equal(19, result.Value.Day);
+            Assert.Equal(11, result.Value.Hour);
+            Assert.Equal(53, result.Value.Minute);
+            Assert.Equal(4, result.Value.Second);
         }
 
         [Fact]

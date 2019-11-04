@@ -63,20 +63,11 @@ namespace System.Data.Tests
         [Fact]
         public void Constructor3_DataType_Null()
         {
-            try
-            {
-                new DataColumn("ColName", null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                // Never premise English.
-                //                Assert.NotNull (ex.Message);
-                Assert.NotNull(ex.ParamName);
-                Assert.Equal("dataType", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new DataColumn("ColName", null));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull (ex.Message);
+            Assert.NotNull(ex.ParamName);
+            Assert.Equal("dataType", ex.ParamName);
         }
 
         [Fact]
@@ -87,14 +78,7 @@ namespace System.Data.Tests
             col.AllowDBNull = true;
             _tbl.Rows.Add(_tbl.NewRow());
             _tbl.Rows[0]["NullCheck"] = DBNull.Value;
-            try
-            {
-                col.AllowDBNull = false;
-                Assert.False(true);
-            }
-            catch (DataException)
-            {
-            }
+            Assert.Throws<DataException>(() => col.AllowDBNull = false);
         }
 
         [Fact]
@@ -141,14 +125,7 @@ namespace System.Data.Tests
             col.Expression = "SomeExpression";
 
             //if computed column exception is thrown
-            try
-            {
-                col.AutoIncrement = true;
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => col.AutoIncrement = true);
         }
 
         [Fact]
@@ -183,42 +160,29 @@ namespace System.Data.Tests
         public void DateTime_DataType_Invalid()
         {
             DataColumn col = new DataColumn("birthdate", typeof(int));
-            try
-            {
-                col.DateTimeMode = DataSetDateTime.Local;
-                Assert.False(true);
-            }
-            catch (InvalidOperationException ex)
-            {
-                // The DateTimeMode can be set only on DataColumns
-                // of type DateTime
-                Assert.Equal(typeof(InvalidOperationException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("DateTimeMode") != -1);
-                Assert.True(ex.Message.IndexOf("DateTime") != -1);
-            }
+
+            // The DateTimeMode can be set only on DataColumns
+            // of type DateTime
+            InvalidOperationException ex =
+                Assert.Throws<InvalidOperationException>(() => col.DateTimeMode = DataSetDateTime.Local);
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("DateTimeMode", ex.Message);
         }
 
         [Fact]
         public void DateTimeMode_Invalid()
         {
             DataColumn col = new DataColumn("birthdate", typeof(DateTime));
-            try
-            {
-                col.DateTimeMode = (DataSetDateTime)666;
-                Assert.False(true);
-            }
-            catch (InvalidEnumArgumentException ex)
-            {
-                // The DataSetDateTime enumeration value, 666, is invalid
-                Assert.Equal(typeof(InvalidEnumArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("DataSetDateTime") != -1);
-                Assert.True(ex.Message.IndexOf("666") != -1);
-                Assert.Null(ex.ParamName);
-            }
+
+            // The DataSetDateTime enumeration value, 666, is invalid
+            InvalidEnumArgumentException ex =
+                Assert.Throws<InvalidEnumArgumentException>(() => col.DateTimeMode = (DataSetDateTime)666);
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("DataSetDateTime", ex.Message);
+            Assert.Contains("666", ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact]
@@ -235,16 +199,8 @@ namespace System.Data.Tests
             _tbl.Columns.Add(col);
 
             //Duplicate name exception
-            try
-            {
-                col2.ColumnName = "abc";
-                _tbl.Columns.Add(col2);
-                Assert.Equal("abc", col2.ColumnName);
-                Assert.False(true);
-            }
-            catch (DuplicateNameException)
-            {
-            }
+            Assert.Throws<DuplicateNameException>(() => { col2.ColumnName = "abc"; _tbl.Columns.Add(col2); });
+
             // Make sure case matters in duplicate checks
             col3.ColumnName = "ABC";
             _tbl.Columns.Add(col3);
@@ -258,26 +214,12 @@ namespace System.Data.Tests
 
             //Set default Value if Autoincrement is true
             tbl.Columns[0].AutoIncrement = true;
-            try
-            {
-                tbl.Columns[0].DefaultValue = 2;
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => tbl.Columns[0].DefaultValue = 2);
 
             tbl.Columns[0].AutoIncrement = false;
 
             //Set default value to an incompatible datatype
-            try
-            {
-                tbl.Columns[0].DefaultValue = "hello";
-                Assert.False(true);
-            }
-            catch (FormatException)
-            {
-            }
+            Assert.Throws<FormatException>(() => tbl.Columns[0].DefaultValue = "hello");
         }
 
         [Fact]
@@ -361,280 +303,235 @@ namespace System.Data.Tests
             t.Columns.Add("aaa");
             t.Rows.Add(new object[] { "xxx" });
             DataColumn c = t.Columns.Add("bbb");
-            try
-            {
-                c.Expression = "SUBSTRING(aaa, 6000000000000000, 2)";
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+            Assert.Throws<OverflowException>(() => c.Expression = "SUBSTRING(aaa, 6000000000000000, 2)");
         }
 
         [Fact]
         public void ExpressionFunctions()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            C.Expression = "substring (name, 1, 3) + len (name) + age";
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            c.Expression = "substring (name, 1, 3) + len (name) + age";
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = DBNull.Value;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = DBNull.Value;
+            t.Rows.Add(row);
 
-            Assert.Equal("hum710", T.Rows[10][2]);
-            Assert.Equal("hum64", T.Rows[4][2]);
-            C = T.Columns[2];
-            C.Expression = "isnull (age, 'succ[[]]ess')";
-            Assert.Equal("succ[[]]ess", T.Rows[100][2]);
+            Assert.Equal("hum710", t.Rows[10][2]);
+            Assert.Equal("hum64", t.Rows[4][2]);
+            c = t.Columns[2];
+            c.Expression = "isnull (age, 'succ[[]]ess')";
+            Assert.Equal("succ[[]]ess", t.Rows[100][2]);
 
-            C.Expression = "iif (age = 24, 'hurrey', 'boo')";
-            Assert.Equal("boo", T.Rows[50][2]);
-            Assert.Equal("hurrey", T.Rows[24][2]);
+            c.Expression = "iif (age = 24, 'hurrey', 'boo')";
+            Assert.Equal("boo", t.Rows[50][2]);
+            Assert.Equal("hurrey", t.Rows[24][2]);
 
-            C.Expression = "convert (age, 'System.Boolean')";
-            Assert.Equal(bool.TrueString, T.Rows[50][2]);
-            Assert.Equal(bool.FalseString, T.Rows[0][2]);
+            c.Expression = "convert (age, 'System.Boolean')";
+            Assert.Equal(bool.TrueString, t.Rows[50][2]);
+            Assert.Equal(bool.FalseString, t.Rows[0][2]);
 
             //
             // Exceptions
             //
 
-            try
-            {
-                // The expression contains undefined function call iff().
-                C.Expression = "iff (age = 24, 'hurrey', 'boo')";
-                Assert.False(true);
-            }
-            catch (EvaluateException)
-            {
-            }
-            catch (SyntaxErrorException)
-            {
-            }
-
+            Assert.ThrowsAny<InvalidExpressionException>(() => c.Expression = "iff (age = 24, 'hurrey', 'boo')");
             //The following two cases fail on mono. MS.net evaluates the expression
             //immediately upon assignment. We don't do this yet hence we don't throw
             //an exception at this point.
-            try
-            {
-                C.Expression = "iif (nimi = 24, 'hurrey', 'boo')";
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Cannot find column [nimi].", e.Message);
-            }
+            // Cannot find column [nimi].
+            Assert.Throws<EvaluateException>(() => c.Expression = "iif (nimi = 24, 'hurrey', 'boo')");
 
-            try
-            {
-                C.Expression = "iif (name = 24, 'hurrey', 'boo')";
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-                //AssertEquals ("DC41", "Cannot perform '=' operation on System.String and System.Int32.", e.Message);
-            }
+            // Cannot perform '=' operation on System.String and System.Int32.
+            Assert.Throws<EvaluateException>(() => c.Expression = "iif (name = 24, 'hurrey', 'boo')");
 
-            try
-            {
-                C.Expression = "convert (age, Boolean)";
-                Assert.False(true);
-            }
-            catch (EvaluateException e)
-            {
-                Assert.Equal(typeof(EvaluateException), e.GetType());
-                // Never premise English.
-                //Assert.Equal ("Invalid type name 'Boolean'.", e.Message);
-            }
+            // Invalid type name 'Boolean'.
+            Assert.Throws<EvaluateException>(() => c.Expression = "convert (age, Boolean)");
         }
 
         [Fact]
         public void ExpressionAggregates()
         {
-            DataTable T = new DataTable("test");
-            DataTable T2 = new DataTable("test2");
+            DataTable t = new DataTable("test");
+            DataTable t2 = new DataTable("test2");
 
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("childname");
-            T.Columns.Add(C);
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("childname");
+            t.Columns.Add(c);
 
-            C = new DataColumn("expression");
-            T.Columns.Add(C);
+            c = new DataColumn("expression");
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
-            Set.Tables.Add(T2);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
+            set.Tables.Add(t2);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                Row[2] = "child" + i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                row[2] = "child" + i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = DBNull.Value;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = DBNull.Value;
+            t.Rows.Add(row);
 
-            C = new DataColumn("name");
-            T2.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T2.Columns.Add(C);
+            c = new DataColumn("name");
+            t2.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t2.Columns.Add(c);
 
             for (int i = 0; i < 100; i++)
             {
-                Row = T2.NewRow();
-                Row[0] = "child" + i;
-                Row[1] = i;
-                T2.Rows.Add(Row);
-                Row = T2.NewRow();
-                Row[0] = "child" + i;
-                Row[1] = i - 2;
-                T2.Rows.Add(Row);
+                row = t2.NewRow();
+                row[0] = "child" + i;
+                row[1] = i;
+                t2.Rows.Add(row);
+                row = t2.NewRow();
+                row[0] = "child" + i;
+                row[1] = i - 2;
+                t2.Rows.Add(row);
             }
 
-            DataRelation Rel = new DataRelation("Rel", T.Columns[2], T2.Columns[0]);
-            Set.Relations.Add(Rel);
+            DataRelation rel = new DataRelation("Rel", t.Columns[2], t2.Columns[0]);
+            set.Relations.Add(rel);
 
-            C = T.Columns[3];
-            C.Expression = "Sum (Child.age)";
-            Assert.Equal("-2", T.Rows[0][3]);
-            Assert.Equal("98", T.Rows[50][3]);
+            c = t.Columns[3];
+            c.Expression = "Sum (Child.age)";
+            Assert.Equal("-2", t.Rows[0][3]);
+            Assert.Equal("98", t.Rows[50][3]);
 
-            C.Expression = "Count (Child.age)";
-            Assert.Equal("2", T.Rows[0][3]);
-            Assert.Equal("2", T.Rows[60][3]);
+            c.Expression = "Count (Child.age)";
+            Assert.Equal("2", t.Rows[0][3]);
+            Assert.Equal("2", t.Rows[60][3]);
 
-            C.Expression = "Avg (Child.age)";
-            Assert.Equal("-1", T.Rows[0][3]);
-            Assert.Equal("59", T.Rows[60][3]);
+            c.Expression = "Avg (Child.age)";
+            Assert.Equal("-1", t.Rows[0][3]);
+            Assert.Equal("59", t.Rows[60][3]);
 
-            C.Expression = "Min (Child.age)";
-            Assert.Equal("-2", T.Rows[0][3]);
-            Assert.Equal("58", T.Rows[60][3]);
+            c.Expression = "Min (Child.age)";
+            Assert.Equal("-2", t.Rows[0][3]);
+            Assert.Equal("58", t.Rows[60][3]);
 
-            C.Expression = "Max (Child.age)";
-            Assert.Equal("0", T.Rows[0][3]);
-            Assert.Equal("60", T.Rows[60][3]);
+            c.Expression = "Max (Child.age)";
+            Assert.Equal("0", t.Rows[0][3]);
+            Assert.Equal("60", t.Rows[60][3]);
 
-            C.Expression = "stdev (Child.age)";
-            Assert.Equal((1.4142135623730951).ToString(T.Locale), T.Rows[0][3]);
-            Assert.Equal((1.4142135623730951).ToString(T.Locale), T.Rows[60][3]);
+            c.Expression = "stdev (Child.age)";
+            Assert.Equal((1.4142135623730951).ToString(t.Locale), t.Rows[0][3]);
+            Assert.Equal((1.4142135623730951).ToString(t.Locale), t.Rows[60][3]);
 
-            C.Expression = "var (Child.age)";
-            Assert.Equal("2", T.Rows[0][3]);
-            Assert.Equal("2", T.Rows[60][3]);
+            c.Expression = "var (Child.age)";
+            Assert.Equal("2", t.Rows[0][3]);
+            Assert.Equal("2", t.Rows[60][3]);
         }
 
         [Fact]
         public void ExpressionOperator()
         {
-            DataTable T = new DataTable("test");
-            DataColumn C = new DataColumn("name");
-            T.Columns.Add(C);
-            C = new DataColumn("age");
-            C.DataType = typeof(int);
-            T.Columns.Add(C);
-            C = new DataColumn("id");
-            C.Expression = "substring (name, 1, 3) + len (name) + age";
-            T.Columns.Add(C);
+            DataTable t = new DataTable("test");
+            DataColumn c = new DataColumn("name");
+            t.Columns.Add(c);
+            c = new DataColumn("age");
+            c.DataType = typeof(int);
+            t.Columns.Add(c);
+            c = new DataColumn("id");
+            c.Expression = "substring (name, 1, 3) + len (name) + age";
+            t.Columns.Add(c);
 
-            DataSet Set = new DataSet("TestSet");
-            Set.Tables.Add(T);
+            DataSet set = new DataSet("TestSet");
+            set.Tables.Add(t);
 
-            DataRow Row = null;
+            DataRow row = null;
             for (int i = 0; i < 100; i++)
             {
-                Row = T.NewRow();
-                Row[0] = "human" + i;
-                Row[1] = i;
-                T.Rows.Add(Row);
+                row = t.NewRow();
+                row[0] = "human" + i;
+                row[1] = i;
+                t.Rows.Add(row);
             }
 
-            Row = T.NewRow();
-            Row[0] = "h*an";
-            Row[1] = DBNull.Value;
-            T.Rows.Add(Row);
+            row = t.NewRow();
+            row[0] = "h*an";
+            row[1] = DBNull.Value;
+            t.Rows.Add(row);
 
-            C = T.Columns[2];
-            C.Expression = "age + 4";
-            Assert.Equal("68", T.Rows[64][2]);
+            c = t.Columns[2];
+            c.Expression = "age + 4";
+            Assert.Equal("68", t.Rows[64][2]);
 
-            C.Expression = "age - 4";
-            Assert.Equal("60", T.Rows[64][2]);
+            c.Expression = "age - 4";
+            Assert.Equal("60", t.Rows[64][2]);
 
-            C.Expression = "age * 4";
-            Assert.Equal("256", T.Rows[64][2]);
+            c.Expression = "age * 4";
+            Assert.Equal("256", t.Rows[64][2]);
 
-            C.Expression = "age / 4";
-            Assert.Equal("16", T.Rows[64][2]);
+            c.Expression = "age / 4";
+            Assert.Equal("16", t.Rows[64][2]);
 
-            C.Expression = "age % 5";
-            Assert.Equal("4", T.Rows[64][2]);
+            c.Expression = "age % 5";
+            Assert.Equal("4", t.Rows[64][2]);
 
-            C.Expression = "age in (5, 10, 15, 20, 25)";
-            Assert.Equal("False", T.Rows[64][2]);
-            Assert.Equal("True", T.Rows[25][2]);
+            c.Expression = "age in (5, 10, 15, 20, 25)";
+            Assert.Equal("False", t.Rows[64][2]);
+            Assert.Equal("True", t.Rows[25][2]);
 
-            C.Expression = "name like 'human1%'";
-            Assert.Equal("True", T.Rows[1][2]);
-            Assert.Equal("False", T.Rows[25][2]);
+            c.Expression = "name like 'human1%'";
+            Assert.Equal("True", t.Rows[1][2]);
+            Assert.Equal("False", t.Rows[25][2]);
 
-            C.Expression = "age < 4";
-            Assert.Equal("False", T.Rows[4][2]);
-            Assert.Equal("True", T.Rows[3][2]);
+            c.Expression = "age < 4";
+            Assert.Equal("False", t.Rows[4][2]);
+            Assert.Equal("True", t.Rows[3][2]);
 
-            C.Expression = "age <= 4";
-            Assert.Equal("True", T.Rows[4][2]);
-            Assert.Equal("False", T.Rows[5][2]);
+            c.Expression = "age <= 4";
+            Assert.Equal("True", t.Rows[4][2]);
+            Assert.Equal("False", t.Rows[5][2]);
 
-            C.Expression = "age > 4";
-            Assert.Equal("False", T.Rows[4][2]);
-            Assert.Equal("True", T.Rows[5][2]);
+            c.Expression = "age > 4";
+            Assert.Equal("False", t.Rows[4][2]);
+            Assert.Equal("True", t.Rows[5][2]);
 
-            C.Expression = "age >= 4";
-            Assert.Equal("True", T.Rows[4][2]);
-            Assert.Equal("False", T.Rows[1][2]);
+            c.Expression = "age >= 4";
+            Assert.Equal("True", t.Rows[4][2]);
+            Assert.Equal("False", t.Rows[1][2]);
 
-            C.Expression = "age = 4";
-            Assert.Equal("True", T.Rows[4][2]);
-            Assert.Equal("False", T.Rows[1][2]);
+            c.Expression = "age = 4";
+            Assert.Equal("True", t.Rows[4][2]);
+            Assert.Equal("False", t.Rows[1][2]);
 
-            C.Expression = "age <> 4";
-            Assert.Equal("False", T.Rows[4][2]);
-            Assert.Equal("True", T.Rows[1][2]);
+            c.Expression = "age <> 4";
+            Assert.Equal("False", t.Rows[4][2]);
+            Assert.Equal("True", t.Rows[1][2]);
         }
 
         [Fact]
@@ -645,14 +542,7 @@ namespace System.Data.Tests
             ds.Tables.Add("MyType");
             ds.Tables["MyType"].Columns.Add(new DataColumn("Desc",
                 typeof(string), "", MappingType.SimpleContent));
-            try
-            {
-                ds.Tables["MyType"].Columns["Desc"].MaxLength = 32;
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => ds.Tables["MyType"].Columns["Desc"].MaxLength = 32);
         }
 
         [Fact]
@@ -787,7 +677,6 @@ namespace System.Data.Tests
         [Fact]
         public void Aggregation_TestForSyntaxErrors()
         {
-            string error = "Aggregation functions cannot be called on Singular(Parent) Columns";
             DataSet ds = new DataSet();
             DataTable table1 = new DataTable();
             DataTable table2 = new DataTable();
@@ -807,74 +696,25 @@ namespace System.Data.Tests
             ds.Relations.Add(rel1);
             ds.Relations.Add(rel2);
 
-            error = "Aggregation Functions cannot be called on Columns Returning Single Row (Parent Column)";
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "count(parent.test)");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            // Aggregation Functions cannot be called on Columns Returning Single Row (Parent Column)
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "count(parent.test)"));
 
-            error = "Numerical or Functions cannot be called on Columns Returning Multiple Rows (Child Column)";
-            // Check arithematic operator
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "10*(child.test)");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            // Numerical or Functions cannot be called on Columns Returning Multiple Rows (Child Column);
+            // Check arithmetic operator
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "10*(child.test)"));
 
             // Check rel operator
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "(child.test) > 10");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "(child.test) > 10"));
 
-            // Check predicates
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "(child.test) IN (1,2,3)");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            // Check predicates 
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "(child.test) IN (1,2,3)"));
 
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "(child.test) LIKE 1");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "(child.test) LIKE 1"));
 
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "(child.test) IS null");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "(child.test) IS null"));
 
             // Check Calc Functions
-            try
-            {
-                table2.Columns.Add("result", typeof(int), "isnull(child.test,10)");
-                Assert.False(true);
-            }
-            catch (SyntaxErrorException)
-            {
-            }
+            Assert.Throws<SyntaxErrorException>(() => table2.Columns.Add("result", typeof(int), "isnull(child.test,10)"));
         }
 
         [Fact]
@@ -904,48 +744,34 @@ namespace System.Data.Tests
         [Fact]
         public void B565616_NonIConvertibleTypeTest()
         {
-            try
-            {
-                DataTable dt = new DataTable();
-                Guid id = Guid.NewGuid();
-                dt.Columns.Add("ID", typeof(string));
-                DataRow row = dt.NewRow();
-                row["ID"] = id;
-                Assert.Equal(id.ToString(), row["ID"]);
-            }
-            catch (InvalidCastException ex)
-            {
-                Assert.False(true);
-            }
+            DataTable dt = new DataTable();
+            Guid id = Guid.NewGuid();
+            dt.Columns.Add("ID", typeof(string));
+            DataRow row = dt.NewRow();
+            row["ID"] = id;
+            Assert.Equal(id.ToString(), row["ID"]);
         }
 
         [Fact]
         public void B623451_SetOrdinalTest()
         {
-            try
-            {
-                DataTable t = new DataTable();
-                t.Columns.Add("one");
-                t.Columns.Add("two");
-                t.Columns.Add("three");
-                Assert.Equal("one", t.Columns[0].ColumnName);
-                Assert.Equal("two", t.Columns[1].ColumnName);
-                Assert.Equal("three", t.Columns[2].ColumnName);
+            DataTable t = new DataTable();
+            t.Columns.Add("one");
+            t.Columns.Add("two");
+            t.Columns.Add("three");
+            Assert.Equal("one", t.Columns[0].ColumnName);
+            Assert.Equal("two", t.Columns[1].ColumnName);
+            Assert.Equal("three", t.Columns[2].ColumnName);
 
-                t.Columns["three"].SetOrdinal(0);
-                Assert.Equal("three", t.Columns[0].ColumnName);
-                Assert.Equal("one", t.Columns[1].ColumnName);
-                Assert.Equal("two", t.Columns[2].ColumnName);
+            t.Columns["three"].SetOrdinal(0);
+            Assert.Equal("three", t.Columns[0].ColumnName);
+            Assert.Equal("one", t.Columns[1].ColumnName);
+            Assert.Equal("two", t.Columns[2].ColumnName);
 
-                t.Columns["three"].SetOrdinal(1);
-                Assert.Equal("one", t.Columns[0].ColumnName);
-                Assert.Equal("three", t.Columns[1].ColumnName);
-                Assert.Equal("two", t.Columns[2].ColumnName);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                Assert.False(true);
-            }
+            t.Columns["three"].SetOrdinal(1);
+            Assert.Equal("one", t.Columns[0].ColumnName);
+            Assert.Equal("three", t.Columns[1].ColumnName);
+            Assert.Equal("two", t.Columns[2].ColumnName);
         }
 
         [Fact]
@@ -992,28 +818,5 @@ namespace System.Data.Tests
                 Expression = test
             };
         }
-
-#if false
-// Check Windows output for the row [0] value
-        [Fact]
-        public void NullStrings ()
-        {
-            var a = MakeColumn ("nullbar", "null+'bar'");
-            var b = MakeColumn ("barnull", "'bar'+null");
-            var c = MakeColumn ("foobar", "'foo'+'bar'");
-
-                var table = new DataTable();
-
-                table.Columns.Add(a);
-                table.Columns.Add(b);
-                table.Columns.Add(c);
-
-                var row = table.NewRow();
-                table.Rows.Add(row);
-            Assert.Equal (row [0], DBNull.Value);
-            Assert.Equal (row [1], DBNull.Value);
-            Assert.Equal (row [2], "foobar");
-        }
-#endif
     }
 }

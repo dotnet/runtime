@@ -27,7 +27,6 @@
 using Xunit;
 using System.Xml;
 using System.Data.SqlTypes;
-using System.Globalization;
 
 namespace System.Data.Tests.SqlTypes
 {
@@ -45,13 +44,13 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Create()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(1);
-            SqlBoolean SqlFalse2 = new SqlBoolean(0);
+            SqlBoolean sqlTrue2 = new SqlBoolean(1);
+            SqlBoolean sqlFalse2 = new SqlBoolean(0);
 
             Assert.True(_sqlTrue.Value);
-            Assert.True(SqlTrue2.Value);
-            Assert.True(!_sqlFalse.Value);
-            Assert.True(!SqlFalse2.Value);
+            Assert.True(sqlTrue2.Value);
+            Assert.False(_sqlFalse.Value);
+            Assert.False(sqlFalse2.Value);
         }
 
         ////
@@ -62,103 +61,102 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void And()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
             // One result value
             SqlBoolean sqlResult;
 
             // true && false
             sqlResult = SqlBoolean.And(_sqlTrue, _sqlFalse);
-            Assert.True(!sqlResult.Value);
+            Assert.False(sqlResult.Value);
             sqlResult = SqlBoolean.And(_sqlFalse, _sqlTrue);
-            Assert.True(!sqlResult.Value);
+            Assert.False(sqlResult.Value);
 
             // true && true
-            sqlResult = SqlBoolean.And(_sqlTrue, SqlTrue2);
+            sqlResult = SqlBoolean.And(_sqlTrue, sqlTrue2);
             Assert.True(sqlResult.Value);
 
             sqlResult = SqlBoolean.And(_sqlTrue, _sqlTrue);
             Assert.True(sqlResult.Value);
 
             // false && false
-            sqlResult = SqlBoolean.And(_sqlFalse, SqlFalse2);
-            Assert.True(!sqlResult.Value);
+            sqlResult = SqlBoolean.And(_sqlFalse, sqlFalse2);
+            Assert.False(sqlResult.Value);
             sqlResult = SqlBoolean.And(_sqlFalse, _sqlFalse);
-            Assert.True(!sqlResult.Value);
+            Assert.False(sqlResult.Value);
         }
 
         // NotEquals
         [Fact]
         public void NotEquals()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
 
-            SqlBoolean SqlResult;
+            SqlBoolean sqlResult;
 
             // true != false
-            SqlResult = SqlBoolean.NotEquals(_sqlTrue, _sqlFalse);
-            Assert.True(SqlResult.Value);
-            SqlResult = SqlBoolean.NotEquals(_sqlFalse, _sqlTrue);
-            Assert.True(SqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlTrue, _sqlFalse);
+            Assert.True(sqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlFalse, _sqlTrue);
+            Assert.True(sqlResult.Value);
 
 
             // true != true
-            SqlResult = SqlBoolean.NotEquals(_sqlTrue, _sqlTrue);
-            Assert.True(!SqlResult.Value);
-            SqlResult = SqlBoolean.NotEquals(_sqlTrue, SqlTrue2);
-            Assert.True(!SqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlTrue, _sqlTrue);
+            Assert.False(sqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlTrue, sqlTrue2);
+            Assert.False(sqlResult.Value);
             // false != false
-            SqlResult = SqlBoolean.NotEquals(_sqlFalse, _sqlFalse);
-            Assert.True(!SqlResult.Value);
-            SqlResult = SqlBoolean.NotEquals(_sqlTrue, SqlTrue2);
-            Assert.True(!SqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlFalse, _sqlFalse);
+            Assert.False(sqlResult.Value);
+            sqlResult = SqlBoolean.NotEquals(_sqlTrue, sqlTrue2);
+            Assert.False(sqlResult.Value);
 
             // If either instance of SqlBoolean is null, the Value of the SqlBoolean will be Null.
-            SqlResult = SqlBoolean.NotEquals(SqlBoolean.Null, _sqlFalse);
-            Assert.True(SqlResult.IsNull);
-            SqlResult = SqlBoolean.NotEquals(_sqlTrue, SqlBoolean.Null);
-            Assert.True(SqlResult.IsNull);
+            sqlResult = SqlBoolean.NotEquals(SqlBoolean.Null, _sqlFalse);
+            Assert.True(sqlResult.IsNull);
+            sqlResult = SqlBoolean.NotEquals(_sqlTrue, SqlBoolean.Null);
+            Assert.True(sqlResult.IsNull);
         }
 
         // OnesComplement
         [Fact]
         public void OnesComplement()
         {
-            SqlBoolean SqlFalse2 = SqlBoolean.OnesComplement(_sqlTrue);
-            Assert.True(!SqlFalse2.Value);
+            SqlBoolean sqlFalse2 = SqlBoolean.OnesComplement(_sqlTrue);
+            Assert.False(sqlFalse2.Value);
 
-            SqlBoolean SqlTrue2 = SqlBoolean.OnesComplement(_sqlFalse);
-            Assert.True(SqlTrue2.Value);
+            SqlBoolean sqlTrue2 = SqlBoolean.OnesComplement(_sqlFalse);
+            Assert.True(sqlTrue2.Value);
         }
 
         // Or
         [Fact]
         public void Or()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
+            SqlBoolean sqlResult;
 
             // true || false
-            SqlResult = SqlBoolean.Or(_sqlTrue, _sqlFalse);
-            Assert.True(SqlResult.Value);
-            SqlResult = SqlBoolean.Or(_sqlFalse, _sqlTrue);
-            Assert.True(SqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlTrue, _sqlFalse);
+            Assert.True(sqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlFalse, _sqlTrue);
+            Assert.True(sqlResult.Value);
 
             // true || true
-            SqlResult = SqlBoolean.Or(_sqlTrue, _sqlTrue);
-            Assert.True(SqlResult.Value);
-            SqlResult = SqlBoolean.Or(_sqlTrue, SqlTrue2);
-            Assert.True(SqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlTrue, _sqlTrue);
+            Assert.True(sqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlTrue, sqlTrue2);
+            Assert.True(sqlResult.Value);
 
             // false || false
-            SqlResult = SqlBoolean.Or(_sqlFalse, _sqlFalse);
-            Assert.True(!SqlResult.Value);
-            SqlResult = SqlBoolean.Or(_sqlFalse, SqlFalse2);
-            Assert.True(!SqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlFalse, _sqlFalse);
+            Assert.False(sqlResult.Value);
+            sqlResult = SqlBoolean.Or(_sqlFalse, sqlFalse2);
+            Assert.False(sqlResult.Value);
         }
 
 
@@ -166,55 +164,52 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Parse()
         {
-            string error = "Parse method does not work correctly ";
-
             Assert.True(SqlBoolean.Parse("True").Value);
             Assert.True(SqlBoolean.Parse(" True").Value);
             Assert.True(SqlBoolean.Parse("True ").Value);
             Assert.True(SqlBoolean.Parse("tRuE").Value);
-            Assert.True(!SqlBoolean.Parse("False").Value);
-            Assert.True(!SqlBoolean.Parse(" False").Value);
-            Assert.True(!SqlBoolean.Parse("False ").Value);
-            Assert.True(!SqlBoolean.Parse("fAlSe").Value);
+            Assert.False(SqlBoolean.Parse("False").Value);
+            Assert.False(SqlBoolean.Parse(" False").Value);
+            Assert.False(SqlBoolean.Parse("False ").Value);
+            Assert.False(SqlBoolean.Parse("fAlSe").Value);
         }
 
         // Xor
         [Fact]
         public void Xor()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
+            SqlBoolean sqlResult;
 
             // true ^ false
-            SqlResult = SqlBoolean.Xor(_sqlTrue, _sqlFalse);
-            Assert.True(SqlResult.Value);
-            SqlResult = SqlBoolean.Xor(_sqlFalse, _sqlTrue);
-            Assert.True(SqlResult.Value);
+            sqlResult = SqlBoolean.Xor(_sqlTrue, _sqlFalse);
+            Assert.True(sqlResult.Value);
+            sqlResult = SqlBoolean.Xor(_sqlFalse, _sqlTrue);
+            Assert.True(sqlResult.Value);
 
             // true ^ true
-            SqlResult = SqlBoolean.Xor(_sqlTrue, SqlTrue2);
-            Assert.True(!SqlResult.Value);
+            sqlResult = SqlBoolean.Xor(_sqlTrue, sqlTrue2);
+            Assert.False(sqlResult.Value);
 
             // false ^ false
-            SqlResult = SqlBoolean.Xor(_sqlFalse, SqlFalse2);
-            Assert.True(!SqlResult.Value);
+            sqlResult = SqlBoolean.Xor(_sqlFalse, sqlFalse2);
+            Assert.False(sqlResult.Value);
         }
 
         // static Equals
         [Fact]
         public void StaticEquals()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
-            string error = "Static Equals method does not work correctly ";
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            Assert.True(SqlBoolean.Equals(_sqlTrue, SqlTrue2).Value);
-            Assert.True(SqlBoolean.Equals(_sqlFalse, SqlFalse2).Value);
+            Assert.True(SqlBoolean.Equals(_sqlTrue, sqlTrue2).Value);
+            Assert.True(SqlBoolean.Equals(_sqlFalse, sqlFalse2).Value);
 
-            Assert.True(!SqlBoolean.Equals(_sqlTrue, _sqlFalse).Value);
-            Assert.True(!SqlBoolean.Equals(_sqlFalse, _sqlTrue).Value);
+            Assert.False(SqlBoolean.Equals(_sqlTrue, _sqlFalse).Value);
+            Assert.False(SqlBoolean.Equals(_sqlFalse, _sqlTrue).Value);
 
             Assert.Equal(SqlBoolean.Null, SqlBoolean.Equals(SqlBoolean.Null, _sqlFalse));
             Assert.Equal(SqlBoolean.Null, SqlBoolean.Equals(_sqlTrue, SqlBoolean.Null));
@@ -232,32 +227,30 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void CompareTo()
         {
-            string error = "CompareTo method does not work correctly";
 
             Assert.True((_sqlTrue.CompareTo(SqlBoolean.Null) > 0));
             Assert.True((_sqlTrue.CompareTo(_sqlFalse) > 0));
             Assert.True((_sqlFalse.CompareTo(_sqlTrue) < 0));
-            Assert.True((_sqlFalse.CompareTo(_sqlFalse) == 0));
+            Assert.Equal(0, _sqlFalse.CompareTo(_sqlFalse));
         }
 
         // Equals
         [Fact]
         public void Equals()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            string error = "Equals method does not work correctly ";
-            Assert.True(_sqlTrue.Equals(SqlTrue2));
-            Assert.True(_sqlFalse.Equals(SqlFalse2));
+            Assert.True(_sqlTrue.Equals(sqlTrue2));
+            Assert.True(_sqlFalse.Equals(sqlFalse2));
 
-            Assert.True(!_sqlTrue.Equals(_sqlFalse));
-            Assert.True(!_sqlFalse.Equals(_sqlTrue));
+            Assert.False(_sqlTrue.Equals(_sqlFalse));
+            Assert.False(_sqlFalse.Equals(_sqlTrue));
 
             Assert.False(_sqlTrue.Equals(SqlBoolean.Null));
             Assert.False(_sqlFalse.Equals(SqlBoolean.Null));
 
-            Assert.True(!_sqlTrue.Equals(null));
+            Assert.False(_sqlTrue.Equals(null));
             Assert.True(SqlBoolean.Null.Equals(SqlBoolean.Null));
             Assert.False(SqlBoolean.Null.Equals(_sqlTrue));
             Assert.False(SqlBoolean.Null.Equals(_sqlFalse));
@@ -271,140 +264,122 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(0, _sqlFalse.GetHashCode());
         }
 
-        // GetType
-        [Fact]
-        public void GetTypeTest()
-        {
-            Assert.Equal("System.Data.SqlTypes.SqlBoolean", _sqlTrue.GetType().ToString());
-        }
-
         // ToSqlByte
         [Fact]
         public void ToSqlByte()
         {
-            SqlByte SqlTestByte;
+            SqlByte sqlTestByte;
 
-            string error = "ToSqlByte method does not work correctly ";
+            sqlTestByte = _sqlTrue.ToSqlByte();
+            Assert.Equal((byte)1, sqlTestByte.Value);
 
-            SqlTestByte = _sqlTrue.ToSqlByte();
-            Assert.Equal((byte)1, SqlTestByte.Value);
-
-            SqlTestByte = _sqlFalse.ToSqlByte();
-            Assert.Equal((byte)0, SqlTestByte.Value);
+            sqlTestByte = _sqlFalse.ToSqlByte();
+            Assert.Equal((byte)0, sqlTestByte.Value);
         }
 
         // ToSqlDecimal
         [Fact]
         public void ToSqlDecimal()
         {
-            SqlDecimal SqlTestDecimal;
+            SqlDecimal sqlTestDecimal;
 
-            string error = "ToSqlDecimal method does not work correctly ";
-            SqlTestDecimal = _sqlTrue.ToSqlDecimal();
+            sqlTestDecimal = _sqlTrue.ToSqlDecimal();
 
-            Assert.Equal(1, SqlTestDecimal.Value);
+            Assert.Equal(1, sqlTestDecimal.Value);
 
-            SqlTestDecimal = _sqlFalse.ToSqlDecimal();
-            Assert.Equal(0, SqlTestDecimal.Value);
+            sqlTestDecimal = _sqlFalse.ToSqlDecimal();
+            Assert.Equal(0, sqlTestDecimal.Value);
         }
 
         // ToSqlDouble
         [Fact]
         public void ToSqlDouble()
         {
-            SqlDouble SqlTestDouble;
+            SqlDouble sqlTestDouble;
 
-            string error = "ToSqlDouble method does not work correctly ";
-            SqlTestDouble = _sqlTrue.ToSqlDouble();
-            Assert.Equal(1, SqlTestDouble.Value);
+            sqlTestDouble = _sqlTrue.ToSqlDouble();
+            Assert.Equal(1, sqlTestDouble.Value);
 
-            SqlTestDouble = _sqlFalse.ToSqlDouble();
-            Assert.Equal(0, SqlTestDouble.Value);
+            sqlTestDouble = _sqlFalse.ToSqlDouble();
+            Assert.Equal(0, sqlTestDouble.Value);
         }
 
         // ToSqlInt16
         [Fact]
         public void ToSqlInt16()
         {
-            SqlInt16 SqlTestInt16;
+            SqlInt16 sqlTestInt16;
 
-            string error = "ToSqlInt16 method does not work correctly ";
-            SqlTestInt16 = _sqlTrue.ToSqlInt16();
-            Assert.Equal((short)1, SqlTestInt16.Value);
+            sqlTestInt16 = _sqlTrue.ToSqlInt16();
+            Assert.Equal((short)1, sqlTestInt16.Value);
 
-            SqlTestInt16 = _sqlFalse.ToSqlInt16();
-            Assert.Equal((short)0, SqlTestInt16.Value);
+            sqlTestInt16 = _sqlFalse.ToSqlInt16();
+            Assert.Equal((short)0, sqlTestInt16.Value);
         }
 
         // ToSqlInt32
         [Fact]
         public void ToSqlInt32()
         {
-            SqlInt32 SqlTestInt32;
+            SqlInt32 sqlTestInt32;
 
-            string error = "ToSqlInt32 method does not work correctly ";
-            SqlTestInt32 = _sqlTrue.ToSqlInt32();
-            Assert.Equal(1, SqlTestInt32.Value);
+            sqlTestInt32 = _sqlTrue.ToSqlInt32();
+            Assert.Equal(1, sqlTestInt32.Value);
 
-            SqlTestInt32 = _sqlFalse.ToSqlInt32();
-            Assert.Equal(0, SqlTestInt32.Value);
+            sqlTestInt32 = _sqlFalse.ToSqlInt32();
+            Assert.Equal(0, sqlTestInt32.Value);
         }
 
         // ToSqlInt64
         [Fact]
         public void ToSqlInt64()
         {
-            SqlInt64 SqlTestInt64;
+            SqlInt64 sqlTestInt64;
 
-            string error = "ToSqlInt64 method does not work correctly ";
+            sqlTestInt64 = _sqlTrue.ToSqlInt64();
+            Assert.Equal(1, sqlTestInt64.Value);
 
-            SqlTestInt64 = _sqlTrue.ToSqlInt64();
-            Assert.Equal(1, SqlTestInt64.Value);
-
-            SqlTestInt64 = _sqlFalse.ToSqlInt64();
-            Assert.Equal(0, SqlTestInt64.Value);
+            sqlTestInt64 = _sqlFalse.ToSqlInt64();
+            Assert.Equal(0, sqlTestInt64.Value);
         }
 
         // ToSqlMoney
         [Fact]
         public void ToSqlMoney()
         {
-            SqlMoney SqlTestMoney;
+            SqlMoney sqlTestMoney;
 
-            string error = "ToSqlMoney method does not work correctly ";
-            SqlTestMoney = _sqlTrue.ToSqlMoney();
-            Assert.Equal(1.0000M, SqlTestMoney.Value);
+            sqlTestMoney = _sqlTrue.ToSqlMoney();
+            Assert.Equal(1M, sqlTestMoney.Value);
 
-            SqlTestMoney = _sqlFalse.ToSqlMoney();
-            Assert.Equal(0, SqlTestMoney.Value);
+            sqlTestMoney = _sqlFalse.ToSqlMoney();
+            Assert.Equal(0, sqlTestMoney.Value);
         }
 
         // ToSqlSingle
         [Fact]
         public void ToSqlsingle()
         {
-            SqlSingle SqlTestSingle;
+            SqlSingle sqlTestSingle;
 
-            string error = "ToSqlSingle method does not work correctly ";
-            SqlTestSingle = _sqlTrue.ToSqlSingle();
-            Assert.Equal(1, SqlTestSingle.Value);
+            sqlTestSingle = _sqlTrue.ToSqlSingle();
+            Assert.Equal(1, sqlTestSingle.Value);
 
-            SqlTestSingle = _sqlFalse.ToSqlSingle();
-            Assert.Equal(0, SqlTestSingle.Value);
+            sqlTestSingle = _sqlFalse.ToSqlSingle();
+            Assert.Equal(0, sqlTestSingle.Value);
         }
 
         // ToSqlString
         [Fact]
         public void ToSqlString()
         {
-            SqlString SqlTestString;
+            SqlString sqlTestString;
 
-            string error = "ToSqlString method does not work correctly ";
-            SqlTestString = _sqlTrue.ToSqlString();
-            Assert.Equal("True", SqlTestString.Value);
+            sqlTestString = _sqlTrue.ToSqlString();
+            Assert.Equal("True", sqlTestString.Value);
 
-            SqlTestString = _sqlFalse.ToSqlString();
-            Assert.Equal("False", SqlTestString.Value);
+            sqlTestString = _sqlFalse.ToSqlString();
+            Assert.Equal("False", sqlTestString.Value);
         }
 
         // ToString
@@ -412,8 +387,6 @@ namespace System.Data.Tests.SqlTypes
         public void ToStringTest()
         {
             SqlString TestString;
-
-            string error = "ToString method does not work correctly ";
 
             TestString = _sqlTrue.ToString();
             Assert.Equal("True", TestString.Value);
@@ -432,119 +405,111 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void BitwiseAndOperator()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
-            string error = "BitwiseAnd operator does not work correctly ";
+            SqlBoolean sqlResult;
 
-            SqlResult = _sqlTrue & _sqlFalse;
-            Assert.True(!SqlResult.Value);
-            SqlResult = _sqlFalse & _sqlTrue;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlTrue & _sqlFalse;
+            Assert.False(sqlResult.Value);
+            sqlResult = _sqlFalse & _sqlTrue;
+            Assert.False(sqlResult.Value);
 
-            SqlResult = _sqlTrue & SqlTrue2;
-            Assert.True(SqlResult.Value);
+            sqlResult = _sqlTrue & sqlTrue2;
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlFalse & SqlFalse2;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlFalse & sqlFalse2;
+            Assert.False(sqlResult.Value);
         }
 
         // BitwixeOr operator
         [Fact]
         public void BitwiseOrOperator()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
-            string error = "BitwiseOr operator does not work correctly ";
+            SqlBoolean sqlResult;
 
-            SqlResult = _sqlTrue | _sqlFalse;
-            Assert.True(SqlResult.Value);
-            SqlResult = _sqlFalse | _sqlTrue;
+            sqlResult = _sqlTrue | _sqlFalse;
+            Assert.True(sqlResult.Value);
+            sqlResult = _sqlFalse | _sqlTrue;
 
-            Assert.True(SqlResult.Value);
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlTrue | SqlTrue2;
-            Assert.True(SqlResult.Value);
+            sqlResult = _sqlTrue | sqlTrue2;
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlFalse | SqlFalse2;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlFalse | sqlFalse2;
+            Assert.False(sqlResult.Value);
         }
 
         // Equality operator
         [Fact]
         public void EqualityOperator()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
-            string error = "Equality operator does not work correctly ";
+            SqlBoolean sqlResult;
 
-            SqlResult = _sqlTrue == _sqlFalse;
-            Assert.True(!SqlResult.Value);
-            SqlResult = _sqlFalse == _sqlTrue;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlTrue == _sqlFalse;
+            Assert.False(sqlResult.Value);
+            sqlResult = _sqlFalse == _sqlTrue;
+            Assert.False(sqlResult.Value);
 
-            SqlResult = _sqlTrue == SqlTrue2;
-            Assert.True(SqlResult.Value);
+            sqlResult = _sqlTrue == sqlTrue2;
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlFalse == SqlFalse2;
-            Assert.True(SqlResult.Value);
+            sqlResult = _sqlFalse == sqlFalse2;
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlFalse == SqlBoolean.Null;
-            Assert.True(SqlResult.IsNull);
-            //SqlResult = SqlBoolean.Null == SqlBoolean.Null;
-            Assert.True(SqlResult.IsNull);
+            sqlResult = _sqlFalse == SqlBoolean.Null;
+            Assert.True(sqlResult.IsNull);
+            //sqlResult = SqlBoolean.Null == SqlBoolean.Null;
+            //Assert.True(sqlResult.IsNull);
         }
 
         // ExlusiveOr operator
         [Fact]
         public void ExlusiveOrOperator()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
-            SqlBoolean SqlResult;
-            string error = "ExclusiveOr operator does not work correctly ";
+            SqlBoolean sqlResult;
 
-            SqlResult = _sqlTrue ^ _sqlFalse;
-            Assert.True(SqlResult.Value);
-            SqlResult = _sqlFalse | _sqlTrue;
-            Assert.True(SqlResult.Value);
+            sqlResult = _sqlTrue ^ _sqlFalse;
+            Assert.True(sqlResult.Value);
+            sqlResult = _sqlFalse | _sqlTrue;
+            Assert.True(sqlResult.Value);
 
-            SqlResult = _sqlTrue ^ SqlTrue2;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlTrue ^ sqlTrue2;
+            Assert.False(sqlResult.Value);
 
-            SqlResult = _sqlFalse ^ SqlFalse2;
-            Assert.True(!SqlResult.Value);
+            sqlResult = _sqlFalse ^ sqlFalse2;
+            Assert.False(sqlResult.Value);
         }
 
         // false operator
         [Fact]
         public void FalseOperator()
         {
-            string error = "false operator does not work correctly ";
-
-            Assert.Equal(SqlBoolean.False, (!_sqlTrue));
-            Assert.Equal(SqlBoolean.True, (!_sqlFalse));
+            Assert.Equal(SqlBoolean.False, !_sqlTrue);
+            Assert.Equal(SqlBoolean.True, !_sqlFalse);
         }
 
         // Inequality operator
         [Fact]
         public void InequalityOperator()
         {
-            SqlBoolean SqlTrue2 = new SqlBoolean(true);
-            SqlBoolean SqlFalse2 = new SqlBoolean(false);
-
-            string error = "Inequality operator does not work correctly";
+            SqlBoolean sqlTrue2 = new SqlBoolean(true);
+            SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
             Assert.Equal(SqlBoolean.False, _sqlTrue != true);
-            Assert.Equal(SqlBoolean.False, _sqlTrue != SqlTrue2);
+            Assert.Equal(SqlBoolean.False, _sqlTrue != sqlTrue2);
             Assert.Equal(SqlBoolean.False, _sqlFalse != false);
-            Assert.Equal(SqlBoolean.False, _sqlFalse != SqlFalse2);
+            Assert.Equal(SqlBoolean.False, _sqlFalse != sqlFalse2);
             Assert.Equal(SqlBoolean.True, _sqlTrue != _sqlFalse);
             Assert.Equal(SqlBoolean.True, _sqlFalse != _sqlTrue);
             Assert.Equal(SqlBoolean.Null, SqlBoolean.Null != _sqlTrue);
@@ -555,8 +520,6 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void LogicalNotOperator()
         {
-            string error = "Logical Not operator does not work correctly";
-
             Assert.Equal(SqlBoolean.False, !_sqlTrue);
             Assert.Equal(SqlBoolean.True, !_sqlFalse);
         }
@@ -565,14 +528,12 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void OnesComplementOperator()
         {
-            string error = "Ones complement operator does not work correctly";
+            SqlBoolean sqlResult;
 
-            SqlBoolean SqlResult;
-
-            SqlResult = ~_sqlTrue;
-            Assert.True(!SqlResult.Value);
-            SqlResult = ~_sqlFalse;
-            Assert.True(SqlResult.Value);
+            sqlResult = ~_sqlTrue;
+            Assert.False(sqlResult.Value);
+            sqlResult = ~_sqlFalse;
+            Assert.True(sqlResult.Value);
         }
 
 
@@ -580,242 +541,226 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void TrueOperator()
         {
-            string error = "true operator does not work correctly ";
-
-            Assert.Equal(SqlBoolean.True, (_sqlTrue));
-            Assert.Equal(SqlBoolean.False, (_sqlFalse));
+            Assert.Equal(SqlBoolean.True, _sqlTrue);
+            Assert.Equal(SqlBoolean.False, _sqlFalse);
         }
 
         // SqlBoolean to Boolean
         [Fact]
         public void SqlBooleanToBoolean()
         {
-            string error = "SqlBooleanToBoolean operator does not work correctly ";
-
             bool TestBoolean = (bool)_sqlTrue;
             Assert.True(TestBoolean);
             TestBoolean = (bool)_sqlFalse;
-            Assert.True(!TestBoolean);
+            Assert.False(TestBoolean);
         }
 
         // SqlByte to SqlBoolean
         [Fact]
         public void SqlByteToSqlBoolean()
         {
-            SqlByte SqlTestByte;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlByteToSqlBoolean operator does not work correctly ";
+            SqlByte sqlTestByte;
+            SqlBoolean sqlTestBoolean;
+            sqlTestByte = new SqlByte(1);
+            sqlTestBoolean = (SqlBoolean)sqlTestByte;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTestByte = new SqlByte(1);
-            SqlTestBoolean = (SqlBoolean)SqlTestByte;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTestByte = new SqlByte(2);
+            sqlTestBoolean = (SqlBoolean)sqlTestByte;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTestByte = new SqlByte(2);
-            SqlTestBoolean = (SqlBoolean)SqlTestByte;
-            Assert.True(SqlTestBoolean.Value);
-
-            SqlTestByte = new SqlByte(0);
-            SqlTestBoolean = (SqlBoolean)SqlTestByte;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTestByte = new SqlByte(0);
+            sqlTestBoolean = (SqlBoolean)sqlTestByte;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlDecimal to SqlBoolean
         [Fact]
         public void SqlDecimalToSqlBoolean()
         {
-            SqlDecimal SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlDecimalToSqlBoolean operator does not work correctly ";
+            SqlDecimal sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlDecimal(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlDecimal(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlDecimal(19);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlDecimal(19);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlDecimal(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlDecimal(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlDouble to SqlBoolean
         [Fact]
         public void SqlDoubleToSqlBoolean()
         {
-            SqlDouble SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlDoubleToSqlBoolean operator does not work correctly ";
+            SqlDouble sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlDouble(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlDouble(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlDouble(-19.8);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlDouble(-19.8);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlDouble(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlDouble(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlIn16 to SqlBoolean
         [Fact]
         public void SqlInt16ToSqlBoolean()
         {
-            SqlInt16 SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlInt16ToSqlBoolean operator does not work correctly ";
+            SqlInt16 sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlInt16(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt16(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt16(-143);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt16(-143);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt16(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlInt16(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlInt32 to SqlBoolean
         [Fact]
         public void SqlInt32ToSqlBoolean()
         {
-            SqlInt32 SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlInt32ToSqlBoolean operator does not work correctly ";
+            SqlInt32 sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlInt32(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt32(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt32(1430);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt32(1430);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt32(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlInt32(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlInt64 to SqlBoolean
         [Fact]
         public void SqlInt64ToSqlBoolean()
         {
-            SqlInt64 SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlInt64ToSqlBoolean operator does not work correctly ";
+            SqlInt64 sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlInt64(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt64(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt64(-14305);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlInt64(-14305);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlInt64(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlInt64(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlMoney to SqlBoolean
         [Fact]
         public void SqlMoneyToSqlBoolean()
         {
-            SqlMoney SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlMoneyToSqlBoolean operator does not work correctly ";
+            SqlMoney sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlMoney(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlMoney(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlMoney(1305);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlMoney(1305);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlMoney(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlMoney(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlSingle to SqlBoolean
         [Fact]
         public void SqlSingleToSqlBoolean()
         {
-            SqlSingle SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlSingleToSqlBoolean operator does not work correctly ";
+            SqlSingle sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlSingle(1);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlSingle(1);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlSingle(1305);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlSingle(1305);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlSingle(-305.3);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlSingle(-305.3);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlSingle(0);
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlSingle(0);
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // SqlString to SqlBoolean
         [Fact]
         public void SqlStringToSqlBoolean()
         {
-            SqlString SqlTest;
-            SqlBoolean SqlTestBoolean;
-            string error = "SqlSingleToSqlBoolean operator does not work correctly ";
+            SqlString sqlTest;
+            SqlBoolean sqlTestBoolean;
 
-            SqlTest = new SqlString("true");
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlString("true");
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlString("TRUE");
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlString("TRUE");
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlString("True");
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(SqlTestBoolean.Value);
+            sqlTest = new SqlString("True");
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.True(sqlTestBoolean.Value);
 
-            SqlTest = new SqlString("false");
-            SqlTestBoolean = (SqlBoolean)SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = new SqlString("false");
+            sqlTestBoolean = (SqlBoolean)sqlTest;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // Boolean to SqlBoolean
         [Fact]
         public void BooleanToSqlBoolean()
         {
-            SqlBoolean SqlTestBoolean;
+            SqlBoolean sqlTestBoolean;
             bool btrue = true;
             bool bfalse = false;
-            string error = "BooleanToSqlBoolean operator does not work correctly ";
 
-            bool SqlTest = true;
-            SqlTestBoolean = SqlTest;
-            Assert.True(SqlTestBoolean.Value);
-            SqlTestBoolean = btrue;
-            Assert.True(SqlTestBoolean.Value);
+            bool sqlTest = true;
+            sqlTestBoolean = sqlTest;
+            Assert.True(sqlTestBoolean.Value);
+            sqlTestBoolean = btrue;
+            Assert.True(sqlTestBoolean.Value);
 
-
-            SqlTest = false;
-            SqlTestBoolean = SqlTest;
-            Assert.True(!SqlTestBoolean.Value);
-            SqlTestBoolean = bfalse;
-            Assert.True(!SqlTestBoolean.Value);
+            sqlTest = false;
+            sqlTestBoolean = sqlTest;
+            Assert.False(sqlTestBoolean.Value);
+            sqlTestBoolean = bfalse;
+            Assert.False(sqlTestBoolean.Value);
         }
 
         // END OF OPERATORS
@@ -828,8 +773,6 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ByteValueProperty()
         {
-            string error = "ByteValue property does not work correctly ";
-
             Assert.Equal((byte)1, _sqlTrue.ByteValue);
             Assert.Equal((byte)0, _sqlFalse.ByteValue);
         }
@@ -838,9 +781,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void IsFalseProperty()
         {
-            string error = "IsFalse property does not work correctly ";
-
-            Assert.True(!_sqlTrue.IsFalse);
+            Assert.False(_sqlTrue.IsFalse);
             Assert.True(_sqlFalse.IsFalse);
         }
 
@@ -848,10 +789,8 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void IsNullProperty()
         {
-            string error = "IsNull property does not work correctly ";
-
-            Assert.True(!_sqlTrue.IsNull);
-            Assert.True(!_sqlFalse.IsNull);
+            Assert.False(_sqlTrue.IsNull);
+            Assert.False(_sqlFalse.IsNull);
             Assert.True(SqlBoolean.Null.IsNull);
         }
 
@@ -859,23 +798,19 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void IsTrueProperty()
         {
-            string error = "IsTrue property does not work correctly ";
-
             Assert.True(_sqlTrue.IsTrue);
-            Assert.True(!_sqlFalse.IsTrue);
+            Assert.False(_sqlFalse.IsTrue);
         }
 
         // Value property
         [Fact]
         public void ValueProperty()
         {
-            string error = "Value property does not work correctly ";
-
             Assert.True(_sqlTrue.Value);
-            Assert.True(!_sqlFalse.Value);
+            Assert.False(_sqlFalse.Value);
         }
 
-        // END OF PROPERTIEs
+        // END OF PROPERTIES
         ////
 
         ////
@@ -884,7 +819,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void FalseField()
         {
-            Assert.True(!SqlBoolean.False.Value);
+            Assert.False(SqlBoolean.False.Value);
         }
 
         [Fact]

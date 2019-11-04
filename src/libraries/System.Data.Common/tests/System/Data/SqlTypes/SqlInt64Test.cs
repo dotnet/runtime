@@ -62,12 +62,12 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            SqlInt64 Test5443 = new SqlInt64(5443);
-            SqlInt64 Test1 = new SqlInt64(1);
+            SqlInt64 test5443 = new SqlInt64(5443);
+            SqlInt64 test1 = new SqlInt64(1);
 
             Assert.True(SqlInt64.Null.IsNull);
-            Assert.Equal(5443, Test5443.Value);
-            Assert.Equal(1, Test1.Value);
+            Assert.Equal(5443, test5443.Value);
+            Assert.Equal(1, test1.Value);
         }
 
         // PUBLIC METHODS
@@ -75,258 +75,187 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticMethods()
         {
-            SqlInt64 Test64 = new SqlInt64(64);
-            SqlInt64 Test0 = new SqlInt64(0);
-            SqlInt64 Test164 = new SqlInt64(164);
-            SqlInt64 TestMax = new SqlInt64(SqlInt64.MaxValue.Value);
+            SqlInt64 test64 = new SqlInt64(64);
+            SqlInt64 test0 = new SqlInt64(0);
+            SqlInt64 test164 = new SqlInt64(164);
+            SqlInt64 testMax = new SqlInt64(SqlInt64.MaxValue.Value);
 
             // Add()
-            Assert.Equal(64, SqlInt64.Add(Test64, Test0).Value);
-            Assert.Equal(228, SqlInt64.Add(Test64, Test164).Value);
-            Assert.Equal(164, SqlInt64.Add(Test0, Test164).Value);
-            Assert.Equal((long)SqlInt64.MaxValue, SqlInt64.Add(TestMax, Test0).Value);
+            Assert.Equal(64, SqlInt64.Add(test64, test0).Value);
+            Assert.Equal(228, SqlInt64.Add(test64, test164).Value);
+            Assert.Equal(164, SqlInt64.Add(test0, test164).Value);
+            Assert.Equal((long)SqlInt64.MaxValue, SqlInt64.Add(testMax, test0).Value);
 
-            try
-            {
-                SqlInt64.Add(TestMax, Test64);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.Add(testMax, test64));
 
             // Divide()
-            Assert.Equal(2, SqlInt64.Divide(Test164, Test64).Value);
-            Assert.Equal(0, SqlInt64.Divide(Test64, Test164).Value);
+            Assert.Equal(2, SqlInt64.Divide(test164, test64).Value);
+            Assert.Equal(0, SqlInt64.Divide(test64, test164).Value);
 
-            try
-            {
-                SqlInt64.Divide(Test64, Test0);
-                Assert.False(true);
-            }
-            catch (DivideByZeroException e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => SqlInt64.Divide(test64, test0));
 
             // Mod()
-            Assert.Equal(36, SqlInt64.Mod(Test164, Test64));
-            Assert.Equal(64, SqlInt64.Mod(Test64, Test164));
+            Assert.Equal(36, SqlInt64.Mod(test164, test64));
+            Assert.Equal(64, SqlInt64.Mod(test64, test164));
 
             // Multiply()
-            Assert.Equal(10496, SqlInt64.Multiply(Test64, Test164).Value);
-            Assert.Equal(0, SqlInt64.Multiply(Test64, Test0).Value);
+            Assert.Equal(10496, SqlInt64.Multiply(test64, test164).Value);
+            Assert.Equal(0, SqlInt64.Multiply(test64, test0).Value);
 
-            try
-            {
-                SqlInt64.Multiply(TestMax, Test64);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.Multiply(testMax, test64));
 
             // Subtract()
-            Assert.Equal(100, SqlInt64.Subtract(Test164, Test64).Value);
+            Assert.Equal(100, SqlInt64.Subtract(test164, test64).Value);
 
-            try
-            {
-                SqlInt64.Subtract(SqlInt64.MinValue, Test164);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.Subtract(SqlInt64.MinValue, test164));
 
             // Modulus ()
-            Assert.Equal(36, SqlInt64.Modulus(Test164, Test64));
-            Assert.Equal(64, SqlInt64.Modulus(Test64, Test164));
+            Assert.Equal(36, SqlInt64.Modulus(test164, test64));
+            Assert.Equal(64, SqlInt64.Modulus(test64, test164));
         }
 
         [Fact]
         public void BitwiseMethods()
         {
             long MaxValue = SqlInt64.MaxValue.Value;
-            SqlInt64 TestInt = new SqlInt64(0);
-            SqlInt64 TestIntMax = new SqlInt64(MaxValue);
-            SqlInt64 TestInt2 = new SqlInt64(10922);
-            SqlInt64 TestInt3 = new SqlInt64(21845);
+            SqlInt64 testInt = new SqlInt64(0);
+            SqlInt64 testIntMax = new SqlInt64(MaxValue);
+            SqlInt64 testInt2 = new SqlInt64(10922);
+            SqlInt64 testInt3 = new SqlInt64(21845);
 
             // BitwiseAnd
-            Assert.Equal(21845, SqlInt64.BitwiseAnd(TestInt3, TestIntMax).Value);
-            Assert.Equal(0, SqlInt64.BitwiseAnd(TestInt2, TestInt3).Value);
-            Assert.Equal(10922, SqlInt64.BitwiseAnd(TestInt2, TestIntMax).Value);
+            Assert.Equal(21845, SqlInt64.BitwiseAnd(testInt3, testIntMax).Value);
+            Assert.Equal(0, SqlInt64.BitwiseAnd(testInt2, testInt3).Value);
+            Assert.Equal(10922, SqlInt64.BitwiseAnd(testInt2, testIntMax).Value);
 
             //BitwiseOr
-            Assert.Equal(21845, SqlInt64.BitwiseOr(TestInt, TestInt3).Value);
-            Assert.Equal(MaxValue, SqlInt64.BitwiseOr(TestIntMax, TestInt2).Value);
+            Assert.Equal(21845, SqlInt64.BitwiseOr(testInt, testInt3).Value);
+            Assert.Equal(MaxValue, SqlInt64.BitwiseOr(testIntMax, testInt2).Value);
         }
 
         [Fact]
         public void CompareTo()
         {
-            SqlInt64 TestInt4000 = new SqlInt64(4000);
-            SqlInt64 TestInt4000II = new SqlInt64(4000);
-            SqlInt64 TestInt10 = new SqlInt64(10);
-            SqlInt64 TestInt10000 = new SqlInt64(10000);
-            SqlString TestString = new SqlString("This is a test");
+            SqlInt64 testInt4000 = new SqlInt64(4000);
+            SqlInt64 testInt4000II = new SqlInt64(4000);
+            SqlInt64 testInt10 = new SqlInt64(10);
+            SqlInt64 testInt10000 = new SqlInt64(10000);
+            SqlString testString = new SqlString("This is a test");
 
-            Assert.True(TestInt4000.CompareTo(TestInt10) > 0);
-            Assert.True(TestInt10.CompareTo(TestInt4000) < 0);
-            Assert.True(TestInt4000II.CompareTo(TestInt4000) == 0);
-            Assert.True(TestInt4000II.CompareTo(SqlInt64.Null) > 0);
+            Assert.True(testInt4000.CompareTo(testInt10) > 0);
+            Assert.True(testInt10.CompareTo(testInt4000) < 0);
+            Assert.Equal(0, testInt4000II.CompareTo(testInt4000));
+            Assert.True(testInt4000II.CompareTo(SqlInt64.Null) > 0);
 
-            try
-            {
-                TestInt10.CompareTo(TestString);
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-                Assert.Equal(typeof(ArgumentException), e.GetType());
-            }
+            Assert.Throws<ArgumentException>(() => testInt10.CompareTo(testString));
         }
 
         [Fact]
         public void EqualsMethod()
         {
-            SqlInt64 Test0 = new SqlInt64(0);
-            SqlInt64 Test158 = new SqlInt64(158);
-            SqlInt64 Test180 = new SqlInt64(180);
-            SqlInt64 Test180II = new SqlInt64(180);
+            SqlInt64 test0 = new SqlInt64(0);
+            SqlInt64 test158 = new SqlInt64(158);
+            SqlInt64 test180 = new SqlInt64(180);
+            SqlInt64 test180II = new SqlInt64(180);
 
-            Assert.True(!Test0.Equals(Test158));
-            Assert.True(!Test158.Equals(Test180));
-            Assert.True(!Test180.Equals(new SqlString("TEST")));
-            Assert.True(Test180.Equals(Test180II));
+            Assert.False(test0.Equals(test158));
+            Assert.False(test158.Equals(test180));
+            Assert.False(test180.Equals(new SqlString("TEST")));
+            Assert.True(test180.Equals(test180II));
         }
 
         [Fact]
         public void StaticEqualsMethod()
         {
-            SqlInt64 Test34 = new SqlInt64(34);
-            SqlInt64 Test34II = new SqlInt64(34);
-            SqlInt64 Test15 = new SqlInt64(15);
+            SqlInt64 test34 = new SqlInt64(34);
+            SqlInt64 test34II = new SqlInt64(34);
+            SqlInt64 test15 = new SqlInt64(15);
 
-            Assert.True(SqlInt64.Equals(Test34, Test34II).Value);
-            Assert.True(!SqlInt64.Equals(Test34, Test15).Value);
-            Assert.True(!SqlInt64.Equals(Test15, Test34II).Value);
+            Assert.True(SqlInt64.Equals(test34, test34II).Value);
+            Assert.False(SqlInt64.Equals(test34, test15).Value);
+            Assert.False(SqlInt64.Equals(test15, test34II).Value);
         }
 
         [Fact]
         public void GetHashCodeTest()
         {
-            SqlInt64 Test15 = new SqlInt64(15);
+            SqlInt64 test15 = new SqlInt64(15);
 
             // FIXME: Better way to test HashCode
-            Assert.Equal(15, Test15.GetHashCode());
-        }
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            SqlInt64 Test = new SqlInt64(84);
-            Assert.Equal("System.Data.SqlTypes.SqlInt64", Test.GetType().ToString());
+            Assert.Equal(15, test15.GetHashCode());
         }
 
         [Fact]
         public void Greaters()
         {
-            SqlInt64 Test10 = new SqlInt64(10);
-            SqlInt64 Test10II = new SqlInt64(10);
-            SqlInt64 Test110 = new SqlInt64(110);
+            SqlInt64 test10 = new SqlInt64(10);
+            SqlInt64 test10II = new SqlInt64(10);
+            SqlInt64 test110 = new SqlInt64(110);
 
             // GreateThan ()
-            Assert.True(!SqlInt64.GreaterThan(Test10, Test110).Value);
-            Assert.True(SqlInt64.GreaterThan(Test110, Test10).Value);
-            Assert.True(!SqlInt64.GreaterThan(Test10II, Test10).Value);
+            Assert.False(SqlInt64.GreaterThan(test10, test110).Value);
+            Assert.True(SqlInt64.GreaterThan(test110, test10).Value);
+            Assert.False(SqlInt64.GreaterThan(test10II, test10).Value);
 
             // GreaterTharOrEqual ()
-            Assert.True(!SqlInt64.GreaterThanOrEqual(Test10, Test110).Value);
-            Assert.True(SqlInt64.GreaterThanOrEqual(Test110, Test10).Value);
-            Assert.True(SqlInt64.GreaterThanOrEqual(Test10II, Test10).Value);
+            Assert.False(SqlInt64.GreaterThanOrEqual(test10, test110).Value);
+            Assert.True(SqlInt64.GreaterThanOrEqual(test110, test10).Value);
+            Assert.True(SqlInt64.GreaterThanOrEqual(test10II, test10).Value);
         }
 
         [Fact]
         public void Lessers()
         {
-            SqlInt64 Test10 = new SqlInt64(10);
-            SqlInt64 Test10II = new SqlInt64(10);
-            SqlInt64 Test110 = new SqlInt64(110);
+            SqlInt64 test10 = new SqlInt64(10);
+            SqlInt64 test10II = new SqlInt64(10);
+            SqlInt64 test110 = new SqlInt64(110);
 
             // LessThan()
-            Assert.True(SqlInt64.LessThan(Test10, Test110).Value);
-            Assert.True(!SqlInt64.LessThan(Test110, Test10).Value);
-            Assert.True(!SqlInt64.LessThan(Test10II, Test10).Value);
+            Assert.True(SqlInt64.LessThan(test10, test110).Value);
+            Assert.False(SqlInt64.LessThan(test110, test10).Value);
+            Assert.False(SqlInt64.LessThan(test10II, test10).Value);
 
             // LessThanOrEqual ()
-            Assert.True(SqlInt64.LessThanOrEqual(Test10, Test110).Value);
-            Assert.True(!SqlInt64.LessThanOrEqual(Test110, Test10).Value);
-            Assert.True(SqlInt64.LessThanOrEqual(Test10II, Test10).Value);
-            Assert.True(SqlInt64.LessThanOrEqual(Test10II, SqlInt64.Null).IsNull);
+            Assert.True(SqlInt64.LessThanOrEqual(test10, test110).Value);
+            Assert.False(SqlInt64.LessThanOrEqual(test110, test10).Value);
+            Assert.True(SqlInt64.LessThanOrEqual(test10II, test10).Value);
+            Assert.True(SqlInt64.LessThanOrEqual(test10II, SqlInt64.Null).IsNull);
         }
 
         [Fact]
         public void NotEquals()
         {
-            SqlInt64 Test12 = new SqlInt64(12);
-            SqlInt64 Test128 = new SqlInt64(128);
-            SqlInt64 Test128II = new SqlInt64(128);
+            SqlInt64 test12 = new SqlInt64(12);
+            SqlInt64 test128 = new SqlInt64(128);
+            SqlInt64 test128II = new SqlInt64(128);
 
-            Assert.True(SqlInt64.NotEquals(Test12, Test128).Value);
-            Assert.True(SqlInt64.NotEquals(Test128, Test12).Value);
-            Assert.True(SqlInt64.NotEquals(Test128II, Test12).Value);
-            Assert.True(!SqlInt64.NotEquals(Test128II, Test128).Value);
-            Assert.True(!SqlInt64.NotEquals(Test128, Test128II).Value);
-            Assert.True(SqlInt64.NotEquals(SqlInt64.Null, Test128II).IsNull);
-            Assert.True(SqlInt64.NotEquals(SqlInt64.Null, Test128II).IsNull);
+            Assert.True(SqlInt64.NotEquals(test12, test128).Value);
+            Assert.True(SqlInt64.NotEquals(test128, test12).Value);
+            Assert.True(SqlInt64.NotEquals(test128II, test12).Value);
+            Assert.False(SqlInt64.NotEquals(test128II, test128).Value);
+            Assert.False(SqlInt64.NotEquals(test128, test128II).Value);
+            Assert.True(SqlInt64.NotEquals(SqlInt64.Null, test128II).IsNull);
+            Assert.True(SqlInt64.NotEquals(SqlInt64.Null, test128II).IsNull);
         }
 
         [Fact]
         public void OnesComplement()
         {
-            SqlInt64 Test12 = new SqlInt64(12);
-            SqlInt64 Test128 = new SqlInt64(128);
+            SqlInt64 test12 = new SqlInt64(12);
+            SqlInt64 test128 = new SqlInt64(128);
 
-            Assert.Equal(-13, SqlInt64.OnesComplement(Test12));
-            Assert.Equal(-129, SqlInt64.OnesComplement(Test128));
+            Assert.Equal(-13, SqlInt64.OnesComplement(test12));
+            Assert.Equal(-129, SqlInt64.OnesComplement(test128));
         }
 
         [Fact]
         public void Parse()
         {
-            try
-            {
-                SqlInt64.Parse(null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException e)
-            {
-                Assert.Equal(typeof(ArgumentNullException), e.GetType());
-            }
+            Assert.Throws<ArgumentNullException>(() => SqlInt64.Parse(null));
 
-            try
-            {
-                SqlInt64.Parse("not-a-number");
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => SqlInt64.Parse("not-a-number"));
 
-            try
-            {
-                SqlInt64.Parse("1000000000000000000000000000");
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.Parse("1000000000000000000000000000"));
 
             Assert.Equal(150, SqlInt64.Parse("150").Value);
         }
@@ -334,86 +263,78 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Conversions()
         {
-            SqlInt64 Test12 = new SqlInt64(12);
-            SqlInt64 Test0 = new SqlInt64(0);
+            SqlInt64 test12 = new SqlInt64(12);
+            SqlInt64 test0 = new SqlInt64(0);
             SqlInt64 TestNull = SqlInt64.Null;
-            SqlInt64 Test1000 = new SqlInt64(1000);
-            SqlInt64 Test288 = new SqlInt64(288);
+            SqlInt64 test1000 = new SqlInt64(1000);
+            SqlInt64 test288 = new SqlInt64(288);
 
             // ToSqlBoolean ()
-            Assert.True(Test12.ToSqlBoolean().Value);
-            Assert.True(!Test0.ToSqlBoolean().Value);
+            Assert.True(test12.ToSqlBoolean().Value);
+            Assert.False(test0.ToSqlBoolean().Value);
             Assert.True(TestNull.ToSqlBoolean().IsNull);
 
             // ToSqlByte ()
-            Assert.Equal((byte)12, Test12.ToSqlByte().Value);
-            Assert.Equal((byte)0, Test0.ToSqlByte().Value);
+            Assert.Equal((byte)12, test12.ToSqlByte().Value);
+            Assert.Equal((byte)0, test0.ToSqlByte().Value);
 
-            try
-            {
-                SqlByte b = (byte)Test1000.ToSqlByte();
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => test1000.ToSqlByte());
 
             // ToSqlDecimal ()
-            Assert.Equal(12, Test12.ToSqlDecimal().Value);
-            Assert.Equal(0, Test0.ToSqlDecimal().Value);
-            Assert.Equal(288, Test288.ToSqlDecimal().Value);
+            Assert.Equal(12, test12.ToSqlDecimal().Value);
+            Assert.Equal(0, test0.ToSqlDecimal().Value);
+            Assert.Equal(288, test288.ToSqlDecimal().Value);
 
             // ToSqlDouble ()
-            Assert.Equal(12, Test12.ToSqlDouble().Value);
-            Assert.Equal(0, Test0.ToSqlDouble().Value);
-            Assert.Equal(1000, Test1000.ToSqlDouble().Value);
+            Assert.Equal(12, test12.ToSqlDouble().Value);
+            Assert.Equal(0, test0.ToSqlDouble().Value);
+            Assert.Equal(1000, test1000.ToSqlDouble().Value);
 
             // ToSqlInt32 ()
-            Assert.Equal(12, Test12.ToSqlInt32().Value);
-            Assert.Equal(0, Test0.ToSqlInt32().Value);
-            Assert.Equal(288, Test288.ToSqlInt32().Value);
+            Assert.Equal(12, test12.ToSqlInt32().Value);
+            Assert.Equal(0, test0.ToSqlInt32().Value);
+            Assert.Equal(288, test288.ToSqlInt32().Value);
 
             // ToSqlInt16 ()
-            Assert.Equal((short)12, Test12.ToSqlInt16().Value);
-            Assert.Equal((short)0, Test0.ToSqlInt16().Value);
-            Assert.Equal((short)288, Test288.ToSqlInt16().Value);
+            Assert.Equal((short)12, test12.ToSqlInt16().Value);
+            Assert.Equal((short)0, test0.ToSqlInt16().Value);
+            Assert.Equal((short)288, test288.ToSqlInt16().Value);
 
             // ToSqlMoney ()
-            Assert.Equal(12.0000M, Test12.ToSqlMoney().Value);
-            Assert.Equal(0, Test0.ToSqlMoney().Value);
-            Assert.Equal(288.0000M, Test288.ToSqlMoney().Value);
+            Assert.Equal(12.0000M, test12.ToSqlMoney().Value);
+            Assert.Equal(0, test0.ToSqlMoney().Value);
+            Assert.Equal(288.0000M, test288.ToSqlMoney().Value);
 
             // ToSqlSingle ()
-            Assert.Equal(12, Test12.ToSqlSingle().Value);
-            Assert.Equal(0, Test0.ToSqlSingle().Value);
-            Assert.Equal(288, Test288.ToSqlSingle().Value);
+            Assert.Equal(12, test12.ToSqlSingle().Value);
+            Assert.Equal(0, test0.ToSqlSingle().Value);
+            Assert.Equal(288, test288.ToSqlSingle().Value);
 
             // ToSqlString ()
-            Assert.Equal("12", Test12.ToSqlString().Value);
-            Assert.Equal("0", Test0.ToSqlString().Value);
-            Assert.Equal("288", Test288.ToSqlString().Value);
+            Assert.Equal("12", test12.ToSqlString().Value);
+            Assert.Equal("0", test0.ToSqlString().Value);
+            Assert.Equal("288", test288.ToSqlString().Value);
 
             // ToString ()
-            Assert.Equal("12", Test12.ToString());
-            Assert.Equal("0", Test0.ToString());
-            Assert.Equal("288", Test288.ToString());
+            Assert.Equal("12", test12.ToString());
+            Assert.Equal("0", test0.ToString());
+            Assert.Equal("288", test288.ToString());
         }
 
         [Fact]
         public void Xor()
         {
-            SqlInt64 Test14 = new SqlInt64(14);
-            SqlInt64 Test58 = new SqlInt64(58);
-            SqlInt64 Test130 = new SqlInt64(130);
-            SqlInt64 TestMax = new SqlInt64(SqlInt64.MaxValue.Value);
-            SqlInt64 Test0 = new SqlInt64(0);
+            SqlInt64 test14 = new SqlInt64(14);
+            SqlInt64 test58 = new SqlInt64(58);
+            SqlInt64 test130 = new SqlInt64(130);
+            SqlInt64 testMax = new SqlInt64(SqlInt64.MaxValue.Value);
+            SqlInt64 test0 = new SqlInt64(0);
 
-            Assert.Equal(52, SqlInt64.Xor(Test14, Test58).Value);
-            Assert.Equal(140, SqlInt64.Xor(Test14, Test130).Value);
-            Assert.Equal(184, SqlInt64.Xor(Test58, Test130).Value);
-            Assert.Equal(0, SqlInt64.Xor(TestMax, TestMax).Value);
-            Assert.Equal(TestMax.Value, SqlInt64.Xor(TestMax, Test0).Value);
+            Assert.Equal(52, SqlInt64.Xor(test14, test58).Value);
+            Assert.Equal(140, SqlInt64.Xor(test14, test130).Value);
+            Assert.Equal(184, SqlInt64.Xor(test58, test130).Value);
+            Assert.Equal(0, SqlInt64.Xor(testMax, testMax).Value);
+            Assert.Equal(testMax.Value, SqlInt64.Xor(testMax, test0).Value);
         }
 
         // OPERATORS
@@ -421,285 +342,221 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticOperators()
         {
-            SqlInt64 Test24 = new SqlInt64(24);
-            SqlInt64 Test64 = new SqlInt64(64);
-            SqlInt64 Test2550 = new SqlInt64(2550);
-            SqlInt64 Test0 = new SqlInt64(0);
+            SqlInt64 test24 = new SqlInt64(24);
+            SqlInt64 test64 = new SqlInt64(64);
+            SqlInt64 test2550 = new SqlInt64(2550);
+            SqlInt64 test0 = new SqlInt64(0);
 
             // "+"-operator
-            Assert.Equal(2614, Test2550 + Test64);
-            try
-            {
-                SqlInt64 result = Test64 + SqlInt64.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Equal(2614, test2550 + test64);
+            Assert.Throws<OverflowException>(() => test64 + SqlInt64.MaxValue);
+
 
             // "/"-operator
-            Assert.Equal(39, Test2550 / Test64);
-            Assert.Equal(0, Test24 / Test64);
+            Assert.Equal(39, test2550 / test64);
+            Assert.Equal(0, test24 / test64);
 
-            try
-            {
-                SqlInt64 result = Test2550 / Test0;
-                Assert.False(true);
-            }
-            catch (DivideByZeroException e)
-            {
-                Assert.Equal(typeof(DivideByZeroException), e.GetType());
-            }
+            Assert.Throws<DivideByZeroException>(() => test2550 / test0);
 
             // "*"-operator
-            Assert.Equal(1536, Test64 * Test24);
+            Assert.Equal(1536, test64 * test24);
 
-            try
-            {
-                SqlInt64 test = (SqlInt64.MaxValue * Test64);
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.MaxValue * test64);
 
             // "-"-operator
-            Assert.Equal(2526, Test2550 - Test24);
+            Assert.Equal(2526, test2550 - test24);
 
-            try
-            {
-                SqlInt64 test = SqlInt64.MinValue - Test64;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => SqlInt64.MinValue - test64);
 
             // "%"-operator
-            Assert.Equal(54, Test2550 % Test64);
-            Assert.Equal(24, Test24 % Test64);
+            Assert.Equal(54, test2550 % test64);
+            Assert.Equal(24, test24 % test64);
             Assert.Equal(0, new SqlInt64(100) % new SqlInt64(10));
         }
 
         [Fact]
         public void BitwiseOperators()
         {
-            SqlInt64 Test2 = new SqlInt64(2);
-            SqlInt64 Test4 = new SqlInt64(4);
+            SqlInt64 test2 = new SqlInt64(2);
+            SqlInt64 test4 = new SqlInt64(4);
 
-            SqlInt64 Test2550 = new SqlInt64(2550);
+            SqlInt64 test2550 = new SqlInt64(2550);
 
             // & -operator
-            Assert.Equal(0, Test2 & Test4);
-            Assert.Equal(2, Test2 & Test2550);
+            Assert.Equal(0, test2 & test4);
+            Assert.Equal(2, test2 & test2550);
             Assert.Equal(0, SqlInt64.MaxValue & SqlInt64.MinValue);
 
             // | -operator
-            Assert.Equal(6, Test2 | Test4);
-            Assert.Equal(2550, Test2 | Test2550);
+            Assert.Equal(6, test2 | test4);
+            Assert.Equal(2550, test2 | test2550);
             Assert.Equal(-1, SqlInt64.MinValue | SqlInt64.MaxValue);
 
             //  ^ -operator
-            Assert.Equal(2546, (Test2550 ^ Test4));
-            Assert.Equal(6, (Test2 ^ Test4));
+            Assert.Equal(2546, (test2550 ^ test4));
+            Assert.Equal(6, (test2 ^ test4));
         }
 
         [Fact]
         public void ThanOrEqualOperators()
         {
-            SqlInt64 Test165 = new SqlInt64(165);
-            SqlInt64 Test100 = new SqlInt64(100);
-            SqlInt64 Test100II = new SqlInt64(100);
-            SqlInt64 Test255 = new SqlInt64(2550);
+            SqlInt64 test165 = new SqlInt64(165);
+            SqlInt64 test100 = new SqlInt64(100);
+            SqlInt64 test100II = new SqlInt64(100);
+            SqlInt64 test255 = new SqlInt64(2550);
 
             // == -operator
-            Assert.True((Test100 == Test100II).Value);
-            Assert.True(!(Test165 == Test100).Value);
-            Assert.True((Test165 == SqlInt64.Null).IsNull);
+            Assert.True((test100 == test100II).Value);
+            Assert.False((test165 == test100).Value);
+            Assert.True((test165 == SqlInt64.Null).IsNull);
 
             // != -operator
-            Assert.True(!(Test100 != Test100II).Value);
-            Assert.True((Test100 != Test255).Value);
-            Assert.True((Test165 != Test255).Value);
-            Assert.True((Test165 != SqlInt64.Null).IsNull);
+            Assert.False((test100 != test100II).Value);
+            Assert.True((test100 != test255).Value);
+            Assert.True((test165 != test255).Value);
+            Assert.True((test165 != SqlInt64.Null).IsNull);
 
             // > -operator
-            Assert.True((Test165 > Test100).Value);
-            Assert.True(!(Test165 > Test255).Value);
-            Assert.True(!(Test100 > Test100II).Value);
-            Assert.True((Test165 > SqlInt64.Null).IsNull);
+            Assert.True((test165 > test100).Value);
+            Assert.False((test165 > test255).Value);
+            Assert.False((test100 > test100II).Value);
+            Assert.True((test165 > SqlInt64.Null).IsNull);
 
             // >=  -operator
-            Assert.True(!(Test165 >= Test255).Value);
-            Assert.True((Test255 >= Test165).Value);
-            Assert.True((Test100 >= Test100II).Value);
-            Assert.True((Test165 >= SqlInt64.Null).IsNull);
+            Assert.False((test165 >= test255).Value);
+            Assert.True((test255 >= test165).Value);
+            Assert.True((test100 >= test100II).Value);
+            Assert.True((test165 >= SqlInt64.Null).IsNull);
 
             // < -operator
-            Assert.True(!(Test165 < Test100).Value);
-            Assert.True((Test165 < Test255).Value);
-            Assert.True(!(Test100 < Test100II).Value);
-            Assert.True((Test165 < SqlInt64.Null).IsNull);
+            Assert.False((test165 < test100).Value);
+            Assert.True((test165 < test255).Value);
+            Assert.False((test100 < test100II).Value);
+            Assert.True((test165 < SqlInt64.Null).IsNull);
 
             // <= -operator
-            Assert.True((Test165 <= Test255).Value);
-            Assert.True(!(Test255 <= Test165).Value);
-            Assert.True((Test100 <= Test100II).Value);
-            Assert.True((Test165 <= SqlInt64.Null).IsNull);
+            Assert.True((test165 <= test255).Value);
+            Assert.False((test255 <= test165).Value);
+            Assert.True((test100 <= test100II).Value);
+            Assert.True((test165 <= SqlInt64.Null).IsNull);
         }
 
         [Fact]
         public void OnesComplementOperator()
         {
-            SqlInt64 Test12 = new SqlInt64(12);
-            SqlInt64 Test128 = new SqlInt64(128);
+            SqlInt64 test12 = new SqlInt64(12);
+            SqlInt64 test128 = new SqlInt64(128);
 
-            Assert.Equal(-13, ~Test12);
-            Assert.Equal(-129, ~Test128);
+            Assert.Equal(-13, ~test12);
+            Assert.Equal(-129, ~test128);
             Assert.Equal(SqlInt64.Null, ~SqlInt64.Null);
         }
 
         [Fact]
         public void UnaryNegation()
         {
-            SqlInt64 Test = new SqlInt64(2000);
-            SqlInt64 TestNeg = new SqlInt64(-3000);
+            SqlInt64 test = new SqlInt64(2000);
+            SqlInt64 testNeg = new SqlInt64(-3000);
 
-            SqlInt64 Result = -Test;
-            Assert.Equal(-2000, Result.Value);
+            SqlInt64 result = -test;
+            Assert.Equal(-2000, result.Value);
 
-            Result = -TestNeg;
-            Assert.Equal(3000, Result.Value);
+            result = -testNeg;
+            Assert.Equal(3000, result.Value);
         }
 
         [Fact]
         public void SqlBooleanToSqlInt64()
         {
-            SqlBoolean TestBoolean = new SqlBoolean(true);
-            SqlInt64 Result;
+            SqlBoolean testBoolean = new SqlBoolean(true);
+            SqlInt64 tesult;
 
-            Result = (SqlInt64)TestBoolean;
+            tesult = (SqlInt64)testBoolean;
 
-            Assert.Equal(1, Result.Value);
+            Assert.Equal(1, tesult.Value);
 
-            Result = (SqlInt64)SqlBoolean.Null;
-            Assert.True(Result.IsNull);
+            tesult = (SqlInt64)SqlBoolean.Null;
+            Assert.True(tesult.IsNull);
         }
 
         [Fact]
         public void SqlDecimalToSqlInt64()
         {
-            SqlDecimal TestDecimal64 = new SqlDecimal(64);
-            SqlDecimal TestDecimal900 = new SqlDecimal(90000);
+            SqlDecimal testDecimal64 = new SqlDecimal(64);
 
-            Assert.Equal(64, ((SqlInt64)TestDecimal64).Value);
+            Assert.Equal(64, ((SqlInt64)testDecimal64).Value);
             Assert.Equal(SqlInt64.Null, ((SqlInt64)SqlDecimal.Null));
 
-            try
-            {
-                SqlInt64 test = (SqlInt64)SqlDecimal.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => (SqlInt64)SqlDecimal.MaxValue);
         }
 
         [Fact]
         public void SqlDoubleToSqlInt64()
         {
-            SqlDouble TestDouble64 = new SqlDouble(64);
-            SqlDouble TestDouble900 = new SqlDouble(90000);
+            SqlDouble testDouble64 = new SqlDouble(64);
+            SqlDouble testDouble900 = new SqlDouble(90000);
 
-            Assert.Equal(64, ((SqlInt64)TestDouble64).Value);
+            Assert.Equal(64, ((SqlInt64)testDouble64).Value);
             Assert.Equal(SqlInt64.Null, ((SqlInt64)SqlDouble.Null));
 
-            try
-            {
-                SqlInt64 test = (SqlInt64)SqlDouble.MaxValue;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => (SqlInt64)SqlDouble.MaxValue);
         }
 
         [Fact]
         public void Sql64IntToInt64()
         {
-            SqlInt64 Test = new SqlInt64(12);
-            long Result = (long)Test;
-            Assert.Equal(12, Result);
+            SqlInt64 test = new SqlInt64(12);
+            long result = (long)test;
+            Assert.Equal(12, result);
         }
 
         [Fact]
         public void SqlInt32ToSqlInt64()
         {
-            SqlInt32 Test64 = new SqlInt32(64);
-            Assert.Equal(64, ((SqlInt64)Test64).Value);
+            SqlInt32 test64 = new SqlInt32(64);
+            Assert.Equal(64, ((SqlInt64)test64).Value);
         }
 
         [Fact]
         public void SqlInt16ToSqlInt64()
         {
-            SqlInt16 Test64 = new SqlInt16(64);
-            Assert.Equal(64, ((SqlInt64)Test64).Value);
+            SqlInt16 test64 = new SqlInt16(64);
+            Assert.Equal(64, ((SqlInt64)test64).Value);
         }
 
         [Fact]
         public void SqlMoneyToSqlInt64()
         {
-            SqlMoney TestMoney64 = new SqlMoney(64);
-            Assert.Equal(64, ((SqlInt64)TestMoney64).Value);
+            SqlMoney testMoney64 = new SqlMoney(64);
+            Assert.Equal(64, ((SqlInt64)testMoney64).Value);
         }
 
         [Fact]
         public void SqlSingleToSqlInt64()
         {
-            SqlSingle TestSingle64 = new SqlSingle(64);
-            Assert.Equal(64, ((SqlInt64)TestSingle64).Value);
+            SqlSingle testSingle64 = new SqlSingle(64);
+            Assert.Equal(64, ((SqlInt64)testSingle64).Value);
         }
 
         [Fact]
         public void SqlStringToSqlInt64()
         {
-            SqlString TestString = new SqlString("Test string");
-            SqlString TestString100 = new SqlString("100");
-            SqlString TestString1000 = new SqlString("1000000000000000000000");
+            SqlString testString = new SqlString("Test string");
+            SqlString testString100 = new SqlString("100");
+            SqlString testString1000 = new SqlString("1000000000000000000000");
 
-            Assert.Equal(100, ((SqlInt64)TestString100).Value);
+            Assert.Equal(100, ((SqlInt64)testString100).Value);
 
-            try
-            {
-                SqlInt64 test = (SqlInt64)TestString1000;
-                Assert.False(true);
-            }
-            catch (OverflowException e)
-            {
-                Assert.Equal(typeof(OverflowException), e.GetType());
-            }
+            Assert.Throws<OverflowException>(() => (SqlInt64)testString1000);
 
-            try
-            {
-                SqlInt64 test = (SqlInt64)TestString;
-                Assert.False(true);
-            }
-            catch (FormatException e)
-            {
-                Assert.Equal(typeof(FormatException), e.GetType());
-            }
+            Assert.Throws<FormatException>(() => (SqlInt64)testString);
         }
 
         [Fact]
         public void ByteToSqlInt64()
         {
-            short TestShort = 14;
-            Assert.Equal(14, ((SqlInt64)TestShort).Value);
+            short testShort = 14;
+            Assert.Equal(14, ((SqlInt64)testShort).Value);
         }
         [Fact]
         public void GetXsdTypeTest()
@@ -750,15 +607,9 @@ namespace System.Data.Tests.SqlTypes
             ReadWriteXmlTestInternal(xml1, lngtest1, "BA01");
             ReadWriteXmlTestInternal(xml2, lngtest2, "BA02");
 
-            try
-            {
-                ReadWriteXmlTestInternal(xml3, lngtest3, "BA03");
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                Assert.Equal(typeof(FormatException), e.InnerException.GetType());
-            }
+            InvalidOperationException ex =
+                Assert.Throws<InvalidOperationException>(() => ReadWriteXmlTestInternal(xml3, lngtest3, "#BA03"));
+            Assert.Equal(typeof(FormatException), ex.InnerException.GetType());
         }
     }
 }

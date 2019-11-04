@@ -259,8 +259,6 @@ namespace System.Data.Tests
         [Serializable]
         public class CustomTypeXml : IXmlSerializable
         {
-            private XmlNode _mFuncXmlNode;
-
             #region Constructors
             public CustomTypeXml()
             {
@@ -270,41 +268,28 @@ namespace System.Data.Tests
             {
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(str);
-                _mFuncXmlNode = doc.DocumentElement;
+                Node = doc.DocumentElement;
             }
 
             public CustomTypeXml(XmlNode xNode)
             {
-                _mFuncXmlNode = xNode;
+                Node = xNode;
             }
             #endregion
 
-            #region Node (set/get)
-            public XmlNode Node
-            {
-                get
-                {
-                    return _mFuncXmlNode;
-                }
-                set
-                {
-                    _mFuncXmlNode = value;
-                }
-            }
-            #endregion
-            #region ToString
+            public XmlNode Node { get; set; }
+
             public override string ToString()
             {
                 return Node.OuterXml;
             }
-            #endregion
 
             /* IXmlSerializable overrides */
             #region WriteXml
             void IXmlSerializable.WriteXml(XmlWriter writer)
             {
                 XmlDocument doc = new XmlDocument();
-                doc.LoadXml(_mFuncXmlNode.OuterXml);
+                doc.LoadXml(Node.OuterXml);
 
                 // On function level
                 if (doc.DocumentElement.Name == "Func")
@@ -343,7 +328,7 @@ namespace System.Data.Tests
                 {
                     doc.LoadXml(reader.ReadOuterXml());
                 }
-                _mFuncXmlNode = doc.DocumentElement;
+                Node = doc.DocumentElement;
             }
             #endregion
             #region GetSchema

@@ -223,11 +223,7 @@ namespace System.Data.Tests
             table.Constraints.AddRange(constraints);
 
             //Check the table property of UniqueConstraint Object
-            try
-            {
-                Assert.Null(constraints[2].Table);
-            }
-            catch (NullReferenceException) { }
+            Assert.Null(constraints[2].Table);
 
             table.EndInit();
         }
@@ -235,17 +231,10 @@ namespace System.Data.Tests
         [Fact]
         public void Clear()
         {
-            //try
-            //{
             _table.Constraints.Clear(); //Clear all constraints
             Assert.Equal(0, _table.Constraints.Count);
             _table2.Constraints.Clear();
             Assert.Equal(0, _table2.Constraints.Count);
-            //}
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine(e);
-            //}
         }
 
         [Fact]

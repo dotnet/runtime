@@ -60,50 +60,50 @@ namespace System.Data.Tests
         [Fact]
         public void Ctor1()
         {
-            DataTable Table = _ds.Tables[0];
+            DataTable table = _ds.Tables[0];
 
-            Assert.Equal(0, Table.Constraints.Count);
-            Table = _ds.Tables[1];
-            Assert.Equal(0, Table.Constraints.Count);
+            Assert.Equal(0, table.Constraints.Count);
+            table = _ds.Tables[1];
+            Assert.Equal(0, table.Constraints.Count);
 
             // ctor (string, DataColumn, DataColumn
             ForeignKeyConstraint Constraint = new ForeignKeyConstraint("test", _ds.Tables[0].Columns[2], _ds.Tables[1].Columns[0]);
-            Table = _ds.Tables[1];
-            Table.Constraints.Add(Constraint);
+            table = _ds.Tables[1];
+            table.Constraints.Add(Constraint);
 
-            Assert.Equal(1, Table.Constraints.Count);
-            Assert.Equal("test", Table.Constraints[0].ConstraintName);
-            Assert.Equal(typeof(ForeignKeyConstraint), Table.Constraints[0].GetType());
+            Assert.Equal(1, table.Constraints.Count);
+            Assert.Equal("test", table.Constraints[0].ConstraintName);
+            Assert.Equal(typeof(ForeignKeyConstraint), table.Constraints[0].GetType());
 
-            Table = _ds.Tables[0];
-            Assert.Equal(1, Table.Constraints.Count);
-            Assert.Equal("Constraint1", Table.Constraints[0].ConstraintName);
-            Assert.Equal(typeof(UniqueConstraint), Table.Constraints[0].GetType());
+            table = _ds.Tables[0];
+            Assert.Equal(1, table.Constraints.Count);
+            Assert.Equal("Constraint1", table.Constraints[0].ConstraintName);
+            Assert.Equal(typeof(UniqueConstraint), table.Constraints[0].GetType());
         }
 
         // Tests ctor (DataColumn, DataColumn)
         [Fact]
         public void Ctor2()
         {
-            DataTable Table = _ds.Tables[0];
+            DataTable table = _ds.Tables[0];
 
-            Assert.Equal(0, Table.Constraints.Count);
-            Table = _ds.Tables[1];
-            Assert.Equal(0, Table.Constraints.Count);
+            Assert.Equal(0, table.Constraints.Count);
+            table = _ds.Tables[1];
+            Assert.Equal(0, table.Constraints.Count);
 
             // ctor (string, DataColumn, DataColumn
             ForeignKeyConstraint Constraint = new ForeignKeyConstraint(_ds.Tables[0].Columns[2], _ds.Tables[1].Columns[0]);
-            Table = _ds.Tables[1];
-            Table.Constraints.Add(Constraint);
+            table = _ds.Tables[1];
+            table.Constraints.Add(Constraint);
 
-            Assert.Equal(1, Table.Constraints.Count);
-            Assert.Equal("Constraint1", Table.Constraints[0].ConstraintName);
-            Assert.Equal(typeof(ForeignKeyConstraint), Table.Constraints[0].GetType());
+            Assert.Equal(1, table.Constraints.Count);
+            Assert.Equal("Constraint1", table.Constraints[0].ConstraintName);
+            Assert.Equal(typeof(ForeignKeyConstraint), table.Constraints[0].GetType());
 
-            Table = _ds.Tables[0];
-            Assert.Equal(1, Table.Constraints.Count);
-            Assert.Equal("Constraint1", Table.Constraints[0].ConstraintName);
-            Assert.Equal(typeof(UniqueConstraint), Table.Constraints[0].GetType());
+            table = _ds.Tables[0];
+            Assert.Equal(1, table.Constraints.Count);
+            Assert.Equal("Constraint1", table.Constraints[0].ConstraintName);
+            Assert.Equal(typeof(UniqueConstraint), table.Constraints[0].GetType());
         }
 
         // Test ctor (DataColumn [], DataColumn [])
@@ -197,17 +197,10 @@ namespace System.Data.Tests
             // Create a ForeingKeyConstraint Object using the constructor
             // ForeignKeyConstraint (string, string, string[], string[], AcceptRejectRule, Rule, Rule);
             ForeignKeyConstraint fkc = new ForeignKeyConstraint("hello world", parentTableName, parentColumnNames, childColumnNames, AcceptRejectRule.Cascade, Rule.Cascade, Rule.Cascade);                                                                                                                            // Assert that the Constraint object does not belong to any table yet
-            try
-            {
-                DataTable tmp = fkc.Table;
-                Assert.False(true);
-            }
-            catch (NullReferenceException)
-            { // actually .NET throws this (bug)
-            }
-            catch (InvalidOperationException)
-            {
-            }
+
+            Exception ex = Assert.ThrowsAny<Exception>(() => fkc.Table);
+            Assert.True(ex is NullReferenceException || ex is InvalidOperationException);
+
 
             Constraint[] constraints = new Constraint[3];
             constraints[0] = new UniqueConstraint(column1);
@@ -215,49 +208,26 @@ namespace System.Data.Tests
             constraints[2] = fkc;
 
             // Try to add the constraint to ConstraintCollection of the DataTable through Add()
-            try
-            {
-                table2.Constraints.Add(fkc);
-                throw new ApplicationException("An Exception was expected");
-            }
+            //try
+            //{
+            //    table2.Constraints.Add(fkc);
+            //    throw new ApplicationException("An Exception was expected");
+            //}
             // spec says InvalidConstraintException but throws this
-            catch (NullReferenceException)
-            {
-            }
+            //catch (NullReferenceException)
+            //{
+            //}
+            Assert.Throws<NullReferenceException>(() => table2.Constraints.Add(fkc));
 
-#if false // FIXME: Here this test crashes under MS.NET.
-                        // OK - So AddRange() is the only way!
-                        table2.Constraints.AddRange (constraints);
-               // After AddRange(), Check the properties of ForeignKeyConstraint object
-                        Assert.True(fkc.RelatedColumns [0].ColumnName.Equals ("col1"));
-                        Assert.True(fkc.RelatedColumns [1].ColumnName.Equals ("col2"));
-                        Assert.True(fkc.RelatedColumns [2].ColumnName.Equals ("col3"));
-                        Assert.True(fkc.Columns [0].ColumnName.Equals ("col4"));
-                        Assert.True(fkc.Columns [1].ColumnName.Equals ("col5"));
-                        Assert.True(fkc.Columns [2].ColumnName.Equals ("col6"));
-#endif
             // Try to add columns with names which do not exist in the table
             parentColumnNames[2] = "noColumn";
             ForeignKeyConstraint foreignKeyConstraint = new ForeignKeyConstraint("hello world", parentTableName, parentColumnNames, childColumnNames, AcceptRejectRule.Cascade, Rule.Cascade, Rule.Cascade);
             constraints[0] = new UniqueConstraint(column1);
             constraints[1] = new UniqueConstraint(column2);
             constraints[2] = foreignKeyConstraint;
-            try
-            {
-                table2.Constraints.AddRange(constraints);
-                throw new ApplicationException("An Exception was expected");
-            }
-            catch (ArgumentException e)
-            {
-            }
-            catch (InvalidConstraintException e)
-            { // Could not test on ms.net, as ms.net does not reach here so far.
-            }
 
-#if false // FIXME: Here this test crashes under MS.NET.
-                        // Check whether the child table really contains the foreign key constraint named "hello world"
-                        Assert.True(table2.Constraints.Contains ("hello world"));
-#endif
+            Exception ex2 = Assert.ThrowsAny<Exception>(() => table2.Constraints.AddRange(constraints));
+            Assert.True(ex2 is ArgumentException || ex2 is InvalidConstraintException);
         }
 
 
@@ -390,10 +360,9 @@ namespace System.Data.Tests
             Assert.True(fkc2.Equals(fkc));
             Assert.True(fkc.Equals(fkc));
 
-            Assert.True(fkc.Equals(fkcDiff) == false);
+            Assert.False(fkc.Equals(fkcDiff));
 
-            //Assert.True( "Hash Code Assert.True.Failed. 1");
-            Assert.True(fkc.GetHashCode() != fkcDiff.GetHashCode());
+            Assert.NotEqual(fkc.GetHashCode(), fkcDiff.GetHashCode());
         }
 
         [Fact]
@@ -459,7 +428,7 @@ namespace System.Data.Tests
             t2.Rows.Add(new object[] { 10 });
 
             t1.Rows[0][0] = 20;
-            Assert.True((int)t2.Rows[0][0] == 20);
+            Assert.Equal(20, (int)t2.Rows[0][0]);
         }
 
         [Fact]

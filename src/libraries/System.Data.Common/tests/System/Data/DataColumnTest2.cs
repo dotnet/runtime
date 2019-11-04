@@ -24,9 +24,6 @@
 //
 
 using System.ComponentModel;
-using System.Globalization;
-
-
 using Xunit;
 
 namespace System.Data.Tests
@@ -171,38 +168,22 @@ namespace System.Data.Tests
         {
             DataColumn dc;
             dc = new DataColumn();
-            string[] sTypeArr = { "System.Boolean", "System.Byte", "System.Char", "System.DateTime",
-                "System.Decimal", "System.Double", "System.Int16", "System.Int32",
-                "System.Int64", "System.SByte", "System.Single", "System.String",
-                "System.TimeSpan", "System.UInt16", "System.UInt32", "System.UInt64" };
+            Type[] typeArr = { typeof(bool), typeof(byte), typeof(char), typeof(DateTime),
+                typeof(decimal), typeof(double), typeof(short), typeof(int),
+                typeof(long), typeof(sbyte), typeof(float), typeof(string),
+                typeof(TimeSpan), typeof(ushort), typeof(uint), typeof(ulong) };
 
             //Checking default value (string)
             // GetType - Default
-            Assert.Equal(Type.GetType("System.String"), dc.DataType);
+            Assert.Equal(typeof(string), dc.DataType);
 
-            foreach (string sType in sTypeArr)
+            foreach (Type type in typeArr)
             {
                 //Cheking Set
-                dc.DataType = Type.GetType(sType);
+                dc.DataType = type;
                 // Checking GetType " + sType);
-                Assert.Equal(Type.GetType(sType), dc.DataType);
+                Assert.Equal(type, dc.DataType);
             }
-        }
-
-        [Fact]
-        public void Equals()
-        {
-            DataColumn dc1, dc2;
-            dc1 = new DataColumn();
-            dc2 = new DataColumn();
-            // #1
-            // Equals 1
-            Assert.False(dc1.Equals(dc2));
-
-            dc1 = dc2;
-            // #2
-            // Equals 2
-            Assert.Equal(dc2, dc1);
         }
 
         [Fact]
@@ -213,8 +194,8 @@ namespace System.Data.Tests
             dc = new DataColumn();
 
             pc = dc.ExtendedProperties;
-            // Checking ExtendedProperties default
-            Assert.True(pc != null);
+            // Checking ExtendedProperties default 
+            Assert.NotNull(pc);
 
             // Checking ExtendedProperties count
             Assert.Equal(0, pc.Count);
@@ -233,18 +214,6 @@ namespace System.Data.Tests
                 // GetHashCode #" + i.ToString());
                 Assert.Equal(dc1.GetHashCode(), iHashCode1);
             }
-        }
-
-        [Fact]
-        public void TestGetType()
-        {
-            DataColumn dc;
-            Type myType;
-            dc = new DataColumn();
-            myType = dc.GetType();
-
-            // GetType
-            Assert.Equal(typeof(DataColumn), myType);
         }
 
         [Fact]
@@ -395,26 +364,9 @@ namespace System.Data.Tests
 
             Assert.True(col.Unique);
 
-            try
-            {
-                col.Unique = false;
-                Assert.False(true);
-            }
-            catch (ArgumentException e)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => col.Unique = false);
 
             Assert.True(col.Unique);
-        }
-
-        [Fact]
-        public void ctor()
-        {
-            DataColumn dc;
-            dc = new DataColumn();
-
-            // ctor
-            Assert.False(dc == null);
         }
 
         [Fact]
@@ -423,9 +375,6 @@ namespace System.Data.Tests
             DataColumn dc;
             string sName = "ColName";
             dc = new DataColumn(sName);
-
-            // ctor - object
-            Assert.False(dc == null);
 
             // ctor - ColName
             Assert.Equal(sName, dc.ColumnName);
@@ -436,31 +385,27 @@ namespace System.Data.Tests
         {
             Type typTest;
             DataColumn dc = null;
-            string[] sTypeArr = { "System.Boolean", "System.Byte", "System.Char", "System.DateTime",
-                "System.Decimal", "System.Double", "System.Int16", "System.Int32",
-                "System.Int64", "System.SByte", "System.Single", "System.String",
-                "System.TimeSpan", "System.UInt16", "System.UInt32", "System.UInt64" };
+            Type[] typeArr = { typeof(bool), typeof(byte), typeof(char), typeof(DateTime),
+                typeof(decimal), typeof(double), typeof(short), typeof(int),
+                typeof(long), typeof(sbyte), typeof(float), typeof(string),
+                typeof(TimeSpan), typeof(ushort), typeof(uint), typeof(ulong) };
 
-            foreach (string sType in sTypeArr)
+            foreach (Type type in typeArr)
             {
-                typTest = Type.GetType(sType);
-                dc = new DataColumn("ColName", typTest);
-                // ctor - object
-                Assert.False(dc == null);
+                dc = new DataColumn("ColName", type);
 
                 // ctor - ColName
-                Assert.Equal(typTest, dc.DataType);
+                Assert.Equal(type, dc.DataType);
             }
         }
 
         [Fact]
         public void ctor_ByColumnNameTypeExpression()
         {
-            DataColumn dc;
-            dc = new DataColumn("ColName", typeof(string), "Price * 1.18");
-
-            // ctor - object
-            Assert.False(dc == null);
+            DataColumn col = new DataColumn("ColName", typeof(string), "Price * 1.18");
+            Assert.Equal("ColName", col.ColumnName);
+            Assert.Equal(typeof(string), col.DataType);
+            Assert.Equal("Price * 1.18", col.Expression);
         }
 
         [Fact]
@@ -470,10 +415,8 @@ namespace System.Data.Tests
             //Cheking constructor for each Enum MappingType
             foreach (int i in Enum.GetValues(typeof(MappingType)))
             {
-                dc = null;
                 dc = new DataColumn("ColName", typeof(string), "Price * 1.18", (MappingType)i);
                 // Ctor #" + i.ToString());
-                Assert.False(dc == null);
             }
         }
 
@@ -586,7 +529,7 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             //Simple expression --> not aggregate
-            DataColumn dc = new DataColumn("expr", Type.GetType("System.Decimal"));
+            DataColumn dc = new DataColumn("expr", typeof(decimal));
             dt.Columns.Add(dc);
             dt.Columns["expr"].Expression = dt.Columns[0].ColumnName + "*0.52 +" + dt.Columns[0].ColumnName;
 
@@ -620,7 +563,7 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             //Simple expression -->  aggregate
-            DataColumn dc = new DataColumn("expr", Type.GetType("System.Decimal"));
+            DataColumn dc = new DataColumn("expr", typeof(decimal));
             dt.Columns.Add(dc);
             dt.Columns["expr"].Expression = "sum(" + dt.Columns[0].ColumnName + ") + count(" + dt.Columns[0].ColumnName + ")";
             dt.Columns["expr"].Expression += " + avg(" + dt.Columns[0].ColumnName + ") + Min(" + dt.Columns[0].ColumnName + ")";
@@ -664,7 +607,7 @@ namespace System.Data.Tests
 
             //Create the computed columns
 
-            DataColumn dcComputedParent = new DataColumn("computedParent", Type.GetType("System.Double"));
+            DataColumn dcComputedParent = new DataColumn("computedParent", typeof(double));
             parent.Columns.Add(dcComputedParent);
             dcComputedParent.Expression = "sum(child(Relation1)." + child.Columns[1].ColumnName + ")";
 
@@ -685,7 +628,7 @@ namespace System.Data.Tests
                 }
             }
 
-            DataColumn dcComputedChild = new DataColumn("computedChild", Type.GetType("System.Double"));
+            DataColumn dcComputedChild = new DataColumn("computedChild", typeof(double));
             child.Columns.Add(dcComputedChild);
             dcComputedChild.Expression = "Parent." + parent.Columns[0].ColumnName;
 
@@ -703,7 +646,7 @@ namespace System.Data.Tests
         public void Expression_IIF()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
-            DataColumn dcComputedParent = new DataColumn("computedCol", Type.GetType("System.Double"));
+            DataColumn dcComputedParent = new DataColumn("computedCol", typeof(double));
             dcComputedParent.DefaultValue = 25.5;
             dt.Columns.Add(dcComputedParent);
             dcComputedParent.Expression = "IIF(" + dt.Columns[0].ColumnName + ">3" + ",1,2)";
@@ -755,12 +698,7 @@ namespace System.Data.Tests
         {
             DataColumn col = new DataColumn("col", typeof(int));
             Assert.Equal(DataSetDateTime.UnspecifiedLocal, col.DateTimeMode);
-            try
-            {
-                col.DateTimeMode = DataSetDateTime.Local;
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e) { }
+            Assert.Throws<InvalidOperationException>(() => col.DateTimeMode = DataSetDateTime.Local);
 
             col = new DataColumn("col", typeof(DateTime));
             col.DateTimeMode = DataSetDateTime.Utc;
@@ -773,19 +711,9 @@ namespace System.Data.Tests
         public void DateTimeMode_InvalidValues()
         {
             DataColumn col = new DataColumn("col", typeof(DateTime));
-            try
-            {
-                col.DateTimeMode = (DataSetDateTime)(-1);
-                Assert.False(true);
-            }
-            catch (InvalidEnumArgumentException e) { }
+            Assert.Throws<InvalidEnumArgumentException>(() => col.DateTimeMode = (DataSetDateTime)(-1));
 
-            try
-            {
-                col.DateTimeMode = (DataSetDateTime)5;
-                Assert.False(true);
-            }
-            catch (InvalidEnumArgumentException e) { }
+            Assert.Throws<InvalidEnumArgumentException>(() => col.DateTimeMode = (DataSetDateTime)5);
         }
 
         [Fact]
@@ -800,31 +728,16 @@ namespace System.Data.Tests
             table.Columns[0].DateTimeMode = DataSetDateTime.Unspecified;
             table.Columns[0].DateTimeMode = DataSetDateTime.UnspecifiedLocal;
 
-            try
-            {
-                table.Columns[0].DateTimeMode = DataSetDateTime.Local;
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e) { }
+            Assert.Throws<InvalidOperationException>(() => table.Columns[0].DateTimeMode = DataSetDateTime.Local);
 
-            try
-            {
-                table.Columns[0].DateTimeMode = DataSetDateTime.Utc;
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e) { }
+            Assert.Throws<InvalidOperationException>(() => table.Columns[0].DateTimeMode = DataSetDateTime.Utc);
         }
 
         [Fact]
         public void SetOrdinalTest()
         {
             DataColumn col = new DataColumn("col", typeof(int));
-            try
-            {
-                col.SetOrdinal(2);
-                Assert.False(true);
-            }
-            catch (ArgumentException e) { }
+            Assert.Throws<ArgumentException>(() => col.SetOrdinal(2));
 
             DataTable table = new DataTable();
             DataColumn col1 = table.Columns.Add("col1", typeof(int));
@@ -842,22 +755,12 @@ namespace System.Data.Tests
             Assert.Equal(1, col3.Ordinal);
             Assert.Equal(2, col1.Ordinal);
 
-            try
-            {
-                table.Columns[0].SetOrdinal(-1);
-                Assert.False(true);
-            }
-            catch (ArgumentOutOfRangeException e) { }
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.Columns[0].SetOrdinal(-1));
 
-            try
-            {
-                table.Columns[0].SetOrdinal(4);
-                Assert.False(true);
-            }
-            catch (ArgumentOutOfRangeException e) { }
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.Columns[0].SetOrdinal(4));
         }
         [Fact]
-        public void bug672113_MulpleColConstraint()
+        public void Bug672113_MulpleColConstraint()
         {
             DataTable FirstTable = new DataTable("First Table");
             DataColumn col0 = new DataColumn("empno", typeof(int));

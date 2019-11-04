@@ -24,8 +24,6 @@
 //
 
 using Xunit;
-//using System.ComponentModel;
-
 
 namespace System.Data.Tests
 {
@@ -183,7 +181,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ctor_ByNameDataColumns()
+        public void Ctor_ByNameDataColumns()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -194,9 +192,6 @@ namespace System.Data.Tests
             DataRelation dRel;
             dRel = new DataRelation("MyRelation", dtParent.Columns[0], dtChild.Columns[0]);
             ds.Relations.Add(dRel);
-
-            // DataRelation - CTor
-            Assert.False(dRel == null);
 
             // DataRelation - parent Constraints
             Assert.Equal(1, dtParent.Constraints.Count);
@@ -247,7 +242,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ctor_ByNameDataColumnsCreateConstraints()
+        public void Ctor_ByNameDataColumnsCreateConstraints()
         {
             DataRelation dRel;
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -292,9 +287,6 @@ namespace System.Data.Tests
                 dRel = new DataRelation("MyRelation", dtParent.Columns[0], dtChild.Columns[0], createConstraints);
                 ds.Relations.Add(dRel);
 
-                // DataRelation - CTor,createConstraints=
-                Assert.False(dRel == null);
-
                 // DataRelation - parent Constraints,createConstraints=
                 Assert.Equal(i, dtParent.Constraints.Count);
 
@@ -313,7 +305,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ctor_ByNameDataColumnsArrays()
+        public void Ctor_ByNameDataColumnsArrays()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -356,9 +348,6 @@ namespace System.Data.Tests
             // DataSet DataRelation count
             Assert.Equal(1, ds.Relations.Count);
 
-            // DataRelation - CTor
-            Assert.False(dRel == null);
-
             // DataRelation - parent Constraints
             Assert.Equal(1, dtParent.Constraints.Count);
 
@@ -376,7 +365,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void ctor_ByNameDataColumnsArraysCreateConstraints()
+        public void Ctor_ByNameDataColumnsArraysCreateConstraints()
         {
             DataRelation dRel;
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -419,9 +408,6 @@ namespace System.Data.Tests
                 dRel = new DataRelation("MyRelation", new DataColumn[] { dtParent.Columns[0] }, new DataColumn[] { dtChild.Columns[0] }, createConstraints);
                 ds.Relations.Add(dRel);
 
-                // DataRelation - CTor,createConstraints=
-                Assert.False(dRel == null);
-
                 // DataRelation - parent Constraints,createConstraints=
                 Assert.Equal(i, dtParent.Constraints.Count);
 
@@ -440,7 +426,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void extendedProperties()
+        public void ExtendedProperties()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -455,15 +441,15 @@ namespace System.Data.Tests
             PropertyCollection pc;
             pc = dRel.ExtendedProperties;
 
-            // Checking ExtendedProperties default
-            Assert.True(pc != null);
+            // Checking ExtendedProperties default 
+            Assert.NotNull(pc);
 
             // Checking ExtendedProperties count
             Assert.Equal(0, pc.Count);
         }
 
         [Fact]
-        public void nested()
+        public void Nested()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -485,7 +471,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void relationName()
+        public void RelationName()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -511,7 +497,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void bug79233()
+        public void Bug79233()
         {
             DataSet ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -547,12 +533,7 @@ namespace System.Data.Tests
             ds.Relations.Clear();
             t2.Columns[0].DateTimeMode = DataSetDateTime.Local;
 
-            try
-            {
-                ds.Relations.Add("rel", t1.Columns[0], t2.Columns[0], false);
-                Assert.False(true);
-            }
-            catch (InvalidConstraintException) { }
+            Assert.Throws<InvalidConstraintException>(() => ds.Relations.Add("rel", t1.Columns[0], t2.Columns[0], false));
         }
     }
 }

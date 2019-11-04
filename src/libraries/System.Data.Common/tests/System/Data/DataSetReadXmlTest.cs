@@ -766,10 +766,6 @@ namespace System.Data.Tests
             {
                 dataSet1.WriteXml(file, XmlWriteMode.WriteSchema);
             }
-            catch (Exception ex)
-            {
-                Assert.False(true);
-            }
             finally
             {
                 File.Delete(file);

@@ -54,20 +54,20 @@ namespace System.Data.Tests
             DataColumn idColumn = new DataColumn();
 
 
-            idColumn.DataType = Type.GetType("System.Int32");
+            idColumn.DataType = typeof(int);
             idColumn.ColumnName = "Id";
             idColumn.AutoIncrement = true;
             namesTable.Columns.Add(idColumn);
 
 
             DataColumn fNameColumn = new DataColumn();
-            fNameColumn.DataType = Type.GetType("System.String");
+            fNameColumn.DataType = typeof(string);
             fNameColumn.ColumnName = "Fname";
             fNameColumn.DefaultValue = "Fname";
             namesTable.Columns.Add(fNameColumn);
 
             DataColumn lNameColumn = new DataColumn();
-            lNameColumn.DataType = Type.GetType("System.String");
+            lNameColumn.DataType = typeof(string);
             lNameColumn.ColumnName = "LName";
             lNameColumn.DefaultValue = "LName";
             namesTable.Columns.Add(lNameColumn);
@@ -108,7 +108,7 @@ namespace System.Data.Tests
 
                 for (int i = 0; i < colArr.Length; i++)
                 {
-                    Assert.Equal(_table.Columns[1], colArr[i]);
+                    Assert.Same(_table.Columns[1], colArr[i]);
                 }
                 _row.ClearErrors();
             }
@@ -119,7 +119,6 @@ namespace System.Data.Tests
         {
             DataRow newRow;
 
-
             for (int i = 1; i <= 2; i++)
             {
                 newRow = _table.NewRow();
@@ -128,13 +127,10 @@ namespace System.Data.Tests
                 _table.Rows.Add(newRow);
             }
             _table.AcceptChanges();
-
-            int cnt = 1;
             for (int i = 1; i < _table.Rows.Count; i++)
             {
                 DataRow r = _table.Rows[i];
-                Assert.Equal("Name " + cnt, r["fName"]);
-                cnt++;
+                Assert.Equal("Name " + i, r["fName"]);
             }
 
 
@@ -151,16 +147,9 @@ namespace System.Data.Tests
             // Accept changes
             _table.AcceptChanges();
             Assert.Equal("Name 1", (_table.Rows[0])[1]);
-            try
-            {
-                object o = rc[2];
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                // Never premise English.
-                //Assert.Equal ("#A08", "There is no row at position 2.");
-            }
+
+            // There is no row at position 2.
+            Assert.Throws<IndexOutOfRangeException>(() => rc[2]);
         }
 
         [Fact]
@@ -182,14 +171,14 @@ namespace System.Data.Tests
             DataRow rowC;
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(int);
             colC.ColumnName = "Id";
             colC.AutoIncrement = true;
             tableC.Columns.Add(colC);
 
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.String");
+            colC.DataType = typeof(string);
             colC.ColumnName = "Name";
             tableC.Columns.Add(colC);
 
@@ -232,13 +221,13 @@ namespace System.Data.Tests
             DataRow rowC;
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(int);
             colC.ColumnName = "Id";
             colC.AutoIncrement = true;
             tableP.Columns.Add(colC);
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(int);
             colC.ColumnName = "Id";
             tableC.Columns.Add(colC);
 
@@ -255,19 +244,7 @@ namespace System.Data.Tests
             Assert.Equal(1, rows.Length);
             Assert.Equal(tableP.Rows[0], rows[0]);
 
-            try
-            {
-                rows = _row.GetParentRows(dr);
-            }
-            catch (InvalidConstraintException)
-            {
-                //Test done
-                return;
-            }
-            catch (Exception e)
-            {
-                Assert.False(true);
-            }
+            Assert.Throws<InvalidConstraintException>(() => _row.GetParentRows(dr));
         }
 
         [Fact]
@@ -289,13 +266,13 @@ namespace System.Data.Tests
             DataRow rowC;
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(int);
             colC.ColumnName = "Id";
             colC.AutoIncrement = true;
             tableC.Columns.Add(colC);
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.String");
+            colC.DataType = typeof(string);
             colC.ColumnName = "Name";
             tableC.Columns.Add(colC);
 
@@ -326,13 +303,13 @@ namespace System.Data.Tests
             DataRow rowC;
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(System.Int32);
             colC.ColumnName = "Id";
             colC.AutoIncrement = true;
             tableP.Columns.Add(colC);
 
             colC = new DataColumn();
-            colC.DataType = Type.GetType("System.Int32");
+            colC.DataType = typeof(System.Int32);
             colC.ColumnName = "Id";
             tableC.Columns.Add(colC);
 
@@ -349,19 +326,7 @@ namespace System.Data.Tests
             Assert.Equal(1, rows.Length);
             Assert.Equal(tableC.Rows[0], rows[0]);
 
-            try
-            {
-                rows = rowC.GetChildRows(dr);
-            }
-            catch (InvalidConstraintException)
-            {
-                //Test done
-                return;
-            }
-            catch (Exception e)
-            {
-                Assert.False(true);
-            }
+            Assert.Throws<InvalidConstraintException>(() => rowC.GetChildRows(dr));
         }
 
         // tests item at row, column in table to be DBNull.Value
@@ -410,14 +375,7 @@ namespace System.Data.Tests
 
             DataRow row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e1)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -430,14 +388,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -450,14 +401,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -474,14 +418,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -529,14 +466,7 @@ namespace System.Data.Tests
 
             DataRow row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e1)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -548,14 +478,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -568,14 +491,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -590,14 +506,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -623,7 +532,6 @@ namespace System.Data.Tests
         public void AutoIncrementInItemArray()
         {
             string zero = "zero";
-            string num = "num";
 
             DataTable table = new DataTable();
             table.Columns.Add(new DataColumn(zero, typeof(string)));
@@ -642,14 +550,7 @@ namespace System.Data.Tests
 
             DataRow row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e1)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -661,14 +562,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -680,14 +574,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -699,14 +586,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -720,14 +600,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -739,20 +612,12 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e2)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
             // -- object array smaller than number of columns -----
             string abc = "abc";
-            string def = "def";
             obj = new object[2];
             obj[0] = abc;
             // results:
@@ -761,14 +626,7 @@ namespace System.Data.Tests
 
             row = table.NewRow();
 
-            try
-            {
-                row.ItemArray = obj;
-            }
-            catch (Exception e3)
-            {
-                Assert.False(true);
-            }
+            row.ItemArray = obj;
 
             table.Rows.Add(row);
 
@@ -825,9 +683,9 @@ namespace System.Data.Tests
             parent.Columns.Add("id", typeof(int));
             DataTable child = ds.Tables.Add("child");
             child.Columns.Add("idref", typeof(int));
-            Constraint uniqueId = null;
-            parent.Constraints.Add(uniqueId = new UniqueConstraint("uniqueId",
-                                  new DataColumn[] { parent.Columns["id"] }, true));
+            Constraint uniqueId = new UniqueConstraint("uniqueId",
+                                  new DataColumn[] { parent.Columns["id"] }, true);
+            parent.Constraints.Add(uniqueId);
             ForeignKeyConstraint fkc = new ForeignKeyConstraint("ParentChildConstraint", new DataColumn[] { parent.Columns["id"] },
                       new DataColumn[] { child.Columns["idref"] });
 
@@ -897,7 +755,7 @@ namespace System.Data.Tests
             var parent2Column1 = parent2.Columns.Add("column1");
             var parent2Column2 = parent2.Columns.Add("column2");
 
-            var relation1 = ds.Relations.Add("parent1-child", parent1Column1, childColumn1);
+            ds.Relations.Add("parent1-child", parent1Column1, childColumn1);
             ds.Relations.Add("parent2-child", parent2Column2, childColumn2);
 
             var childRow1 = child.NewRow();
@@ -969,14 +827,7 @@ namespace System.Data.Tests
             Assert.Equal(DBNull.Value, childRow1[childColumn1]);
             Assert.Equal(DBNull.Value, childRow1[childColumn2]);
 
-            try
-            {
-                childRow1.SetParentRow(parent1Row, relation2);
-                Assert.False(true);
-            }
-            catch (InvalidConstraintException e)
-            {
-            }
+            Assert.Throws<InvalidConstraintException>(() => childRow1.SetParentRow(parent1Row, relation2));
             Assert.Equal(DBNull.Value, childRow1[childColumn1]);
             Assert.Equal(DBNull.Value, childRow1[childColumn2]);
 

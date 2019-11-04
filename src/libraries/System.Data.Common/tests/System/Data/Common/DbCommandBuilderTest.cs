@@ -45,21 +45,15 @@ namespace System.Data.Tests.Common
         {
             MyCommandBuilder cb = new MyCommandBuilder();
             cb.CatalogLocation = CatalogLocation.End;
-            try
-            {
-                cb.CatalogLocation = (CatalogLocation)666;
-                Assert.False(true);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                // The CatalogLocation enumeration value, 666, is invalid
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("CatalogLocation") != -1);
-                Assert.True(ex.Message.IndexOf("666") != -1);
-                Assert.Equal("CatalogLocation", ex.ParamName);
-            }
+
+            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => cb.CatalogLocation = (CatalogLocation)666);
+            // The CatalogLocation enumeration value, 666, is invalid
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("CatalogLocation", ex.Message);
+            Assert.Contains("666", ex.Message);
+            Assert.Equal("CatalogLocation", ex.ParamName);
+
             Assert.Equal(CatalogLocation.End, cb.CatalogLocation);
         }
 
@@ -94,21 +88,14 @@ namespace System.Data.Tests.Common
         {
             MyCommandBuilder cb = new MyCommandBuilder();
             cb.ConflictOption = ConflictOption.CompareRowVersion;
-            try
-            {
-                cb.ConflictOption = (ConflictOption)666;
-                Assert.False(true);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                // The ConflictOption enumeration value, 666, is invalid
-                Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("ConflictOption") != -1);
-                Assert.True(ex.Message.IndexOf("666") != -1);
-                Assert.Equal("ConflictOption", ex.ParamName);
-            }
+            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => cb.ConflictOption = (ConflictOption)666);
+            // The ConflictOption enumeration value, 666, is invalid
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Contains("ConflictOption", ex.Message);
+            Assert.Contains("666", ex.Message);
+            Assert.Equal("ConflictOption", ex.ParamName);
+
             Assert.Equal(ConflictOption.CompareRowVersion, cb.ConflictOption);
         }
 
@@ -116,29 +103,14 @@ namespace System.Data.Tests.Common
         public void QuoteIdentifier()
         {
             MyCommandBuilder cb = new MyCommandBuilder();
-            try
-            {
-                cb.QuoteIdentifier(null);
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.Equal((new NotSupportedException()).Message, ex.Message);
-            }
 
-            try
-            {
-                cb.QuoteIdentifier("mono");
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.Equal((new NotSupportedException()).Message, ex.Message);
-            }
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => cb.QuoteIdentifier(null));
+            Assert.Null(ex.InnerException);
+            Assert.Equal((new NotSupportedException()).Message, ex.Message);
+
+            NotSupportedException ex2 = Assert.Throws<NotSupportedException>(() => cb.QuoteIdentifier("mono"));
+            Assert.Null(ex.InnerException);
+            Assert.Equal((new NotSupportedException()).Message, ex.Message);
         }
 
         [Fact]

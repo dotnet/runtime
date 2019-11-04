@@ -33,32 +33,19 @@ namespace System.Data.Tests.Common
         public void UpdateBatchSize()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.UpdateBatchSize = 0;
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                // Specified method is not supported
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex1 = Assert.Throws<NotSupportedException>(() => da.UpdateBatchSize = 0);
+            // Specified method is not supported
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+
             Assert.Equal(1, da.UpdateBatchSize);
 
-            try
-            {
-                da.UpdateBatchSize = int.MaxValue;
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                // Specified method is not supported
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+            NotSupportedException ex2 = Assert.Throws<NotSupportedException>(() => da.UpdateBatchSize = 0);
+            // Specified method is not supported
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+
             Assert.Equal(1, da.UpdateBatchSize);
 
             da.UpdateBatchSize = 1;
@@ -69,79 +56,49 @@ namespace System.Data.Tests.Common
         public void UpdateBatchSize_Negative()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.UpdateBatchSize = -1;
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                // Specified method is not supported
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.UpdateBatchSize = -1);
+            // Specified method is not supported
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
         public void ClearBatch()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.ClearBatch();
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.ClearBatch());
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
         public void ExecuteBatch()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.ExecuteBatch();
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.ExecuteBatch());
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
         public void GetBatchedParameter()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.GetBatchedParameter(1, 1);
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.GetBatchedParameter(1, 1));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
         public void GetBatchedRecordsAffected()
         {
             MyAdapter da = new MyAdapter();
-            int recordsAffected = 0;
-            Exception error = null;
 
-            Assert.True(da.GetBatchedRecordsAffected(int.MinValue, out recordsAffected, out error));
+            Assert.True(da.GetBatchedRecordsAffected(int.MinValue, out int recordsAffected, out Exception error));
             Assert.Equal(1, recordsAffected);
             Assert.Null(error);
         }
@@ -150,34 +107,20 @@ namespace System.Data.Tests.Common
         public void InitializeBatching()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.InitializeBatching();
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.InitializeBatching());
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         [Fact]
         public void TerminateBatching()
         {
             MyAdapter da = new MyAdapter();
-            try
-            {
-                da.TerminateBatching();
-                Assert.False(true);
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.Equal(typeof(NotSupportedException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-            }
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => da.TerminateBatching());
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
         }
 
         private class MyAdapter : DbDataAdapter

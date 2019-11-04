@@ -31,7 +31,6 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Text;
-using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Tests;
@@ -95,38 +94,38 @@ namespace System.Data.Tests.SqlTypes
         public void Create()
         {
             // SqlString (String)
-            SqlString TestString = new SqlString("Test");
-            Assert.Equal("Test", TestString.Value);
+            SqlString testString = new SqlString("Test");
+            Assert.Equal("Test", testString.Value);
 
             // SqlString (String, int)
-            TestString = new SqlString("Test", 2057);
-            Assert.Equal(2057, TestString.LCID);
+            testString = new SqlString("Test", 2057);
+            Assert.Equal(2057, testString.LCID);
 
             // SqlString (int, SqlCompareOptions, byte[])
-            TestString = new SqlString(2057,
+            testString = new SqlString(2057,
                 SqlCompareOptions.BinarySort | SqlCompareOptions.IgnoreCase,
                 new byte[2] { 123, 221 });
-            Assert.Equal(2057, TestString.CompareInfo.LCID);
+            Assert.Equal(2057, testString.CompareInfo.LCID);
 
             // SqlString(string, int, SqlCompareOptions)
-            TestString = new SqlString("Test", 2057, SqlCompareOptions.IgnoreNonSpace);
-            Assert.True(!TestString.IsNull);
+            testString = new SqlString("Test", 2057, SqlCompareOptions.IgnoreNonSpace);
+            Assert.False(testString.IsNull);
 
             // SqlString (int, SqlCompareOptions, byte[], bool)
-            TestString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[4] { 100, 100, 200, 45 }, true);
-            Assert.Equal((byte)63, TestString.GetNonUnicodeBytes()[0]);
-            TestString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, false);
-            Assert.Equal("qd", TestString.Value);
+            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[4] { 100, 100, 200, 45 }, true);
+            Assert.Equal((byte)63, testString.GetNonUnicodeBytes()[0]);
+            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, false);
+            Assert.Equal("qd", testString.Value);
 
             // SqlString (int, SqlCompareOptions, byte[], int, int)
-            TestString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, 0, 2);
-            Assert.True(!TestString.IsNull);
+            testString = new SqlString(2057, SqlCompareOptions.BinarySort, new byte[2] { 113, 100 }, 0, 2);
+            Assert.False(testString.IsNull);
 
             // SqlString (int, SqlCompareOptions, byte[], int, int, bool)
-            TestString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 100, 111, 50 }, 1, 2, false);
-            Assert.Equal("o2", TestString.Value);
-            TestString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 123, 111, 222 }, 1, 2, true);
-            Assert.True(!TestString.IsNull);
+            testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 100, 111, 50 }, 1, 2, false);
+            Assert.Equal("o2", testString.Value);
+            testString = new SqlString(2057, SqlCompareOptions.IgnoreCase, new byte[3] { 123, 111, 222 }, 1, 2, true);
+            Assert.False(testString.IsNull);
         }
 
         [Fact]
@@ -188,7 +187,7 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Equal(3081, one.LCID);
 
                 // IsNull
-                Assert.True(!one.IsNull);
+                Assert.False(one.IsNull);
                 Assert.True(SqlString.Null.IsNull);
 
                 // SqlCompareOptions
@@ -204,102 +203,81 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void CompareToArgumentException()
         {
-            SqlByte Test = new SqlByte(1);
-            AssertExtensions.Throws<ArgumentException>(null, () => _test1.CompareTo(Test));
+            SqlByte test = new SqlByte(1);
+            AssertExtensions.Throws<ArgumentException>(null, () => _test1.CompareTo(test));
         }
 
         [Fact]
         public void CompareToSqlTypeException()
         {
-            SqlString T1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
-            SqlString T2 = new SqlString("TEST", 2057, SqlCompareOptions.None);
-            Assert.Throws<SqlTypeException>(() => T1.CompareTo(T2));
+            SqlString t1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
+            SqlString t2 = new SqlString("TEST", 2057, SqlCompareOptions.None);
+            Assert.Throws<SqlTypeException>(() => t1.CompareTo(t2));
         }
 
         [Fact]
         public void CompareTo()
         {
-            SqlByte Test = new SqlByte(1);
-
             Assert.True(_test1.CompareTo(_test3) < 0);
             Assert.True(_test2.CompareTo(_test1) > 0);
-            Assert.True(_test2.CompareTo(_test3) == 0);
+            Assert.Equal(0, _test2.CompareTo(_test3));
             Assert.True(_test3.CompareTo(SqlString.Null) > 0);
 
-            SqlString T1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
-            SqlString T2 = new SqlString("TEST", 2057, SqlCompareOptions.None);
-
             // IgnoreCase
-            T1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
-            T2 = new SqlString("TEST", 2057, SqlCompareOptions.IgnoreCase);
-            Assert.True(T2.CompareTo(T1) == 0);
+            SqlString t1 = new SqlString("test", 2057, SqlCompareOptions.IgnoreCase);
+            SqlString t2 = new SqlString("TEST", 2057, SqlCompareOptions.IgnoreCase);
+            Assert.Equal(0, t2.CompareTo(t1));
 
-            T1 = new SqlString("test", 2057);
-            T2 = new SqlString("TEST", 2057);
-            Assert.True(T2.CompareTo(T1) == 0);
+            t1 = new SqlString("test", 2057);
+            t2 = new SqlString("TEST", 2057);
+            Assert.Equal(0, t2.CompareTo(t1));
 
-            T1 = new SqlString("test", 2057, SqlCompareOptions.None);
-            T2 = new SqlString("TEST", 2057, SqlCompareOptions.None);
-            Assert.True(T2.CompareTo(T1) != 0);
+            t1 = new SqlString("test", 2057, SqlCompareOptions.None);
+            t2 = new SqlString("TEST", 2057, SqlCompareOptions.None);
+            Assert.NotEqual(0, t2.CompareTo(t1));
 
             // IgnoreNonSpace
-            T1 = new SqlString("TEST\xF1", 2057, SqlCompareOptions.IgnoreNonSpace);
-            T2 = new SqlString("TESTn", 2057, SqlCompareOptions.IgnoreNonSpace);
-            Assert.True(T2.CompareTo(T1) == 0);
+            t1 = new SqlString("TEST\xF1", 2057, SqlCompareOptions.IgnoreNonSpace);
+            t2 = new SqlString("TESTn", 2057, SqlCompareOptions.IgnoreNonSpace);
+            Assert.Equal(0, t2.CompareTo(t1));
 
-            T1 = new SqlString("TEST\u00F1", 2057, SqlCompareOptions.None);
-            T2 = new SqlString("TESTn", 2057, SqlCompareOptions.None);
-            Assert.True(T2.CompareTo(T1) != 0);
+            t1 = new SqlString("TEST\u00F1", 2057, SqlCompareOptions.None);
+            t2 = new SqlString("TESTn", 2057, SqlCompareOptions.None);
+            Assert.NotEqual(0, t2.CompareTo(t1));
 
             // BinarySort
-            T1 = new SqlString("01_", 2057, SqlCompareOptions.BinarySort);
-            T2 = new SqlString("_01", 2057, SqlCompareOptions.BinarySort);
-            Assert.True(T1.CompareTo(T2) < 0);
+            t1 = new SqlString("01_", 2057, SqlCompareOptions.BinarySort);
+            t2 = new SqlString("_01", 2057, SqlCompareOptions.BinarySort);
+            Assert.True(t1.CompareTo(t2) < 0);
 
-            T1 = new SqlString("01_", 2057, SqlCompareOptions.None);
-            T2 = new SqlString("_01", 2057, SqlCompareOptions.None);
-            Assert.True(T1.CompareTo(T2) > 0);
+            t1 = new SqlString("01_", 2057, SqlCompareOptions.None);
+            t2 = new SqlString("_01", 2057, SqlCompareOptions.None);
+            Assert.True(t1.CompareTo(t2) > 0);
         }
 
         [Fact]
         public void EqualsMethods()
         {
-            Assert.True(!_test1.Equals(_test2));
-            Assert.True(!_test3.Equals(_test1));
-            Assert.True(!_test2.Equals(new SqlString("TEST")));
+            Assert.False(_test1.Equals(_test2));
+            Assert.False(_test3.Equals(_test1));
+            Assert.False(_test2.Equals(new SqlString("TEST")));
             Assert.True(_test2.Equals(_test3));
 
             // Static Equals()-method
             Assert.True(SqlString.Equals(_test2, _test3).Value);
-            Assert.True(!SqlString.Equals(_test1, _test2).Value);
-        }
-
-        [Fact]
-        public void GetHashCodeTest()
-        {
-            // FIXME: Better way to test HashCode
-            Assert.Equal(_test1.GetHashCode(), _test1.GetHashCode());
-            Assert.True(_test1.GetHashCode() != _test2.GetHashCode());
-            Assert.True(_test2.GetHashCode() == _test2.GetHashCode());
-        }
-
-        [Fact]
-        public void GetTypeTest()
-        {
-            Assert.Equal("System.Data.SqlTypes.SqlString", _test1.GetType().ToString());
-            Assert.Equal("System.String", _test1.Value.GetType().ToString());
+            Assert.False(SqlString.Equals(_test1, _test2).Value);
         }
 
         [Fact]
         public void Greaters()
         {
             // GreateThan ()
-            Assert.True(!SqlString.GreaterThan(_test1, _test2).Value);
+            Assert.False(SqlString.GreaterThan(_test1, _test2).Value);
             Assert.True(SqlString.GreaterThan(_test2, _test1).Value);
-            Assert.True(!SqlString.GreaterThan(_test2, _test3).Value);
+            Assert.False(SqlString.GreaterThan(_test2, _test3).Value);
 
             // GreaterTharOrEqual ()
-            Assert.True(!SqlString.GreaterThanOrEqual(_test1, _test2).Value);
+            Assert.False(SqlString.GreaterThanOrEqual(_test1, _test2).Value);
             Assert.True(SqlString.GreaterThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlString.GreaterThanOrEqual(_test2, _test3).Value);
         }
@@ -308,13 +286,13 @@ namespace System.Data.Tests.SqlTypes
         public void Lessers()
         {
             // LessThan()
-            Assert.True(!SqlString.LessThan(_test2, _test3).Value);
-            Assert.True(!SqlString.LessThan(_test2, _test1).Value);
+            Assert.False(SqlString.LessThan(_test2, _test3).Value);
+            Assert.False(SqlString.LessThan(_test2, _test1).Value);
             Assert.True(SqlString.LessThan(_test1, _test2).Value);
 
             // LessThanOrEqual ()
             Assert.True(SqlString.LessThanOrEqual(_test1, _test2).Value);
-            Assert.True(!SqlString.LessThanOrEqual(_test2, _test1).Value);
+            Assert.False(SqlString.LessThanOrEqual(_test2, _test1).Value);
             Assert.True(SqlString.LessThanOrEqual(_test3, _test2).Value);
             Assert.True(SqlString.LessThanOrEqual(_test2, SqlString.Null).IsNull);
         }
@@ -325,7 +303,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.True(SqlString.NotEquals(_test1, _test2).Value);
             Assert.True(SqlString.NotEquals(_test2, _test1).Value);
             Assert.True(SqlString.NotEquals(_test3, _test1).Value);
-            Assert.True(!SqlString.NotEquals(_test2, _test3).Value);
+            Assert.False(SqlString.NotEquals(_test2, _test3).Value);
             Assert.True(SqlString.NotEquals(SqlString.Null, _test3).IsNull);
         }
 
@@ -343,8 +321,8 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Clone()
         {
-            SqlString TestSqlString = _test1.Clone();
-            Assert.Equal(_test1, TestSqlString);
+            SqlString testSqlString = _test1.Clone();
+            Assert.Equal(_test1, testSqlString);
         }
 
         [Fact]
@@ -378,15 +356,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Equal((byte)105, _test1.GetUnicodeBytes()[2]);
 
-            try
-            {
-                byte test = _test1.GetUnicodeBytes()[105];
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                Assert.Equal(typeof(IndexOutOfRangeException), e.GetType());
-            }
+            Assert.Throws<IndexOutOfRangeException>(() => _test1.GetUnicodeBytes()[105]);
         }
 
         [Fact]
@@ -516,46 +486,46 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Conversions()
         {
-            SqlString String250 = new SqlString("250");
-            SqlString String9E300 = new SqlString("9E+300");
+            SqlString string250 = new SqlString("250");
+            SqlString string9E300 = new SqlString("9E+300");
 
             // ToSqlBoolean ()
             Assert.True((new SqlString("1")).ToSqlBoolean().Value);
-            Assert.True(!(new SqlString("0")).ToSqlBoolean().Value);
+            Assert.False((new SqlString("0")).ToSqlBoolean().Value);
             Assert.True((new SqlString("True")).ToSqlBoolean().Value);
-            Assert.True(!(new SqlString("FALSE")).ToSqlBoolean().Value);
+            Assert.False((new SqlString("FALSE")).ToSqlBoolean().Value);
             Assert.True(SqlString.Null.ToSqlBoolean().IsNull);
 
             // ToSqlByte ()
-            Assert.Equal((byte)250, String250.ToSqlByte().Value);
+            Assert.Equal((byte)250, string250.ToSqlByte().Value);
 
             // ToSqlDateTime
             Assert.Equal(10, (new SqlString("2002-10-10")).ToSqlDateTime().Value.Day);
 
             // ToSqlDecimal ()
-            Assert.Equal(250, String250.ToSqlDecimal().Value);
+            Assert.Equal(250, string250.ToSqlDecimal().Value);
 
             // ToSqlDouble
-            Assert.Equal(9E+300, String9E300.ToSqlDouble());
+            Assert.Equal(9E+300, string9E300.ToSqlDouble());
 
             // ToSqlGuid
             SqlString TestGuid = new SqlString("11111111-1111-1111-1111-111111111111");
             Assert.Equal(new SqlGuid("11111111-1111-1111-1111-111111111111"), TestGuid.ToSqlGuid());
 
             // ToSqlInt16 ()
-            Assert.Equal((short)250, String250.ToSqlInt16().Value);
+            Assert.Equal((short)250, string250.ToSqlInt16().Value);
 
             // ToSqlInt32 ()
-            Assert.Equal(250, String250.ToSqlInt32().Value);
+            Assert.Equal(250, string250.ToSqlInt32().Value);
 
             // ToSqlInt64 ()
-            Assert.Equal(250, String250.ToSqlInt64().Value);
+            Assert.Equal(250, string250.ToSqlInt64().Value);
 
             // ToSqlMoney ()
-            Assert.Equal(250.0000M, String250.ToSqlMoney().Value);
+            Assert.Equal(250.0000M, string250.ToSqlMoney().Value);
 
             // ToSqlSingle ()
-            Assert.Equal(250, String250.ToSqlSingle().Value);
+            Assert.Equal(250, string250.ToSqlSingle().Value);
 
             // ToString ()
             Assert.Equal("First TestString", _test1.ToString());
@@ -566,8 +536,8 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void ArithmeticOperators()
         {
-            SqlString TestString = new SqlString("...Testing...");
-            Assert.Equal("First TestString...Testing...", _test1 + TestString);
+            SqlString testString = new SqlString("...Testing...");
+            Assert.Equal("First TestString...Testing...", _test1 + testString);
             Assert.Equal(SqlString.Null, _test1 + SqlString.Null);
         }
 
@@ -576,23 +546,23 @@ namespace System.Data.Tests.SqlTypes
         {
             // == -operator
             Assert.True((_test2 == _test3).Value);
-            Assert.True(!(_test1 == _test2).Value);
+            Assert.False((_test1 == _test2).Value);
             Assert.True((_test1 == SqlString.Null).IsNull);
 
             // != -operator
-            Assert.True(!(_test3 != _test2).Value);
-            Assert.True(!(_test2 != _test3).Value);
+            Assert.False((_test3 != _test2).Value);
+            Assert.False((_test2 != _test3).Value);
             Assert.True((_test1 != _test3).Value);
             Assert.True((_test1 != SqlString.Null).IsNull);
 
             // > -operator
             Assert.True((_test2 > _test1).Value);
-            Assert.True(!(_test1 > _test3).Value);
-            Assert.True(!(_test2 > _test3).Value);
+            Assert.False((_test1 > _test3).Value);
+            Assert.False((_test2 > _test3).Value);
             Assert.True((_test1 > SqlString.Null).IsNull);
 
             // >= -operator
-            Assert.True(!(_test1 >= _test3).Value);
+            Assert.False((_test1 >= _test3).Value);
             Assert.True((_test3 >= _test1).Value);
             Assert.True((_test2 >= _test3).Value);
             Assert.True((_test1 >= SqlString.Null).IsNull);
@@ -600,12 +570,12 @@ namespace System.Data.Tests.SqlTypes
             // < -operator
             Assert.True((_test1 < _test2).Value);
             Assert.True((_test1 < _test3).Value);
-            Assert.True(!(_test2 < _test3).Value);
+            Assert.False((_test2 < _test3).Value);
             Assert.True((_test1 < SqlString.Null).IsNull);
 
             // <= -operator
             Assert.True((_test1 <= _test3).Value);
-            Assert.True(!(_test3 <= _test1).Value);
+            Assert.False((_test3 <= _test1).Value);
             Assert.True((_test2 <= _test3).Value);
             Assert.True((_test1 <= SqlString.Null).IsNull);
         }
@@ -613,55 +583,48 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void SqlBooleanToSqlString()
         {
-            SqlBoolean TestBoolean = new SqlBoolean(true);
-            SqlBoolean TestBoolean2 = new SqlBoolean(false);
-            SqlString Result;
+            SqlBoolean testBoolean = new SqlBoolean(true);
+            SqlBoolean testBoolean2 = new SqlBoolean(false);
+            SqlString result;
 
-            Result = (SqlString)TestBoolean;
-            Assert.Equal("True", Result.Value);
+            result = (SqlString)testBoolean;
+            Assert.Equal("True", result.Value);
 
-            Result = (SqlString)TestBoolean2;
-            Assert.Equal("False", Result.Value);
+            result = (SqlString)testBoolean2;
+            Assert.Equal("False", result.Value);
 
-            Result = (SqlString)SqlBoolean.Null;
-            Assert.True(Result.IsNull);
+            result = (SqlString)SqlBoolean.Null;
+            Assert.True(result.IsNull);
         }
 
         [Fact]
         public void SqlByteToBoolean()
         {
-            SqlByte TestByte = new SqlByte(250);
-            Assert.Equal("250", ((SqlString)TestByte).Value);
-            try
-            {
-                SqlString test = ((SqlString)SqlByte.Null).Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            SqlByte testByte = new SqlByte(250);
+            Assert.Equal("250", ((SqlString)testByte).Value);
+
+            Assert.Throws<SqlNullValueException>(() => ((SqlString)SqlByte.Null).Value);
         }
 
         [Fact]
         public void SqlDateTimeToSqlString()
         {
-            SqlDateTime TestTime = new SqlDateTime(2002, 10, 22, 9, 52, 30);
-            Assert.Equal(TestTime.Value.ToString((IFormatProvider)null), ((SqlString)TestTime).Value);
+            SqlDateTime testTime = new SqlDateTime(2002, 10, 22, 9, 52, 30);
+            Assert.Equal(testTime.Value.ToString((IFormatProvider)null), ((SqlString)testTime).Value);
         }
 
         [Fact]
         public void SqlDecimalToSqlString()
         {
-            SqlDecimal TestDecimal = new SqlDecimal(1000.2345);
-            Assert.Equal("1000.2345000000000", ((SqlString)TestDecimal).Value);
+            SqlDecimal testDecimal = new SqlDecimal(1000.2345);
+            Assert.Equal("1000.2345000000000", ((SqlString)testDecimal).Value);
         }
 
         [Fact]
         public void SqlDoubleToSqlString()
         {
-            SqlDouble TestDouble = new SqlDouble(64E+64);
-            Assert.Equal(6.4E+65.ToString(), ((SqlString)TestDouble).Value);
+            SqlDouble testDouble = new SqlDouble(64E+64);
+            Assert.Equal(6.4E+65.ToString(), ((SqlString)testDouble).Value);
         }
 
         [Fact]
@@ -670,64 +633,43 @@ namespace System.Data.Tests.SqlTypes
             byte[] b = new byte[16];
             b[0] = 100;
             b[1] = 64;
-            SqlGuid TestGuid = new SqlGuid(b);
+            SqlGuid testGuid = new SqlGuid(b);
 
-            Assert.Equal("00004064-0000-0000-0000-000000000000", ((SqlString)TestGuid).Value);
-            try
-            {
-                SqlString test = ((SqlString)SqlGuid.Null).Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            Assert.Equal("00004064-0000-0000-0000-000000000000", ((SqlString)testGuid).Value);
+
+            Assert.Throws<SqlNullValueException>(() => ((SqlString)SqlGuid.Null).Value);
         }
 
         [Fact]
         public void SqlInt16ToSqlString()
         {
-            SqlInt16 TestInt = new SqlInt16(20012);
-            Assert.Equal("20012", ((SqlString)TestInt).Value);
-            try
-            {
-                SqlString test = ((SqlString)SqlInt16.Null).Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            SqlInt16 testInt = new SqlInt16(20012);
+            Assert.Equal("20012", ((SqlString)testInt).Value);
+
+            Assert.Throws<SqlNullValueException>(() => ((SqlString)SqlInt16.Null).Value);
         }
 
         [Fact]
         public void SqlInt32ToSqlString()
         {
-            SqlInt32 TestInt = new SqlInt32(-12456);
-            Assert.Equal("-12456", ((SqlString)TestInt).Value);
-            try
-            {
-                SqlString test = ((SqlString)SqlInt32.Null).Value;
-                Assert.False(true);
-            }
-            catch (SqlNullValueException e)
-            {
-                Assert.Equal(typeof(SqlNullValueException), e.GetType());
-            }
+            SqlInt32 testInt = new SqlInt32(-12456);
+            Assert.Equal("-12456", ((SqlString)testInt).Value);
+
+            Assert.Throws<SqlNullValueException>(() => ((SqlString)SqlInt32.Null).Value);
         }
 
         [Fact]
         public void SqlInt64ToSqlString()
         {
-            SqlInt64 TestInt = new SqlInt64(10101010);
-            Assert.Equal("10101010", ((SqlString)TestInt).Value);
+            SqlInt64 testInt = new SqlInt64(10101010);
+            Assert.Equal("10101010", ((SqlString)testInt).Value);
         }
 
         [Fact]
         public void SqlMoneyToSqlString()
         {
-            SqlMoney TestMoney = new SqlMoney(646464.6464);
-            Assert.Equal(646464.6464.ToString(), ((SqlString)TestMoney).Value);
+            SqlMoney testMoney = new SqlMoney(646464.6464);
+            Assert.Equal(646464.6464.ToString(), ((SqlString)testMoney).Value);
         }
 
         [Fact]
@@ -746,8 +688,8 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void StringToSqlString()
         {
-            string TestString = "Test String";
-            Assert.Equal("Test String", ((SqlString)TestString).Value);
+            string testString = "Test String";
+            Assert.Equal("Test String", ((SqlString)testString).Value);
         }
 
         [Fact]

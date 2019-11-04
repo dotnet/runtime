@@ -39,7 +39,7 @@ namespace System.Data.Tests
             _changesCounter++;
         }
 
-        private DataSet getDataSet()
+        private DataSet GetDataSet()
         {
             var ds = new DataSet();
             DataTable dt1 = DataProvider.CreateParentDataTable();
@@ -58,7 +58,7 @@ namespace System.Data.Tests
         [Fact]
         public void AddRange()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             DataRelation[] relArray = new DataRelation[2];
 
             relArray[0] = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
@@ -76,7 +76,7 @@ namespace System.Data.Tests
         [Fact]
         public void Add_ByDataColumns()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add(ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
 
             Assert.Equal(1, ds.Relations.Count);
@@ -91,7 +91,7 @@ namespace System.Data.Tests
         [Fact]
         public void Add_ByNameDataColumns()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
 
             Assert.Equal(1, ds.Relations.Count);
@@ -110,7 +110,7 @@ namespace System.Data.Tests
         [Fact]
         public void Add_ByNameDataColumnsWithConstraint()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"], true);
 
             Assert.Equal(1, ds.Relations.Count);
@@ -128,7 +128,7 @@ namespace System.Data.Tests
         [Fact]
         public void Add_ByNameDataColumnsWithOutConstraint()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"], false);
 
             Assert.Equal(1, ds.Relations.Count);
@@ -147,7 +147,7 @@ namespace System.Data.Tests
         [Fact]
         public void CanRemove()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add(ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             Assert.True(ds.Relations.CanRemove(ds.Relations[0]));
             Assert.True(ds.Tables[0].ChildRelations.CanRemove(ds.Tables[0].ChildRelations[0]));
@@ -157,8 +157,8 @@ namespace System.Data.Tests
         [Fact]
         public void CanRemove_DataRelation()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
 
             DataRelation rel = new DataRelation("rel1",
                 ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
@@ -169,7 +169,7 @@ namespace System.Data.Tests
         [Fact]
         public void Clear()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
 
             ds.Relations.Add(ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             ds.Relations.CollectionChanged += new CollectionChangeEventHandler(Relations_CollectionChanged);
@@ -184,7 +184,7 @@ namespace System.Data.Tests
         [Fact]
         public void CollectionChanged()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
 
             ds.Relations.CollectionChanged += new CollectionChangeEventHandler(Relations_CollectionChanged);
 
@@ -201,7 +201,7 @@ namespace System.Data.Tests
         [Fact]
         public void Contains()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
 
             Assert.True(ds.Relations.Contains("rel1"));
@@ -212,7 +212,7 @@ namespace System.Data.Tests
         [Fact]
         public void CopyTo()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
 
             DataRelation[] dataRelArray = new DataRelation[2];
 
@@ -230,7 +230,7 @@ namespace System.Data.Tests
         [Fact]
         public void Count()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             Assert.Equal(0, ds.Relations.Count);
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             Assert.Equal(1, ds.Relations.Count);
@@ -245,7 +245,7 @@ namespace System.Data.Tests
         [Fact]
         public void GetEnumerator()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             int counter = 0;
             ds.Relations.Add("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             ds.Relations.Add("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
@@ -263,8 +263,8 @@ namespace System.Data.Tests
         [Fact]
         public void IndexOf_ByDataRelation()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
 
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
@@ -282,8 +282,8 @@ namespace System.Data.Tests
         [Fact]
         public void IndexOf_ByDataRelationName()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
 
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
@@ -301,7 +301,7 @@ namespace System.Data.Tests
         [Fact]
         public void Item()
         {
-            DataSet ds = getDataSet();
+            DataSet ds = GetDataSet();
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
 
@@ -380,27 +380,10 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Add_DataColumn5()
-        {
-            DataSet ds = GetDataSet();
-        }
-
-        private DataSet GetDataSet()
-        {
-            var ds = new DataSet();
-            DataTable dt1 = DataProvider.CreateParentDataTable();
-            DataTable dt2 = DataProvider.CreateChildDataTable();
-
-            ds.Tables.Add(dt1);
-            ds.Tables.Add(dt2);
-            return ds;
-        }
-
-        [Fact]
         public void Remove_DataColumn()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
 
@@ -430,8 +413,8 @@ namespace System.Data.Tests
         [Fact]
         public void Remove_String()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
 
@@ -461,10 +444,11 @@ namespace System.Data.Tests
             });
         }
 
+        [Fact]
         private void RemoveAt()
         {
-            DataSet ds = getDataSet();
-            DataSet ds1 = getDataSet();
+            DataSet ds = GetDataSet();
+            DataSet ds1 = GetDataSet();
             DataRelation rel1 = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"], ds.Tables[1].Columns["ParentId"]);
             DataRelation rel2 = new DataRelation("rel2", ds.Tables[0].Columns["String1"], ds.Tables[1].Columns["String1"]);
 

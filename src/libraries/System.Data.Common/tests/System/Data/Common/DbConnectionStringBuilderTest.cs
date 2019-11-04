@@ -86,40 +86,25 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < invalid_keywords.Length; i++)
             {
                 string keyword = invalid_keywords[i];
-                try
-                {
-                    _builder.Add(keyword, "abc");
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // Invalid keyword, contain one or more of 'no characters',
-                    // 'control characters', 'leading or trailing whitespace'
-                    // or 'leading semicolons'
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                    Assert.Contains(keyword, ex.Message);
-                    Assert.Equal(keyword, ex.ParamName);
-                }
+
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => _builder.Add(keyword, "abc"));
+                // Invalid keyword, contain one or more of 'no characters',
+                // 'control characters', 'leading or trailing whitespace'
+                // or 'leading semicolons'
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                Assert.Contains(keyword, ex.Message);
+                Assert.Equal(keyword, ex.ParamName);
             }
         }
 
         [Fact]
         public void Add_Keyword_Null()
         {
-            try
-            {
-                _builder.Add(null, "abc");
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _builder.Add(null, "abc"));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyword", ex.ParamName);
         }
 
         [Fact]
@@ -289,113 +274,61 @@ namespace System.Data.Tests.Common
             for (int i = 0; i < invalid_keywords.Length; i++)
             {
                 string keyword = invalid_keywords[i];
-                try
-                {
-                    _builder[keyword] = "abc";
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // Invalid keyword, contain one or more of 'no characters',
-                    // 'control characters', 'leading or trailing whitespace'
-                    // or 'leading semicolons'
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                    Assert.Contains(keyword, ex.Message);
-                    Assert.Equal(keyword, ex.ParamName);
-                }
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => _builder[keyword] = "abc");
+                // Invalid keyword, contain one or more of 'no characters',
+                // 'control characters', 'leading or trailing whitespace'
+                // or 'leading semicolons'
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                Assert.Contains(keyword, ex.Message);
+                Assert.Equal(keyword, ex.ParamName);
 
                 _builder[keyword] = null;
                 Assert.False(_builder.ContainsKey(keyword));
 
-                try
-                {
-                    object value = _builder[keyword];
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // Keyword not supported: '...'
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-
-                    // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                    // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                    // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                    Assert.Matches(@"[\p{Pi}\p{Po}]" + Regex.Escape(keyword) + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                    Assert.Null(ex.ParamName);
-                }
+                ArgumentException ex2 = Assert.Throws<ArgumentException>(() => _builder[keyword]);
+                // Keyword not supported: '...'
+                Assert.Null(ex2.InnerException);
+                Assert.NotNull(ex2.Message);
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + Regex.Escape(keyword) + @"[\p{Pf}\p{Po}]", ex2.Message);
+                Assert.Null(ex2.ParamName);
             }
         }
 
         [Fact]
         public void Indexer_Keyword_NotSupported()
         {
-            try
-            {
-                object value = _builder["abc"];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Keyword not supported: 'abc'
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "abc" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => _builder["abc"]);
+            // Keyword not supported: 'abc'
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "abc" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact]
         public void Indexer_Keyword_Null()
         {
-            try
-            {
-                _builder[null] = "abc";
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _builder[null] = "abc");
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyword", ex.ParamName);
 
-            try
-            {
-                _builder[null] = null;
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex2 = Assert.Throws<ArgumentNullException>(() => _builder[null] = null);
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal("keyword", ex2.ParamName);
 
-            try
-            {
-                object value = _builder[null];
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex3 = Assert.Throws<ArgumentNullException>(() => _builder[null]);
+            Assert.Null(ex3.InnerException);
+            Assert.NotNull(ex3.Message);
+            Assert.Equal("keyword", ex3.ParamName);
         }
 
         [Fact]
@@ -403,25 +336,17 @@ namespace System.Data.Tests.Common
         {
             _builder["DriverID"] = null;
             Assert.Equal(string.Empty, _builder.ConnectionString);
-            try
-            {
-                object value = _builder["DriverID"];
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Keyword not supported: 'DriverID'
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
 
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "DriverID" + @"[\p{Pf}\p{Po}]", ex.Message);
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => _builder["DriverID"]);
+            // Keyword not supported: 'DriverID'
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "DriverID" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Null(ex.ParamName);
 
-                Assert.Null(ex.ParamName);
-            }
             Assert.False(_builder.ContainsKey("DriverID"));
             Assert.Equal(string.Empty, _builder.ConnectionString);
 
@@ -513,18 +438,10 @@ namespace System.Data.Tests.Common
         [Fact]
         public void Remove_Keyword_Null()
         {
-            try
-            {
-                _builder.Remove(null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _builder.Remove(null));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyword", ex.ParamName);
         }
 
         [Fact]
@@ -582,18 +499,10 @@ namespace System.Data.Tests.Common
         public void ContainsKey_Keyword_Null()
         {
             _builder["SourceType"] = "DBC";
-            try
-            {
-                _builder.ContainsKey(null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _builder.ContainsKey(null));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyword", ex.ParamName);
         }
 
         [Fact]
@@ -730,60 +639,34 @@ namespace System.Data.Tests.Common
         [Fact] // AppendKeyValuePair (StringBuilder, String, String)
         public void AppendKeyValuePair1_Builder_Null()
         {
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    null, "Server",
-                    "localhost");
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("builder", ex.ParamName);
-            }
+            ArgumentNullException ex =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(null, "Server", "localhost"));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("builder", ex.ParamName);
         }
 
         [Fact] // AppendKeyValuePair (StringBuilder, String, String)
         public void AppendKeyValuePair1_Keyword_Empty()
         {
             StringBuilder sb = new StringBuilder();
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, string.Empty, "localhost");
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Expecting non-empty string for 'keyName'
-                // parameter
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex =
+                Assert.Throws<ArgumentException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, string.Empty, "localhost"));
+            // Expecting non-empty string for 'keyName' parameter
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact] // AppendKeyValuePair (StringBuilder, String, String)
         public void AppendKeyValuePair1_Keyword_Null()
         {
             StringBuilder sb = new StringBuilder();
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, null, "localhost");
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyName", ex.ParamName);
-            }
+            ArgumentNullException ex =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, null, "localhost"));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyName", ex.ParamName);
         }
 
         [Fact] // AppendKeyValuePair (StringBuilder, String, String, Boolean)
@@ -1619,105 +1502,54 @@ namespace System.Data.Tests.Common
         [Fact] // AppendKeyValuePair (StringBuilder, String, String, Boolean)
         public void AppendKeyValuePair2_Builder_Null()
         {
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    null, "Server",
-                    "localhost", true);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("builder", ex.ParamName);
-            }
+            ArgumentNullException ex1 =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(null, "Server", "localhost", true));
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Equal("builder", ex1.ParamName);
 
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    null, "Server",
-                    "localhost", false);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("builder", ex.ParamName);
-            }
+            ArgumentNullException ex2 =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(null, "Server", "localhost", false));
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal("builder", ex2.ParamName);
         }
 
         [Fact] // AppendKeyValuePair (StringBuilder, String, String, Boolean)
         public void AppendKeyValuePair2_Keyword_Empty()
         {
             StringBuilder sb = new StringBuilder();
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, string.Empty, "localhost", true);
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Expecting non-empty string for 'keyName'
-                // parameter
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Null(ex.ParamName);
-            }
 
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, string.Empty, "localhost", false);
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // Expecting non-empty string for 'keyName'
-                // parameter
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Null(ex.ParamName);
-            }
+            ArgumentException ex1 =
+                Assert.Throws<ArgumentException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, string.Empty, "localhost", true));
+            // Expecting non-empty string for 'keyName' parameter
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Null(ex1.ParamName);
+
+            ArgumentException ex2 =
+                Assert.Throws<ArgumentException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, string.Empty, "localhost", false));
+            // Expecting non-empty string for 'keyName' parameter
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Null(ex2.ParamName);
         }
 
         [Fact] // AppendKeyValuePair (StringBuilder, String, String, Boolean)
         public void AppendKeyValuePair2_Keyword_Null()
         {
             StringBuilder sb = new StringBuilder();
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, null, "localhost", true);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyName", ex.ParamName);
-            }
+            ArgumentNullException ex1 =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, null, "localhost", true));
+            Assert.Null(ex1.InnerException);
+            Assert.NotNull(ex1.Message);
+            Assert.Equal("keyName", ex1.ParamName);
 
-            try
-            {
-                DbConnectionStringBuilder.AppendKeyValuePair(
-                    sb, null, "localhost", false);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyName", ex.ParamName);
-            }
+            ArgumentNullException ex2 =
+                Assert.Throws<ArgumentNullException>(() => DbConnectionStringBuilder.AppendKeyValuePair(sb, null, "localhost", false));
+            Assert.Null(ex2.InnerException);
+            Assert.NotNull(ex2.Message);
+            Assert.Equal("keyName", ex2.ParamName);
         }
 
         [Fact]
@@ -1840,19 +1672,11 @@ namespace System.Data.Tests.Common
         [Fact]
         public void TryGetValue_Keyword_Null()
         {
-            object value = null;
-            try
-            {
-                _builder.TryGetValue(null, out value);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException ex)
-            {
-                Assert.Equal(typeof(ArgumentNullException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-                Assert.Equal("keyword", ex.ParamName);
-            }
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _builder.TryGetValue(null, out object value));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            Assert.Equal("keyword", ex.ParamName);
+
         }
 
         [Fact]
@@ -2426,21 +2250,13 @@ namespace System.Data.Tests.Common
                 if (found)
                     continue;
 
-                try
-                {
-                    sb.ConnectionString = test1[0];
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // Format of the initialization string does
-                    // not conform to specification starting
-                    // at index 0
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                    Assert.Null(ex.ParamName);
-                }
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => sb.ConnectionString = test1[0]);
+                // Format of the initialization string does
+                // not conform to specification starting
+                // at index 0
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                Assert.Null(ex.ParamName);
             }
 
             // check uniqueness of tests
@@ -2450,8 +2266,7 @@ namespace System.Data.Tests.Common
                 {
                     if (i == j)
                         continue;
-                    if (tests1[i] == tests1[j])
-                        Assert.False(true);
+                    Assert.NotEqual(tests1[i], tests1[j]);
                 }
             }
 
@@ -2462,8 +2277,7 @@ namespace System.Data.Tests.Common
                 {
                     if (i == j)
                         continue;
-                    if (tests2[i] == tests2[j])
-                        Assert.False(true);
+                    Assert.NotEqual(tests2[i], tests2[j]);
                 }
             }
         }

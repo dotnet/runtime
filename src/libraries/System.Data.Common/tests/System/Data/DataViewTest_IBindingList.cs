@@ -25,12 +25,10 @@
 
 
 using System.ComponentModel;
+using Xunit;
 
 namespace System.Data.Tests
 {
-    using Xunit;
-
-
     public class DataViewTest_IBindingList
     {
         private DataTable _dt = new DataTable();

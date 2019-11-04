@@ -160,42 +160,6 @@ namespace System.Data.Tests.Common
         }
 
         [Fact]
-        public void Equals()
-        {
-            //            DataTableMappingCollection collect2=new DataTableMappingCollection();
-            _tableMapCollection.AddRange(_tabs);
-            //            collect2.AddRange(tabs);
-            DataTableMappingCollection copy1;
-            copy1 = _tableMapCollection;
-
-            //            Assert.False(tableMapCollection.Equals(collect2));
-            Assert.True(_tableMapCollection.Equals(copy1));
-            //            Assert.False(collect2.Equals(tableMapCollection));
-            Assert.True(copy1.Equals(_tableMapCollection));
-            //            Assert.False(collect2.Equals(copy1));
-            Assert.True(copy1.Equals(_tableMapCollection));
-            Assert.True(_tableMapCollection.Equals(_tableMapCollection));
-            //            Assert.True(collect2.Equals(collect2));
-            Assert.True(copy1.Equals(copy1));
-
-            //            Assert.False(Object.Equals(collect2, tableMapCollection));
-            Assert.True(object.Equals(copy1, _tableMapCollection));
-            //            Assert.False(Object.Equals(tableMapCollection, collect2));
-            Assert.True(object.Equals(_tableMapCollection, copy1));
-            //            Assert.False(Object.Equals(copy1, collect2));
-            Assert.True(object.Equals(_tableMapCollection, copy1));
-            Assert.True(object.Equals(_tableMapCollection, _tableMapCollection));
-            //            Assert.True(Object.Equals(collect2, collect2));
-            Assert.True(object.Equals(copy1, copy1));
-            //            Assert.False(Object.Equals(tableMapCollection, collect2));
-            Assert.True(object.Equals(_tableMapCollection, copy1));
-            //            Assert.False(Object.Equals(collect2, tableMapCollection));
-            Assert.True(object.Equals(copy1, _tableMapCollection));
-            //            Assert.False(Object.Equals(collect2, copy1));
-            Assert.True(object.Equals(copy1, _tableMapCollection));
-        }
-
-        [Fact]
         public void GetByDataSetTable()
         {
             _tableMapCollection.AddRange(_tabs);

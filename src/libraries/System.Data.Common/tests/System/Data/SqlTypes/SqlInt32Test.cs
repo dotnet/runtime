@@ -497,15 +497,9 @@ namespace System.Data.Tests.SqlTypes
             ReadWriteXmlTestInternal(xml1, test1, "BA01");
             ReadWriteXmlTestInternal(xml2, test2, "BA02");
 
-            try
-            {
-                ReadWriteXmlTestInternal(xml3, test3, "#BA03");
-                Assert.False(true);
-            }
-            catch (InvalidOperationException e)
-            {
-                Assert.Equal(typeof(FormatException), e.InnerException.GetType());
-            }
+            InvalidOperationException ex =
+                Assert.Throws<InvalidOperationException>(() => ReadWriteXmlTestInternal(xml3, test3, "#BA03"));
+            Assert.Equal(typeof(FormatException), ex.InnerException.GetType());
         }
     }
 }

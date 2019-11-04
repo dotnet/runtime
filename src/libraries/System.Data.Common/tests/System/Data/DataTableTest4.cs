@@ -585,20 +585,12 @@ namespace System.Data.Tests
 
             using (FileStream stream = new FileStream(_tempFile, FileMode.Open))
             {
-                try
-                {
-                    table.ReadXml(stream);
-                    //Should throw an exception if the Xml
-                    // File has no schema and target table
-                    // too does not define any schema
-                    Assert.False(true);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    Assert.Equal(typeof(InvalidOperationException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                }
+                // Should throw an exception if the Xml
+                // File has no schema and target table
+                // too does not define any schema
+                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => table.ReadXml(stream));
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
             }
         }
 
@@ -638,27 +630,17 @@ namespace System.Data.Tests
             _dataSet.Tables.Add(table);
 
             //Read the Xml and the Schema into a table which already belongs to a DataSet
-            //and the table name does not match with the table ion the source XML
-            try
-            {
-                table.ReadXml(_tempFile);
-                Assert.False(true);
-            }
-            catch (ArgumentException ex)
-            {
-                // DataTable 'Table1' does not match to any
-                // DataTable in source
-                Assert.Equal(typeof(ArgumentException), ex.GetType());
-                Assert.Null(ex.InnerException);
-                Assert.NotNull(ex.Message);
-
-                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                Assert.Null(ex.ParamName);
-            }
+            //and the table name does not match with the table ion the source XML 
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => table.ReadXml(_tempFile));
+            // DataTable 'Table1' does not match to any
+            // DataTable in source
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
+            Assert.Null(ex.ParamName);
         }
 
         [Fact]
@@ -1514,26 +1496,17 @@ namespace System.Data.Tests
                 DataTable table = new DataTable("Table1");
                 table.Columns.Add(new DataColumn("id", typeof(int)));
 
-                try
-                {
-                    table.ReadXml(stream);
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // DataTable 'Table1' does not match to
-                    // any DataTable in source
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-
-                    // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                    // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                    // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                    Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                    Assert.Null(ex.ParamName);
-                }
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => table.ReadXml(stream));
+                // DataTable 'Table1' does not match to
+                // any DataTable in source
+                Assert.Equal(typeof(ArgumentException), ex.GetType());
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
+                Assert.Null(ex.ParamName);
             }
         }
 
@@ -1698,26 +1671,17 @@ namespace System.Data.Tests
                 table.Columns.Add(new DataColumn("id", Type.GetType("System.Int32")));
                 ds.Tables.Add(table);
 
-                try
-                {
-                    table.ReadXml(stream);
-                    Assert.False(true);
-                }
-                catch (ArgumentException ex)
-                {
-                    // DataTable 'Table1' does not match to
-                    // any DataTable in source
-                    Assert.Equal(typeof(ArgumentException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
+                ArgumentException ex = Assert.Throws<ArgumentException>(() => table.ReadXml(stream));
+                // DataTable 'Table1' does not match to
+                // any DataTable in sources
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
+                Assert.Null(ex.ParamName);
 
-                    // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
-                    // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
-                    // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-                    Assert.Matches(@"[\p{Pi}\p{Po}]" + "Table1" + @"[\p{Pf}\p{Po}]", ex.Message);
-
-                    Assert.Null(ex.ParamName);
-                }
             }
         }
 
@@ -1781,17 +1745,9 @@ namespace System.Data.Tests
             {
                 DataTable table = new DataTable();
 
-                try
-                {
-                    table.ReadXml(stream);
-                    Assert.False(true);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    Assert.Equal(typeof(InvalidOperationException), ex.GetType());
-                    Assert.Null(ex.InnerException);
-                    Assert.NotNull(ex.Message);
-                }
+                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => table.ReadXml(stream));
+                Assert.Null(ex.InnerException);
+                Assert.NotNull(ex.Message);
             }
         }
 
