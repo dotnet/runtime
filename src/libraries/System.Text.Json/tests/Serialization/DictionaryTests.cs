@@ -512,84 +512,89 @@ namespace System.Text.Json.Serialization.Tests
                     yield return new object[] { type, invalidJson };
                 }
             }
+
+            yield return new object[] { typeof(int[]), @"""test""" };
+            yield return new object[] { typeof(int[]), @"1" };
+            yield return new object[] { typeof(int[]), @"false" };
+            yield return new object[] { typeof(int[]), @"{}" };
+            yield return new object[] { typeof(int[]), @"{""test"": 1}" };
+            yield return new object[] { typeof(int[]), @"[""test""" };
+            yield return new object[] { typeof(int[]), @"[""test""]" };
+            yield return new object[] { typeof(int[]), @"[true]" };
+            yield return new object[] { typeof(int[]), @"[{}]" };
+            yield return new object[] { typeof(int[]), @"[[]]" };
+            yield return new object[] { typeof(int[]), @"[{""test"": 1}]" };
+            yield return new object[] { typeof(int[]), @"[[true]]" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": {}}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": {""test"": 1}}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": ""test""}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": 1}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": true}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [""test""}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [[]]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [true]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [{}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": ""test""}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": 1}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": false}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": {}}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": {""test"": 1}}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [""test""}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [""test""]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [true]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [{}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [[]]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [{""test"": 1}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [[true]]}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"""test""" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"1" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"false" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": 1}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": {}}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": {"""":""""}}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[""test""" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[""test""]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[true]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[{}]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[[]]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[{""test"": 1}]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[[true]]" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":""test""}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":1}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":false}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": 1}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {}}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {"""":""""}}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[true]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{}]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[]]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{""test"": 1}]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[true]]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[{""Id"":3}]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[""test""]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[1]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[false]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":1}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":{""Id"":3}}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":{}}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":[[]]}" };
+            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":[]}" };
+            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":1}" };
         }
 
-        [Theory]
-        [MemberData(nameof(DataForInvalidJsonForTypeTests))]
-        [InlineData(typeof(int[]), @"""test""")]
-        [InlineData(typeof(int[]), @"1")]
-        [InlineData(typeof(int[]), @"false")]
-        [InlineData(typeof(int[]), @"{}")]
-        [InlineData(typeof(int[]), @"{""test"": 1}")]
-        [InlineData(typeof(int[]), @"[""test""")]
-        [InlineData(typeof(int[]), @"[""test""]")]
-        [InlineData(typeof(int[]), @"[true]")]
-        [InlineData(typeof(int[]), @"[{}]")]
-        [InlineData(typeof(int[]), @"[[]]")]
-        [InlineData(typeof(int[]), @"[{""test"": 1}]")]
-        [InlineData(typeof(int[]), @"[[true]]")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {}}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {""test"": 1}}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": ""test""}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": 1}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": true}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [[]]}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [true]}")]
-        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": ""test""}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": 1}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": false}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": {}}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": {""test"": 1}}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [""test""}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [""test""]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [true]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [{}]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [[]]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [{""test"": 1}]}")]
-        [InlineData(typeof(ClassWithIntArray), @"{""Obj"": [[true]]}")]
-        [InlineData(typeof(Dictionary<string, string>), @"""test""")]
-        [InlineData(typeof(Dictionary<string, string>), @"1")]
-        [InlineData(typeof(Dictionary<string, string>), @"false")]
-        [InlineData(typeof(Dictionary<string, string>), @"{"""": 1}")]
-        [InlineData(typeof(Dictionary<string, string>), @"{"""": {}}")]
-        [InlineData(typeof(Dictionary<string, string>), @"{"""": {"""":""""}}")]
-        [InlineData(typeof(Dictionary<string, string>), @"[""test""")]
-        [InlineData(typeof(Dictionary<string, string>), @"[""test""]")]
-        [InlineData(typeof(Dictionary<string, string>), @"[true]")]
-        [InlineData(typeof(Dictionary<string, string>), @"[{}]")]
-        [InlineData(typeof(Dictionary<string, string>), @"[[]]")]
-        [InlineData(typeof(Dictionary<string, string>), @"[{""test"": 1}]")]
-        [InlineData(typeof(Dictionary<string, string>), @"[[true]]")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":""test""}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":1}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":false}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": 1}}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {}}}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {"""":""""}}}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""]}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[true]}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{}]}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[]]}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{""test"": 1}]}")]
-        [InlineData(typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[true]]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[{""Id"":3}]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[""test""]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[1]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[false]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":[]}")]
-        [InlineData(typeof(Dictionary<string, Poco>), @"{""key"":1}")]
-        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":{""Id"":3}}")]
-        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":{}}")]
-        [InlineData(typeof(Dictionary<string, List<Poco>>), @"{""key"":[[]]}")]
-        [InlineData(typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":[]}")]
-        [InlineData(typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":1}")]
-        public static void InvalidJsonForTypeShouldFail(Type type, string invalidJson)
+        [Fact]
+        public static void InvalidJsonForTypeShouldFail()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(invalidJson, type));
+            foreach (object[] args in DataForInvalidJsonForTypeTests()) // ~140K tests, too many for theory to handle well with our infrastructure
+            {
+                var type = (Type)args[0];
+                var invalidJson = (string)args[1];
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(invalidJson, type));
+            }
         }
 
         [Fact]
