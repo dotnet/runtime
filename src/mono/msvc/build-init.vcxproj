@@ -146,7 +146,13 @@
       <_EnableDefines>$(_EnableDefines.Trim(';'))</_EnableDefines>
       <_HaveDefines>$(_HaveDefines.Trim(';'))</_HaveDefines>
     </PropertyGroup>
+    <GetVersionsFromConfigureAC ConfigFileRoot="$(MSBuildThisFileDirectory)..\">
+      <Output TaskParameter="MonoVersion" PropertyName="_MonoVersion" />
+      <Output TaskParameter="MonoCorlibVersion" PropertyName="_MonoCorlibVersion" />
+    </GetVersionsFromConfigureAC>
     <WinConfigSetup ConfigFileRoot="$(MSBuildThisFileDirectory)..\"
+                    MonoVersion="$(_MonoVersion)"
+                    MonoCorlibVersion="$(_MonoCorlibVersion)"
                     DisableDefines=""
                     EnableDefines="$(_EnableDefines)"
                     HaveDefines="$(_HaveDefines)"/>

@@ -13,6 +13,60 @@
 #define DEFAULT_GC_NAME "Included Boehm (with typed GC)"
 #endif
 
+/* Some VES is available at runtime */
+#define ENABLE_ILGEN 1
+
+/* Start configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
+/* @ENABLE_DEFINES@ */
+/* End configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
+
+#if defined(ENABLE_HYBRID_SUSPEND)
+/* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND defines. */
+#undef ENABLE_HYBRID_SUSPEND
+#endif
+
+/* No ENABLE_DEFINES below this point */
+
+/* Keep in sync with netcore runtime-preset in configure.ac */
+#ifdef ENABLE_NETCORE
+#ifndef DISABLE_REMOTING
+#define DISABLE_REMOTING 1
+#endif
+#ifndef DISABLE_REFLECTION_EMIT_SAVE
+#define DISABLE_REFLECTION_EMIT_SAVE 1
+#endif
+#ifndef DISABLE_APPDOMAINS
+#define DISABLE_APPDOMAINS 1
+#endif
+#ifndef DISABLE_CLEANUP
+#define DISABLE_CLEANUP 1
+#endif
+#ifndef DISABLE_DESKTOP_LOADER
+#define DISABLE_DESKTOP_LOADER 1
+#endif
+#ifndef DISABLE_SECURITY
+#define DISABLE_SECURITY 1
+#endif
+#ifndef DISABLE_MDB
+#define DISABLE_MDB 1
+#endif
+#ifndef DISABLE_COM
+#define DISABLE_COM 1
+#endif
+#ifndef DISABLE_GAC
+#define DISABLE_GAC 1
+#endif
+#ifndef DISABLE_PERFCOUNTERS
+#define DISABLE_PERFCOUNTERS 1
+#endif
+#ifndef DISABLE_ATTACH
+#define DISABLE_ATTACH 1
+#endif
+#ifndef DISABLE_DLLMAP
+#define DISABLE_DLLMAP 1
+#endif
+#endif
+
 /* Disable runtime state dumping */
 #define DISABLE_CRASH_REPORTING 1
 
@@ -27,20 +81,6 @@
 /* End configure DISABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 
 /* No DISABLE_DEFINES below this point */
-
-/* Some VES is available at runtime */
-#define ENABLE_ILGEN 1
-
-/* Start configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
-/* @ENABLE_DEFINES@ */
-/* End configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
-
-#if defined(ENABLE_HYBRID_SUSPEND)
-/* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND defines. */
-#undef ENABLE_HYBRID_SUSPEND
-#endif
-
-/* No ENABLE_DEFINES below this point */
 
 /* Have access */
 #define HAVE_ACCESS 1

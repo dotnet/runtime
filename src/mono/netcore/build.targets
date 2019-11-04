@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <UsingTask TaskName="ReplaceInFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+        <Input ParameterType="System.String" Required="true" />
+        <Output ParameterType="System.String" Required="true" />
+        <Match ParameterType="System.String" Required="true" />
+        <Replace ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+        <Reference Include="System.Core" />
+        <Using Namespace="System" />
+        <Using Namespace="System.IO" />
+        <Using Namespace="System.Text.RegularExpressions" />
+        <Code Type="Fragment" Language="cs">
+        <![CDATA[
+            File.WriteAllText(Output, Regex.Replace(File.ReadAllText(Input), Match, Replace));
+        ]]>
+        </Code>
+    </Task>
+    </UsingTask>
+
+    <Import Project="$(MSBuildThisFileDirectory)..\eng\Versions.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\msvc\mono.winconfig.targets"/>
+
+    <PropertyGroup>
+        <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+        <MONO_ENABLE_LLVM Condition="'$(MONO_ENABLE_LLVM)' == ''">false</MONO_ENABLE_LLVM>
+        <DOTNET>$(MSBuildThisFileDirectory)..\.dotnet\dotnet</DOTNET>
+        <ROSLYN_VERSION>$(MicrosoftNetCompilersVersion)</ROSLYN_VERSION>
+        <NETCORETESTS_VERSION>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</NETCORETESTS_VERSION>
+        <NETCOREAPP_VERSION>$(MicrosoftNETCoreAppVersion)</NETCOREAPP_VERSION>
+        <COREARCH Condition="'$(COREARCH)' == ''">x64</COREARCH>
+        <RID Condition="'$(RID)' == ''">win-x64</RID>
+        <CORLIB_BUILD_FLAGS Condition="'$(CORLIB_BUILD_FLAGS)' == ''">-c $(Configuration)</CORLIB_BUILD_FLAGS>
+        <NETCORESDK_FILE>dotnet-runtime-$(NETCOREAPP_VERSION)-$(RID).zip</NETCORESDK_FILE>
+        <NETCORE_URL>https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$(NETCOREAPP_VERSION)/$(NETCORESDK_FILE)</NETCORE_URL>
+        <SHAREDRUNTIME>shared\Microsoft.NETCore.App\$(NETCOREAPP_VERSION)\</SHAREDRUNTIME>
+        <FEED_BASE_URL>https://dotnetfeed.blob.core.windows.net/dotnet-core</FEED_BASE_URL>
+        <TEST_ASSETS_PATH>corefx-tests/$(NETCORETESTS_VERSION)/Windows_NT.x64/netcoreapp/corefx-test-assets.xml</TEST_ASSETS_PATH>
+        <MONO_RUNTIME_BUILD_DIR>$(MSBuildThisFileDirectory)..\msvc\build\sgen\$(COREARCH)\Bin\$(Configuration)\</MONO_RUNTIME_BUILD_DIR>
+        <MONO_PRIVATE_CORLIB_BUILD_DIR>$(MSBuildThisFileDirectory)System.Private.CoreLib\bin\$(COREARCH)\</MONO_PRIVATE_CORLIB_BUILD_DIR>
+    </PropertyGroup>
+
+    <Target Name="configure-mono-environment-source"
+            Inputs="$(MSBuildThisFileDirectory)..\configure.ac;$(MSBuildThisFileDirectory)System.Private.CoreLib\src\System\Environment.Mono.in"
+            Outputs="$(MSBuildThisFileDirectory)System.Private.CoreLib\src\System\Environment.Mono.cs">
+        <GetVersionsFromConfigureAC ConfigFileRoot="$(MSBuildThisFileDirectory)..\">
+            <Output TaskParameter="MonoVersion" PropertyName="_MonoVersion" />
+            <Output TaskParameter="MonoCorlibVersion" PropertyName="_MonoCorlibVersion" />
+        </GetVersionsFromConfigureAC>
+
+        <ReplaceInFile
+            Input="$(MSBuildThisFileDirectory)System.Private.CoreLib\src\System\Environment.Mono.in"
+            Output="$(MSBuildThisFileDirectory)System.Private.CoreLib\src\System\Environment.Mono.cs"
+            Match="@MONO_CORLIB_VERSION@"
+            Replace="$(_MonoCorlibVersion)" />
+    </Target>
+
+    <Target Name="init-tools">
+        <Exec Command="powershell -NoProfile -NoLogo -ExecutionPolicy ByPass -Command &quot;$(MSBuildThisFileDirectory)init-tools.ps1&quot;">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+    </Target>
+
+    <Target Name="update-roslyn"
+            Condition="!Exists('$(MSBuildThisFileDirectory)roslyn\packages\microsoft.net.compilers.toolset\$(ROSLYN_VERSION)\microsoft.net.compilers.toolset.nuspec')"
+            DependsOnTargets="init-tools">
+        <PropertyGroup>
+                <_UpdateRoslynArgs>&quot;$(MSBuildThisFileDirectory)roslyn-restore.csproj&quot;</_UpdateRoslynArgs>
+                <_UpdateRoslynArgs>$(_UpdateRoslynArgs) -p:RoslynVersion=$(ROSLYN_VERSION)</_UpdateRoslynArgs>
+                <_UpdateRoslynArgs>$(_UpdateRoslynArgs) --packages &quot;$(MSBuildThisFileDirectory)roslyn\packages&quot;</_UpdateRoslynArgs>
+                <_UpdateRoslynArgs>$(_UpdateRoslynArgs) -p:OutputPath=&quot;$(MSBuildThisFileDirectory)roslyn\restore&quot;</_UpdateRoslynArgs>
+            </PropertyGroup>
+        <Exec Command="$(DOTNET) restore $(_UpdateRoslynArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+    </Target>
+
+    <Target Name="update-corefx"
+            Inputs="$(MSBuildThisFileDirectory)corefx-restore.csproj"
+            Outputs="$(MSBuildThisFileDirectory)corefx\.stamp-dl-corefx-$(NETCORETESTS_VERSION)"
+            DependsOnTargets="init-tools">
+        <PropertyGroup>
+            <_UpdateCoreFxArgs>&quot;$(MSBuildThisFileDirectory)corefx-restore.csproj&quot;</_UpdateCoreFxArgs>
+            <_UpdateCoreFxArgs>$(_UpdateCoreFxArgs) --runtime $(RID)</_UpdateCoreFxArgs>
+            <_UpdateCoreFxArgs>$(_UpdateCoreFxArgs) --packages &quot;$(MSBuildThisFileDirectory)corefx\packages&quot;</_UpdateCoreFxArgs>
+            <_UpdateCoreFxArgs>$(_UpdateCoreFxArgs) -p:MicrosoftPrivateCoreFxNETCoreAppVersion=$(NETCORETESTS_VERSION)</_UpdateCoreFxArgs>
+            <_UpdateCoreFxArgs>$(_UpdateCoreFxArgs) -p:OutputPath=&quot;$(MSBuildThisFileDirectory)corefx\restore&quot;</_UpdateCoreFxArgs>
+        </PropertyGroup>
+        <Exec Command="$(DOTNET) build $(_UpdateCoreFxArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+        <Touch Files="$(MSBuildThisFileDirectory)corefx\.stamp-dl-corefx-$(NETCORETESTS_VERSION)" AlwaysCreate="true" />
+    </Target>
+
+    <Target Name="download-unzip-netcore-sdk"
+            Condition="!Exists('$(MSBuildThisFileDirectory)$(NETCORESDK_FILE)')">
+        <DownloadFile SourceUrl="$(NETCORE_URL)" DestinationFolder="$(MSBuildThisFileDirectory)" DestinationFileName="$(NETCORESDK_FILE)" />
+        <Unzip SourceFiles="$(MSBuildThisFileDirectory)$(NETCORESDK_FILE)" DestinationFolder="$(MSBuildThisFileDirectory)" OverwriteReadOnlyFiles="true" />
+    </Target>
+
+    <Target Name="update-netcore-sdk"
+            Condition="!Exists('$(MSBuildThisFileDirectory)$(NETCORESDK_FILE)')">
+        <PropertyGroup>
+            <_UpdateNetCoreSdkArgs>&quot;$(MSBuildThisFileDirectory)build.targets&quot;</_UpdateNetCoreSdkArgs>
+            <_UpdateNetCoreSdkArgs>$(_UpdateNetCoreSdkArgs) /t:download-unzip-netcore-sdk</_UpdateNetCoreSdkArgs>
+        </PropertyGroup>
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)shared\Microsoft.NETCore.App" />
+        <Exec Command="$(DOTNET) msbuild $(_UpdateNetCoreSdkArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+    </Target>
+
+    <Target Name="update-tests-corefx"
+            Inputs="$(MSBuildThisFileDirectory)corefx-tests-restore.proj"
+            Outputs="$(MSBuildThisFileDirectory)corefx\.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)"
+            DependsOnTargets="init-tools">
+        <PropertyGroup>
+            <_UpdateTestsCoreFxArgs>&quot;$(MSBuildThisFileDirectory)corefx-tests-restore.proj&quot;</_UpdateTestsCoreFxArgs>
+            <_UpdateTestsCoreFxArgs>$(_UpdateTestsCoreFxArgs) -m</_UpdateTestsCoreFxArgs>
+            <_UpdateTestsCoreFxArgs>$(_UpdateTestsCoreFxArgs) -t:DownloadAllTests</_UpdateTestsCoreFxArgs>
+            <_UpdateTestsCoreFxArgs>$(_UpdateTestsCoreFxArgs) -p:TEST_ASSETS_PATH=&quot;$(TEST_ASSETS_PATH)&quot;</_UpdateTestsCoreFxArgs>
+            <_UpdateTestsCoreFxArgs>$(_UpdateTestsCoreFxArgs) -p:FEED_BASE_URL=&quot;$(FEED_BASE_URL)&quot;</_UpdateTestsCoreFxArgs>
+        </PropertyGroup>
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)corefx\tests" />
+        <Exec Command="$(DOTNET) msbuild $(_UpdateTestsCoreFxArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)corefx\tests\extracted\System.Utf8String.Experimental.Tests" />
+        <Touch Files="$(MSBuildThisFileDirectory)corefx\.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)" AlwaysCreate="true" />
+    </Target>
+
+    <Target Name="bcl" DependsOnTargets="init-tools;update-roslyn;configure-mono-environment-source">
+        <PropertyGroup>
+            <_CorlibBuildArgs>-p:TargetsWindows=true</_CorlibBuildArgs>
+            <_CorlibBuildArgs>$(_CorlibBuildArgs) $(CORLIB_BUILD_FLAGS)</_CorlibBuildArgs>
+            <_CorlibBuildArgs>$(_CorlibBuildArgs) -p:BuildArch=$(COREARCH)</_CorlibBuildArgs>
+            <_CorlibBuildArgs>$(_CorlibBuildArgs) -p:OutputPath=bin\$(COREARCH)</_CorlibBuildArgs>
+            <_CorlibBuildArgs>$(_CorlibBuildArgs) -p:RoslynPropsFile=&quot;$(MSBuildThisFileDirectory)\roslyn\packages\microsoft.net.compilers.toolset\$(ROSLYN_VERSION)\build\Microsoft.Net.Compilers.Toolset.props&quot;</_CorlibBuildArgs>
+            <_CorlibBuildArgs>$(_CorlibBuildArgs) &quot;$(MSBuildThisFileDirectory)System.Private.CoreLib\System.Private.CoreLib.csproj&quot;</_CorlibBuildArgs>
+        </PropertyGroup>
+
+        <Exec Command="$(DOTNET) build $(_CorlibBuildArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+    </Target>
+
+    <Target Name="build-runtime">
+        <PropertyGroup>
+            <RuntimeBuildTarget Condition="'$(RuntimeBuildTarget)' == ''">build</RuntimeBuildTarget>
+        </PropertyGroup>
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\msvc\mono.sln" Targets="$(RuntimeBuildTarget)" Properties="Platform=$(COREARCH);Configuration=$(Configuration);MONO_TARGET_GC=sgen;MONO_ENABLE_LLVM=$(MONO_ENABLE_LLVM);MONO_ENABLE_NETCORE=true"/>
+    </Target>
+
+    <Target Name="link-mono">
+        <Error Text="Missing Mono MSVC runtime build." Condition="!Exists('$(MONO_RUNTIME_BUILD_DIR)mono-2.0-sgen.dll')" />
+        <Error Text="Missing Mono System.Private.CoreLib build." Condition="!Exists('$(MONO_PRIVATE_CORLIB_BUILD_DIR)System.Private.CoreLib.dll')" />
+        <Copy SourceFiles="$(MONO_RUNTIME_BUILD_DIR)mono-2.0-sgen.dll" DestinationFiles="$(SHAREDRUNTIME)coreclr.dll" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(MONO_RUNTIME_BUILD_DIR)mono-2.0-sgen.pdb" DestinationFiles="$(SHAREDRUNTIME)coreclr.pdb" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(MONO_PRIVATE_CORLIB_BUILD_DIR)System.Private.CoreLib.dll" DestinationFiles="$(SHAREDRUNTIME)System.Private.CoreLib.dll" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(MONO_PRIVATE_CORLIB_BUILD_DIR)System.Private.CoreLib.pdb" DestinationFiles="$(SHAREDRUNTIME)System.Private.CoreLib.pdb" SkipUnchangedFiles="true" />
+    </Target>
+
+    <Target Name="prepare" DependsOnTargets="update-netcore-sdk;update-corefx;update-roslyn;link-mono" />
+
+    <!-- To run an individual test, set property CoreFxTests to the name of the test to execute -->
+    <Target Name="run-tests-corefx" DependsOnTargets="prepare;update-tests-corefx">
+        <PropertyGroup>
+            <CoreFxTests Condition="'$(CoreFxTests)' == ''">*</CoreFxTests>
+            <CoreFxTestTimeout Condition="'$(CoreFxTestTimeout)' == ''">-1</CoreFxTestTimeout>
+            <_RunTestsCoreFxArgs>(set MONO_ENV_OPTIONS=&quot;--debug&quot;) &amp; (set COMPlus_DebugWriteToStdErr=1) &amp; </_RunTestsCoreFxArgs>
+            <_RunTestsCoreFxArgs>$(_RunTestsCoreFxArgs) powershell -NoProfile -NoLogo -ExecutionPolicy ByPass -Command &quot;$(MSBuildThisFileDirectory)run-tests-corefx.ps1&quot;</_RunTestsCoreFxArgs>
+            <_RunTestsCoreFxArgs>$(_RunTestsCoreFxArgs) -fxversion &quot;$(NETCOREAPP_VERSION)&quot; -timeout $(CoreFxTestTimeout) -corefxtests &quot;$(CoreFxTests)&quot;</_RunTestsCoreFxArgs>
+        </PropertyGroup>
+
+        <Exec Command="$(_RunTestsCoreFxArgs)">
+            <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+        </Exec>
+    </Target>
+
+    <Target Name="Clean">
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)..\.dotnet" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)sdk" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)shared" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)host" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)dotnet" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)corefx" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)roslyn" />
+        <RemoveDir Directories="$(MSBuildThisFileDirectory)System.Private.CoreLib\bin" />
+        <Delete Files="$(MSBuildThisFileDirectory)$(NETCORESDK_FILE)" />
+        <Delete Files="$(MSBuildThisFileDirectory)LICENSE.txt" />
+        <Delete Files="$(MSBuildThisFileDirectory)ThirdPartyNotices.txt" />
+        <Delete Files="$(MSBuildThisFileDirectory).failures" />
+    </Target>
+
+    <Target Name="Build" DependsOnTargets="prepare;bcl" />
+
+</Project>
