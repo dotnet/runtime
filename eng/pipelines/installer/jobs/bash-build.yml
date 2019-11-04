@@ -118,9 +118,7 @@ jobs:
     - script: |
         set -x
         df -h
-        $(RunArguments) $(BuildScript) --restore --build $(BuildArguments)
-
-        $(RunArguments) $(BuildScript) --test $(BuildArguments)
+        $(RunArguments) $(BuildScript) --restore --build --test $(BuildArguments)
       displayName: Build and Test
 
     # Only for glibc leg, here we produce RPMs and Debs
