@@ -58,6 +58,7 @@
     <MicrosoftNETCoreTargetsVersion>5.0.0-alpha.1.19551.5</MicrosoftNETCoreTargetsVersion>
     <SystemTextJsonVersion>5.0.0-alpha.1.19551.5</SystemTextJsonVersion>
     <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19551.5</SystemTextEncodingsWebVersion>
+     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19551.5</runtimenativeSystemIOPortsVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19551.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->
