@@ -5268,6 +5268,8 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
     {
         EX_TRY
         {
+                SendMethodDetailsEvent(pMethodDesc);
+
                 SString tNamespace, tMethodName, tMethodSignature;
                 pMethodDesc->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
 
@@ -6241,6 +6243,75 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 }
 
+VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, 
+                                        TRACE_LEVEL_INFORMATION, 
+                                        CLR_METHODDIAGNOSTIC_KEYWORD))
+        {
+            if (pMethodDesc->IsDynamicMethod())
+                goto done;
+
+            Instantiation inst = pMethodDesc->GetMethodInstantiation();
+
+            if (inst.GetNumArgs() > 1024) // ETW has a limit for maximum event size. Do not log overly large method type argument sets
+                goto done;
+
+            BulkTypeEventLogger typeLogger;
+
+            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
+            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+            ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
+
+            StackSArray<ULONGLONG> rgTypeParameters;
+            DWORD cParams = inst.GetNumArgs();
+
+            BOOL fSucceeded = FALSE;
+            EX_TRY
+            {
+                for (COUNT_T i = 0; i < cParams; i++)
+                {
+                    rgTypeParameters.Append((ULONGLONG)inst[i].AsPtr());
+                }
+                fSucceeded = TRUE;
+            }
+            EX_CATCH
+            {
+                fSucceeded = FALSE;
+            }
+            EX_END_CATCH(RethrowCorruptingExceptions);
+            if (!fSucceeded)
+                goto done;      
+
+            // Log any referenced parameter types
+            for (COUNT_T i=0; i < cParams; i++)
+            {
+                ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, rgTypeParameters[i], ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
+            }
+
+            typeLogger.FireBulkTypeEvent();
+            // Send method event
+
+            FireEtwMethodDetails((ULONGLONG)pMethodDesc, // MethodID
+                                        typeID,  // MethodType
+                                        pMethodDesc->GetMemberDef_NoLogging(), // MethodToken
+                                        cParams,
+                                        loaderModuleID,
+                                        rgTypeParameters.OpenRawBuffer());
+
+            rgTypeParameters.CloseRawBuffer();
+        }
+done:;
+    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+}
+
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
@@ -6266,6 +6337,8 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
         if(!pMethodDesc->IsRestored()) {
                 return;
         }
+
+        SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
         BOOL bIsGenericMethod = FALSE;
@@ -6487,6 +6560,8 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     szDtraceOutput1 = (PCWSTR)pNamespaceName;
     szDtraceOutput2 = (PCWSTR)pMethodName;
     szDtraceOutput3 = (PCWSTR)pMethodSignature;
+
+    SendMethodDetailsEvent(pMethodDesc);
 
     if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad))
