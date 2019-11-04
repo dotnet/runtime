@@ -309,6 +309,13 @@ namespace System.Reflection.Tests
             Assert.Equal(assemblyName.Name.Length, assemblyName.FullName.IndexOf(','));
         }
 
+        [Fact]
+        public void EmptyFusionLog()
+        {
+            FileNotFoundException fnfe = Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom(@"\non\existent\file.dll"));
+            Assert.Null(fnfe.FusionLog);
+        }
+
         public static IEnumerable<object[]> SetPublicKey_TestData()
         {
             yield return new object[] { null };
