@@ -817,6 +817,56 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
+#ifdef ENABLE_NETCORE
+MonoArrayHandle
+ves_icall_System_Array_InternalCreate (MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds, MonoError *error)
+{
+	MonoClass* klass = mono_class_from_mono_type_internal (type);
+	if (!mono_class_init_checked (klass, error))
+		return NULL_HANDLE_ARRAY;
+
+	if (m_class_get_byval_arg (m_class_get_element_class (klass))->type == MONO_TYPE_VOID) {
+		mono_error_set_not_supported (error, "Arrays of System.Void are not supported.");
+		return NULL_HANDLE_ARRAY;
+	}
+
+	if (type->byref || m_class_is_byreflike (klass)) {
+		mono_error_set_not_supported (error, NULL);
+		return NULL_HANDLE_ARRAY;
+	}
+
+	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
+	if (is_generic_parameter (type) || mono_class_is_gtd (klass) || (gklass && gklass->context.class_inst->is_open)) {
+		mono_error_set_not_supported (error, NULL);
+		return NULL_HANDLE_ARRAY;
+	}
+
+	/* vectors are not the same as one dimensional arrays with non-zero bounds */
+	const gboolean bounded = pLowerBounds != NULL && rank == 1 && pLowerBounds [0] != 0;
+
+	MonoClass* const aklass = mono_class_create_bounded_array (klass, rank, bounded);
+	uintptr_t const aklass_rank = m_class_get_rank (aklass);
+	uintptr_t* const sizes = g_newa (uintptr_t, aklass_rank);
+	intptr_t* const lower_bounds = g_newa (intptr_t, aklass_rank);
+
+	// Copy lengths and lower_bounds from gint32 to [u]intptr_t.
+	for (uintptr_t i = 0; i < aklass_rank; ++i) {
+		if (pLowerBounds != NULL) {
+			lower_bounds [i] = pLowerBounds [i];
+			if ((gint64) pLowerBounds [i] + (gint64) pLengths [i] > G_MAXINT32) {
+				mono_error_set_argument_out_of_range (error, NULL, "Length + bound must not exceed Int32.MaxValue.");
+				return NULL_HANDLE_ARRAY;
+			}
+		} else {
+			lower_bounds [i] = 0;
+		}
+		sizes [i] = pLengths [i];
+	}
+	
+	return mono_array_new_full_handle (mono_domain_get (), aklass, sizes, lower_bounds, error);
+}
+#endif
+
 MonoArrayHandle
 ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoArrayHandle lengths, MonoArrayHandle bounds, MonoError *error)
 {
