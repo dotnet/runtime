@@ -208,15 +208,6 @@ namespace System.Data.Tests
             constraints[2] = fkc;
 
             // Try to add the constraint to ConstraintCollection of the DataTable through Add()
-            //try
-            //{
-            //    table2.Constraints.Add(fkc);
-            //    throw new ApplicationException("An Exception was expected");
-            //}
-            // spec says InvalidConstraintException but throws this
-            //catch (NullReferenceException)
-            //{
-            //}
             Assert.Throws<NullReferenceException>(() => table2.Constraints.Add(fkc));
 
             // Try to add columns with names which do not exist in the table
