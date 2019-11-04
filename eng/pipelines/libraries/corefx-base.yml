@@ -32,10 +32,10 @@ parameters:
   # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
 
   # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
-  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./build.sh ...'
+  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./libraries.sh ...'
 
   # Optional: buildExtraArguments -> String -> string to append at the end of the build arguments
-  #   buildExtraArguments: /p:RuntimeOS=win10 -> 'build.cmd ... /p:RuntimeOS=win10'
+  #   buildExtraArguments: /p:RuntimeOS=win10 -> 'libraries.cmd ... /p:RuntimeOS=win10'
 
   # Optional: customBuildSteps -> Array -> list of steps to run instead of the common build steps.
   #   customBuildSteps:
@@ -52,7 +52,7 @@ parameters:
 
 jobs:
   - ${{ each job in parameters.jobs }}:
-    - template: ../common/templates/job/job.yml
+    - template: /eng/common/templates/job/job.yml
       parameters:
         variables:
 
@@ -96,12 +96,12 @@ jobs:
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
-          - _buildScript: build.cmd
+          - _buildScript: libraries.cmd
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
-          - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
+          - _buildScript: ${{ job.buildScriptPrefix }}./libraries.sh
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _commonArguments: $(_args) -stripSymbols
@@ -186,7 +186,7 @@ jobs:
                   artifactType: container
                 condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
 
-            - template: /eng/pipelines/helix.yml
+            - template: /eng/pipelines/libraries/helix.yml
               parameters:
                 # send tests to helix only on public builds, official scheduled builds or manual official builds.
                 condition: eq(${{ parameters.isOfficialBuild }}, False)
