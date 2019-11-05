@@ -349,6 +349,24 @@ namespace Internal.TypeSystem.Ecma
                         }
                     }
                     break;
+                case NativeTypeKind.SafeArray:
+                    {
+                        // There's nobody to consume SafeArrays, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Get optional VARTYPE for the element
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadCompressedInteger();
+                        }
+
+                        // VARTYPE can be followed by optional type name
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadSerializedString();
+                        }
+                    }
+                    break;
                 default:
                     break;
             }

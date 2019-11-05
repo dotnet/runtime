@@ -764,6 +764,15 @@ namespace Internal.JitInterface
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
+
+#if READYTORUN
+            // IL stubs don't inline well
+            if (calleeMethod.IsPInvoke)
+            {
+                return CorInfoInline.INLINE_NEVER;
+            }
+#endif
+
             if (_compilation.CanInline(callerMethod, calleeMethod))
             {
                 // No restrictions on inlining
@@ -3046,7 +3055,13 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
 
             if (this.MethodBeingCompiled.IsPInvoke)
+            {
                 flags.Set(CorJitFlag.CORJIT_FLAG_IL_STUB);
+
+#if READYTORUN
+                flags.Set(CorJitFlag.CORJIT_FLAG_PUBLISH_SECRET_PARAM);
+#endif
+            }
 
             if (this.MethodBeingCompiled.IsNoOptimization)
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);

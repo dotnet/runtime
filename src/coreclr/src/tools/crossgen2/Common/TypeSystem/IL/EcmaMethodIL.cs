@@ -43,6 +43,14 @@ namespace Internal.IL
             _clearInitLocals = clearInitLocals;
         }
 
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
         public override MethodDesc OwningMethod
         {
             get

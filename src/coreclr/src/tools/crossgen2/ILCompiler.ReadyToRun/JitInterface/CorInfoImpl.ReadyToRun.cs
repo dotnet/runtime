@@ -620,6 +620,7 @@ namespace Internal.JitInterface
         {
             mdToken token = pResolvedToken.token;
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            EcmaModule module;
 
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
             // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
@@ -627,9 +628,9 @@ namespace Internal.JitInterface
             // token to refer to the result of token lookup in the R2R fixups.
             //
             // We replace the token with the token of the ECMA entity. This only works for **non-generic
-            // types/members within the current module**, but this happens to be good enough because
+            // types/members within the current version bubble**, but this happens to be good enough because
             // we only do this replacement within CoreLib to replace method bodies in places
-            // that we cannot express in C# right now).
+            // that we cannot express in C# right now and for p/invokes in large version bubbles).
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
             bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
             if (isFauxMethodIL)
@@ -638,32 +639,42 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc)
                 {
-                    Debug.Assert(resultDef is EcmaMethod em && em.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                    Debug.Assert(resultDef is EcmaMethod);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
+                    module = ((EcmaMethod)resultDef).Module;
                 }
                 else if (resultDef is FieldDesc)
                 {
-                    Debug.Assert(resultDef is EcmaField ef && ef.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                    Debug.Assert(resultDef is EcmaField);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultDef).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
+                    module = ((EcmaField)resultDef).Module;
                 }
                 else
                 {
                     if (resultDef is EcmaType ecmaType)
                     {
-                        Debug.Assert(ecmaType.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                        Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType));
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
+                        module = ecmaType.EcmaModule;
                     }
                     else
                     {
                         // To replace !!0, we need to find the token for a !!0 TypeSpec within the image.
                         Debug.Assert(resultDef is SignatureMethodVariable);
                         Debug.Assert(((SignatureMethodVariable)resultDef).Index == 0);
-                        token = FindGenericMethodArgTypeSpec((EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                        module = (EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module;
+                        token = FindGenericMethodArgTypeSpec(module);
                     }
                 }
             }
+            else
+            {
+                module = ((EcmaMethodIL)methodILDef).Module;
+            }
 
-            return new ModuleToken(((EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition()).Module, token);
+            return new ModuleToken(module, token);
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
