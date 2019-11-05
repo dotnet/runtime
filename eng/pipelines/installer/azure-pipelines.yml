@@ -1,11 +1,31 @@
 trigger:
   branches:
     include:
-    - installer
+    - master
+    - release/3.*
   paths:
     exclude:
     - src/coreclr/*
     - src/libraries/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/libraries/*
+    - Documentation/*
+    - README.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+pr:
+  branches:
+    include:
+    - master
+    - release/3.*
+  paths:
+    exclude:
+    - src/coreclr/*
+    - src/libraries/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/libraries/*
     - Documentation/*
     - README.md
     - CONTRIBUTING.md
