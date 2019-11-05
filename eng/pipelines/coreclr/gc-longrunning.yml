@@ -33,7 +33,7 @@ jobs:
     jobTemplate: build-test-job.yml
     buildConfig: release
     platforms:
-    - OSX_x64
+    - Linux_x64
     - Linux_arm64
     - Windows_NT_x64
     - Windows_NT_arm64
@@ -51,5 +51,6 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_arm64
     helixQueueGroup: ci
+    managedOsxBuild: false
     jobParameters:
       testGroup: gc-longrunning
