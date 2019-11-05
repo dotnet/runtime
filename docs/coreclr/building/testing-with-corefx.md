@@ -111,11 +111,6 @@ After the tests are copied to the remote machine, you want to run them. Use one 
 [tests\scripts\run-corefx-tests.sh](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.sh)
 to run all the tests (consult the scripts for proper usage). Or, run a single test as described below.
 
-## Other corefx build considerations
-
-To build for Linux arm32, you need to make sure to build using clang 5 (the default is clang 3.9).
-You might need to pass `/p:BuildNativeCompiler=--clang5.0` to the corefx build scripts.
-
 ## Running a single CoreFX test assembly
 
 Once you've built the CoreFX tests (possibly with replaced CoreCLR bits), you can also run just a single test. E.g.,
