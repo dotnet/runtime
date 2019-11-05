@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -27,7 +28,7 @@ namespace System.Text.Unicode
 
         // This field is only used on big-endian architectures. We don't
         // bother computing it on little-endian architectures.
-        private static readonly uint[] _definedCharacterBitmapBigEndian = (BitConverter.IsLittleEndian) ? null : CreateDefinedCharacterBitmapMachineEndian();
+        private static readonly uint[]? _definedCharacterBitmapBigEndian = (BitConverter.IsLittleEndian) ? null : CreateDefinedCharacterBitmapMachineEndian();
 
         private static uint[] CreateDefinedCharacterBitmapMachineEndian()
         {
