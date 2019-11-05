@@ -626,6 +626,7 @@ pinvoke_probe_for_module (MonoImage *image, const char *new_scope, char **found_
 			if (internal_module == NULL)
 				internal_module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
 			module = internal_module;
+			goto leave;
 		}
 	}
 
@@ -696,6 +697,7 @@ pinvoke_probe_for_module (MonoImage *image, const char *new_scope, char **found_
 			break;
 	}
 
+leave:
 	*found_name_out = found_name;
 	*error_msg_out = error_msg;
 	return module;
