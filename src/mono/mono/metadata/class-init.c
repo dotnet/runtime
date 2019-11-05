@@ -2871,8 +2871,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	GSList *virt_methods = NULL, *l;
 	int stelemref_slot = 0;
 
-	error_init (error);
-
 	if (klass->vtable)
 		return;
 
@@ -5254,8 +5252,6 @@ mono_class_setup_events (MonoClass *klass)
 			ERROR_DECL (error);
 			MonoEvent *event = &events [i];
 			MonoEvent *gevent = &ginfo->events [i];
-
-			error_init (error); //since we do conditional calls, we must ensure the default value is ok
 
 			event->parent = klass;
 			event->name = gevent->name;

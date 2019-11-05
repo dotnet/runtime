@@ -76,7 +76,6 @@ mono_icall_get_platform (void)
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error)
 {
-	error_init (error);
 	return mono_string_new_handle (mono_domain_get (), "\r\n", error);
 }
 

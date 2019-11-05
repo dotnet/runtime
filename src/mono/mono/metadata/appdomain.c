@@ -2104,8 +2104,6 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	char *shadow_dir;
 	gint32 copy_error;
 
-	error_init (oerror);
-
 	set_domain_search_path (domain);
 
 	if (!mono_is_shadow_copy_enabled (domain, dir_name)) {

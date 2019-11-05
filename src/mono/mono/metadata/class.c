@@ -1107,7 +1107,6 @@ MonoMethod *
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
-	error_init (error);
 	MonoMethod *res = mono_class_inflate_generic_method_full_checked (method, NULL, context, error);
 	mono_error_assert_msg_ok (error, "Could not inflate generic method");
 	return res;
@@ -2831,7 +2830,6 @@ MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
 	ERROR_DECL (error);
-	error_init (error);
 	MonoClass *result = mono_class_get_checked (image, type_token, error);
 	mono_error_assert_ok (error);
 	return result;
