@@ -1943,8 +1943,33 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
 
-    regNumber dstAddrBaseReg = genConsumeReg(node->Addr());
-    unsigned  dstOffset      = 0;
+    unsigned  dstLclNum      = BAD_VAR_NUM;
+    regNumber dstAddrBaseReg = REG_NA;
+    int       dstOffset      = 0;
+    GenTree*  dstAddr        = node->Addr();
+
+    if (!dstAddr->isContained())
+    {
+        dstAddrBaseReg = genConsumeReg(dstAddr);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        assert(!dstAddr->AsAddrMode()->HasIndex());
+
+        dstAddrBaseReg = genConsumeReg(dstAddr->AsAddrMode()->Base());
+        dstOffset      = dstAddr->AsAddrMode()->Offset();
+    }
+    else
+    {
+        assert(dstAddr->OperIsLocalAddr());
+        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+
+        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            assert(dstAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
+            dstOffset = dstAddr->AsLclFld()->gtLclOffs;
+        }
+    }
 
     regNumber srcReg;
     GenTree*  src = node->Data();
@@ -1977,10 +2002,20 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     emitter* emit = GetEmitter();
     unsigned size = node->GetLayout()->GetSize();
 
+    assert(size <= INT32_MAX);
+    assert(dstOffset < INT32_MAX - static_cast<int>(size));
+
 #ifdef _TARGET_ARM64_
     for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
     {
-        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, srcReg, srcReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
+        }
     }
 #endif
 
@@ -1998,22 +2033,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             case 1:
                 storeIns = INS_strb;
-#ifdef _TARGET_ARM64_
-                attr = EA_1BYTE;
-#else
-                attr = EA_4BYTE;
-#endif
+                attr     = EA_4BYTE;
                 break;
             case 2:
                 storeIns = INS_strh;
-#ifdef _TARGET_ARM64_
-                attr = EA_2BYTE;
-#else
-                attr = EA_4BYTE;
-#endif
+                attr     = EA_4BYTE;
                 break;
             case 4:
+#ifdef _TARGET_ARM64_
             case 8:
+#endif
                 storeIns = INS_str;
                 attr     = EA_ATTR(regSize);
                 break;
@@ -2021,7 +2050,14 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 unreached();
         }
 
-        emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(storeIns, attr, srcReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
+        }
     }
 }
 
@@ -2037,12 +2073,19 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     unsigned  dstLclNum      = BAD_VAR_NUM;
     regNumber dstAddrBaseReg = REG_NA;
-    unsigned  dstOffset      = 0;
+    int       dstOffset      = 0;
     GenTree*  dstAddr        = node->Addr();
 
     if (!dstAddr->isContained())
     {
         dstAddrBaseReg = genConsumeReg(dstAddr);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        assert(!dstAddr->AsAddrMode()->HasIndex());
+
+        dstAddrBaseReg = genConsumeReg(dstAddr->AsAddrMode()->Base());
+        dstOffset      = dstAddr->AsAddrMode()->Offset();
     }
     else
     {
@@ -2057,12 +2100,17 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-        dstOffset = dstAddr->OperIs(GT_LCL_FLD_ADDR) ? dstAddr->AsLclFld()->gtLclOffs : 0;
+
+        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
+        {
+            assert(dstAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
+            dstOffset = dstAddr->AsLclFld()->gtLclOffs;
+        }
     }
 
     unsigned  srcLclNum      = BAD_VAR_NUM;
     regNumber srcAddrBaseReg = REG_NA;
-    unsigned  srcOffset      = 0;
+    int       srcOffset      = 0;
     GenTree*  src            = node->Data();
 
     assert(src->isContained());
@@ -2070,7 +2118,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-        srcOffset = src->OperIs(GT_LCL_FLD) ? src->AsLclFld()->gtLclOffs : 0;
+
+        if (src->OperIs(GT_LCL_FLD))
+        {
+            assert(src->AsLclFld()->gtLclOffs <= INT32_MAX);
+            srcOffset = static_cast<int>(src->AsLclFld()->gtLclOffs);
+        }
     }
     else
     {
@@ -2081,11 +2134,21 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             srcAddrBaseReg = genConsumeReg(srcAddr);
         }
+        else if (srcAddr->OperIsAddrMode())
+        {
+            srcAddrBaseReg = genConsumeReg(srcAddr->AsAddrMode()->Base());
+            srcOffset      = srcAddr->AsAddrMode()->Offset();
+        }
         else
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-            srcOffset = srcAddr->OperIs(GT_LCL_FLD_ADDR) ? srcAddr->AsLclFld()->gtLclOffs : 0;
+
+            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
+            {
+                assert(srcAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
+                srcOffset = static_cast<int>(srcAddr->AsLclFld()->gtLclOffs);
+            }
         }
     }
 
@@ -2096,6 +2159,10 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     emitter* emit = GetEmitter();
     unsigned size = node->GetLayout()->GetSize();
+
+    assert(size <= INT32_MAX);
+    assert(srcOffset < INT32_MAX - static_cast<int>(size));
+    assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
     regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
 
@@ -2144,20 +2211,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             case 1:
                 loadIns  = INS_ldrb;
                 storeIns = INS_strb;
-#ifdef _TARGET_ARM64_
-                attr = EA_1BYTE;
-#else
-                attr = EA_4BYTE;
-#endif
+                attr     = EA_4BYTE;
                 break;
             case 2:
                 loadIns  = INS_ldrh;
                 storeIns = INS_strh;
-#ifdef _TARGET_ARM64_
-                attr = EA_2BYTE;
-#else
-                attr = EA_4BYTE;
-#endif
+                attr     = EA_4BYTE;
                 break;
             case 4:
 #ifdef _TARGET_ARM64_
