@@ -5,6 +5,7 @@ trigger:
     - release/3.*
   paths:
     include:
+    - '*'
     - docs/installer/manpages/*
     exclude:
     - src/coreclr/*
@@ -24,6 +25,7 @@ pr:
     - release/3.*
   paths:
     include:
+    - '*'
     - docs/installer/manpages/*
     exclude:
     - src/coreclr/*
