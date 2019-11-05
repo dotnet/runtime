@@ -498,4 +498,12 @@ mono_atomic_store_bool (volatile gboolean *dest, gboolean val)
 	mono_atomic_store_i32 ((volatile gint32 *)dest, (gint32)val);
 }
 
+#if defined (WAPI_NO_ATOMIC_ASM)
+#define MONO_ATOMIC_USES_LOCK
+#elif defined(BROKEN_64BIT_ATOMICS_INTRINSIC)
+#if !defined(TARGET_OSX) && !(defined (__arm__) && defined (HAVE_ARMV7) && (defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_ANDROID)))
+#define MONO_ATOMIC_USES_LOCK
+#endif
+#endif
+
 #endif /* _WAPI_ATOMIC_H_ */

@@ -16,16 +16,19 @@
 #include <mono/utils/mono-compiler.h>
 
 #if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
-
-#include <pthread.h>
-
-static pthread_mutex_t spin G_GNUC_UNUSED = PTHREAD_MUTEX_INITIALIZER;
-
 #define NEED_64BIT_CMPXCHG_FALLBACK
+#endif
 
+#ifdef MONO_ATOMIC_USES_LOCK
+#include <pthread.h>
+static pthread_mutex_t spin G_GNUC_UNUSED = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #ifdef WAPI_NO_ATOMIC_ASM
+
+#ifndef MONO_ATOMIC_USES_LOCK
+#error MONO_ATOMIC_USES_LOCK NOT defined
+#endif
 
 gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch,
 				  gint32 comp)
@@ -497,6 +500,10 @@ void mono_atomic_store_ptr(volatile gpointer *dst, gpointer val)
 
 #if defined (TARGET_OSX)
 
+#ifdef MONO_ATOMIC_USES_LOCK
+#error MONO_ATOMIC_USES_LOCK defined
+#endif
+
 /* The compiler breaks if this code is in the header... */
 
 gint64
@@ -506,6 +513,10 @@ mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 }
 
 #elif defined (__arm__) && defined (HAVE_ARMV7) && (defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_ANDROID))
+
+#ifdef MONO_ATOMIC_USES_LOCK
+#error MONO_ATOMIC_USES_LOCK defined
+#endif
 
 #if defined (TARGET_IOS) || defined (TARGET_WATCHOS)
 
@@ -558,6 +569,10 @@ mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 #endif
 
 #else
+
+#ifndef MONO_ATOMIC_USES_LOCK
+#error MONO_ATOMIC_USES_LOCK NOT defined
+#endif
 
 gint64
 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
