@@ -28,5 +28,10 @@ namespace ILCompiler
         {
             return type == _method.OwningType;
         }
+
+        public override bool GeneratesPInvoke(MethodDesc method)
+        {
+            return true;
+        }
     }
 }

@@ -40,6 +40,9 @@
     <Compile Include="..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
+    <Compile Include="..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
+    <Compile Include="..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
     <Compile Include="..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
@@ -95,6 +98,7 @@
     <Compile Include="..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />
     <Compile Include="..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
     <Compile Include="..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
+    <Compile Include="..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
@@ -178,6 +182,8 @@
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
+    <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />

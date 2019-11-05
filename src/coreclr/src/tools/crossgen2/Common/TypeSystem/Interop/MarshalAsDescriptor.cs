@@ -7,7 +7,6 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    [Flags]
     public enum NativeTypeKind : byte
     {
         Boolean = 0x2,
@@ -26,6 +25,7 @@ namespace Internal.TypeSystem
         LPTStr = 0x16,        // Ptr to OS preferred (SBCS/Unicode) string
         ByValTStr = 0x17,     // OS preferred (SBCS/Unicode) inline string (only valid in structs)
         Struct = 0x1b,
+        SafeArray = 0x1d,
         ByValArray = 0x1e,
         SysInt = 0x1f,
         SysUInt = 0x20,

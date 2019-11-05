@@ -139,7 +139,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeEQ, "op_Equality", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeNEQ, "op_Inequality", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr, "GetStubContextAddr", "System.StubHelpers", "StubHelpers"); // interop-specific
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget, "GetNDirectTarget", "System.StubHelpers", "StubHelpers"); // interop-specific
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedAdd32, "Add", System.Threading", "Interlocked"); // unused

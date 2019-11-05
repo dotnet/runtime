@@ -93,7 +93,7 @@ namespace Internal.IL
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            if (method is EcmaMethod)
+            if (method is EcmaMethod ecmaMethod)
             {
                 if (method.IsIntrinsicWorkaround())
                 {
@@ -102,7 +102,7 @@ namespace Internal.IL
                         return result;
                 }
 
-                MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)method);
+                MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
                 if (methodIL != null)
                     return methodIL;
 
