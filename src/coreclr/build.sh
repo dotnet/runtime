@@ -861,6 +861,12 @@ while :; do
             __GccBuild=1
             ;;
 
+        gcc9|-gcc9)
+            __GccMajorVersion=9
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
         gcc|-gcc)
             __GccMajorVersion=
             __GccMinorVersion=
