@@ -221,22 +221,19 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, ObjectNative::Clone, Object* pThisUNSAFE)
+FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF refClone = NULL;
-    OBJECTREF refThis  = ObjectToOBJECTREF(pThisUNSAFE);
+    // Delegate error handling to managed side (it will throw NullRefenceException)
+    if (pObjUNSAFE == NULL)
+        return NULL;
 
-    if (refThis == NULL)
-        FCThrow(kNullReferenceException);
+    OBJECTREF refClone  = ObjectToOBJECTREF(pObjUNSAFE);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClone, refThis);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refClone);
 
-    // ObjectNative::Clone() ensures that the source and destination are always in
-    // the same context.
-
-    MethodTable* pMT = refThis->GetMethodTable();
+    MethodTable* pMT = refClone->GetMethodTable();
 
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
@@ -245,23 +242,11 @@ FCIMPL1(Object*, ObjectNative::Clone, Object* pThisUNSAFE)
 #endif // FEATURE_UTF8STRING
 
     if (pMT->IsArray()) {
-        refClone = DupArrayForCloning((BASEARRAYREF)refThis);
+        refClone = DupArrayForCloning((BASEARRAYREF)refClone);
     } else {
         // We don't need to call the <cinit> because we know
         //  that it has been called....(It was called before this was created)
         refClone = AllocateObject(pMT);
-    }
-
-    SIZE_T cb = refThis->GetSize() - sizeof(ObjHeader);
-
-    // copy contents of "this" to the clone
-    if (pMT->ContainsPointers())
-    {
-        memmoveGCRefs(OBJECTREFToObject(refClone), OBJECTREFToObject(refThis), cb);
-    }
-    else
-    {
-        memcpyNoGCRefs(OBJECTREFToObject(refClone), OBJECTREFToObject(refThis), cb);
     }
 
     HELPER_METHOD_FRAME_END();
