@@ -13,7 +13,7 @@ steps:
   lfs: false
 
 - powershell: |
-    .\build.cmd -ci -c $(BUILD_CONFIGURATION)
+    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
   displayName: Build Corefx
 
 - powershell: |
