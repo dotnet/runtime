@@ -31,7 +31,7 @@ For Ubuntu 14.04, the following packages should be installed to build the native
 components
 
 * git
-* clang-3.9
+* clang-9
 * cmake
 * make
 * libc6-dev
@@ -40,7 +40,7 @@ components
 * libcurl4-openssl-dev
 * zlib1g-dev
 
-`sudo apt-get install git clang-3.9 cmake make libc6-dev libssl-dev libkrb5-dev
+`sudo apt-get install git clang-9 cmake make libc6-dev libssl-dev libkrb5-dev
 libcurl4-openssl-dev zlib1g-dev`
 
 #### Managed build

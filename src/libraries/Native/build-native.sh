@@ -108,7 +108,7 @@ check_native_prereqs()
         fi
 
         # Check for clang
-        hash "clang-$__ClangMajorVersion.$__ClangMinorVersion" 2>/dev/null || hash "clang$__ClangMajorVersion$__ClangMinorVersion" 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
+        hash "clang-$__ClangMajorVersion.$__ClangMinorVersion" 2>/dev/null || hash "clang-$__ClangMajorVersion$__ClangMinorVersion" 2>/dev/null || hash "clang$__ClangMajorVersion$__ClangMinorVersion" 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
     else
         # Minimum required version of gcc is version 5.0 for arm/armel cross build
         if [ "$__CrossBuild" = 1 ] && { [ "$__BuildArch" = "arm" ] || [ "$__BuildArch" = "armel" ]; }; then
@@ -428,8 +428,8 @@ fi
 
 # Set the default clang version if not already set
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
-    __ClangMajorVersion=3
-    __ClangMinorVersion=9
+    __ClangMajorVersion=9
+    __ClangMinorVersion=
 fi
 
 # Set the remaining variables based upon the determined build configuration
