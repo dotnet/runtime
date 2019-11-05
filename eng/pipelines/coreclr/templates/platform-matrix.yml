@@ -14,6 +14,8 @@ parameters:
   # 'corefx' - the queues used for a corefx test run.
   helixQueueGroup: 'pr'
   stagedBuild: false
+  # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
+  managedOsxBuild: true
   jobParameters: {}
 
 jobs:
@@ -74,9 +76,10 @@ jobs:
       archType: x64
       osGroup: Linux
       osSubgroup: _musl
-      ${{ if eq(parameters.platformGroup, 'gcstress') }}:
-        managedTestBuildOsGroup: Linux_musl
-      ${{ if ne(parameters.platformGroup, 'gcstress') }}:
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: Linux
+        managedTestBuildOsSubgroup: _musl
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
         managedTestBuildOsGroup: OSX
       container:
         image: alpine-3.9-WithNode-0fc54a3-20190918214015
@@ -122,9 +125,9 @@ jobs:
       archType: x64
       osGroup: Linux
       osSubgroup: _rhel6
-      ${{ if eq(parameters.platformGroup, 'gcstress') }}:
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
         managedTestBuildOsGroup: Linux_rhel
-      ${{ if ne(parameters.platformGroup, 'gcstress') }}:
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
         managedTestBuildOsGroup: OSX
       container:
         image: centos-6-f39df28-20191023143802
@@ -144,9 +147,9 @@ jobs:
       buildConfig: ${{ parameters.buildConfig }}
       archType: x64
       osGroup: Linux
-      ${{ if eq(parameters.platformGroup, 'gcstress') }}:
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
         managedTestBuildOsGroup: Linux
-      ${{ if ne(parameters.platformGroup, 'gcstress') }}:
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
         managedTestBuildOsGroup: OSX
       container:
         image: centos-7-f39df28-20191023143754
