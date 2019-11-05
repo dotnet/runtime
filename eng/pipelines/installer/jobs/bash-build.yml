@@ -50,7 +50,7 @@ jobs:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-        BuildScript: ./eng/install-nuget-credprovider-then-build.sh installer
+        BuildScript: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
         MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:

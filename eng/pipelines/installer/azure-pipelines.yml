@@ -4,12 +4,14 @@ trigger:
     - master
     - release/3.*
   paths:
+    include:
+    - docs/installer/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
-    - Documentation/*
+    - docs/*
     - README.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -21,12 +23,14 @@ pr:
     - master
     - release/3.*
   paths:
+    include:
+    - docs/installer/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
-    - Documentation/*
+    - docs/*
     - README.md
     - CONTRIBUTING.md
     - LICENSE.TXT
