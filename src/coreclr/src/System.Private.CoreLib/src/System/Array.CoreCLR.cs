@@ -145,8 +145,8 @@ namespace System
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
             if (pMT == RuntimeHelpers.GetMethodTable(destinationArray) &&
                 !pMT->IsMultiDimensionalArray &&
-                (uint)length <= (uint)sourceArray.Length &&
-                (uint)length <= (uint)destinationArray.Length)
+                (uint)length <= (nuint)sourceArray.LongLength &&
+                (uint)length <= (nuint)destinationArray.LongLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
                 ref byte src = ref sourceArray.GetRawSzArrayData();
@@ -176,8 +176,8 @@ namespace System
                 if (pMT == RuntimeHelpers.GetMethodTable(destinationArray) &&
                     !pMT->IsMultiDimensionalArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
-                    (uint)(sourceIndex + length) <= (uint)sourceArray.Length &&
-                    (uint)(destinationIndex + length) <= (uint)destinationArray.Length)
+                    (uint)(sourceIndex + length) <= (nuint)sourceArray.LongLength &&
+                    (uint)(destinationIndex + length) <= (nuint)destinationArray.LongLength)
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
@@ -221,9 +221,9 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
             destinationIndex -= dstLB;
 
-            if ((uint)(sourceIndex + length) > (uint)sourceArray.Length)
+            if ((uint)(sourceIndex + length) > (nuint)sourceArray.LongLength)
                 throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
-            if ((uint)(destinationIndex + length) > (uint)destinationArray.Length)
+            if ((uint)(destinationIndex + length) > (nuint)destinationArray.LongLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
             if (sourceArray.GetType() == destinationArray.GetType() || IsSimpleCopy(sourceArray, destinationArray))
@@ -294,7 +294,7 @@ namespace System
 
             int offset = index - lowerBound;
 
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > (uint)array.Length)
+            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > (nuint)array.LongLength)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             nuint elementSize = pMT->ComponentSize;
