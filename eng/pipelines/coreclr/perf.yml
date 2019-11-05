@@ -10,9 +10,9 @@ jobs:
 #
 # Checkout repository
 #
-- template: ../checkout-job.yml
+- template: templates/checkout-job.yml
 
-- template: ../platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: release
@@ -23,7 +23,7 @@ jobs:
     jobParameters:
       testGroup: perf
     
-- template: ../platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: perf-job.yml
     buildConfig: release

@@ -14,9 +14,9 @@ jobs:
 #
 # Checkout repository
 #
-- template: ../checkout-job.yml
+- template: templates/checkout-job.yml
 
-- template: ../platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: checked
@@ -31,7 +31,7 @@ jobs:
     jobParameters:
       testGroup: jitstressregs
 
-- template: ../platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: run-test-job.yml
     buildConfig: checked

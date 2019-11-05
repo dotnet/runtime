@@ -33,7 +33,7 @@ stages:
     #
     # Checkout repository
     #
-    - template: ../checkout-job.yml
+    - template: templates/checkout-job.yml
 
   - stage: build
     displayName: Build
@@ -41,7 +41,7 @@ stages:
     #
     # Release builds
     #
-    - template: ../platform-matrix.yml
+    - template: templates/platform-matrix.yml
       parameters:
         jobTemplate: build-job.yml
         buildConfig: release
@@ -63,7 +63,7 @@ stages:
     # product build job), and publishes them to the build assets
     # registry. Its dependencies should be updated to include all of the
     # official builds if we add more platform/arch combinations.
-    - template: ../finalize-publish.yml
+    - template: templates/finalize-publish.yml
       parameters:
         dependsOn:
         - build_Linux_arm_release
@@ -91,7 +91,7 @@ stages:
     #
     # Release test builds
     #
-    - template: ../platform-matrix.yml
+    - template: templates/platform-matrix.yml
       parameters:
         jobTemplate: build-test-job.yml
         buildConfig: release
@@ -112,7 +112,7 @@ stages:
     #
     # Release JIT test executions
     #
-    - template: ../platform-matrix.yml
+    - template: templates/platform-matrix.yml
       parameters:
         jobTemplate: run-test-job.yml
         buildConfig: release
@@ -126,7 +126,7 @@ stages:
     #
     # Release R2R test executions
     #
-    - template: ../platform-matrix.yml
+    - template: templates/platform-matrix.yml
       parameters:
         jobTemplate: run-test-job.yml
         buildConfig: release
