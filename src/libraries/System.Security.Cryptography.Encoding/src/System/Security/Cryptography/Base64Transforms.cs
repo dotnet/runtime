@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
                 ThrowHelper.ThrowCryptographicException();
             }
 
-            Debug.Assert(status == OperationStatus.NeedMoreData);
+            Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(consumed == InputBlockSize);
 
             return written;
