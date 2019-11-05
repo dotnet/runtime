@@ -1849,7 +1849,7 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeMethodHandle::GetDeclaringType, MethodDe
         // Load the TypeDesc for the array type.  Note the returned type is approximate, i.e.
         // if shared between reference array types then we will get object[] back.
         DWORD rank = pMT->GetRank();
-        TypeHandle elemType = pMT->GetApproxArrayElementTypeHandle();
+        TypeHandle elemType = pMT->GetArrayElementTypeHandle();
         declType = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
         HELPER_METHOD_FRAME_END();
     }

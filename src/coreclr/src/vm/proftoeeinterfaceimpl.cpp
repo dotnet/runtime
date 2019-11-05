@@ -1782,7 +1782,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
             // If this is an array of classes and they wish to have the base type.
             if (pBaseClassId != NULL)
             {
-                *pBaseClassId = TypeHandleToClassID(pArrMT->GetApproxArrayElementTypeHandle());
+                *pBaseClassId = TypeHandleToClassID(pArrMT->GetArrayElementTypeHandle());
             }
 
             // If they want the number of dimensions of the array

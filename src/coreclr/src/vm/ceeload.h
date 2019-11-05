@@ -2159,9 +2159,6 @@ protected:
     // the class load, which avoids the need for a 'being loaded' list
     MethodTable* CreateArrayMethodTable(TypeHandle elemType, CorElementType kind, unsigned rank, class AllocMemTracker *pamTracker);
 
-    // This is called from CreateArrayMethodTable
-    MethodTable* CreateGenericArrayMethodTable(TypeHandle elemType);
-
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
 

@@ -723,7 +723,7 @@ public:
     TypeHandle GetArrayElementTypeHandle()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetMethodTable()->GetApproxArrayElementTypeHandle();
+        return GetMethodTable()->GetArrayElementTypeHandle();
     }
 
     PTR_OBJECTREF GetDataPtr()

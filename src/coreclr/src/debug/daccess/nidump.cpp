@@ -6949,7 +6949,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     if( mt->IsArray() )
     {
         WriteFieldTypeHandle( m_ElementTypeHnd,
-                              mt->GetApproxArrayElementTypeHandle(),
+                              mt->GetArrayElementTypeHandle(),
                               MethodTable, METHODTABLES );
     }
 

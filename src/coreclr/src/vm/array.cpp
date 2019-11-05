@@ -250,17 +250,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Shared EEClass if there is one
     MethodTable * pCanonMT = NULL;
 
-    // Strictly speaking no method table should be needed for
-    // arrays of the faked up TypeDescs for variable types that are
-    // used when verfifying generic code.
-    // However verification is tied in with some codegen in the JITs, so give these
-    // the shared MT just in case.
-    // This checks match precisely one in ParamTypeDesc::OwnsTemplateMethodTable
-    if (CorTypeInfo::IsGenericVariable(elemType)) {
-        // This is loading the canonical version of the array so we can override
-        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-        return(ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).GetMethodTable());
-    }
 
     // Arrays of reference types all share the same EEClass.
     //
@@ -432,7 +421,11 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     pMT->SetParentMethodTable(pParentClass);
 
-    DWORD dwComponentSize = elemTypeHnd.GetSize();
+    // Method tables for arrays of generic type parameters are needed for type analysis. 
+    // No instances will be created, so we can use 0 as element size.
+    DWORD dwComponentSize = CorTypeInfo::IsGenericVariable(elemType) ?
+                                0 :
+                                elemTypeHnd.GetSize();
 
     if (elemType == ELEMENT_TYPE_VALUETYPE || elemType == ELEMENT_TYPE_VOID)
     {
@@ -456,9 +449,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pMT->SetCanonicalMethodTable(pCanonMT);
     }
 
-    pMT->SetIsArray(arrayKind, elemType);
+    pMT->SetIsArray(arrayKind);
 
-    pMT->SetApproxArrayElementTypeHandle(elemTypeHnd);
+    pMT->SetArrayElementTypeHandle(elemTypeHnd);
 
     _ASSERTE(FitsIn<WORD>(dwComponentSize));
     pMT->SetComponentSize(static_cast<WORD>(dwComponentSize));
@@ -958,7 +951,7 @@ public:
         }
         m_pCode->EmitADD();
 
-        LocalDesc elemType(pMT->GetApproxArrayElementTypeHandle().GetInternalCorElementType());
+        LocalDesc elemType(pMT->GetArrayElementTypeHandle().GetInternalCorElementType());
 
         switch (m_pMD->GetArrayFuncIndex())
         {
@@ -966,7 +959,7 @@ public:
         case ArrayMethodDesc::ARRAY_FUNC_GET:
             if(elemType.ElementType[0]==ELEMENT_TYPE_VALUETYPE)
             {
-                m_pCode->EmitLDOBJ(GetToken(pMT->GetApproxArrayElementTypeHandle()));
+                m_pCode->EmitLDOBJ(GetToken(pMT->GetArrayElementTypeHandle()));
             }
             else
                 m_pCode->EmitLDIND_T(&elemType);
@@ -978,7 +971,7 @@ public:
 
             if(elemType.ElementType[0]==ELEMENT_TYPE_VALUETYPE)
             {
-                m_pCode->EmitSTOBJ(GetToken(pMT->GetApproxArrayElementTypeHandle()));
+                m_pCode->EmitSTOBJ(GetToken(pMT->GetArrayElementTypeHandle()));
             }
             else
                 m_pCode->EmitSTIND_T(&elemType);
@@ -1101,7 +1094,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
     MetaSig msig(pMD);
     _ASSERTE(!msig.IsVarArg());     // No array signature is varargs, code below does not expect it.
 
-    switch (pMT->GetApproxArrayElementTypeHandle().GetInternalCorElementType())
+    switch (pMT->GetArrayElementTypeHandle().GetInternalCorElementType())
     {
         // These are all different because of sign extension
 

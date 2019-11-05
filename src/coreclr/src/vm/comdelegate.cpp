@@ -2812,7 +2812,7 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     // for these cases.
     if (thExactMethodType.IsArrayType() && !thExactMethodType.IsArray())
     {
-        TypeHandle thElement = thExactMethodType.AsMethodTable()->GetApproxArrayElementTypeHandle();
+        TypeHandle thElement = thExactMethodType.AsMethodTable()->GetArrayElementTypeHandle();
         CorElementType etElement = thExactMethodType.AsMethodTable()->GetInternalCorElementType();
         unsigned uRank = thExactMethodType.AsMethodTable()->GetRank();
 

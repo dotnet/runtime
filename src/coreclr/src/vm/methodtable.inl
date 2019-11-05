@@ -1674,7 +1674,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 }
 
 //==========================================================================================
-inline void MethodTable::SetIsArray(CorElementType arrayType, CorElementType elementType)
+inline void MethodTable::SetIsArray(CorElementType arrayType)
 {
     STANDARD_VM_CONTRACT;
 

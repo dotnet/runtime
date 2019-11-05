@@ -184,19 +184,6 @@ BOOL ParamTypeDesc::OwnsTemplateMethodTable()
         return FALSE;
     }
 
-    CorElementType elemType = m_Arg.GetSignatureCorElementType();
-
-    // This check matches precisely one in Module::CreateArrayMethodTable
-    //
-    // They indicate if an array TypeDesc is non-canonical (in much the same a a generic
-    // method table being non-canonical), i.e. it is not the primary
-    // owner of the m_TemplateMT (the primary owner is the TypeDesc for object[])
-
-    if (CorTypeInfo::IsGenericVariable_NoThrow(elemType))
-    {
-        return FALSE;
-    }
-
     return TRUE;
 }
 
@@ -354,65 +341,6 @@ BOOL TypeDesc::HasTypeParam()
 
 #ifndef DACCESS_COMPILE
 
-BOOL ArrayTypeDesc::ArrayIsInstanceOf(ArrayTypeDesc *toArrayType, TypeHandlePairList* pVisited)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(this->IsArray());
-        PRECONDITION(toArrayType->IsArray());
-    } CONTRACTL_END;
-
-    // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
-    {
-        if (this->GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
-        {
-            return TypeHandle::CannotCast;
-        }
-    }
-    else
-    {
-        if (this->GetRank() != toArrayType->GetRank())
-        {
-            return TypeHandle::CannotCast;
-        }
-    }
-    _ASSERTE(this->GetRank() == toArrayType->GetRank());
-
-    TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
-    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
-
-    BOOL result = (elementTypeHandle == toElementTypeHandle) ||
-        TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);
-
-    return result;
-}
-
-BOOL ArrayTypeDesc::ArraySupportsBizarreInterface(MethodTable *pInterfaceMT, TypeHandlePairList *pVisited)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-
-        PRECONDITION(this->IsArray());
-        PRECONDITION(pInterfaceMT->IsInterface());
-        PRECONDITION(pInterfaceMT->HasInstantiation());
-    }
-    CONTRACTL_END
-
-    // IList<T> & IReadOnlyList<T> only supported for SZ_ARRAYS
-    if (this->GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
-        return FALSE;
-
-    if (!IsImplicitInterfaceOfSZArray(pInterfaceMT))
-        return FALSE;
-
-    return TypeDesc::CanCastParam(this->GetTypeParam(), pInterfaceMT->GetInstantiation()[0], pVisited);
-}
-
 BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
 {
     CONTRACTL
@@ -431,22 +359,18 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
 
     if (IsArray())
     {
-        MethodTable* pMT = this->GetMethodTable();
+        MethodTable* pMT = dac_cast<PTR_ArrayTypeDesc>(this)->GetMethodTable();
 
         if (toTypeHnd.IsArray())
         {
-            // NOTE: in a few cases array type desc may contain a methodtable for object[]
-            //       we cannot delegate the cast analysis to the method tables here
-            //       we could get a wrong result, so we need to use the typedesc helpers.
-            fCast = dac_cast<PTR_ArrayTypeDesc>(this)->ArrayIsInstanceOf(toTypeHnd.AsArray(), pVisited);
+            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, pVisited);
         }
         else if (!toTypeHnd.IsTypeDesc())
         {
             MethodTable* toMT = toTypeHnd.AsMethodTable();
             if (toMT->IsInterface() && toMT->HasInstantiation())
             {
-                // see comment above about ArrayIsInstanceOf
-                fCast = dac_cast<PTR_ArrayTypeDesc>(this)->ArraySupportsBizarreInterface(toMT, pVisited);
+                fCast = pMT->ArraySupportsBizarreInterface(toMT, pVisited);
             }
             else
             {
@@ -1035,12 +959,11 @@ void ParamTypeDesc::Save(DataImage *image)
         image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
     }
 
-    // This set of checks matches precisely those in Module::CreateArrayMethodTable
-    // and ParamTypeDesc::ComputeNeedsRestore
+    // This set of checks matches precisely those in ParamTypeDesc::ComputeNeedsRestore
     //
     // They indicate if an array TypeDesc is non-canonical (in much the same a a generic
     // method table being non-canonical), i.e. it is not the primary
-    // owner of the m_TemplateMT (the primary owner is the TypeDesc for object[])
+    // owner of the m_TemplateMT 
     //
     if (OwnsTemplateMethodTable())
     {
@@ -1125,7 +1048,7 @@ BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisit
         res = TRUE;
     }
 
-    // This set of checks matches precisely those in Module::CreateArrayMethodTable and ParamTypeDesc::Fixup
+    // This set of checks matches precisely those in ParamTypeDesc::Fixup
     //
     if (!m_TemplateMT.IsNull())
     {

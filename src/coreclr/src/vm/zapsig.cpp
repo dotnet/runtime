@@ -170,7 +170,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             pSigBuilder->AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
             pSigBuilder->AppendElementType(elemType);
 
-            TypeHandle elementType = pMT->GetApproxArrayElementTypeHandle();
+            TypeHandle elementType = pMT->GetArrayElementTypeHandle();
             if (!this->GetSignatureForTypeHandle(elementType, pSigBuilder))
                 return FALSE;
 

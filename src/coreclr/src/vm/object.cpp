@@ -684,7 +684,7 @@ void ArrayBase::AssertArrayTypeDescLoaded()
 
     // The type should already be loaded
     // See also: MethodTable::DoFullyLoad
-    TypeHandle th = ClassLoader::LoadArrayTypeThrowing(m_pMethTab->GetApproxArrayElementTypeHandle(),
+    TypeHandle th = ClassLoader::LoadArrayTypeThrowing(m_pMethTab->GetArrayElementTypeHandle(),
                                                        m_pMethTab->GetInternalCorElementType(),
                                                        m_pMethTab->GetRank(),
                                                        ClassLoader::DontLoadTypes);
