@@ -907,7 +907,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
                 MethodTable *pMT = ty.GetMethodTable();
                 PREFIX_ASSUME(pMT != NULL);
                 rank = pMT->GetRank();
-                elemType = pMT->GetApproxArrayElementTypeHandle();
+                elemType = pMT->GetArrayElementTypeHandle();
             }
 
             _ASSERTE(!elemType.IsNull());

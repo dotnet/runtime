@@ -812,7 +812,7 @@ TypeHandle TypeHandle::MergeTypeHandlesToCommonParent(TypeHandle ta, TypeHandle 
         if (tb.IsInterface() && tb.HasInstantiation())
         {
             //Check to see if we can merge the array to a common interface (such as Derived[] and IList<Base>)
-            if (ta.AsArray()->ArraySupportsBizarreInterface(tb.AsMethodTable(), /* pVisited */ NULL))
+            if (ta.CanCastTo(tb, /* pVisited */ NULL))
                 return tb;
         }
 
@@ -823,7 +823,7 @@ TypeHandle TypeHandle::MergeTypeHandlesToCommonParent(TypeHandle ta, TypeHandle 
         if (ta.IsInterface() && ta.HasInstantiation())
         {
             //Check to see if we can merge the array to a common interface (such as Derived[] and IList<Base>)
-            if (tb.AsArray()->ArraySupportsBizarreInterface(ta.AsMethodTable(), /* pVisited */ NULL))
+            if (tb.CanCastTo(ta, /* pVisited */ NULL))
                 return ta;
         }
 
@@ -1599,7 +1599,7 @@ TypeKey TypeHandle::GetTypeKey() const
         MethodTable *pMT = AsMethodTable();
         if (pMT->IsArray())
         {
-            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetApproxArrayElementTypeHandle(), TRUE, pMT->GetRank());
+            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetArrayElementTypeHandle(), TRUE, pMT->GetRank());
             return tk;
         }
         else if (pMT->IsTypicalTypeDefinition())
@@ -1636,7 +1636,7 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
             CHECK_MSGF(pMT->GetInternalCorElementType() == pKey->GetKind(),
                        ("CorElementType %d of Array MethodTable does not match key %S", pMT->GetArrayElementType(), typeKeyString.GetUnicode()));
 
-            CHECK_MSGF(pMT->GetApproxArrayElementTypeHandle() == pKey->GetElementType(),
+            CHECK_MSGF(pMT->GetArrayElementTypeHandle() == pKey->GetElementType(),
                        ("Element type of Array MethodTable does not match key %S",typeKeyString.GetUnicode()));
 
             CHECK_MSGF(pMT->GetRank() == pKey->GetRank(),

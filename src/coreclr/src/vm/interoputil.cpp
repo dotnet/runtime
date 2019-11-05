@@ -2722,7 +2722,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
             }
 
             // Make sure the class implements the interface.
-            if (!pClassMT->CanCastToNonVariantInterface(DefItfType.GetMethodTable()))
+            if (!pClassMT->CanCastToInterface(DefItfType.GetMethodTable()))
             {
                 StackSString ssClassName;
                 StackSString ssInvalidItfName;

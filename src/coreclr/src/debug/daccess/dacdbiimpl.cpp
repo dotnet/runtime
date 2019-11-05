@@ -7155,7 +7155,7 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
             }
             else
             {
-                TypeHandle hnd = mt->GetApproxArrayElementTypeHandle();
+                TypeHandle hnd = mt->GetArrayElementTypeHandle();
                 PTR_MethodTable cmt = hnd.GetMethodTable();
                 layout[i].id.token2 = (ULONG64)cmt.GetAddr();
             }
@@ -7239,7 +7239,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
         pLayout->firstElementOffset = ArrayBase::GetDataPtrOffset(mt);
 
 
-        TypeHandle hnd = mt->GetApproxArrayElementTypeHandle();
+        TypeHandle hnd = mt->GetArrayElementTypeHandle();
         PTR_MethodTable cmt = hnd.GetMethodTable();
 
         CorElementType componentType = cmt->GetInternalCorElementType();

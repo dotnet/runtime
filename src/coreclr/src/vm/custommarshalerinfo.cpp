@@ -44,7 +44,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 
 
     // Make sure the custom marshaller implements ICustomMarshaler.
-    if (!hndCustomMarshalerType.GetMethodTable()->CanCastToNonVariantInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)))
+    if (!hndCustomMarshalerType.GetMethodTable()->CanCastToInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)))
     {
         DefineFullyQualifiedNameForClassW()
         COMPlusThrow(kApplicationException,
@@ -305,7 +305,7 @@ MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods
 
     MethodTable *pMT = hndCustomMarshalertype.AsMethodTable();
 
-    _ASSERTE(pMT->CanCastToNonVariantInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
+    _ASSERTE(pMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
 
     MethodDesc *pMD = NULL;
 

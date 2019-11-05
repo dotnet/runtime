@@ -1905,7 +1905,7 @@ SString &MethodTable::_GetFullyQualifiedNameForClass(SString &ssBuf)
     if (IsArray())
     {
         TypeDesc::ConstructName(GetInternalCorElementType(),
-                                GetApproxArrayElementTypeHandle(),
+                                GetArrayElementTypeHandle(),
                                 GetRank(),
                                 ssBuf);
     }

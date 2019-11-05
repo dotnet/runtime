@@ -1770,7 +1770,7 @@ PTR_Module Module::GetPreferredZapModuleForMethodTable(MethodTable *pMT)
 
     if (pMT->IsArray())
     {
-        TypeHandle elemTH = pMT->GetApproxArrayElementTypeHandle();
+        TypeHandle elemTH = pMT->GetArrayElementTypeHandle();
         pRet= ComputePreferredZapModule(NULL, Instantiation(&elemTH, 1));
     }
     else if (pMT->HasInstantiation() && !pMT->IsGenericTypeDefinition())

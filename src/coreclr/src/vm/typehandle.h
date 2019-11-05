@@ -419,9 +419,11 @@ public:
 #endif
 
     // Unlike AsMethodTable, GetMethodTable will get the method table
-    // of the type, regardless of whether it is an array etc. Note, however
-    // this method table may be shared, and some types (like TypeByRef), have
-    // no method table (and this function returns NULL for them)
+    // of the type, regardless of whether it is an array etc. 
+    // Note, however this method table may be non-exact/shared for TypeDescs. 
+    // for example all pointers and function pointers use ELEMENT_TYPE_U.
+    // And some types (like ByRef or generic type parameters) have no 
+    // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
 
     // Returns the method table which should be used for visibility checking.

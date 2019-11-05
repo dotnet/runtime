@@ -187,7 +187,7 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
     // for T[] is available and restored
 
     // == FailIfNotLoadedOrNotRestored
-    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetApproxArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);
+    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);
     CONSISTENCY_CHECK(!arrayType.IsNull());
     return(arrayType);
 }
@@ -281,7 +281,7 @@ inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    return GetGCSafeMethodTable()->GetApproxArrayElementTypeHandle();
+    return GetGCSafeMethodTable()->GetArrayElementTypeHandle();
 }
 
 //===============================================================================

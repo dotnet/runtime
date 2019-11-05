@@ -2204,7 +2204,7 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 ArrayBase *pArrayObj = PTR_ArrayBase(TO_TADDR(addr));
                 objectData->ElementType = mt->GetArrayElementType();
 
-                TypeHandle thElem = mt->GetApproxArrayElementTypeHandle();
+                TypeHandle thElem = mt->GetArrayElementTypeHandle();
 
                 TypeHandle thCur  = thElem;
                 while (thCur.IsTypeDesc())

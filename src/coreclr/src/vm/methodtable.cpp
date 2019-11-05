@@ -1345,7 +1345,7 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
             return FALSE;
 
         // arrays of structures have their own unshared MTs and will take this path
-        return (GetApproxArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetApproxArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
+        return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
     }
 
     return IsEquivalentTo_WorkerInner(pOtherMT COMMA_INDEBUG(&newVisited));
@@ -1439,8 +1439,8 @@ BOOL MethodTable::IsEquivalentTo_WorkerInner(MethodTable *pOtherMT COMMA_INDEBUG
         }
 
         // arrays of structures have their own unshared MTs and will take this path
-        TypeHandle elementType1 = GetApproxArrayElementTypeHandle();
-        TypeHandle elementType2 = pOtherMT->GetApproxArrayElementTypeHandle();
+        TypeHandle elementType1 = GetArrayElementTypeHandle();
+        TypeHandle elementType2 = pOtherMT->GetArrayElementTypeHandle();
         fEquivalent = elementType1.IsEquivalentTo(elementType2 COMMA_INDEBUG(pVisited));
         goto EquivalenceCalculated;
     }
@@ -1631,29 +1631,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
 }
 
 #include <optsmallperfcritical.h>
-//==========================================================================================
-BOOL MethodTable::CanCastToNonVariantInterface(MethodTable *pTargetMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->HasVariance());
-        PRECONDITION(IsRestored_NoLogging());
-    }
-    CONTRACTL_END
-
-    // Check to see if the current class is for the interface passed in.
-    if (this == pTargetMT)
-        return TRUE;
-
-    // Check to see if the static class definition indicates we implement the interface.
-    return ImplementsInterfaceInline(pTargetMT);
-}
 
 //==========================================================================================
 BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
@@ -1710,7 +1687,7 @@ BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable * pInterfaceMT, Type
         return FALSE;
     }
 
-    BOOL result = TypeDesc::CanCastParam(this->GetApproxArrayElementTypeHandle(), pInterfaceMT->GetInstantiation()[0], pVisited);
+    BOOL result = TypeDesc::CanCastParam(this->GetArrayElementTypeHandle(), pInterfaceMT->GetInstantiation()[0], pVisited);
 
     CastCache::TryAddToCache(this, pInterfaceMT, (BOOL)result);
     return result;
@@ -1747,7 +1724,7 @@ BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pV
     }
     _ASSERTE(this->GetRank() == toArrayType->GetRank());
 
-    TypeHandle elementTypeHandle = this->GetApproxArrayElementTypeHandle();
+    TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
     TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
 
     BOOL result = (elementTypeHandle == toElementTypeHandle) ||
@@ -4475,7 +4452,7 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
 
     if (IsArray())
     {
-        if(!image->CanPrerestoreEagerBindToTypeHandle(GetApproxArrayElementTypeHandle(), pVisited))
+        if(!image->CanPrerestoreEagerBindToTypeHandle(GetArrayElementTypeHandle(), pVisited))
         {
             UPDATE_RESTORE_REASON(ArrayElement);
             return TRUE;
@@ -5846,7 +5823,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         // The array type should be loaded, if template method table is loaded
         // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
-        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetApproxArrayElementTypeHandle(),
+        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetArrayElementTypeHandle(),
                                                            GetInternalCorElementType(),
                                                            GetRank(),
                                                            ClassLoader::LoadTypes,
@@ -5903,7 +5880,7 @@ void MethodTable::DoRestoreTypeKey()
         //
         // Restore array element type handle
         //
-        Module::RestoreTypeHandlePointerRaw(GetApproxArrayElementTypeHandlePtr(),
+        Module::RestoreTypeHandlePointerRaw(GetArrayElementTypeHandlePtr(),
                                             GetLoaderModule(), CLASS_LOAD_UNRESTORED);
     }
 
