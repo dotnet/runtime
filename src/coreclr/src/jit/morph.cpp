@@ -14482,7 +14482,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 {
                     tree = newTree;
                     /* newTree is non-Null if we propagated an assertion */
-                    newTree = optAssertionProp(apFull, tree, nullptr);
+                    newTree = optAssertionProp(apFull, tree, nullptr, nullptr);
                 }
                 assert(tree != nullptr);
             }
