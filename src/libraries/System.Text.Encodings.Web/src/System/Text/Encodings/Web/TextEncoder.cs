@@ -410,7 +410,7 @@ namespace System.Text.Encodings.Web
                     if (UnicodeUtility.IsAsciiCodePoint(nextScalarValue))
                     {
                         // Check Ascii cache.
-                        byte[] encodedBytes = GetAsciiEncoding((byte)nextScalarValue);
+                        byte[]? encodedBytes = GetAsciiEncoding((byte)nextScalarValue);
 
                         if (ReferenceEquals(encodedBytes, s_noEscape))
                         {
@@ -615,7 +615,7 @@ namespace System.Text.Encodings.Web
 
         private unsafe void EncodeCore(TextWriter output, char* value, int valueLength)
         {
-            Debug.Assert(value != null & output != null);
+            Debug.Assert(value != null && output != null);
             Debug.Assert(valueLength >= 0);
 
             int bufferLength = MaxOutputCharactersPerInputCharacter;
@@ -881,7 +881,7 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private byte[] GetAsciiEncoding(byte value)
+        private byte[]? GetAsciiEncoding(byte value)
         {
             byte[] encoding = _asciiEscape[value];
             if (encoding == null)

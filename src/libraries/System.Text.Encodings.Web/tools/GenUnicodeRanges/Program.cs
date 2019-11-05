@@ -36,6 +36,8 @@ namespace GenDefinedCharList
             StringBuilder runtimeCodeBuilder = new StringBuilder();
             WriteCopyrightAndHeader(runtimeCodeBuilder);
             runtimeCodeBuilder.AppendLine();
+            runtimeCodeBuilder.AppendLine("#nullable enable");
+            runtimeCodeBuilder.AppendLine();
             runtimeCodeBuilder.AppendLine("namespace System.Text.Unicode");
             runtimeCodeBuilder.AppendLine("{");
             runtimeCodeBuilder.AppendLine("    public static partial class UnicodeRanges");
@@ -102,7 +104,7 @@ namespace GenDefinedCharList
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// See http://www.unicode.org/charts/PDF/U{startCode}.pdf for the full set of characters in this block."));
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// </remarks>"));
                 runtimeCodeBuilder.AppendLine(Invariant($"        public static UnicodeRange {blockNameAsProperty} => {blockNameAsField} ?? CreateRange(ref {blockNameAsField}, first: '\\u{startCode}', last: '\\u{endCode}');"));
-                runtimeCodeBuilder.AppendLine(Invariant($"        private static UnicodeRange {blockNameAsField};"));
+                runtimeCodeBuilder.AppendLine(Invariant($"        private static UnicodeRange? {blockNameAsField};"));
 
                 testCodeBuilder.AppendLine(Invariant($"            new object[] {{ '\\u{startCode}', '\\u{endCode}', nameof(UnicodeRanges.{blockNameAsProperty}) }},"));
             }
