@@ -5,6 +5,7 @@
 using Internal.Runtime.CompilerServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mono;
@@ -491,6 +492,13 @@ namespace System
 		{
 			ThrowHelper.ThrowNotSupportedException ();
 			return 0;
+		}
+
+		[Intrinsic]
+		public bool IsPrimitive ()
+		{
+			ThrowHelper.ThrowNotSupportedException ();
+			return false;
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]

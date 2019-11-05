@@ -54,7 +54,6 @@ HANDLES(ARRAY_14, "SetValueRelaxedImpl",  ves_icall_System_Array_SetValueRelaxed
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
 NOHANDLES(ICALL(BUFFER_0, "BulkMoveWithWriteBarrier", ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier))
-HANDLES(BUFFER_1, "IsPrimitiveTypeArray", ves_icall_System_Buffer_IsPrimitiveTypeArray, MonoBoolean, 1, (MonoArray))
 NOHANDLES(ICALL(BUFFER_2, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
 NOHANDLES(ICALL(BUFFER_3, "__ZeroMemory", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
 
