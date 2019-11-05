@@ -1154,7 +1154,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
     }
     else if (fWaitForParameters)
     {
-        // This feels lame, but it doesn't appear like we have the good threading primitves
+        // This feels annoying, but it doesn't appear like we have the good threading primitves
         // for this. What I would like is an AutoResetEvent that atomically exits the table
         // Crst when I wait on it. From what I can tell our AutoResetEvent doesn't have
         // that atomic transition which means this ordering could occur:
