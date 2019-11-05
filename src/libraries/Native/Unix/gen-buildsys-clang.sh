@@ -22,6 +22,9 @@ repo_root=$1
 if which "clang-$3.$4" > /dev/null 2>&1
     then
         export CC="$(which clang-$3.$4)"
+elif which "clang-$3$4" > /dev/null 2>&1
+    then
+        export CC="$(which clang-$3$4)"
 elif which "clang$3$4" > /dev/null 2>&1
     then
         export CC="$(which clang$3$4)"
