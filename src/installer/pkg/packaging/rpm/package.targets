@@ -27,7 +27,7 @@
       <RpmPackageVersion>$(HostPackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <RpmFile>$(SharedHostInstallerFile)</RpmFile>
-      <ManPagesDir>$(RepoRoot)Documentation/manpages</ManPagesDir>
+      <ManPagesDir Condition="'$(ManPagesDir)' == ''">$(RepoRoot)Documentation/manpages</ManPagesDir>
       <ConfigJsonName>dotnet-sharedhost-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -61,6 +61,18 @@
         <SHManpages Include="$(ManPagesDir)/**/*" />
         <SHTemplatesFiles Include="$(TemplatesDir)/**/*" />
     </ItemGroup>
+
+    <!--
+      Detect no files being found and emit an early error to avoid breaking the build in a way that
+      prevents binlog publish in the official build.
+
+      We create a temporary symlink before calling FPM, and if FPM fails due to not finding some of
+      these files, the build terminates before deleting the symlink. The symlink causes the 'find'
+      command to fail. AzDO uses 'find' to find the binlogs, so we get into a bad state.
+    -->
+    <Error Condition="'@(SHFiles)' == ''" Text="No SHFiles found." />
+    <Error Condition="'@(SHManpages)' == ''" Text="No SHManpages found." />
+    <Error Condition="'@(SHTemplatesFiles)' == ''" Text="No SHTemplatesFiles found." />
 
     <Copy SourceFiles="@(SHFiles)" DestinationFiles="@(SHFiles->'$(rpmLayoutUsrShareDotnetDir)/%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SHManpages)" DestinationFiles="@(SHManpages->'$(rpmLayoutDocs)/%(RecursiveDir)%(Filename)%(Extension)')" />
