@@ -46,12 +46,12 @@ namespace System.Runtime.Intrinsics.Arm
             /// <summary>
             ///   A64: RBIT Xd, Xn
             /// </summary>
-            public static int ReverseElementBits(long value) { throw new PlatformNotSupportedException(); }
+            public static long ReverseElementBits(long value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   A64: RBIT Xd, Xn
             /// </summary>
-            public static int ReverseElementBits(ulong value) { throw new PlatformNotSupportedException(); }
+            public static ulong ReverseElementBits(ulong value) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -76,6 +76,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: RBIT Rd, Rm
         ///   A64: RBIT Wd, Wn
         /// </summary>
-        public static int ReverseElementBits(uint value) { throw new PlatformNotSupportedException(); }
+        public static uint ReverseElementBits(uint value) { throw new PlatformNotSupportedException(); }
     }
 }
