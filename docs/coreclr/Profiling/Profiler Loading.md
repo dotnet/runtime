@@ -20,4 +20,4 @@ A couple things to note about this:
 
 
 ## Through the registry (Windows Only)
-If the environment variables above are not set (and you're running on Windows) then coreclr will look up the CLSID from `CORECLR_PROFILER` in the registry to find the full path to your profiler's DLL.  Just like with any COM server DLL, we look for your profiler's CLSID under HKEY_CLASSES_ROOT, which merges the classes from HKLM and HKCU.
+If the `CORECLR_PROFILER_PATH*` environment variables above are not set (and you're running on Windows) then coreclr will look up the CLSID from `CORECLR_PROFILER` in the registry to find the full path to your profiler's DLL. Just like with any COM server DLL, we look for your profiler's CLSID under HKEY_CLASSES_ROOT, which merges the classes from HKLM and HKCU.
