@@ -62,6 +62,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">
             <Issue>timeout</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
+            <Issue>27595</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->

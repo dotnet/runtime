@@ -62,11 +62,6 @@
       <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
 
-    <Message Importance="High" Text="RepoRoot:             $(RepoRoot)" />
-    <Message Importance="High" Text="DotnetCliPath:        $(DotnetCliPath)" />
-    <Message Importance="High" Text="DotnetToolPath:       $(DotnetToolPath)" />
-    <Message Importance="High" Text="DotnetRestoreCommand: $(DotnetRestoreCommand)" />
-
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
 
