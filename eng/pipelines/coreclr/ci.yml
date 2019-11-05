@@ -7,12 +7,12 @@ jobs:
 #
 # Checkout repository
 #
-- template: /eng/checkout-job.yml
+- template: templates/checkout-job.yml
 
 #
 # Debug builds
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: debug
@@ -32,7 +32,7 @@ jobs:
 #
 # Checked builds
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: checked
@@ -43,7 +43,7 @@ jobs:
 #
 # Release builds
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: release
@@ -59,7 +59,7 @@ jobs:
 #
 # Checked test builds
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-test-job.yml
     buildConfig: checked
@@ -77,7 +77,7 @@ jobs:
 #
 # Checked JIT test runs
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: run-test-job.yml
     buildConfig: checked
@@ -89,7 +89,7 @@ jobs:
 #
 # Checked R2R test runs
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: run-test-job.yml
     buildConfig: checked
@@ -113,7 +113,7 @@ jobs:
 #
 # Crossgen-comparison jobs
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: crossgen-comparison-job.yml
     buildConfig: release
@@ -124,8 +124,9 @@ jobs:
 #
 # Formatting
 #
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: format-job.yml
     platforms:
     - Linux_x64
+    - Windows_NT_x64

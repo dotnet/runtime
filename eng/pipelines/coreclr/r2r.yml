@@ -6,9 +6,9 @@ jobs:
 #
 # Checkout repository
 #
-- template: /eng/checkout-job.yml
+- template: templates/checkout-job.yml
 
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
     buildConfig: checked
@@ -21,7 +21,7 @@ jobs:
     jobParameters:
       testGroup: outerloop
 
-- template: /eng/platform-matrix.yml
+- template: templates/platform-matrix.yml
   parameters:
     jobTemplate: test-job.yml
     buildConfig: checked
