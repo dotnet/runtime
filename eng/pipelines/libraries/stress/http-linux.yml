@@ -1,5 +1,12 @@
 trigger: none
 
+schedules:
+- cron: "0 5 * * *"
+  displayName: HttpStress nightly run
+  branches:
+    include:
+    - master
+
 pool:
   name: Hosted Ubuntu 1604
 
