@@ -49,9 +49,9 @@
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19553.2</MicrosoftNETCoreILAsmVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRVersion>5.0.0-alpha1.19553.2</MicrosoftNETCoreRuntimeCoreCLRVersion>
-    <MicrosoftNETSdkILVersion>5.0.0-alpha1.19553.2</MicrosoftNETSdkILVersion>
+    <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19554.1</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRVersion>5.0.0-alpha1.19554.1</MicrosoftNETCoreRuntimeCoreCLRVersion>
+    <MicrosoftNETSdkILVersion>5.0.0-alpha1.19554.1</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <MicrosoftNETCorePlatformsVersion>5.0.0-alpha.1.19551.5</MicrosoftNETCorePlatformsVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>5.0.0-alpha.1.19551.5</MicrosoftPrivateCoreFxNETCoreAppVersion>
