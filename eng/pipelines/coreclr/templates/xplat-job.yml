@@ -165,7 +165,7 @@ jobs:
       clean: true
 
     # Download the GIT repository
-    - template: /eng/download-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
       parameters:
         displayName: 'GIT repository'
         downloadFolder: $(Build.SourcesDirectory)/download/

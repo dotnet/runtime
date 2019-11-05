@@ -25,7 +25,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/xplat-job.yml
+- template: xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -55,8 +55,11 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
+    - name: coreClrRepoRoot
+      value: $(Build.SourcesDirectory)/src/coreclr
+
     - name: binTestsPath
-      value: $(Build.SourcesDirectory)/bin/tests
+      value: $(coreClrRepoRoot)/bin/tests
 
     - name: testRootFolderPath
       value: $(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)
@@ -68,7 +71,7 @@ jobs:
       value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
-      value: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
+      value: $(coreClrRepoRoot)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
 
     - name: testArtifactName
       value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
@@ -98,6 +101,8 @@ jobs:
         value: zip
       - name: tarCompression
         value: ''
+      - name: scriptExt
+        value: '.cmd'
 
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: archiveExtension
@@ -106,6 +111,8 @@ jobs:
         value: tar
       - name: tarCompression
         value: gz
+      - name: scriptExt
+        value: '.sh'
 
     - name: priorityArg
       value: ''

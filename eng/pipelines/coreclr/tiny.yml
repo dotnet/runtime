@@ -1,0 +1,51 @@
+trigger: none
+
+pr:
+- master
+
+jobs:
+#
+# Checkout repository
+#
+- template: templates/checkout-job.yml
+
+#
+# Checked builds
+#
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+
+#
+# Checked test builds
+#
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Windows_NT_x64
+    helixQueueGroup: pr
+    jobParameters:
+      testGroup: innerloop
+
+#
+# Checked JIT test executions
+#
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Windows_NT_x64
+    helixQueueGroup: pr
+    jobParameters:
+      testGroup: innerloop

@@ -31,6 +31,11 @@ set __BuildOS=Windows_NT
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
+set "__RepoRootDir=%__ProjectDir%\..\.."
+
+rem Remove after repo consolidation
+if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
+
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
@@ -40,6 +45,8 @@ set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
 set __Exclude=%__TestDir%\issues.targets
+
+echo __Exclude: %__Exclude%
 
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
 set "__args= %*"
@@ -283,11 +290,19 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 
 REM Disable warnAsError - coreclr issue 19922
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
+
+if errorlevel 1 (
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Package restoration failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
 
 :SkipRestoreProduct
 
@@ -321,7 +336,7 @@ set __NumberOfTestGroups=3
 if %__Priority% GTR 0 (set __NumberOfTestGroups=10)
 echo %__MsgPrefix%Building tests divided into %__NumberOfTestGroups% test groups
 
-set __CommonMSBuildCmdPrefix=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "!__ProjectDir!\eng\common\msbuild.ps1" !__ArcadeScriptArgs!
+set __CommonMSBuildCmdPrefix=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "!__RepoRootDir!\eng\common\msbuild.ps1" !__ArcadeScriptArgs!
 
 for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
@@ -334,7 +349,16 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
     if not "%__CopyNativeTestBinaries%" == "1" (
         REM Disable warnAsError - coreclr issue 19922
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs! !__PriorityArg! !__UnprocessedBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
+        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__Logging!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !TargetsWindowsMsbuildArg!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__msbuildArgs!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__PriorityArg!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__UnprocessedBuildArgs!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -377,7 +401,7 @@ REM Check that we've built about as many tests as we expect. This is primarily i
 REM drastically fewer Pri-1 tests than expected.
 echo %__MsgPrefix%Check the managed tests build
 echo Running: dotnet msbuild %__ProjectDir%\tests\src\runtest.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     %__ProjectDir%\tests\src\runtest.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Check Test Build failed.
@@ -430,7 +454,7 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\src\runtest.proj /t:CreateTestOverlay /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
@@ -463,7 +487,7 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\src\runtest.proj /t:CreateTestHost /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^

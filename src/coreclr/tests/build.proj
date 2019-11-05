@@ -54,13 +54,19 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
+      <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(RepoRoot)\.dotnet\</DotnetCliPath>
       <DotnetToolPath Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</DotnetToolPath>
       <DotnetToolPath Condition="'$(OS)' == 'Windows_NT'">$(DotnetCliPath)dotnet.exe</DotnetToolPath>
       <_ConfigurationProperties>/p:__BuildOS=$(__BuildOS) /p:__BuildArch=$(__BuildArch) /p:__BuildType=$(__BuildType)</_ConfigurationProperties>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">$(DotnetToolPath) restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">$(DotnetToolPath) restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
+
+    <Message Importance="High" Text="RepoRoot:             $(RepoRoot)" />
+    <Message Importance="High" Text="DotnetCliPath:        $(DotnetCliPath)" />
+    <Message Importance="High" Text="DotnetToolPath:       $(DotnetToolPath)" />
+    <Message Importance="High" Text="DotnetRestoreCommand: $(DotnetRestoreCommand)" />
+
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
 

@@ -37,7 +37,7 @@
 
 # True to attempt using .NET Core already that meets requirements specified in global.json
 # installed on the machine instead of downloading one.
-[bool]$useInstalledDotNetCli = if (Test-Path variable:useInstalledDotNetCli) { $useInstalledDotNetCli } else { $true }
+[bool]$useInstalledDotNetCli = $false
 
 # Enable repos to use a particular version of the on-line dotnet-install scripts.
 #    default URL: https://dot.net/v1/dotnet-install.ps1
@@ -135,6 +135,8 @@ function InitializeDotNetCli([bool]$install) {
     $dotnetRoot = $env:DOTNET_INSTALL_DIR
   } else {
     $dotnetRoot = Join-Path $RepoRoot ".dotnet"
+    Write-Host "RepoRoot:   $RepoRoot"
+    Write-Host "DotnetRoot: $dotnetRoot"
 
     if (-not (Test-Path(Join-Path $dotnetRoot "sdk\$dotnetSdkVersion"))) {
       if ($install) {
