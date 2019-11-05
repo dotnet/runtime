@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -101,6 +102,118 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return customAttributeEntries;
         }
 
+        /**
+         * This class is used to extract the first type handle in a signature.
+         * 
+         * In the case that a custom attribute's constructor is a MemberReference,
+         * and its parent is a TypeSpec, we have to parse the signature, but we do 
+         * not want to actually resolve the types. So we used this dummy signature 
+         * type provider to extract the first type handle.
+         */ 
+        private class FirstTypeHandleExtractor : ISignatureTypeProvider<DummyType, DummyGenericContext>
+        {
+            private EntityHandle _firstTypeHandle;
+
+            public EntityHandle FirstTypeHandle => _firstTypeHandle;
+
+            public DummyType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            {
+                if (_firstTypeHandle.IsNil)
+                {
+                    _firstTypeHandle = handle;
+                }
+                return new DummyType();
+            }
+
+            public DummyType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            {
+                if (_firstTypeHandle.IsNil)
+                {
+                    _firstTypeHandle = handle;
+                }
+                return DummyType.Instance;
+            }
+
+            #region Uninteresting dummy methods
+
+            // These methods are required by the interface, but it is otherwise uninteresting for our purpose here
+
+            public DummyType GetArrayType(DummyType elementType, ArrayShape shape)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetByReferenceType(DummyType elementType)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetFunctionPointerType(MethodSignature<DummyType> signature)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetGenericInstantiation(DummyType genericType, ImmutableArray<DummyType> typeArguments)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetGenericMethodParameter(DummyGenericContext genericContext, int index)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetGenericTypeParameter(DummyGenericContext genericContext, int index)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetModifiedType(DummyType modifier, DummyType unmodifiedType, bool isRequired)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetPinnedType(DummyType elementType)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetPointerType(DummyType elementType)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetPrimitiveType(PrimitiveTypeCode typeCode)
+            {
+                return new DummyType();
+            }
+
+            public DummyType GetSZArrayType(DummyType elementType)
+            {
+                return DummyType.Instance;
+            }
+
+            public DummyType GetTypeFromSpecification(MetadataReader reader, DummyGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            {
+                return DummyType.Instance;
+            }
+
+            #endregion
+        }
+
+        #region Uninteresting dummy types
+
+        private class DummyType
+        {
+            public static DummyType Instance = new DummyType();
+        }
+
+        private class DummyGenericContext
+        {
+        }
+
+        #endregion
+
         private void ReadCustomAttributeTypeNameWithoutResolving(EntityHandle customAttributeConstructorHandle, out string customAttributeTypeNamespace, out string customAttributeTypeName)
         {
             /**
@@ -115,26 +228,40 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (customAttributeConstructorHandle.Kind == HandleKind.MethodDefinition)
             {
                 MethodDefinitionHandle customAttributeConstructorDefinitionHandle = (MethodDefinitionHandle)customAttributeConstructorHandle;
-                MethodDefinition customAttributeConstructorDefinition =  _module.MetadataReader.GetMethodDefinition(customAttributeConstructorDefinitionHandle);
+                MethodDefinition customAttributeConstructorDefinition = _module.MetadataReader.GetMethodDefinition(customAttributeConstructorDefinitionHandle);
                 TypeDefinitionHandle customAttributeConstructorTypeDefinitionHandle = customAttributeConstructorDefinition.GetDeclaringType();
-                TypeDefinition customAttributeConstructorTypeDefinition =  _module.MetadataReader.GetTypeDefinition(customAttributeConstructorTypeDefinitionHandle);
-                StringHandle customAttributeConstructorTypeNamespaceHandle = customAttributeConstructorTypeDefinition.Namespace;
-                StringHandle customAttributeConstructorTypeNameHandle = customAttributeConstructorTypeDefinition.Name;
-                customAttributeTypeNamespace =  _module.MetadataReader.GetString(customAttributeConstructorTypeNamespaceHandle);
-                customAttributeTypeName =  _module.MetadataReader.GetString(customAttributeConstructorTypeNameHandle);
+                GetTypeNameFromTypeDefinitionHandle(customAttributeConstructorTypeDefinitionHandle, out customAttributeTypeNamespace, out customAttributeTypeName);
             }
             else if (customAttributeConstructorHandle.Kind == HandleKind.MemberReference)
             {
                 MemberReferenceHandle customAttributeConstructorReferenceHandle = (MemberReferenceHandle)customAttributeConstructorHandle;
-                MemberReference customAttributeConstructorReference =  _module.MetadataReader.GetMemberReference(customAttributeConstructorReferenceHandle);
+                MemberReference customAttributeConstructorReference = _module.MetadataReader.GetMemberReference(customAttributeConstructorReferenceHandle);
                 EntityHandle customAttributeConstructorReferenceParentHandle = customAttributeConstructorReference.Parent;
-                Debug.Assert(customAttributeConstructorReferenceParentHandle.Kind == HandleKind.TypeReference);
-                TypeReferenceHandle customAttributeConstructorTypeReferenceHandle = (TypeReferenceHandle)customAttributeConstructorReferenceParentHandle;
-                TypeReference customAttributeConstructorTypeReference =  _module.MetadataReader.GetTypeReference(customAttributeConstructorTypeReferenceHandle);
-                StringHandle customAttributeConstructorTypeNamespaceHandle = customAttributeConstructorTypeReference.Namespace;
-                StringHandle customAttributeConstructorTypeNameHandle = customAttributeConstructorTypeReference.Name;
-                customAttributeTypeNamespace =  _module.MetadataReader.GetString(customAttributeConstructorTypeNamespaceHandle);
-                customAttributeTypeName =  _module.MetadataReader.GetString(customAttributeConstructorTypeNameHandle);
+                if (customAttributeConstructorReferenceParentHandle.Kind == HandleKind.TypeReference)
+                {
+                    TypeReferenceHandle customAttributeConstructorTypeReferenceHandle = (TypeReferenceHandle)customAttributeConstructorReferenceParentHandle;
+                    GetTypeNameFromTypeReferenceHandle(customAttributeConstructorTypeReferenceHandle, out customAttributeTypeNamespace, out customAttributeTypeName);
+                }
+                else
+                {
+                    Debug.Assert(customAttributeConstructorReferenceParentHandle.Kind == HandleKind.TypeSpecification);
+                    TypeSpecificationHandle customAttributeConstructorTypeSpecificationHandle = (TypeSpecificationHandle)customAttributeConstructorReferenceParentHandle;
+                    TypeSpecification customAttributeConstructorTypeSpecification = _module.MetadataReader.GetTypeSpecification(customAttributeConstructorTypeSpecificationHandle);
+                    FirstTypeHandleExtractor fakeSignatureTypeProvider = new FirstTypeHandleExtractor();
+                    customAttributeConstructorTypeSpecification.DecodeSignature(fakeSignatureTypeProvider, new DummyGenericContext());
+                    EntityHandle firstTypeHandle = fakeSignatureTypeProvider.FirstTypeHandle;
+                    if (firstTypeHandle.Kind == HandleKind.TypeDefinition)
+                    {
+                        TypeDefinitionHandle customAttributeConstructorTypeDefinitionHandle = (TypeDefinitionHandle)firstTypeHandle;
+                        GetTypeNameFromTypeDefinitionHandle(customAttributeConstructorTypeDefinitionHandle, out customAttributeTypeNamespace, out customAttributeTypeName);
+                    } 
+                    else
+                    {
+                        Debug.Assert(firstTypeHandle.Kind == HandleKind.TypeReference);
+                        TypeReferenceHandle customAttributeConstructorTypeReferenceHandle = (TypeReferenceHandle)firstTypeHandle;
+                        GetTypeNameFromTypeReferenceHandle(customAttributeConstructorTypeReferenceHandle, out customAttributeTypeNamespace, out customAttributeTypeName);
+                    }
+                }
             }
             else
             {
@@ -142,6 +269,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 customAttributeTypeNamespace = null;
                 customAttributeTypeName = null;
             }
+        }
+
+        private void GetTypeNameFromTypeReferenceHandle(TypeReferenceHandle typeReferenceHandle, out string typeNamespace, out string typeName)
+        {
+            TypeReference typeReference = _module.MetadataReader.GetTypeReference(typeReferenceHandle);
+            StringHandle typeNamespaceHandle = typeReference.Namespace;
+            StringHandle typeNameHandle = typeReference.Name;
+            typeNamespace = _module.MetadataReader.GetString(typeNamespaceHandle);
+            typeName = _module.MetadataReader.GetString(typeNameHandle);
+        }
+
+        private void GetTypeNameFromTypeDefinitionHandle(TypeDefinitionHandle typeDefinitionHandle, out string typeNamespace, out string typeName)
+        {
+            TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(typeDefinitionHandle);
+            StringHandle typeNamespaceHandle = typeDefinition.Namespace;
+            StringHandle typeNameHandle = typeDefinition.Name;
+            typeNamespace = _module.MetadataReader.GetString(typeNamespaceHandle);
+            typeName = _module.MetadataReader.GetString(typeNameHandle);
         }
 
         // Algorithm "xor128" from p. 5 of Marsaglia, "Xorshift RNGs"
