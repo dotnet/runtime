@@ -423,29 +423,6 @@ namespace System
 			SetValue (value, ind);
 		}
 
-		static void SortImpl (Array keys, Array? items, int index, int length, IComparer comparer)
-		{
-			/* TODO: CoreCLR optimizes this case via an internal call
-			if (comparer == Comparer.Default)
-			{
-				bool r = TrySZSort(keys, items, index, index + length - 1);
-				if (r)
-					return;
-			}*/
-
-			object[]? objKeys = keys as object[];
-			object[]? objItems = null;
-			if (objKeys != null)
-				objItems = items as object[];
-			if (objKeys != null && (items == null || objItems != null)) {
-				SorterObjectArray sorter = new SorterObjectArray (objKeys, objItems, comparer);
-				sorter.Sort(index, length);
-			} else {
-				SorterGenericArray sorter = new SorterGenericArray (keys, items, comparer);
-				sorter.Sort(index, length);
-			}
-		}
-
 		static bool TrySZBinarySearch (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
 		{
 			retVal = default;
@@ -465,8 +442,6 @@ namespace System
 		}
 
 		static bool TrySZReverse (Array array, int index, int count) => false;
-
-		static bool TrySZSort (Array keys, Array? items, int left, int right) => false;
 
 		public int GetUpperBound (int dimension)
 		{
