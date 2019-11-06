@@ -180,7 +180,7 @@ namespace System.IO.Tests
             string testDirDest = Path.Combine(TestDirectory, GetTestFileName());
 
             Directory.CreateDirectory(testDirSource);
-            Move(testDirSource + Path.DirectorySeparatorChar, testDirDest + Path.DirectorySeparatorChar);
+            Directory.Move(testDirSource + Path.DirectorySeparatorChar, testDirDest + Path.DirectorySeparatorChar);
             Assert.True(Directory.Exists(testDirDest));
         }
 
@@ -212,9 +212,144 @@ namespace System.IO.Tests
             });
         }
 
+        [Fact]
+        public void ThrowIOExceptionWhenMovingDirectoryToItself()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "foo"));
+            Assert.Throws<IOException>(() => Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "foo")));
+        }
+
+        [Fact]
+        public void ThrowIOExceptionWhenMovingToExistingDirectoryWithSameCase()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "foo"));
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "bar", "foo"));
+            Assert.Throws<IOException>(() => Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "bar", "foo")));
+        }
+
+        [Fact]
+        public void ToNewDirectoryButWithDifferentCasing()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "foo"));
+            var otherDirectory = Path.Combine(TestDirectory, "bar");
+            Directory.CreateDirectory(Path.Combine(otherDirectory));
+            Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(otherDirectory, "FOO"));
+            Assert.True(Directory.Exists(Path.Combine(otherDirectory, "FOO")));
+            Assert.False(Directory.Exists(Path.Combine(TestDirectory, "foo")));
+        }
+
+        [Fact]
+        public void SameDirectoryWithDifferentCasing_WithFileContent()
+        {
+            var fooDirectory = Path.Combine(TestDirectory, "foo");
+            var fooDirectoryUppercase = Path.Combine(TestDirectory, "FOO");
+            Directory.CreateDirectory(fooDirectory);
+            File.WriteAllText(Path.Combine(fooDirectory, "bar.txt"), string.Empty);
+            Directory.Move(fooDirectory, fooDirectoryUppercase);
+            var firstFile = Directory.GetFiles(fooDirectoryUppercase);
+            Assert.Equal("bar.txt", Path.GetFileName(firstFile[0]));
+        }
+
+        [Fact]
+        public void WithDifferentRootCase()
+        {
+            Directory.CreateDirectory($"{TestDirectory}/bar");
+            var root = Path.GetPathRoot(TestDirectory);
+            Directory.Move($"{TestDirectory}/bar".Replace(root, root.ToLower()), $"{TestDirectory}/foo");
+            Assert.True(Directory.Exists($"{TestDirectory}/foo"));
+            Assert.False(Directory.Exists($"{TestDirectory}/bar"));
+        }
+
+        [Fact]
+        public void SameDirectoryWithDifferentCasing_WithDirectoryContent()
+        {
+            var fooDirectoryPath = Path.Combine(TestDirectory, "foo");
+            var fooDirectoryPathUpperCase = Path.Combine(TestDirectory, "FOO");
+            Directory.CreateDirectory(fooDirectoryPath);
+            Directory.CreateDirectory(Path.Combine(fooDirectoryPath, "bar"));
+            Directory.Move(fooDirectoryPath, fooDirectoryPathUpperCase);
+            var firstFile = Directory.GetDirectories(fooDirectoryPathUpperCase);
+            Assert.Equal("bar", Path.GetFileName(firstFile[0]));
+        }
+
         #endregion
 
         #region PlatformSpecific
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public void DirectoryWithDifferentCasingThanFileSystem_ToAnotherDirectory()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "FOO"));
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "bar"));
+            Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "bar", "FOO"));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public void DirectoryWithDifferentCasingThanFileSystem_ToItself()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "FOO"));
+            Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "FOO"));
+            Assert.True(Directory.Exists(Path.Combine(TestDirectory, "FOO")));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void DirectoryWithDifferentCasingThanFileSystem_ToAnotherDirectory_CaseSensitiveOS()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "FOO"));
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "bar"));
+            Assert.Throws<DirectoryNotFoundException>(() => Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "bar", "FOO")));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void DirectoryWithDifferentCasingThanFileSystem_ToItself_CaseSensitiveOS()
+        {
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "FOO"));
+            Assert.Throws<DirectoryNotFoundException>(() => Directory.Move(Path.Combine(TestDirectory, "foo"), Path.Combine(TestDirectory, "FOO")));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CaseVariantDirectoryNameWithCaseVariantPaths_CaseInsensitiveFileSystem()
+        {
+            var directoryToBeMoved = Path.Combine(TestDirectory, "FOO", "bar");
+            var newPath = Path.Combine(TestDirectory, "foo", "bar");
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "FOO", "bar"));
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "foo"));
+
+            Assert.Throws<IOException>(() => Directory.Move(directoryToBeMoved, Path.Combine(newPath, "bar")));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.FreeBSD | TestPlatforms.NetBSD)]
+        public void MoveDirectory_FailToMoveDirectoryWithUpperCaseToOtherDirectoryWithLowerCase()
+        {
+            Directory.CreateDirectory($"{TestDirectory}/FOO");
+            Directory.CreateDirectory($"{TestDirectory}/bar/foo");
+            Assert.Throws<IOException>(() => Directory.Move($"{TestDirectory}/FOO", $"{TestDirectory}/bar/foo"));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void MoveDirectory_NoOpWhenMovingDirectoryWithUpperCaseToOtherDirectoryWithLowerCase()
+        {
+            Directory.CreateDirectory($"{TestDirectory}/FOO");
+            Directory.CreateDirectory($"{TestDirectory}/bar/foo");
+            Directory.Move($"{TestDirectory}/FOO", $"{TestDirectory}/bar/foo");
+            Assert.True(Directory.Exists(Path.Combine(TestDirectory, "bar", "foo")));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.NetBSD)]
+        public void MoveDirectory_FailToMoveLowerCaseDirectoryWhenUpperCaseDirectoryExists()
+        {
+            Directory.CreateDirectory($"{TestDirectory}/bar/FOO");
+            Directory.CreateDirectory($"{TestDirectory}/foo");
+            Assert.Throws<IOException>(() => Directory.Move($"{TestDirectory}/foo", $"{TestDirectory}/bar/foo"));
+        }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
