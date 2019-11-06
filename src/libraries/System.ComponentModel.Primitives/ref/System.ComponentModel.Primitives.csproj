@@ -7,6 +7,7 @@
     <Compile Include="System.ComponentModel.Primitives.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />

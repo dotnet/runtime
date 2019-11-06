@@ -23,6 +23,13 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         [Fact]
+        public void IsConverterForT()
+        {
+            var conv = TypeDescriptor.GetConverter(typeof(T));
+            Assert.IsType(Converter.GetType(), conv);
+        }
+
+        [Fact]
         public void GetStandardValuesSupported()
         {
             Assert.Equal(StandardValuesSupported, Converter.GetStandardValuesSupported());

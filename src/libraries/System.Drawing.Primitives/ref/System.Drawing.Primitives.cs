@@ -7,6 +7,7 @@
 
 namespace System.Drawing
 {
+    [System.ComponentModel.TypeConverterAttribute("System.Drawing.ColorConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public readonly partial struct Color : System.IEquatable<System.Drawing.Color>
     {
         private readonly object _dummy;
@@ -366,6 +367,7 @@ namespace System.Drawing
         MenuBar = 173,
         MenuHighlight = 174,
     }
+    [System.ComponentModel.TypeConverterAttribute("System.Drawing.PointConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct Point : System.IEquatable<System.Drawing.Point>
     {
         private int _dummyPrimitive;
@@ -419,6 +421,7 @@ namespace System.Drawing
         public static System.Drawing.PointF Subtract(System.Drawing.PointF pt, System.Drawing.SizeF sz) { throw null; }
         public override readonly string ToString() { throw null; }
     }
+    [System.ComponentModel.TypeConverterAttribute("System.Drawing.RectangleConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct Rectangle : System.IEquatable<System.Drawing.Rectangle>
     {
         private int _dummyPrimitive;
@@ -511,6 +514,7 @@ namespace System.Drawing
         public override readonly string ToString() { throw null; }
         public static System.Drawing.RectangleF Union(System.Drawing.RectangleF a, System.Drawing.RectangleF b) { throw null; }
     }
+    [System.ComponentModel.TypeConverterAttribute("System.Drawing.SizeConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct Size : System.IEquatable<System.Drawing.Size>
     {
         private int _dummyPrimitive;
@@ -543,6 +547,7 @@ namespace System.Drawing
         public override readonly string ToString() { throw null; }
         public static System.Drawing.Size Truncate(System.Drawing.SizeF value) { throw null; }
     }
+    [System.ComponentModel.TypeConverterAttribute("System.Drawing.SizeFConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct SizeF : System.IEquatable<System.Drawing.SizeF>
     {
         private int _dummyPrimitive;
