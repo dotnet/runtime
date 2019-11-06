@@ -1330,7 +1330,7 @@ namespace System.Tests
             }
 
             short[,] a = new short[2, 2_000_000_000];
-            a[1, 1] = 42;
+            a[0, 1] = 42;
             Array.Copy(a, 1, a, Int32.MaxValue, 2);
             Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
 
