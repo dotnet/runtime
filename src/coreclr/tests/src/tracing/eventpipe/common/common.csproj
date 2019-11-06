@@ -9,5 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IpcTraceTest.cs" />
+    <Compile Include="StreamProxy.cs" />
   </ItemGroup>
 </Project>
