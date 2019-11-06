@@ -21,6 +21,19 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		private static IEnumerable<TypeDefinition> EnumerateTypesAndNestedTypes (IEnumerable<TypeDefinition> types)
+		{
+			// Recursively (depth-first) yield each element in 'types' and all nested types under each element.
+
+			foreach (TypeDefinition type in types) {
+				yield return type;
+
+				foreach (TypeDefinition nestedType in EnumerateTypesAndNestedTypes (type.NestedTypes)) {
+					yield return nestedType;
+				}
+			}
+		}
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if ((_assemblies != null) && (!_assemblies.Contains (assembly.Name.Name))) {
@@ -30,7 +43,7 @@ namespace Mono.Linker.Steps
 			bool changed = false;
 
 			foreach (ModuleDefinition module in assembly.Modules) {
-				foreach (TypeDefinition type in module.Types) {
+				foreach (TypeDefinition type in EnumerateTypesAndNestedTypes (module.Types)) {
 					foreach (MethodDefinition method in type.Methods) {
 						if (method.Body != null) {
 							if (method.Body.InitLocals) {
