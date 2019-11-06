@@ -82,8 +82,12 @@ namespace System.Net.NetworkInformation.Tests
             yield return new object[] { "47-FB-74-41-3B", new byte[] { 0x47, 0xfb, 0x74, 0x41, 0x3B } };
             yield return new object[] { "00-11-22-33-44-55", new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 } };
             yield return new object[] { "F0-E1-D2-C3-B4-A5", new byte[] { 0xf0, 0xe1, 0xd2, 0xc3, 0xb4, 0xa5 } };
+            yield return new object[] { "f0-e1-d2-c3-b4-a5", new byte[] { 0xf0, 0xe1, 0xd2, 0xc3, 0xb4, 0xa5 } };
             yield return new object[] { "54-0C-C4-7E-66-54", new byte[] { 0x54, 0x0c, 0xc4, 0x7e, 0x66, 0x54 } };
             yield return new object[] { "001122334455", new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 } };
+            yield return new object[] { "00:11:22:33:44:55", new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 } };
+            yield return new object[] { "0011:2233:4455", new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 } };
+            yield return new object[] { "0011.2233.4455", new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 } };
             yield return new object[]
             {
                 "00-01-02-03-04-05-06-07-08-09-0A-0B-0C-0D-0E-0F-10-11-12-13-14-15-16-17-18-19-1A-1B-1C-1D-1E-1F-" +
@@ -128,10 +132,22 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData("D2-C3-")]
         [InlineData("D2-A33")]
         [InlineData("B4-A5-F01")]
-        [InlineData("f0-e1-d2-c3-b4-a5")]
-        [InlineData("47:FB:74:41:66:3B")]
-        [InlineData("de84.1251.1c9d")]
-        [InlineData("AE88.D6EC.A720")]
+        [InlineData("00:111:22:33:44:55")]
+        [InlineData("0:1:22:33:44:55")]
+        [InlineData("0:0:1:1:22:33:44:55")]
+        [InlineData(":::00112233444")]
+        [InlineData("0011:2233")]
+        [InlineData("0011:2233:4455:6677")]
+        [InlineData("0011:2233:4455:6677:8899:0011")]
+        [InlineData("001:12233:4455")]
+        [InlineData("0011:2233:")]
+        [InlineData("0011:2233:44555")]
+        [InlineData("001.12233.4455")]
+        [InlineData("0011.2233.")]
+        [InlineData("0011.2233.44555")]
+        [InlineData("00.111.22.33.44.55")]
+        [InlineData("001.122.334.455")]
+
         public void Parse_Invalid_ThrowsFormatException(string address)
         {
             FormatException ex = Assert.Throws<FormatException>(() => PhysicalAddress.Parse(address));
@@ -150,7 +166,7 @@ namespace System.Net.NetworkInformation.Tests
         [MemberData(nameof(RoundtripParseToString_String_Bytes))]
         public void ToString_ExpectedResult(string expectedAddress, byte[] inputBytes)
         {
-            Assert.Equal(expectedAddress.Replace("-", ""), new PhysicalAddress(inputBytes).ToString());
+            Assert.Equal(expectedAddress.Replace("-", "").Replace(":", "").Replace(".", "").ToUpper(), new PhysicalAddress(inputBytes).ToString());
         }
 
         [Theory]
