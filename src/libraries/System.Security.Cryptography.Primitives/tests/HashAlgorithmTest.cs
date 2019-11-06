@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Tests
 {
-    public partial class HashAlgorithmTest
+    public class HashAlgorithmTest
     {
         [Fact]
         public void SpanMethodsUsed_NotOverridden_ArrayMethodsInvoked()

@@ -9,22 +9,19 @@
     </Compile>
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
     <Compile Include="CryptoConfigTests.cs" />
-    <Compile Include="CryptoStream.cs" />
     <Compile Include="CryptographicException.cs" />
+    <Compile Include="CryptoStream.cs" />
+    <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
+    <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="HmacAlgorithmTest.cs" />
     <Compile Include="KeyedHashAlgorithmTests.cs" />
     <Compile Include="Length32Hash.cs" />
+    <Compile Include="PbeParametersTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
     <Compile Include="Sum32Hash.cs" />
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="CryptoStream.netcoreapp.cs" />
-    <Compile Include="FixedTimeEqualsTests.cs" />
-    <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
-    <Compile Include="PbeParametersTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
   </ItemGroup>
 </Project>
