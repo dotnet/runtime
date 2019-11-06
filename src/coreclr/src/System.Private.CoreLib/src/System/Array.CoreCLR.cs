@@ -415,33 +415,6 @@ namespace System
             InternalSetValue(&elemref, value);
         }
 
-        private static void SortImpl(Array keys, Array? items, int index, int length, IComparer comparer)
-        {
-            Debug.Assert(comparer != null);
-
-            if (comparer == Comparer.Default)
-            {
-                bool r = TrySZSort(keys, items, index, index + length - 1);
-                if (r)
-                    return;
-            }
-
-            object[]? objKeys = keys as object[];
-            object[]? objItems = null;
-            if (objKeys != null)
-                objItems = items as object[];
-            if (objKeys != null && (items == null || objItems != null))
-            {
-                SorterObjectArray sorter = new SorterObjectArray(objKeys, objItems, comparer);
-                sorter.Sort(index, length);
-            }
-            else
-            {
-                SorterGenericArray sorter = new SorterGenericArray(keys, items, comparer);
-                sorter.Sort(index, length);
-            }
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
         private extern unsafe void InternalGetReference(void* elemRef, int rank, int* pIndices);
@@ -512,9 +485,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool TrySZReverse(Array array, int index, int count);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZSort(Array keys, Array? items, int left, int right);
 
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.

@@ -1466,7 +1466,124 @@ namespace System
 
             if (length > 1)
             {
-                SortImpl(keys, items, index, length, comparer ?? Comparer.Default);
+                comparer ??= Comparer.Default;
+
+                if (comparer == Comparer.Default)
+                {
+                    switch (Type.GetTypeCode(keys.GetType().GetElementType()))
+                    {
+                        case TypeCode.Boolean:
+                            if (TryGenericSort(keys as bool[], items, index, length)) return;
+                            break;
+                        case TypeCode.Byte:
+                            if (TryGenericSort(keys as byte[], items, index, length)) return;
+                            break;
+                        case TypeCode.Char:
+                            if (TryGenericSort(keys as char[], items, index, length)) return;
+                            break;
+                        case TypeCode.Double:
+                            if (TryGenericSort(keys as double[], items, index, length)) return;
+                            break;
+                        case TypeCode.Int16:
+                            if (TryGenericSort(keys as short[], items, index, length)) return;
+                            break;
+                        case TypeCode.Int32:
+                            if (TryGenericSort(keys as int[], items, index, length)) return;
+                            break;
+                        case TypeCode.Int64:
+                            if (TryGenericSort(keys as long[], items, index, length)) return;
+                            break;
+                        case TypeCode.SByte:
+                            if (TryGenericSort(keys as sbyte[], items, index, length)) return;
+                            break;
+                        case TypeCode.Single:
+                            if (TryGenericSort(keys as float[], items, index, length)) return;
+                            break;
+                        case TypeCode.String:
+                            if (TryGenericSort(keys as string[], items, index, length)) return;
+                            break;
+                        case TypeCode.UInt16:
+                            if (TryGenericSort(keys as ushort[], items, index, length)) return;
+                            break;
+                        case TypeCode.UInt32:
+                            if (TryGenericSort(keys as uint[], items, index, length)) return;
+                            break;
+                        case TypeCode.UInt64:
+                            if (TryGenericSort(keys as ulong[], items, index, length)) return;
+                            break;
+                    }
+
+                    static bool TryGenericSort<TKey>(TKey[]? keys, Array? items, int index, int length)
+                    {
+                        if (keys != null)
+                        {
+                            if (items is null)
+                            {
+                                Sort(keys, index, length);
+                                return true;
+                            }
+
+                            switch (Type.GetTypeCode(items.GetType().GetElementType()))
+                            {
+                                case TypeCode.Boolean:
+                                    if (items is bool[] boolItems) { Sort(keys, boolItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Byte:
+                                    if (items is byte[] byteItems) { Sort(keys, byteItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Char:
+                                    if (items is char[] charItems) { Sort(keys, charItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Double:
+                                    if (items is double[] doubleItems) { Sort(keys, doubleItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Int16:
+                                    if (items is short[] shortItems) { Sort(keys, shortItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Int32:
+                                    if (items is int[] intItems) { Sort(keys, intItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Int64:
+                                    if (items is long[] longItems) { Sort(keys, longItems, index, length); return true; }
+                                    break;
+                                case TypeCode.SByte:
+                                    if (items is sbyte[] sbyteItems) { Sort(keys, sbyteItems, index, length); return true; }
+                                    break;
+                                case TypeCode.Single:
+                                    if (items is float[] floatItems) { Sort(keys, floatItems, index, length); return true; }
+                                    break;
+                                case TypeCode.String:
+                                    if (items is string[] stringItems) { Sort(keys, stringItems, index, length); return true; }
+                                    break;
+                                case TypeCode.UInt16:
+                                    if (items is ushort[] ushortItems) { Sort(keys, ushortItems, index, length); return true; }
+                                    break;
+                                case TypeCode.UInt32:
+                                    if (items is uint[] uintItems) { Sort(keys, uintItems, index, length); return true; }
+                                    break;
+                                case TypeCode.UInt64:
+                                    if (items is ulong[] ulongItems) { Sort(keys, ulongItems, index, length); return true; }
+                                    break;
+                            }
+                        }
+
+                        return false;
+                    }
+                }
+
+                object[]? objKeys = keys as object[];
+                object[]? objItems = null;
+                if (objKeys != null)
+                    objItems = items as object[];
+
+                if (objKeys != null && (items == null || objItems != null))
+                {
+                    new SorterObjectArray(objKeys, objItems, comparer).Sort(index, length);
+                }
+                else
+                {
+                    new SorterGenericArray(keys, items, comparer).Sort(index, length);
+                }
             }
         }
 
@@ -1474,7 +1591,12 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort<T>(array, 0, array.Length, null);
+
+            if (array.Length > 1)
+            {
+                var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+                ArraySortHelper<T>.Default.Sort(span, null);
+            }
         }
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items)
@@ -1521,17 +1643,8 @@ namespace System
 
             if (length > 1)
             {
-#if !CORERT
-                if (comparer == null || comparer == Comparer<T>.Default)
-                {
-                    if (TrySZSort(array, null, index, index + length - 1))
-                    {
-                        return;
-                    }
-                }
-#endif
-
-                ArraySortHelper<T>.Default.Sort(array, index, length, comparer);
+                var span = new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index), length);
+                ArraySortHelper<T>.Default.Sort(span, comparer);
             }
         }
 
@@ -1548,23 +1661,15 @@ namespace System
 
             if (length > 1)
             {
-#if !CORERT
-                if (comparer == null || comparer == Comparer<TKey>.Default)
-                {
-                    if (TrySZSort(keys, items, index, index + length - 1))
-                    {
-                        return;
-                    }
-                }
-#endif
-
                 if (items == null)
                 {
                     Sort<TKey>(keys, index, length, comparer);
                     return;
                 }
 
-                ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, index, length, comparer);
+                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref Unsafe.As<byte, TKey>(ref keys.GetRawSzArrayData()), index), length);
+                var spanItems = new Span<TValue>(ref Unsafe.Add(ref Unsafe.As<byte, TValue>(ref items.GetRawSzArrayData()), index), length);
+                ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
 
@@ -1580,7 +1685,8 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            ArraySortHelper<T>.Sort(array, 0, array.Length, comparison!);
+            var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+            ArraySortHelper<T>.Sort(span, comparison);
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)

@@ -1002,5 +1002,6 @@ namespace System
         NotSupported_FixedSizeCollection,
         Rank_MultiDimNotSupported,
         Arg_TypeNotSupported,
+        Argument_SpansMustHaveSameLength,
     }
 }
