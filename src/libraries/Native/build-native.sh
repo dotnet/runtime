@@ -426,6 +426,11 @@ if [ $__BuildArch != wasm ]; then
     esac
 fi
 
+# set default OSX deployment target
+if [[ $__BuildOS == OSX ]]; then
+    __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
+fi
+
 # Set the default clang version if not already set
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
     __ClangMajorVersion=9
