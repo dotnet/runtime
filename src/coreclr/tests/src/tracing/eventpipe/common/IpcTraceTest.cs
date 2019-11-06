@@ -176,17 +176,6 @@ namespace Tracing.Tests.Common
             var isClean = EnsureCleanEnvironment();
             if (!isClean)
                 return -1;
-
-            var processId = Process.GetCurrentProcess().Id;
-            Logger.logger.Log("Connecting to EventPipe...");
-            var binaryReader = EventPipeClient.CollectTracing(processId, _sessionConfiguration, out var eventpipeSessionId);
-            if (eventpipeSessionId == 0)
-            {
-                Logger.logger.Log("Failed to connect to EventPipe!");
-                return -1;
-            }
-            Logger.logger.Log($"Connected to EventPipe with sessionID '0x{eventpipeSessionId:x}'");
-            
             // CollectTracing returns before EventPipe::Enable has returned, so the
             // the sources we want to listen for may not have been enabled yet.
             // We'll use this sentinel EventSource to check if Enable has finished
@@ -202,53 +191,83 @@ namespace Tracing.Tests.Common
             });
             sentinelTask.Start();
 
-            EventPipeEventSource source = null;
+            int processId = Process.GetCurrentProcess().Id;;
+            object threadSync = new object(); // for locking eventpipeSessionId access
+            ulong eventpipeSessionId = 0;
             Func<int> optionalTraceValidationCallback = null;
             var readerTask = new Task(() =>
             {
-                Logger.logger.Log("Creating EventPipeEventSource...");
-                source = new EventPipeEventSource(binaryReader);
-                Logger.logger.Log("EventPipeEventSource created");
-
-                source.Dynamic.All += (eventData) =>
+                Logger.logger.Log("Connecting to EventPipe...");
+                using (var eventPipeStream = new StreamProxy(EventPipeClient.CollectTracing(processId, _sessionConfiguration, out var sessionId)))
                 {
-                    try
+                    if (sessionId == 0)
                     {
-                        if (eventData.ProviderName == "SentinelEventSource")
+                        Logger.logger.Log("Failed to connect to EventPipe!");
+                        throw new ApplicationException("Failed to connect to EventPipe");
+                    }
+                    Logger.logger.Log($"Connected to EventPipe with sessionID '0x{sessionId:x}'");
+
+                    lock (threadSync)
+                    {
+                        eventpipeSessionId = sessionId;
+                    }
+
+                    Logger.logger.Log("Creating EventPipeEventSource...");
+                    using (EventPipeEventSource source = new EventPipeEventSource(eventPipeStream))
+                    {
+                        Logger.logger.Log("EventPipeEventSource created");
+
+                        source.Dynamic.All += (eventData) =>
                         {
-                            if (!sentinelEventReceived.WaitOne(0))
-                                Logger.logger.Log("Saw sentinel event");
-                            sentinelEventReceived.Set();
+                            try
+                            {
+                                if (eventData.ProviderName == "SentinelEventSource")
+                                {
+                                    if (!sentinelEventReceived.WaitOne(0))
+                                        Logger.logger.Log("Saw sentinel event");
+                                    sentinelEventReceived.Set();
+                                }
+
+                                else if (_actualEventCounts.TryGetValue(eventData.ProviderName, out _))
+                                {
+                                    _actualEventCounts[eventData.ProviderName]++;
+                                }
+                                else
+                                {
+                                    Logger.logger.Log($"Saw new provider '{eventData.ProviderName}'");
+                                    _actualEventCounts[eventData.ProviderName] = 1;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.logger.Log("Exception in Dynamic.All callback " + e.ToString());
+                            }
+                        };
+                        Logger.logger.Log("Dynamic.All callback registered");
+
+                        if (_optionalTraceValidator != null)
+                        {
+                            Logger.logger.Log("Running optional trace validator");
+                            optionalTraceValidationCallback = _optionalTraceValidator(source);
+                            Logger.logger.Log("Finished running optional trace validator");
                         }
 
-                        else if (_actualEventCounts.TryGetValue(eventData.ProviderName, out _))
+                        Logger.logger.Log("Starting stream processing...");
+                        try
                         {
-                            _actualEventCounts[eventData.ProviderName]++;
+                            source.Process();
                         }
-                        else
+                        catch (Exception e)
                         {
-                            Logger.logger.Log($"Saw new provider '{eventData.ProviderName}'");
-                            _actualEventCounts[eventData.ProviderName] = 1;
+                            Logger.logger.Log($"Exception thrown while reading; dumping culprit stream to disk...");
+                            eventPipeStream.DumpStreamToDisk();
+                            // rethrow it to fail the test
+                            throw e;
                         }
+                        Logger.logger.Log("Stopping stream processing");
+                        Logger.logger.Log($"Dropped {source.EventsLost} events");
                     }
-                    catch (Exception e)
-                    {
-                        Logger.logger.Log("Exception in Dynamic.All callback " + e.ToString());
-                    }
-                };
-                Logger.logger.Log("Dynamic.All callback registered");
-
-                if (_optionalTraceValidator != null)
-                {
-                    Logger.logger.Log("Running optional trace validator");
-                    optionalTraceValidationCallback = _optionalTraceValidator(source);
-                    Logger.logger.Log("Finished running optional trace validator");
                 }
-
-                Logger.logger.Log("Starting stream processing...");
-                source.Process();
-                Logger.logger.Log("Stopping stream processing");
-                Logger.logger.Log($"Dropped {source.EventsLost} events");
             });
 
             readerTask.Start();
@@ -258,11 +277,18 @@ namespace Tracing.Tests.Common
             _eventGeneratingAction();
             Logger.logger.Log("Stopping event generating action");
 
-            Logger.logger.Log("Sending StopTracing command...");
-            EventPipeClient.StopTracing(processId, eventpipeSessionId);
-            Logger.logger.Log("Finished StopTracing command");
+            var stopTask = Task.Run(() => 
+            {
+                Logger.logger.Log("Sending StopTracing command...");
+                lock (threadSync) // eventpipeSessionId
+                {
+                    EventPipeClient.StopTracing(processId, eventpipeSessionId);
+                }
+                Logger.logger.Log("Finished StopTracing command");
+            });
 
-            readerTask.Wait();
+            // Should throw if the reader task throws any exceptions
+            Task.WaitAll(readerTask, stopTask);
             Logger.logger.Log("Reader task finished");
 
             foreach (var (provider, expectedCount) in _expectedEventCounts)
@@ -283,6 +309,7 @@ namespace Tracing.Tests.Common
             if (optionalTraceValidationCallback != null)
             {
                 Logger.logger.Log("Validating optional callback...");
+                // reader thread should be dead now, no need to lock
                 return optionalTraceValidationCallback();
             }
             else
