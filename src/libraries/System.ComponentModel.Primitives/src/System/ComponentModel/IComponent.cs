@@ -20,6 +20,7 @@ namespace System.ComponentModel
     /// provided "site".
     /// Provides functionality required by all components.
     /// </summary>
+    [TypeConverter("System.ComponentModel.ComponentConverter, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public interface IComponent : IDisposable
     {
         /// <summary>

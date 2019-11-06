@@ -14,6 +14,13 @@ namespace System.ComponentModel.TypeConverterTests
 {
     public class ColorConverterTests
     {
+        [Fact]
+        public void IsConverterForColor()
+        {
+            var conv = TypeDescriptor.GetConverter(typeof(Color));
+            Assert.IsType<ColorConverter>(conv);
+        }
+
         [Theory]
         [InlineData(typeof(string))]
         public void CanConvertFromTrue(Type type)

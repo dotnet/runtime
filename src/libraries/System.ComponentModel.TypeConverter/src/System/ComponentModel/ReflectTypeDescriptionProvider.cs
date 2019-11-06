@@ -127,16 +127,10 @@ namespace System.ComponentModel
             [typeof(Guid)] = typeof(GuidConverter),
             [typeof(Uri)] = typeof(UriTypeConverter),
             [typeof(Version)] = typeof(VersionConverter),
-            [typeof(Color)] = typeof(ColorConverter),
-            [typeof(Point)] = typeof(PointConverter),
-            [typeof(Rectangle)] = typeof(RectangleConverter),
-            [typeof(Size)] = typeof(SizeConverter),
-            [typeof(SizeF)] = typeof(SizeFConverter),
             // Special cases for things that are not bound to a specific type
             //
             [typeof(Array)] = typeof(ArrayConverter),
             [typeof(ICollection)] = typeof(CollectionConverter),
-            [typeof(IComponent)] = typeof(ComponentConverter),
             [typeof(Enum)] = typeof(EnumConverter),
             [s_intrinsicNullableKey] = typeof(NullableConverter),
         });

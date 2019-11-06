@@ -154,6 +154,7 @@ namespace System.ComponentModel
         public void Dispose() { }
         public void RemoveHandler(object key, System.Delegate? value) { }
     }
+    [System.ComponentModel.TypeConverterAttribute("System.ComponentModel.ComponentConverter, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial interface IComponent : System.IDisposable
     {
         System.ComponentModel.ISite? Site { get; set; }
