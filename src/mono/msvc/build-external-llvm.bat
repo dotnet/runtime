@@ -114,11 +114,6 @@ if "%FORCE_MSBUILD%" == "" (
     set FORCE_MSBUILD=false
 )
 
-if not exist "%LLVM_DIR%" (
-    echo Could not find "%LLVM_DIR%".
-    goto ON_ERROR
-)
-
 set LLVM_CFLAGS=%VS_CFLAGS%
 set LLVM_ARCH=x86_64
 if /i "%VS_PLATFORM%" == "win32" (
@@ -244,17 +239,19 @@ if "%GIT%" == "" (
 )
 
 :: Make sure llvm submodule is up to date.
-pushd
-cd "%LLVM_DIR%"
-"%GIT%" submodule update --init
+"%GIT%" submodule update --init -- "%LLVM_DIR%"
 if not ERRORLEVEL == 0 (
-   "%GIT%" submodule init
-    "%GIT%" submodule update
+    "%GIT%" submodule init -- "%LLVM_DIR%"
+    "%GIT%" submodule update -- "%LLVM_DIR%"
     if not ERRORLEVEL == 0 (
         echo Git llvm submodules failed to updated. You may experience compilation problems if some submodules are out of date.
     )
 )
-popd
+
+if not exist "%LLVM_DIR%" (
+    echo Could not find "%LLVM_DIR%".
+    goto ON_ERROR
+)
 
 if not exist "%LLVM_BUILD_DIR%" (
     mkdir "%LLVM_BUILD_DIR%"

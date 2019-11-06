@@ -110,16 +110,6 @@ if "%FORCE_MSBUILD%" == "" (
     set FORCE_MSBUILD=false
 )
 
-if not exist "%MONO_BTLS_DIR%" (
-    echo Could not find "%MONO_BTLS_DIR%".
-    goto ON_ERROR
-)
-
-if not exist "%BTLS_DIR%" (
-    echo Could not find "%BTLS_DIR%".
-    goto ON_ERROR
-)
-
 set BTLS_CFLAGS=%VS_CFLAGS%
 set BTLS_ARCH=x86_64
 if /i "%VS_PLATFORM%" == "win32" (
@@ -245,17 +235,19 @@ if "%GIT%" == "" (
 )
 
 :: Make sure boringssl submodule is up to date.
-pushd
-cd "%BTLS_DIR%"
-"%GIT%" submodule update --init
+"%GIT%" submodule update --init -- "%BTLS_DIR%"
 if not ERRORLEVEL == 0 (
-   "%GIT%" submodule init
-    "%GIT%" submodule update
+    "%GIT%" submodule init -- "%BTLS_DIR%"
+    "%GIT%" submodule update -- "%BTLS_DIR%"
     if not ERRORLEVEL == 0 (
         echo Git boringssl submodules failed to updated. You may experience compilation problems if some submodules are out of date.
     )
 )
-popd
+
+if not exist "%BTLS_DIR%" (
+    echo Could not find "%BTLS_DIR%".
+    goto ON_ERROR
+)
 
 if not exist "%BTLS_BUILD_DIR%" (
     mkdir "%BTLS_BUILD_DIR%"
