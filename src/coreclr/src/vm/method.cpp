@@ -2642,10 +2642,10 @@ void MethodDesc::Save(DataImage *image)
             }
         }
     }
-
+    
     if (GetMethodDictionary())
     {
-        DWORD cBytes = DictionaryLayout::GetFirstDictionaryBucketSize(GetNumGenericMethodArgs(), GetDictionaryLayout());
+        DWORD cBytes = DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericMethodArgs(), GetDictionaryLayout());
         void* pBytes = GetMethodDictionary()->AsPtr();
 
         LOG((LF_ZAP, LL_INFO10000, "    MethodDesc::Save dictionary size %d\n", cBytes));

@@ -967,8 +967,83 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
+    // Record this type for dynamic dictionary expansion (if applicable)
+    RecordDependenciesForDictionaryExpansion(pMT);
+
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
+
+    RETURN;
+}
+
+/*static*/
+void ClassLoader::RecordDependenciesForDictionaryExpansion(MethodTable* pMT)
+{
+    CONTRACT_VOID
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
+    }
+    CONTRACT_END; 
+
+
+#ifndef CROSSGEN_COMPILE
+    if (pMT->GetNumDicts() == 0)
+        RETURN;
+
+    // Check if there are no dependencies that need tracking. There is no point in taking the lock
+    // below if we don't need to track anything.
+    {
+        bool hasSharedMethodTables = false;
+        MethodTable* pCurrentMT = pMT;
+        while (pCurrentMT)
+        {
+            if (pCurrentMT->HasInstantiation() && !pCurrentMT->IsCanonicalMethodTable())
+            {
+                hasSharedMethodTables = true;
+                break;
+            }
+            pCurrentMT = pCurrentMT->GetParentMethodTable();
+        }
+
+        if (!hasSharedMethodTables)
+            RETURN;
+    }
+
+    {
+        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+
+        MethodTable* pParentMT = pMT->GetParentMethodTable();
+        if (pParentMT != NULL && pParentMT->HasPerInstInfo())
+        {
+            // Copy/update down all inherited dictionary pointers which we could not embed.
+            // This step has to be done under the dictionary lock, to prevent other threads from making updates
+            // the the dictionaries of the parent types while we're also copying them over to the derived type here.
+
+            DWORD nDicts = pParentMT->GetNumDicts();
+            for (DWORD iDict = 0; iDict < nDicts; iDict++)
+            {
+                if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
+                {
+                    pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
+                }
+            }
+        }
+
+        // Add the current type as a dependency to its canonical version, as well as a dependency to all parent
+        // types in the hierarchy with dictionaries, so that if one of the base types gets a dictionary expansion, we make
+        // sure to update the derived type's parent dictionary pointer.
+        MethodTable* pCurrentMT = pMT;
+        while (pCurrentMT)
+        {
+            if (pCurrentMT->HasInstantiation() && !pCurrentMT->IsCanonicalMethodTable())
+                pCurrentMT->GetModule()->RecordTypeForDictionaryExpansion_Locked(pCurrentMT, pMT);
+
+            pCurrentMT = pCurrentMT->GetParentMethodTable();
+        }
+    }
+#endif
 
     RETURN;
 }

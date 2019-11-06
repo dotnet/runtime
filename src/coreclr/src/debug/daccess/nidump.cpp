@@ -6984,7 +6984,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         if( currentDictionary != NULL )
         {
             PTR_DictionaryEntry entry(currentDictionary->EntryAddr(0));
-
+            
             PTR_DictionaryLayout layout( clazz->GetDictionaryLayout() );
 
             DisplayStartStructure( "Dictionary",
@@ -6992,7 +6992,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                    //if there is a layout, use it to compute
                                    //the size, otherwise there is just the one
                                    //entry.
-                                   DictionaryLayout::GetFirstDictionaryBucketSize(mt->GetNumGenericArgs(), layout),
+                                   DictionaryLayout::GetDictionarySizeFromLayout(mt->GetNumGenericArgs(), layout),
                                    METHODTABLES );
 
             DisplayStartArrayWithOffset( m_pEntries, NULL, Dictionary,
@@ -8018,7 +8018,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetFirstDictionaryBucketSize(imd->GetNumGenericMethodArgs(),
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
                                                                           layout);
             }
         }
