@@ -19,30 +19,30 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal Stream _input;
         internal long _topId;
         internal long _headerId;
-        internal SizedArray _objectMapIdTable;
-        internal SizedArray _assemIdToAssemblyTable;    // Used to hold assembly information
+        internal SizedArray? _objectMapIdTable;
+        internal SizedArray? _assemIdToAssemblyTable;    // Used to hold assembly information
         internal SerStack _stack = new SerStack("ObjectProgressStack");
 
         internal BinaryTypeEnum _expectedType = BinaryTypeEnum.ObjectUrt;
-        internal object _expectedTypeInformation;
-        internal ParseRecord _prs;
+        internal object? _expectedTypeInformation;
+        internal ParseRecord? _prs;
 
-        private BinaryAssemblyInfo _systemAssemblyInfo;
+        private BinaryAssemblyInfo? _systemAssemblyInfo;
         private readonly BinaryReader _dataReader;
-        private SerStack _opPool;
+        private SerStack? _opPool;
 
-        private BinaryObject _binaryObject;
-        private BinaryObjectWithMap _bowm;
-        private BinaryObjectWithMapTyped _bowmt;
+        private BinaryObject? _binaryObject;
+        private BinaryObjectWithMap? _bowm;
+        private BinaryObjectWithMapTyped? _bowmt;
 
-        internal BinaryObjectString _objectString;
-        internal BinaryCrossAppDomainString _crossAppDomainString;
-        internal MemberPrimitiveTyped _memberPrimitiveTyped;
-        private byte[] _byteBuffer;
-        internal MemberPrimitiveUnTyped memberPrimitiveUnTyped;
-        internal MemberReference _memberReference;
-        internal ObjectNull _objectNull;
-        internal static volatile MessageEnd _messageEnd;
+        internal BinaryObjectString? _objectString;
+        internal BinaryCrossAppDomainString? _crossAppDomainString;
+        internal MemberPrimitiveTyped? _memberPrimitiveTyped;
+        private byte[]? _byteBuffer;
+        internal MemberPrimitiveUnTyped? memberPrimitiveUnTyped;
+        internal MemberReference? _memberReference;
+        internal ObjectNull? _objectNull;
+        internal static volatile MessageEnd? _messageEnd;
 
         internal BinaryParser(Stream stream, ObjectReader objectReader)
         {
@@ -156,7 +156,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         // If this is an object, and the end of object has been reached, then parse object end.
                         while (!isData)
                         {
-                            ObjectProgress op = (ObjectProgress)_stack.Peek();
+                            ObjectProgress? op = (ObjectProgress?)_stack.Peek();
                             if (op == null)
                             {
                                 // No more object on stack, then the next record is a top level object
@@ -301,7 +301,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 record.Read(this);
             }
 
-            AssemIdToAssemblyTable[record._assemId] = new BinaryAssemblyInfo(record._assemblyString);
+            AssemIdToAssemblyTable[record._assemId] = new BinaryAssemblyInfo(record._assemblyString!);
         }
 
         private void ReadObject()
@@ -312,7 +312,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             _binaryObject.Read(this);
 
-            ObjectMap objectMap = (ObjectMap)ObjectMapIdTable[_binaryObject._mapId];
+            ObjectMap? objectMap = (ObjectMap?)ObjectMapIdTable[_binaryObject._mapId];
             if (objectMap == null)
             {
                 throw new SerializationException(SR.Format(SR.Serialization_Map, _binaryObject._mapId));
@@ -328,7 +328,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             op._memberTypes = objectMap._memberTypes;
             op._typeInformationA = objectMap._typeInformationA;
             op._memberLength = op._binaryTypeEnumA.Length;
-            ObjectProgress objectOp = (ObjectProgress)_stack.PeekPeek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.PeekPeek();
             if ((objectOp == null) || (objectOp._isInitial))
             {
                 // Non-Nested Object
@@ -379,15 +379,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             BinaryCrossAppDomainMap record = new BinaryCrossAppDomainMap();
             record.Read(this);
             object mapObject = _objectReader.CrossAppDomainArray(record._crossAppDomainArrayIndex);
-            BinaryObjectWithMap binaryObjectWithMap = mapObject as BinaryObjectWithMap;
-            if (binaryObjectWithMap != null)
+            if (mapObject is BinaryObjectWithMap binaryObjectWithMap)
             {
                 ReadObjectWithMap(binaryObjectWithMap);
             }
             else
             {
-                BinaryObjectWithMapTyped binaryObjectWithMapTyped = mapObject as BinaryObjectWithMapTyped;
-                if (binaryObjectWithMapTyped != null)
+                if (mapObject is BinaryObjectWithMapTyped binaryObjectWithMapTyped)
                 {
                     ReadObjectWithMapTyped(binaryObjectWithMapTyped);
                 }
@@ -414,7 +412,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadObjectWithMap(BinaryObjectWithMap record)
         {
-            BinaryAssemblyInfo assemblyInfo = null;
+            BinaryAssemblyInfo? assemblyInfo = null;
             ObjectProgress op = GetOp();
             ParseRecord pr = op._pr;
             _stack.Push(op);
@@ -426,7 +424,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     throw new SerializationException(SR.Format(SR.Serialization_Assembly, record._name));
                 }
 
-                assemblyInfo = ((BinaryAssemblyInfo)AssemIdToAssemblyTable[record._assemId]);
+                assemblyInfo = ((BinaryAssemblyInfo?)AssemIdToAssemblyTable[record._assemId]);
 
                 if (assemblyInfo == null)
                 {
@@ -438,9 +436,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 assemblyInfo = SystemAssemblyInfo; //Urt assembly
             }
 
-            Type objectType = _objectReader.GetType(assemblyInfo, record._name);
+            Debug.Assert(record._name != null && record._memberNames != null);
+            Type? objectType = _objectReader.GetType(assemblyInfo!, record._name);
 
-            ObjectMap objectMap = ObjectMap.Create(record._name, objectType, record._memberNames, _objectReader, record._objectId, assemblyInfo);
+            Debug.Assert(objectType != null);
+            ObjectMap objectMap = ObjectMap.Create(record._name, objectType, record._memberNames, _objectReader, record._objectId, assemblyInfo!);
             ObjectMapIdTable[record._objectId] = objectMap;
 
             op._objectTypeEnum = InternalObjectTypeE.Object;
@@ -450,7 +450,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             op._memberNames = objectMap._memberNames;
             op._memberTypes = objectMap._memberTypes;
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.PeekPeek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.PeekPeek();
 
             if ((objectOp == null) || (objectOp._isInitial))
             {
@@ -512,7 +512,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadObjectWithMapTyped(BinaryObjectWithMapTyped record)
         {
-            BinaryAssemblyInfo assemblyInfo = null;
+            BinaryAssemblyInfo? assemblyInfo = null;
             ObjectProgress op = GetOp();
             ParseRecord pr = op._pr;
             _stack.Push(op);
@@ -524,7 +524,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     throw new SerializationException(SR.Format(SR.Serialization_AssemblyId, record._name));
                 }
 
-                assemblyInfo = (BinaryAssemblyInfo)AssemIdToAssemblyTable[record._assemId];
+                assemblyInfo = (BinaryAssemblyInfo?)AssemIdToAssemblyTable[record._assemId];
                 if (assemblyInfo == null)
                 {
                     throw new SerializationException(SR.Format(SR.Serialization_AssemblyId, record._assemId + " " + record._name));
@@ -535,7 +535,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 assemblyInfo = SystemAssemblyInfo; // Urt assembly
             }
 
-            ObjectMap objectMap = ObjectMap.Create(record._name, record._memberNames, record._binaryTypeEnumA, record._typeInformationA, record._memberAssemIds, _objectReader, record._objectId, assemblyInfo, AssemIdToAssemblyTable);
+            Debug.Assert(record._name != null && record._memberNames != null && record._binaryTypeEnumA != null && record._typeInformationA != null && record._memberAssemIds != null);
+            ObjectMap objectMap = ObjectMap.Create(record._name, record._memberNames, record._binaryTypeEnumA, record._typeInformationA, record._memberAssemIds, _objectReader, record._objectId, assemblyInfo!, AssemIdToAssemblyTable);
             ObjectMapIdTable[record._objectId] = objectMap;
             op._objectTypeEnum = InternalObjectTypeE.Object;
             op._binaryTypeEnumA = objectMap._binaryTypeEnumA;
@@ -544,7 +545,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             op._memberNames = objectMap._memberNames;
             op._memberTypes = objectMap._memberTypes;
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.PeekPeek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.PeekPeek();
 
             if ((objectOp == null) || (objectOp._isInitial))
             {
@@ -627,7 +628,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             PRs._objectTypeEnum = InternalObjectTypeE.Object;
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
 
             PRs._value = _objectString._value;
             PRs._keyDt = "System.String";
@@ -674,7 +675,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _memberPrimitiveTyped.Read(this);
 
             PRs._objectTypeEnum = InternalObjectTypeE.Object; //Get rid of
-            ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
 
             PRs.Init();
             PRs._varValue = _memberPrimitiveTyped._value;
@@ -714,7 +715,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadArray(BinaryHeaderEnum binaryHeaderEnum)
         {
-            BinaryAssemblyInfo assemblyInfo = null;
+            BinaryAssemblyInfo? assemblyInfo = null;
             BinaryArray record = new BinaryArray(binaryHeaderEnum);
             record.Read(this);
 
@@ -724,7 +725,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     throw new SerializationException(SR.Format(SR.Serialization_AssemblyId, record._typeInformation));
                 }
-                assemblyInfo = (BinaryAssemblyInfo)AssemIdToAssemblyTable[record._assemId];
+                assemblyInfo = (BinaryAssemblyInfo?)AssemIdToAssemblyTable[record._assemId];
             }
             else
             {
@@ -738,7 +739,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             op._binaryTypeEnum = record._binaryTypeEnum;
             op._typeInformation = record._typeInformation;
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.PeekPeek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.PeekPeek();
             if ((objectOp == null) || (record._objectId > 0))
             {
                 // Non-Nested Object
@@ -798,12 +799,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             pr._lowerBoundA = record._lowerBoundA;
             bool isPrimitiveArray = false;
 
+            Debug.Assert(record._lengthA != null);
             switch (record._binaryArrayTypeEnum)
             {
                 case BinaryArrayTypeEnum.Single:
                 case BinaryArrayTypeEnum.SingleOffset:
                     op._numItems = record._lengthA[0];
                     pr._arrayTypeEnum = InternalArrayTypeE.Single;
+                    Debug.Assert(record._lowerBoundA != null);
                     if (Converter.IsWriteAsByteArray(pr._arrayElementTypeCode) &&
                         (record._lowerBoundA[0] == 0))
                     {
@@ -848,6 +851,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadArrayAsBytes(ParseRecord pr)
         {
+            Debug.Assert(pr._lengthA != null);
             if (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Byte)
             {
                 pr._newObj = ReadBytes(pr._lengthA[0]);
@@ -897,22 +901,23 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void ReadMemberPrimitiveUnTyped()
         {
-            ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
             if (memberPrimitiveUnTyped == null)
             {
                 memberPrimitiveUnTyped = new MemberPrimitiveUnTyped();
             }
-            memberPrimitiveUnTyped.Set((InternalPrimitiveTypeE)_expectedTypeInformation);
+            memberPrimitiveUnTyped.Set((InternalPrimitiveTypeE)_expectedTypeInformation!);
             memberPrimitiveUnTyped.Read(this);
 
             PRs.Init();
             PRs._varValue = memberPrimitiveUnTyped._value;
 
-            PRs._dtTypeCode = (InternalPrimitiveTypeE)_expectedTypeInformation;
+            PRs._dtTypeCode = (InternalPrimitiveTypeE)_expectedTypeInformation!;
             PRs._dtType = Converter.ToType(PRs._dtTypeCode);
             PRs._parseTypeEnum = InternalParseTypeE.Member;
             PRs._memberValueEnum = InternalMemberValueE.InlineValue;
 
+            Debug.Assert(objectOp != null);
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
                 PRs._memberTypeEnum = InternalMemberTypeE.Field;
@@ -934,13 +939,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             _memberReference.Read(this);
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
 
             PRs.Init();
             PRs._idRef = _objectReader.GetId(_memberReference._idRef);
             PRs._parseTypeEnum = InternalParseTypeE.Member;
             PRs._memberValueEnum = InternalMemberValueE.Reference;
 
+            Debug.Assert(objectOp != null);
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
                 PRs._memberTypeEnum = InternalMemberTypeE.Field;
@@ -963,12 +969,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             _objectNull.Read(this, binaryHeaderEnum);
 
-            ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
+            ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
 
             PRs.Init();
             PRs._parseTypeEnum = InternalParseTypeE.Member;
             PRs._memberValueEnum = InternalMemberValueE.Null;
 
+            Debug.Assert(objectOp != null);
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
                 PRs._memberTypeEnum = InternalMemberTypeE.Field;
@@ -1024,11 +1031,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private ObjectProgress GetOp()
         {
-            ObjectProgress op = null;
+            ObjectProgress op;
 
             if (_opPool != null && !_opPool.IsEmpty())
             {
-                op = (ObjectProgress)_opPool.Pop();
+                op = (ObjectProgress)_opPool.Pop()!;
                 op.Init();
             }
             else

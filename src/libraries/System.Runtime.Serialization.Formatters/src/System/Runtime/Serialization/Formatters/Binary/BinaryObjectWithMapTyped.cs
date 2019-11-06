@@ -2,18 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class BinaryObjectWithMapTyped : IStreamable
     {
         internal BinaryHeaderEnum _binaryHeaderEnum;
         internal int _objectId;
-        internal string _name;
+        internal string? _name;
         internal int _numMembers;
-        internal string[] _memberNames;
-        internal BinaryTypeEnum[] _binaryTypeEnumA;
-        internal object[] _typeInformationA;
-        internal int[] _memberAssemIds;
+        internal string[]? _memberNames;
+        internal BinaryTypeEnum[]? _binaryTypeEnumA;
+        internal object?[]? _typeInformationA;
+        internal int[]? _memberAssemIds;
         internal int _assemId;
 
         internal BinaryObjectWithMapTyped() { }
@@ -23,7 +25,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binaryHeaderEnum = binaryHeaderEnum;
         }
 
-        internal void Set(int objectId, string name, int numMembers, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object[] typeInformationA, int[] memberAssemIds, int assemId)
+        internal void Set(int objectId, string name, int numMembers, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object?[] typeInformationA, int[] memberAssemIds, int assemId)
         {
             _objectId = objectId;
             _assemId = assemId;
@@ -42,6 +44,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Write(BinaryFormatterWriter output)
         {
+            Debug.Assert(_name != null && _memberNames != null && _binaryTypeEnumA != null && _typeInformationA != null && _memberAssemIds != null);
             output.WriteByte((byte)_binaryHeaderEnum);
             output.WriteInt32(_objectId);
             output.WriteString(_name);

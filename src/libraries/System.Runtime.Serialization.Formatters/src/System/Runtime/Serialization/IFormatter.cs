@@ -10,8 +10,8 @@ namespace System.Runtime.Serialization
     {
         object Deserialize(Stream serializationStream);
         void Serialize(Stream serializationStream, object graph);
-        ISurrogateSelector SurrogateSelector { get; set; }
-        SerializationBinder Binder { get; set; }
+        ISurrogateSelector? SurrogateSelector { get; set; }
+        SerializationBinder? Binder { get; set; }
         StreamingContext Context { get; set; }
     }
 }

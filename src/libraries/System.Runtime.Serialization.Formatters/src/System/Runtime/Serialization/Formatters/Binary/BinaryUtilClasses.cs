@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
@@ -19,15 +20,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal InternalObjectPositionE _objectPositionEnum = InternalObjectPositionE.Empty;
 
         // Object
-        internal string _name;
+        internal string? _name;
 
         // Value
-        internal string _value;
-        internal object _varValue;
+        internal string? _value;
+        internal object? _varValue;
 
         // dt attribute
-        internal string _keyDt;
-        internal Type _dtType;
+        internal string? _keyDt;
+        internal Type? _dtType;
         internal InternalPrimitiveTypeE _dtTypeCode;
 
         // Object ID
@@ -39,37 +40,37 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Array
 
         // Array Element Type
-        internal string _arrayElementTypeString;
-        internal Type _arrayElementType;
+        internal string? _arrayElementTypeString;
+        internal Type? _arrayElementType;
         internal bool _isArrayVariant = false;
         internal InternalPrimitiveTypeE _arrayElementTypeCode;
 
         // Parsed array information
         internal int _rank;
-        internal int[] _lengthA;
-        internal int[] _lowerBoundA;
+        internal int[]? _lengthA;
+        internal int[]? _lowerBoundA;
 
         // Array map for placing array elements in array
-        internal int[] _indexMap;
+        internal int[]? _indexMap;
         internal int _memberIndex;
         internal int _linearlength;
-        internal int[] _rectangularMap;
+        internal int[]? _rectangularMap;
         internal bool _isLowerBound;
 
         // MemberInfo accumulated during parsing of members
 
-        internal ReadObjectInfo _objectInfo;
+        internal ReadObjectInfo? _objectInfo;
 
         // ValueType Fixup needed
         internal bool _isValueTypeFixup = false;
 
         // Created object
-        internal object _newObj;
-        internal object[] _objectA; //optimization, will contain object[]
-        internal PrimitiveArray _primitiveArray; // for Primitive Soap arrays, optimization
+        internal object? _newObj;
+        internal object?[]? _objectA; //optimization, will contain object[]
+        internal PrimitiveArray? _primitiveArray; // for Primitive Soap arrays, optimization
         internal bool _isRegistered; // Used when registering nested classes
-        internal object[] _memberData; // member data is collected here before populating
-        internal SerializationInfo _si;
+        internal object?[]? _memberData; // member data is collected here before populating
+        internal SerializationInfo? _si;
 
         internal int _consecutiveNullArrayEntryCount;
 
@@ -141,7 +142,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
     // Implements a stack used for parsing
     internal sealed class SerStack
     {
-        internal object[] _objects = new object[5];
+        internal object?[] _objects = new object?[5];
         internal string _stackId;
         internal int _top = -1;
 
@@ -161,14 +162,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Pop the object from the stack
-        internal object Pop()
+        internal object? Pop()
         {
             if (_top < 0)
             {
                 return null;
             }
 
-            object obj = _objects[_top];
+            object? obj = _objects[_top];
             _objects[_top--] = null;
             return obj;
         }
@@ -182,10 +183,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Gets the object on the top of the stack
-        internal object Peek() => _top < 0 ? null : _objects[_top];
+        internal object? Peek() => _top < 0 ? null : _objects[_top];
 
         // Gets the second entry in the stack.
-        internal object PeekPeek() => _top < 1 ? null : _objects[_top - 1];
+        internal object? PeekPeek() => _top < 1 ? null : _objects[_top - 1];
 
         // The number of entries in the stack
         internal bool IsEmpty() => _top <= 0;
@@ -194,8 +195,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
     // Implements a Growable array
     internal sealed class SizedArray : ICloneable
     {
-        internal object[] _objects = null;
-        internal object[] _negObjects = null;
+        internal object?[] _objects;
+        internal object?[] _negObjects;
 
         internal SizedArray()
         {
@@ -219,7 +220,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public object Clone() => new SizedArray(this);
 
-        internal object this[int index]
+        internal object? this[int index]
         {
             get
             {
@@ -359,16 +360,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class NameCache
     {
         private static readonly ConcurrentDictionary<string, object> s_ht = new ConcurrentDictionary<string, object>();
-        private string _name = null;
+        private string? _name = null;
 
-        internal object GetCachedValue(string name)
+        internal object? GetCachedValue(string name)
         {
             _name = name;
-            object value;
-            return s_ht.TryGetValue(name, out value) ? value : null;
+            return s_ht.TryGetValue(name, out object? value) ? value : null;
         }
 
-        internal void SetCachedValue(object value) => s_ht[_name] = value;
+        internal void SetCachedValue(object value) => s_ht[_name!] = value;
     }
 
 
@@ -376,12 +376,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class ValueFixup
     {
         internal ValueFixupEnum _valueFixupEnum = ValueFixupEnum.Empty;
-        internal Array _arrayObj;
-        internal int[] _indexMap;
-        internal object _header = null;
-        internal object _memberObject;
-        internal ReadObjectInfo _objectInfo;
-        internal string _memberName;
+        internal Array? _arrayObj;
+        internal int[]? _indexMap;
+        internal object? _header = null;
+        internal object? _memberObject;
+        internal ReadObjectInfo? _objectInfo;
+        internal string? _memberName;
 
         internal ValueFixup(Array arrayObj, int[] indexMap)
         {
@@ -390,7 +390,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _indexMap = indexMap;
         }
 
-        internal ValueFixup(object memberObject, string memberName, ReadObjectInfo objectInfo)
+        internal ValueFixup(object? memberObject, string memberName, ReadObjectInfo objectInfo)
         {
             _valueFixupEnum = ValueFixupEnum.Member;
             _memberObject = memberObject;
@@ -400,22 +400,23 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal void Fixup(ParseRecord record, ParseRecord parent)
         {
-            object obj = record._newObj;
+            object? obj = record._newObj;
             switch (_valueFixupEnum)
             {
                 case ValueFixupEnum.Array:
-                    _arrayObj.SetValue(obj, _indexMap);
+                    _arrayObj!.SetValue(obj, _indexMap!);
                     break;
                 case ValueFixupEnum.Header:
                     throw new PlatformNotSupportedException();
                 case ValueFixupEnum.Member:
+                    Debug.Assert(_objectInfo!._objectManager != null);
                     if (_objectInfo._isSi)
                     {
-                        _objectInfo._objectManager.RecordDelayedFixup(parent._objectId, _memberName, record._objectId);
+                        _objectInfo._objectManager.RecordDelayedFixup(parent._objectId, _memberName!, record._objectId);
                     }
                     else
                     {
-                        MemberInfo memberInfo = _objectInfo.GetMemberInfo(_memberName);
+                        MemberInfo? memberInfo = _objectInfo.GetMemberInfo(_memberName);
                         if (memberInfo != null)
                         {
                             _objectInfo._objectManager.RecordFixup(parent._objectId, memberInfo, record._objectId);
@@ -437,11 +438,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
     internal sealed class NameInfo
     {
-        internal string _fullName; // Name from SerObjectInfo.GetType
+        internal string? _fullName; // Name from SerObjectInfo.GetType
         internal long _objectId;
         internal long _assemId;
         internal InternalPrimitiveTypeE _primitiveTypeEnum = InternalPrimitiveTypeE.Invalid;
-        internal Type _type;
+        internal Type? _type;
         internal bool _isSealed;
         internal bool _isArray;
         internal bool _isArrayItem;
@@ -476,6 +477,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 if (!_sealedStatusChecked)
                 {
+                    Debug.Assert(_type != null);
                     _isSealed = _type.IsSealed;
                     _sealedStatusChecked = true;
                 }
@@ -483,9 +485,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        public string NIname
+        public string? NIname
         {
-            get { return _fullName ?? (_fullName = _type.FullName); }
+            get { return _fullName ?? (_fullName = _type?.FullName); }
             set { _fullName = value; }
         }
     }
@@ -493,17 +495,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class PrimitiveArray
     {
         private readonly InternalPrimitiveTypeE _code;
-        private readonly bool[] _booleanA = null;
-        private readonly char[] _charA = null;
-        private readonly double[] _doubleA = null;
-        private readonly short[] _int16A = null;
-        private readonly int[] _int32A = null;
-        private readonly long[] _int64A = null;
-        private readonly sbyte[] _sbyteA = null;
-        private readonly float[] _singleA = null;
-        private readonly ushort[] _uint16A = null;
-        private readonly uint[] _uint32A = null;
-        private readonly ulong[] _uint64A = null;
+        private readonly bool[] _booleanA = null!;
+        private readonly char[] _charA = null!;
+        private readonly double[] _doubleA = null!;
+        private readonly short[] _int16A = null!;
+        private readonly int[] _int32A = null!;
+        private readonly long[] _int64A = null!;
+        private readonly sbyte[] _sbyteA = null!;
+        private readonly float[] _singleA = null!;
+        private readonly ushort[] _uint16A = null!;
+        private readonly uint[] _uint32A = null!;
+        private readonly ulong[] _uint64A = null!;
 
         internal PrimitiveArray(InternalPrimitiveTypeE code, Array array)
         {

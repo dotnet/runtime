@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class BinaryArray : IStreamable
     {
         internal int _objectId;
         internal int _rank;
-        internal int[] _lengthA;
-        internal int[] _lowerBoundA;
+        internal int[]? _lengthA;
+        internal int[]? _lowerBoundA;
         internal BinaryTypeEnum _binaryTypeEnum;
-        internal object _typeInformation;
+        internal object? _typeInformation;
         internal int _assemId = 0;
         private BinaryHeaderEnum _binaryHeaderEnum;
         internal BinaryArrayTypeEnum _binaryArrayTypeEnum;
@@ -23,7 +25,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binaryHeaderEnum = binaryHeaderEnum;
         }
 
-        internal void Set(int objectId, int rank, int[] lengthA, int[] lowerBoundA, BinaryTypeEnum binaryTypeEnum, object typeInformation, BinaryArrayTypeEnum binaryArrayTypeEnum, int assemId)
+        internal void Set(int objectId, int rank, int[] lengthA, int[]? lowerBoundA, BinaryTypeEnum binaryTypeEnum, object? typeInformation, BinaryArrayTypeEnum binaryArrayTypeEnum, int assemId)
         {
             _objectId = objectId;
             _binaryArrayTypeEnum = binaryArrayTypeEnum;
@@ -54,13 +56,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Write(BinaryFormatterWriter output)
         {
+            Debug.Assert(_lengthA != null);
             switch (_binaryHeaderEnum)
             {
                 case BinaryHeaderEnum.ArraySinglePrimitive:
                     output.WriteByte((byte)_binaryHeaderEnum);
                     output.WriteInt32(_objectId);
                     output.WriteInt32(_lengthA[0]);
-                    output.WriteByte((byte)((InternalPrimitiveTypeE)_typeInformation));
+                    output.WriteByte((byte)((InternalPrimitiveTypeE)_typeInformation!));
                     break;
                 case BinaryHeaderEnum.ArraySingleString:
                     output.WriteByte((byte)_binaryHeaderEnum);
@@ -85,6 +88,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         (_binaryArrayTypeEnum == BinaryArrayTypeEnum.JaggedOffset) ||
                         (_binaryArrayTypeEnum == BinaryArrayTypeEnum.RectangularOffset))
                     {
+                        Debug.Assert(_lowerBoundA != null);
                         for (int i = 0; i < _rank; i++)
                         {
                             output.WriteInt32(_lowerBoundA[i]);

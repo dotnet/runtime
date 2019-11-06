@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization
     public class SurrogateSelector : ISurrogateSelector
     {
         internal readonly SurrogateHashtable _surrogates = new SurrogateHashtable(32);
-        internal ISurrogateSelector _nextSelector;
+        internal ISurrogateSelector? _nextSelector;
 
         public virtual void AddSurrogate(Type type, StreamingContext context, ISerializationSurrogate surrogate)
         {
@@ -31,7 +31,7 @@ namespace System.Runtime.Serialization
         {
             Debug.Assert(selector != null, "[HasCycle]selector!=null");
 
-            ISurrogateSelector head = selector, tail = selector;
+            ISurrogateSelector? head = selector, tail = selector;
             while (head != null)
             {
                 head = head.GetNextSelector();
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
                     return false;
                 }
                 head = head.GetNextSelector();
-                tail = tail.GetNextSelector();
+                tail = tail!.GetNextSelector();
 
                 if (head == tail)
                 {
@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
 
             // Check for a cycle that would lead back to this.  We find the end of the list that we're being asked to
             // insert for use later.
-            ISurrogateSelector tempCurr = selector.GetNextSelector();
+            ISurrogateSelector? tempCurr = selector.GetNextSelector();
             ISurrogateSelector tempEnd = selector;
             while (tempCurr != null && tempCurr != this)
             {
@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization
 
             // Check for a cycle later in the list which would be introduced by this insertion.
             tempCurr = selector;
-            ISurrogateSelector tempPrev = selector;
+            ISurrogateSelector? tempPrev = selector;
             while (tempCurr != null)
             {
                 if (tempCurr == tempEnd)
@@ -128,6 +128,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
+                    Debug.Assert(tempPrev != null);
                     tempPrev = tempPrev.GetNextSelector();
                 }
                 if (tempCurr == tempPrev)
@@ -137,7 +138,7 @@ namespace System.Runtime.Serialization
             }
 
             // Add the new selector and it's entire chain of selectors as the next thing that we check.
-            ISurrogateSelector temp = _nextSelector;
+            ISurrogateSelector? temp = _nextSelector;
             _nextSelector = selector;
             if (temp != null)
             {
@@ -146,11 +147,11 @@ namespace System.Runtime.Serialization
         }
 
         // Get the next selector on the chain of selectors.
-        public virtual ISurrogateSelector GetNextSelector() => _nextSelector;
+        public virtual ISurrogateSelector? GetNextSelector() => _nextSelector;
 
         // Gets the surrogate for a particular type.  If this selector can't
         // provide a surrogate, it checks with all of it's children before returning null.
-        public virtual ISerializationSurrogate GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
+        public virtual ISerializationSurrogate? GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
         {
             if (type == null)
             {
@@ -160,7 +161,7 @@ namespace System.Runtime.Serialization
             selector = this;
 
             SurrogateKey key = new SurrogateKey(type, context);
-            ISerializationSurrogate temp = (ISerializationSurrogate)_surrogates[key];
+            ISerializationSurrogate? temp = (ISerializationSurrogate?)_surrogates[key];
             if (temp != null)
             {
                 return temp;
@@ -212,7 +213,9 @@ namespace System.Runtime.Serialization
         // is a subset of the context for which the serialization selector is provided (presentContext)
         // Note: This is done by overriding KeyEquals rather than overriding Equals() in the SurrogateKey
         // class because Equals() method must be commutative.
+#pragma warning disable CS8610
         protected override bool KeyEquals(object key, object item)
+#pragma warning restore CS8610
         {
             SurrogateKey givenValue = (SurrogateKey)item;
             SurrogateKey presentValue = (SurrogateKey)key;

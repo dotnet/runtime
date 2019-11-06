@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class BinaryObjectWithMap : IStreamable
     {
         internal BinaryHeaderEnum _binaryHeaderEnum;
         internal int _objectId;
-        internal string _name;
+        internal string? _name;
         internal int _numMembers;
-        internal string[] _memberNames;
+        internal string[]? _memberNames;
         internal int _assemId;
 
         internal BinaryObjectWithMap() { }
@@ -35,6 +37,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Write(BinaryFormatterWriter output)
         {
+            Debug.Assert(_name != null && _memberNames != null);
             output.WriteByte((byte)_binaryHeaderEnum);
             output.WriteInt32(_objectId);
             output.WriteString(_name);

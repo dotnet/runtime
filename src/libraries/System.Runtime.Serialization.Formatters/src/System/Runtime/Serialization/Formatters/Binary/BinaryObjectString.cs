@@ -7,11 +7,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class BinaryObjectString : IStreamable
     {
         internal int _objectId;
-        internal string _value;
+        internal string? _value;
 
         internal BinaryObjectString() { }
 
-        internal void Set(int objectId, string value)
+        internal void Set(int objectId, string? value)
         {
             _objectId = objectId;
             _value = value;
@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             output.WriteByte((byte)BinaryHeaderEnum.ObjectString);
             output.WriteInt32(_objectId);
-            output.WriteString(_value);
+            output.WriteString(_value!);
         }
 
         public void Read(BinaryParser input)

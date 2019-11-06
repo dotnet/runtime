@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -109,12 +110,13 @@ namespace System.Runtime.Serialization
             return System.Convert.ToDateTime(value, CultureInfo.InvariantCulture);
         }
 
-        public string ToString(object value)
+        public string? ToString(object value)
         {
             if (value == null) ThrowValueNullException();
             return System.Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
+        [DoesNotReturn]
         private static void ThrowValueNullException()
         {
             throw new ArgumentNullException("value");

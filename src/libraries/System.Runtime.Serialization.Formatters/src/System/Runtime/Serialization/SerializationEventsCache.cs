@@ -11,12 +11,12 @@ namespace System.Runtime.Serialization
 {
     internal sealed class SerializationEvents
     {
-        private readonly List<MethodInfo> _onSerializingMethods;
-        private readonly List<MethodInfo> _onSerializedMethods;
-        private readonly List<MethodInfo> _onDeserializingMethods;
-        private readonly List<MethodInfo> _onDeserializedMethods;
+        private readonly List<MethodInfo>? _onSerializingMethods;
+        private readonly List<MethodInfo>? _onSerializedMethods;
+        private readonly List<MethodInfo>? _onDeserializingMethods;
+        private readonly List<MethodInfo>? _onDeserializedMethods;
 
-        internal SerializationEvents(Type t)
+        internal SerializationEvents(Type? t)
         {
             _onSerializingMethods = GetMethodsWithAttribute(typeof(OnSerializingAttribute), t);
             _onSerializedMethods = GetMethodsWithAttribute(typeof(OnSerializedAttribute), t);
@@ -24,12 +24,12 @@ namespace System.Runtime.Serialization
             _onDeserializedMethods = GetMethodsWithAttribute(typeof(OnDeserializedAttribute), t);
         }
 
-        private List<MethodInfo> GetMethodsWithAttribute(Type attribute, Type t)
+        private List<MethodInfo>? GetMethodsWithAttribute(Type attribute, Type? t)
         {
-            List<MethodInfo> mi = null;
+            List<MethodInfo>? mi = null;
 
             // Traverse the hierarchy to find all methods with the particular attribute
-            Type baseType = t;
+            Type? baseType = t;
             while (baseType != null && baseType != typeof(object))
             {
                 // Get all methods which are declared on this type, instance and public or nonpublic
@@ -62,21 +62,21 @@ namespace System.Runtime.Serialization
         internal void InvokeOnDeserialized(object obj, StreamingContext context) =>
             InvokeOnDelegate(obj, context, _onDeserializedMethods);
 
-        internal SerializationEventHandler AddOnSerialized(object obj, SerializationEventHandler handler) =>
+        internal SerializationEventHandler? AddOnSerialized(object obj, SerializationEventHandler? handler) =>
             AddOnDelegate(obj, handler, _onSerializedMethods);
 
-        internal SerializationEventHandler AddOnDeserialized(object obj, SerializationEventHandler handler) =>
+        internal SerializationEventHandler? AddOnDeserialized(object obj, SerializationEventHandler? handler) =>
             AddOnDelegate(obj, handler, _onDeserializedMethods);
 
         /// <summary>Invoke all methods.</summary>
-        private static void InvokeOnDelegate(object obj, StreamingContext context, List<MethodInfo> methods)
+        private static void InvokeOnDelegate(object obj, StreamingContext context, List<MethodInfo>? methods)
         {
             Debug.Assert(obj != null, "object should have been initialized");
             AddOnDelegate(obj, null, methods)?.Invoke(context);
         }
 
         /// <summary>Add all methods to a delegate.</summary>
-        private static SerializationEventHandler AddOnDelegate(object obj, SerializationEventHandler handler, List<MethodInfo> methods)
+        private static SerializationEventHandler? AddOnDelegate(object obj, SerializationEventHandler? handler, List<MethodInfo>? methods)
         {
             if (methods != null)
             {

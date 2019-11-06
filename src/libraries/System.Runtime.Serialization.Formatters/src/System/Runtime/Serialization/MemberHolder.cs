@@ -8,7 +8,7 @@ namespace System.Runtime.Serialization
 {
     internal sealed class MemberHolder
     {
-        internal readonly MemberInfo[] _members = null;
+        internal readonly MemberInfo[]? _members = null;
         internal readonly Type _memberType;
         internal readonly StreamingContext _context;
 
@@ -20,11 +20,9 @@ namespace System.Runtime.Serialization
 
         public override int GetHashCode() => _memberType.GetHashCode();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            var mh = obj as MemberHolder;
-            return
-                mh != null &&
+            return obj is MemberHolder mh &&
                 ReferenceEquals(mh._memberType, _memberType) &&
                 mh._context.State == _context.State;
         }

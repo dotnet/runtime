@@ -7,11 +7,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class MemberPrimitiveTyped : IStreamable
     {
         internal InternalPrimitiveTypeE _primitiveTypeEnum;
-        internal object _value;
+        internal object? _value;
 
         internal MemberPrimitiveTyped() { }
 
-        internal void Set(InternalPrimitiveTypeE primitiveTypeEnum, object value)
+        internal void Set(InternalPrimitiveTypeE primitiveTypeEnum, object? value)
         {
             _primitiveTypeEnum = primitiveTypeEnum;
             _value = value;

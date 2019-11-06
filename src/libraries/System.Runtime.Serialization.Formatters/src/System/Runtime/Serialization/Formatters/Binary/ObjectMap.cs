@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     // When an ObjectWithMap or an ObjectWithMapTyped is read off the stream, an ObjectMap class is created
@@ -9,15 +11,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class ObjectMap
     {
         internal string _objectName;
-        internal Type _objectType;
+        internal Type? _objectType;
 
         internal BinaryTypeEnum[] _binaryTypeEnumA;
-        internal object[] _typeInformationA;
-        internal Type[] _memberTypes;
+        internal object?[] _typeInformationA;
+        internal Type?[] _memberTypes;
         internal string[] _memberNames;
         internal ReadObjectInfo _objectInfo;
         internal bool _isInitObjectInfo = true;
-        internal ObjectReader _objectReader = null;
+        internal ObjectReader? _objectReader = null;
         internal int _objectId;
         internal BinaryAssemblyInfo _assemblyInfo;
 
@@ -31,21 +33,20 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _assemblyInfo = assemblyInfo;
 
             _objectInfo = objectReader.CreateReadObjectInfo(objectType);
-            _memberTypes = _objectInfo.GetMemberTypes(memberNames, objectType);
+            _memberTypes = _objectInfo.GetMemberTypes(memberNames, objectType)!;
 
             _binaryTypeEnumA = new BinaryTypeEnum[_memberTypes.Length];
             _typeInformationA = new object[_memberTypes.Length];
 
             for (int i = 0; i < _memberTypes.Length; i++)
             {
-                object typeInformation = null;
-                BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetParserBinaryTypeInfo(_memberTypes[i], out typeInformation);
+                BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetParserBinaryTypeInfo(_memberTypes[i]!, out object? typeInformation);
                 _binaryTypeEnumA[i] = binaryTypeEnum;
                 _typeInformationA[i] = typeInformation;
             }
         }
 
-        internal ObjectMap(string objectName, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object[] typeInformationA, int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable)
+        internal ObjectMap(string objectName, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object?[] typeInformationA, int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable)
         {
             _objectName = objectName;
             _memberNames = memberNames;
@@ -66,13 +67,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
             for (int i = 0; i < memberNames.Length; i++)
             {
                 InternalPrimitiveTypeE primitiveTypeEnum;
-                string typeString;
-                Type type;
                 bool isVariant;
 
                 BinaryTypeConverter.TypeFromInfo(
-                    binaryTypeEnumA[i], typeInformationA[i], objectReader, (BinaryAssemblyInfo)assemIdToAssemblyTable[memberAssemIds[i]],
-                    out primitiveTypeEnum, out typeString, out type, out isVariant);
+                    binaryTypeEnumA[i], typeInformationA[i], objectReader, (BinaryAssemblyInfo?)assemIdToAssemblyTable[memberAssemIds[i]],
+                    out primitiveTypeEnum, out string? typeString, out Type? type, out isVariant);
                 _memberTypes[i] = type;
             }
 
@@ -83,7 +82,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal ReadObjectInfo CreateObjectInfo(ref SerializationInfo si, ref object[] memberData)
+        internal ReadObjectInfo CreateObjectInfo(ref SerializationInfo? si, ref object?[]? memberData)
         {
             if (_isInitObjectInfo)
             {
@@ -107,7 +106,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         // Member type information
         internal static ObjectMap Create(
-            string name, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object[] typeInformationA,
+            string name, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object?[] typeInformationA,
             int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable) =>
             new ObjectMap(name, memberNames, binaryTypeEnumA, typeInformationA, memberAssemIds, objectReader, objectId, assemblyInfo, assemIdToAssemblyTable);
     }

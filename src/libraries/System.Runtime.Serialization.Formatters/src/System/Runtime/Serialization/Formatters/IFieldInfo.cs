@@ -6,7 +6,7 @@ namespace System.Runtime.Serialization.Formatters
 {
     public interface IFieldInfo
     {
-        string[] FieldNames { get; set; }
-        Type[] FieldTypes { get; set; }
+        string[]? FieldNames { get; set; }
+        Type[]? FieldTypes { get; set; }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal static class BinaryTypeConverter
     {
         // From the type create the BinaryTypeEnum and typeInformation which describes the type on the wire
-        internal static BinaryTypeEnum GetBinaryTypeInfo(Type type, WriteObjectInfo objectInfo, string typeName, ObjectWriter objectWriter, out object typeInformation, out int assemId)
+        internal static BinaryTypeEnum GetBinaryTypeInfo(Type type, WriteObjectInfo? objectInfo, string? typeName, ObjectWriter objectWriter, out object? typeInformation, out int assemId)
         {
             BinaryTypeEnum binaryTypeEnum;
 
@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 switch (primitiveTypeEnum)
                 {
                     case InternalPrimitiveTypeE.Invalid:
-                        string assembly = null;
+                        string? assembly = null;
                         if (objectInfo == null)
                         {
                             assembly = type.Assembly.FullName;
@@ -57,6 +57,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                             typeInformation = objectInfo.GetTypeFullName();
                         }
 
+                        Debug.Assert(assembly != null);
                         if (assembly.Equals(Converter.s_urtAssemblyString) || assembly.Equals(Converter.s_urtAlternativeAssemblyString))
                         {
                             binaryTypeEnum = BinaryTypeEnum.ObjectUrt;
@@ -84,7 +85,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Used for non Si types when Parsing
-        internal static BinaryTypeEnum GetParserBinaryTypeInfo(Type type, out object typeInformation)
+        internal static BinaryTypeEnum GetParserBinaryTypeInfo(Type type, out object? typeInformation)
         {
             BinaryTypeEnum binaryTypeEnum;
             typeInformation = null;
@@ -131,7 +132,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Writes the type information on the wire
-        internal static void WriteTypeInfo(BinaryTypeEnum binaryTypeEnum, object typeInformation, int assemId, BinaryFormatterWriter output)
+        internal static void WriteTypeInfo(BinaryTypeEnum binaryTypeEnum, object? typeInformation, int assemId, BinaryFormatterWriter output)
         {
             switch (binaryTypeEnum)
             {
@@ -147,11 +148,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     break;
                 case BinaryTypeEnum.ObjectUrt:
                     Debug.Assert(typeInformation != null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
-                    output.WriteString(typeInformation.ToString());
+                    output.WriteString(typeInformation.ToString()!);
                     break;
                 case BinaryTypeEnum.ObjectUser:
                     Debug.Assert(typeInformation != null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
-                    output.WriteString(typeInformation.ToString());
+                    output.WriteString(typeInformation.ToString()!);
                     output.WriteInt32(assemId);
                     break;
                 default:
@@ -162,7 +163,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Reads the type information from the wire
         internal static object ReadTypeInfo(BinaryTypeEnum binaryTypeEnum, BinaryParser input, out int assemId)
         {
-            object var = null;
+            object var = null!;
             int readAssemId = 0;
 
             switch (binaryTypeEnum)
@@ -192,12 +193,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         // Given the wire type information, returns the actual type and additional information
         internal static void TypeFromInfo(BinaryTypeEnum binaryTypeEnum,
-                                          object typeInformation,
+                                          object? typeInformation,
                                           ObjectReader objectReader,
-                                          BinaryAssemblyInfo assemblyInfo,
+                                          BinaryAssemblyInfo? assemblyInfo,
                                           out InternalPrimitiveTypeE primitiveTypeEnum,
-                                          out string typeString,
-                                          out Type type,
+                                          out string? typeString,
+                                          out Type? type,
                                           out bool isVariant)
         {
             isVariant = false;
@@ -208,7 +209,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             switch (binaryTypeEnum)
             {
                 case BinaryTypeEnum.Primitive:
-                    primitiveTypeEnum = (InternalPrimitiveTypeE)typeInformation;
+                    primitiveTypeEnum = (InternalPrimitiveTypeE)typeInformation!;
                     typeString = Converter.ToComType(primitiveTypeEnum);
                     type = Converter.ToType(primitiveTypeEnum);
                     break;
@@ -226,7 +227,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     type = Converter.s_typeofStringArray;
                     break;
                 case BinaryTypeEnum.PrimitiveArray:
-                    primitiveTypeEnum = (InternalPrimitiveTypeE)typeInformation;
+                    primitiveTypeEnum = (InternalPrimitiveTypeE)typeInformation!;
                     type = Converter.ToArrayType(primitiveTypeEnum);
                     break;
                 case BinaryTypeEnum.ObjectUser:
@@ -234,7 +235,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     if (typeInformation != null)
                     {
                         typeString = typeInformation.ToString();
-                        type = objectReader.GetType(assemblyInfo, typeString);
+                        type = objectReader.GetType(assemblyInfo!, typeString!);
                         if (ReferenceEquals(type, Converter.s_typeofObject))
                         {
                             isVariant = true;
