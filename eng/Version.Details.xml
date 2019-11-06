@@ -52,9 +52,9 @@
       <Uri>https://github.com/dotnet/standard</Uri>
       <Sha>1063b6811691a2e009d7733cbf68f897511f00b2</Sha>
     </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19551.1">
+    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19556.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>c579f6c2003031e07b0549520a6316bcd853a4e0</Sha>
+      <Sha>0fb4605e96dbf9eb2cd4472eda32ab2bbe179484</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
