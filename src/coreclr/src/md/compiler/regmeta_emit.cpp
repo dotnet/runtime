@@ -1089,7 +1089,7 @@ HRESULT RegMeta::_DefineMethodSemantics(    // S_OK or error.
 
     _ASSERTE(TypeFromToken(md) == mdtMethodDef || IsNilToken(md));
     _ASSERTE(RidFromToken(tkAssoc));
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
 
     // Clear all matching records by setting association to a Nil token.
     if (bClear)

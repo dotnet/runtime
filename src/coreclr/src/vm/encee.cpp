@@ -206,7 +206,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     memcpy(pLocalILMemory, pDeltaIL, cbDeltaIL);
 
     // Enumerate all of the EnC delta tokens
-    memset(&enumENC, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&enumENC);
     IfFailGo(pIMDInternalImportENC->EnumDeltaTokensInit(&enumENC));
 
     mdToken token;

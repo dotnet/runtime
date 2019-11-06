@@ -196,7 +196,7 @@ class WinMDInternalImportRO : public IMDInternalImport, IWinMDImport, IMetaModel
         if (FAILED(hr))
         {
             HENUMInternal::ClearEnum(phEnumBody);
-            INDEBUG(memset(phEnumBody, 0xcc, sizeof(HENUMInternal)));
+            INDEBUG(HENUMInternal::ZeroEnum(phEnumBody));
         }
         return hr;
     }

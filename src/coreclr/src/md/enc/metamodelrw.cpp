@@ -792,7 +792,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
 
     _ASSERTE(phEnum != NULL);
 
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     HENUMInternal::InitDynamicArrayEnum(phEnum);
 

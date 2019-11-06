@@ -68,7 +68,7 @@ HRESULT HENUMInternal::CreateSimpleEnum(
     if (pEnum == NULL)
         IfFailGo( E_OUTOFMEMORY );
 
-    memset(pEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(pEnum);
     pEnum->m_tkKind = tkKind;
     pEnum->m_EnumType = MDSimpleEnum;
     pEnum->u.m_ulStart = pEnum->u.m_ulCur = ridStart;
@@ -334,7 +334,7 @@ HRESULT HENUMInternal::CreateDynamicArrayEnum(
     if (pEnum == NULL)
         IfFailGo( E_OUTOFMEMORY );
 
-    memset(pEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(pEnum);
     pEnum->m_tkKind = tkKind;
     pEnum->m_EnumType = MDDynamicArrayEnum;
 
@@ -358,7 +358,7 @@ void HENUMInternal::InitDynamicArrayEnum(
 {
     TOKENLIST       *pdalist;
 
-    memset(pEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(pEnum);
     pEnum->m_EnumType = MDDynamicArrayEnum;
     pEnum->m_tkKind = (DWORD) -1;
 
