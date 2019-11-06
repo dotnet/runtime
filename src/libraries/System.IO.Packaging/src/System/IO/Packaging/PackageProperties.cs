@@ -5,16 +5,16 @@
 //-----------------------------------------------------------------------------
 //
 // Description:
-//  This abstract class provides access to the "core properties" a Metro document.
+//  This abstract class provides access to the "core properties" of an XPS document.
 //  The "core properties" are a subset of the standard OLE property sets
 //  SummaryInformation and DocumentSummaryInformation, and include such properties
 //  as Title and Subject.
 //
 //  There are two concrete derived classes. PackagePackageProperties represents the
-//  core properties of a normal unencrypted Metro document, physically represented
+//  core properties of a normal unencrypted XPS document, physically represented
 //  as a Zip archive. EncryptedPackagePackageProperties represents the core properties
-//  of an RM-protected Metro document, physically represented by an OLE compound
-//  file containing a well-known stream in which a Metro Zip archive, encrypted
+//  of an RM-protected XPS document, physically represented by an OLE compound
+//  file containing a well-known stream in which an XPS Zip archive, encrypted
 //  in its entirety, is stored.
 //
 //-----------------------------------------------------------------------------
@@ -26,7 +26,7 @@ namespace System.IO.Packaging
 {
     /// <summary>
     /// This class provides access to the "core properties", such as Title and
-    /// Subject, of an RM-protected Metro package. These properties are a subset of
+    /// Subject, of an RM-protected XPS package. These properties are a subset of
     /// of the standard OLE property sets SummaryInformation and
     /// DocumentSummaryInformation.
     /// </summary>

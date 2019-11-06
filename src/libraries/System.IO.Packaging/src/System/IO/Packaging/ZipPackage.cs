@@ -45,7 +45,7 @@ namespace System.IO.Packaging
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 
-            // Convert Metro CompressionOption to Zip CompressionMethodEnum.
+            // Convert XPS CompressionOption to Zip CompressionMethodEnum.
             CompressionLevel level;
             GetZipCompressionMethodFromOpcCompressionOption(compressionOption,
                 out level);
@@ -388,7 +388,7 @@ namespace System.IO.Packaging
             return string.Concat(ForwardSlashString, zipItemName);
         }
 
-        // Convert from Metro CompressionOption to ZipFileInfo compression properties.
+        // Convert from XPS CompressionOption to ZipFileInfo compression properties.
         internal static void GetZipCompressionMethodFromOpcCompressionOption(
             CompressionOption compressionOption,
             out CompressionLevel compressionLevel)
@@ -475,7 +475,7 @@ namespace System.IO.Packaging
             }
         }
 
-        // convert from Zip CompressionMethodEnum and DeflateOptionEnum to Metro CompressionOption
+        // convert from Zip CompressionMethodEnum and DeflateOptionEnum to XPS CompressionOption
         private static CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
         {
             // Note: we can't determine compression method / level from the ZipArchiveEntry.
