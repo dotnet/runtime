@@ -151,32 +151,20 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(coreClrRepoRoot)/build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
-          displayName: Copy native test components to test output folder
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(coreClrRepoRoot)\build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
-          displayName: Copy native test components to test output folder
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
+        displayName: Copy native test components to test output folder
 
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./build-test.sh skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
-          displayName: Generate test host
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: build-test.cmd skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(priorityArg)
-          displayName: Generate test host
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+        displayName: Generate test host
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: ./build-test.sh skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
-          displayName: Crossgen framework assemblies
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - script: build-test.cmd skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(priorityArg)
-          displayName: Crossgen framework assemblies
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+        displayName: Crossgen framework assemblies
 
 
     # Send tests to Helix
