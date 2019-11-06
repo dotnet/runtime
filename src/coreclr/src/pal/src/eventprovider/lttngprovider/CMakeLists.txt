@@ -40,16 +40,27 @@ add_custom_command(OUTPUT ${LTTNG_PROVIDER_SOURCES} ${TRACEPOINT_PROVIDER_SOURCE
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${EVENT_MANIFEST} ${GENERATE_SCRIPT})
 
+set_source_files_properties(
+  ${LTTNG_PROVIDER_SOURCES} ${TRACEPOINT_PROVIDER_SOURCES} ${LTTNG_HEADERS}
+  PROPERTIES GENERATED TRUE)
+
+add_custom_target(
+  generated_eventing_headers
+  DEPENDS ${LTTNG_HEADERS})
+
 add_library(eventprovider
-    STATIC
-    ${LTTNG_PROVIDER_SOURCES}
-    eventproviderhelpers.cpp
+  STATIC
+  ${LTTNG_PROVIDER_SOURCES}
+  eventproviderhelpers.cpp
 )
 
 add_library(coreclrtraceptprovider
-    SHARED
-    ${TRACEPOINT_PROVIDER_SOURCES}
+  SHARED
+  ${TRACEPOINT_PROVIDER_SOURCES}
 )
+
+add_dependencies(eventprovider generated_eventing_headers)
+add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 
 find_library(LTTNG NAMES lttng-ust)
 
