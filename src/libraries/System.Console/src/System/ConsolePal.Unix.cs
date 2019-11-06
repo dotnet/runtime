@@ -1409,8 +1409,6 @@ namespace System
         {
             /// <summary>The file descriptor for the opened file.</summary>
             private readonly SafeFileHandle _handle;
-            /// <summary>The type of the underlying file descriptor.</summary>
-            internal readonly int _handleType;
 
             /// <summary>Initialize the stream.</summary>
             /// <param name="handle">The file handle wrapped by this stream.</param>
@@ -1421,13 +1419,6 @@ namespace System
                 Debug.Assert(handle != null, "Expected non-null console handle");
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
                 _handle = handle;
-
-                // Determine the type of the descriptor (e.g. regular file, character file, pipe, etc.)
-                Interop.Sys.FileStatus buf;
-                _handleType =
-                Interop.Sys.FStat(_handle, out buf) == 0 ?
-                        (buf.Mode & Interop.Sys.FileTypes.S_IFMT) :
-                        Interop.Sys.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
             }
 
             protected override void Dispose(bool disposing)
