@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -35,9 +34,6 @@
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
     </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true' And '$(TargetFramework)' != 'netstandard2.1' ">
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />

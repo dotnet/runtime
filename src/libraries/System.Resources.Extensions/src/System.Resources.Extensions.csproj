@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
-    <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>
@@ -13,7 +14,6 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Resources\ResourceReader.cs" Link="System\Resources\Extensions\ResourceReader.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Resources\RuntimeResourceSet.cs" Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="BinaryReaderExtensions.cs" />
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />

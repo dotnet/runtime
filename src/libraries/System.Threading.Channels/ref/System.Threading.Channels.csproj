@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -11,7 +10,6 @@
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">

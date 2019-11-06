@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard2.0'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -45,7 +44,6 @@
     <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
