@@ -6367,7 +6367,7 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoo
 }
 
 void
-ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (MonoError *error)
+ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 {
 #if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
 	mono_merp_disable ();
@@ -6378,7 +6378,7 @@ ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (MonoError *error)
 }
 
 void
-ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *value, MonoError *error)
+ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *value)
 {
 #if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
 	if (!mono_merp_enabled ())
@@ -6541,7 +6541,7 @@ ves_icall_Mono_Runtime_RegisterReportingForAllNativeLibs ()
 }
 
 void
-ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory, MonoError *error)
+ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory)
 {
 #ifndef DISABLE_CRASH_REPORTING
 	mono_summarize_set_timeline_dir (directory);
@@ -6549,13 +6549,11 @@ ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory, MonoError
 }
 
 int
-ves_icall_Mono_Runtime_CheckCrashReportingLog (const char *directory, MonoBoolean clear, MonoError *error)
+ves_icall_Mono_Runtime_CheckCrashReportingLog (const char *directory, MonoBoolean clear)
 {
-	int ret;
+	int ret = 0;
 #ifndef DISABLE_CRASH_REPORTING
 	ret = (int) mono_summarize_timeline_read_level (directory, clear != 0);
-#else
-	ret = 0;
 #endif
 	return ret;
 }
