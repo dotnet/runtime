@@ -31,5 +31,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // when loaded by CoreCLR
             dataBuilder.EmitZeroPointer();
         }
+
+
+        // This is just here in case of future extension (there are no fields specific to this class)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return base.CompareToImpl(other, comparer);
+        }
     }
 }

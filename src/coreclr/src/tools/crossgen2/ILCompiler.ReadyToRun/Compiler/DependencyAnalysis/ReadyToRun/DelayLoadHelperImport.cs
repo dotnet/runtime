@@ -67,5 +67,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
             };
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            DelayLoadHelperImport otherNode = (DelayLoadHelperImport)other;
+            int result = _useVirtualCall.CompareTo(otherNode._useVirtualCall);
+            if (result != 0)
+                return result;
+
+            result = _helper.CompareTo(otherNode._helper);
+            if (result != 0)
+                return result;
+
+            return base.CompareToImpl(other, comparer);
+        }
     }
 }

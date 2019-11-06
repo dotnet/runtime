@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Internal.Text;
 
@@ -14,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         public readonly ImportSectionNode Table;
 
-        internal readonly RvaEmbeddedPointerIndirectionNode<Signature> ImportSignature;
+        internal readonly SignatureEmbeddedPointerIndirectionNode ImportSignature;
 
         internal readonly string CallSite;
 
@@ -22,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Table = tableNode;
             CallSite = callSite;
-            ImportSignature = new RvaEmbeddedPointerIndirectionNode<Signature>(importSignature, callSite);
+            ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
         }
 
         protected override void OnMarked(NodeFactory factory)
@@ -37,9 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        private const int ClassCodeValue = 667823013;
-
-        public override int ClassCode => ClassCodeValue;
+        public override int ClassCode => 667823013;
 
         public virtual bool EmitPrecode => Table.EmitPrecode;
 
@@ -64,9 +63,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new DependencyListEntry[] { new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import") };
         }
 
-        public int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return new ObjectNodeComparer(comparer).Compare(this, (Import)other);
+            Import otherNode = (Import)other;
+            int result = string.Compare(CallSite, otherNode.CallSite);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(ImportSignature.Target, otherNode.ImportSignature.Target);
+            if (result != 0)
+                return result;
+
+            return Table.CompareToImpl(otherNode.Table, comparer);
         }
 
         public override bool RepresentsIndirectionCell => true;

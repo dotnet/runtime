@@ -53,7 +53,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            throw new NotImplementedException();
+            TypeFixupSignature otherNode = (TypeFixupSignature)other;
+            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(_typeDesc, otherNode._typeDesc);
+            if (result != 0)
+                return result;
+
+            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

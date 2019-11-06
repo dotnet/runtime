@@ -107,5 +107,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_methodNode, ((MethodGCInfoNode)other)._methodNode);
+        }
     }
 }

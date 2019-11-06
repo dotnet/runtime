@@ -10,7 +10,7 @@ namespace Internal.TypeSystem.Ecma
 {
     partial class EcmaModule
     {
-        internal int CompareTo(EcmaModule other)
+        public int CompareTo(EcmaModule other)
         {
             if (this == other)
                 return 0;

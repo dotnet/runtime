@@ -151,10 +151,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RvaEmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureContext.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureEmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM64\ImportThunk.cs" />

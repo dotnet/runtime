@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _materializedSignature;
 
         public ImportSectionsTableNode(ReadyToRunCodegenNodeFactory r2rFactory)
-            : base("ImportSectionsTableStart", "ImportSectionsTableEnd", null)
+            : base("ImportSectionsTableStart", "ImportSectionsTableEnd", new EmbeddedObjectNodeComparer(new CompilerComparer()))
         {
             _r2rFactory = r2rFactory;
             _r2rFactory.ManifestMetadataTable.RegisterEmitter(this);

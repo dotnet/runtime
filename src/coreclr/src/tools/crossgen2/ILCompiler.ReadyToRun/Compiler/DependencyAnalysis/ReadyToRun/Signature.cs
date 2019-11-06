@@ -17,10 +17,5 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => ClassCode;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            return CompareToImpl((SortableDependencyNode)other, comparer);
-        }
     }
 }

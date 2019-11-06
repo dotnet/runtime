@@ -100,5 +100,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return GlobalContext.GetHashCode()
                 ^ (LocalContext.GetHashCode() * 31);
         }
+
+        public int CompareTo(SignatureContext other, TypeSystemComparer comparer)
+        {
+            int result = GlobalContext.CompareTo(other.GlobalContext);
+            if (result != 0)
+                return result;
+
+            return LocalContext.CompareTo(other.LocalContext);
+        }
     }
 }

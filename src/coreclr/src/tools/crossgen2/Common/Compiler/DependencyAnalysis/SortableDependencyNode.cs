@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         /// If two manage to conflict (which is pretty unlikely), just make a new one...
         /// </remarks>
         public abstract int ClassCode { get; }
-        
+
         // Note to implementers: the type of `other` is actually the same as the type of `this`.
         public virtual int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

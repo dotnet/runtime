@@ -59,5 +59,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($"_FieldRva_{nameMangler.GetMangledFieldName(_field)}");
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_field, ((CopiedFieldRvaNode)other)._field);
+        }
     }
 }

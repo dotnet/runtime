@@ -170,7 +170,56 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            throw new NotImplementedException();
+            GenericLookupSignature otherNode = (GenericLookupSignature)other;
+            int result = _runtimeLookupKind.CompareTo(otherNode._runtimeLookupKind);
+            if (result != 0)
+                return result;
+
+            result = _fixupKind.CompareTo(otherNode._fixupKind);
+            if (result != 0)
+                return result;
+
+            if (_typeArgument != null || otherNode._typeArgument != null)
+            {
+                if (_typeArgument == null)
+                    return -1;
+                if (otherNode._typeArgument == null)
+                    return 1;
+
+                result = comparer.Compare(_typeArgument, otherNode._typeArgument);
+                if (result != 0)
+                    return result;
+            }
+
+            if (_fieldArgument != null || otherNode._fieldArgument != null)
+            {
+                if (_fieldArgument == null)
+                    return -1;
+                if (otherNode._fieldArgument == null)
+                    return 1;
+
+                result = comparer.Compare(_fieldArgument, otherNode._fieldArgument);
+                if (result != 0)
+                    return result;
+            }
+
+            if (_methodArgument != null || otherNode._methodArgument != null)
+            {
+                if (_methodArgument == null)
+                    return -1;
+                if (otherNode._methodArgument == null)
+                    return 1;
+
+                result = _methodArgument.CompareTo(otherNode._methodArgument, comparer);
+                if (result != 0)
+                    return result;
+            }
+
+            result = comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
+            if (result != 0)
+                return result;
+
+            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

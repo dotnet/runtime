@@ -128,7 +128,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            throw new NotImplementedException();
+            MethodFixupSignature otherNode = (MethodFixupSignature)other;
+            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            if (result != 0)
+                return result;
+
+            result = _isUnboxingStub.CompareTo(otherNode._isUnboxingStub);
+            if (result != 0)
+                return result;
+
+            result = _isInstantiatingStub.CompareTo(otherNode._isInstantiatingStub);
+            if (result != 0)
+                return result;
+
+            result = _method.CompareTo(otherNode._method, comparer);
+            if (result != 0)
+                return result;
+
+            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
         }
     }
 }
