@@ -6,7 +6,7 @@ namespace System.Security.Cryptography
 {
     public abstract class HMAC : KeyedHashAlgorithm
     {
-        private string _hashName;
+        private string _hashName = null!;
         private int _blockSizeValue = 64;
 
         protected int BlockSizeValue
@@ -20,8 +20,8 @@ namespace System.Security.Cryptography
         public static new HMAC Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static new HMAC Create(string algorithmName) =>
-            (HMAC)CryptoConfigForwarder.CreateFromName(algorithmName);
+        public static new HMAC? Create(string algorithmName) =>
+            (HMAC?)CryptoConfigForwarder.CreateFromName(algorithmName);
 
         public string HashName
         {
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] Key
+        public override byte[]? Key
         {
             get => base.Key;
             set => base.Key = value;

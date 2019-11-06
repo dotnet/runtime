@@ -10,15 +10,15 @@ namespace System.Security.Cryptography
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
     {
         protected int KeySizeValue;
-        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
-        public virtual string KeyExchangeAlgorithm { get { throw null; } }
+        public virtual string? KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
-        public virtual string SignatureAlgorithm { get { throw null; } }
+        public virtual string? SignatureAlgorithm { get { throw null; } }
         public void Clear() { }
         public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
-        public static System.Security.Cryptography.AsymmetricAlgorithm Create(string algName) { throw null; }
+        public static System.Security.Cryptography.AsymmetricAlgorithm? Create(string algName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
@@ -55,9 +55,9 @@ namespace System.Security.Cryptography
     {
         public CryptographicUnexpectedOperationException() { }
         protected CryptographicUnexpectedOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public CryptographicUnexpectedOperationException(string message) { }
-        public CryptographicUnexpectedOperationException(string message, System.Exception inner) { }
-        public CryptographicUnexpectedOperationException(string format, string insert) { }
+        public CryptographicUnexpectedOperationException(string? message) { }
+        public CryptographicUnexpectedOperationException(string? message, System.Exception? inner) { }
+        public CryptographicUnexpectedOperationException(string format, string? insert) { }
     }
     public partial class CryptoStream : System.IO.Stream, System.IDisposable
     {
@@ -69,8 +69,8 @@ namespace System.Security.Cryptography
         public bool HasFlushedFinalBlock { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public void Clear() { }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -96,12 +96,12 @@ namespace System.Security.Cryptography
     public abstract partial class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         protected int HashSizeValue;
-        protected internal byte[] HashValue;
+        protected internal byte[]? HashValue;
         protected int State;
         protected HashAlgorithm() { }
         public virtual bool CanReuseTransform { get { throw null; } }
         public virtual bool CanTransformMultipleBlocks { get { throw null; } }
-        public virtual byte[] Hash { get { throw null; } }
+        public virtual byte[]? Hash { get { throw null; } }
         public virtual int HashSize { get { throw null; } }
         public virtual int InputBlockSize { get { throw null; } }
         public virtual int OutputBlockSize { get { throw null; } }
@@ -110,14 +110,14 @@ namespace System.Security.Cryptography
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
         public static System.Security.Cryptography.HashAlgorithm Create() { throw null; }
-        public static System.Security.Cryptography.HashAlgorithm Create(string hashName) { throw null; }
+        public static System.Security.Cryptography.HashAlgorithm? Create(string hashName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
         protected virtual void HashCore(System.ReadOnlySpan<byte> source) { }
         protected abstract byte[] HashFinal();
         public abstract void Initialize();
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { throw null; }
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }
         public bool TryComputeHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected virtual bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -126,14 +126,14 @@ namespace System.Security.Cryptography
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public HashAlgorithmName(string name) { throw null; }
+        public HashAlgorithmName(string? name) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName MD5 { get { throw null; } }
-        public string Name { get { throw null; } }
+        public string? Name { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA1 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA256 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA384 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA512 { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.HashAlgorithmName other) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName FromOid(string oidValue) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -147,9 +147,9 @@ namespace System.Security.Cryptography
         protected HMAC() { }
         protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
-        public override byte[] Key { get { throw null; } set { } }
+        public override byte[]? Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
-        public static new System.Security.Cryptography.HMAC Create(string algorithmName) { throw null; }
+        public static new System.Security.Cryptography.HMAC? Create(string algorithmName) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
@@ -163,16 +163,16 @@ namespace System.Security.Cryptography
         bool CanTransformMultipleBlocks { get; }
         int InputBlockSize { get; }
         int OutputBlockSize { get; }
-        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
+        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset);
         byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm
     {
         protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
-        public virtual byte[] Key { get { throw null; } set { } }
+        public virtual byte[]? Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.KeyedHashAlgorithm Create() { throw null; }
-        public static new System.Security.Cryptography.KeyedHashAlgorithm Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.KeyedHashAlgorithm? Create(string algName) { throw null; }
         protected override void Dispose(bool disposing) { }
     }
     public sealed partial class KeySizes
@@ -209,11 +209,11 @@ namespace System.Security.Cryptography
     {
         protected int BlockSizeValue;
         protected int FeedbackSizeValue;
-        protected byte[] IVValue;
+        protected byte[]? IVValue;
         protected int KeySizeValue;
-        protected byte[] KeyValue;
-        protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
-        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        protected byte[]? KeyValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected System.Security.Cryptography.CipherMode ModeValue;
         protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public void Clear() { }
         public static System.Security.Cryptography.SymmetricAlgorithm Create() { throw null; }
-        public static System.Security.Cryptography.SymmetricAlgorithm Create(string algName) { throw null; }
+        public static System.Security.Cryptography.SymmetricAlgorithm? Create(string algName) { throw null; }
         public virtual System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
         public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
         public virtual System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }

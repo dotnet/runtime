@@ -2,20 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Security.Cryptography
 {
     public abstract class AsymmetricAlgorithm : IDisposable
     {
         protected int KeySizeValue;
-        protected KeySizes[] LegalKeySizesValue;
+        [MaybeNull] protected KeySizes[] LegalKeySizesValue = null!;
 
         protected AsymmetricAlgorithm() { }
 
         public static AsymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static AsymmetricAlgorithm Create(string algName) =>
-            (AsymmetricAlgorithm)CryptoConfigForwarder.CreateFromName(algName);
+        public static AsymmetricAlgorithm? Create(string algName) =>
+            (AsymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
 
         public virtual int KeySize
         {
@@ -38,11 +41,11 @@ namespace System.Security.Cryptography
             get
             {
                 // Desktop compat: No null check is performed
-                return (KeySizes[])LegalKeySizesValue.Clone();
+                return (KeySizes[])LegalKeySizesValue!.Clone();
             }
         }
 
-        public virtual string SignatureAlgorithm
+        public virtual string? SignatureAlgorithm
         {
             get
             {
@@ -50,7 +53,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual string KeyExchangeAlgorithm
+        public virtual string? KeyExchangeAlgorithm
         {
             get
             {

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -17,8 +19,8 @@ namespace System.Security.Cryptography
         public static SymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static SymmetricAlgorithm Create(string algName) =>
-            (SymmetricAlgorithm)CryptoConfigForwarder.CreateFromName(algName);
+        public static SymmetricAlgorithm? Create(string algName) =>
+            (SymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
 
         public virtual int FeedbackSize
         {
@@ -62,7 +64,7 @@ namespace System.Security.Cryptography
             {
                 if (IVValue == null)
                     GenerateIV();
-                return IVValue.CloneByteArray();
+                return IVValue.CloneByteArray()!;
             }
 
             set
@@ -82,7 +84,7 @@ namespace System.Security.Cryptography
             {
                 if (KeyValue == null)
                     GenerateKey();
-                return KeyValue.CloneByteArray();
+                return KeyValue.CloneByteArray()!;
             }
 
             set
@@ -122,7 +124,7 @@ namespace System.Security.Cryptography
             get
             {
                 // Desktop compat: No null check is performed.
-                return (KeySizes[])LegalBlockSizesValue.Clone();
+                return (KeySizes[])LegalBlockSizesValue!.Clone();
             }
         }
 
@@ -131,7 +133,7 @@ namespace System.Security.Cryptography
             get
             {
                 // Desktop compat: No null check is performed.
-                return (KeySizes[])LegalKeySizesValue.Clone();
+                return (KeySizes[])LegalKeySizesValue!.Clone();
             }
         }
 
@@ -222,12 +224,12 @@ namespace System.Security.Cryptography
 
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
-        protected byte[] KeyValue;
-        protected byte[] IVValue;
+        protected byte[]? KeyValue;
+        protected byte[]? IVValue;
         protected int BlockSizeValue;
         protected int FeedbackSizeValue;
         protected int KeySizeValue;
-        protected KeySizes[] LegalBlockSizesValue;
-        protected KeySizes[] LegalKeySizesValue;
+        [MaybeNull] protected KeySizes[] LegalBlockSizesValue = null!;
+        [MaybeNull] protected KeySizes[] LegalKeySizesValue = null!;
     }
 }

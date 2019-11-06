@@ -51,13 +51,13 @@ namespace System.Security.Cryptography
         /// </summary>
         public static HashAlgorithmName SHA512 { get { return new HashAlgorithmName("SHA512"); } }
 
-        private readonly string _name;
+        private readonly string? _name;
 
         /// <summary>
         /// Gets a <see cref="HashAlgorithmName" /> representing a custom name.
         /// </summary>
         /// <param name="name">The custom hash algorithm name.</param>
-        public HashAlgorithmName(string name)
+        public HashAlgorithmName(string? name)
         {
             // Note: No validation because we have to deal with default(HashAlgorithmName) regardless.
             _name = name;
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         /// May be null or empty to indicate that no hash algorithm is applicable.
         /// </remarks>
-        public string Name
+        public string? Name
         {
             get { return _name; }
         }
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
             return _name ?? string.Empty;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is HashAlgorithmName && Equals((HashAlgorithmName)obj);
         }
