@@ -199,7 +199,7 @@ HRESULT MDInternalRO::EnumTypeDefInit( // return hresult
 
     _ASSERTE(phEnum);
 
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
     phEnum->m_tkKind = mdtTypeDef;
     phEnum->m_EnumType = MDSimpleEnum;
     phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountTypeDefs();
@@ -502,7 +502,7 @@ HRESULT MDInternalRO::EnumAllInit(      // return S_FALSE if record not found
 
     // Vars for query.
     _ASSERTE(phEnum);
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     // cache the tkKind and the scope
     phEnum->m_tkKind = TypeFromToken(tkKind);
@@ -2582,7 +2582,7 @@ HRESULT MDInternalRO::EnumAssociateInit(
     HRESULT hr;
     _ASSERTE(phEnum);
 
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     // There is no token kind!!!
     phEnum->m_tkKind = UINT32_MAX;

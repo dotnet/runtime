@@ -756,7 +756,7 @@ HRESULT MDInternalRW::EnumTypeDefInit( // return hresult
 
     _ASSERTE(phEnum);
 
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
     phEnum->m_tkKind = mdtTypeDef;
 
     if ( m_pStgdb->m_MiniMd.HasDelete() )
@@ -821,9 +821,9 @@ HRESULT MDInternalRW::EnumMethodImplInit( // return hresult
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && !IsNilToken(td));
     _ASSERTE(phEnumBody && phEnumDecl);
 
-    memset(phEnumBody, 0, sizeof(HENUMInternal));
-    memset(phEnumDecl, 0, sizeof(HENUMInternal));
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnumBody);
+    HENUMInternal::ZeroEnum(phEnumDecl);
+    HENUMInternal::ZeroEnum(&hEnum);
 
     HENUMInternal::InitDynamicArrayEnum(phEnumBody);
     HENUMInternal::InitDynamicArrayEnum(phEnumDecl);
@@ -968,7 +968,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
 
     // Vars for query.
     _ASSERTE(phEnum);
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     // cache the tkKind and the scope
     phEnum->m_tkKind = TypeFromToken(tkKind);
@@ -1385,7 +1385,7 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
 
     // Vars for query.
     _ASSERTE(phEnum);
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     // cache the tkKind and the scope
     phEnum->m_tkKind = TypeFromToken(tkKind);
@@ -3971,7 +3971,7 @@ HRESULT MDInternalRW::EnumDeltaTokensInit(  // return hresult
 
     // Vars for query.
     _ASSERTE(phEnum);
-    memset(phEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(phEnum);
 
     // cache the tkKind and the scope
     phEnum->m_tkKind = 0;

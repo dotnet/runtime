@@ -900,7 +900,7 @@ HRESULT FilterManager::MarkMethodImplsWithParentToken(mdTypeDef td)
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
     PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
 
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
     IfFailGo( m_pMiniMd->FindMethodImplHelper(td, &hEnum) );
 
     while (HENUMInternal::EnumNext(&hEnum, (mdToken *)&index))

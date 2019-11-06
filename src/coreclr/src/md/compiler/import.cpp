@@ -794,7 +794,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
     START_MD_PERF();
     LOCKREAD();
 
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
 
     if ( pEnum == 0 )
     {
@@ -1545,7 +1545,7 @@ STDMETHODIMP RegMeta::GetEventProps(          // S_OK, S_FALSE, or error.
 
     _ASSERTE(TypeFromToken(ev) == mdtEvent);
 
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
     IfFailGo(pMiniMd->GetEventRecord(RidFromToken(ev), &pRec));
 
     if ( pClass )
@@ -1717,7 +1717,7 @@ STDMETHODIMP RegMeta::GetMethodSemantics(     // S_OK, S_FALSE, or error.
     _ASSERTE( pdwSemanticsFlags );
 
     *pdwSemanticsFlags = 0;
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
 
     // loop through all methods associated with this tkEventProp
     IfFailGo( pMiniMd->FindMethodSemanticsHelper(tkEventProp, &hEnum) );
@@ -2990,7 +2990,7 @@ HRESULT RegMeta::GetPropertyProps(      // S_OK, S_FALSE, or error.
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    memset(&hEnum, 0, sizeof(HENUMInternal));
+    HENUMInternal::ZeroEnum(&hEnum);
     IfFailGo(pMiniMd->GetPropertyRecord(RidFromToken(prop), &pRec));
 
     if ( pClass )
