@@ -57,10 +57,11 @@ try {
 
     # clean all
     if ($clean) {
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:Clean"" ""/p:Configuration=$configuration""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:Clean" `
+        "/p:Configuration=$configuration"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "runtime" -Message "Error cleaning"
             exit 1
         }
@@ -70,10 +71,12 @@ try {
 
     # rebuild mono runtime
     if ($rebuild) {
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:build-runtime"" ""/p:Configuration=$configuration"" ""/p:RuntimeBuildTarget=clean""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:build-runtime" `
+        "/p:Configuration=$configuration" `
+        "/p:RuntimeBuildTarget=clean"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "runtime" -Message "Error cleaning unmanaged runtime"
             exit 1
         }
@@ -81,10 +84,12 @@ try {
 
     # build mono runtime
     if (!$skipnative) {
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:build-runtime"" ""/p:Configuration=$configuration"" ""/p:MONO_ENABLE_LLVM=$enable_llvm""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:build-runtime" `
+        "/p:Configuration=$configuration" `
+        "/p:MONO_ENABLE_LLVM=$enable_llvm"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "runtime" -Message "Error building unmanaged runtime"
             exit 1
         }
@@ -92,10 +97,11 @@ try {
 
     # build System.Private.CoreLib
     if (!$skipmscorlib) {
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:bcl"" ""/p:Configuration=$configuration""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:bcl" `
+        "/p:Configuration=$configuration"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "bcl" -Message "Error building System.Private.CoreLib"
             exit 1
         }
@@ -108,10 +114,11 @@ try {
 
     # run all xunit tests
     if ($test) {
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:update-tests-corefx"" ""/p:Configuration=$configuration""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:update-tests-corefx" `
+        "/p:Configuration=$configuration"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "tests-download" -Message "Error downloading tests"
             exit 1
         }
@@ -121,10 +128,12 @@ try {
             $timeout=600
         }
 
-        $_process = Start-Process -filePath "msbuild.exe" -ArgumentList """$PSScriptRoot\build.targets"" ""/t:run-tests-corefx"" ""/p:Configuration=$configuration"" ""/p:CoreFxTestTimeout=$timeout""" -NoNewWindow -PassThru
-        Wait-Process -InputObject $_process
+        MSBuild "$PSScriptRoot\build.targets" `
+        "/t:run-tests-corefx" `
+        "/p:Configuration=$configuration" `
+        "/p:CoreFxTestTimeout=$timeout"
 
-        if ($_process.ExitCode -ne 0) {
+        if ($LastExitCode -ne 0) {
             Write-PipelineTelemetryError -Category "tests" -Message "Error running tests"
             exit 1
         }
