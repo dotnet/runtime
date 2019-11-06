@@ -1,7 +1,7 @@
 trigger: none
 
 schedules:
-- cron: "0 5 * * *"
+- cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
   branches:
     include:
