@@ -6,8 +6,8 @@
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CS1574;CS3016;CA5379;CA5384</NoWarn>
+    <Nullable>annotations</Nullable>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release;netstandard2.1-Debug;netstandard2.1-Release;netstandard2.1-Windows_NT-Debug;netstandard2.1-Windows_NT-Release</Configurations>
-    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
@@ -54,7 +54,6 @@
     <Compile Include="Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="Internal\Cryptography\PkcsPal.cs" />
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetsNetCoreApp)' != 'true' AND  '$(TargetGroup)' != 'netstandard2.1'" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
