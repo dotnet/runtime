@@ -557,30 +557,30 @@ INST3(vfmsub231sd,      "fmsub231sd",       IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(vfmsub132ss,      "fmsub132ss",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9B),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Multiply-Subtract of Scalar Single-Precision Floating-Point Values
 INST3(vfmsub213ss,      "fmsub213ss",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAB),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
 INST3(vfmsub231ss,      "fmsub231ss",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBB),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd132pd,     "fmnadd132pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Packed Double-Precision Floating-Point Values
-INST3(vfnmadd213pd,     "fmnadd213pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd231pd,     "fmnadd231pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd132ps,     "fmnadd132ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Packed Single-Precision Floating-Point Values
-INST3(vfnmadd213ps,     "fmnadd213ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd231ps,     "fmnadd231ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd132sd,     "fmnadd132sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9D),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Scalar Double-Precision Floating-Point Values
-INST3(vfnmadd213sd,     "fmnadd213sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd231sd,     "fmnadd231sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd132ss,     "fmnadd132ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9D),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Scalar Single-Precision Floating-Point Values
-INST3(vfnmadd213ss,     "fmnadd213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmadd231ss,     "fmnadd231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub132pd,     "fmnsub132pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9E),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Packed Double-Precision Floating-Point Values
-INST3(vfnmsub213pd,     "fmnsub213pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub231pd,     "fmnsub231pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub132ps,     "fmnsub132ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9E),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Packed Single-Precision Floating-Point Values
-INST3(vfnmsub213ps,     "fmnsub213ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub231ps,     "fmnsub231ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub132sd,     "fmnsub132sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9F),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Scalar Double-Precision Floating-Point Values
-INST3(vfnmsub213sd,     "fmnsub213sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub231sd,     "fmnsub231sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub132ss,     "fmnsub132ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9F),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Scalar Single-Precision Floating-Point Values
-INST3(vfnmsub213ss,     "fmnsub213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
-INST3(vfnmsub231ss,     "fmnsub231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd132pd,     "fnmadd132pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Packed Double-Precision Floating-Point Values
+INST3(vfnmadd213pd,     "fnmadd213pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd231pd,     "fnmadd231pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd132ps,     "fnmadd132ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Packed Single-Precision Floating-Point Values
+INST3(vfnmadd213ps,     "fnmadd213ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd231ps,     "fnmadd231ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBC),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd132sd,     "fnmadd132sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9D),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Scalar Double-Precision Floating-Point Values
+INST3(vfnmadd213sd,     "fnmadd213sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd231sd,     "fnmadd231sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd132ss,     "fnmadd132ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9D),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Add of Scalar Single-Precision Floating-Point Values
+INST3(vfnmadd213ss,     "fnmadd213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmadd231ss,     "fnmadd231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBD),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub132pd,     "fnmsub132pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9E),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Packed Double-Precision Floating-Point Values
+INST3(vfnmsub213pd,     "fnmsub213pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub231pd,     "fnmsub231pd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub132ps,     "fnmsub132ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9E),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Packed Single-Precision Floating-Point Values
+INST3(vfnmsub213ps,     "fnmsub213ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub231ps,     "fnmsub231ps",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBE),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub132sd,     "fnmsub132sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9F),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Scalar Double-Precision Floating-Point Values
+INST3(vfnmsub213sd,     "fnmsub213sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub231sd,     "fnmsub231sd",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub132ss,     "fnmsub132ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x9F),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Fused Negative Multiply-Subtract of Scalar Single-Precision Floating-Point Values
+INST3(vfnmsub213ss,     "fnmsub213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xAF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
+INST3(vfnmsub231ss,     "fnmsub231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
 INST3(LAST_FMA_INSTRUCTION, "LAST_FMA_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
 // BMI1
