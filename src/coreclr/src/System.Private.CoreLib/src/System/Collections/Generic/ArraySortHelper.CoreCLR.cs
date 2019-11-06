@@ -8,7 +8,7 @@ namespace System.Collections.Generic
 {
     internal interface IArraySortHelper<TKey>
     {
-        void Sort(TKey[] keys, int index, int length, IComparer<TKey>? comparer);
+        void Sort(Span<TKey> keys, IComparer<TKey>? comparer);
         int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
     }
 
@@ -43,7 +43,7 @@ namespace System.Collections.Generic
 
     internal interface IArraySortHelper<TKey, TValue>
     {
-        void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer);
+        void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer);
     }
 
     [TypeDependency("System.Collections.Generic.GenericArraySortHelper`2")]

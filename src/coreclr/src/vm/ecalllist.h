@@ -721,7 +721,6 @@ FCFuncStart(gArrayFuncs)
     FCFuncElement("TrySZIndexOf", ArrayHelper::TrySZIndexOf)
     FCFuncElement("TrySZLastIndexOf", ArrayHelper::TrySZLastIndexOf)
     FCFuncElement("TrySZBinarySearch", ArrayHelper::TrySZBinarySearch)
-    FCFuncElement("TrySZSort", ArrayHelper::TrySZSort)
     FCFuncElement("TrySZReverse", ArrayHelper::TrySZReverse)
 FCFuncEnd()
 
