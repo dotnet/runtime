@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         private bool _disposed;
         protected int HashSizeValue;
-        protected internal byte[] HashValue;
+        protected internal byte[]? HashValue;
         protected int State = 0;
 
         protected HashAlgorithm() { }
@@ -19,12 +19,12 @@ namespace System.Security.Cryptography
         public static HashAlgorithm Create() =>
             CryptoConfigForwarder.CreateDefaultHashAlgorithm();
 
-        public static HashAlgorithm Create(string hashName) =>
-            (HashAlgorithm)CryptoConfigForwarder.CreateFromName(hashName);
+        public static HashAlgorithm? Create(string hashName) =>
+            (HashAlgorithm?)CryptoConfigForwarder.CreateFromName(hashName);
 
         public virtual int HashSize => HashSizeValue;
 
-        public virtual byte[] Hash
+        public virtual byte[]? Hash
         {
             get
             {
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
                 if (State != 0)
                     throw new CryptographicUnexpectedOperationException(SR.Cryptography_HashNotYetFinalized);
 
-                return (byte[])HashValue?.Clone();
+                return (byte[]?)HashValue?.Clone();
             }
         }
 
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography
         public virtual bool CanTransformMultipleBlocks => true;
         public virtual bool CanReuseTransform => true;
 
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset)
         {
             ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 

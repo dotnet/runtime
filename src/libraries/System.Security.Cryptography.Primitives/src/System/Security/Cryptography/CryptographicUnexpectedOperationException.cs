@@ -16,17 +16,17 @@ namespace System.Security.Cryptography
         {
         }
 
-        public CryptographicUnexpectedOperationException(string message)
+        public CryptographicUnexpectedOperationException(string? message)
             : base(message)
         {
         }
 
-        public CryptographicUnexpectedOperationException(string message, Exception inner)
+        public CryptographicUnexpectedOperationException(string? message, Exception? inner)
             : base(message, inner)
         {
         }
 
-        public CryptographicUnexpectedOperationException(string format, string insert)
+        public CryptographicUnexpectedOperationException(string format, string? insert)
             : base(string.Format(CultureInfo.CurrentCulture, format, insert))
         {
         }
