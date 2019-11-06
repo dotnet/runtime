@@ -52,7 +52,7 @@ namespace System.Diagnostics.Tracing
         ///
         /// If activity tracing is not on, then activityId and relatedActivityId are not set
         /// </summary>
-        public void OnStart(string providerName, string activityName, int task, ref Guid activityId, ref Guid relatedActivityId, EventActivityOptions options)
+        public void OnStart(string providerName, string activityName, int task, ref Guid activityId, ref Guid relatedActivityId, EventActivityOptions options, bool useTplSource = true)
         {
             if (m_current == null)        // We are not enabled
             {
@@ -62,7 +62,7 @@ namespace System.Diagnostics.Tracing
                 if (m_checkedForEnable)
                     return;
                 m_checkedForEnable = true;
-                if (TplEventSource.Log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TasksFlowActivityIds))
+                if (useTplSource && TplEventSource.Log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TasksFlowActivityIds))
                     Enable();
                 if (m_current == null)
                     return;
@@ -73,11 +73,12 @@ namespace System.Diagnostics.Tracing
             ActivityInfo? currentActivity = m_current.Value;
             string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
-            TplEventSource log = TplEventSource.Log;
-            if (log.Debug)
+            TplEventSource? log = useTplSource ? TplEventSource.Log : null;
+            bool tplDebug = log != null && log.Debug;
+            if (tplDebug)
             {
-                log.DebugFacilityMessage("OnStartEnter", fullActivityName);
-                log.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
+                log!.DebugFacilityMessage("OnStartEnter", fullActivityName);
+                log!.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
             }
 
             if (currentActivity != null)
@@ -87,8 +88,8 @@ namespace System.Diagnostics.Tracing
                 {
                     activityId = Guid.Empty;
                     relatedActivityId = Guid.Empty;
-                    if (log.Debug)
-                        log.DebugFacilityMessage("OnStartRET", "Fail");
+                    if (tplDebug)
+                        log!.DebugFacilityMessage("OnStartRET", "Fail");
                     return;
                 }
                 // Check for recursion, and force-stop any activities if the activity already started.
@@ -120,10 +121,10 @@ namespace System.Diagnostics.Tracing
             // Remember the current ID so we can log it
             activityId = newActivity.ActivityId;
 
-            if (log.Debug)
+            if (tplDebug)
             {
-                log.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
-                log.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
+                log!.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
+                log!.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
             }
         }
 
@@ -133,18 +134,19 @@ namespace System.Diagnostics.Tracing
         ///
         /// If activity tracing is not on, then activityId and relatedActivityId are not set
         /// </summary>
-        public void OnStop(string providerName, string activityName, int task, ref Guid activityId)
+        public void OnStop(string providerName, string activityName, int task, ref Guid activityId, bool useTplSource = true)
         {
             if (m_current == null)        // We are not enabled
                 return;
 
             string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
-            TplEventSource log = TplEventSource.Log;
-            if (log.Debug)
+            TplEventSource? log = useTplSource ? TplEventSource.Log : null;
+            bool tplDebug = log != null && log.Debug;
+            if (tplDebug)
             {
-                log.DebugFacilityMessage("OnStopEnter", fullActivityName);
-                log.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
+                log!.DebugFacilityMessage("OnStopEnter", fullActivityName);
+                log!.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
             }
 
             while (true) // This is a retry loop.
@@ -162,8 +164,8 @@ namespace System.Diagnostics.Tracing
                 {
                     activityId = Guid.Empty;
                     // TODO add some logging about this. Basically could not find matching start.
-                    if (log.Debug)
-                        log.DebugFacilityMessage("OnStopRET", "Fail");
+                    if (tplDebug)
+                        log!.DebugFacilityMessage("OnStopRET", "Fail");
                     return;
                 }
 
@@ -201,10 +203,10 @@ namespace System.Diagnostics.Tracing
 
                     m_current.Value = newCurrentActivity;
 
-                    if (log.Debug)
+                    if (tplDebug)
                     {
-                        log.DebugFacilityMessage("OnStopRetActivityState", ActivityInfo.LiveActivities(newCurrentActivity));
-                        log.DebugFacilityMessage("OnStopRet", activityId.ToString());
+                        log!.DebugFacilityMessage("OnStopRetActivityState", ActivityInfo.LiveActivities(newCurrentActivity));
+                        log!.DebugFacilityMessage("OnStopRet", activityId.ToString());
                     }
                     return;
                 }

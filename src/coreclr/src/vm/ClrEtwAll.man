@@ -1647,6 +1647,7 @@
                         <data name="AssemblyPath" inType="win:UnicodeString" />
                         <data name="RequestingAssembly" inType="win:UnicodeString" />
                         <data name="AssemblyLoadContext" inType="win:UnicodeString" />
+                        <data name="RequestingAssemblyLoadContext" inType="win:UnicodeString" />
                         <UserData>
                             <AssemblyLoadStart xmlns="myNs">
                                 <ClrInstanceID> %1 </ClrInstanceID>
@@ -1654,6 +1655,7 @@
                                 <AssemblyPath> %3 </AssemblyPath>
                                 <RequestingAssembly> %4 </RequestingAssembly>
                                 <AssemblyLoadContext> %5 </AssemblyLoadContext>
+                                <RequestingAssemblyLoadContext> %6 </RequestingAssemblyLoadContext>
                             </AssemblyLoadStart>
                         </UserData>
                     </template>
@@ -1664,6 +1666,7 @@
                         <data name="AssemblyPath" inType="win:UnicodeString" />
                         <data name="RequestingAssembly" inType="win:UnicodeString" />
                         <data name="AssemblyLoadContext" inType="win:UnicodeString" />
+                        <data name="RequestingAssemblyLoadContext" inType="win:UnicodeString" />
                         <data name="Success" inType="win:Boolean" />
                         <data name="ResultAssemblyName" inType="win:UnicodeString" />
                         <data name="ResultAssemblyPath" inType="win:UnicodeString" />
@@ -1675,10 +1678,11 @@
                                 <AssemblyPath> %3 </AssemblyPath>
                                 <RequestingAssembly> %4 </RequestingAssembly>
                                 <AssemblyLoadContext> %5 </AssemblyLoadContext>
-                                <Success> %6 </Success>
-                                <ResultAssemblyName> %7 </ResultAssemblyName>
-                                <ResultAssemblyPath> %8 </ResultAssemblyPath>
-                                <Cached> %9 </Cached>
+                                <RequestingAssemblyLoadContext> %6 </RequestingAssemblyLoadContext>
+                                <Success> %7 </Success>
+                                <ResultAssemblyName> %8 </ResultAssemblyName>
+                                <ResultAssemblyPath> %9 </ResultAssemblyPath>
+                                <Cached> %10 </Cached>
                             </AssemblyLoadStop>
                         </UserData>
                     </template>
@@ -6693,8 +6697,8 @@
                 <string id="RuntimePublisher.AppDomainLoad_V1EventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3;%nAppDomainIndex=%4;%nClrInstanceID=%5" />
                 <string id="RuntimePublisher.AppDomainUnloadEventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3" />
                 <string id="RuntimePublisher.AppDomainUnload_V1EventMessage" value="AppDomainID=%1;%nAppDomainFlags=%2;%nAppDomainName=%3;%nAppDomainIndex=%4;%nClrInstanceID=%5" />
-                <string id="RuntimePublisher.AssemblyLoadStartEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5" />
-                <string id="RuntimePublisher.AssemblyLoadStopEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5;%nSuccess=%6;%nResultAssemblyName=%7;%nResultAssemblyPath=%8;%nCached=%9" />
+                <string id="RuntimePublisher.AssemblyLoadStartEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5;%nRequestingAssemblyLoadContext=%6" />
+                <string id="RuntimePublisher.AssemblyLoadStopEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5;%nRequestingAssemblyLoadContext=%6;%nSuccess=%7;%nResultAssemblyName=%8;%nResultAssemblyPath=%9;%nCached=%10" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedEventMessage" value="AppDomainID=%1;%nSurvived=%2;%nProcessSurvived=%3;%nClrInstanceID=%4" />

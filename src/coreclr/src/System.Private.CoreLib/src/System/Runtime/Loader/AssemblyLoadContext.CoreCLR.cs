@@ -206,7 +206,11 @@ namespace System.Runtime.Loader
         /// </summary>
         private static void StartAssemblyLoad(ref Guid activityId, ref Guid relatedActivityId)
         {
-            ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, ref relatedActivityId, EventActivityOptions.Recursive);
+            // Make sure ActivityTracker is enabled
+            ActivityTracker.Instance.Enable();
+
+            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+            ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, ref relatedActivityId, EventActivityOptions.Recursive, useTplSource: false);
         }
 
         /// <summary>
@@ -214,7 +218,8 @@ namespace System.Runtime.Loader
         /// </summary>
         private static void StopAssemblyLoad(ref Guid activityId)
         {
-            ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId);
+            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+            ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
         }
     }
 }
