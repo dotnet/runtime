@@ -12,17 +12,17 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>931f79e4670cb73c9347e14714fd892907be6630</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19554.7">
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19555.8">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>e7d395df56f99222a27b5992311b436ee979e138</Sha>
+      <Sha>4c8b86f1ab28adb38faf923ba1b49fd9c13c2d5b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19554.7">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19555.8">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>e7d395df56f99222a27b5992311b436ee979e138</Sha>
+      <Sha>4c8b86f1ab28adb38faf923ba1b49fd9c13c2d5b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.19554.7">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.19555.8">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>e7d395df56f99222a27b5992311b436ee979e138</Sha>
+      <Sha>4c8b86f1ab28adb38faf923ba1b49fd9c13c2d5b</Sha>
     </Dependency>
     <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19551.5">
       <Uri>https://github.com/dotnet/corefx</Uri>
