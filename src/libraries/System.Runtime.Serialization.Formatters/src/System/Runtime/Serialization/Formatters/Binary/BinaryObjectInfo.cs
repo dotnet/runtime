@@ -5,6 +5,7 @@
 using System.Threading;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -14,33 +15,34 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class WriteObjectInfo
     {
         internal int _objectInfoId;
-        internal object _obj;
-        internal Type _objectType;
+        internal object? _obj;
+        internal Type? _objectType;
 
         internal bool _isSi = false;
         internal bool _isNamed = false;
         internal bool _isArray = false;
 
-        internal SerializationInfo _si = null;
-        internal SerObjectInfoCache _cache = null;
+        internal SerializationInfo? _si = null;
+        internal SerObjectInfoCache _cache = null!; // Initiated before use
 
-        internal object[] _memberData = null;
-        internal ISerializationSurrogate _serializationSurrogate = null;
+        internal object?[]? _memberData = null;
+        internal ISerializationSurrogate? _serializationSurrogate = null;
         internal StreamingContext _context;
-        internal SerObjectInfoInit _serObjectInfoInit = null;
+        internal SerObjectInfoInit? _serObjectInfoInit = null;
 
         // Writing and Parsing information
         internal long _objectId;
         internal long _assemId;
 
         // Binder information
-        private string _binderTypeName;
-        private string _binderAssemblyString;
+        private string? _binderTypeName;
+        private string? _binderAssemblyString;
 
         internal WriteObjectInfo() { }
 
         internal void ObjectEnd()
         {
+            Debug.Assert(_serObjectInfoInit != null);
             PutObjectInfo(_serObjectInfoInit, this);
         }
 
@@ -52,7 +54,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _isNamed = false;
             _isArray = false;
             _si = null;
-            _cache = null;
+            _cache = null!;
             _memberData = null;
 
             // Writing and Parsing information
@@ -64,7 +66,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binderAssemblyString = null;
         }
 
-        internal static WriteObjectInfo Serialize(object obj, ISurrogateSelector surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder binder)
+        internal static WriteObjectInfo Serialize(object obj, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder? binder)
         {
             WriteObjectInfo woi = GetObjectInfo(serObjectInfoInit);
             woi.InitSerialize(obj, surrogateSelector, context, serObjectInfoInit, converter, objectWriter, binder);
@@ -72,7 +74,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Write constructor
-        internal void InitSerialize(object obj, ISurrogateSelector surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder binder)
+        internal void InitSerialize(object obj, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder? binder)
         {
             _context = context;
             _obj = obj;
@@ -117,7 +119,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal static WriteObjectInfo Serialize(Type objectType, ISurrogateSelector surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder binder)
+        internal static WriteObjectInfo Serialize(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder? binder)
         {
             WriteObjectInfo woi = GetObjectInfo(serObjectInfoInit);
             woi.InitSerialize(objectType, surrogateSelector, context, serObjectInfoInit, converter, binder);
@@ -125,7 +127,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Write Constructor used for array types or null members
-        internal void InitSerialize(Type objectType, ISurrogateSelector surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder binder)
+        internal void InitSerialize(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder? binder)
         {
             _objectType = objectType;
             _context = context;
@@ -139,10 +141,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             InvokeSerializationBinder(binder);
 
-            ISurrogateSelector surrogateSelectorTemp = null;
             if (surrogateSelector != null)
             {
-                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out surrogateSelectorTemp);
+                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out ISurrogateSelector surrogateSelectorTemp);
             }
 
             if (_serializationSurrogate != null)
@@ -169,8 +170,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitSiWrite()
         {
-            SerializationInfoEnumerator siEnum = null;
+            SerializationInfoEnumerator? siEnum = null;
             _isSi = true;
+            Debug.Assert(_si != null);
             siEnum = _si.GetEnumerator();
             int infoLength = 0;
 
@@ -180,7 +182,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             // For ISerializable cache cannot be saved because each object instance can have different values
             // BinaryWriter only puts the map on the wire if the ISerializable map cannot be reused.
-            TypeInformation typeInformation = null;
+            TypeInformation? typeInformation = null;
             string fullTypeName = _si.FullTypeName;
             string assemblyString = _si.AssemblyName;
             bool hasTypeForwardedFrom = false;
@@ -219,14 +221,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _isNamed = true;
         }
 
-        private static void CheckTypeForwardedFrom(SerObjectInfoCache cache, Type objectType, string binderAssemblyString)
+        private static void CheckTypeForwardedFrom(SerObjectInfoCache? cache, Type objectType, string? binderAssemblyString)
         {
             // nop
         }
 
         private void InitNoMembers()
         {
-            if (!_serObjectInfoInit._seenBeforeTable.TryGetValue(_objectType, out _cache))
+            Debug.Assert(_serObjectInfoInit != null && _objectType != null);
+            if (!_serObjectInfoInit._seenBeforeTable.TryGetValue(_objectType, out _cache!))
             {
                 _cache = new SerObjectInfoCache(_objectType);
                 _serObjectInfoInit._seenBeforeTable.Add(_objectType, _cache);
@@ -235,7 +238,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitMemberInfo()
         {
-            if (!_serObjectInfoInit._seenBeforeTable.TryGetValue(_objectType, out _cache))
+            Debug.Assert(_serObjectInfoInit != null && _objectType != null);
+            if (!_serObjectInfoInit._seenBeforeTable.TryGetValue(_objectType, out _cache!))
             {
                 _cache = new SerObjectInfoCache(_objectType);
 
@@ -255,7 +259,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (_obj != null)
             {
-                _memberData = FormatterServices.GetObjectData(_obj, _cache._memberInfos);
+                _memberData = FormatterServices.GetObjectData(_obj, _cache._memberInfos!);
             }
 
             _isNamed = true;
@@ -265,10 +269,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal string GetAssemblyString() => _binderAssemblyString ?? _cache._assemblyString;
 
-        private void InvokeSerializationBinder(SerializationBinder binder) =>
-            binder?.BindToName(_objectType, out _binderAssemblyString, out _binderTypeName);
+        private void InvokeSerializationBinder(SerializationBinder? binder) =>
+            binder?.BindToName(_objectType!, out _binderAssemblyString, out _binderTypeName);
 
-        internal void GetMemberInfo(out string[] outMemberNames, out Type[] outMemberTypes, out object[] outMemberData)
+        internal void GetMemberInfo(out string[]? outMemberNames, out Type[]? outMemberTypes, out object?[]? outMemberData)
         {
             outMemberNames = _cache._memberNames;
             outMemberTypes = _cache._memberTypes;
@@ -286,7 +290,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (!serObjectInfoInit._oiPool.IsEmpty())
             {
-                objectInfo = (WriteObjectInfo)serObjectInfoInit._oiPool.Pop();
+                objectInfo = (WriteObjectInfo)serObjectInfoInit._oiPool.Pop()!;
                 objectInfo.InternalInit();
             }
             else
@@ -307,9 +311,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int _objectInfoId;
         internal static int _readObjectInfoCounter;
 
-        internal Type _objectType;
+        internal Type? _objectType = null;
 
-        internal ObjectManager _objectManager;
+        internal ObjectManager? _objectManager;
 
         internal int _count;
 
@@ -317,20 +321,20 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal bool _isTyped = false;
         internal bool _isSimpleAssembly = false;
 
-        internal SerObjectInfoCache _cache;
+        internal SerObjectInfoCache? _cache;
 
-        internal string[] _wireMemberNames;
-        internal Type[] _wireMemberTypes;
+        internal string[]? _wireMemberNames;
+        internal Type[]? _wireMemberTypes;
 
         private int _lastPosition = 0;
 
-        internal ISerializationSurrogate _serializationSurrogate = null;
+        internal ISerializationSurrogate? _serializationSurrogate = null;
         internal StreamingContext _context;
 
         // Si Read
-        internal List<Type> _memberTypesList;
-        internal SerObjectInfoInit _serObjectInfoInit = null;
-        internal IFormatterConverter _formatterConverter;
+        internal List<Type>? _memberTypesList;
+        internal SerObjectInfoInit? _serObjectInfoInit = null;
+        internal IFormatterConverter? _formatterConverter = null;
 
         internal ReadObjectInfo() { }
 
@@ -341,14 +345,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _lastPosition = 0;
         }
 
-        internal static ReadObjectInfo Create(Type objectType, ISurrogateSelector surrogateSelector, StreamingContext context, ObjectManager objectManager, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, bool bSimpleAssembly)
+        internal static ReadObjectInfo Create(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
         {
             ReadObjectInfo roi = GetObjectInfo(serObjectInfoInit);
             roi.Init(objectType, surrogateSelector, context, objectManager, serObjectInfoInit, converter, bSimpleAssembly);
             return roi;
         }
 
-        internal void Init(Type objectType, ISurrogateSelector surrogateSelector, StreamingContext context, ObjectManager objectManager, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, bool bSimpleAssembly)
+        internal void Init(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
         {
             _objectType = objectType;
             _objectManager = objectManager;
@@ -360,14 +364,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             InitReadConstructor(objectType, surrogateSelector, context);
         }
 
-        internal static ReadObjectInfo Create(Type objectType, string[] memberNames, Type[] memberTypes, ISurrogateSelector surrogateSelector, StreamingContext context, ObjectManager objectManager, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, bool bSimpleAssembly)
+        internal static ReadObjectInfo Create(Type? objectType, string[] memberNames, Type[]? memberTypes, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
         {
             ReadObjectInfo roi = GetObjectInfo(serObjectInfoInit);
             roi.Init(objectType, memberNames, memberTypes, surrogateSelector, context, objectManager, serObjectInfoInit, converter, bSimpleAssembly);
             return roi;
         }
 
-        internal void Init(Type objectType, string[] memberNames, Type[] memberTypes, ISurrogateSelector surrogateSelector, StreamingContext context, ObjectManager objectManager, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, bool bSimpleAssembly)
+        internal void Init(Type? objectType, string[] memberNames, Type[]? memberTypes, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
         {
             _objectType = objectType;
             _objectManager = objectManager;
@@ -387,7 +391,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        private void InitReadConstructor(Type objectType, ISurrogateSelector surrogateSelector, StreamingContext context)
+        private void InitReadConstructor(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context)
         {
             if (objectType.IsArray)
             {
@@ -395,7 +399,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
-            ISurrogateSelector surrogateSelectorTemp = null;
+            ISurrogateSelector? surrogateSelectorTemp = null;
             if (surrogateSelector != null)
             {
                 _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out surrogateSelectorTemp);
@@ -430,13 +434,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitNoMembers()
         {
-            _cache = new SerObjectInfoCache(_objectType);
+            _cache = new SerObjectInfoCache(_objectType!);
         }
 
         private void InitMemberInfo()
         {
-            _cache = new SerObjectInfoCache(_objectType);
-            _cache._memberInfos = FormatterServices.GetSerializableMembers(_objectType, _context);
+            _cache = new SerObjectInfoCache(_objectType!);
+            _cache._memberInfos = FormatterServices.GetSerializableMembers(_objectType!, _context);
             _count = _cache._memberInfos.Length;
             _cache._memberNames = new string[_count];
             _cache._memberTypes = new Type[_count];
@@ -452,7 +456,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Get the memberInfo for a memberName
-        internal MemberInfo GetMemberInfo(string name)
+        internal MemberInfo? GetMemberInfo(string? name)
         {
             if (_cache == null)
             {
@@ -474,7 +478,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Get the ObjectType for a memberName
-        internal Type GetType(string name)
+        internal Type? GetType(string name)
         {
             int position = Position(name);
             if (position == -1)
@@ -482,7 +486,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return null;
             }
 
-            Type type = _isTyped ? _cache._memberTypes[position] : _memberTypesList[position];
+            Type type = _isTyped ? _cache!._memberTypes![position] : _memberTypesList![position];
             if (type == null)
             {
                 throw new SerializationException(SR.Format(SR.Serialization_ISerializableTypes, _objectType + " " + name));
@@ -492,10 +496,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Adds the value for a memberName
-        internal void AddValue(string name, object value, ref SerializationInfo si, ref object[] memberData)
+        internal void AddValue(string name, object? value, ref SerializationInfo? si, ref object?[]? memberData)
         {
             if (_isSi)
             {
+                Debug.Assert(si != null);
                 si.AddValue(name, value);
             }
             else
@@ -504,24 +509,27 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 int position = Position(name);
                 if (position != -1)
                 {
+                    Debug.Assert(memberData != null);
                     memberData[position] = value;
                 }
             }
         }
 
-        internal void InitDataStore(ref SerializationInfo si, ref object[] memberData)
+        internal void InitDataStore(ref SerializationInfo? si, ref object?[]? memberData)
         {
             if (_isSi)
             {
                 if (si == null)
                 {
-                    si = new SerializationInfo(_objectType, _formatterConverter);
+                    Debug.Assert(_objectType != null);
+                    si = new SerializationInfo(_objectType, _formatterConverter!);
                 }
             }
             else
             {
                 if (memberData == null && _cache != null)
                 {
+                    Debug.Assert(_cache._memberNames != null);
                     memberData = new object[_cache._memberNames.Length];
                 }
             }
@@ -549,28 +557,31 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         throw new SerializationException(SR.Serialization_CorruptedStream);
                     }
 
+                    Debug.Assert(_cache != null && _cache._memberInfos != null);
                     _objectManager.RecordFixup(objectId, _cache._memberInfos[position], idRef);
                 }
             }
         }
 
         // Fills in the values for an object
-        internal void PopulateObjectMembers(object obj, object[] memberData)
+        internal void PopulateObjectMembers(object obj, object?[]? memberData)
         {
             if (!_isSi && memberData != null)
             {
+                Debug.Assert(_cache != null && _cache._memberInfos != null);
                 FormatterServices.PopulateObjectMembers(obj, _cache._memberInfos, memberData);
             }
         }
 
         // Specifies the position in the memberNames array of this name
-        private int Position(string name)
+        private int Position(string? name)
         {
             if (_cache == null)
             {
                 return -1;
             }
 
+            Debug.Assert(_cache._memberNames != null);
             if (_cache._memberNames.Length > 0 && _cache._memberNames[_lastPosition].Equals(name))
             {
                 return _lastPosition;
@@ -597,7 +608,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Return the member Types in order of memberNames
-        internal Type[] GetMemberTypes(string[] inMemberNames, Type objectType)
+        internal Type[]? GetMemberTypes(string[] inMemberNames, Type? objectType)
         {
             if (_isSi)
             {
@@ -609,6 +620,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return null;
             }
 
+            Debug.Assert(_cache._memberInfos != null);
             if (_cache._memberTypes == null)
             {
                 _cache._memberTypes = new Type[_count];
@@ -652,6 +664,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         if (!_isSimpleAssembly &&
                             _cache._memberInfos[i].GetCustomAttribute(typeof(OptionalFieldAttribute), inherit: false) == null)
                         {
+                            Debug.Assert(_cache._memberNames != null);
                             throw new SerializationException(SR.Format(SR.Serialization_MissingMember, _cache._memberNames[i], objectType, typeof(OptionalFieldAttribute).FullName));
                         }
                     }
@@ -673,7 +686,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
 
-        private static ReadObjectInfo GetObjectInfo(SerObjectInfoInit serObjectInfoInit)
+        private static ReadObjectInfo GetObjectInfo(SerObjectInfoInit? serObjectInfoInit)
         {
             ReadObjectInfo roi = new ReadObjectInfo();
             roi._objectInfoId = Interlocked.Increment(ref _readObjectInfoCounter);
@@ -694,9 +707,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal readonly string _assemblyString;
         internal readonly bool _hasTypeForwardedFrom;
 
-        internal MemberInfo[] _memberInfos;
-        internal string[] _memberNames;
-        internal Type[] _memberTypes;
+        internal MemberInfo[]? _memberInfos;
+        internal string[]? _memberNames;
+        internal Type[]? _memberTypes;
 
         internal SerObjectInfoCache(string typeName, string assemblyName, bool hasTypeForwardedFrom)
         {

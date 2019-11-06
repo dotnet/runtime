@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     // For each object or array being read off the stream, an ObjectProgress object is created. This object
@@ -14,25 +17,25 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal bool _isInitial;
         internal int _count; //Progress count
         internal BinaryTypeEnum _expectedType = BinaryTypeEnum.ObjectUrt;
-        internal object _expectedTypeInformation = null;
+        internal object? _expectedTypeInformation = null;
 
-        internal string _name;
+        internal string? _name;
         internal InternalObjectTypeE _objectTypeEnum = InternalObjectTypeE.Empty;
         internal InternalMemberTypeE _memberTypeEnum;
         internal InternalMemberValueE _memberValueEnum;
-        internal Type _dtType;
+        internal Type? _dtType;
 
         // Array Information
         internal int _numItems;
         internal BinaryTypeEnum _binaryTypeEnum;
-        internal object _typeInformation;
+        internal object? _typeInformation;
 
         // Member Information
         internal int _memberLength;
-        internal BinaryTypeEnum[] _binaryTypeEnumA;
-        internal object[] _typeInformationA;
-        internal string[] _memberNames;
-        internal Type[] _memberTypes;
+        internal BinaryTypeEnum[]? _binaryTypeEnumA;
+        internal object?[]? _typeInformationA;
+        internal string[]? _memberNames;
+        internal Type?[]? _memberTypes;
 
         // ParseRecord
         internal ParseRecord _pr = new ParseRecord();
@@ -73,7 +76,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void ArrayCountIncrement(int value) => _count += value;
 
         // Specifies what is to parsed next from the wire.
-        internal bool GetNext(out BinaryTypeEnum outBinaryTypeEnum, out object outTypeInformation)
+        internal bool GetNext(out BinaryTypeEnum outBinaryTypeEnum, [NotNullWhen(true)] out object? outTypeInformation)
         {
             //Initialize the out params up here.
             outBinaryTypeEnum = BinaryTypeEnum.Primitive;
@@ -105,6 +108,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
+                    Debug.Assert(_binaryTypeEnumA != null && _typeInformationA != null && _memberNames != null && _memberTypes != null);
                     outBinaryTypeEnum = _binaryTypeEnumA[_count];
                     outTypeInformation = _typeInformationA[_count];
                     if (_count == 0)

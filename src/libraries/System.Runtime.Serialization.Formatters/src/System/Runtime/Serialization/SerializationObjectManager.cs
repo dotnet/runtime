@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization
     {
         private readonly Dictionary<object, object> _objectSeenTable; // Table to keep track of objects [OnSerializing] has been called on
         private readonly StreamingContext _context;
-        private SerializationEventHandler _onSerializedHandler;
+        private SerializationEventHandler? _onSerializedHandler;
 
         public SerializationObjectManager(StreamingContext context)
         {

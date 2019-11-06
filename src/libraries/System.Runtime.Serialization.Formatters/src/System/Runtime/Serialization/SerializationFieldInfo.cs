@@ -33,9 +33,9 @@ namespace System.Runtime.Serialization
 
         public override int MetadataToken { get { return m_field.MetadataToken; } }
 
-        public override Type DeclaringType => m_field.DeclaringType;
+        public override Type? DeclaringType => m_field.DeclaringType;
 
-        public override Type ReflectedType => m_field.ReflectedType;
+        public override Type? ReflectedType => m_field.ReflectedType;
 
         public override object[] GetCustomAttributes(bool inherit) => m_field.GetCustomAttributes(inherit);
 
@@ -45,9 +45,9 @@ namespace System.Runtime.Serialization
 
         public override Type FieldType => m_field.FieldType;
 
-        public override object GetValue(object obj) => m_field.GetValue(obj);
+        public override object? GetValue(object? obj) => m_field.GetValue(obj);
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture) => m_field.SetValue(obj, value, invokeAttr, binder, culture);
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) => m_field.SetValue(obj, value, invokeAttr, binder, culture);
 
         public override RuntimeFieldHandle FieldHandle => m_field.FieldHandle;
 

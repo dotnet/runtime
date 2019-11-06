@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class BinaryAssembly : IStreamable
     {
         internal int _assemId;
-        internal string _assemblyString;
+        internal string? _assemblyString;
 
         internal BinaryAssembly() { }
 
@@ -21,6 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             output.WriteByte((byte)BinaryHeaderEnum.Assembly);
             output.WriteInt32(_assemId);
+            Debug.Assert(_assemblyString != null);
             output.WriteString(_assemblyString);
         }
 

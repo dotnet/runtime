@@ -9,14 +9,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class BinaryAssemblyInfo
     {
         internal string _assemblyString;
-        private Assembly _assembly;
+        private Assembly? _assembly;
 
         internal BinaryAssemblyInfo(string assemblyString)
         {
             _assemblyString = assemblyString;
         }
 
-        internal BinaryAssemblyInfo(string assemblyString, Assembly assembly) : this(assemblyString)
+        internal BinaryAssemblyInfo(string assemblyString, Assembly? assembly) : this(assemblyString)
         {
             _assembly = assembly;
         }

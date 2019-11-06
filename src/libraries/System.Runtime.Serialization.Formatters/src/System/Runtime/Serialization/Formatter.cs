@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
 
         public abstract object Deserialize(Stream serializationStream);
 
-        protected virtual object GetNext(out long objID)
+        protected virtual object? GetNext(out long objID)
         {
             if (m_objectQueue.Count == 0)
             {
@@ -31,7 +31,7 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            object obj = m_objectQueue.Dequeue();
+            object obj = m_objectQueue.Dequeue()!;
 
             bool isNew;
             objID = m_idGenerator.HasId(obj, out isNew);
@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        protected virtual long Schedule(object obj)
+        protected virtual long Schedule(object? obj)
         {
             if (obj == null)
             {
@@ -82,9 +82,9 @@ namespace System.Runtime.Serialization
 
         protected abstract void WriteInt64(long val, string name);
 
-        protected abstract void WriteObjectRef(object obj, string name, Type memberType);
+        protected abstract void WriteObjectRef(object? obj, string name, Type memberType);
 
-        protected virtual void WriteMember(string memberName, object data)
+        protected virtual void WriteMember(string memberName, object? data)
         {
             if (data == null)
             {
@@ -182,9 +182,9 @@ namespace System.Runtime.Serialization
 
         protected abstract void WriteValueType(object obj, string name, Type memberType);
 
-        public abstract ISurrogateSelector SurrogateSelector { get; set; }
+        public abstract ISurrogateSelector? SurrogateSelector { get; set; }
 
-        public abstract SerializationBinder Binder { get; set; }
+        public abstract SerializationBinder? Binder { get; set; }
 
         public abstract StreamingContext Context { get; set; }
     }

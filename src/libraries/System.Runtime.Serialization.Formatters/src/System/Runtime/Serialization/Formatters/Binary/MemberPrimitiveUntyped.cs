@@ -8,11 +8,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         // Used for members with primitive values and types are needed
         internal InternalPrimitiveTypeE _typeInformation;
-        internal object _value;
+        internal object? _value;
 
         internal MemberPrimitiveUnTyped() { }
 
-        internal void Set(InternalPrimitiveTypeE typeInformation, object value)
+        internal void Set(InternalPrimitiveTypeE typeInformation, object? value)
         {
             _typeInformation = typeInformation;
             _value = value;

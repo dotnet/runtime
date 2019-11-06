@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -13,27 +14,27 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         // System.Serializer information
         internal Stream _stream;
-        internal ISurrogateSelector _surrogates;
+        internal ISurrogateSelector? _surrogates;
         internal StreamingContext _context;
-        internal ObjectManager _objectManager;
+        internal ObjectManager? _objectManager;
         internal InternalFE _formatterEnums;
-        internal SerializationBinder _binder;
+        internal SerializationBinder? _binder;
 
         // Top object and headers
         internal long _topId;
         internal bool _isSimpleAssembly = false;
-        internal object _topObject;
-        internal SerObjectInfoInit _serObjectInfoInit;
-        internal IFormatterConverter _formatterConverter;
+        internal object? _topObject;
+        internal SerObjectInfoInit? _serObjectInfoInit;
+        internal IFormatterConverter? _formatterConverter;
 
         // Stack of Object ParseRecords
-        internal SerStack _stack;
+        internal SerStack? _stack;
 
         // ValueType Fixup Stack
-        private SerStack _valueFixupStack;
+        private SerStack? _valueFixupStack;
 
         // Cross AppDomain
-        internal object[] _crossAppDomainArray; //Set by the BinaryFormatter
+        internal object[]? _crossAppDomainArray; //Set by the BinaryFormatter
 
         //MethodCall and MethodReturn are handled special for perf reasons
         private bool _fullDeserialization;
@@ -44,11 +45,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // a single counter, only value types have a negative value. Need a way to handle older formats.
         private const int ThresholdForValueTypeIds = int.MaxValue;
         private bool _oldFormatDetected = false;
-        private IntSizedArray _valTypeObjectIdTable;
+        private IntSizedArray? _valTypeObjectIdTable;
 
         private readonly NameCache _typeCache = new NameCache();
 
-        internal object TopObject
+        internal object? TopObject
         {
             get { return _topObject; }
             set
@@ -61,7 +62,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal ObjectReader(Stream stream, ISurrogateSelector selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder binder)
+        internal ObjectReader(Stream stream, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
         {
             if (stream == null)
             {
@@ -101,7 +102,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 if (_fullDeserialization)
                 {
-                    _objectManager.DoFixups();
+                    _objectManager!.DoFixups();
                 }
 
                 if (TopObject == null)
@@ -113,6 +114,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 //So refresh it using topID.
                 if (HasSurrogate(TopObject.GetType()) && _topId != 0)//Not yet resolved
                 {
+                    Debug.Assert(_objectManager != null);
                     TopObject = _objectManager.GetObject(_topId);
                 }
 
@@ -123,10 +125,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 if (_fullDeserialization)
                 {
-                    _objectManager.RaiseDeserializationEvent(); // This will raise both IDeserialization and [OnDeserialized] events
+                    _objectManager!.RaiseDeserializationEvent(); // This will raise both IDeserialization and [OnDeserialized] events
                 }
 
-                return TopObject;
+                return TopObject!;
             }
         }
         private bool HasSurrogate(Type t)
@@ -156,6 +158,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal object CrossAppDomainArray(int index)
         {
+            Debug.Assert(_crossAppDomainArray != null);
             Debug.Assert(index < _crossAppDomainArray.Length, "[System.Runtime.Serialization.Formatters.BinaryObjectReader index out of range for CrossAppDomainArray]");
             return _crossAppDomainArray[index];
         }
@@ -165,7 +168,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return ReadObjectInfo.Create(objectType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
         }
 
-        internal ReadObjectInfo CreateReadObjectInfo(Type objectType, string[] memberNames, Type[] memberTypes)
+        internal ReadObjectInfo CreateReadObjectInfo(Type? objectType, string[] memberNames, Type[]? memberTypes)
         {
             return ReadObjectInfo.Create(objectType, memberNames, memberTypes, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
         }
@@ -210,10 +213,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Parse the SerializedStreamHeader element. This is the first element in the stream if present
-        private void ParseSerializedStreamHeader(ParseRecord pr) => _stack.Push(pr);
+        private void ParseSerializedStreamHeader(ParseRecord pr) => _stack!.Push(pr);
 
         // Parse the SerializedStreamHeader end element. This is the last element in the stream if present
-        private void ParseSerializedStreamHeaderEnd(ParseRecord pr) => _stack.Pop();
+        private void ParseSerializedStreamHeaderEnd(ParseRecord pr) => _stack!.Pop();
 
         // New object encountered in stream
         private void ParseObject(ParseRecord pr)
@@ -230,7 +233,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (pr._parseTypeEnum == InternalParseTypeE.Object)
             {
-                _stack.Push(pr); // Nested objects member names are already on stack
+                _stack!.Push(pr); // Nested objects member names are already on stack
             }
 
             if (pr._objectTypeEnum == InternalObjectTypeE.Array)
@@ -260,8 +263,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
-                        _stack.Pop();
-                        RegisterObject(pr._newObj, pr, (ParseRecord)_stack.Peek());
+                        _stack!.Pop();
+                        RegisterObject(pr._newObj, pr, (ParseRecord?)_stack.Peek());
                         return;
                     }
                 }
@@ -276,6 +279,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 CheckSerializable(pr._dtType);
                 pr._newObj = FormatterServices.GetUninitializedObject(pr._dtType);
 
+                Debug.Assert(_objectManager != null);
                 // Run the OnDeserializing methods
                 _objectManager.RaiseOnDeserializingEvent(pr._newObj);
             }
@@ -299,7 +303,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // End of object encountered in stream
         private void ParseObjectEnd(ParseRecord pr)
         {
-            ParseRecord objectPr = (ParseRecord)_stack.Peek() ?? pr;
+            Debug.Assert(_stack != null);
+            ParseRecord objectPr = (ParseRecord?)_stack.Peek() ?? pr;
 
             if (objectPr._objectPositionEnum == InternalObjectPositionE.Top)
             {
@@ -312,7 +317,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             _stack.Pop();
-            ParseRecord parentPr = (ParseRecord)_stack.Peek();
+            ParseRecord? parentPr = (ParseRecord?)_stack.Peek();
 
             if (objectPr._newObj == null)
             {
@@ -330,6 +335,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
+            Debug.Assert(objectPr._objectInfo != null);
             objectPr._objectInfo.PopulateObjectMembers(objectPr._newObj, objectPr._memberData);
 
             // Registration is after object is populated
@@ -340,7 +346,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (objectPr._isValueTypeFixup)
             {
-                ValueFixup fixup = (ValueFixup)ValueFixupStack.Pop(); //Value fixup
+                ValueFixup? fixup = (ValueFixup?)ValueFixupStack.Pop(); //Value fixup
+                Debug.Assert(fixup != null && parentPr != null);
                 fixup.Fixup(objectPr, parentPr);  // Value fixup
             }
 
@@ -357,8 +364,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             long genId = pr._objectId;
 
+            Debug.Assert(_stack != null);
             if (pr._arrayTypeEnum == InternalArrayTypeE.Base64)
             {
+                Debug.Assert(pr._value != null);
                 // ByteArray
                 pr._newObj = pr._value.Length > 0 ?
                     Convert.FromBase64String(pr._value) :
@@ -373,7 +382,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     TopObject = pr._newObj;
                 }
 
-                ParseRecord parentPr = (ParseRecord)_stack.Peek();
+                ParseRecord? parentPr = (ParseRecord?)_stack.Peek();
 
                 // Base64 can be registered at this point because it is populated
                 RegisterObject(pr._newObj, pr, parentPr);
@@ -386,13 +395,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     TopObject = pr._newObj;
                 }
 
-                ParseRecord parentPr = (ParseRecord)_stack.Peek();
+                ParseRecord? parentPr = (ParseRecord?)_stack.Peek();
 
                 // Primitive typed array can be registered at this point because it is populated
                 RegisterObject(pr._newObj, pr, parentPr);
             }
             else if ((pr._arrayTypeEnum == InternalArrayTypeE.Jagged) || (pr._arrayTypeEnum == InternalArrayTypeE.Single))
             {
+                Debug.Assert(pr._lengthA != null);
                 // Multidimensional jagged array or single array
                 bool couldBeValueType = true;
                 if ((pr._lowerBoundA == null) || (pr._lowerBoundA[0] == 0))
@@ -428,13 +438,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     if (!pr._isLowerBound && (Converter.IsWriteAsByteArray(pr._arrayElementTypeCode)))
                     {
+                        Debug.Assert(pr._newObj != null);
                         pr._primitiveArray = new PrimitiveArray(pr._arrayElementTypeCode, (Array)pr._newObj);
                     }
                     else if (couldBeValueType && pr._arrayElementType != null)
                     {
                         if (!pr._arrayElementType.IsValueType && !pr._isLowerBound)
                         {
-                            pr._objectA = (object[])pr._newObj;
+                            pr._objectA = (object[]?)pr._newObj;
                         }
                     }
                 }
@@ -457,8 +468,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                 }
 
+                Debug.Assert(pr._lengthA != null);
                 if (pr._arrayElementType != null)
                 {
+                    Debug.Assert(pr._lowerBoundA != null);
                     pr._newObj = !pr._isLowerBound ?
                         Array.CreateInstance(pr._arrayElementType, pr._lengthA) :
                         Array.CreateInstance(pr._arrayElementType, pr._lengthA, pr._lowerBoundA);
@@ -483,6 +496,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Builds a map for each item in an incoming rectangle array. The map specifies where the item is placed in the output Array Object
         private void NextRectangleMap(ParseRecord pr)
         {
+            Debug.Assert(pr._rectangularMap != null && pr._lengthA != null && pr._indexMap != null);
             // For each invocation, calculate the next rectangular array position
             // example
             // indexMap 0 [0,0,0]
@@ -515,8 +529,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Array object item encountered in stream
         private void ParseArrayMember(ParseRecord pr)
         {
-            ParseRecord objectPr = (ParseRecord)_stack.Peek();
+            Debug.Assert(_stack != null);
+            ParseRecord? objectPr = (ParseRecord?)_stack.Peek();
 
+            Debug.Assert(objectPr != null && objectPr._indexMap != null && objectPr._lowerBoundA != null);
             // Set up for inserting value into correct array position
             if (objectPr._arrayTypeEnum == InternalArrayTypeE.Rectangular)
             {
@@ -526,6 +542,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 if (objectPr._isLowerBound)
                 {
+                    Debug.Assert(objectPr._rectangularMap != null);
                     for (int i = 0; i < objectPr._rank; i++)
                     {
                         objectPr._indexMap[i] = objectPr._rectangularMap[i] + objectPr._lowerBoundA[i];
@@ -545,8 +562,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Object Reference
 
+                Debug.Assert(_objectManager != null);
                 // See if object has already been instantiated
-                object refObj = _objectManager.GetObject(pr._idRef);
+                object? refObj = _objectManager.GetObject(pr._idRef);
                 if (refObj == null)
                 {
                     // Object not instantiated
@@ -564,6 +582,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
+                        Debug.Assert(objectPr._newObj != null);
                         ((Array)objectPr._newObj).SetValue(refObj, objectPr._indexMap); // Object has been instantiated
                     }
                 }
@@ -581,6 +600,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 if (objectPr._arrayElementType != null)
                 {
+                    Debug.Assert(objectPr._newObj != null);
                     if ((objectPr._arrayElementType.IsValueType) && (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Invalid))
                     {
                         pr._isValueTypeFixup = true; //Valuefixup
@@ -611,6 +631,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
+                        Debug.Assert(objectPr._newObj != null);
                         ((Array)objectPr._newObj).SetValue(pr._value, objectPr._indexMap);
                     }
                 }
@@ -622,7 +643,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         throw new SerializationException(SR.Serialization_ArrayTypeObject);
                     }
 
-                    object var = null;
+                    object? var = null;
 
                     if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
                     {
@@ -631,6 +652,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else if (ReferenceEquals(pr._dtTypeCode, InternalPrimitiveTypeE.Invalid))
                     {
+                        Debug.Assert(pr._dtType != null);
                         CheckSerializable(pr._dtType);
                         // Not nested and invalid, so it is an empty object
                         var = FormatterServices.GetUninitializedObject(pr._dtType);
@@ -647,6 +669,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
+                        Debug.Assert(objectPr._newObj != null);
                         ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type
                     }
                 }
@@ -655,12 +678,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     // Primitive type
                     if (objectPr._primitiveArray != null)
                     {
+                        Debug.Assert(pr._value != null);
                         // Fast path for Soap primitive arrays. Binary was handled in the BinaryParser
                         objectPr._primitiveArray.SetValue(pr._value, objectPr._indexMap[0]);
                     }
                     else
                     {
-                        object var = pr._varValue != null ?
+                        object? var = pr._varValue != null ?
                             pr._varValue :
                             Converter.FromString(pr._value, objectPr._arrayElementTypeCode);
                         if (objectPr._objectA != null)
@@ -669,6 +693,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         }
                         else
                         {
+                            Debug.Assert(objectPr._newObj != null);
                             ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type
                         }
                     }
@@ -698,8 +723,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Object member encountered in stream
         private void ParseMember(ParseRecord pr)
         {
-            ParseRecord objectPr = (ParseRecord)_stack.Peek();
-            string objName = objectPr?._name;
+            Debug.Assert(_stack != null);
+            ParseRecord? objectPr = (ParseRecord?)_stack.Peek();
 
             switch (pr._memberTypeEnum)
             {
@@ -710,6 +735,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     break;
             }
 
+            Debug.Assert(objectPr!= null && objectPr._objectInfo != null && pr._name != null);
             //if ((pr.PRdtType == null) && !objectPr.PRobjectInfo.isSi)
             if (pr._dtType == null && objectPr._objectInfo._isTyped)
             {
@@ -743,8 +769,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else if (pr._memberValueEnum == InternalMemberValueE.Reference)
             {
+                Debug.Assert(_objectManager != null);
                 // See if object has already been instantiated
-                object refObj = _objectManager.GetObject(pr._idRef);
+                object? refObj = _objectManager.GetObject(pr._idRef);
                 if (refObj == null)
                 {
                     objectPr._objectInfo.AddValue(pr._name, null, ref objectPr._si, ref objectPr._memberData);
@@ -769,6 +796,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     // The member field was an object put the value is Inline either  bin.Base64 or invalid
                     if (pr._arrayTypeEnum == InternalArrayTypeE.Base64)
                     {
+                        Debug.Assert(pr._value != null);
                         objectPr._objectInfo.AddValue(pr._name, Convert.FromBase64String(pr._value), ref objectPr._si, ref objectPr._memberData);
                     }
                     else if (ReferenceEquals(pr._dtType, Converter.s_typeofObject))
@@ -794,7 +822,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    object var = pr._varValue != null ?
+                    object? var = pr._varValue != null ?
                         pr._varValue :
                         Converter.FromString(pr._value, pr._dtTypeCode);
                     objectPr._objectInfo.AddValue(pr._name, var, ref objectPr._si, ref objectPr._memberData);
@@ -821,7 +849,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     break;
                 default:
-                    ParseError(pr, (ParseRecord)_stack.Peek());
+                    Debug.Assert(_stack != null);
+                    ParseError(pr, (ParseRecord)_stack.Peek()!);
                     break;
             }
         }
@@ -838,21 +867,21 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        private void RegisterObject(object obj, ParseRecord pr, ParseRecord objectPr)
+        private void RegisterObject(object obj, ParseRecord pr, ParseRecord? objectPr)
         {
             RegisterObject(obj, pr, objectPr, false);
         }
 
-        private void RegisterObject(object obj, ParseRecord pr, ParseRecord objectPr, bool bIsString)
+        private void RegisterObject(object? obj, ParseRecord pr, ParseRecord? objectPr, bool bIsString)
         {
             if (!pr._isRegistered)
             {
                 pr._isRegistered = true;
 
-                SerializationInfo si = null;
+                SerializationInfo? si = null;
                 long parentId = 0;
-                MemberInfo memberInfo = null;
-                int[] indexMap = null;
+                MemberInfo? memberInfo = null;
+                int[]? indexMap = null;
 
                 if (objectPr != null)
                 {
@@ -871,12 +900,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 // SerializationInfo is always needed for ISerialization
                 si = pr._si;
 
+                Debug.Assert(_objectManager != null);
                 if (bIsString)
                 {
-                    _objectManager.RegisterString((string)obj, pr._objectId, si, parentId, memberInfo);
+                    _objectManager.RegisterString((string?)obj, pr._objectId, si, parentId, memberInfo);
                 }
                 else
                 {
+                    Debug.Assert(obj != null);
                     _objectManager.RegisterObject(obj, pr._objectId, si, parentId, memberInfo, indexMap);
                 }
             }
@@ -916,9 +947,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return -1 * objectId;
         }
 
-        internal Type Bind(string assemblyString, string typeString)
+        internal Type? Bind(string assemblyString, string typeString)
         {
-            Type type = null;
+            Type? type = null;
             if (_binder != null)
             {
                 type = _binder.BindToType(assemblyString, typeString);
@@ -932,15 +963,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal sealed class TypeNAssembly
         {
-            public Type Type;
-            public string AssemblyName;
+            public Type? Type;
+            public string? AssemblyName;
         }
 
-        internal Type FastBindToType(string assemblyName, string typeName)
+        internal Type? FastBindToType(string? assemblyName, string typeName)
         {
-            Type type = null;
+            Type? type = null;
 
-            TypeNAssembly entry = (TypeNAssembly)_typeCache.GetCachedValue(typeName);
+            TypeNAssembly? entry = (TypeNAssembly?)_typeCache.GetCachedValue(typeName);
 
             if (entry == null || entry.AssemblyName != assemblyName)
             {
@@ -950,8 +981,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     return null;
                 }
 
-                Assembly assm = null;
-                AssemblyName assmName = null;
+                Assembly? assm = null;
+                AssemblyName? assmName = null;
 
                 try
                 {
@@ -1005,7 +1036,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return entry.Type;
         }
 
-        private static Assembly ResolveSimpleAssemblyName(AssemblyName assemblyName)
+        private static Assembly? ResolveSimpleAssemblyName(AssemblyName assemblyName)
         {
             try
             {
@@ -1017,7 +1048,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 try
                 {
-                    return Assembly.Load(assemblyName.Name);
+                    return Assembly.Load(assemblyName.Name!);
                 }
                 catch { }
             }
@@ -1025,7 +1056,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return null;
         }
 
-        private static void GetSimplyNamedTypeFromAssembly(Assembly assm, string typeName, ref Type type)
+        private static void GetSimplyNamedTypeFromAssembly(Assembly assm, string typeName, ref Type? type)
         {
             // Catching any exceptions that could be thrown from a failure on assembly load
             // This is necessary, for example, if there are generic parameters that are qualified with a version of the assembly that predates the one available
@@ -1044,13 +1075,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        private string _previousAssemblyString;
-        private string _previousName;
-        private Type _previousType;
+        private string? _previousAssemblyString;
+        private string? _previousName;
+        private Type? _previousType;
 
-        internal Type GetType(BinaryAssemblyInfo assemblyInfo, string name)
+        internal Type? GetType(BinaryAssemblyInfo assemblyInfo, string name)
         {
-            Type objectType = null;
+            Type? objectType;
 
             if (((_previousName != null) && (_previousName.Length == name.Length) && (_previousName.Equals(name))) &&
                 ((_previousAssemblyString != null) && (_previousAssemblyString.Length == assemblyInfo._assemblyString.Length) && (_previousAssemblyString.Equals(assemblyInfo._assemblyString))))
@@ -1101,7 +1132,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _topLevelAssembly = topLevelAssembly;
             }
 
-            public Type ResolveType(Assembly assembly, string simpleTypeName, bool ignoreCase)
+            public Type? ResolveType(Assembly? assembly, string simpleTypeName, bool ignoreCase)
             {
                 if (assembly == null)
                 {

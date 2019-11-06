@@ -21,15 +21,15 @@ namespace System.Runtime.Serialization
         /// apply if the containing body is a field info or another
         /// value type.
         /// </summary>
-        private readonly FieldInfo _parentField;
+        private readonly FieldInfo? _parentField;
 
         /// <summary>
         /// The array index of the index into the parent.  This will only
         /// apply if the containing body is an array.
         /// </summary>
-        private readonly int[] _parentIndex;
+        private readonly int[]? _parentIndex;
 
-        public ValueTypeFixupInfo(long containerID, FieldInfo member, int[] parentIndex)
+        public ValueTypeFixupInfo(long containerID, FieldInfo? member, int[]? parentIndex)
         {
             // If both member and arrayIndex are null, we don't have enough information to create
             // a tunnel to do the fixup.
@@ -67,8 +67,8 @@ namespace System.Runtime.Serialization
 
         public long ContainerID => _containerID;
 
-        public FieldInfo ParentField => _parentField;
+        public FieldInfo? ParentField => _parentField;
 
-        public int[] ParentIndex => _parentIndex;
+        public int[]? ParentIndex => _parentIndex;
     }
 }

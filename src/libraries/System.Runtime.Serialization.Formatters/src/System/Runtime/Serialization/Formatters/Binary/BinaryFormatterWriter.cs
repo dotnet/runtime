@@ -18,23 +18,23 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private readonly Stream _outputStream;
         private readonly FormatterTypeStyle _formatterTypeStyle;
-        private readonly ObjectWriter _objectWriter = null;
-        private readonly BinaryWriter _dataWriter = null;
+        private readonly ObjectWriter _objectWriter;
+        private readonly BinaryWriter _dataWriter;
 
         private int _consecutiveNullArrayEntryCount = 0;
-        private Dictionary<string, ObjectMapInfo> _objectMapTable;
+        private Dictionary<string, ObjectMapInfo>? _objectMapTable;
 
-        private BinaryObject _binaryObject;
-        private BinaryObjectWithMap _binaryObjectWithMap;
-        private BinaryObjectWithMapTyped _binaryObjectWithMapTyped;
-        private BinaryObjectString _binaryObjectString;
-        private BinaryArray _binaryArray;
-        private byte[] _byteBuffer = null;
-        private MemberPrimitiveUnTyped _memberPrimitiveUnTyped;
-        private MemberPrimitiveTyped _memberPrimitiveTyped;
-        private ObjectNull _objectNull;
-        private MemberReference _memberReference;
-        private BinaryAssembly _binaryAssembly;
+        private BinaryObject? _binaryObject;
+        private BinaryObjectWithMap? _binaryObjectWithMap;
+        private BinaryObjectWithMapTyped? _binaryObjectWithMapTyped;
+        private BinaryObjectString? _binaryObjectString;
+        private BinaryArray? _binaryArray;
+        private byte[]? _byteBuffer = null;
+        private MemberPrimitiveUnTyped? _memberPrimitiveUnTyped;
+        private MemberPrimitiveTyped? _memberPrimitiveTyped;
+        private ObjectNull? _objectNull;
+        private MemberReference? _memberReference;
+        private BinaryAssembly? _binaryAssembly;
 
         internal BinaryFormatterWriter(Stream outputStream, ObjectWriter objectWriter, FormatterTypeStyle formatterTypeStyle)
         {
@@ -112,23 +112,24 @@ namespace System.Runtime.Serialization.Formatters.Binary
             record.Write(this);
         }
 
-        internal void WriteObject(NameInfo nameInfo, NameInfo typeNameInfo, int numMembers, string[] memberNames, Type[] memberTypes, WriteObjectInfo[] memberObjectInfos)
+        internal void WriteObject(NameInfo nameInfo, NameInfo? typeNameInfo, int numMembers, string[] memberNames, Type[] memberTypes, WriteObjectInfo[] memberObjectInfos)
         {
             InternalWriteItemNull();
             int assemId;
             int objectId = (int)nameInfo._objectId;
 
-            string objectName = objectId < 0 ?
-                objectName = typeNameInfo.NIname : // Nested Object
-                objectName = nameInfo.NIname; // Non-Nested
+            Debug.Assert(typeNameInfo != null); // Explicitly called with null, asserting for now https://github.com/dotnet/corefx/issues/42393
+            string? objectName = objectId < 0 ?
+                typeNameInfo.NIname : // Nested Object
+                nameInfo.NIname; // Non-Nested
 
             if (_objectMapTable == null)
             {
                 _objectMapTable = new Dictionary<string, ObjectMapInfo>();
             }
 
-            ObjectMapInfo objectMapInfo;
-            if (_objectMapTable.TryGetValue(objectName, out objectMapInfo) &&
+            Debug.Assert(objectName != null);
+            if (_objectMapTable.TryGetValue(objectName, out ObjectMapInfo? objectMapInfo) &&
                 objectMapInfo.IsCompatible(numMembers, memberNames, memberTypes))
             {
                 // Object
@@ -162,11 +163,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // ObjectWithMapTyped
                 var binaryTypeEnumA = new BinaryTypeEnum[numMembers];
-                var typeInformationA = new object[numMembers];
+                var typeInformationA = new object?[numMembers];
                 var assemIdA = new int[numMembers];
                 for (int i = 0; i < numMembers; i++)
                 {
-                    object typeInformation = null;
+                    object? typeInformation = null;
                     binaryTypeEnumA[i] = BinaryTypeConverter.GetBinaryTypeInfo(memberTypes[i], memberObjectInfos[i], null, _objectWriter, out typeInformation, out assemId);
                     typeInformationA[i] = typeInformation;
                     assemIdA[i] = assemId;
@@ -188,7 +189,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal void WriteObjectString(int objectId, string value)
+        internal void WriteObjectString(int objectId, string? value)
         {
             InternalWriteItemNull();
 
@@ -201,14 +202,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binaryObjectString.Write(this);
         }
 
-        internal void WriteSingleArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound, Array array)
+        internal void WriteSingleArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo? objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound, Array array)
         {
             InternalWriteItemNull();
             BinaryArrayTypeEnum binaryArrayTypeEnum;
             var lengthA = new int[1];
             lengthA[0] = length;
-            int[] lowerBoundA = null;
-            object typeInformation = null;
+            int[]? lowerBoundA = null;
+            object? typeInformation = null;
 
             if (lowerBound == 0)
             {
@@ -223,7 +224,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             int assemId;
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(
-                arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+                arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
@@ -254,7 +255,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void WriteArrayAsBytes(Array array, int typeLength)
         {
             InternalWriteItemNull();
-            int byteLength = array.Length * typeLength;
             int arrayOffset = 0;
             if (_byteBuffer == null)
             {
@@ -285,14 +285,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal void WriteJaggedArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound)
+        internal void WriteJaggedArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo? objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound)
         {
             InternalWriteItemNull();
             BinaryArrayTypeEnum binaryArrayTypeEnum;
             var lengthA = new int[1];
             lengthA[0] = length;
-            int[] lowerBoundA = null;
-            object typeInformation = null;
+            int[]? lowerBoundA = null;
+            object? typeInformation = null;
             int assemId = 0;
 
             if (lowerBound == 0)
@@ -306,7 +306,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 lowerBoundA[0] = lowerBound;
             }
 
-            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
@@ -317,14 +317,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binaryArray.Write(this);
         }
 
-        internal void WriteRectangleArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, int rank, int[] lengthA, int[] lowerBoundA)
+        internal void WriteRectangleArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo? objectInfo, NameInfo arrayElemTypeNameInfo, int rank, int[] lengthA, int[] lowerBoundA)
         {
             InternalWriteItemNull();
 
             BinaryArrayTypeEnum binaryArrayTypeEnum = BinaryArrayTypeEnum.Rectangular;
-            object typeInformation = null;
+            object? typeInformation = null;
             int assemId = 0;
-            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
@@ -344,7 +344,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binaryArray.Write(this);
         }
 
-        internal void WriteObjectByteArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound, byte[] byteA)
+        internal void WriteObjectByteArray(NameInfo memberNameInfo, NameInfo arrayNameInfo, WriteObjectInfo? objectInfo, NameInfo arrayElemTypeNameInfo, int length, int lowerBound, byte[] byteA)
         {
             InternalWriteItemNull();
             WriteSingleArray(memberNameInfo, arrayNameInfo, objectInfo, arrayElemTypeNameInfo, length, lowerBound, byteA);
@@ -408,7 +408,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             InternalWriteItemNull();
         }
 
-        internal void WriteMemberString(NameInfo memberNameInfo, NameInfo typeNameInfo, string value)
+        internal void WriteMemberString(NameInfo memberNameInfo, NameInfo typeNameInfo, string? value)
         {
             InternalWriteItemNull();
             WriteObjectString((int)typeNameInfo._objectId, value);
@@ -453,7 +453,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             WriteMemberObjectRef(nameInfo, idRef);
         }
 
-        internal void WriteAssembly(Type type, string assemblyString, int assemId, bool isNew)
+        internal void WriteAssembly(Type? type, string assemblyString, int assemId, bool isNew)
         {
             //If the file being tested wasn't built as an assembly, then we're going to get null back
             //for the assembly name.  This is very unfortunate.
@@ -475,7 +475,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Method to write a value onto a stream given its primitive type code
-        internal void WriteValue(InternalPrimitiveTypeE code, object value)
+        internal void WriteValue(InternalPrimitiveTypeE code, object? value)
         {
             switch (code)
             {
@@ -492,8 +492,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case InternalPrimitiveTypeE.UInt32: WriteUInt32(Convert.ToUInt32(value, CultureInfo.InvariantCulture)); break;
                 case InternalPrimitiveTypeE.UInt64: WriteUInt64(Convert.ToUInt64(value, CultureInfo.InvariantCulture)); break;
                 case InternalPrimitiveTypeE.Decimal: WriteDecimal(Convert.ToDecimal(value, CultureInfo.InvariantCulture)); break;
-                case InternalPrimitiveTypeE.TimeSpan: WriteTimeSpan((TimeSpan)value); break;
-                case InternalPrimitiveTypeE.DateTime: WriteDateTime((DateTime)value); break;
+                case InternalPrimitiveTypeE.TimeSpan: WriteTimeSpan((TimeSpan)value!); break;
+                case InternalPrimitiveTypeE.DateTime: WriteDateTime((DateTime)value!); break;
                 default: throw new SerializationException(SR.Format(SR.Serialization_TypeCode, code.ToString()));
             }
         }
@@ -513,7 +513,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _memberTypes = memberTypes;
             }
 
-            internal bool IsCompatible(int numMembers, string[] memberNames, Type[] memberTypes)
+            internal bool IsCompatible(int numMembers, string[] memberNames, Type[]? memberTypes)
             {
                 if (_numMembers != numMembers)
                 {

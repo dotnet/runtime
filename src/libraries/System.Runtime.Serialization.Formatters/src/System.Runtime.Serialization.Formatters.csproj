@@ -4,6 +4,7 @@
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />

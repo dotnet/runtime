@@ -13,26 +13,26 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         private static readonly ConcurrentDictionary<Type, TypeInformation> s_typeNameCache = new ConcurrentDictionary<Type, TypeInformation>();
 
-        internal ISurrogateSelector _surrogates;
+        internal ISurrogateSelector? _surrogates;
         internal StreamingContext _context;
-        internal SerializationBinder _binder;
+        internal SerializationBinder? _binder;
         internal FormatterTypeStyle _typeFormat = FormatterTypeStyle.TypesAlways; // For version resiliency, always put out types
         internal FormatterAssemblyStyle _assemblyFormat = FormatterAssemblyStyle.Simple;
         internal TypeFilterLevel _securityLevel = TypeFilterLevel.Full;
-        internal object[] _crossAppDomainArray = null;
+        internal object[]? _crossAppDomainArray = null;
 
         public FormatterTypeStyle TypeFormat { get { return _typeFormat; } set { _typeFormat = value; } }
         public FormatterAssemblyStyle AssemblyFormat { get { return _assemblyFormat; } set { _assemblyFormat = value; } }
         public TypeFilterLevel FilterLevel { get { return _securityLevel; } set { _securityLevel = value; } }
-        public ISurrogateSelector SurrogateSelector { get { return _surrogates; } set { _surrogates = value; } }
-        public SerializationBinder Binder { get { return _binder; } set { _binder = value; } }
+        public ISurrogateSelector? SurrogateSelector { get { return _surrogates; } set { _surrogates = value; } }
+        public SerializationBinder? Binder { get { return _binder; } set { _binder = value; } }
         public StreamingContext Context { get { return _context; } set { _context = value; } }
 
         public BinaryFormatter() : this(null, new StreamingContext(StreamingContextStates.All))
         {
         }
 
-        public BinaryFormatter(ISurrogateSelector selector, StreamingContext context)
+        public BinaryFormatter(ISurrogateSelector? selector, StreamingContext context)
         {
             _surrogates = selector;
             _context = context;
