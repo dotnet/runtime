@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -66,14 +67,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int CompareTo(ModuleToken other)
         {
-            int result = 0;
-            // TODO: how to compare modules?
-            // result = Module.CompareTo(other.Module);
-            if (result == 0)
-            {
-                result = Token.CompareTo(other.Token);
-            }
-            return result;
+            int result = Token.CompareTo(other.Token);
+            if (result != 0)
+                return result;
+
+            return Module.CompareTo(other.Module);
         }
 
         public SignatureContext SignatureContext(ModuleTokenResolver resolver)

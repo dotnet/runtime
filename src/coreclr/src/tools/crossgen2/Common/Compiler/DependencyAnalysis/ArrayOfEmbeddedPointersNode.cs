@@ -9,6 +9,12 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    interface ISimpleEmbeddedPointerIndirectionNode<out TTarget>
+        where TTarget : ISortableSymbolNode
+    {
+        TTarget Target { get; }
+    }
+
     /// <summary>
     /// Represents an array of pointers to symbols. <typeparamref name="TTarget"/> is the type
     /// of node each pointer within the vector points to.
@@ -25,11 +31,11 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public delegate void OnMarkedDelegate(EmbeddedPointerIndirectionNode<TTarget> embeddedObject);
 
-        public ArrayOfEmbeddedPointersNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TTarget> nodeSorter)
+        public ArrayOfEmbeddedPointersNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedPointerIndirectionNode<TTarget>> nodeSorter)
             : base(
                   startSymbolMangledName,
                   endSymbolMangledName,
-                  nodeSorter != null ? new PointerIndirectionNodeComparer(nodeSorter) : null)
+                  nodeSorter)
         {
             _startSymbolMangledName = startSymbolMangledName;
         }
@@ -53,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedPointersNode;
 
-        private class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
+        public class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
         {
             private IComparer<TTarget> _innerComparer;
 
@@ -68,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private class SimpleEmbeddedPointerIndirectionNode : EmbeddedPointerIndirectionNode<TTarget>
+        private class SimpleEmbeddedPointerIndirectionNode : EmbeddedPointerIndirectionNode<TTarget>, ISimpleEmbeddedPointerIndirectionNode<TTarget>
         {
             protected ArrayOfEmbeddedPointersNode<TTarget> _parentNode;
 
@@ -97,6 +103,12 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             public override int ClassCode => -66002498;
+
+            public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+            {
+                var otherNode = (ISimpleEmbeddedPointerIndirectionNode<ISortableSymbolNode>)other;
+                return comparer.Compare(Target, otherNode.Target);
+            }
         }
 
         private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode

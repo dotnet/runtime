@@ -4,8 +4,6 @@
 
 using System;
 
-using Internal.JitInterface;
-
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class StringImport : Import
@@ -18,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _token = token;
         }
 
-        public override int ClassCode => throw new NotImplementedException();
+        public override int ClassCode => 59575119;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
@@ -32,6 +30,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override string GetName(NodeFactory context)
         {
             return "StringCell: " + _token.ToString();
+        }
+
+        // This is just here in case of future extension (_token is already compared in the base CompareToImpl)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return base.CompareToImpl(other, comparer);
         }
     }
 }

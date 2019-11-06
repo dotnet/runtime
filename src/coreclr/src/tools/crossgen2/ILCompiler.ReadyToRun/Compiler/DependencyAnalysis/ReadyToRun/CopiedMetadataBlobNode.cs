@@ -135,5 +135,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__MetadataBlob");
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _sourceModule.CompareTo(((CopiedMetadataBlobNode)other)._sourceModule);
+        }
     }
 }

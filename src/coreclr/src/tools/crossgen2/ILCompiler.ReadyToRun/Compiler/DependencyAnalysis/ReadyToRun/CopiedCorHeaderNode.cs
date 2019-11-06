@@ -139,5 +139,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitInt(0);
             builder.EmitInt(0);
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _module.CompareTo(((CopiedCorHeaderNode)other)._module);
+        }
     }
 }

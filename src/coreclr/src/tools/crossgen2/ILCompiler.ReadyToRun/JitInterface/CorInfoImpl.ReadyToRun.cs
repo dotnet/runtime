@@ -64,6 +64,28 @@ namespace Internal.JitInterface
             sb.Append("; ");
             sb.Append(Token.ToString());
         }
+
+        public int CompareTo(MethodWithToken other, TypeSystemComparer comparer)
+        {
+            int result;
+            if (ConstrainedType != null || other.ConstrainedType != null)
+            {
+                if (ConstrainedType == null)
+                    return -1;
+                else if (other.ConstrainedType == null)
+                    return 1;
+
+                result = comparer.Compare(ConstrainedType, other.ConstrainedType);
+                if (result != 0)
+                    return result;
+            }
+
+            result = comparer.Compare(Method, other.Method);
+            if (result != 0)
+                return result;
+
+            return Token.CompareTo(other.Token);
+        }
     }
 
     public struct GenericContext : IEquatable<GenericContext>

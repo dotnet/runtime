@@ -203,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return Id.GetHashCode() 
+                return Id.GetHashCode()
                     ^ (Target.GetHashCode() * 23)
                     ^ (SignatureContext.GetHashCode() * 31);
             }

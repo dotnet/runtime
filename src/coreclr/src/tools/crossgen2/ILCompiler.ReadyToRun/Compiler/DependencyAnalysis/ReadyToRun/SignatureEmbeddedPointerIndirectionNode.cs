@@ -3,20 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class RvaEmbeddedPointerIndirectionNode<TTarget> : EmbeddedPointerIndirectionNode<TTarget>
-        where TTarget : ISortableSymbolNode
+    class SignatureEmbeddedPointerIndirectionNode : EmbeddedPointerIndirectionNode<Signature>
     {
-        private readonly string _callSite;
+        private readonly Import _import;
         
-        public RvaEmbeddedPointerIndirectionNode(TTarget target, string callSite = null)
-            : base(target)
+        public SignatureEmbeddedPointerIndirectionNode(Import import, Signature signature)
+            : base(signature)
         {
-            _callSite = callSite;
+            _import = import;
         }
 
         protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
@@ -37,15 +36,20 @@ namespace ILCompiler.DependencyAnalysis
     
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("RVA_");
+            sb.Append("SignaturePointer_");
             Target.AppendMangledName(nameMangler, sb);
-            if (_callSite != null)
+            if (_import.CallSite != null)
             {
                 sb.Append(" @ ");
-                sb.Append(_callSite);
+                sb.Append(_import.CallSite);
             }
         }
 
         public override int ClassCode => -66002498;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_import, ((SignatureEmbeddedPointerIndirectionNode)other)._import);
+        }
     }
 }

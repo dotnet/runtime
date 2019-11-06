@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private class ImportTable : ArrayOfEmbeddedDataNode<Import>
         {
-            public ImportTable(string startSymbol, string endSymbol) : base(startSymbol, endSymbol, nodeSorter: null) {}
+            public ImportTable(string startSymbol, string endSymbol) : base(startSymbol, endSymbol, nodeSorter: new EmbeddedObjectNodeComparer(new CompilerComparer())) {}
 
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
         }
@@ -42,9 +42,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _emitGCRefMap = emitGCRefMap;
 
             _imports = new ImportTable(_name + "_ImportBegin", _name + "_ImportEnd");
-            _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", _name + "_SigEnd", null);
+            _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", _name + "_SigEnd", new EmbeddedObjectNodeComparer(new CompilerComparer()));
             _signatureList = new List<Signature>();
-            _gcRefMap = (_emitGCRefMap ? new GCRefMapNode(this) : null);
+            _gcRefMap = _emitGCRefMap ? new GCRefMapNode(this) : null;
         }
 
         public void MaterializeSignature(ReadyToRunCodegenNodeFactory r2rFactory)
@@ -68,7 +68,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             _imports.AddEmbeddedObject(import);
             _signatures.AddEmbeddedObject(import.ImportSignature);
-            _signatureList.Add(import.ImportSignature.Target);
+
+            lock (_signatureList)
+            {
+                _signatureList.Add(import.ImportSignature.Target);
+            }
+
             if (_emitGCRefMap)
             {
                 _gcRefMap.AddImport(import);
@@ -137,6 +142,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override string GetName(NodeFactory context)
         {
             return _name;
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _name.CompareTo(((ImportSectionNode)other)._name);
         }
     }
 }

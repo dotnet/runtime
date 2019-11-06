@@ -125,5 +125,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return Array.Empty<DependencyListEntry>();
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_methodNode, ((ProfileDataNode)other)._methodNode);
+        }
     }
 }

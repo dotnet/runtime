@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VirtualStubDispatch,
         }
 
-        private readonly ISymbolNode _helperCell;
+        private readonly Import _helperCell;
 
         private readonly Import _instanceCell;
 
@@ -71,5 +71,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public override int ClassCode => 433266948;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            ImportThunk otherNode = (ImportThunk)other;
+            int result = _thunkKind.CompareTo(otherNode._thunkKind);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(_helperCell, otherNode._helperCell);
+            if (result != 0)
+                return result;
+
+            return comparer.Compare(_instanceCell, otherNode._instanceCell);
+        }
     }
 }

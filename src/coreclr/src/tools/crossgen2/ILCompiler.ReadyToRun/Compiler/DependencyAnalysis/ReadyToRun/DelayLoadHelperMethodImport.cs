@@ -21,10 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _useInstantiatingStub;
 
-        private readonly ReadyToRunHelper _helper;
-
-        private readonly ImportThunk _delayLoadHelper;
-
         private readonly SignatureContext _signatureContext;
 
         public DelayLoadHelperMethodImport(
@@ -39,10 +35,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             string callSite = null)
             : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, callSite)
         {
-            _helper = helper;
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;
-            _delayLoadHelper = new ImportThunk(helper, factory, this, useVirtualCall);
             _signatureContext = signatureContext;
         }
 
@@ -70,5 +64,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => 192837465;
 
         public MethodDesc Method => _method.Method;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            DelayLoadHelperMethodImport otherNode = (DelayLoadHelperMethodImport)other;
+            int result = _useInstantiatingStub.CompareTo(otherNode._useInstantiatingStub);
+            if (result != 0)
+                return result;
+
+            result = _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            if (result != 0)
+                return result;
+
+            result = _method.CompareTo(otherNode._method, comparer);
+            if (result != 0)
+                return result;
+
+            return base.CompareToImpl(other, comparer);
+        }
     }
 }

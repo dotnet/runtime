@@ -48,10 +48,5 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override int ClassCode => -2055384490;
-
-        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            return comparer.Compare(_targetNode, ((EmbeddedPointerIndirectionNode<TTarget>)other)._targetNode);
-        }
     }
 }

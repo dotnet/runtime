@@ -127,7 +127,8 @@ namespace ILCompiler
                 win32Resources,
                 attributePresenceFilterNode);
 
-            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
 
