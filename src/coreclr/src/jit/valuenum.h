@@ -225,6 +225,9 @@ private:
     // MapSelect application.
     int m_mapSelectBudget;
 
+    template <typename T, typename NumMap>
+    inline ValueNum VnForConst(T cnsVal, NumMap* numMap, var_types varType);
+
 public:
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();
@@ -257,7 +260,6 @@ public:
 #endif // DEBUG
 
     // This block of methods gets value numbers for constants of primitive types.
-
     ValueNum VNForIntCon(INT32 cnsVal);
     ValueNum VNForLongCon(INT64 cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
@@ -1144,24 +1146,6 @@ private:
             m_intCnsMap = new (m_alloc) IntToValueNumMap(m_alloc);
         }
         return m_intCnsMap;
-    }
-
-    ValueNum GetVNForIntCon(INT32 cnsVal)
-    {
-        ValueNum res;
-        if (GetIntCnsMap()->Lookup(cnsVal, &res))
-        {
-            return res;
-        }
-        else
-        {
-            Chunk*   c                                             = GetAllocChunk(TYP_INT, CEA_Const);
-            unsigned offsetWithinChunk                             = c->AllocVN();
-            res                                                    = c->m_baseVN + offsetWithinChunk;
-            reinterpret_cast<INT32*>(c->m_defs)[offsetWithinChunk] = cnsVal;
-            GetIntCnsMap()->Set(cnsVal, res);
-            return res;
-        }
     }
 
     typedef VNMap<INT64> LongToValueNumMap;
