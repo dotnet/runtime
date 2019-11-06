@@ -102,7 +102,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 
     if (m_wszCodeBase == NULL)
     {
-        GetFileOrDisplayName(0, assemblyDisplayName);
+        GetDisplayName(0, assemblyDisplayName);
     }
 
     // Have a default binding context setup
@@ -461,6 +461,26 @@ VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
         return;
     }
 
+    GetDisplayNameInternal(flags, result);
+}
+
+VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        INJECT_FAULT(ThrowOutOfMemory());
+        PRECONDITION(CheckValue(result));
+        PRECONDITION(result.IsEmpty());
+    }
+    CONTRACTL_END;
+
+    GetDisplayNameInternal(flags, result);
+}
+
+VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) const
+{
     if (flags==0)
         flags=ASM_DISPLAYF_FULL;
 

@@ -8,16 +8,23 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Reflection;
-using Xunit;
 
-using Assert = Xunit.Assert;
+using TestLibrary;
 
 namespace BinderTracingTests
 {
     internal class BindOperation
     {
         internal AssemblyName AssemblyName;
+        internal string AssemblyPath;
+        internal AssemblyName RequestingAssembly;
+        internal string AssemblyLoadContext;
+        internal string RequestingAssemblyLoadContext;
+
         internal bool Success;
+        internal AssemblyName ResultAssemblyName;
+        internal string ResultAssemblyPath;
+        internal bool Cached;
 
         internal Guid ActivityId;
         internal Guid ParentActivityId;
@@ -81,23 +88,39 @@ namespace BinderTracingTests
                 case "AssemblyLoadStart":
                     lock (eventsLock)
                     {
-                        Assert.True(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
+                        Assert.IsTrue(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
                         var bindOperation = new BindOperation()
                         {
                             AssemblyName = new AssemblyName(GetDataString("AssemblyName")),
+                            AssemblyPath = GetDataString("AssemblyPath"),
+                            AssemblyLoadContext = GetDataString("AssemblyLoadContext"),
+                            RequestingAssemblyLoadContext = GetDataString("RequestingAssemblyLoadContext"),
                             ActivityId = data.ActivityId,
                             ParentActivityId = data.RelatedActivityId,
                             Nested = bindOperations.ContainsKey(data.RelatedActivityId)
                         };
+                        string requestingAssembly = GetDataString("RequestingAssembly");
+                        if (!string.IsNullOrEmpty(requestingAssembly))
+                        {
+                            bindOperation.RequestingAssembly = new AssemblyName(requestingAssembly);
+                        }
                         bindOperations.Add(data.ActivityId, bindOperation);
                     }
                     break;
                 case "AssemblyLoadStop":
                     lock (eventsLock)
                     {
-                        Assert.True(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStop should have a matching AssemblyLoadStart");
-                        bindOperations[data.ActivityId].Success = (bool)GetData("Success");
-                        bindOperations[data.ActivityId].Completed = true;
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStop should have a matching AssemblyBindStart");
+                        BindOperation bind = bindOperations[data.ActivityId];
+                        bind.Success = (bool)GetData("Success");
+                        string resultName = GetDataString("ResultAssemblyName");
+                        if (!string.IsNullOrEmpty(resultName))
+                        {
+                            bind.ResultAssemblyName = new AssemblyName(resultName);
+                        }
+                        bind.ResultAssemblyPath = GetDataString("ResultAssemblyPath");
+                        bind.Cached = (bool)GetData("Cached");
+                        bind.Completed = true;
                     }
                     break;
             }

@@ -19,6 +19,8 @@ void ActivityTracker::Start(/*out*/ GUID *activityId, /*out*/ GUID *relatedActiv
 {
     GCX_COOP();
 
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__START_ASSEMBLY_LOAD);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(activityId);
@@ -30,6 +32,8 @@ void ActivityTracker::Start(/*out*/ GUID *activityId, /*out*/ GUID *relatedActiv
 void ActivityTracker::Stop(/*out*/ GUID *activityId)
 {
     GCX_COOP();
+
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__STOP_ASSEMBLY_LOAD);
     DECLARE_ARGHOLDER_ARRAY(args, 1);

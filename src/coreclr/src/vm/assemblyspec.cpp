@@ -29,6 +29,8 @@
 #include "winrthelpers.h"
 #endif
 
+#include "../binder/inc/bindertracing.h"
+
 #ifdef _DEBUG
 // This debug-only wrapper for LookupAssembly is solely for the use of postconditions and
 // assertions. The problem is that the real LookupAssembly can throw an OOM
@@ -917,6 +919,9 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
 
     if (pAssembly)
     {
+        BinderTracing::AssemblyBindOperation bindOperation(this);
+        bindOperation.SetResult(pAssembly->GetFile(), true /*cached*/);
+
         pDomain->LoadDomainFile(pAssembly, targetLevel);
         RETURN pAssembly;
     }
