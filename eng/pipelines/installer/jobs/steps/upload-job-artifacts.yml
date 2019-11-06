@@ -35,6 +35,13 @@ steps:
   continueOnError: true
   condition: always()
 
+- task: DeleteFiles@1
+  displayName: Delete broken symlinks.
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: artifacts/obj/rhel.7-x64.Debug/packages/dotnet-host/5.0.0/rpmLayoutDirectory/package_root/usr/bin/dotnet
+  condition: succeededOrFailed()
+
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory
   inputs:

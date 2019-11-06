@@ -5,6 +5,7 @@ parameters:
   outputRidArg: ''
   packageStepDescription: null
   packagingArgs: ''
+  subsetArg: ''
 
 steps:
 - ${{ if eq(parameters.buildTraversalBuildDependencies, true) }}:
@@ -13,7 +14,7 @@ steps:
       df -h
       $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
         --ci \
-        /root/coresetup/tools-local/tasks/installer.tasks/installer.tasks.csproj \
+        /root/runtime/tools-local/tasks/installer.tasks/installer.tasks.csproj \
         /t:Restore /t:Build /t:CreateHostMachineInfoFile \
         $(CommonMSBuildArgs) \
         /bl:msbuild.${{ parameters.distroRid }}.traversaldependencies.binlog
@@ -24,12 +25,12 @@ steps:
     df -h
     $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
       --ci \
-      /p:Subset=Installer \
+      ${{ parameters.subsetArg }} \
       /p:UsePrebuiltPortableBinariesForInstallers=true \
       $(PackagePortableBitsArgs) \
       /p:GenerateProjectInstallers=true \
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
       ${{ parameters.outputRidArg }} \
-      /bl:msbuild.${{ parameters.distroRid }}.installers.binlog
+      /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}

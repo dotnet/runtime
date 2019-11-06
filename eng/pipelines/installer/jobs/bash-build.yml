@@ -40,8 +40,8 @@ jobs:
       ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: >-
           docker run --privileged --rm
-          -v "$(Build.SourcesDirectory):/root/coresetup"
-          -w="/root/coresetup"
+          -v "$(Build.SourcesDirectory):/root/runtime"
+          -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
@@ -50,12 +50,15 @@ jobs:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-        BuildScript: ./eng/install-nuget-credprovider-then-build.sh
-        MSBuildScript: /root/coresetup/eng/install-nuget-credprovider-then-msbuild.sh
+        ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
+          BuildScript: ./eng/install-nuget-credprovider-then-build.sh
+        ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
+          BuildScript: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
+        MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-        BuildScript: ./build.sh
-        MSBuildScript: /root/coresetup/eng/common/msbuild.sh
+        BuildScript: ./$(buildScriptFileName).sh
+        MSBuildScript: /root/runtime/eng/common/msbuild.sh
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
@@ -89,10 +92,15 @@ jobs:
 
       DockerRunMSBuild: >-
         docker run
-        -v $(Build.SourcesDirectory):/root/coresetup
+        -v $(Build.SourcesDirectory):/root/runtime
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
-        -w=/root/coresetup
+        -w=/root/runtime
         $(PreserveNuGetAuthDockerArgs)
+
+      ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
+        installersSubsetArg: --subset Installers
+      ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
+        installersSubsetArg: /p:Subset=Installer
 
     steps:
 
@@ -139,6 +147,7 @@ jobs:
             distroRid: ${{ packageBuild.imageRid }}
             image: ${{ packageBuild.image }}
             packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
+            subsetArg: $(installersSubsetArg)
 
         - ${{ each rid in packageBuild.rids }}:
           # Build distro-dependent packages.
@@ -149,6 +158,7 @@ jobs:
               outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.targetArchitecture }}
               packageStepDescription: Runtime Deps installers
               packagingArgs: /p:BuildDistroIndependentInstallers=false
+              subsetArg: $(installersSubsetArg)
 
     # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
     # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step

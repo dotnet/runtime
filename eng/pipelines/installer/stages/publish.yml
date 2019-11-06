@@ -40,7 +40,7 @@ stages:
     variables:
     - template: /eng/common/templates/post-build/common-variables.yml
     jobs:
-    - template: /eng/pipelines/jobs/run-publish-project.yml
+    - template: $(pipelinesPath)/jobs/run-publish-project.yml
       parameters:
         projectName: publish-final
         dependency: ${{ dependency }}
