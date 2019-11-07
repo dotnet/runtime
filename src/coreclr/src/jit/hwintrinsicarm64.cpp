@@ -23,6 +23,8 @@ static InstructionSet Arm64VersionOfIsa(InstructionSet isa)
             return InstructionSet_AdvSimd_Arm64;
         case InstructionSet_ArmBase:
             return InstructionSet_ArmBase_Arm64;
+        case InstructionSet_Crc32:
+            return InstructionSet_Crc32_Arm64;
         default:
             unreached();
     }
@@ -53,6 +55,13 @@ static InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "ArmBase") == 0)
         {
             return InstructionSet_ArmBase;
+        }
+    }
+    else if (className[0] == 'C')
+    {
+        if (strcmp(className, "Crc32") == 0)
+        {
+            return InstructionSet_Crc32;
         }
     }
     else if (className[0] == 'S')
@@ -154,6 +163,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         case InstructionSet_Aes:
         case InstructionSet_ArmBase:
         case InstructionSet_ArmBase_Arm64:
+        case InstructionSet_Crc32:
+        case InstructionSet_Crc32_Arm64:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
         case InstructionSet_Vector64:
@@ -183,6 +194,8 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
     {
         case InstructionSet_ArmBase:
         case InstructionSet_ArmBase_Arm64:
+        case InstructionSet_Crc32:
+        case InstructionSet_Crc32_Arm64:
         {
             return true;
         }
