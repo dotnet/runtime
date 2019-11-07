@@ -1400,6 +1400,11 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             if (typesAreCompatible)
             {
                 dest = destNode;
+                if (destType != TYP_STRUCT)
+                {
+                    // Use a normalized type if available. We know from above that they're equivalent.
+                    asgType = destType;
+                }
             }
         }
     }
