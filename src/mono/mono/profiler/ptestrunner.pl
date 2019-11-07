@@ -31,7 +31,7 @@ if ($builddir eq "out-of-tree") {
 	$mprofreportdir = dirname ($monosgen);
 } else {
 	$monosgen = "$builddir/mono/mini/mono-sgen";
-	$profmoduledir = "$builddir/mono/mini/.libs";
+	$profmoduledir = "$builddir/mono/profiler/.libs";
 	$mprofreportdir = "$builddir/mono/profiler";
 }
 
@@ -78,6 +78,12 @@ $report = run_test ("test-excleave.exe", "report,legacy,calls");
 check_report_basics ($report);
 check_report_calls ($report, "T:Main (string[])" => 1, "T:throw_ex ()" => 1000);
 check_report_exceptions ($report, 1000, 1000, 1000);
+report_errors ();
+add_xml_testcase_result ();
+# test native-to-managed and managed-to-native wrappers
+$report = run_test ("test-pinvokes.exe", "report,calls");
+check_report_basics ($report);
+check_report_calls ($report, "(wrapper managed-to-native) T:test_reverse_pinvoke (System.Action)" => 1, "(wrapper native-to-managed) T:CallBack ()" => 1, "T:CallBack ()" => 1);
 report_errors ();
 add_xml_testcase_result ();
 # test heapshot

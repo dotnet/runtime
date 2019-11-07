@@ -50,7 +50,7 @@ mono_threads_enter_gc_unsafe_region_internal (MonoStackData *stackdata);
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata);
 
-void
+MONO_PROFILER_API void
 mono_threads_exit_gc_unsafe_region_internal (gpointer cookie, MonoStackData *stackdata);
 
 MONO_API gpointer

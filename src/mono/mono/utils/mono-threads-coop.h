@@ -138,11 +138,7 @@ mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackDa
 
 #define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
 
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-gpointer
-mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData *stackdata);
-
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
+MONO_PROFILER_API
 gpointer
 mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData *stackdata);
 
