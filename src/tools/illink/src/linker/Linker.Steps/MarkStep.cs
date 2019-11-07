@@ -2326,6 +2326,14 @@ namespace Mono.Linker.Steps {
 		}
 
 		//
+		// Extension point for reflection logic handling customization
+		//
+		protected virtual bool ProcessReflectionDependency (MethodBody body, Instruction instruction)
+		{
+			return false;
+		}
+
+		//
 		// Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
 		//
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body)
@@ -2342,6 +2350,9 @@ namespace Mono.Linker.Steps {
 				var instruction = instructions [i];
 
 				if (instruction.OpCode != OpCodes.Call && instruction.OpCode != OpCodes.Callvirt)
+					continue;
+
+				if (ProcessReflectionDependency (body, instruction))
 					continue;
 
 				var methodCalled = instruction.Operand as MethodReference;
