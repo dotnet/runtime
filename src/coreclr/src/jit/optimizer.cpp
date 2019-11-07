@@ -6871,7 +6871,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
-                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->m_defLoc.m_blk);
+                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
                 // and the VN of the tree is considered invariant as well.
                 //
                 // TODO-CQ: This VN invariance check should not be necessary and in some cases it is conservative - it
@@ -7260,7 +7260,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
             unsigned      lclNum = funcApp.m_args[0];
             unsigned      ssaNum = funcApp.m_args[1];
             LclSsaVarDsc* ssaDef = lvaTable[lclNum].GetPerSsaData(ssaNum);
-            res                  = !optLoopContains(lnum, ssaDef->m_defLoc.m_blk->bbNatLoopNum);
+            res                  = !optLoopContains(lnum, ssaDef->GetBlock()->bbNatLoopNum);
         }
         else if (funcApp.m_func == VNF_PhiMemoryDef)
         {

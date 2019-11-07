@@ -424,9 +424,9 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     }
 
     // Track along the use-def chain to get the array length
-    GenTree* treelhs = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc.m_tree;
+    GenTreeOp* ssaDefAsg = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetAssignment();
 
-    if (treelhs == nullptr)
+    if (ssaDefAsg == nullptr)
     {
         // Incoming parameters or live-in variables don't have actual definition tree node
         // for their FIRST_SSA_NUM. See SsaBuilder::RenameVariables.
@@ -434,46 +434,41 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     }
     else
     {
-        GenTree** lhsPtr;
-        GenTree*  treeDefParent = treelhs->gtGetParent(&lhsPtr);
+        assert(ssaDefAsg->OperIs(GT_ASG));
 
-        if (treeDefParent->OperGet() == GT_ASG)
+        GenTree* treeRhs = ssaDefAsg->gtGetOp2();
+
+        if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
         {
-            assert(treelhs == treeDefParent->gtGetOp1());
-            GenTree* treeRhs = treeDefParent->gtGetOp2();
+            // Recursively track the Rhs
+            unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();
+            unsigned rhsSsaNum = treeRhs->AsLclVarCommon()->GetSsaNum();
 
-            if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
+            value = optPropGetValueRec(rhsLclNum, rhsSsaNum, valueKind, walkDepth + 1);
+        }
+        else
+        {
+            if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                // Recursively track the Rhs
-                unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();
-                unsigned rhsSsaNum = treeRhs->AsLclVarCommon()->GetSsaNum();
-
-                value = optPropGetValueRec(rhsLclNum, rhsSsaNum, valueKind, walkDepth + 1);
-            }
-            else
-            {
-                if (valueKind == optPropKind::OPK_ARRAYLEN)
+                value = getArrayLengthFromAllocation(treeRhs);
+                if (value != nullptr)
                 {
-                    value = getArrayLengthFromAllocation(treeRhs);
-                    if (value != nullptr)
+                    if (!value->IsCnsIntOrI())
                     {
-                        if (!value->IsCnsIntOrI())
-                        {
-                            // Leave out non-constant-sized array
-                            value = nullptr;
-                        }
+                        // Leave out non-constant-sized array
+                        value = nullptr;
                     }
                 }
-                else if (valueKind == optPropKind::OPK_OBJ_GETTYPE)
+            }
+            else if (valueKind == optPropKind::OPK_OBJ_GETTYPE)
+            {
+                value = getObjectHandleNodeFromAllocation(treeRhs);
+                if (value != nullptr)
                 {
-                    value = getObjectHandleNodeFromAllocation(treeRhs);
-                    if (value != nullptr)
+                    if (!value->IsCnsIntOrI())
                     {
-                        if (!value->IsCnsIntOrI())
-                        {
-                            // Leave out non-constant-sized array
-                            value = nullptr;
-                        }
+                        // Leave out non-constant-sized array
+                        value = nullptr;
                     }
                 }
             }
@@ -548,15 +543,15 @@ void Compiler::optFoldNullCheck(GenTree* tree)
 
         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            DefLoc      defLoc   = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc;
-            BasicBlock* defBlock = defLoc.m_blk;
+            LclSsaVarDsc* defLoc   = lvaTable[lclNum].GetPerSsaData(ssaNum);
+            BasicBlock*   defBlock = defLoc->GetBlock();
 
             if (compCurBB == defBlock)
             {
-                GenTree* defTree   = defLoc.m_tree;
-                GenTree* defParent = defTree->gtGetParent(nullptr);
+                GenTree* defParent = defLoc->GetAssignment();
+                assert(defParent->OperIs(GT_ASG));
 
-                if ((defParent->OperGet() == GT_ASG) && (defParent->gtNext == nullptr))
+                if (defParent->gtNext == nullptr)
                 {
                     GenTree* defRHS = defParent->gtGetOp2();
                     if (defRHS->OperGet() == GT_COMMA)

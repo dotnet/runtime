@@ -523,7 +523,7 @@ public:
 
 private:
     // Given a lclvar use, try to find the lclvar's defining assignment and its containing block.
-    GenTreeOp* GetSsaDefAsg(GenTreeLclVarCommon* lclUse, BasicBlock** asgBlock);
+    LclSsaVarDsc* GetSsaDefAsg(GenTreeLclVarCommon* lclUse);
 
     GenTreeBoundsChk* m_pCurBndsChk;
 
