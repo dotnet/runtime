@@ -32,7 +32,7 @@
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
-    <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
+    <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'installer', 'manpages'))</ManPagesDir>
   </PropertyGroup>
 
   <!-- Packaging properties -->
