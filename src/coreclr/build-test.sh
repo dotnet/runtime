@@ -537,7 +537,7 @@ build_native_projects()
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$scriptDir/gen-buildsys.sh\" \"$__TestDir\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $extraCmakeArguments $__cmakeargs"
+        nextCommand="CONFIG_DIR=\"$__RepoRootDir/eng/common/cross\" \"$scriptDir/gen-buildsys.sh\" \"$__TestDir\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
         
@@ -1057,7 +1057,7 @@ fi
 if [ $__CrossBuild == 1 ]; then
     export CROSSCOMPILE=1
     if ! [[ -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
+        export ROOTFS_DIR="$__RepoRootDir/eng/common/cross/rootfs/$__BuildArch"
     fi
 fi
 

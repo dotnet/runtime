@@ -66,7 +66,7 @@ if [ "$CROSSCOMPILE" == "1" ]; then
         exit 1
     fi
     if [[ -z $CONFIG_DIR ]]; then
-        CONFIG_DIR="$1/cross"
+        CONFIG_DIR="$1/eng/common/cross"
     fi
     export TARGET_BUILD_ARCH=$build_arch
     cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
