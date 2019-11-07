@@ -111,7 +111,7 @@ elif [[ "$configuration" == "Release" ]]; then
 fi
 
 if [ "$llvm" = "true" ]; then
-  git submodule update --init -- ../external/llvm || (Write-PipelineTelemetryError -c "git" -e 1 "Error fetching LLVM submodule" && exit 1)
+  git submodule update --init -- ../external/llvm-project || (Write-PipelineTelemetryError -c "git" -e 1 "Error fetching LLVM submodule" && exit 1)
   autogen_params="$autogen_params --enable-llvm"
 fi
 
