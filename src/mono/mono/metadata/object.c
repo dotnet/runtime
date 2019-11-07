@@ -110,9 +110,11 @@ static MonoCoopMutex ldstr_section;
 void
 mono_runtime_object_init (MonoObject *this_obj)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	mono_runtime_object_init_checked (this_obj, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -7170,7 +7172,11 @@ mono_object_get_domain_internal (MonoObject *obj)
 MonoDomain*
 mono_object_get_domain (MonoObject *obj)
 {
-	MONO_EXTERNAL_ONLY (MonoDomain*, mono_object_get_domain_internal (obj));
+	MonoDomain* ret = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	ret = mono_object_get_domain_internal (obj);
+	MONO_EXIT_GC_UNSAFE;
+	return ret;
 }
 
 /**
@@ -7704,6 +7710,7 @@ char *
 mono_string_to_utf8 (MonoString *s)
 {
 	char *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	result = mono_string_to_utf8_checked_internal (s, error);
 	
@@ -7711,6 +7718,7 @@ mono_string_to_utf8 (MonoString *s)
 		mono_error_cleanup (error);
 		result = NULL;
 	}
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
