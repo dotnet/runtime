@@ -1088,8 +1088,15 @@ namespace System.IO.Tests
     }
 
     [Collection("NoParallelTests")]
-    public class DangerousFileSystemWatcherTests : FileSystemWatcherTest
+    public partial class DangerousFileSystemWatcherTests : FileSystemWatcherTest
     {
+        private readonly ITestOutputHelper _output;
+
+        public DangerousFileSystemWatcherTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [PlatformSpecific(TestPlatforms.Linux)]  // Reads MaxUsersWatches from Linux OS files
         [OuterLoop("This test will use all available watchers and can cause failures in other concurrent tests or system processes.")]
         [Fact]
