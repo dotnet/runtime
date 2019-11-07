@@ -24,16 +24,16 @@ namespace System.CodeDom.Compiler
             {
                 if (_compiledAssembly == null && PathToAssembly != null)
                 {
-                    _compiledAssembly = Assembly.Load(new AssemblyName() { CodeBase = PathToAssembly });
+                    _compiledAssembly = Assembly.LoadFile(PathToAssembly);
                 }
                 return _compiledAssembly;
             }
             set => _compiledAssembly = value;
         }
-
         public CompilerErrorCollection Errors { get; } = new CompilerErrorCollection();
 
         public StringCollection Output { get; } = new StringCollection();
+
         public string PathToAssembly { get; set; }
 
         public int NativeCompilerReturnValue { get; set; }
