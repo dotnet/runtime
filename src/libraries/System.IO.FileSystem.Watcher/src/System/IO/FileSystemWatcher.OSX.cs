@@ -72,6 +72,7 @@ namespace System.IO
             {
                 _cancellation = null;
                 token.Cancel();
+                token.Dispose();
             }
         }
 
@@ -259,18 +260,21 @@ namespace System.IO
 
             private void CancellationCallback()
             {
-                if (!_stopping && _eventStream != null)
+                SafeEventStreamHandle eventStream =  _eventStream;
+                if (!_stopping && eventStream != null)
                 {
                     _stopping = true;
+                    _eventStream = null;
 
                     try
                     {
                         // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
-                        Interop.EventStream.FSEventStreamStop(_eventStream);
+                        Interop.EventStream.FSEventStreamStop(eventStream);
                     }
                     finally
                     {
-                        StaticWatcherRunLoopManager.UnscheduleFromRunLoop(_eventStream);
+                        StaticWatcherRunLoopManager.UnscheduleFromRunLoop(eventStream);
+                        eventStream.Close();
                     }
                 }
             }
