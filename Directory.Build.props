@@ -1,0 +1,48 @@
+<Project>
+
+  <!--
+    Import the arcade sdk with these requirements.
+    After:
+      Configuration setup
+    Before:
+      DebugType needs to be not be set to embedded at least for facades
+      OutputPath setup
+  -->
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
+
+  <!-- Common paths -->
+  <PropertyGroup>
+    <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
+
+    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
+    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+
+    <!-- Installer specific, required during restore. -->
+    <InstallerTasksOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'installer.tasks', '$(Configuration)'))</InstallerTasksOutputPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'netstandard2.0', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'net46', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
+
+    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
+    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
+    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
+
+    <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
+    <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>    
+  </PropertyGroup>
+
+  <!-- Packaging properties -->
+  <PropertyGroup>
+    <!--
+      This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used 
+      to find source code for debugging. It is also used to name the build output manifest for orchestrated builds.
+    -->
+    <GitHubRepositoryName>runtime</GitHubRepositoryName>
+    <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
+    <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
+    <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
+  </PropertyGroup>
+
+</Project>

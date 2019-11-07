@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "coverlet.console": {
+      "version": "1.6.0",
+      "commands": [
+        "coverlet"
+      ]
+    },
+    "dotnet-reportgenerator-globaltool": {
+      "version": "4.3.0",
+      "commands": [
+        "reportgenerator"
+      ]
+    }
+  }
+}
