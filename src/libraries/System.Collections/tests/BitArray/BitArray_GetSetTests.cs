@@ -233,59 +233,64 @@ namespace System.Collections.Tests
             yield return new object[] { new BitArray(0), 0, 0, new byte[0], default(byte) };
             yield return new object[] { new BitArray(0), 0, 0, new int[0], default(int) };
 
-            foreach (int bitArraySize in new[] { 0, 1, BitsPerByte, BitsPerByte * 2, BitsPerInt32, BitsPerInt32 * 2 })
+            foreach (int bitArraySize in new[] { 0, 1, BitsPerByte, BitsPerByte * 2, BitsPerInt32, BitsPerInt32 * 2, BitsPerInt32 * 4, BitsPerInt32 * 8, BitsPerInt32 * 16 })
             {
-                BitArray allTrue = new BitArray(Enumerable.Repeat(true, bitArraySize).ToArray());
-                BitArray allFalse = new BitArray(Enumerable.Repeat(false, bitArraySize).ToArray());
+                BitArray allTrue = new BitArray(bitArraySize, true);
+                BitArray allFalse = new BitArray(bitArraySize, false);
                 BitArray alternating = new BitArray(Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray());
 
-                foreach (Tuple<int, int> d in new[] { Tuple.Create(bitArraySize, 0),
-                    Tuple.Create(bitArraySize * 2 + 1, 0),
-                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize + 1),
-                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize / 2 + 1) })
-                {
-                    int arraySize = d.Item1;
-                    int index = d.Item2;
+                Random rnd = new Random(0);
 
-                    yield return new object[] { allTrue, arraySize, index, Enumerable.Repeat(true, bitArraySize).ToArray(), default(bool) };
-                    yield return new object[] { allFalse, arraySize, index, Enumerable.Repeat(false, bitArraySize).ToArray(), default(bool) };
-                    yield return new object[] { alternating, arraySize, index, Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray(), default(bool) };
+                foreach ((int arraySize, int startIndex) in new[] { (bitArraySize, 0),
+                                                               (bitArraySize * 2 + 1, 0),
+                                                               (bitArraySize * 2 + 1, bitArraySize + 1),
+                                                               (bitArraySize * 2 + 1, bitArraySize / 2 + 1) })
+                {
+                    yield return new object[] { allTrue, arraySize, startIndex, Enumerable.Repeat(true, bitArraySize).ToArray(), default(bool) };
+                    yield return new object[] { allFalse, arraySize, startIndex, Enumerable.Repeat(false, bitArraySize).ToArray(), default(bool) };
+                    yield return new object[] { alternating, arraySize, startIndex, Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray(), default(bool) };
+
+                    bool[] randomBools = new bool[bitArraySize];
+                    for (int i = 0; i < bitArraySize; i++)
+                    {
+                        randomBools[i] = rnd.Next(0, 2) == 0;
+                    }
+                    BitArray random = new BitArray(randomBools);
+
+                    yield return new object[] { random, arraySize, startIndex, randomBools, default(bool) };
 
                     if (bitArraySize >= BitsPerByte)
                     {
-                        yield return new object[] { allTrue, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0xff, bitArraySize / BitsPerByte).ToArray(), default(byte) };
-                        yield return new object[] { allFalse, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0x00, bitArraySize / BitsPerByte).ToArray(), default(byte) };
-                        yield return new object[] { alternating, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0xaa, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                        yield return new object[] { allTrue, arraySize / BitsPerByte, startIndex / BitsPerByte, Enumerable.Repeat((byte)0xff, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                        yield return new object[] { allFalse, arraySize / BitsPerByte, startIndex / BitsPerByte, Enumerable.Repeat((byte)0x00, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                        yield return new object[] { alternating, arraySize / BitsPerByte, startIndex / BitsPerByte, Enumerable.Repeat((byte)0xaa, bitArraySize / BitsPerByte).ToArray(), default(byte) };
                     }
 
                     if (bitArraySize >= BitsPerInt32)
                     {
-                        yield return new object[] { allTrue, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).ToArray(), default(int) };
-                        yield return new object[] { allFalse, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32).ToArray(), default(int) };
-                        yield return new object[] { alternating, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                        yield return new object[] { allTrue, arraySize / BitsPerInt32, startIndex / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                        yield return new object[] { allFalse, arraySize / BitsPerInt32, startIndex / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                        yield return new object[] { alternating, arraySize / BitsPerInt32, startIndex / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).ToArray(), default(int) };
                     }
                 }
             }
 
             foreach (int bitArraySize in new[] { BitsPerInt32 - 1, BitsPerInt32 * 2 - 1 })
             {
-                BitArray allTrue = new BitArray(Enumerable.Repeat(true, bitArraySize).ToArray());
-                BitArray allFalse = new BitArray(Enumerable.Repeat(false, bitArraySize).ToArray());
+                BitArray allTrue = new BitArray(bitArraySize, true);
+                BitArray allFalse = new BitArray(bitArraySize, false);
                 BitArray alternating = new BitArray(Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray());
-
-                foreach (Tuple<int, int> d in new[] { Tuple.Create(bitArraySize, 0),
-                    Tuple.Create(bitArraySize * 2 + 1, 0),
-                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize + 1),
-                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize / 2 + 1)})
+                foreach ((int arraySize, int startIndex) in new[] { (bitArraySize, 0),
+                                                               (bitArraySize * 2 + 1, 0),
+                                                               (bitArraySize * 2 + 1, bitArraySize + 1),
+                                                               (bitArraySize * 2 + 1, bitArraySize / 2 + 1) })
                 {
-                    int arraySize = d.Item1;
-                    int index = d.Item2;
 
                     if (bitArraySize >= BitsPerInt32)
                     {
-                        yield return new object[] { allTrue, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xffffffffu >> 1)) }).ToArray(), default(int) };
-                        yield return new object[] { allFalse, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32 + 1).ToArray(), default(int) };
-                        yield return new object[] { alternating, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xaaaaaaaau >> 2)) }).ToArray(), default(int) };
+                        yield return new object[] { allTrue, (arraySize - 1) / BitsPerInt32 + 1, startIndex / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xffffffffu >> 1)) }).ToArray(), default(int) };
+                        yield return new object[] { allFalse, (arraySize - 1) / BitsPerInt32 + 1, startIndex / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32 + 1).ToArray(), default(int) };
+                        yield return new object[] { alternating, (arraySize - 1) / BitsPerInt32 + 1, startIndex / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xaaaaaaaau >> 2)) }).ToArray(), default(int) };
                     }
                 }
             }
@@ -293,22 +298,22 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(CopyTo_Array_TestData))]
-        public static void CopyTo<T>(BitArray bitArray, int length, int index, T[] expected, T def)
+        public static void CopyTo<T>(BitArray bitArray, int destinationLength, int startIndex, T[] expected, T def)
         {
-            T[] array = (T[])Array.CreateInstance(typeof(T), length);
+            T[] array = new T[destinationLength];
             ICollection collection = bitArray;
-            collection.CopyTo(array, index);
-            for (int i = 0; i < index; i++)
+            collection.CopyTo(array, startIndex);
+            for (int i = 0; i < startIndex; i++)
             {
-                Assert.Equal(def, array[i]);
+                Assert.True(def.Equals(array[i]), $"Elements before the start index have been modified. Expected {def} at index {i}, actual {array[i]}");
             }
             for (int i = 0; i < expected.Length; i++)
             {
-                Assert.Equal(expected[i], array[i + index]);
+                Assert.True(expected[i].Equals(array[i + startIndex]), $"Elements that are copied over does not match the expected value. Expected {expected[i]} at index {i + startIndex}, actual {array[i]}");
             }
-            for (int i = index + expected.Length; i < array.Length; i++)
+            for (int i = startIndex + expected.Length; i < array.Length; i++)
             {
-                Assert.Equal(def, array[i]);
+                Assert.True(def.Equals(array[i]), $"Elements after the copied area have been modified. Expected {def} at index {i}, actual {array[i]}");
             }
         }
 
