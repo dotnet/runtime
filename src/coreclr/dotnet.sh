@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+__ProjectDir=${working_tree_root}
 __RepoRootDir=${working_tree_root}/../..
 
 # BEGIN SECTION to remove after repo consolidation
 if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectRoot}
+  __RepoRootDir=${__ProjectDir}
 fi
 # END SECTION to remove after repo consolidation
 
@@ -15,11 +16,17 @@ export DOTNET_MULTILEVEL_LOOKUP=0
 # Disable first run since we want to control all package sources
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
-echo "Running init-dotnet.sh"
-source $working_tree_root/init-dotnet.sh
+source ${__RepoRootDir}/eng/common/tools.sh
 
-${_InitializeDotNetCli}/dotnet
-dotnetPath=${__RepoRootDir}/.dotnet/dotnet
+InitializeDotNetCli
+__dotnetDir=${_InitializeDotNetCli}
+
+if [ $? != 0 ]; then
+    echo "Failed to install dotnet using Arcade"
+    exit $?
+fi
+
+dotnetPath=${__dotnetDir}/dotnet
 
 echo "Running: ${dotnetPath} $@"
 ${dotnetPath} "$@"
