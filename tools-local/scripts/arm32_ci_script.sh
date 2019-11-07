@@ -204,12 +204,12 @@ function cross_build_core_setup_with_docker {
 
     if [ $__skipRootFS == 0 ]; then
         # Build rootfs
-        __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
+        __buildRootfsCmd="./eng/common/cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
 
         (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
         $__dockerCmd $__buildRootfsCmd
         sudo chown -R $(id -u -n) cross/rootfs
-        __rootfsDir="/opt/core-setup/cross/rootfs/$__buildArch"
+        __rootfsDir="/opt/core-setup/eng/common/cross/rootfs/$__buildArch"
     fi
 
     # Cross building core-setup with rootfs in Docker

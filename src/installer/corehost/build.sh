@@ -188,7 +188,7 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     if ! [[ -n $ROOTFS_DIR ]]; then
-        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+        export ROOTFS_DIR="$RootRepo/eng/common/cross/rootfs/$__build_arch"
     fi
 fi
 
@@ -268,7 +268,7 @@ if [ $__CrossBuild == 1 ]; then
     fi
     export TARGET_BUILD_ARCH=$__build_arch_lowcase
     export __DistroRid=$__rid_plat
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER=$__policy_ver -DCLI_CMAKE_PKG_RID=$__base_rid -DCLI_CMAKE_COMMIT_HASH=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix -DCMAKE_TOOLCHAIN_FILE=$RootRepo/cross/toolchain.cmake
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER=$__policy_ver -DCLI_CMAKE_PKG_RID=$__base_rid -DCLI_CMAKE_COMMIT_HASH=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix -DCMAKE_TOOLCHAIN_FILE=$RootRepo/eng/common/cross/toolchain.cmake
 else
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER=$__host_ver -DCLI_CMAKE_COMMON_HOST_VER=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER=$__policy_ver -DCLI_CMAKE_PKG_RID=$__base_rid -DCLI_CMAKE_COMMIT_HASH=$__commit_hash -DCMAKE_INSTALL_PREFIX=$__cmake_bin_prefix
 fi
