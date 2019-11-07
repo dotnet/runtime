@@ -98,7 +98,6 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: download-artifact-step.yml
         parameters:
-          downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testRootFolderPath)'
           artifactFileName: '$(testArtifactName)$(archiveExtension)'
           artifactName: '$(testArtifactName)'
@@ -109,7 +108,6 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: download-artifact-step.yml
         parameters:
-          downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testBuildRootFolderPath)'
           cleanUnpackFolder: false
           artifactFileName: '$(testBuildArtifactName)$(archiveExtension)'
@@ -120,7 +118,6 @@ jobs:
     # Download product binaries directory
     - template: download-artifact-step.yml
       parameters:
-        downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
@@ -132,7 +129,6 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: download-artifact-step.yml
         parameters:
-          downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
           artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
           artifactName: '$(microsoftNetSdkIlArtifactName)'
@@ -143,7 +139,6 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: download-artifact-step.yml
         parameters:
-          downloadFolder: '$(binTestsPath)/tmp'
           unpackFolder: '$(testNativeRootFolderPath)'
           artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
           artifactName: '$(testNativeArtifactName)'

@@ -1,5 +1,4 @@
 parameters:
-  downloadFolder: ''
   unpackFolder: ''
   cleanUnpackFolder: true
   artifactFileName: ''
@@ -13,13 +12,13 @@ steps:
     inputs:
       buildType: current
       downloadType: single
-      downloadPath: '${{ parameters.downloadFolder }}'
+      downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
 
   # Unzip artifact
   - task: ExtractFiles@1
     displayName: 'Unzip ${{ parameters.displayName }}'
     inputs:
-      archiveFilePatterns: ${{ parameters.downloadFolder }}/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
       destinationFolder: ${{ parameters.unpackFolder }}
       cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}

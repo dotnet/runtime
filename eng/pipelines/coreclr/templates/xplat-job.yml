@@ -168,7 +168,6 @@ jobs:
     - template: download-artifact-step.yml
       parameters:
         displayName: 'GIT repository'
-        downloadFolder: $(Build.SourcesDirectory)/download/
         cleanUnpackFolder: false
         unpackFolder: $(Build.SourcesDirectory)
         ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

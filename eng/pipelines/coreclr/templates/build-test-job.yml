@@ -74,7 +74,6 @@ jobs:
     # Download product binaries directory
     - template: download-artifact-step.yml
       parameters:
-        downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
@@ -95,9 +94,9 @@ jobs:
       parameters:
         rootFolder: $(testRootFolderPath)
         includeRootFolder: false
-        archiveFile: '$(Build.StagingDirectory)/$(testArtifactName)$(archiveExtension)'
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
         artifactName: $(testArtifactName)
         displayName: 'managed test components'
 
@@ -108,9 +107,9 @@ jobs:
       parameters:
         rootFolder: $(microsoftNetSdkIlFolderPath)
         includeRootFolder: false
-        archiveFile: $(Build.StagingDirectory)/$(microsoftNetSdkIlArtifactName)$(archiveExtension)
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
 

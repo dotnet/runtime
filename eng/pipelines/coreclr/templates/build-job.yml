@@ -160,9 +160,9 @@ jobs:
       parameters:
         rootFolder: $(buildProductRootFolderPath)
         includeRootFolder: false
-        archiveFile: $(Build.StagingDirectory)/$(buildProductArtifactName)$(archiveExtension)
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
         artifactName: $(buildProductArtifactName)
         displayName: 'product build'
 
@@ -171,9 +171,9 @@ jobs:
       parameters:
         rootFolder: $(testNativeRootFolderPath)
         includeRootFolder: false
-        archiveFile: $(Build.StagingDirectory)/$(testNativeArtifactName)$(archiveExtension)
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
         artifactName: $(testNativeArtifactName)
         displayName: 'native test components'
 
@@ -182,9 +182,9 @@ jobs:
       parameters:
         rootFolder: $(testBuildRootFolderPath)
         includeRootFolder: false
-        archiveFile: $(Build.StagingDirectory)/$(testBuildArtifactName)$(archiveExtension)
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
         artifactName: $(testBuildArtifactName)
         displayName: 'test build tree'
 

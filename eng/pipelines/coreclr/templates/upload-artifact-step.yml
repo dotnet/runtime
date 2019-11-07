@@ -1,9 +1,9 @@
 parameters:
   rootFolder: ''
   includeRootFolder: false
-  archiveFile: ''
   archiveType: ''
   tarCompression: ''
+  archiveExtension: ''
   artifactName: ''
   displayName: ''
 
@@ -13,7 +13,7 @@ steps:
     displayName: 'Zip ${{ parameters.displayName }}'
     inputs:
       rootFolderOrFile:  ${{ parameters.rootFolder }}
-      archiveFile:       ${{ parameters.archiveFile }}
+      archiveFile:       $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
       archiveType:       ${{ parameters.archiveType }}
       tarCompression:    ${{ parameters.tarCompression }}
       includeRootFolder: ${{ parameters.includeRootFolder }}
@@ -21,5 +21,5 @@ steps:
   - task: PublishBuildArtifacts@1
     displayName: 'Publish ${{ parameters.displayName }}'
     inputs:
-      pathtoPublish: ${{ parameters.archiveFile }}
+      pathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
       artifactName:  ${{ parameters.artifactName }}

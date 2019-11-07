@@ -29,9 +29,9 @@ jobs:
       displayName: 'GIT repository (Windows)'
       rootFolder: $(Build.SourcesDirectory)
       includeRootFolder: false
-      archiveFile: $(Build.StagingDirectory)/repo_windows.zip
       archiveType: 'zip'
       tarCompression: ''
+      archiveExtension: '.zip'
       artifactName: repo_windows
 
 - job: 'checkout_unix'
@@ -58,7 +58,7 @@ jobs:
       displayName: 'GIT repository (Unix)'
       rootFolder: $(Build.SourcesDirectory)
       includeRootFolder: false
-      archiveFile: $(Build.StagingDirectory)/repo_unix.tar.gz
       archiveType: 'tar'
       tarCompression: 'gz'
+      archiveExtension: '.tar.gz'
       artifactName: repo_unix
