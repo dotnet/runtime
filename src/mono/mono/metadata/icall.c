@@ -818,36 +818,47 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 }
 
 #ifdef ENABLE_NETCORE
-MonoArrayHandle
-ves_icall_System_Array_InternalCreate (MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds, MonoError *error)
+
+void
+ves_icall_System_Array_InternalCreate (MonoArray *volatile* result, MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds)
 {
+	ERROR_DECL (error);
+
 	MonoClass* klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
-		return NULL_HANDLE_ARRAY;
+		goto exit;
 
 	if (m_class_get_byval_arg (m_class_get_element_class (klass))->type == MONO_TYPE_VOID) {
 		mono_error_set_not_supported (error, "Arrays of System.Void are not supported.");
-		return NULL_HANDLE_ARRAY;
+		goto exit;
 	}
 
 	if (type->byref || m_class_is_byreflike (klass)) {
 		mono_error_set_not_supported (error, NULL);
-		return NULL_HANDLE_ARRAY;
+		goto exit;
 	}
 
 	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 	if (is_generic_parameter (type) || mono_class_is_gtd (klass) || (gklass && gklass->context.class_inst->is_open)) {
 		mono_error_set_not_supported (error, NULL);
-		return NULL_HANDLE_ARRAY;
+		goto exit;
 	}
 
 	/* vectors are not the same as one dimensional arrays with non-zero bounds */
-	const gboolean bounded = pLowerBounds != NULL && rank == 1 && pLowerBounds [0] != 0;
+	gboolean bounded;
+	bounded = pLowerBounds != NULL && rank == 1 && pLowerBounds [0] != 0;
 
-	MonoClass* const aklass = mono_class_create_bounded_array (klass, rank, bounded);
-	uintptr_t const aklass_rank = m_class_get_rank (aklass);
-	uintptr_t* const sizes = g_newa (uintptr_t, aklass_rank);
-	intptr_t* const lower_bounds = g_newa (intptr_t, aklass_rank);
+	MonoClass* aklass;
+	aklass = mono_class_create_bounded_array (klass, rank, bounded);
+
+	uintptr_t aklass_rank;
+	aklass_rank = m_class_get_rank (aklass);
+
+	uintptr_t* sizes;
+	sizes = g_newa (uintptr_t, aklass_rank * 2);
+
+	intptr_t* lower_bounds;
+	lower_bounds = (intptr_t*)(sizes + aklass_rank);
 
 	// Copy lengths and lower_bounds from gint32 to [u]intptr_t.
 	for (uintptr_t i = 0; i < aklass_rank; ++i) {
@@ -855,16 +866,20 @@ ves_icall_System_Array_InternalCreate (MonoType* type, gint32 rank, gint32* pLen
 			lower_bounds [i] = pLowerBounds [i];
 			if ((gint64) pLowerBounds [i] + (gint64) pLengths [i] > G_MAXINT32) {
 				mono_error_set_argument_out_of_range (error, NULL, "Length + bound must not exceed Int32.MaxValue.");
-				return NULL_HANDLE_ARRAY;
+				goto exit;
 			}
 		} else {
 			lower_bounds [i] = 0;
 		}
 		sizes [i] = pLengths [i];
 	}
-	
-	return mono_array_new_full_handle (mono_domain_get (), aklass, sizes, lower_bounds, error);
+
+	*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, lower_bounds, error);
+
+exit:
+	mono_error_set_pending_exception (error);
 }
+
 #endif
 
 MonoArrayHandle
