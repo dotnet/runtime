@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
+    <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\Helper.Win32Unix.cs" />
+    <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Reference Include="System.IO.FileSystem.AccessControl" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+</Project>

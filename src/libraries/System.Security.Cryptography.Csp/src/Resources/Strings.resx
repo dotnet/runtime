@@ -1,0 +1,218 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="Cryptography_CAPI_Required" xml:space="preserve">
+    <value>'{0}' requires Windows Cryptographic API (CAPI), which is not available on this platform.</value>
+  </data>
+  <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
+    <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
+  </data>
+  <data name="Cryptography_CSP_NotFound" xml:space="preserve">
+    <value>The requested key container was not found.</value>
+  </data>
+  <data name="Cryptography_CSP_WrongKeySpec" xml:space="preserve">
+    <value>The specified cryptographic service provider (CSP) does not support this key algorithm: {0}.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_InvalidDSASignatureSize" xml:space="preserve">
+    <value>Length of the DSA signature was not 40 bytes.</value>
+  </data>
+  <data name="Cryptography_InvalidHashSize" xml:space="preserve">
+    <value>{0} algorithm hash size is {1} bytes.</value>
+  </data>
+  <data name="Cryptography_InvalidIVSize" xml:space="preserve">
+    <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidKey_Weak" xml:space="preserve">
+    <value>Specified key is a known weak key for '{0}' and cannot be used.</value>
+  </data>
+  <data name="Cryptography_InvalidKey_SemiWeak" xml:space="preserve">
+    <value>Specified key is a known semi-weak key for '{0}' and cannot be used.</value>
+  </data>
+  <data name="Cryptography_InvalidKeySize" xml:space="preserve">
+    <value>Specified key is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidOID" xml:space="preserve">
+    <value>Object identifier (OID) is unknown.</value>
+  </data>
+  <data name="Cryptography_InvalidPadding" xml:space="preserve">
+    <value>Padding is invalid and cannot be removed.</value>
+  </data>
+  <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
+    <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_MissingIV" xml:space="preserve">
+    <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
+  </data>
+  <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
+    <value>TransformBlock may only process bytes in block sized increments.</value>
+  </data>
+  <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
+    <value>Cannot open an invalid handle.</value>
+  </data>
+  <data name="Cryptography_PartialBlock" xml:space="preserve">
+    <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidAlgorithm" xml:space="preserve">
+    <value>Algorithm is unavailable or is not supported for this operation.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidIV" xml:space="preserve">
+    <value>The Initialization vector should have the same length as the algorithm block size in bytes.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_TooManyBytes" xml:space="preserve">
+    <value>Requested number of bytes exceeds the maximum.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_ValuesFixed" xml:space="preserve">
+    <value>Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
+  </data>
+  <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
+    <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>
+  </data>
+  <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
+    <value>The length of the data to decrypt is not valid for the size of this key.</value>
+  </data>
+  <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
+    <value>Attempt to transform beyond end of buffer.</value>
+  </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
+    <value>Unknown padding mode used.</value>
+  </data>
+  <data name="CryptSetKeyParam_Failed" xml:space="preserve">
+    <value>CryptSetKeyParam failed with error code {0}.</value>
+  </data>
+  <data name="CspParameter_invalid" xml:space="preserve">
+    <value>CSPParameters cannot be null</value>
+  </data>
+</root>

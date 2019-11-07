@@ -1,0 +1,8 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of [Theory] data which causes xunit to reflect on ToString() -->
+    <Type Name="System.Globalization.CompareOptions" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+

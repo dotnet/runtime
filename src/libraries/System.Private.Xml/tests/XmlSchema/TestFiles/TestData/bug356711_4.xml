@@ -1,0 +1,9 @@
+<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:a="a">
+
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema' targetNamespace="x">
+	<xsd:include schemaLocation="bug356711.xsd"/>
+</xsd:schema>
+
+<a:doc/>
+
+</root>

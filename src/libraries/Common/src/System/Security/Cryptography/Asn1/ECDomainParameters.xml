@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="ECDomainParameters"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://www.secg.org/sec1-v2.pdf, C.2
+
+    ECDomainParameters{ECDOMAIN:IOSet} ::= CHOICE {
+        specified SpecifiedECDomain,
+        named ECDOMAIN.&id({IOSet}),
+        implicitCA NULL
+    }
+  -->
+  <asn:AsnType name="Specified" typeName="System.Security.Cryptography.Asn1.SpecifiedECDomain" />
+  <asn:ObjectIdentifier name="Named" />
+</asn:Choice>

@@ -1,0 +1,102 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity" xml:space="preserve">
+    <value>Number must be no greater than the value specified in BoundedCapacity.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
+    <value>Number must be positive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
+    <value>Number must be either non-negative and less than or equal to Int32.MaxValue or -1</value>
+  </data>
+  <data name="Argument_BoundedCapacityNotSupported" xml:space="preserve">
+    <value>BoundedCapacity must be Unbounded or -1 for this dataflow block.</value>
+  </data>
+  <data name="Argument_CantConsumeFromANullSource" xml:space="preserve">
+    <value>The argument must be false if no source from which to consume is specified.</value>
+  </data>
+  <data name="Argument_InvalidMessageHeader" xml:space="preserve">
+    <value>The DataflowMessageHeader instance does not represent a valid message header.</value>
+  </data>
+  <data name="Argument_InvalidMessageId" xml:space="preserve">
+    <value>To construct a DataflowMessageHeader instance, either pass a non-zero value or use the parameterless constructor.</value>
+  </data>
+  <data name="Argument_NonGreedyNotSupported" xml:space="preserve">
+    <value>Greedy must be true for this dataflow block.</value>
+  </data>
+  <data name="InvalidOperation_DataNotAvailableForReceive" xml:space="preserve">
+    <value>The source completed without providing data to receive.</value>
+  </data>
+  <data name="InvalidOperation_FailedToConsumeReservedMessage" xml:space="preserve">
+    <value>The target block failed to consume a message it had successfully reserved.</value>
+  </data>
+  <data name="InvalidOperation_MessageNotReservedByTarget" xml:space="preserve">
+    <value>The target does not have the message reserved.</value>
+  </data>
+  <data name="NotSupported_MemberNotNeeded" xml:space="preserve">
+    <value>This member is not supported on this dataflow block. The block is intended for a specific purpose that does not utilize this member.</value>
+  </data>
+  <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
+    <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="InvalidOperation_ErrorDuringCleanup" xml:space="preserve">
+    <value>An error occurred while linking up the target or during the cleanup after completion.</value>
+  </data>
+</root>

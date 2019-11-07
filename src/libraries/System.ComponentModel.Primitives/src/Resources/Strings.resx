@@ -1,0 +1,126 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data>
+  <data name="PropertyCategoryAction" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="PropertyCategoryAppearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="PropertyCategoryAsynchronous" xml:space="preserve">
+    <value>Asynchronous</value>
+  </data>
+  <data name="PropertyCategoryBehavior" xml:space="preserve">
+    <value>Behavior</value>
+  </data>
+  <data name="PropertyCategoryConfig" xml:space="preserve">
+    <value>Configurations</value>
+  </data>
+  <data name="PropertyCategoryData" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="PropertyCategoryDDE" xml:space="preserve">
+    <value>DDE</value>
+  </data>
+  <data name="PropertyCategoryDefault" xml:space="preserve">
+    <value>Misc</value>
+  </data>
+  <data name="PropertyCategoryDesign" xml:space="preserve">
+    <value>Design</value>
+  </data>
+  <data name="PropertyCategoryDragDrop" xml:space="preserve">
+    <value>Drag Drop</value>
+  </data>
+  <data name="PropertyCategoryFocus" xml:space="preserve">
+    <value>Focus</value>
+  </data>
+  <data name="PropertyCategoryFont" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="PropertyCategoryFormat" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="PropertyCategoryKey" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="PropertyCategoryLayout" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="PropertyCategoryList" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="PropertyCategoryMouse" xml:space="preserve">
+    <value>Mouse</value>
+  </data>
+  <data name="PropertyCategoryPosition" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="PropertyCategoryScale" xml:space="preserve">
+    <value>Scale</value>
+  </data>
+  <data name="PropertyCategoryText" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="PropertyCategoryWindowStyle" xml:space="preserve">
+    <value>Window Style</value>
+  </data>
+</root>

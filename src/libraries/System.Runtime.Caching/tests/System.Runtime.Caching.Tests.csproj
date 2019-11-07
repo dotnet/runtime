@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AdditionalCacheTests\AdditionalCacheTests.cs" />
+    <Compile Include="Common\PokerChangeMonitor.cs" />
+    <Compile Include="Common\PokerMemoryCache.cs" />
+    <Compile Include="Common\PokerObjectCache.cs" />
+    <Compile Include="Common\TestNotificationSystem.cs" />
+    <Compile Include="System.Runtime.Caching\HostFileChangeMonitorTest.cs" />
+    <Compile Include="System.Runtime.Caching\ObjectCacheTest.cs" />
+    <Compile Include="System.Runtime.Caching\MemoryCacheTest.cs" />
+  </ItemGroup>
+</Project>

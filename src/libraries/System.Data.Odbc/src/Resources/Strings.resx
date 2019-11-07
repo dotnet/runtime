@@ -1,0 +1,437 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ADP_CollectionIndexInt32" xml:space="preserve">
+    <value>Invalid index {0} for this {1} with Count={2}.</value>
+  </data>
+  <data name="ADP_CollectionIndexString" xml:space="preserve">
+    <value>An {0} with {1} '{2}' is not contained by this {3}.</value>
+  </data>
+  <data name="ADP_CollectionInvalidType" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects, not {2} objects.</value>
+  </data>
+  <data name="ADP_CollectionIsNotParent" xml:space="preserve">
+    <value>The {0} is already contained by another {1}.</value>
+  </data>
+  <data name="ADP_CollectionIsParent" xml:space="preserve">
+    <value>The {0} with is already contained by this {1}.</value>
+  </data>
+  <data name="ADP_CollectionNullValue" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects.</value>
+  </data>
+  <data name="ADP_CollectionRemoveInvalidObject" xml:space="preserve">
+    <value>Attempted to remove an {0} that is not contained by this {1}.</value>
+  </data>
+  <data name="ADP_CollectionUniqueValue" xml:space="preserve">
+    <value>The {0}.{1} is required to be unique, '{2}' already exists in the collection.</value>
+  </data>
+  <data name="ADP_ConnectionAlreadyOpen" xml:space="preserve">
+    <value>The connection was not closed. {0}</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Closed" xml:space="preserve">
+    <value>The connection's current state is closed.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Connecting" xml:space="preserve">
+    <value>The connection's current state is connecting.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Open" xml:space="preserve">
+    <value>The connection's current state is open.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenExecuting" xml:space="preserve">
+    <value>The connection's current state is executing.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenFetching" xml:space="preserve">
+    <value>The connection's current state is fetching.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg" xml:space="preserve">
+    <value>The connection's current state: {0}.</value>
+  </data>
+  <data name="ADP_ConnectionStringSyntax" xml:space="preserve">
+    <value>Format of the initialization string does not conform to specification starting at index {0}.</value>
+  </data>
+  <data name="ADP_DataReaderClosed" xml:space="preserve">
+    <value>Invalid attempt to call {0} when reader is closed.</value>
+  </data>
+  <data name="ADP_EmptyString" xml:space="preserve">
+    <value>Expecting non-empty string for '{0}' parameter.</value>
+  </data>
+  <data name="ADP_InternalConnectionError" xml:space="preserve">
+    <value>Internal DbConnection Error: {0}</value>
+  </data>
+  <data name="ADP_InvalidDataDirectory" xml:space="preserve">
+    <value>The DataDirectory substitute is not a string.</value>
+  </data>
+  <data name="ADP_InvalidEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is invalid.</value>
+  </data>
+  <data name="ADP_InvalidKey" xml:space="preserve">
+    <value>Invalid keyword, contain one or more of 'no characters', 'control characters', 'leading or trailing whitespace' or 'leading semicolons'.</value>
+  </data>
+  <data name="ADP_InvalidOffsetValue" xml:space="preserve">
+    <value>Invalid parameter Offset value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_InvalidValue" xml:space="preserve">
+    <value>The value contains embedded nulls (\\u0000).</value>
+  </data>
+  <data name="ADP_NoConnectionString" xml:space="preserve">
+    <value>The ConnectionString property has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenConnectionPropertySet" xml:space="preserve">
+    <value>Not allowed to change the '{0}' property. {1}</value>
+  </data>
+  <data name="ADP_PooledOpenTimeout" xml:space="preserve">
+    <value>Timeout expired.  The timeout period elapsed prior to obtaining a connection from the pool.  This may have occurred because all pooled connections were in use and max pool size was reached.</value>
+  </data>
+  <data name="ADP_NonPooledOpenTimeout" xml:space="preserve">
+    <value>Timeout attempting to open the connection.  The time period elapsed prior to attempting to open the connection has been exceeded.  This may have occurred because of too many simultaneous non-pooled connection attempts.</value>
+  </data>
+  <data name="ADP_QuotePrefixNotSet" xml:space="preserve">
+    <value>{0} requires an open connection when the quote prefix has not been set.</value>
+  </data>
+  <data name="MDF_QueryFailed" xml:space="preserve">
+    <value>Unable to build the '{0}' collection because execution of the SQL query failed. See the inner exception for details.</value>
+  </data>
+  <data name="MDF_TooManyRestrictions" xml:space="preserve">
+    <value>More restrictions were provided than the requested schema ('{0}') supports.</value>
+  </data>
+  <data name="MDF_InvalidRestrictionValue" xml:space="preserve">
+    <value>'{2}' is not a valid value for the '{1}' restriction of the '{0}' schema collection.</value>
+  </data>
+  <data name="MDF_UndefinedCollection" xml:space="preserve">
+    <value>The requested collection ({0}) is not defined.</value>
+  </data>
+  <data name="MDF_UndefinedPopulationMechanism" xml:space="preserve">
+    <value>The population mechanism '{0}' is not defined.</value>
+  </data>
+  <data name="MDF_UnsupportedVersion" xml:space="preserve">
+    <value>The requested collection ({0}) is not supported by this version of the provider.</value>
+  </data>
+  <data name="MDF_MissingDataSourceInformationColumn" xml:space="preserve">
+    <value>One of the required DataSourceInformation tables columns is missing.</value>
+  </data>
+  <data name="MDF_IncorrectNumberOfDataSourceInformationRows" xml:space="preserve">
+    <value>The DataSourceInformation table must contain exactly one row.</value>
+  </data>
+  <data name="MDF_MissingRestrictionColumn" xml:space="preserve">
+    <value>One or more of the required columns of the restrictions collection is missing.</value>
+  </data>
+  <data name="MDF_MissingRestrictionRow" xml:space="preserve">
+    <value>A restriction exists for which there is no matching row in the restrictions collection.</value>
+  </data>
+  <data name="MDF_NoColumns" xml:space="preserve">
+    <value>The schema table contains no columns.</value>
+  </data>
+  <data name="MDF_UnableToBuildCollection" xml:space="preserve">
+    <value>Unable to build schema collection '{0}';</value>
+  </data>
+  <data name="MDF_AmbigousCollectionName" xml:space="preserve">
+    <value>The collection name '{0}' matches at least two collections with the same name but with different case, but does not match any of them exactly.</value>
+  </data>
+  <data name="MDF_CollectionNameISNotUnique" xml:space="preserve">
+    <value>There are multiple collections named '{0}'.</value>
+  </data>
+  <data name="MDF_DataTableDoesNotExist" xml:space="preserve">
+    <value>The collection '{0}' is missing from the metadata XML.</value>
+  </data>
+  <data name="MDF_InvalidXml" xml:space="preserve">
+    <value>The metadata XML is invalid.</value>
+  </data>
+  <data name="MDF_InvalidXmlMissingColumn" xml:space="preserve">
+    <value>The metadata XML is invalid. The {0} collection must contain a {1} column and it must be a string column.</value>
+  </data>
+  <data name="MDF_InvalidXmlInvalidValue" xml:space="preserve">
+    <value>The metadata XML is invalid. The {1} column of the {0} collection must contain a non-empty string.</value>
+  </data>
+  <data name="SqlConvert_ConvertFailed" xml:space="preserve">
+    <value>Cannot convert object of type '{0}' to object of type '{1}'.</value>
+  </data>
+  <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve">
+    <value>Invalid value for key '{0}'.</value>
+  </data>
+  <data name="ADP_KeywordNotSupported" xml:space="preserve">
+    <value>Keyword not supported: '{0}'.</value>
+  </data>
+  <data name="ADP_InternalProviderError" xml:space="preserve">
+    <value>Internal .NET Framework Data Provider error {0}.</value>
+  </data>
+  <data name="ADP_InvalidMultipartName" xml:space="preserve">
+    <value>{0} '{1}'.</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve">
+    <value>{0} '{1}', incorrect usage of quotes.</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve">
+    <value>{0} '{1}', the current limit of '{2}' is insufficient.</value>
+  </data>
+  <data name="ADP_NotSupportedEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is not supported by the {2} method.</value>
+  </data>
+  <data name="ADP_StreamClosed" xml:space="preserve">
+    <value>Invalid attempt to {0} when stream is closed.</value>
+  </data>
+  <data name="ADP_InvalidSourceBufferIndex" xml:space="preserve">
+    <value>Invalid source buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="ADP_InvalidDestinationBufferIndex" xml:space="preserve">
+    <value>Invalid destination buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="SQL_InvalidBufferSizeOrIndex" xml:space="preserve">
+    <value>Buffer offset '{1}' plus the bytes available '{0}' is greater than the length of the passed in buffer.</value>
+  </data>
+  <data name="SQL_InvalidDataLength" xml:space="preserve">
+    <value>Data length '{0}' is less than 0.</value>
+  </data>
+  <data name="ADP_InvalidSeekOrigin" xml:space="preserve">
+    <value>Specified SeekOrigin value is invalid.</value>
+  </data>
+  <data name="SQL_WrongType" xml:space="preserve">
+    <value>Expecting argument of type {1}, but received type {0}.</value>
+  </data>
+  <data name="ODBC_ODBCCommandText" xml:space="preserve">
+    <value>OdbcCommandBuilder.DeriveParameters failed because the OdbcCommand.CommandText property value is an invalid multipart name</value>
+  </data>
+  <data name="ODBC_NotSupportedEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is not supported by the .NET Framework Odbc Data Provider.</value>
+  </data>
+  <data name="ADP_CommandTextRequired" xml:space="preserve">
+    <value>{0}: CommandText property has not been initialized</value>
+  </data>
+  <data name="ADP_ConnectionRequired" xml:space="preserve">
+    <value>{0}: Connection property has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenConnectionRequired" xml:space="preserve">
+    <value>{0} requires an open and available Connection. {1}</value>
+  </data>
+  <data name="ADP_TransactionConnectionMismatch" xml:space="preserve">
+    <value>The transaction is either not associated with the current connection or has been completed.</value>
+  </data>
+  <data name="ADP_TransactionRequired" xml:space="preserve">
+    <value>{0} requires the command to have a transaction when the connection assigned to the command is in a pending local transaction.  The Transaction property of the command has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenReaderExists" xml:space="preserve">
+    <value>There is already an open DataReader associated with this Command which must be closed first.</value>
+  </data>
+  <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
+    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType. {1}.</value>
+  </data>
+  <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
+    <value>Invalid CommandTimeout value {0}; the value must be &gt;= 0.</value>
+  </data>
+  <data name="ADP_UninitializedParameterSize" xml:space="preserve">
+    <value>{1}[{0}]: the Size property has an invalid size of 0.</value>
+  </data>
+  <data name="ADP_ClosedConnectionError" xml:space="preserve">
+    <value>Invalid operation. The connection is closed.</value>
+  </data>
+  <data name="ADP_ConnectionIsDisabled" xml:space="preserve">
+    <value>The connection has been disabled.</value>
+  </data>
+  <data name="ADP_EmptyDatabaseName" xml:space="preserve">
+    <value>Database cannot be null, the empty string, or string of only whitespace.</value>
+  </data>
+  <data name="ADP_DatabaseNameTooLong" xml:space="preserve">
+    <value>The argument is too long.</value>
+  </data>
+  <data name="ADP_DataReaderNoData" xml:space="preserve">
+    <value>No data exists for the row/column.</value>
+  </data>
+  <data name="ADP_NumericToDecimalOverflow" xml:space="preserve">
+    <value>The numerical value is too large to fit into a 96 bit decimal.</value>
+  </data>
+  <data name="ADP_InvalidDataType" xml:space="preserve">
+    <value>The parameter data type of {0} is invalid.</value>
+  </data>
+  <data name="ADP_UnknownDataType" xml:space="preserve">
+    <value>No mapping exists from object type {0} to a known managed provider native type.</value>
+  </data>
+  <data name="ADP_UnknownDataTypeCode" xml:space="preserve">
+    <value>Unable to handle an unknown TypeCode {0} returned by Type {1}.</value>
+  </data>
+  <data name="ADP_DbTypeNotSupported" xml:space="preserve">
+    <value>No mapping exists from DbType {0} to a known {1}.</value>
+  </data>
+  <data name="ADP_InvalidSizeValue" xml:space="preserve">
+    <value>Invalid parameter Size value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_ParameterConversionFailed" xml:space="preserve">
+    <value>Failed to convert parameter value from a {0} to a {1}.</value>
+  </data>
+  <data name="ADP_ParallelTransactionsNotSupported" xml:space="preserve">
+    <value>{0} does not support parallel transactions.</value>
+  </data>
+  <data name="ADP_TransactionZombied" xml:space="preserve">
+    <value>This {0} has completed; it is no longer usable.</value>
+  </data>
+  <data name="ADP_DbRecordReadOnly" xml:space="preserve">
+    <value>'{0}' cannot be called when the record is read only.</value>
+  </data>
+  <data name="ADP_NonSeqByteAccess" xml:space="preserve">
+    <value>Invalid {2} attempt at dataIndex '{0}'.  With CommandBehavior.SequentialAccess, you may only read from dataIndex '{1}' or greater.</value>
+  </data>
+  <data name="ADP_OffsetOutOfRangeException" xml:space="preserve">
+    <value>Offset must refer to a location within the value.</value>
+  </data>
+  <data name="ODBC_GetSchemaRestrictionRequired" xml:space="preserve">
+    <value>The ODBC managed provider requires that the TABLE_NAME restriction be specified and non-null for the GetSchema indexes collection.</value>
+  </data>
+  <data name="ADP_OdbcNoTypesFromProvider" xml:space="preserve">
+    <value>The ODBC provider did not return results from SQLGETTYPEINFO.</value>
+  </data>
+  <data name="OdbcConnection_ConnectionStringTooLong" xml:space="preserve">
+    <value>Connection string exceeds maximum allowed length of {0}.</value>
+  </data>
+  <data name="Odbc_UnknownSQLType" xml:space="preserve">
+    <value>Unknown SQL type - {0}.</value>
+  </data>
+  <data name="Odbc_NegativeArgument" xml:space="preserve">
+    <value>Invalid negative argument!</value>
+  </data>
+  <data name="Odbc_CantSetPropertyOnOpenConnection" xml:space="preserve">
+    <value>Can't set property on an open connection.</value>
+  </data>
+  <data name="Odbc_NoMappingForSqlTransactionLevel" xml:space="preserve">
+    <value>No valid mapping for a SQL_TRANSACTION '{0}' to a System.Data.IsolationLevel enumeration value.</value>
+  </data>
+  <data name="Odbc_CantEnableConnectionpooling" xml:space="preserve">
+    <value>{0} - unable to enable connection pooling...</value>
+  </data>
+  <data name="Odbc_CantAllocateEnvironmentHandle" xml:space="preserve">
+    <value>{0} - unable to allocate an environment handle.</value>
+  </data>
+  <data name="Odbc_FailedToGetDescriptorHandle" xml:space="preserve">
+    <value>{0} - unable to get descriptor handle.</value>
+  </data>
+  <data name="Odbc_NotInTransaction" xml:space="preserve">
+    <value>Not in a transaction</value>
+  </data>
+  <data name="Odbc_ExceptionMessage" xml:space="preserve">
+    <value>{0} [{1}] {2}</value>
+  </data>
+  <data name="Odbc_ConnectionClosed" xml:space="preserve">
+    <value>The connection is closed.</value>
+  </data>
+  <data name="Odbc_OpenConnectionNoOwner" xml:space="preserve">
+    <value>An internal connection does not have an owner.</value>
+  </data>
+  <data name="Odbc_PlatformNotSupported" xml:space="preserve">
+    <value>System.Data.ODBC is not supported on this platform.</value>
+  </data>
+  <data name="Odbc_UnixOdbcNotFound" xml:space="preserve">
+    <value>Dependency unixODBC with minimum version 2.3.1 is required.</value>
+  </data>
+</root>

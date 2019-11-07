@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="PBEParameter"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc2898#appendix-A.3
+
+    PBEParameter ::= SEQUENCE {
+        salt OCTET STRING (SIZE(8)),
+        iterationCount INTEGER
+    }
+    
+    The version from PKCS#12 (pkcs-12PbeParams, https://tools.ietf.org/html/rfc7292#appendix-C)
+    is the same, without limiting the size of the salt value.
+  -->
+  <asn:OctetString name="Salt" />
+  <!--
+    The spec calls out that while there's technically no limit to IterationCount,
+    that specific platforms may have their own limits. This defines ours to int.MaxValue.
+  -->
+  <asn:Integer name="IterationCount" backingType="int" />
+</asn:Sequence>

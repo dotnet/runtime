@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WebHeaderCollectionTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+  </ItemGroup>
+</Project>

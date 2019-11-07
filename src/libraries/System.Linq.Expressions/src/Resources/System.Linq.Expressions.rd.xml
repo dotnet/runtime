@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Linq.Expressions*">
+    <Assembly Name="System.Linq.Expressions">
+      <TypeInstantiation Name="System.Linq.Expressions.ExpressionCreator" Arguments="System.Func{System.Boolean}" Dynamic="Required All" />
+      <TypeInstantiation Name="System.Runtime.CompilerServices.CallSite" Arguments="System.Func{System.Runtime.CompilerServices.CallSite, System.Object, System.Int32}" Dynamic="Required All" /> 
+      <Type Name="System.Runtime.CompilerServices.CallSiteOps" Dynamic="Required All" />
+      <Type Name="System.Runtime.CompilerServices.RuntimeOps" Dynamic="Required All" />
+      <Namespace Name="System.Linq.Expressions">
+        <Type Name="Expression&lt;TDelegate&gt;">
+          <GenericParameter Name="TDelegate" Dynamic="Public"/>
+        </Type>
+        <Type Name="Expression">
+          <Method Name ="Block">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Break">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Call">
+            <TypeParameter Name="type" Dynamic="Public"/>
+            <!-- When we can express interesting method names ... <TypeParameter Name="methodName" Type="MethodName" Dynamic="Public" />-->
+          </Method>
+          <Method Name="Catch">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Constant">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Continue">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Convert">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="ConvertChecked">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Default">
+            <TypeParameter Name="type" Dynamic="Public" Activate="Public"/>
+          </Method>
+          <Method Name="Field">
+            <TypeParameter Name="type" Dynamic="Public" Serialize="Public"/>
+            <!-- When we can express interesting field names ... <TypeParameter Name="fieldName" Type="FieldName" Dynamic="Public" /> ALSO we might want to remove the notation above that injects serialization-->
+          </Method>
+          <Method Name="Goto">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Label">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Lambda">
+            <TypeParameter Name="delegateType" Dynamic="Public" Activate="Public"/>
+          </Method>
+          <!-- ListInit may be interesting -->
+          <Method Name="MakeCatchBlock">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="MakeGoto">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="MakeTry">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="MakeUnary">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="New">
+            <TypeParameter Name="type" Dynamic="Public" Activate="Public"/>
+          </Method>
+          <Method Name="NewArrayBounds">
+            <TypeParameter Name="type" Dynamic="Public"/>
+            <!-- <TypeParameter Name="type" Type="MakeArray(System.Type)" Dynamic="Public" Activate="Public"/> -->
+          </Method>
+          <Method Name="NewArrayInit">
+            <TypeParameter Name="type" Dynamic="Public"/>
+            <!-- <TypeParameter Name="type" Type="MakeArray(System.Type)" Dynamic="Public" Activate="Public"/> -->
+          </Method>
+          <Method Name="Parameter">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Property">
+            <TypeParameter Name="type" Dynamic="Public" Serialize="Public"/>
+            <!--
+            <TypeParameter Name="propertyName" Type="PropertyName" Dynamic="Public"/>
+            -->
+          </Method>
+          <Method Name="Rethrow">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Return">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Switch">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Throw">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="TypeAs">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="TypeEqual">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="TypeIs">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+          <Method Name="Unbox">
+            <TypeParameter Name="type" Dynamic="Public" Activate="Public"/>
+          </Method>
+          <Method Name="Variable">
+            <TypeParameter Name="type" Dynamic="Public"/>
+          </Method>
+        </Type>
+      </Namespace>
+      <!-- make Debug.Assert in Linq code pass ... this probably isn't generally necessary, but debug builds of linq require this... -->
+      <Type Name="System.Linq.Expressions.ExpressionType" Serialize="Public"/>
+      <!-- Every Expression<T> type must be visible to reflection -->
+      <Type Name="System.Linq.Expressions.Expression&lt;&gt;" Activate="Public"/>
+      <!-- CachedReflectionInfo.cs obtains MemberInfo's for many DynamicObject members -->
+      <Type Name="System.Dynamic.DynamicObject" Dynamic="Required Public" />
+    </Assembly>
+    <Assembly Name="System.Private.CoreLib">
+      <Namespace Name="System">
+        <Type Name="Decimal">
+          <Method Name="op_Decrement" Dynamic="Required"/>
+          <Method Name="op_Division" Dynamic="Required"/>
+          <Method Name="op_Equality" Dynamic="Required" />
+          <Method Name="op_GreaterThan" Dynamic="Required"/>
+          <Method Name="op_GreaterThanOrEqual" Dynamic="Required"/>
+          <Method Name="op_Increment" Dynamic="Required"/>
+          <Method Name="op_Inequality" Dynamic="Required"/>
+          <Method Name="op_LessThan" Dynamic="Required"/>
+          <Method Name="op_LessThanOrEqual" Dynamic="Required"/>
+          <Method Name="op_Subtraction" Dynamic="Required"/>
+          <Method Name="op_Modulus" Dynamic="Required"/>
+          <Method Name="op_Multiply" Dynamic="Required"/>
+          <Method Name="op_Addition" Dynamic="Required"/>
+          <Method Name="op_UnaryNegation" Dynamic="Required"/>
+          <Method Name="op_UnaryPlus" Dynamic="Required"/>
+          <Method Name="op_Implicit" Dynamic="Required"/>
+          <Method Name="op_Explicit" Dynamic="Required"/>
+        </Type>
+        <Type Name="IDisposable">
+          <Method Name="Dispose" Dynamic="Required"/>
+        </Type>
+        <Type Name="Math">
+          <Method Name="Pow" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Collections">
+        <Type Name="IEnumerator">
+           <Method Name="MoveNext" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Collections.Generic">
+        <Type Name="IEnumerable&lt;&gt;">
+           <Method Name="GetEnumerator" Dynamic="Required"/>
+        </Type>
+        <Type Name="IEnumerator&lt;&gt;">
+           <Property Name="Current" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+    </Assembly>
+    <Assembly Name="System.Runtime">
+      <Type Name="System.Runtime.CompilerServices.StrongBox&lt;System.Object&gt;" Dynamic="Required All" />
+    </Assembly>
+  </Library>
+</Directives>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" ?>
+<!DOCTYPE Book 
+[  
+	<!ENTITY copy "&#169;">
+	<!ENTITY Name "Professional XML">
+	<!ENTITY PubName "Wrox Press Ltd.">
+	<!ENTITY PubYear "2001">  
+	<!ENTITY CopyrightText "Copyright &copy; &PubName; All Rights..">
+]>
+<Book>
+	<Publisher>
+		<Name>&Name;</Name>
+		<PubName>&PubName;</PubName>
+		<PubYear>&PubYear;</PubYear>
+		<CopyRight>&CopyrightText;</CopyRight>
+	</Publisher>
+</Book>

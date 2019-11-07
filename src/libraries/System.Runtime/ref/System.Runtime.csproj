@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- disable warnings about obsolete APIs -->
+    <NoWarn>$(NoWarn);0809;0618</NoWarn>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.cs" />
+    <Compile Include="System.Runtime.Manual.cs" />
+  </ItemGroup>
+</Project>

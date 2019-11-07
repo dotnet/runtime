@@ -1,0 +1,311 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="CannotReadFromDeflateStream" xml:space="preserve">
+    <value>Reading from the compression stream is not supported.</value>
+  </data>
+  <data name="CannotWriteToDeflateStream" xml:space="preserve">
+    <value>Writing to the compression stream is not supported.</value>
+  </data>
+  <data name="GenericInvalidData" xml:space="preserve">
+    <value>Found invalid data while decoding.</value>
+  </data>
+  <data name="InvalidArgumentOffsetCount" xml:space="preserve">
+    <value>Offset plus count is larger than the length of target array.</value>
+  </data>
+  <data name="InvalidBeginCall" xml:space="preserve">
+    <value>Only one asynchronous reader or writer is allowed time at one time.</value>
+  </data>
+  <data name="InvalidBlockLength" xml:space="preserve">
+    <value>Block length does not match with its complement.</value>
+  </data>
+  <data name="InvalidHuffmanData" xml:space="preserve">
+    <value>Failed to construct a huffman tree using the length array. The stream might be corrupted.</value>
+  </data>
+  <data name="NotSupported" xml:space="preserve">
+    <value>This operation is not supported.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="UnknownBlockType" xml:space="preserve">
+    <value>Unknown block type. Stream might be corrupted.</value>
+  </data>
+  <data name="UnknownState" xml:space="preserve">
+    <value>Decoder is in some unknown state. This might be caused by corrupted data.</value>
+  </data>
+  <data name="ZLibErrorDLLLoadError" xml:space="preserve">
+    <value>The underlying compression routine could not be loaded correctly.</value>
+  </data>
+  <data name="ZLibErrorInconsistentStream" xml:space="preserve">
+    <value>The stream state of the underlying compression routine is inconsistent.</value>
+  </data>
+  <data name="ZLibErrorIncorrectInitParameters" xml:space="preserve">
+    <value>The underlying compression routine received incorrect initialization parameters.</value>
+  </data>
+  <data name="ZLibErrorNotEnoughMemory" xml:space="preserve">
+    <value>The underlying compression routine could not reserve sufficient memory.</value>
+  </data>
+  <data name="ZLibErrorVersionMismatch" xml:space="preserve">
+    <value>The version of the underlying compression routine does not match expected version.</value>
+  </data>
+  <data name="ZLibErrorUnexpected" xml:space="preserve">
+    <value>The underlying compression routine returned an unexpected error code.</value>
+  </data>
+  <data name="ArgumentNeedNonNegative" xml:space="preserve">
+    <value>The argument must be non-negative.</value>
+  </data>
+  <data name="CannotBeEmpty" xml:space="preserve">
+    <value>String cannot be empty.</value>
+  </data>
+  <data name="CDCorrupt" xml:space="preserve">
+    <value>Central Directory corrupt.</value>
+  </data>
+  <data name="CentralDirectoryInvalid" xml:space="preserve">
+    <value>Central Directory is invalid.</value>
+  </data>
+  <data name="CreateInReadMode" xml:space="preserve">
+    <value>Cannot create entries on an archive opened in read mode.</value>
+  </data>
+  <data name="CreateModeCapabilities" xml:space="preserve">
+    <value>Cannot use create mode on a non-writable stream.</value>
+  </data>
+  <data name="CreateModeCreateEntryWhileOpen" xml:space="preserve">
+    <value>Entries cannot be created while previously created entries are still open.</value>
+  </data>
+  <data name="CreateModeWriteOnceAndOneEntryAtATime" xml:space="preserve">
+    <value>Entries in create mode may only be written to once, and only one entry may be held open at a time.</value>
+  </data>
+  <data name="DateTimeOutOfRange" xml:space="preserve">
+    <value>The DateTimeOffset specified cannot be converted into a Zip file timestamp.</value>
+  </data>
+  <data name="DeletedEntry" xml:space="preserve">
+    <value>Cannot modify deleted entry.</value>
+  </data>
+  <data name="DeleteOnlyInUpdate" xml:space="preserve">
+    <value>Delete can only be used when the archive is in Update mode.</value>
+  </data>
+  <data name="DeleteOpenEntry" xml:space="preserve">
+    <value>Cannot delete an entry currently open for writing.</value>
+  </data>
+  <data name="EntriesInCreateMode" xml:space="preserve">
+    <value>Cannot access entries in Create mode.</value>
+  </data>
+  <data name="EntryNameEncodingNotSupported" xml:space="preserve">
+    <value>The specified entry name encoding is not supported.</value>
+  </data>
+  <data name="EntryNamesTooLong" xml:space="preserve">
+    <value>Entry names cannot require more than 2^16 bits.</value>
+  </data>
+  <data name="EntryTooLarge" xml:space="preserve">
+    <value>Entries larger than 4GB are not supported in Update mode.</value>
+  </data>
+  <data name="EOCDNotFound" xml:space="preserve">
+    <value>End of Central Directory record could not be found.</value>
+  </data>
+  <data name="FieldTooBigCompressedSize" xml:space="preserve">
+    <value>Compressed Size cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigLocalHeaderOffset" xml:space="preserve">
+    <value>Local Header Offset cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigNumEntries" xml:space="preserve">
+    <value>Number of Entries cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigOffsetToCD" xml:space="preserve">
+    <value>Offset to Central Directory cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigOffsetToZip64EOCD" xml:space="preserve">
+    <value>Offset to Zip64 End Of Central Directory record cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigStartDiskNumber" xml:space="preserve">
+    <value>Start Disk Number cannot be held in an Int64.</value>
+  </data>
+  <data name="FieldTooBigUncompressedSize" xml:space="preserve">
+    <value>Uncompressed Size cannot be held in an Int64.</value>
+  </data>
+  <data name="FrozenAfterWrite" xml:space="preserve">
+    <value>Cannot modify entry in Create mode after entry has been opened for writing.</value>
+  </data>
+  <data name="HiddenStreamName" xml:space="preserve">
+    <value>A stream from ZipArchiveEntry has been disposed.</value>
+  </data>
+  <data name="LengthAfterWrite" xml:space="preserve">
+    <value>Length properties are unavailable once an entry has been opened for writing.</value>
+  </data>
+  <data name="LocalFileHeaderCorrupt" xml:space="preserve">
+    <value>A local file header is corrupt.</value>
+  </data>
+  <data name="NumEntriesWrong" xml:space="preserve">
+    <value>Number of entries expected in End Of Central Directory does not correspond to number of entries in Central Directory.</value>
+  </data>
+  <data name="OffsetLengthInvalid" xml:space="preserve">
+    <value>The offset and length parameters are not valid for the array that was given.</value>
+  </data>
+  <data name="ReadingNotSupported" xml:space="preserve">
+    <value>This stream from ZipArchiveEntry does not support reading.</value>
+  </data>
+  <data name="ReadModeCapabilities" xml:space="preserve">
+    <value>Cannot use read mode on a non-readable stream.</value>
+  </data>
+  <data name="ReadOnlyArchive" xml:space="preserve">
+    <value>Cannot modify read-only archive.</value>
+  </data>
+  <data name="SeekingNotSupported" xml:space="preserve">
+    <value>This stream from ZipArchiveEntry does not support seeking.</value>
+  </data>
+  <data name="SetLengthRequiresSeekingAndWriting" xml:space="preserve">
+    <value>SetLength requires a stream that supports seeking and writing.</value>
+  </data>
+  <data name="SplitSpanned" xml:space="preserve">
+    <value>Split or spanned archives are not supported.</value>
+  </data>
+  <data name="UnexpectedEndOfStream" xml:space="preserve">
+    <value>Zip file corrupt: unexpected end of stream reached.</value>
+  </data>
+  <data name="UnsupportedCompression" xml:space="preserve">
+    <value>The archive entry was compressed using an unsupported compression method.</value>
+  </data>
+  <data name="UnsupportedCompressionMethod" xml:space="preserve">
+    <value>The archive entry was compressed using {0} and is not supported.</value>
+  </data>
+  <data name="UpdateModeCapabilities" xml:space="preserve">
+    <value>Update mode requires a stream with read, write, and seek capabilities.</value>
+  </data>
+  <data name="UpdateModeOneStream" xml:space="preserve">
+    <value>Entries cannot be opened multiple times in Update mode.</value>
+  </data>
+  <data name="WritingNotSupported" xml:space="preserve">
+    <value>This stream from ZipArchiveEntry does not support writing.</value>
+  </data>
+  <data name="Zip64EOCDNotWhereExpected" xml:space="preserve">
+    <value>Zip 64 End of Central Directory Record not where indicated.</value>
+  </data>
+</root>

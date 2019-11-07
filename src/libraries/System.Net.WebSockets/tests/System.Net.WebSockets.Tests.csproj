@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WebSocketTests.cs" />
+    <Compile Include="WebSocketTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="WebSocketExceptionTests.cs" />
+    <Compile Include="WebSocketReceiveResultTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Net\WebSockets\WebSocketCreateTest.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketCreateTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.WebSockets.cs">
+      <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,186 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_EmptyApplicationName" xml:space="preserve">
+    <value>ApplicationId cannot have an empty string for the name.</value>
+  </data>
+  <data name="Argument_FrameworkNameMissingVersion" xml:space="preserve">
+    <value>FrameworkName version component is missing.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
+    <value> FrameworkName is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalidVersion" xml:space="preserve">
+    <value>FrameworkName version component is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameTooShort" xml:space="preserve">
+    <value>FrameworkName cannot have less than two components or more than three components.</value>
+  </data>
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
+    <value>'{0}' must be greater than zero.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
+  <data name="Argument_BadResourceScopeTypeBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.</value>
+  </data>
+  <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
+  </data>
+  <data name="ArgumentNull_TypeRequiredByResourceScope" xml:space="preserve">
+    <value>The type parameter cannot be null when scoping the resource's visibility to Private or Assembly.</value>
+  </data>
+  <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
+    <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
+  </data>
+  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
+    <value>Attempted to access an unloaded AppDomain.</value>
+  </data>
+  <data name="Arg_SwitchExpressionException" xml:space="preserve">
+    <value>Non-exhaustive switch expression failed to match its input.</value>
+  </data>
+  <data name="Arg_ContextMarshalException" xml:space="preserve">
+    <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="GenericInvalidData" xml:space="preserve">
+    <value>Found invalid data while decoding.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
+    <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
+  </data>
+  <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
+    <value>Unmatched value was {0}.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="Argument_StringZeroLength" xml:space="preserve">
+    <value>String cannot be of zero length.</value>
+  </data>
+</root>

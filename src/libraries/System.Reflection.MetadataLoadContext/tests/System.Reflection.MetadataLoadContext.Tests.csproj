@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="src\SampleMetadata\SampleMetadata.cs" />
+    <Compile Include="src\Tests\Assembly\AssemblyGetNameTests.cs" />
+    <Compile Include="src\Tests\Assembly\AssemblyProhibitedApiTests.cs" />
+    <Compile Include="src\Tests\Assembly\AssemblyTests.cs" />
+    <Compile Include="src\Tests\Constructor\ConstructorTests.cs" />
+    <Compile Include="src\Tests\CustomAttributes\CustomAttributeTests.cs" />
+    <Compile Include="src\Tests\CustomAttributes\DllImportTests.cs" />
+    <Compile Include="src\Tests\Event\EventTests.cs" />
+    <Compile Include="src\Tests\Field\FieldTests.cs" />
+    <Compile Include="src\Tests\Identity\IdentityTests.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\PathAssemblyResolver.cs" />
+    <Compile Include="src\Tests\Method\MethodInvariants.cs" />
+    <Compile Include="src\Tests\Method\MethodTests.cs" />
+    <Compile Include="src\Tests\Module\ModuleProhibitedApiTests.cs" />
+    <Compile Include="src\Tests\Module\ModuleTests.cs" />
+    <Compile Include="src\Tests\Module\MultiModuleTests.cs" />
+    <Compile Include="src\Tests\Parameter\ParameterTests.cs" />
+    <Compile Include="src\Tests\Property\PropertyTests.cs" />
+    <Compile Include="src\Tests\RestrictedApis\RestrictedApis.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredCtorTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredEventTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredFieldTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredMemberTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredMethodTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredNestedTypeTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_DeclaredPropertiesTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_GenericTypeArgumentsTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_GenericTypeParametersTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_ImplementedInterfacesTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_IsAssignableFromTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_MethodTests.cs" />
+    <Compile Include="src\Tests\TypeInfoFromProjectN\TypeInfo_PropertyTests.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\CoreAssembly.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\Dispose.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\ExternalAssemblies.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\GetAssemblies.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\LoadApi.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\ResolveMethod.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\Scenarios.cs" />
+    <Compile Include="src\Tests\Type\TypeInvariants.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.BaseType.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.Constraints.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.Enum.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.Get.CornerCases.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.GetInterface.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.GetMember.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.Interfaces.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.StructLayoutAttribute.cs" />
+    <Compile Include="src\Tests\Type\TypeTests.TypeFactories.cs" />
+    <Compile Include="src\TestUtils\CoreMetadataAssemblyResolver.cs" />
+    <Compile Include="src\TestUtils\CustomAttributeInstantiator.cs" />
+    <Compile Include="src\TestUtils\EmptyCoreMetadataAssemblyResolver.cs" />
+    <Compile Include="src\TestUtils\FuncMetadataAssemblyResolver.cs" />
+    <Compile Include="src\TestUtils\NetStandardBridge.cs" />
+    <Compile Include="src\TestUtils\SimpleAssemblyResolver.cs" />
+    <Compile Include="src\TestUtils\TestData.cs" />
+    <Compile Include="src\TestUtils\TestUtils.cs" />
+    <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />
+    <Compile Include="src\TestUtils\TypeWrapper.cs" />
+  </ItemGroup>
+</Project>

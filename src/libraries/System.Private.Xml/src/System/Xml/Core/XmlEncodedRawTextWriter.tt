@@ -1,0 +1,6 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ output extension=".cs" #>
+<#@ import namespace="System" #>
+<#@ include file="RawTextWriterEncoded.ttinclude" #>
+<#@ include file="XmlRawTextWriterGenerator.ttinclude" #>

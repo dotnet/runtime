@@ -1,0 +1,11 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Composition.AttributedModel\pkg\System.Composition.AttributedModel.pkgproj" />
+    <ProjectReference Include="..\..\System.Composition.Convention\pkg\System.Composition.Convention.pkgproj" />
+    <ProjectReference Include="..\..\System.Composition.Hosting\pkg\System.Composition.Hosting.pkgproj" />
+    <ProjectReference Include="..\..\System.Composition.Runtime\pkg\System.Composition.Runtime.pkgproj" />
+    <ProjectReference Include="..\..\System.Composition.TypedParts\pkg\System.Composition.TypedParts.pkgproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

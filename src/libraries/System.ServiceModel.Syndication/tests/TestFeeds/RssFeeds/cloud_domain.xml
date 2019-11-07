@@ -1,0 +1,13 @@
+<!--
+  Description:  cloud includes domain attribute
+  Expect:       ValidCloud{element:cloud,attr:domain}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Invalid cloud</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>foo</description>
+<cloud domain="contoso.com" port="80" path="/RPC2" registerProcedure="pingMe" protocol="soap"/>
+</channel>
+</rss>

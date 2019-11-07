@@ -1,0 +1,8 @@
+<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      <!-- Setting BuildConfiguration to empty in order to skip the build of this project -->
+      ;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

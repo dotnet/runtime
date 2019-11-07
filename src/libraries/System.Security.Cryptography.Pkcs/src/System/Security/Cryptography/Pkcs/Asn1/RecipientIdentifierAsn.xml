@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="RecipientIdentifierAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-6.2.1
+
+    RecipientIdentifier ::= CHOICE {
+        issuerAndSerialNumber IssuerAndSerialNumber,
+        subjectKeyIdentifier[0] SubjectKeyIdentifier
+    }
+
+    DEFINITIONS IMPLICIT TAGS, so [0] is [0] IMPLICIT
+  -->
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:OctetString name="SubjectKeyIdentifier" implicitTag="0" />
+</asn:Choice>

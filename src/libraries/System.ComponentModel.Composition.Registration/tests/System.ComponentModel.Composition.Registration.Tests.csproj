@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InternalCalls.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportInterfacesContractExclusionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ImportBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderInheritanceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderInterfaceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfTInheritanceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfTTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderAttributedOverrideUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderExportFuncTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationContextUnitTests.cs" />
+  </ItemGroup>
+</Project>

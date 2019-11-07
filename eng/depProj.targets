@@ -1,0 +1,150 @@
+<!--
+***********************************************************************************************
+depProj.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file defines the steps in the standard build process specific for NuGet deployment
+projects. The remainder of the build process is defined in Microsoft.Common.targets, 
+which is imported by this file.
+
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+See the LICENSE file in the project root for more information.
+***********************************************************************************************
+-->
+<Project InitialTargets="RemoveImplicitPackageReferences">
+
+  <!-- Deployment project
+       Restores NuGet dependencies and copies them to the output directory.
+       
+       NuGetTargetMoniker - determined by the TargetFramework* and TargetPlatform* 
+                            properties of the project, can be overidden.
+       NuGetRuntimeIdentifier - defaults to <empty> (""), can be overidden.
+       NuGetDeploySourceItem - defaults to ReferenceCopyLocalPaths, can be overidden to
+                               specify Reference (for compile assets) or Analyzer(for
+                               analyzer assets)
+                         
+       For the appropriate behavior of P2P references the project should set the 
+       TargetName and TargetExt to match one of the files that will be copied
+       from the packages.
+  -->
+
+  <PropertyGroup>
+    <!-- Always raise runtime/lib items even for frameworks that may not use them -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- We don't need the SDK to validate that we get runtime packages -->
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <!-- don't generate netcoreapp files -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetDeploySourceItem Condition="'$(NuGetDeploySourceItem)' == ''">ReferenceCopyLocalPaths</NuGetDeploySourceItem>
+
+    <!-- suppress the attempt to copy build output. -->
+    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
+
+    <!-- Unless overridden, use no runtime identifier. This is transformed in packageresolve.targets. 
+         We specify "None" here to avoid being assigned the default runtime for projects which set CopyNuGetImplementations=true. -->
+    <NuGetRuntimeIdentifier Condition="'$(NuGetRuntimeIdentifier)' == ''">None</NuGetRuntimeIdentifier>
+
+    <!-- make sure we tell nuget targets to copy, even if output type would not by default -->
+    <CopyNuGetImplementations>true</CopyNuGetImplementations>
+  </PropertyGroup>
+
+  <Target Name="RemoveImplicitPackageReferences">
+    <ItemGroup>
+      <!-- Remove all implicit framework packages, depprojs are meant to be wholly explicit -->
+      <PackageReference Remove="@(PackageReference)" Condition="'%(PackageReference.IsImplicitlyDefined)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RunRestoreDuringBuild"
+          DependsOnTargets="Restore"
+          BeforeTargets="ResolvePackageAssets"
+          Condition="'$(VSDesignTimeBuild)' != 'true'" />
+
+  <Target Name="CoreCompile" Condition="'@(PackageReference)' != '' Or '@(PackageDownload)' == ''">
+
+    <Error Condition="'$(NuGetDeploySourceItem)' != 'ReferenceCopyLocalPaths' AND
+                      '$(NuGetDeploySourceItem)' != 'Reference' AND
+                      '$(NuGetDeploySourceItem)' != 'Analyzer'"
+           Text="Unexpected value for NuGetDeploySourceItem:'$(NuGetDeploySourceItem)'.  Expected ReferenceCopyLocalPaths, Reference, or Analyzer." />
+
+    <ItemGroup>
+      <!-- Don't set IntermediateAssembly since this is not produced -->
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+
+      <NuGetDeploy Include="@($(NuGetDeploySourceItem))"/>
+
+      <!-- filter to only items that came from packages -->
+      <!-- the following condition must be applied after the include because msbuild doesn't seem
+           to support property-defined-item-names in a metadata statement -->
+      <NuGetDeploy Remove="@(NuGetDeploy)" Condition="'%(NuGetDeploy.NuGetPackageId)' == ''" />
+
+      <!-- remove all existing items from NuGet packages we'll be defining these in our own item -->
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' != ''"/>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.NuGetPackageId)' != ''"/>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' != ''"/>
+
+      <!-- add items defined by NuGetDeployItem property to Content so that we get clean behavior -->
+      <ContentWithTargetPath Include="@(NuGetDeploy)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <TargetPath>%(NuGetDeploy.SubFolder)%(FileName)%(Extension)</TargetPath>
+      </ContentWithTargetPath>
+    </ItemGroup>
+
+    <Error Condition="'@(NuGetDeploy)' == ''" Text="Error no assets were resolved from NuGet packages." />
+    <Message Importance="High" Text="%(FullPath) (%(NuGetPackageId).%(NuGetPackageVersion)) -&gt; @(NuGetDeploy->'$(TargetDir)%(SubFolder)%(FileName)%(Extension)')" />
+
+    <!-- Include marker files if an extension has been provided -->
+    <!-- internal builds use this to distinguish files which have already been signed -->
+    <Touch Condition="'$(DeployMarkerExtension)' != ''" Files="@(NuGetDeploy->'$(TargetDir)%(FileName)$(DeployMarkerExtension)')" AlwaysCreate="true">
+      <Output TaskParameter="TouchedFiles" ItemName="FileWrites"/>
+    </Touch>
+  </Target>
+
+  <!-- Required by Common.Targets but not used for depproj -->
+  <Target Name="CreateManifestResourceNames" />
+  
+  <Target Name="RemoveFrameworkReferences"
+          AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <ResolvedFrameworkAssemblies Remove="@(ResolvedFrameworkAssemblies)" Condition="'%(ResolvedFrameworkAssemblies.NuGetIsFrameworkReference)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Support filtering to a subset of packages or files -->
+  <Target Name="FilterNugetPackages" 
+          BeforeTargets="ResolveAssemblyReferences"
+          DependsOnTargets="ResolvePackageAssets"
+          Condition="'@(PackageToInclude)' != '' OR '@(PackageToExclude)' != '' OR '@(FileToInclude)' != '' OR '@(FileToExclude)' != ''">
+    <ItemGroup>
+      <_nuGetDeploy Include="@($(NuGetDeploySourceItem))"/>
+      <_nuGetDeployByFileName Include="@(_nuGetDeploy->'%(FileName)')">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_nuGetDeployByFileName>
+
+      <_nuGetDeployByFileNameToRemove Include="@(_nuGetDeployByFileName)" Exclude="@(FileToInclude)" Condition="'@(FileToInclude)' != ''" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Exclude="@(_nuGetDeployByFileNameToRemove);@(FileToExclude)" />
+      
+      <_nuGetDeployByPackageId Include="@(_filteredNuGetDeployByFileName->'%(NuGetPackageId)')" />
+
+      <_nuGetDeployByPackageIdToRemove Include="@(_nuGetDeployByPackageId)" Exclude="@(PackageToInclude)" Condition="'@(PackageToInclude)' != ''" />
+      <_filteredNuGetDeployByPackageId Include="@(_nuGetDeployByPackageId)" Exclude="@(_nuGetDeployByPackageIdToRemove);@(PackageToExclude)" />
+
+      <ReferenceCopyLocalPaths Condition="'$(NuGetDeploySourceItem)' == 'ReferenceCopyLocalPaths'" Remove="@(ReferenceCopyLocalPaths)" />
+      <Reference Condition="'$(NuGetDeploySourceItem)' == 'Reference'" Remove="@(Reference)" />
+      <Analyzer Condition="'$(NuGetDeploySourceItem)' == 'Analyzer'" Remove="@(Analyzer)" />
+    </ItemGroup>
+    
+    <CreateItem Include="@(_filteredNuGetDeployByPackageId->'%(OriginalItemSpec)')">
+      <Output TaskParameter="Include" ItemName="$(NuGetDeploySourceItem)" />
+    </CreateItem>
+  </Target>
+
+</Project>

@@ -1,0 +1,35 @@
+<Project>
+  <!-- Add validation for netcoreapp5.0 to package build and testing -->
+  <ItemGroup>
+    <DefaultValidateFramework Include="netcoreapp5.0" RuntimeIDs="@(NETCoreApp30RIDs)" />
+    <DefaultValidateFramework Remove="uap10.0.16300" />
+  </ItemGroup>
+
+  <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
+           dektop with RAR we will make sure there are no exclude=compile references in the package.
+    For more info, please check issues:
+     - https://github.com/dotnet/corefx/issues/32457  -> Why reference assets were removed from the package
+     - https://github.com/aspnet/AspNetCore/issues/11206  -> Why ASP.NET required a ref to be added back for netcoreapp
+     - https://github.com/dotnet/corefx/issues/38729  -> Issue tracking to work of readding a ref to netcoreapp -->
+  <Target Name="RemoveExcludeCompileFromPackageDependencies" Condition="'$(RemoveExcludeCompileFromPackageDependencies)' == 'true'" DependsOnTargets="GetPackageDependencies" BeforeTargets="ValidateExcludeCompileDesktop">
+    <ItemGroup>
+      <Dependency>
+        <Exclude></Exclude>
+      </Dependency>
+    </ItemGroup>    
+  </Target>
+
+  <Target Name="ValidateExcludeCompileDesktop"
+          AfterTargets="GetPackageDependencies"
+          Inputs="%(Dependency.Identity);%(Dependency.TargetFramework)" 
+          Outputs="unused"
+          Condition="'$(SkipValidatePackage)' != 'true'">
+    <PropertyGroup>
+      <_excludeCompile Condition="@(Dependency->WithMetadataValue('Exclude', 'Compile')->Count()) == @(Dependency->Count())">true</_excludeCompile>
+    </PropertyGroup>
+    <Error Text="Cannot have Exclude=Compile dependencies when targeting a desktop TFM. @(Dependency). You can exclude the reference asset in the package by setting the ExcludeReferenceAssets property to true in your project." 
+           Condition="$([System.String]::Copy('%(Dependency.TargetFramework)').StartsWith('net4')) AND 
+                      '$(_excludeCompile)' == 'true' AND
+                      '%(Dependency.Identity)' != '_._'" />
+  </Target>
+</Project>

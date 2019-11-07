@@ -1,0 +1,44 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\Microsoft.CSharp.csproj">
+      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\Microsoft.CSharp.csproj" />
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.0" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
+    <InboxOnTargetFramework Include="MonoAndroid10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="MonoTouch10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="net45">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="portable-net45+win8+wp8+wpa81" />
+    <InboxOnTargetFramework Include="xamarinios10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinmac20">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarintvos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinwatchos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <ValidatePackageSuppression Include="PermitMissingImplementation">
+      <!-- Supported inbox by all ns1.0-1.2 frameworks -->
+      <Value>.NETStandard,Version=v1.0;.NETStandard,Version=v1.1;.NETStandard,Version=v1.2</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

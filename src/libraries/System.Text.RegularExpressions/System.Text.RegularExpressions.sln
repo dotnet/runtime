@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Tests", "tests\System.Text.RegularExpressions.Tests.csproj", "{94B106C2-D574-4392-80AB-3EE308A078DF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2C58640B-5BED-4E83-9554-CD2B9762643F} = {2C58640B-5BED-4E83-9554-CD2B9762643F}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions", "src\System.Text.RegularExpressions.csproj", "{2C58640B-5BED-4E83-9554-CD2B9762643F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09} = {B262B15E-13E6-4C1E-A25E-16D06E222A09}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions", "ref\System.Text.RegularExpressions.csproj", "{B262B15E-13E6-4C1E-A25E-16D06E222A09}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{94B106C2-D574-4392-80AB-3EE308A078DF}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{94B106C2-D574-4392-80AB-3EE308A078DF}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{94B106C2-D574-4392-80AB-3EE308A078DF}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{94B106C2-D574-4392-80AB-3EE308A078DF}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{2C58640B-5BED-4E83-9554-CD2B9762643F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{2C58640B-5BED-4E83-9554-CD2B9762643F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{2C58640B-5BED-4E83-9554-CD2B9762643F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{2C58640B-5BED-4E83-9554-CD2B9762643F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{94B106C2-D574-4392-80AB-3EE308A078DF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{2C58640B-5BED-4E83-9554-CD2B9762643F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{B262B15E-13E6-4C1E-A25E-16D06E222A09} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB23A868-50B7-44AF-9365-275595F5B312}
+	EndGlobalSection
+EndGlobal

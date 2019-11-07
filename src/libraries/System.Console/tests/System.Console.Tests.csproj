@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CancelKeyPress.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="ReadAndWrite.cs" />
+    <Compile Include="ConsoleKeyInfoTests.cs" />
+    <Compile Include="SetError.cs" />
+    <Compile Include="SetIn.cs" />
+    <Compile Include="Color.cs" />
+    <Compile Include="SetOut.cs" />
+    <Compile Include="NegativeTesting.cs" />
+    <Compile Include="ConsoleEncoding.cs" />
+    <Compile Include="SyncTextReader.cs" />
+    <Compile Include="SyncTextWriter.cs" />
+    <Compile Include="Timeout.cs" />
+    <Compile Include="ThreadSafety.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="TermInfo.cs" />
+    <Compile Include="RedirectedStream.cs" />
+    <Compile Include="ReadKey.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\InterceptStreamWriter.cs">
+      <Link>Common\System\IO\InterceptStreamWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+    <Compile Include="WindowAndCursorProps.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)TestData\**\*"
+          Link="%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="ConsoleEncoding.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Compile Include="CancelKeyPress.Unix.cs" />
+    <Compile Include="NonStandardConfiguration.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,22 @@
+' Licensed to the .NET Foundation under one or more agreements.
+' The .NET Foundation licenses this file to you under the MIT license.
+' See the LICENSE file in the project root for more information.
+' Requires PlantUML to interpret: http://plantuml.com/
+' See license info under http://plantuml.com/faq for more details
+
+@startuml
+package "Lowest JSON Layer" {
+  [JsonReader] #Yellow
+  [JsonWriter] #LightGreen
+}
+
+package "Layer on top" {
+  [JsonDocument] #Yellow
+  [JsonSerializer] #LightGreen
+  [JsonDeserializer] #Yellow
+}
+
+[JsonDocument] --> [JsonReader]
+[JsonDeserializer] --> [JsonReader]
+[JsonSerializer] --> [JsonWriter]
+@enduml

@@ -1,0 +1,47 @@
+﻿<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Xml.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Runtime.InteropServices" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ include file="GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+
+#nullable enable
+using System.Runtime.InteropServices;
+
+namespace System.Numerics
+{
+    /// <summary>
+    /// A structure describing the layout of an SSE2-sized register.
+    /// Contains overlapping fields representing the set of valid numeric types.
+    /// Allows the generic Vector'T struct to contain an explicit field layout.
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct Register
+    {
+        #region Internal Storage Fields
+<#
+    foreach (var type in supportedTypes)
+    {
+        Debug.Assert(
+            totalSize % Marshal.SizeOf(type) == 0,
+            "The size of supported structs must be a factor of the supported register size.");
+#>
+        // Internal <#= type.FullName #> Fields
+<#
+        for (int g = 0; g < totalSize / Marshal.SizeOf(type); g++)
+        {
+#>
+        [FieldOffset(<#=Marshal.SizeOf(type) * g#>)]
+        internal <#= typeAliases[type] #> <#= type.Name.ToLowerInvariant() + "_" + g #>;
+<#
+        }
+#>
+
+<#
+    }
+#>        #endregion Internal Storage Fields
+    }
+}

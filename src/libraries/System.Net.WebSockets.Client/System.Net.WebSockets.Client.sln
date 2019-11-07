@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Client.Tests", "tests\System.Net.WebSockets.Client.Tests.csproj", "{7C395A91-D955-444C-98BF-D3F809A56CE1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B} = {B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Client", "src\System.Net.WebSockets.Client.csproj", "{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F282B57E-2E1E-422B-8AC2-88145E37B809} = {F282B57E-2E1E-422B-8AC2-88145E37B809}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Client", "ref\System.Net.WebSockets.Client.csproj", "{F282B57E-2E1E-422B-8AC2-88145E37B809}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F282B57E-2E1E-422B-8AC2-88145E37B809}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F282B57E-2E1E-422B-8AC2-88145E37B809}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F282B57E-2E1E-422B-8AC2-88145E37B809}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F282B57E-2E1E-422B-8AC2-88145E37B809}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7C395A91-D955-444C-98BF-D3F809A56CE1} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{F282B57E-2E1E-422B-8AC2-88145E37B809} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0998F457-1A03-4825-96F4-9B6EFC1F08EF}
+	EndGlobalSection
+EndGlobal

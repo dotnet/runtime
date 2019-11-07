@@ -1,0 +1,19 @@
+MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.SyncRoot.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier.Parameters.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier.Parameters.set(System.Byte[])' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.IsSynchronized.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.SyncRoot.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner..ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.AsymmetricAlgorithm)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.PrivateKey.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.PrivateKey.set(System.Security.Cryptography.AsymmetricAlgorithm)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms.Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo, System.Security.Cryptography.AsymmetricAlgorithm)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.IsSynchronized.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.SyncRoot.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignedCms.AddCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignedCms.RemoveCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.GetSignature()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.SignatureAlgorithm.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SubjectIdentifier.MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)' does not exist in the reference but it does exist in the implementation.

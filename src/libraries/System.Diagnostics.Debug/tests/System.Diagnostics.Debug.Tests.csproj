@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.Debug.Tests</AssemblyName>
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
+    <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
+    <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DebuggerTypeProxyAttributeTests.cs" />
+    <Compile Include="DebuggerDisplayAttributeTests.cs" />
+    <Compile Include="DebuggerBrowsableAttributeTests.cs" />
+    <Compile Include="DebuggerVisualizerAttributeTests.cs" />
+    <Compile Include="EmptyAttributeTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="DebuggerTests.cs" />
+    <Compile Include="DebugTests.cs" />
+    <Compile Include="DebugTestsNoListeners.cs" />
+    <Compile Include="DebugTestsUsingListeners.cs" />
+  </ItemGroup>
+</Project>

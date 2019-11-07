@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Uma.TestStructs.cs" />
+    <Compile Include="Uma.ReadWriteStruct.cs" />
+    <Compile Include="Uma.ReadWriteStructArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ArrayHelpers.cs" />
+    <Compile Include="UmaTests.cs" />
+    <Compile Include="UmsCtorTests.cs" />
+    <Compile Include="HGlobalSafeBuffer.cs" />
+    <Compile Include="UmsDisposeAsync.cs" />
+    <Compile Include="UmsReadWrite.cs" />
+    <Compile Include="UmsSafeBuffer.cs" />
+    <Compile Include="UmaCtorTests.cs" />
+    <Compile Include="UmsFlush.cs" />
+    <Compile Include="UmsTests.cs" />
+    <Compile Include="UmsManager.cs" />
+    <Compile Include="UmsSecurityTest.cs" />
+  </ItemGroup>
+</Project>

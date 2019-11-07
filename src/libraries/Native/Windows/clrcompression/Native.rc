@@ -1,0 +1,4 @@
+#define FX_VER_FILEDESCRIPTION_STR "Native data compression routines\0"
+
+#include <fxver.h>
+#include <fxver.rc>

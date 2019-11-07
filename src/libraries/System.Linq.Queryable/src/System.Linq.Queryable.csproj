@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Linq.Queryable</AssemblyName>
+    <RootNamespace>System.Linq.Queryable</RootNamespace>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Linq\CachedReflection.cs" />
+    <Compile Include="System\Linq\EnumerableExecutor.cs" />
+    <Compile Include="System\Linq\EnumerableQuery.cs" />
+    <Compile Include="System\Linq\EnumerableRewriter.cs" />
+    <Compile Include="System\Linq\Error.cs" />
+    <Compile Include="System\Linq\Queryable.cs" />
+    <Compile Include="System\Linq\Strings.cs" />
+    <Compile Include="System\Linq\TypeHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+</Project>

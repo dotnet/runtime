@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificateTemplateAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    Microsoft extension (1.3.6.1.4.1.311.21.7)
+
+    TemplateVersion ::= INTEGER
+
+    CertificateTemplate ::= SEQUENCE {
+        templateID OBJECT IDENTIFIER,
+        templateMajorVersion TemplateVersion,
+        templateMinorVersion TemplateVersion OPTIONAL
+    }
+  -->
+  <asn:ObjectIdentifier name="TemplateID" backingType="string" />
+  <asn:Integer name="TemplateMajorVersion" backingType="int" />
+  <asn:Integer name="TemplateMinorVersion" backingType="int" optional="true" />
+</asn:Sequence>

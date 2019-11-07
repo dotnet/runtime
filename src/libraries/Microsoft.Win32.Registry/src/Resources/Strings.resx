@@ -1,0 +1,138 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AccessControl_InvalidHandle" xml:space="preserve">
+    <value>The supplied handle is invalid. This can happen when trying to set an ACL on an anonymous kernel object.</value>
+  </data>
+  <data name="Arg_RegSubKeyAbsent" xml:space="preserve">
+    <value>Cannot delete a subkey tree because the subkey does not exist.</value>
+  </data>
+  <data name="Arg_RegKeyDelHive" xml:space="preserve">
+    <value>Cannot delete a registry hive's subtree.</value>
+  </data>
+  <data name="Arg_RegKeyNoRemoteConnect" xml:space="preserve">
+    <value>No remote connection to '{0}' while trying to read the registry.</value>
+  </data>
+  <data name="Arg_RegKeyOutOfRange" xml:space="preserve">
+    <value>Registry HKEY was out of the legal range.</value>
+  </data>
+  <data name="Arg_RegKeyNotFound" xml:space="preserve">
+    <value>The specified registry key does not exist.</value>
+  </data>
+  <data name="Arg_RegKeyStrLenBug" xml:space="preserve">
+    <value>Registry key names should not be greater than 255 characters.</value>
+  </data>
+  <data name="Arg_RegValStrLenBug" xml:space="preserve">
+    <value>Registry value names should not be greater than 16,383 characters.</value>
+  </data>
+  <data name="Arg_RegBadKeyKind" xml:space="preserve">
+    <value>The specified RegistryValueKind is an invalid value.</value>
+  </data>
+  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
+    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  </data>
+  <data name="Arg_RegSetMismatchedKind" xml:space="preserve">
+    <value>The type of the value object did not match the specified RegistryValueKind or the object could not be properly converted.</value>
+  </data>
+  <data name="Arg_RegSetBadArrType" xml:space="preserve">
+    <value>RegistryKey.SetValue does not support arrays of type '{0}'. Only Byte[] and String[] are supported.</value>
+  </data>
+  <data name="Arg_RegSetStrArrNull" xml:space="preserve">
+    <value>RegistryKey.SetValue does not allow a String[] that contains a null String reference.</value>
+  </data>
+  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
+    <value>Registry key name must start with a valid base key name.</value>
+  </data>
+  <data name="Arg_DllInitFailure" xml:space="preserve">
+    <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
+    <value>No value exists with that name.</value>
+  </data>
+  <data name="Argument_InvalidRegistryOptionsCheck" xml:space="preserve">
+    <value>The specified RegistryOptions value is invalid.</value>
+  </data>
+  <data name="Argument_InvalidRegistryViewCheck" xml:space="preserve">
+    <value>The specified RegistryView value is invalid.</value>
+  </data>
+  <data name="Argument_InvalidRegistryKeyPermissionCheck" xml:space="preserve">
+    <value>The specified RegistryKeyPermissionCheck value is invalid.</value>
+  </data>
+  <data name="InvalidOperation_RegRemoveSubKey" xml:space="preserve">
+    <value>Registry key has subkeys and recursive removes are not supported by this method.</value>
+  </data>
+  <data name="ObjectDisposed_RegKeyClosed" xml:space="preserve">
+    <value>Cannot access a closed registry key.</value>
+  </data>
+  <data name="PlatformNotSupported_Registry" xml:space="preserve">
+    <value>Registry is not supported on this platform.</value>
+  </data>
+  <data name="Security_RegistryPermission" xml:space="preserve">
+    <value>Requested registry access is not allowed.</value>
+  </data>
+  <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
+    <value>Access to the registry key '{0}' is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_RegistryNoWrite" xml:space="preserve">
+    <value>Cannot write to the registry key.</value>
+  </data>
+</root>

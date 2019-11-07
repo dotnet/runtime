@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Composition.AttributedModel</AssemblyName>
+    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Composition\Convention\AttributedModelProvider.cs" />
+    <Compile Include="System\Composition\ExportAttribute.cs" />
+    <Compile Include="System\Composition\ExportMetadataAttribute.cs" />
+    <Compile Include="System\Composition\ImportAttribute.cs" />
+    <Compile Include="System\Composition\ImportingConstructorAttribute.cs" />
+    <Compile Include="System\Composition\ImportManyAttribute.cs" />
+    <Compile Include="System\Composition\ImportMetadataConstraintAttribute.cs" />
+    <Compile Include="System\Composition\MetadataAttributeAttribute.cs" />
+    <Compile Include="System\Composition\OnImportsSatisfiedAttribute.cs" />
+    <Compile Include="System\Composition\PartMetadataAttribute.cs" />
+    <Compile Include="System\Composition\PartNotDiscoverableAttribute.cs" />
+    <Compile Include="System\Composition\SharedAttribute.cs" />
+    <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
+  </ItemGroup>
+</Project>

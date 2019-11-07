@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
+    <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
+    <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\JavaScriptEncoderHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
+    <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
+    <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
+    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
+      <Link>System\Text\UnicodeDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeUtility.cs">
+      <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
+    </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.Intrinsics" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

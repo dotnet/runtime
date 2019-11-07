@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BerConverterTests.cs" />
+    <Compile Include="LdapSessionOptionsTests.cs" />
+    <Compile Include="PermissiveModifyControlTests.cs" />
+    <Compile Include="ModifyDNRequestTests.cs" />
+    <Compile Include="ModifyRequestTests.cs" />
+    <Compile Include="PageResultRequestControlTests.cs" />
+    <Compile Include="SortRequestControlTests.cs" />
+    <Compile Include="SortKeyTests.cs" />
+    <Compile Include="ReferralCallbackTests.cs" />
+    <Compile Include="VlvRequestControlTests.cs" />
+    <Compile Include="VerifyNameControlTests.cs" />
+    <Compile Include="TreeDeleteControlTests.cs" />
+    <Compile Include="ShowDeletedControlTests.cs" />
+    <Compile Include="QuotaControlTests.cs" />
+    <Compile Include="SecurityDescriptorFlagControlTests.cs" />
+    <Compile Include="SearchOptionsControlTests.cs" />
+    <Compile Include="SearchRequestTests.cs" />
+    <Compile Include="TlsOperationExceptionTests.cs" />
+    <Compile Include="LdapExceptionTests.cs" />
+    <Compile Include="LdapConnectionTests.cs" />
+    <Compile Include="LazyCommitControlTests.cs" />
+    <Compile Include="ExtendedRequestTests.cs" />
+    <Compile Include="ExtendedDNControlTests.cs" />
+    <Compile Include="DsmlAuthRequestTests.cs" />
+    <Compile Include="DomainScopeControlTests.cs" />
+    <Compile Include="DirSyncRequestControlTests.cs" />
+    <Compile Include="LdapDirectoryIdentifierTests.cs" />
+    <Compile Include="DirectoryNotificationControlTests.cs" />
+    <Compile Include="DirectoryControlCollectionTests.cs" />
+    <Compile Include="DirectoryAttributeModificationCollectionTests.cs" />
+    <Compile Include="DirectoryAttributeCollectionTests.cs" />
+    <Compile Include="DirectoryControlTests.cs" />
+    <Compile Include="DirectoryConnectionTests.cs" />
+    <Compile Include="DirectoryAttributeTests.cs" />
+    <Compile Include="DeleteRequestTests.cs" />
+    <Compile Include="CrossDomainMoveControlTests.cs" />
+    <Compile Include="CompareRequestTests.cs" />
+    <Compile Include="DirectoryAttributeModificationTests.cs" />
+    <Compile Include="DirectoryOperationExceptionTests.cs" />
+    <Compile Include="DirectoryExceptionTests.cs" />
+    <Compile Include="BerConversionExceptionTests.cs" />
+    <Compile Include="AsqRequestControlTests.cs" />
+    <Compile Include="AddRequestTests.cs" />
+    <Compile Include="DirectoryServicesProtocolsTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\DirectoryServices\LdapConfiguration.cs">
+      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LDAP.Configuration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

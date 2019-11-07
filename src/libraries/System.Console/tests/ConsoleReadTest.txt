@@ -1,0 +1,24 @@
+3232 Hello32 Hello 5032 Hello 50 532 Hello 50 5 aTrueaabcdbc1.23123.4561.23439505050System.ObjectHello World
+32
+
+32 Hello
+
+32 Hello 50
+
+32 Hello 50 5
+
+32 Hello 50 5 a
+
+True
+a
+abcd
+bc
+1.23
+123.456
+1.234
+39
+50
+50
+50
+System.Object
+Hello World

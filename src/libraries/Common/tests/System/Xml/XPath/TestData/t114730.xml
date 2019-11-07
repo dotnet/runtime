@@ -1,0 +1,10 @@
+<MyComputer>
+
+  <a>
+	  <UIntData value='0'><Value>0</Value></UIntData>
+  </a>
+  <b>
+     <Value value='fs:jpeg'></Value>
+  </b>
+
+</MyComputer>

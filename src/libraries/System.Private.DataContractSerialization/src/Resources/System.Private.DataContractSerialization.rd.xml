@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Private.DataContractSerialization*">
+    <Assembly Name="System.Private.DataContractSerialization">
+      <Namespace Name="System.Runtime.Serialization">
+        <Type Name="DataContractSerializer">
+          <Method Name=".ctor">
+            <TypeParameter Name="type" DataContractSerializer="Public"/>
+            <TypeEnumerableParameter Name="knownTypes" DataContractSerializer="Public"/>
+          </Method>
+        </Type>
+        <Type Name="KeyValuePairAdapter`2" Dynamic="Required All" />
+        <!-- Reflection-based serialization requires the entries below. -->
+        <Type Name="CollectionDataContract">
+          <Type Name="CollectionDataContractCriticalHelper">
+            <Method Name="BuildCreateGenericDictionaryEnumerator{K, V}" Dynamic="Required" />
+            <Method Name="BuildIncrementCollectionCountDelegate{T}" Dynamic="Required" />
+          </Type>
+        </Type>
+        <Type Name="DateTimeOffsetAdapter" Dynamic="Required All" />
+        <Type Name="FastInvokerBuilder" Dynamic="Required All" />
+        <Type Name="ReflectionReader">
+          <Method Name="GetCollectionSetItemDelegate{T}" Dynamic="Required" />
+          <Method Name="ObjectToKeyValuePairGetKey{K, V}" Dynamic="Required" />
+          <Method Name="ObjectToKeyValuePairGetValue{K, V}" Dynamic="Required" />
+        </Type>
+        <Type Name="XmlObjectSerializerReadContext">
+          <Method Name="TrimArraySize{T}" Dynamic="Required" />
+        </Type>
+        <Type Name="XmlObjectSerializerWriteContext">        
+          <Method Name="GetDefaultValue{T}" Dynamic="Required" />
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Runtime.Serialization.Json">
+        <Type Name="DataContractJsonSerializer">
+          <Method Name=".ctor">
+            <TypeParameter Name="type" DataContractJsonSerializer="Public"/>
+            <TypeEnumerableParameter Name="knownTypes" DataContractJsonSerializer="Public"/>
+          </Method>
+        </Type>
+      </Namespace>
+    </Assembly>
+    <Namespace Name="System.Collections">
+      <Type Name="IEnumerable" Dynamic="Required All" />
+      <Type Name="IEnumerator" Dynamic="Required All" />
+    </Namespace>
+  </Library>
+</Directives>

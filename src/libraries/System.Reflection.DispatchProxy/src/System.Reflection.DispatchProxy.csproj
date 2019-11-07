@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- this library depends on Ref.Emit which is not available for netstandard -->
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
+    <Compile Include="$(CommonPath)\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
+      <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true' and '$(TargetsNetFx)' != 'true'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

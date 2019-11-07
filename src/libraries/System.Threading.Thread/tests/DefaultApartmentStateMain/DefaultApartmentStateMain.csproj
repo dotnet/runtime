@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- To be consistent between netfx and others we override the SDK behavior which defaults to .dll -->
+    <TargetExt>.exe</TargetExt>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DefaultApartmentStateMain.cs" />
+  </ItemGroup>
+</Project>

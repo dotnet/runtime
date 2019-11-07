@@ -1,0 +1,13 @@
+<Project DefaultTargets="Build">
+    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+    <ItemGroup>
+    <ProjectReference Include="..\ref\System.ComponentModel.Composition.Registration.csproj">
+      <SupportedFramework>netcoreapp3.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.ComponentModel.Composition.Registration.csproj" />
+    <InboxOnTargetFramework Include="net45">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

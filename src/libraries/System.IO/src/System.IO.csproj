@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.IO</AssemblyName>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup>
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,7 @@
+﻿<Project>
+  <PropertyGroup>
+    <BuildConfigurations>
+      package;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

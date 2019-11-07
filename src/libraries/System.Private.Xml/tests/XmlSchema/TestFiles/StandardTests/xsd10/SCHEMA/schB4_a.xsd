@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="schB4_b.xsd" />	
+</xsd:schema>
+
+
