@@ -7325,14 +7325,14 @@ ClrDataAccess::GetDacGlobals()
     // This could fail if a different version of dacvars.h or vptr_list.h was used when building
     // mscordacwks.dll than when running DacTableGen.
 
-    if (offsetof(DacGlobals, Thread__vtAddr) != header.numGlobals * sizeof(ULONG))
+    if (offsetof(DacGlobals, EEJitManager__vtAddr) != header.numGlobals * sizeof(ULONG))
     {
 #ifdef _DEBUG
         char szMsgBuf[1024];
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
             "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %d.",
             header.numGlobals,
-            offsetof(DacGlobals, Thread__vtAddr) / sizeof(ULONG));
+            offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
@@ -7347,7 +7347,7 @@ ClrDataAccess::GetDacGlobals()
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
             "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %d.",
             header.numVptrs,
-            (sizeof(DacGlobals) - offsetof(DacGlobals, Thread__vtAddr)) / sizeof(ULONG));
+            (sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
