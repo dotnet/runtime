@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossrootfsDir: ''
   stagedBuild: false
+  strategy: ''
 
   # arcade-specific parameters
   condition: ''
@@ -47,6 +48,8 @@ jobs:
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     enablePublishUsingPipelines: true
+
+    strategy: ${{ parameters.strategy }}
 
     pool:
 

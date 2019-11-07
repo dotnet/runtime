@@ -12,6 +12,7 @@ parameters:
   crossrootfsDir: ''
   corefxTests: false
   stagedBuild: false
+  strategy: ''
 
   # arcade-specific parameters
   condition: ''
@@ -36,6 +37,7 @@ jobs:
     container: ${{ parameters.container }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    strategy: ${{ parameters.strategy }}
   
     # arcade-specific parameters
     condition: ${{ parameters.condition }}

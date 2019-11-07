@@ -28,75 +28,68 @@ jobs:
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
     
-    jobs:
-      - job: '${{ parameters.jobName }}'
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
 
-        ${{ if ne(parameters.displayName, '') }}:
-          displayName: '${{ parameters.displayName }}'
-        ${{ if eq(parameters.displayName, '') }}:
-          displayName: '${{ parameters.jobName }}'
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-        timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    variables:
 
-        variables:
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
 
-        - ${{ each variable in parameters.variables }}:
-          - ${{ if ne(variable.name, '') }}:
-            - name: ${{ variable.name }}
-              value: ${{ variable.value }}
-          - ${{ if ne(variable.group, '') }}:
-            - group: ${{ variable.group }}
+    - IsInternal: ''
+    - HelixApiAccessToken: ''
+    - HelixPreCommand: ''
 
-        - IsInternal: ''
-        - HelixApiAccessToken: ''
-        - HelixPreCommand: ''
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+        - HelixPreCommand: 'set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - IsInternal: -Internal
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - HelixPreCommand: 'export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - IsInternal: --internal
+        
+      - group: DotNet-HelixApi-Access
+      - group: dotnet-benchview
 
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-            - HelixPreCommand: 'set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-            - IsInternal: -Internal
-          - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-            - HelixPreCommand: 'export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-            - IsInternal: --internal
-            
-          - group: DotNet-HelixApi-Access
-          - group: dotnet-benchview
-
-        workspace:
-          clean: all
-        pool:
-          ${{ parameters.pool }}
-        container: ${{ parameters.container }}
-        strategy:
-          matrix:
-            ${{ each framework in parameters.frameworks }}:
-              ${{ framework }}:
-                _Framework: ${{ framework }}
-        steps:
-        - checkout: self
-          clean: true
-        # Run all of the steps to setup repo
-        - ${{ each step in parameters.steps }}:
-          - ${{ step }}
-        - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
-          displayName: Performance Setup (Windows)
-          condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-          continueOnError: ${{ parameters.continueOnError }}
-        - script: $(coreClrRepoRoot)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
-          displayName: Performance Setup (Unix)
-          condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-          continueOnError: ${{ parameters.continueOnError }}
-        - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
-          displayName: Run ci setup script
-        # Run perf testing in helix
-        - template: /eng/common/templates/steps/perf-send-to-helix.yml
-          parameters:
-            HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-            HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
-            HelixAccessToken: $(HelixApiAccessToken)
-            HelixTargetQueues: $(Queue)
-            HelixPreCommands: $(HelixPreCommand)
-            Creator: $(Creator)
-            WorkItemTimeout: 4:00 # 4 hours
-            WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
-            CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    strategy:
+      matrix:
+        ${{ each framework in parameters.frameworks }}:
+          ${{ framework }}:
+            _Framework: ${{ framework }}
+    steps:
+    - ${{ parameters.steps }}
+    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
+      displayName: Performance Setup (Windows)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
+    - script: $(coreClrRepoRoot)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
+      displayName: Performance Setup (Unix)
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
+      displayName: Run ci setup script
+    # Run perf testing in helix
+    - template: /eng/common/templates/steps/perf-send-to-helix.yml
+      parameters:
+        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
+        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: $(Queue)
+        HelixPreCommands: $(HelixPreCommand)
+        Creator: $(Creator)
+        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
+        CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
