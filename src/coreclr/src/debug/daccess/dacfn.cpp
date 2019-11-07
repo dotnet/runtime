@@ -1137,7 +1137,7 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
 {
     PWSTR pszRet = NULL;
 
-    ULONG *targ = &g_dacGlobals.Thread__vtAddr;
+    ULONG *targ = &g_dacGlobals.EEJitManager__vtAddr;
     ULONG *targStart = targ;
     for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
@@ -1162,8 +1162,8 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
     // The host vtable table exactly parallels the
     // target vtable table, so just iterate to a match
     // return the matching entry.
-    host = &g_dacHostVtPtrs.Thread;
-    targ = &g_dacGlobals.Thread__vtAddr;
+    host = &g_dacHostVtPtrs.EEJitManager;
+    targ = &g_dacGlobals.EEJitManager__vtAddr;
     for (i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
         if (*host == vtHost)

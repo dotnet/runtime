@@ -265,9 +265,7 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     bool needReset =
         priority != ThreadNative::PRIORITY_NORMAL ||
         pThread->HasThreadStateNC(Thread::TSNC_SOWorkNeeded) ||
-        !pThread->IsBackground() ||
-        pThread->HasCriticalRegion() ||
-        pThread->HasThreadAffinity();
+        !pThread->IsBackground();
 
     bool shouldAdjustWorkers = ThreadpoolMgr::ShouldAdjustMaxWorkersActive();
 

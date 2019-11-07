@@ -977,7 +977,7 @@ class BaseStackGuard;
 // Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in
 // "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
 // here - so doing this explicitly and maintaining layout sanity should be just fine.
-class Thread: public IUnknown
+class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
     friend class  ThreadStore;
@@ -1032,8 +1032,6 @@ class Thread: public IUnknown
 
     friend class ThreadStatics;
 
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(Thread)
-
 public:
     enum SetThreadStackGuaranteeScope { STSGuarantee_Force, STSGuarantee_OnlyIfEnabled };
     static BOOL IsSetThreadStackGuaranteeInUse(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled)
@@ -1056,6 +1054,14 @@ public:
     }
 
 public:
+    // Allocator used during marshaling for temporary buffers, much faster than
+    // heap allocation.
+    //
+    // Uses of this allocator should be effectively statically scoped, i.e. a "region"
+    // is started using a CheckPointHolder and GetCheckpoint, and this region can then be used for allocations
+    // from that point onwards, and then all memory is reclaimed when the static scope for the
+    // checkpoint is exited by the running thread.
+    StackingAllocator* m_stackLocalAllocator = NULL;
 
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_GCSuspendPending, TS_UserSuspendPending,
@@ -1220,30 +1226,6 @@ public:
                                                       // and does not proceed with a stackwalk on the same thread
                                                       // There are cases during managed debugging when we can run into this situation
     };
-
-    // Functions called by host
-    STDMETHODIMP    QueryInterface(REFIID riid, void** ppv)
-        DAC_EMPTY_RET(E_NOINTERFACE);
-    STDMETHODIMP_(ULONG) AddRef(void)
-        DAC_EMPTY_RET(0);
-    STDMETHODIMP_(ULONG) Release(void)
-        DAC_EMPTY_RET(0);
-    STDMETHODIMP Abort()
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP RudeAbort()
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP NeedsPriorityScheduling(BOOL *pbNeedsPriorityScheduling)
-        DAC_EMPTY_RET(E_FAIL);
-
-    STDMETHODIMP YieldTask()
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP LocksHeld(SIZE_T *pLockCount)
-        DAC_EMPTY_RET(E_FAIL);
-
-    STDMETHODIMP BeginPreventAsyncAbort()
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP EndPreventAsyncAbort()
-        DAC_EMPTY_RET(E_FAIL);
 
     void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority);
@@ -1641,15 +1623,6 @@ public:
     RCWStackHeader*      m_pRCWStack;
 #endif // FEATURE_COMINTEROP
 
-    // Allocator used during marshaling for temporary buffers, much faster than
-    // heap allocation.
-    //
-    // Uses of this allocator should be effectively statically scoped, i.e. a "region"
-    // is started using a CheckPointHolder and GetCheckpoint, and this region can then be used for allocations
-    // from that point onwards, and then all memory is reclaimed when the static scope for the
-    // checkpoint is exited by the running thread.
-    StackingAllocator*    m_stackLocalAllocator = NULL;
-
     // Flags used to indicate tasks the thread has to do.
     ThreadTasks          m_ThreadTasks;
 
@@ -1756,12 +1729,6 @@ public:
         return fHasLock;
     }
 
-    inline BOOL HasCriticalRegion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-
     inline DWORD GetNewHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1790,14 +1757,6 @@ public:
         return (dbg_m_cSuspendedThreads - dbg_m_cSuspendedThreadsWithoutOSLock);
     }
 #endif
-
-public:
-
-    BOOL HasThreadAffinity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
 
  private:
     LoadLevelLimiter *m_pLoadLimiter;
@@ -1832,8 +1791,6 @@ public:
     BOOL InitThread(BOOL fInternal);
     BOOL AllocHandles();
 
-    void SetupThreadForHost();
-
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
     // than SetupThread, complete the setup here when the thread is
@@ -1866,9 +1823,9 @@ public:
     // Destructor
     //--------------------------------------------------------------
 #ifndef DACCESS_COMPILE
-    virtual ~Thread();
+    ~Thread();
 #else
-    virtual ~Thread() {}
+    ~Thread() {}
 #endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1950,30 +1907,6 @@ public:
     inline Frame* FindFrame(SIZE_T StackPointer);
 
     bool DetectHandleILStubsForDebugger();
-
-    void SetWin32FaultAddress(DWORD eip)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Win32FaultAddress = eip;
-    }
-
-    void SetWin32FaultCode(DWORD code)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Win32FaultCode = code;
-    }
-
-    DWORD GetWin32FaultAddress()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_Win32FaultAddress;
-    }
-
-    DWORD GetWin32FaultCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_Win32FaultCode;
-    }
 
 #ifdef ENABLE_CONTRACTS
     ClrDebugState *GetClrDebugState()
@@ -3588,9 +3521,6 @@ private:
 
 #endif // FEATURE_HIJACK
 
-    DWORD       m_Win32FaultAddress;
-    DWORD       m_Win32FaultCode;
-
     // Support for Wait/Notify
     BOOL        Block(INT32 timeOut, PendingSync *syncInfo);
     void        Wake(SyncBlock *psb);
@@ -3714,8 +3644,6 @@ private:
 #endif // HAVE_GCCOVER
 
     ULONG           m_ExternalRefCount;
-
-    ULONG           m_UnmanagedRefCount;
 
     LONG            m_TraceCallCount;
 
@@ -4532,9 +4460,6 @@ private:
     friend class CompletedFCallTransitionState;
     HelperMethodFrameCallerList *m_pHelperMethodFrameCallerList;
 #endif // _DEBUG
-
-private:
-    LONG m_dwHostTaskRefCount;
 
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which

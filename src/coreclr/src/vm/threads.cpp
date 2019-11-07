@@ -746,8 +746,6 @@ Thread* SetupThread(BOOL fInternal)
     // We now have a Thread object visable to the RS. unmark special status.
     hCantStop.Release();
 
-    pThread->SetupThreadForHost();
-
     threadHolder.SuppressRelease();
 
     FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_FullyInitialized);
@@ -1380,7 +1378,6 @@ Thread::Thread()
     m_OSThreadId = 0;
     m_Priority = INVALID_THREAD_PRIORITY;
     m_ExternalRefCount = 1;
-    m_UnmanagedRefCount = 0;
     m_State = TS_Unstarted;
     m_StateNC = TSNC_Unknown;
 
@@ -1508,8 +1505,6 @@ Thread::Thread()
 #ifdef _DEBUG
     m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
 #endif
-
-    m_dwHostTaskRefCount = 0;
 
     m_pExceptionDuringStartup = NULL;
 
@@ -1824,9 +1819,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         {
             ThrowOutOfMemory();
         }
-
-        SetupThreadForHost();
-
 
         ThreadStore::TransferStartedThread(this, bRequiresTSL);
 
@@ -2773,7 +2765,7 @@ void Thread::CleanupDetachedThreads()
     {
         Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
 
-        if (thread->IsDetached() && thread->m_UnmanagedRefCount == 0)
+        if (thread->IsDetached())
         {
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
 
@@ -8174,151 +8166,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     }
 }
 
-HRESULT Thread::Abort ()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        UserAbort(TAR_Thread, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Host);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return S_OK;
-}
-
-HRESULT Thread::RudeAbort()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        UserAbort(TAR_Thread, EEPolicy::TA_Rude, INFINITE, Thread::UAC_Host);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return S_OK;
-}
-
-HRESULT Thread::NeedsPriorityScheduling(BOOL *pbNeedsPriorityScheduling)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    *pbNeedsPriorityScheduling = (m_fPreemptiveGCDisabled ||
-                                  (g_fEEStarted && this == FinalizerThread::GetFinalizerThread()));
-    return S_OK;
-}
-
-
-HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    *pLockCount = m_dwLockCount;
-    return S_OK;
-}
-
-HRESULT Thread::BeginPreventAsyncAbort()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    int count =
-#endif
-        FastInterlockIncrement((LONG*)&m_PreventAbort);
-
-#ifdef _DEBUG
-    ASSERT(count > 0);
-
-    FastInterlockIncrement((LONG*)&m_dwDisableAbortCheckCount);
-#endif
-
-    return S_OK;
-}
-
-HRESULT Thread::EndPreventAsyncAbort()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    int count =
-#endif
-        FastInterlockDecrement((LONG*)&m_PreventAbort);
-
-#ifdef _DEBUG
-    ASSERT(count >= 0);
-
-    FastInterlockDecrement((LONG*)&m_dwDisableAbortCheckCount);
-#endif
-
-    return S_OK;
-}
-
-
-ULONG Thread::AddRef()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(m_ExternalRefCount > 0);
-
-    _ASSERTE (m_UnmanagedRefCount != (DWORD) -1);
-    ULONG ref = FastInterlockIncrement((LONG*)&m_UnmanagedRefCount);
-
-    return ref;
-}
-
-ULONG Thread::Release()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC_HOST_ONLY;
-
-    _ASSERTE (m_ExternalRefCount > 0);
-    _ASSERTE (m_UnmanagedRefCount > 0);
-    ULONG ref = FastInterlockDecrement((LONG*)&m_UnmanagedRefCount);
-    return ref;
-}
-
-HRESULT Thread::QueryInterface(REFIID riid, void **ppUnk)
-{
-    LIMITED_METHOD_CONTRACT;
-
-        return E_NOINTERFACE;
-
-}
-
-void Thread::SetupThreadForHost()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (GetThread() == this);
-}
-
-
 ETaskType GetCurrentTaskType()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -8655,7 +8502,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    DAC_ENUM_VTHIS();
+    DAC_ENUM_DTHIS();
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pDomain.IsValid())

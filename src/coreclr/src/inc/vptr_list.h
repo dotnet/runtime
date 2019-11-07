@@ -5,8 +5,6 @@
 // Any class with a vtable that needs to be instantiated
 // during debugging data access must be listed here.
 
-VPTR_CLASS(Thread)
-
 VPTR_CLASS(EEJitManager)
 
 #ifdef FEATURE_PREJIT
