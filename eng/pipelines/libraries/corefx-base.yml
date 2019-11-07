@@ -32,10 +32,10 @@ parameters:
   # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
 
   # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
-  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./build.sh ...'
+  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./$(buildScriptName).sh ...'
 
   # Optional: buildExtraArguments -> String -> string to append at the end of the build arguments
-  #   buildExtraArguments: /p:RuntimeOS=win10 -> 'build.cmd ... /p:RuntimeOS=win10'
+  #   buildExtraArguments: /p:RuntimeOS=win10 -> '$(buildScriptName).cmd ... /p:RuntimeOS=win10'
 
   # Optional: customBuildSteps -> Array -> list of steps to run instead of the common build steps.
   #   customBuildSteps:
@@ -52,7 +52,7 @@ parameters:
 
 jobs:
   - ${{ each job in parameters.jobs }}:
-    - template: ../common/templates/job/job.yml
+    - template: /eng/common/templates/job/job.yml
       parameters:
         variables:
 
@@ -96,12 +96,12 @@ jobs:
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
-          - _buildScript: build.cmd
+          - _buildScript: $(buildScriptFileName).cmd
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
-          - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
+          - _buildScript: ${{ job.buildScriptPrefix }}./$(buildScriptFileName).sh
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _commonArguments: $(_args) -stripSymbols
@@ -159,7 +159,7 @@ jobs:
 
           - ${{ if eq(job.submitToHelix, 'true') }}:
             - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-              - script: $(_msbuildCommand) src/publishTestAssets.proj
+              - script: $(_msbuildCommand) $(sourcesRoot)/publishTestAssets.proj
                       /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
                       /p:AccountKey=$(dotnetfeed-storage-access-key-1)
                       /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
@@ -186,26 +186,50 @@ jobs:
                   artifactType: container
                 condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
 
-            - template: /eng/pipelines/helix.yml
-              parameters:
-                # send tests to helix only on public builds, official scheduled builds or manual official builds.
-                condition: eq(${{ parameters.isOfficialBuild }}, False)
-                targetOS: ${{ parameters.targetOS }}
-                archGroup: $(_architecture)
-                configuration: $(_BuildConfig)
-                helixQueues: $(_helixQueues)
-                msbuildScript: $(_msbuildCommand)
-                framework: $(_framework)
-                testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
+            - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}: # TODO: (Consolidation) remove.
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  # send tests to helix only on public builds, official scheduled builds or manual official builds.
+                  condition: eq(${{ parameters.isOfficialBuild }}, False)
+                  targetOS: ${{ parameters.targetOS }}
+                  archGroup: $(_architecture)
+                  configuration: $(_BuildConfig)
+                  helixQueues: $(_helixQueues)
+                  msbuildScript: $(_msbuildCommand)
+                  framework: $(_framework)
+                  testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
 
-                ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-                  officialBuildId: $(Build.BuildNumber)
-                  helixToken: $(HelixApiAccessToken)
+                  ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+                    officialBuildId: $(Build.BuildNumber)
+                    helixToken: $(HelixApiAccessToken)
 
-                ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-                  # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
-                  creator: dotnet-bot
-                  helixToken: ''
+                  ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+                    # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
+                    creator: dotnet-bot
+                    helixToken: ''
+
+            # TODO: (Consolidation) remove this if block when consolidated
+            - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
+              - template: /eng/pipelines/helix.yml
+                parameters:
+                  # send tests to helix only on public builds, official scheduled builds or manual official builds.
+                  condition: eq(${{ parameters.isOfficialBuild }}, False)
+                  targetOS: ${{ parameters.targetOS }}
+                  archGroup: $(_architecture)
+                  configuration: $(_BuildConfig)
+                  helixQueues: $(_helixQueues)
+                  msbuildScript: $(_msbuildCommand)
+                  framework: $(_framework)
+                  testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
+
+                  ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+                    officialBuildId: $(Build.BuildNumber)
+                    helixToken: $(HelixApiAccessToken)
+
+                  ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+                    # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
+                    creator: dotnet-bot
+                    helixToken: ''
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - task: PublishBuildArtifacts@1

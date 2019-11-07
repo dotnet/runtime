@@ -7,10 +7,11 @@ trigger:
   branches:
     include:
     - master
-    - release/3.*
+    - release/3.* # TODO: (Consolidation) Remove when consolidated
   paths:
     exclude:
-    - Documentation/*
+    - Documentation/* # TODO: (Consolidation) Remove when consolidated
+    - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -18,15 +19,20 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/installer/*
 
 pr:
   branches:
     include:
     - master
-    - release/3.*
+    - release/3.* # TODO: (Consolidation) Remove when consolidated
   paths:
     exclude:
-    - Documentation/*
+    - Documentation/* # TODO: (Consolidation) Remove when consolidated
+    - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -34,6 +40,10 @@ pr:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/installer/*
 
 resources:
   containers:
@@ -59,6 +69,13 @@ resources:
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191023143845
 
 variables:
+  - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}: # TODO: (Consolidation) remove this condition
+    - template: variables.yml
+
+  # TODO: (Consolidation) remove this conditional block
+  - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
+    - template: /eng/pipelines/variables.yml
+
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - group: DotNet-Blob-Feed
     - group: corefx-sdl-validation
@@ -73,32 +90,32 @@ variables:
 
 stages:
   # Windows legs
-  - template: /eng/pipelines/windows.yml
+  - template: ${{ variables['pipelinesPath'] }}/windows.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Linux legs
-  - template: /eng/pipelines/linux.yml
+  - template: ${{ variables['pipelinesPath'] }}/linux.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # MacOS legs
-  - template: /eng/pipelines/macos.yml
+  - template: ${{ variables['pipelinesPath'] }}/macos.yml
     parameters:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
     # FreeBSD leg is only for official builds
-    # - template: /eng/pipelines/freebsd.yml
+    # - template: ${{ variables['pipelinesPath'] }}/freebsd.yml
     #   parameters:
     #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
     #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Publish and validation steps. Only run in official builds
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: /eng/pipelines/pre-publish.yml
+    - template: ${{ variables['pipelinesPath'] }}/pre-publish.yml
       parameters:
         dependsOn:
           - WindowsStage

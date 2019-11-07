@@ -126,7 +126,7 @@ stages:
 
           frameworkArg: -allConfigurations
           customBuildSteps:
-            - script: build.cmd
+            - script: $(buildScriptFileName).cmd
                       -build
                       -configuration $(_BuildConfig)
                       -ci

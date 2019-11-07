@@ -7,7 +7,7 @@ stages:
   displayName: Pre-publish
   dependsOn: ${{ parameters.dependsOn }}
   jobs:
-    - template: ../common/templates/jobs/jobs.yml
+    - template: /eng/common/templates/jobs/jobs.yml
       parameters:
         enableMicrobuild: true
         enablePublishUsingPipelines: $(_PublishUsingPipelines)
@@ -51,12 +51,12 @@ stages:
                 artifactName: packages
                 downloadPath: $(_artifactsDir)
 
-            - script: build.cmd
+            - script: $(buildScriptFileName).cmd
                       -restore
                       -ci
               displayName: Restore tools
 
-            - script: build.cmd
+            - script: $(buildScriptFileName).cmd
                       -sign
                       -ci
                       -configuration $(_BuildConfig)
@@ -64,7 +64,7 @@ stages:
                       /p:OfficialBuildId=$(Build.BuildNumber)
               displayName: Sign packages
 
-            - script: build.cmd
+            - script: $(buildScriptFileName).cmd
                       -publish
                       -ci
                       -configuration $(_BuildConfig)
@@ -77,7 +77,7 @@ stages:
                       /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/PublishToArtifacts.binlog
               displayName: Publish to artifacts and produce manifest
 
-            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 src\build.proj
+            - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 $(sourcesRoot)/build.proj
                       -warnaserror:0 -ci
                       /t:UpdatePublishedVersions
                       /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)

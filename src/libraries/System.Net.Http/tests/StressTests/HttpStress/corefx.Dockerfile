@@ -8,7 +8,9 @@ WORKDIR /repo
 COPY . .
 
 ARG CONFIGURATION=Release
-RUN ./build.sh -c $CONFIGURATION
+# TODO: (Consolidation) remove when consolidated, change to ./libraries.sh
+ARG BUILD_SCRIPT_NAME=build
+RUN ./$BUILD_SCRIPT_NAME.sh -c $CONFIGURATION
 
 FROM $SDK_BASE_IMAGE as target
 
