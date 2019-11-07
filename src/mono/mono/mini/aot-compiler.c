@@ -8993,6 +8993,12 @@ append_mangled_type (GString *s, MonoType *t)
 	case MONO_TYPE_VOID:
 		g_string_append_printf (s, "void");
 		break;
+	case MONO_TYPE_BOOLEAN:
+		g_string_append_printf (s, "bool");
+		break;
+	case MONO_TYPE_CHAR:
+		g_string_append_printf (s, "char");
+		break;
 	case MONO_TYPE_I1:
 		g_string_append_printf (s, "i1");
 		break;
@@ -9034,19 +9040,26 @@ append_mangled_type (GString *s, MonoType *t)
 		break;
 	default: {
 		char *fullname = mono_type_full_name (t);
+		char *name = fullname;
 		GString *temp;
 		char *temps;
+		gboolean is_system = FALSE;
 		int i, len;
 
+		len = strlen ("System.");
+		if (strncmp (fullname, "System.", len) == 0) {
+			name = fullname + len;
+			is_system = TRUE;
+		}
 		/*
 		 * Have to create a mangled name which is:
 		 * - a valid symbol
 		 * - unique
 		 */
 		temp = g_string_new ("");
-		len = strlen (fullname);
+		len = strlen (name);
 		for (i = 0; i < len; ++i) {
-			char c = fullname [i];
+			char c = name [i];
 			if (isalnum (c)) {
 				g_string_append_c (temp, c);
 			} else if (c == '_') {
@@ -9054,13 +9067,17 @@ append_mangled_type (GString *s, MonoType *t)
 				g_string_append_c (temp, '_');
 			} else {
 				g_string_append_c (temp, '_');
-				g_string_append_printf (temp, "%x", (int)c);
+				if (c == '.')
+					g_string_append_c (temp, 'd');
+				else
+					g_string_append_printf (temp, "%x", (int)c);
 			}
 		}
 		temps = g_string_free (temp, FALSE);
 		/* Include the length to avoid different length type names aliasing each other */
-		g_string_append_printf (s, "cl%x_%s_", (int)strlen (temps), temps);
+		g_string_append_printf (s, "cl%s%x_%s_", is_system ? "s" : "", (int)strlen (temps), temps);
 		g_free (temps);
+		g_free (fullname);
 	}
 	}
 	if (t->attrs)
