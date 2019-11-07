@@ -55,38 +55,38 @@ To build them, use the following steps:
 
 Generating the rootfs
 ---------------------
-The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate a rootfs as this is what CoreCLR targets.
+The `eng/common/cross/build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate a rootfs as this is what CoreCLR targets.
 
-    Usage: ./cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]
+    Usage: ./eng/common/cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]
     BuildArch can be: arm(default), armel, arm64, x86
     LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial or alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen.
     lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8. This is ignored when building rootfs for Alpine Linux.
 
-The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system, it will by default generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
+The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system, it will by default generate the rootfs in `eng/common/cross/rootfs/<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
 
 For example, to generate an arm rootfs:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm
+    ben@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh arm
 
 You can choose Linux code name to match your target, give `vivid` for `Ubuntu 15.04`, `wily` for `Ubuntu 15.10`. The default is `trusty`, version `Ubuntu 14.04`.
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm wily
+    ben@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh arm wily
 
 and if you wanted to generate the rootfs elsewhere:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/arm ./cross/build-rootfs.sh arm
+    ben@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/arm ./eng/common/cross/build-rootfs.sh arm
 
 For example, to generate an armel rootfs:
 
-    hqu@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh armel
+    hqu@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh armel
 
 You can choose code name to match your target, give `jessie` for `Debian`, `tizen` for `Tizen`. The default is `jessie`.
 
-    hque@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh armel tizen
+    hque@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh armel tizen
 
 and if you wanted to generate the rootfs elsewhere:
 
-    hque@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/armel ./cross/build-rootfs.sh armel tizen
+    hque@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/armel ./eng/common/cross/build-rootfs.sh armel tizen
 
 
 Cross compiling CoreCLR

@@ -75,14 +75,14 @@ CORECLR_DIR=/opt/code
 ARM_CHROOT_HOME_DIR=/home/coreclr
 
 if [ -z "${ROOTFS_DIR}" ]; then
-    __ROOTFS_DIR=${CORECLR_DIR}/cross/rootfs/${__abi}
+    __ROOTFS_DIR=${CORECLR_DIR}/eng/common/cross/rootfs/${__abi}
 else
     __ROOTFS_DIR=${ROOTFS_DIR}
 fi
 
 if [ "$__abi" == "armel" ]; then
     # Prepare armel emulation environment
-    pushd ${CORECLR_DIR}/cross/armel/tizen
+    pushd ${CORECLR_DIR}/eng/common/cross/armel/tizen
     apt-get update
     apt-get -y -qq --force-yes --reinstall install qemu binfmt-support qemu-user-static
     __qemuARM=$(which qemu-arm-static)

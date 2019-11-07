@@ -273,8 +273,9 @@ build_native()
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        echo "Invoking \"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
-        source "$scriptDir/gen-buildsys.sh" "$__ProjectRoot" "$intermediatesForBuild" $platformArch $__BuildType $generator $scan_build "$extraCmakeArguments" "$__cmakeargs"
+        nextCommand="CONFIG_DIR=\"$__RepoRootDir/eng/common/cross\" \"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
+        echo "Invoking $nextCommand"
+        eval $nextCommand
     
         if [ $? != 0  ]; then
             echo "${__ErrMsgPrefix}Failed to generate $message build project!"
@@ -1077,7 +1078,7 @@ __CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__Buil
 if [ $__CrossBuild == 1 ]; then
     export CROSSCOMPILE=1
     if ! [[ -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
+        export ROOTFS_DIR="$__RepoRootDir/eng/common/cross/rootfs/$__BuildArch"
     fi
 fi
 
