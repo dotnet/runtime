@@ -47,7 +47,6 @@ jobs:
     # Download product binaries directory
     - template: download-artifact-step.yml
       parameters:
-        downloadFolder: $(binTestsPath)/tmp
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
