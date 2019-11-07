@@ -27,7 +27,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool IsShareable => false;
 
-        public override int ClassCode => 82124527;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.CorHeaderNode;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -124,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Managed Native (ReadyToRun) Header Directory
             ReadDirectoryEntry(ref reader);
             builder.EmitReloc(r2rFactory.Header, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            builder.EmitInt(r2rFactory.Header.GetData(factory, relocsOnly).Data.Length);
+            builder.EmitReloc(r2rFactory.Header, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
             // Did we fully read the header?
             Debug.Assert(reader.Offset - headerSize == _module.PEReader.PEHeaders.CorHeaderStartOffset);

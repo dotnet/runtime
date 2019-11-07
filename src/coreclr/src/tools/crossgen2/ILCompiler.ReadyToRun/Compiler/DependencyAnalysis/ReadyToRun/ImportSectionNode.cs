@@ -14,6 +14,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public ImportTable(string startSymbol, string endSymbol) : base(startSymbol, endSymbol, nodeSorter: new EmbeddedObjectNodeComparer(new CompilerComparer())) {}
 
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
+
+            public override int ClassCode => (int)ObjectNodeOrder.ImportSectionNode;
         }
 
         private readonly ImportTable _imports;
@@ -88,7 +90,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override int ClassCode => -62839441;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ImportSectionNode;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
@@ -103,8 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                dataBuilder.EmitInt(_imports.GetData(factory, false).Data.Length);
-
+                dataBuilder.EmitReloc(_imports.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE);
                 dataBuilder.EmitShort((short)_flags);
                 dataBuilder.EmitByte((byte)_type);
                 dataBuilder.EmitByte(_entrySize);

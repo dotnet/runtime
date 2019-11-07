@@ -53,6 +53,20 @@ namespace ILCompiler.DependencyAnalysis
             // The ordering of this sequence of nodes is deliberate and currently required for 
             // compiler correctness.
             //
+
+            //
+            // ReadyToRun Nodes
+            //
+            CorHeaderNode,
+            ReadyToRunHeaderNode,
+            ImportSectionsTableNode,
+            ImportSectionNode,
+            MethodEntrypointTableNode,
+
+
+            //
+            // CoreRT Nodes
+            //
             MetadataNode,
             ResourceDataNode,
             ResourceIndexNode,

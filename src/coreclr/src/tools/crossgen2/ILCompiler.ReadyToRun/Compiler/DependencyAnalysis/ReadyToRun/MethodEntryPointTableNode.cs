@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
-
-        public override int ClassCode => 787556329;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        public override int ClassCode => (int)ObjectNodeOrder.MethodEntrypointTableNode;
     }
 }

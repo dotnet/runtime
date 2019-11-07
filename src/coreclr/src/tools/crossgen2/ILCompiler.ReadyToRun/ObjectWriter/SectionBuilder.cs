@@ -36,16 +36,19 @@ namespace ILCompiler.PEWriter
         /// Offset of the symbol within the section.
         /// </summary>
         public readonly int Offset;
-        
+
+        public readonly int Size;
+
         /// <summary>
         /// Initialize symbol target with section and offset.
         /// </summary>
         /// <param name="sectionIndex">Section index where the symbol target resides</param>
         /// <param name="offset">Offset of the target within the section</param>
-        public SymbolTarget(int sectionIndex, int offset)
+        public SymbolTarget(int sectionIndex, int offset, int size)
         {
             SectionIndex = sectionIndex;
             Offset = offset;
+            Size = size;
         }
     }
     
@@ -465,7 +468,8 @@ namespace ILCompiler.PEWriter
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
-                        offset: alignedOffset + symbol.Offset));
+                        offset: alignedOffset + symbol.Offset,
+                        size: objectData.Data.Length));
                 }
             }
 
@@ -820,6 +824,12 @@ namespace ILCompiler.PEWriter
                         SymbolTarget relocationTarget = _symbolMap[relocation.Target];
                         Section targetSection = _sections[relocationTarget.SectionIndex];
                         int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
+
+                        // If relocating to a node's size, switch out the target RVA with data length
+                        if (relocation.RelocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
+                        {
+                            targetRVA = relocationTarget.Size;
+                        }
 
                         // Apply the relocation
                         relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
