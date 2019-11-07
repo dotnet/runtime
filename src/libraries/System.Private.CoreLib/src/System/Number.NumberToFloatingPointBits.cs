@@ -484,7 +484,16 @@ namespace System
             }
 
             AccumulateDecimalDigitsIntoBigInteger(ref number, fractionalFirstIndex, fractionalLastIndex, out BigInteger fractionalNumerator);
-            Debug.Assert(!fractionalNumerator.IsZero());
+
+            if (fractionalNumerator.IsZero())
+            {
+                return ConvertBigIntegerToFloatingPointBits(
+                    ref integerValue,
+                    in info,
+                    integerBitsOfPrecision,
+                    fractionalDigitsPresent != 0
+                );
+            }
 
             BigInteger.Pow10(fractionalDenominatorExponent, out BigInteger fractionalDenominator);
 
