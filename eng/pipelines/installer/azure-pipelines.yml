@@ -218,6 +218,7 @@ stages:
 
   - template: ${{ variables['pipelinesPath'] }}/stages/publish.yml
     parameters:
+      pipelinesPath: ${{ variables['pipelinesPath'] }}
       # Publish channel configuration. The publish template wraps Arcade publishing and adds some
       # extras that aren't implemented in Arcade yet.
       #
