@@ -10,6 +10,8 @@
   -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
+  <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+
   <!-- Common paths -->
   <PropertyGroup>
     <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
@@ -30,13 +32,13 @@
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
-    <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>    
+    <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
   </PropertyGroup>
 
   <!-- Packaging properties -->
   <PropertyGroup>
     <!--
-      This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used 
+      This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used
       to find source code for debugging. It is also used to name the build output manifest for orchestrated builds.
     -->
     <GitHubRepositoryName>runtime</GitHubRepositoryName>

@@ -48,7 +48,7 @@
   -->
 
   <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+    <SkipImportArcadeSdkFromRoot Condition="'$(MSBuildProjectFile)' == 'Build.proj'">true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
 
   <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
@@ -69,7 +69,7 @@
 
   <ItemGroup>
     <!-- Global -->
-    <SubsetName Include="RegenerateReadmeTable" Category="" OnDemand="true" Description="Regenerates the table of asset links in the README.md file." />    
+    <SubsetName Include="RegenerateReadmeTable" Category="" OnDemand="true" Description="Regenerates the table of asset links in the README.md file." />
 
     <!-- Libraries -->
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
@@ -97,7 +97,7 @@
 
   <!-- Installer sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('corehost'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\build.proj" SignPhase="Binaries" />
+    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" />
     <ProjectToBuild Include="@(CorehostProjectToBuild)" />
   </ItemGroup>
 
