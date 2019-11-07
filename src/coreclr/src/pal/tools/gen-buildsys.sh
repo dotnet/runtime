@@ -17,6 +17,15 @@ then
   exit 1
 fi
 
+__ProjectDir=$1
+__RepoRootDir=${__ProjectDir}/../..
+
+# BEGIN SECTION to remove after repo consolidation
+if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
+  __RepoRootDir=${__ProjectDir}
+fi
+# END SECTION to remove after repo consolidation
+
 build_arch="$3"
 buildtype=DEBUG
 code_coverage=OFF
@@ -53,7 +62,7 @@ if [ "$CROSSCOMPILE" == "1" ]; then
         exit 1
     fi
     if [[ -z $CONFIG_DIR ]]; then
-        CONFIG_DIR="$1/cross"
+        CONFIG_DIR="${__RepoRootDir}/cross"
     fi
     export TARGET_BUILD_ARCH=$build_arch
     cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
@@ -74,5 +83,5 @@ $cmake_command \
   "-DCMAKE_USER_MAKE_RULES_OVERRIDE=" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  -S "$1" \
+  -S "${__ProjectDir}" \
   -B "$2"
