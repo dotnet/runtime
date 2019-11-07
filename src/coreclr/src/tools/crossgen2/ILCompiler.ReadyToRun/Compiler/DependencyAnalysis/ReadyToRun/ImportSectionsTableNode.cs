@@ -51,6 +51,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override int ClassCode => 787556329;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ImportSectionsTableNode;
     }
 }

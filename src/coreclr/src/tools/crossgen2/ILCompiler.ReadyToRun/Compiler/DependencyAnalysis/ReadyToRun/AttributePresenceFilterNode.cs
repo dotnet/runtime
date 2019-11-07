@@ -10,7 +10,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -19,15 +18,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private EcmaModule _module;
 
-        // TODO: Eliminate the cache (https://github.com/dotnet/coreclr/issues/27116)
-        private ObjectData _computedData;
-
         public override int ClassCode => 56456113;
 
         public AttributePresenceFilterNode(EcmaModule module)
             : base(module.Context.Target)
         {
-            this._module = module;
+            _module = module;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -307,11 +303,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            if (_computedData != null)
-            {
-                return _computedData;
-            }
-
             List<CustomAttributeEntry> customAttributeEntries = GetCustomAttributeEntries();
             int countOfEntries = customAttributeEntries.Count;
             if (countOfEntries == 0)
@@ -470,8 +461,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialAlignment(16);
             builder.AddSymbol(this);
             builder.EmitBytes(result);
-            _computedData = builder.ToObjectData();
-            return _computedData;
+            
+            return builder.ToObjectData(); ;
         }
     }
 }

@@ -134,9 +134,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitInt((int)item.Id);
                 
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
-
-                if (!relocsOnly)
-                    builder.EmitInt(item.Node.GetData(factory).Data.Length);
+                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE);
                 
                 count++;
             }
@@ -146,6 +144,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        public override int ClassCode => 627741208;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunHeaderNode;
     }
 }

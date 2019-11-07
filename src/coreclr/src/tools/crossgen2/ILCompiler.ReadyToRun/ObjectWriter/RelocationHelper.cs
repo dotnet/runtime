@@ -155,6 +155,7 @@ namespace ILCompiler.PEWriter
                     }
 
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     {
                         relocationLength = 4;
                         delta = targetRVA;
