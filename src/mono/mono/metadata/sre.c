@@ -2913,6 +2913,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 {
 	error_init (error);
 	
+	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (domain);
 	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (domain, mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype;
@@ -2936,7 +2937,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
-			MonoType *mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, klass->image, error);
+			MonoType *mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, klass->image, error);
 			goto_if_nok (error, fail);
 
 			if (mtype) {

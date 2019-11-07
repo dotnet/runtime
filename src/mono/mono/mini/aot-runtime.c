@@ -273,6 +273,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 {
 	MonoAssembly *assembly;
 	MonoImageOpenStatus status;
+	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
 
 	g_assert (index < amodule->image_table_len);
 
@@ -302,8 +303,12 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	 */
 	if (!strcmp (amodule->assembly->image->guid, amodule->image_guids [index]))
 		assembly = amodule->assembly;
-	else
-		assembly = mono_assembly_load (&amodule->image_names [index], amodule->assembly->basedir, &status);
+	else {
+		MonoAssemblyByNameRequest req;
+		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		req.basedir = amodule->assembly->basedir;
+		assembly = mono_assembly_request_byname (&amodule->image_names [index], &req, &status);
+	}
 	if (!assembly) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable because dependency %s is not found.", amodule->aot_name, amodule->image_names [index].name);
 		mono_error_set_bad_image_by_name (error, amodule->aot_name, "module is unusable because dependency %s is not found (error %d).\n", amodule->image_names [index].name, status);

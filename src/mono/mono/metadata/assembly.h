@@ -19,7 +19,8 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly *mono_assembly_open_full (const char *filename,
 				       	MonoImageOpenStatus *status,
 					mono_bool refonly);
-MONO_API MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
 MONO_API MONO_RT_EXTERNAL_ONLY

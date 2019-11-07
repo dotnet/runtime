@@ -2,6 +2,7 @@
 #include "mini-runtime.h"
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
@@ -407,7 +408,9 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 	//resolve the assembly
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
-	MonoAssembly *assembly = mono_assembly_load (aname, NULL, &status);
+	MonoAssemblyByNameRequest byname_req;
+	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 	g_free (lookup_name);
 	if (!assembly) {
 		DEBUG_PRINTF (1, "Could not resolve assembly %s\n", assembly_name);

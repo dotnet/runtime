@@ -1798,6 +1798,7 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 	const char *ptr = *_ptr;
 	char *enum_name;
 	guint32 str_len = 0;
+	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
 
 	if (!is_valid_ser_string_full (ctx, &str_start, &str_len, &ptr, end))
 		return NULL;
@@ -1810,7 +1811,7 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 
 	enum_name = (char *)g_memdup (str_start, str_len + 1);
 	enum_name [str_len] = 0;
-	type = mono_reflection_type_from_name_checked (enum_name, ctx->image, error);
+	type = mono_reflection_type_from_name_checked (enum_name, alc, ctx->image, error);
 	if (!type || !is_ok (error)) {
 		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid enum class %s, due to %s", enum_name, mono_error_get_message (error)));
 		g_free (enum_name);
