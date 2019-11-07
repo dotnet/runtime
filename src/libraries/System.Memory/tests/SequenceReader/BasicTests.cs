@@ -189,6 +189,139 @@ namespace System.Memory.Tests.SequenceReader
         }
 
         [Fact]
+        public void TryPeekOffset()
+        {
+            SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(10)));
+            Assert.True(reader.TryRead(out T first));
+            Assert.Equal(InputData[0], first);
+            Assert.True(reader.TryRead(out T second));
+            Assert.Equal(InputData[1], second);
+
+            Assert.True(reader.TryPeek(7, out T value));
+            Assert.Equal(InputData[9], value);
+
+            Assert.False(reader.TryPeek(8, out T defaultValue));
+            Assert.Equal(default, defaultValue);
+
+            Assert.Equal(2, reader.Consumed);
+            Assert.Equal(8, reader.Remaining);
+        }
+
+        [Fact]
+        public void TryPeekOffset_AfterEnd()
+        {
+            SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(2)));
+            Assert.True(reader.TryRead(out T first));
+            Assert.Equal(InputData[0], first);
+
+            Assert.True(reader.TryPeek(0, out T value));
+            Assert.Equal(InputData[1], value);
+            Assert.Equal(1, reader.Remaining);
+
+            Assert.False(reader.TryPeek(1, out T defaultValue));
+            Assert.Equal(default, defaultValue);
+        }
+
+        [Fact]
+        public void TryPeekOffset_RemainsZeroOffsetZero()
+        {
+            SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(1)));
+            Assert.True(reader.TryRead(out T first));
+            Assert.Equal(InputData[0], first);
+            Assert.Equal(0, reader.Remaining);
+            Assert.False(reader.TryPeek(0, out T defaultValue));
+            Assert.Equal(default, defaultValue);
+        }
+
+        [Fact]
+        public void TryPeekOffset_Empty()
+        {
+            SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(0)));
+            Assert.False(reader.TryPeek(0, out T defaultValue));
+            Assert.Equal(default, defaultValue);
+        }
+
+
+        [Fact]
+        public void TryPeekOffset_MultiSegment_StarAhead()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            // Move by 2 element
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(reader.TryRead(out T val));
+                Assert.Equal(InputData[i], val);
+            }
+
+            // We're on element 3 we peek last element of first segment
+            Assert.True(reader.TryPeek(2, out T lastElementFirstSegment));
+            Assert.Equal(InputData[4], lastElementFirstSegment);
+
+            // We're on element 3 we peek first element of first segment
+            Assert.True(reader.TryPeek(3, out T fistElementSecondSegment));
+            Assert.Equal(InputData[5], fistElementSecondSegment);
+
+            // We're on element 3 we peek last element of second segment
+            Assert.True(reader.TryPeek(7, out T lastElementSecondSegment));
+            Assert.Equal(InputData[9], lastElementSecondSegment);
+
+            // 3 + 8 out of bounds
+            Assert.False(reader.TryPeek(8, out T defaultValue));
+            Assert.Equal(default, defaultValue);
+
+            Assert.Equal(2, reader.Consumed);
+            Assert.Equal(8, reader.Remaining);
+        }
+
+        [Fact]
+        public void TryPeekOffset_MultiSegment_GetFirstGetLast()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            Assert.True(reader.TryPeek(0, out T firstElement));
+            Assert.Equal(InputData[0], firstElement);
+
+            Assert.True(reader.TryPeek(data.Length - 1, out T lastElemen));
+            Assert.Equal(InputData[data.Length - 1], lastElemen);
+
+            Assert.Equal(0, reader.Consumed);
+            Assert.Equal(10, reader.Remaining);
+        }
+
+        [Fact]
+        public void TryPeekOffset_InvalidOffset()
+        {
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(10)));
+                reader.TryPeek(-1, out _);
+            });
+
+            Assert.Equal("offset", exception.ParamName);
+        }
+
+        [Fact]
         public void CursorIsCorrectAtEnd()
         {
             SequenceReader<T> reader = new SequenceReader<T>(Factory.CreateWithContent(GetInputData(2)));
