@@ -28,10 +28,13 @@ resources:
   - container: ubuntu_1604_arm_cross_container
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20191023143847
 
+variables:
+  - template: variables.yml
+
 stages:
   # Windows outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
-    - template: /eng/pipelines/windows.yml
+    - template: windows.yml
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
@@ -39,7 +42,7 @@ stages:
 
   # Linux outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'linux'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
-    - template: /eng/pipelines/linux.yml
+    - template: linux.yml
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
@@ -47,7 +50,7 @@ stages:
 
   # MacOS outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'osx'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
-    - template: /eng/pipelines/macos.yml
+    - template: macos.yml
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}

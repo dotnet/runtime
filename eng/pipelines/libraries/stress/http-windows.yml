@@ -11,7 +11,9 @@ pool:
   name: Hosted VS2017
 
 variables:
-  httpStressProject: src/System.Net.Http/tests/StressTests/HttpStress/
+  - template: ../variables.yml
+  - name: httpStressProject
+    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
 
 steps:
 - checkout: self
@@ -20,11 +22,11 @@ steps:
   lfs: false
 
 - powershell: |
-    .\build.cmd -ci -c $(BUILD_CONFIGURATION)
+    .\$(buildScriptFileName).cmd -ci -c $(BUILD_CONFIGURATION)
   displayName: Build Corefx
 
 - powershell: |
-    cd '$(Build.SourcesDirectory)/$(HttpStressProject)'
+    cd '$(HttpStressProject)'
     # Load testhost sdk in environment
     . .\load-corefx-testhost.ps1 -c $(BUILD_CONFIGURATION) -b
     # Run the stress suite
