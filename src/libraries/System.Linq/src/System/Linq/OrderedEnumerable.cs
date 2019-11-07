@@ -169,7 +169,16 @@ namespace System.Linq
 
         internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
         {
-            EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(_keySelector, _comparer, _descending, next);
+            // Special case the common use of string with default comparer. Comparer<string>.Default checks the
+            // thread's Culture on each call which is an overhead which is not required, because we are about to
+            // do a sort which remains on the current thread (and EnumerableSorter is not used afterwards).
+            IComparer<TKey> comparer = _comparer;
+            if (typeof(TKey) == typeof(string) && comparer == Comparer<string>.Default)
+            {
+                comparer = (IComparer<TKey>)StringComparer.CurrentCulture;
+            }
+
+            EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(_keySelector, comparer, _descending, next);
             if (_parent != null)
             {
                 sorter = _parent.GetEnumerableSorter(sorter);
