@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _gcvt
+Name = Call _gcvt on normal values, negatives, exponents and hex digits.
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Call the _gcvt function on a number of cases.  Check that it
+= handles negatives, exponents and hex digits properly.  Also check that 
+= the 'digit' specification works. (And that it doesn't truncate negative
+= signs or decimals) 

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="LeadingSignCount.Int32.cs" />
+    <Compile Include="LeadingSignCount.Int64.cs" />
+    <Compile Include="LeadingZeroCount.Int64.cs" />
+    <Compile Include="LeadingZeroCount.UInt64.cs" />
+    <Compile Include="Program.ArmBase.Arm64.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

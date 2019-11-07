@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = fread
+Name = Positive Test for fread
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Tests the PAL implementation of the fread function.
+= Open a file in READ mode, then try to read from the file with
+= different 'size' params.  Check to ensure the return values and
+= the text in the buffer is correct

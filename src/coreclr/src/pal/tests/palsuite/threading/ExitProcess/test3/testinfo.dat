@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = ExitProcess
+Name = Positive test for ExitProcess
+TYPE = DEFAULT
+EXE1 = test3
+Description 
+= Test to ensure proper operation of the ExitProcess()
+= API by ensuring it works after PAL_Terminate() is
+= called.

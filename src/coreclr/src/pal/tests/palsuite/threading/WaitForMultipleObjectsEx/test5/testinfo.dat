@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading 
+Function = WaitForMultipleObjectsEx
+Name = Check simultaneously waiting on multiple processes.
+TYPE = DEFAULT
+EXE1 = test5
+EXE2 = helper
+Description
+= Create a number of helper processes and helper threads.
+= Helper threads wait on helper processes to finish. 
+= Helper processes wait on the event signal from test
+= thread before exit. The test thread then selectively
+= signals helper process to finish and then wait on the
+= selected helper thread to finish. 

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- This project exists purely to work around Arcade
+       behavior. Arcade knows how to restore tasks needed for
+       publishing to blob feeds, but it requires a project file that
+       imports nuget restore targets to be specified for this to
+       work. See details in
+       https://github.com/dotnet/arcade/commit/f657be5cb7cd4920334dd9162173b131211a1e17#r31728598.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

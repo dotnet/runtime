@@ -1,0 +1,25 @@
+parameters:
+  rootFolder: ''
+  includeRootFolder: false
+  archiveType: ''
+  tarCompression: ''
+  archiveExtension: ''
+  artifactName: ''
+  displayName: ''
+
+steps:
+  # Zip Artifact
+  - task: ArchiveFiles@2
+    displayName: 'Zip ${{ parameters.displayName }}'
+    inputs:
+      rootFolderOrFile:  ${{ parameters.rootFolder }}
+      archiveFile:       $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+      archiveType:       ${{ parameters.archiveType }}
+      tarCompression:    ${{ parameters.tarCompression }}
+      includeRootFolder: ${{ parameters.includeRootFolder }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish ${{ parameters.displayName }}'
+    inputs:
+      pathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+      artifactName:  ${{ parameters.artifactName }}

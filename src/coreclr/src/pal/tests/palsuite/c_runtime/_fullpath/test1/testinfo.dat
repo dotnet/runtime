@@ -1,0 +1,23 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = c_runtime
+Function = _fullpath
+Name = Positive Test for _fullpath
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Test to see if the _fullpath function returns the
+= proper values.  A check is done to ensure NULL is returned
+= by _fullpath only for the condition where the length of the 
+= created absolute path name (absPath) is greater than 
+= maxLength.
+
+
+
+
+
+
+

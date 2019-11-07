@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
+    <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DllImportPathTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable Include="export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$%28pwd)/Subdirectory" />
+  </ItemGroup>
+  <PropertyGroup>
+    <PathEnvSetupCommands><![CDATA[
+      mkdir Subdirectory
+      ]]></PathEnvSetupCommands>
+    <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMapping
+Name = CreateFileMappingA with PAGE_WRITECOPY.
+TYPE = DEFAULT
+EXE1 = createfilemapping
+Description
+= Positive test the CreateFileMapping API.
+= Call CreateFileMapping with access PAGE_WRITECOPY.

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <SupportedPackageOSGroups>Linux;OSX;FreeBSD</SupportedPackageOSGroups>
+  </PropertyGroup>
+  <Import Project="../Directory.Build.props" />
+</Project>

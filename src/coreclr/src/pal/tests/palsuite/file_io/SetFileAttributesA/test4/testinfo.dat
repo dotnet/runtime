@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = SetFileAttributesA
+Name = Tests SetFileAttributesA properly overrides NORMAL
+TYPE = DEFAULT
+EXE1 = setfileattributesa
+Description 
+= Test the SetFileAttributesA function. Check that using two flags 
+= (READONLY and NORMAL) only sets the file as READONLY, as MSDN 
+= notes that everything else overrides NORMAL.

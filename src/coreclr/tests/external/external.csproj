@@ -1,0 +1,110 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- This project places dlls from packagereferences into the
+       targeting pack folder, where they are referenced directly (via
+       "Reference") by the test projects. They are also copied into
+       the CORE_ROOT when running tests. -->
+
+  <PropertyGroup>
+    <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
+         This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
+    -->
+    <OutputPath>$(TargetingPackPath)</OutputPath>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+    <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+    <XUnitRunnerPackageId>xunit.runner.console</XUnitRunnerPackageId>
+    <XUnitRunnerTargetFramework>netcoreapp2.0</XUnitRunnerTargetFramework>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+    <IsTestProject>false</IsTestProject>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <!-- Some out-of-band packages like System.ComponentModel.Primitives
+       conflict with the versions in other test dependencies files. We
+       don't want to overwrite these versions when creating the
+       CORE_ROOT. This logic prevents filters out such conflicts. -->
+  <Target Name="FilterNugetPackages"
+          AfterTargets="ResolveAssemblyReferences"
+          Condition="'@(PackageToInclude)' != ''">
+
+    <ItemGroup>
+      <_nuGetDeploy Include="@(ReferenceCopyLocalPaths)">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_nuGetDeploy>
+
+      <_nuGetDeployByPackageId Include="@(_nuGetDeploy->'%(NuGetPackageId)')" />
+
+      <_nuGetDeployByPackageIdToRemove Include="@(_nuGetDeployByPackageId)" Exclude="@(PackageToInclude)" Condition="'@(PackageToInclude)' != ''" />
+      <_filteredNuGetDeployByPackageId Include="@(_nuGetDeployByPackageId)" Exclude="@(_nuGetDeployByPackageIdToRemove)" />
+
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(_filteredNuGetDeployByPackageId->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+
+  </Target>
+
+  <ItemGroup>
+    <PackageToInclude Include="xunit.abstractions"/>
+    <PackageToInclude Include="xunit.assert"/>
+    <PackageToInclude Include="xunit.extensibility.core"/>
+    <PackageToInclude Include="xunit.extensibility.execution"/>
+    <PackageToInclude Include="xunit.runner.utility"/>
+    <PackageToInclude Include="xunit.performance.api"/>
+    <PackageToInclude Include="xunit.performance.core"/>
+    <PackageToInclude Include="xunit.performance.execution"/>
+    <PackageToInclude Include="xunit.performance.metrics"/>
+    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
+    <PackageToInclude Include="Newtonsoft.Json"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.Analyzers"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
+    <PackageToInclude Include="CommandLineParser"/>
+
+    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
+    <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
+    <PackageReference Include="xunit.performance.api" Version="$(XunitPerformanceApiPackageVersion)" />
+    <PackageReference Include="xunit.performance.core" Version="$(XunitPerformanceApiPackageVersion)" />
+    <PackageReference Include="xunit.performance.execution" Version="$(XunitPerformanceApiPackageVersion)" />
+    <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiPackageVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
+    <PackageReference Include="xunit.runner.console" Version="$(XunitPackageVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="xunit.runner.utility" Version="$(XunitPackageVersion)" />
+  </ItemGroup>
+
+  <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll')"
+            Text="Error: looks the package $(Pkgxunit_runner_console) not restored or missing xunit.console.dll."
+    />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths
+        Include="$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\*.*"
+        Exclude="$(Pkgxunit_runner_console)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll.config"
+      >
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <Target Name="CoreCompile">
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

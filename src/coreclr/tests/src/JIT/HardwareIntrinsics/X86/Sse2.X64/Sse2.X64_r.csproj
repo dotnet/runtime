@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ConvertToInt64.Vector128Double.cs" />
+    <Compile Include="ConvertToInt64.Vector128Int64.cs" />
+    <Compile Include="ConvertToUInt64.Vector128UInt64.cs" />
+    <Compile Include="ConvertToInt64WithTruncation.Vector128Double.cs" />
+    <Compile Include="ConvertScalarToVector128Double.Double.cs" />
+    <Compile Include="ConvertScalarToVector128Int64.Int64.cs" />
+    <Compile Include="ConvertScalarToVector128UInt64.UInt64.cs" />
+    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\ScalarSimdUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="Program.Sse2.X64.cs" />
+  </ItemGroup>
+</Project>

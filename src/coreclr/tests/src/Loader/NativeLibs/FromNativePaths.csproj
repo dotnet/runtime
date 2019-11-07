@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FromNativePaths.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable Include="export CORE_LIBRARIES=$CORE_LIBRARIES:$%28pwd)/Subdirectory" />
+    <CLRTestBatchEnvironmentVariable Include="set CORE_LIBRARIES=$CORE_LIBRARIES%3B%25cd%\\Subdirectory" />
+  </ItemGroup>
+  <PropertyGroup>
+    <PathEnvSetupCommands><![CDATA[
+      mkdir Subdirectory
+      ]]></PathEnvSetupCommands>
+    <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
+    <CLRTestBatchPreCommands>$(BatchCLRTestPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
+  </PropertyGroup>
+</Project>

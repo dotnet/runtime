@@ -1,0 +1,138 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  corefxTests: false
+  stagedBuild: false
+
+  # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    name: ${{ parameters.name }}
+    helixType: ${{ parameters.helixType }}
+    container: ${{ parameters.container }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+  
+    # arcade-specific parameters
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}
+    dependsOn: ${{ parameters.dependsOn }}
+    displayName: ${{ parameters.displayName }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+  
+    variables:
+    - ${{ if ne(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+
+    - ${{ if eq(parameters.testGroup, '') }}:
+      - name: testArtifactRootName
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.zip'
+      - name: archiveType
+        value: zip
+      - name: tarCompression
+        value: ''
+      - name: scriptExt
+        value: '.cmd'
+      - name: dir
+        value: '\'
+
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: archiveExtension
+        value: '.tar.gz'
+      - name: archiveType
+        value: tar
+      - name: tarCompression
+        value: gz
+      - name: scriptExt
+        value: '.sh'
+      - name: dir
+        value: '/'
+
+    - name: coreClrRepoRoot
+      value: '$(Build.SourcesDirectory)'
+
+    - name: coreClrRepoRootDir
+      value: '$(coreClrRepoRoot)$(dir)'
+
+    - name: binTestsPath
+      value: '$(coreClrRepoRoot)/bin/tests'
+
+    - name: testRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: nativeRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: buildProductArtifactName
+      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: '$(coreClrRepoRoot)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testArtifactName
+      value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
+
+    - name: testNativeArtifactName
+      value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: testNativeRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: testBuildArtifactName
+      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: microsoftNetSdkIlFolderPath
+      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+      
+    - name: microsoftNetSdkIlArtifactName
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - name: priorityArg
+      value: ''
+
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps: ${{ parameters.steps }}

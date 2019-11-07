@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = FreeLibrary
+Name = Negative test for FreeLibrary
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Tests the PAL implementation of the FreeLibrary function.
+= This is a negative test that will pass an invalid and a
+= null handle to FreeLibrary.

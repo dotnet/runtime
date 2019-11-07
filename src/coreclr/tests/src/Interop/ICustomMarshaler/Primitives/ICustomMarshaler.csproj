@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);Windows</DefineConstants>
+    <!-- The test uses xunit directly and it fails to find the test assembly for some reason -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ICustomMarshaler.cs" />
+    <Compile Include="..\..\common\XunitBase.cs" />
+  </ItemGroup>
+</Project>

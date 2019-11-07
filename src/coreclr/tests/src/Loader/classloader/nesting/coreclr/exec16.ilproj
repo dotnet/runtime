@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="exec16.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="nesting16.ilproj" />
+  </ItemGroup>
+</Project>

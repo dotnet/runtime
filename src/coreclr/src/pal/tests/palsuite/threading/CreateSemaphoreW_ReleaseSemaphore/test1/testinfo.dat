@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CreateSemaphoreW / ReleaseSemaphore
+Name = Positive Test for CreateSemaphoreW and ReleaseSemaphore
+TYPE = DEFAULT
+EXE1 = createsemaphore
+Description 
+= Implementation of Producer / Consumer IPC problem using CreateSemaphoreW
+= and ReleaseSemaphore functions.  This test case exercises CreateSemaphoreW
+= , ReleaseSemaphore, CreateThread and WaitForSingleObject functions.  
+= Since there is no way to currently create "pseudo" random events in the 
+= pal, this example does not behave as classic bounded buffers would.  This
+= test case is designed to starve the consumer and have the producer fill
+= the buffer.   

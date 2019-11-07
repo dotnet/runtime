@@ -1,0 +1,35 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pr: none
+
+jobs:
+#
+# Checkout repository
+#
+- template: templates/checkout-job.yml
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: perf
+    
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: perf-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    jobParameters:
+      testGroup: perf

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+
+    <!-- Crossgen2 currently targets only x64 -->
+    <DisableProjectBuild Condition="'$(Platform)' != 'x64'">true</DisableProjectBuild>
+
+    <!-- Generate ILDLL so that the DLL can be the crossgenned assembly -->
+    <TargetExt>.ildll</TargetExt>
+
+    <!-- This is an explicit crossgen test -->
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+%Core_Root%\crossgen2\crossgen2 -r:%Core_Root%\*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+$CORE_ROOT/crossgen2/crossgen2 -r:$CORE_ROOT/*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

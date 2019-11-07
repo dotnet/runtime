@@ -1,0 +1,20 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CreateSemaphoreW / ReleaseSemaphore
+Name = Positive Test for CreateSemaphoreW and ReleaseSemaphore
+TYPE = DEFAULT
+EXE1 = createsemaphore
+Description
+= Test attributes of CreateSemaphoreW and ReleaseSemaphore.  
+= Insure for CreateSemaphore that lInitialCount and lMaximumCount
+= constraints are respected.  Validate that CreateSemaphore rejects 
+= conditions where, initial count and / or maximum count are negative 
+= and conditions where the initial count is greater than the maximum 
+= count.  For ReleaseSemaphore validate that lpPreviousCount gets set
+= to the previous semaphore count and lpPreviousCount can be NULL.
+= Also establish ReleaseSemaphore fails when called in a semaphore 
+= with count equal to lMaximumCount.

@@ -1,0 +1,56 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 11 * * 2,4"
+  displayName: Every Tuesday and Thursday at 3:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: templates/checkout-job.yml
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: gc-longrunning
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-test-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: gc-longrunning
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: run-test-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    managedOsxBuild: false
+    jobParameters:
+      testGroup: gc-longrunning

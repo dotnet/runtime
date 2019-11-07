@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = SetEndOfFile
+Name = Positive Test for SetEndOfFile (test 4)
+Type = DEFAULT 
+EXE1 = setendoffile
+Description
+= Tests the PAL implementation of the SetEndOfFile function.
+= Verify that the file pointer is the same before
+= and after a SetEndOfFile using SetFilePointer with
+= FILE_BEGIN, FILE_CURRENT and FILE_END
