@@ -90,17 +90,17 @@ fi
 # This script must be located in coreclr/tests.
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-__ProjectDir=${scriptDir}/..
-__RepoRootDir=${__ProjectDir}/../..
+CoreClrDir=${scriptDir}/..
+__RepoRootDir=${CoreClrDir}/../..
 
 # BEGIN SECTION to remove after repo consolidation
 if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectDir}
+  __RepoRootDir=${CoreClrDir}
 fi
 # END SECTION to remove after repo consolidation
 
 dotnet=${__RepoRootDir}/.dotnet/dotnet
-csprojPath="${__ProjectDir}/stress_dependencies/stress_dependencies.csproj"
+csprojPath="${CoreClrDir}/tests/stress_dependencies/stress_dependencies.csproj"
 
 if [ ! -e $dotnetCmd ]; then
     exit_with_error 1 'dotnet commandline does not exist:'$dotnetCmd
@@ -153,7 +153,7 @@ esac
 
 isPortable=0
 
-source "${__ProjectDir}/init-distro-rid.sh"
+source "${CoreClrDir}/init-distro-rid.sh"
 initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
 
 # Hack, replace the rid to ubuntu.14.04 which has a valid non-portable
@@ -187,7 +187,7 @@ then
     exit_with_error 1 "Failed to restore the package"
 fi
 
-CoreDisToolsPackagePathOutputFile="${__ProjectDir}/bin/obj/${__BuildOS}.x64/optdatapath.txt"
+CoreDisToolsPackagePathOutputFile="${CoreClrDir}/bin/obj/${__BuildOS}.x64/optdatapath.txt"
 
 bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\" /bl" 
 if [ $? -ne 0 ]
