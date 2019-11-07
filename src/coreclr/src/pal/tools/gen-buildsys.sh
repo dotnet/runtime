@@ -17,12 +17,12 @@ then
   exit 1
 fi
 
-__ProjectDir=$1
-__RepoRootDir=${__ProjectDir}/../..
+__CoreClrDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../../.."
+__RepoRootDir=${__CoreClrDir}/../..
 
 # BEGIN SECTION to remove after repo consolidation
 if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectDir}
+  __RepoRootDir=${__CoreClrDir}
 fi
 # END SECTION to remove after repo consolidation
 
@@ -83,5 +83,5 @@ $cmake_command \
   "-DCMAKE_USER_MAKE_RULES_OVERRIDE=" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  -S "${__ProjectDir}" \
+  -S "$1" \
   -B "$2"
