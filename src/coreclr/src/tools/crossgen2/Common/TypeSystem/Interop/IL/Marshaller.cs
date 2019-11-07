@@ -1062,8 +1062,9 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
 
-            LoadNativeAddr(codeStream);
-            codeStream.Emit(ILOpcode.initobj, emitter.NewToken(NativeType));
+            codeStream.EmitLdc(0);
+            codeStream.Emit(ILOpcode.conv_u);
+            StoreNativeValue(codeStream);
 
             // Check for null array
             LoadManagedValue(codeStream);
@@ -1081,7 +1082,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.mul_ovf);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));
+                InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem", null)));
             StoreNativeValue(codeStream);
 
             codeStream.EmitLabel(lNullArray);
@@ -1162,15 +1163,25 @@ namespace Internal.TypeSystem.Interop
             ILCodeLabel lRangeCheck = emitter.NewCodeLabel();
             ILCodeLabel lLoopHeader = emitter.NewCodeLabel();
             var lNullArray = emitter.NewCodeLabel();
-            
-            // Check for null array
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
+            // Check for null array
+            if (!IsManagedByRef)
+            {
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.brfalse, lNullArray);
+            }
 
             EmitElementCount(codeStream, MarshalDirection.Reverse);
 
             codeStream.EmitStLoc(vLength);
+
+            if (IsManagedByRef)
+            {
+                codeStream.EmitLdLoc(vLength);
+                codeStream.Emit(ILOpcode.newarr, emitter.NewToken(ManagedElementType));
+                StoreManagedValue(codeStream);
+            }
+
             codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.EmitStLoc(vSizeOf);
@@ -1307,31 +1318,42 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var arrayType = (ArrayType)ManagedType;
-            Debug.Assert(arrayType.IsSzArray);
-
-            ILLocalVariable vPinnedFirstElement = emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
 
-            // Check for null array, or 0 element array.
+            MethodDesc getRawSzArrayDataMethod = InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetRawSzArrayData", null);
+
+            // Check for null array
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.ldlen);
-            codeStream.Emit(ILOpcode.conv_i4);
-            codeStream.Emit(ILOpcode.brfalse, lNullArray);
+            
+            if (IsManagedByRef)
+            {
+                base.AllocManagedToNative(codeStream);
 
-            // Array has elements.
-            LoadManagedValue(codeStream);
-            codeStream.EmitLdc(0);
-            codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(arrayType.ElementType));
-            codeStream.EmitStLoc(vPinnedFirstElement);
+                LoadNativeValue(codeStream);
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
+                EmitElementCount(codeStream, MarshalDirection.Forward);
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(ManagedElementType));
+                codeStream.Emit(ILOpcode.mul_ovf);
+                codeStream.Emit(ILOpcode.cpblk);
 
-            // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
-            codeStream.EmitLabel(lNullArray);
-            codeStream.EmitLdLoc(vPinnedFirstElement);
-            codeStream.Emit(ILOpcode.conv_i);
-            StoreNativeValue(codeStream);
+                codeStream.EmitLabel(lNullArray);
+            }
+            else
+            {
+                ILLocalVariable vPinnedFirstElement = emitter.NewLocal(ManagedElementType.MakeByRefType(), true);
+
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
+                codeStream.EmitStLoc(vPinnedFirstElement);
+
+                // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
+                codeStream.EmitLabel(lNullArray);
+                codeStream.EmitLdLoc(vPinnedFirstElement);
+                codeStream.Emit(ILOpcode.conv_i);
+                StoreNativeValue(codeStream);
+            }
         }
 
         protected override void ReInitNativeTransform(ILCodeStream codeStream)
@@ -1343,13 +1365,13 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            if ((IsManagedByRef && !In) || (MarshalDirection == MarshalDirection.Reverse && MarshallerType == MarshallerType.Argument))
+            if (IsManagedByRef || (MarshalDirection == MarshalDirection.Reverse && MarshallerType == MarshallerType.Argument))
                 base.TransformNativeToManaged(codeStream);
         }
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
-            if (IsManagedByRef && !In)
+            if (IsManagedByRef)
                 base.EmitCleanupManaged(codeStream);
         }
     }

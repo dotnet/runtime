@@ -259,6 +259,20 @@ namespace Internal.TypeSystem.Ecma
             return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
                 attributeNamespace, attributeName).IsNil;
         }
+
+        public override MarshalAsDescriptor GetMarshalAsDescriptor()
+        {
+            MetadataReader reader = MetadataReader;
+            FieldDefinition definition = reader.GetFieldDefinition(_handle);
+            if ((definition.Attributes & FieldAttributes.HasFieldMarshal) != 0)
+            {
+                BlobReader marshalAsReader = reader.GetBlobReader(definition.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(_type.EcmaModule, marshalAsReader);
+                return parser.ParseMarshalAsDescriptor();
+            }
+
+            return null;
+        }
     }
 
     public static class EcmaFieldExtensions

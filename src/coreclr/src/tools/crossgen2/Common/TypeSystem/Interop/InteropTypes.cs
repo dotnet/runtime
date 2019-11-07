@@ -45,6 +45,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Marshal");
         }
 
+        public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+        }
+
         public static MetadataType GetStubHelpers(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
@@ -96,6 +101,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Guid");
+        }
+
+        public static bool IsSystemArgIterator(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ArgIterator");
         }
 
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)

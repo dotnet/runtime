@@ -397,7 +397,7 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert(_reader.RemainingBytes != 0);
 
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
-            NativeTypeKind arraySubType = NativeTypeKind.Invalid;
+            NativeTypeKind arraySubType = NativeTypeKind.Default;
             uint? paramNum = null, numElem = null;
 
             switch (type)

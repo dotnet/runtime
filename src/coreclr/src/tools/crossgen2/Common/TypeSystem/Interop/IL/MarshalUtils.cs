@@ -9,51 +9,66 @@ namespace Internal.TypeSystem.Interop
     public static class MarshalUtils
     {
         /// <summary>
-        /// Returns true if this is a type that doesn't require marshalling.
+        /// Returns true if this type has a common representation in both managed and unmanaged memory
+        /// and does not require special handling by the interop marshaler.
         /// </summary>
         public static bool IsBlittableType(TypeDesc type)
         {
-            type = type.UnderlyingType;
-
-            if (type.IsValueType)
+            if (!type.IsDefType)
             {
-                if (type.IsPrimitive)
-                {
-                    // All primitive types except char and bool are blittable
-                    TypeFlags category = type.Category;
-                    if (category == TypeFlags.Boolean || category == TypeFlags.Char)
-                        return false;
-
-                    return true;
-                }
-
-                foreach (FieldDesc field in type.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    TypeDesc fieldType = field.FieldType;
-
-                    // TODO: we should also reject fields that specify custom marshalling
-                    if (!MarshalUtils.IsBlittableType(fieldType))
-                    {
-                        // This field can still be blittable if it's a Char and marshals as Unicode
-                        var owningType = field.OwningType as MetadataType;
-                        if (owningType == null)
-                            return false;
-
-                        if (fieldType.Category != TypeFlags.Char ||
-                            owningType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass)
-                            return false;
-                    }
-                }
-                return true;
+                return false;
             }
 
-            if (type.IsPointer || type.IsFunctionPointer)
-                return true;
+            TypeDesc baseType = type.BaseType;
+            bool hasNonTrivialParent = baseType != null
+                && !baseType.IsWellKnownType(WellKnownType.Object)
+                && !baseType.IsWellKnownType(WellKnownType.ValueType);
 
-            return false;
+            if (hasNonTrivialParent && !IsBlittableType(baseType))
+            {
+                return false;
+            }
+
+            var mdType = (MetadataType)type;
+
+            if (!mdType.IsSequentialLayout && !mdType.IsExplicitLayout)
+            {
+                return false;
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic)
+                {
+                    continue;
+                }
+
+                if (!field.FieldType.IsValueType)
+                {
+                    // Types with fields of non-value types cannot be blittable
+                    // This check prevents possible infinite recursion where GetMarshallerKind would call back to IsBlittable e.g. for
+                    // the case of classes with pointer members to the class itself.
+                    return false;
+                }
+
+                MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
+                    field.FieldType,
+                    field.GetMarshalAsDescriptor(),
+                    isReturn: false,
+                    isAnsi: mdType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass,
+                    MarshallerType.Field,
+                    elementMarshallerKind: out var _);
+
+                if (marshallerKind != MarshallerKind.Enum
+                    && marshallerKind != MarshallerKind.BlittableValue
+                    && marshallerKind != MarshallerKind.BlittableStruct
+                    && marshallerKind != MarshallerKind.UnicodeChar)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

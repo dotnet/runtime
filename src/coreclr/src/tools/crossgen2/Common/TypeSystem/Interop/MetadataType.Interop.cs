@@ -33,13 +33,5 @@ namespace Internal.TypeSystem
         {
             get;
         }
-
-        /// <summary>
-        /// Retrieves the MarshalAsDescriptor of each field of the type
-        /// </summary>
-        public virtual MarshalAsDescriptor[] GetFieldMarshalAsDescriptors()
-        {
-            return Array.Empty<MarshalAsDescriptor>();
-        }
     }
 }

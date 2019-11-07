@@ -438,9 +438,6 @@
     <Compile Include="..\Common\TypeSystem\IL\ILOpcodeHelper.cs">
       <Link>IL\ILOpcodeHelper.cs</Link>
     </Compile>
-    <Compile Include="..\Common\TypeSystem\Interop\IL\MarshalUtils.cs">
-      <Link>Interop\IL\MarshalUtils.cs</Link>
-    </Compile>
     <Compile Include="..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
@@ -464,6 +461,9 @@
     </Compile>
     <Compile Include="..\Common\TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs">
       <Link>TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\Interop\FieldDesc.Interop.cs">
+      <Link>TypeSystem\Interop\FieldDesc.Interop.cs</Link>
     </Compile>
     <Compile Include="..\Common\TypeSystem\Interop\InstantiatedType.Interop.cs">
       <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
