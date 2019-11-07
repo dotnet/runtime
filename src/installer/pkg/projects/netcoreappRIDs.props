@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <PackageRID Condition="'$(PackageRID)' == ''">$(OutputRid)</PackageRID>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="linux-musl-x64" />
+    <OfficialBuildRID Include="rhel.6-x64" />
+    <OfficialBuildRID Include="osx-x64" />
+    <!-- Not currently built by CoreFX. -->
+    <!-- <OfficialBuildRID Include="freebsd-x64" /> -->
+    <OfficialBuildRID Include="win-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-x64"/>
+    <OfficialBuildRID Include="win-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-musl-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+
+    <!-- The following RIDs are not officically supported and are not
+         built during official builds, however we wish to include them
+         in our runtime.json to enable others to provide them.  -->
+    <UnofficialBuildRID Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="tizen.5.0.0-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+  </ItemGroup>
+</Project>

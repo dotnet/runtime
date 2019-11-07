@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CommonManaged.props))\CommonManaged.props" />
+
+  <PropertyGroup>
+    <Description>Abstractions for reading `.deps` files.</Description>
+    <TargetFrameworks>net451;netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Microsoft.DotNet.PlatformAbstractions\HashCodeCombiner.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
+  </ItemGroup>
+
+  <Choose>
+    <!--
+    Since we added a target for netstandard2.0 so users aren't forced to download the 1.x dependencies,
+    or depend on Newtonsoft.Json, use the Microsoft.Bcl.Json.Sources package (which targets netstandard2.0).
+    However, we still use the Newtonsoft.Json (v9.0.1) for other TFMs, so existing users don't need to upgrade their Newtonsoft.Json.
+    For example, the SDK targets net4x and is loaded in VS, so it can't upgrade to a new Newtonsoft.Json.
+    -->
+    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <ItemGroup>
+        <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="DependencyContextJsonReader.JsonTextReader.cs" />
+        <Compile Remove="DependencyContextWriter.JsonTextWriter.cs" />
+        <Compile Remove="UnifiedJsonReader.JsonTextReader.cs" />
+        <Compile Remove="UnifiedJsonWriter.JsonTextWriter.cs" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.0.0" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="ArrayBufferWriter.cs" />
+        <Compile Remove="DependencyContextJsonReader.Utf8JsonReader.cs" />
+        <Compile Remove="DependencyContextWriter.Utf8JsonWriter.cs" />
+        <Compile Remove="UnifiedJsonReader.Utf8JsonReader.cs" />
+        <Compile Remove="UnifiedJsonWriter.Utf8JsonWriter.cs" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' Or '$(TargetFramework)' == 'netstandard1.6' ">
+    <PackageReference Include="System.AppContext" Version="4.1.0" />
+    <PackageReference Include="System.Diagnostics.Debug" Version="4.0.11" />
+    <PackageReference Include="System.Dynamic.Runtime" Version="4.0.11" />
+    <PackageReference Include="System.IO.FileSystem" Version="4.0.1" />
+    <PackageReference Include="System.Linq" Version="4.1.0" />
+  </ItemGroup>
+
+</Project>

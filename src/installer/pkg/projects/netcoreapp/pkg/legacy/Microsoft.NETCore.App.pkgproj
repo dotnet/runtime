@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      This project builds the runtime packages, but the lineup package is now
+      Microsoft.NETCore.App.Internal.
+    -->
+    <BuildLineupPackage>false</BuildLineupPackage>
+
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+  </PropertyGroup>
+
+</Project>

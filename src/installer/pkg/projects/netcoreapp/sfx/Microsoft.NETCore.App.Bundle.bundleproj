@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
+      product band to upgrade in place.
+    -->
+    <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BundleComponentReference Include="Microsoft.NETCore.App.SharedFx.sfxproj" />
+    <BundleComponentReference Include="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.pkgproj" />
+    <BundleComponentReference Include="..\..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CandleVariables Include="BundleThmDir" Value="$(MSBuildProjectDirectory)" />
+  </ItemGroup>
+
+  <!-- ***** When the product-band version: "3.0" advances, remove these sections to clean up ***** -->
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'x86'">
+    <!-- ".NET Core 3.0.0 Preview 1" 3.0.0-preview-27122-01-win-x86 upgrade-code -->
+    <UpgradeRelatedBundle Include="{138DC905-5BB8-5C92-2BB2-CEEC57FD4912}" />
+    <!-- ".NET Core 3.0.0 Preview 2" 3.0.0-preview-27324-5-win-x86 upgrade-code -->
+    <UpgradeRelatedBundle Include="{2210ACC2-5EA6-4707-01F8-B064B94BB1C8}" />
+    <!-- ".NET Core 3.0.0 Preview 3" 3.0.0-preview3-27503-5-win-x86 upgrade-code -->
+    <UpgradeRelatedBundle Include="{8F802AA7-56BF-69E8-8E15-BE8FF8347CF7}" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
+    <!-- ".NET Core 3.0.0 Preview 1" 3.0.0-preview-27122-01-win-x64 upgrade-code -->
+    <UpgradeRelatedBundle Include="{C98F9B17-536C-711E-5B31-ADA492F8B956}" />
+    <!-- ".NET Core 3.0.0 Preview 2" 3.0.0-preview-27324-5-win-x64 upgrade-code -->
+    <UpgradeRelatedBundle Include="{E5F8505A-5282-7C15-4388-83FB730DCC13}" />
+    <!-- ".NET Core 3.0.0 Preview 3" 3.0.0-preview3-27503-5-win-x64 upgrade-code -->
+    <UpgradeRelatedBundle Include="{31F12178-5807-40A5-6799-2C9C47725A5E}" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NETCoreAppFrameworkVersion)' == '3.0'">
+    <CandleVariables Include="RelatedDotNetBundleIds" Value="@(UpgradeRelatedBundle)" />
+  </ItemGroup>
+
+</Project>
