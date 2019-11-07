@@ -2375,12 +2375,12 @@ public:
 
                     // These should not have been set yet, since this is the first and
                     // only def for this CSE.
-                    assert(ssaVarDsc->m_defLoc.m_blk == nullptr);
-                    assert(ssaVarDsc->m_defLoc.m_tree == nullptr);
+                    assert(ssaVarDsc->GetBlock() == nullptr);
+                    assert(ssaVarDsc->GetAssignment() == nullptr);
 
-                    ssaVarDsc->m_vnPair        = val->gtVNPair;
-                    ssaVarDsc->m_defLoc.m_blk  = blk;
-                    ssaVarDsc->m_defLoc.m_tree = asg->AsOp()->gtOp1;
+                    ssaVarDsc->m_vnPair = val->gtVNPair;
+                    ssaVarDsc->SetBlock(blk);
+                    ssaVarDsc->SetAssignment(asg->AsOp());
                 }
 
                 /* Create a reference to the CSE temp */

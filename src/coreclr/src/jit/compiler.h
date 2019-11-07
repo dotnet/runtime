@@ -207,35 +207,52 @@ struct VarScopeDsc
 #endif
 };
 
-// This is the location of a SSA definition.
-struct DefLoc
-{
-    BasicBlock* m_blk;
-    GenTree*    m_tree;
-
-    DefLoc() : m_blk(nullptr), m_tree(nullptr)
-    {
-    }
-
-    DefLoc(BasicBlock* block, GenTree* tree) : m_blk(block), m_tree(tree)
-    {
-    }
-};
-
 // This class stores information associated with a LclVar SSA definition.
 class LclSsaVarDsc
 {
+    // The basic block where the definition occurs. Definitions of uninitialized variables
+    // are considered to occur at the start of the first basic block (fgFirstBB).
+    //
+    // TODO-Cleanup: In the case of uninitialized variables the block is set to nullptr by
+    // SsaBuilder and changed to fgFirstBB during value numbering. It would be useful to
+    // investigate and perhaps eliminate this rather unexpected behavior.
+    BasicBlock* m_block;
+    // The GT_ASG node that generates the definition, or nullptr for definitions
+    // of uninitialized variables.
+    GenTreeOp* m_asg;
+
 public:
-    LclSsaVarDsc()
+    LclSsaVarDsc() : m_block(nullptr), m_asg(nullptr)
     {
     }
 
-    LclSsaVarDsc(BasicBlock* block, GenTree* tree) : m_defLoc(block, tree)
+    LclSsaVarDsc(BasicBlock* block, GenTreeOp* asg) : m_block(block), m_asg(asg)
     {
+        assert((asg == nullptr) || asg->OperIs(GT_ASG));
+    }
+
+    BasicBlock* GetBlock() const
+    {
+        return m_block;
+    }
+
+    void SetBlock(BasicBlock* block)
+    {
+        m_block = block;
+    }
+
+    GenTreeOp* GetAssignment() const
+    {
+        return m_asg;
+    }
+
+    void SetAssignment(GenTreeOp* asg)
+    {
+        assert((asg == nullptr) || asg->OperIs(GT_ASG));
+        m_asg = asg;
     }
 
     ValueNumPair m_vnPair;
-    DefLoc       m_defLoc;
 };
 
 // This class stores information associated with a memory SSA definition.
