@@ -30,7 +30,8 @@ jobs:
     buildConfig: checked
     platformGroup: gcstress # r2r-extra testGroup runs gcstress15 scenario
     helixQueueGroup: ci
-    testGroup: r2r-extra
+    managedOsxBuild: false
     jobParameters:
+      testGroup: r2r-extra
       readyToRun: true
       displayNameArgs: R2R
