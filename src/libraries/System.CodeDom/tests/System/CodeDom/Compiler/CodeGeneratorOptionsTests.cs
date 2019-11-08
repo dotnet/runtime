@@ -27,6 +27,20 @@ namespace System.CodeDom.Compiler.Tests
             Assert.Equal("value", options["name"]);
         }
 
+        [Fact]
+        public void Item_GetNull_ThrowsArgumentNullException()
+        {
+            var options = new CodeGeneratorOptions();
+            Assert.Throws<ArgumentNullException>("key", () => options[null]);
+        }
+
+        [Fact]
+        public void Item_SetNull_ThrowsArgumentNullException()
+        {
+            var options = new CodeGeneratorOptions();
+            Assert.Throws<ArgumentNullException>("key", () => options[null] = new object());
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -44,22 +58,38 @@ namespace System.CodeDom.Compiler.Tests
             Assert.Throws<InvalidCastException>(() => options.BlankLinesBetweenMembers);
         }
 
+        [Fact]
+        public void BlankLinesBetweenMembers_GetWhenNull_ReturnsTrue()
+        {
+            var options = new CodeGeneratorOptions();
+            options[nameof(CodeGeneratorOptions.BlankLinesBetweenMembers)] = null;
+            Assert.True(options.BlankLinesBetweenMembers);
+        }
+
         [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("value")]
-        public void BracingStyle_Set_GetReturnsExpected(string value)
+        [InlineData(null, "Block")]
+        [InlineData("", "")]
+        [InlineData("value", "value")]
+        public void BracingStyle_Set_GetReturnsExpected(string value, string expected)
         {
             var options = new CodeGeneratorOptions { BracingStyle = value };
-            Assert.Equal(value ?? "Block", options.BracingStyle);
+            Assert.Equal(expected, options.BracingStyle);
         }
 
         [Fact]
-        public void BracingStyle_GetWhenNotBool_ThrowsInvalidCastException()
+        public void BracingStyle_GetWhenNotString_ThrowsInvalidCastException()
         {
             var options = new CodeGeneratorOptions();
             options[nameof(CodeGeneratorOptions.BracingStyle)] = new object();
             Assert.Throws<InvalidCastException>(() => options.BracingStyle);
+        }
+
+        [Fact]
+        public void BracingStyle_GetWhenNull_ReturnsExpected()
+        {
+            var options = new CodeGeneratorOptions();
+            options[nameof(CodeGeneratorOptions.BracingStyle)] = null;
+            Assert.Equal("Block", options.BracingStyle);
         }
 
         [Theory]
@@ -79,6 +109,14 @@ namespace System.CodeDom.Compiler.Tests
             Assert.Throws<InvalidCastException>(() => options.ElseOnClosing);
         }
 
+        [Fact]
+        public void ElseOnClosing_GetWhenNull_Return()
+        {
+            var options = new CodeGeneratorOptions();
+            options[nameof(CodeGeneratorOptions.ElseOnClosing)] = null;
+            Assert.False(options.ElseOnClosing);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -90,11 +128,19 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        public void IndentString_GetWhenNotBool_ThrowsInvalidCastException()
+        public void IndentString_GetWhenNotString_ThrowsInvalidCastException()
         {
             var options = new CodeGeneratorOptions();
             options[nameof(CodeGeneratorOptions.IndentString)] = new object();
             Assert.Throws<InvalidCastException>(() => options.IndentString);
+        }
+
+        [Fact]
+        public void IndentString_GetWhenNull_ReturnsExpected()
+        {
+            var options = new CodeGeneratorOptions();
+            options[nameof(CodeGeneratorOptions.IndentString)] = null;
+            Assert.Equal("    ", options.IndentString);
         }
 
         [Theory]
@@ -112,6 +158,14 @@ namespace System.CodeDom.Compiler.Tests
             var options = new CodeGeneratorOptions();
             options[nameof(CodeGeneratorOptions.VerbatimOrder)] = new object();
             Assert.Throws<InvalidCastException>(() => options.VerbatimOrder);
+        }
+
+        [Fact]
+        public void VerbatimOrder_GetWhenNotBoolNull_ReturnsFalse()
+        {
+            var options = new CodeGeneratorOptions();
+            options[nameof(CodeGeneratorOptions.VerbatimOrder)] = null;
+            Assert.False(options.VerbatimOrder);
         }
     }
 }
