@@ -610,6 +610,7 @@ check_c_source_compiles(
     "
     #include <sys/types.h>
     #include <sys/socketvar.h>
+    #include <sys/queue.h>
     #include <netinet/in.h>
     #include <netinet/ip.h>
     #include <netinet/tcp.h>

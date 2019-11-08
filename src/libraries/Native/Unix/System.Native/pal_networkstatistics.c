@@ -257,6 +257,13 @@ int32_t SystemNative_GetEstimatedTcpConnectionCount()
     return count;
 }
 
+#ifdef __FreeBSD__
+int32_t SystemNative_GetActiveTcpConnectionInfos(__attribute__((unused)) NativeTcpConnectionInformation* infos, int32_t* infoCount)
+{
+    *infoCount = 0;
+    return 0;
+}
+#else
 static size_t GetEstimatedTcpPcbSize()
 {
     void* oldp = NULL;
@@ -348,6 +355,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
     free(buffer);
     return 0;
 }
+#endif
 
 int32_t SystemNative_GetEstimatedUdpListenerCount()
 {
@@ -357,6 +365,13 @@ int32_t SystemNative_GetEstimatedUdpListenerCount()
     return count;
 }
 
+#ifdef __FreeBSD__
+int32_t SystemNative_GetActiveUdpListeners(__attribute__((unused)) IPEndPointInfo* infos, int32_t* infoCount)
+{
+    *infoCount = 0;
+    return 0;
+}
+#else
 static size_t GetEstimatedUdpPcbSize()
 {
     void* oldp = NULL;
@@ -436,6 +451,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
     free(buffer);
     return 0;
 }
+#endif
 
 int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
