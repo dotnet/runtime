@@ -283,6 +283,7 @@ namespace System.Net.Http.Functional.Tests
                     "}", rm.ToString());
 
                 rm.TrailingHeaders.Add("Custom-Trailing-Header", "value3");
+                rm.TrailingHeaders.Add("Content-MD5", "Q2hlY2sgSW50ZWdyaXR5IQ==");
 
                 Assert.Equal(
                     "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
@@ -295,6 +296,7 @@ namespace System.Net.Http.Functional.Tests
                     "}, Trailing Headers:" + Environment.NewLine +
                     "{" + Environment.NewLine +
                     "  Custom-Trailing-Header: value3" + Environment.NewLine +
+                    "  Content-MD5: Q2hlY2sgSW50ZWdyaXR5IQ==" + Environment.NewLine +
                     "}", rm.ToString());
             }
         }

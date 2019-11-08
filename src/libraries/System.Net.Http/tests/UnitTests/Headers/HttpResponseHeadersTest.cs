@@ -19,6 +19,44 @@ namespace System.Net.Http.Tests
             headers = new HttpResponseHeaders();
         }
 
+        public static IEnumerable<object[]> ProhibitedTrailingHeaders()
+        {
+            return new KnownHeader[]    // rfc7230 4.1.2.
+            {
+                // Message framing headers.
+                KnownHeaders.TransferEncoding, KnownHeaders.ContentLength,
+
+                // Routing headers.
+                KnownHeaders.Host,
+
+                // Request modifiers: controls and conditionals.
+                // rfc7231#section-5.1: Controls.
+                KnownHeaders.CacheControl, KnownHeaders.Expect, KnownHeaders.MaxForwards, KnownHeaders.Pragma, KnownHeaders.Range, KnownHeaders.TE,
+
+                // rfc7231#section-5.2: Conditionals.
+                KnownHeaders.IfMatch, KnownHeaders.IfNoneMatch, KnownHeaders.IfModifiedSince, KnownHeaders.IfUnmodifiedSince, KnownHeaders.IfRange,
+
+                // Authentication headers.
+                KnownHeaders.Authorization, KnownHeaders.SetCookie,
+
+                // Response control data.
+                // rfc7231#section-7.1: Control Data.
+                KnownHeaders.Age, KnownHeaders.Expires, KnownHeaders.Date, KnownHeaders.Location, KnownHeaders.RetryAfter, KnownHeaders.Vary, KnownHeaders.Warning,
+
+                // Content-Encoding, Content-Type, Content-Range, and Trailer itself.
+                KnownHeaders.ContentEncoding, KnownHeaders.ContentType, KnownHeaders.ContentRange, KnownHeaders.Trailer
+            }.Select(h => new object[] { h.Name }).ToArray();
+        }
+
+        public static IEnumerable<object[]> AllowedTrailingHeaders()
+        {
+            return new[]
+            {
+                new[] {"Content-MD5", "Q2hlY2sgSW50ZWdyaXR5IQ=="}, new [] { "Accept-Encoding", "identity,gzip" },
+                new[] {"X-MyHeader", "ABC"}, new[] { "ETag", "\"737060cd8c284d8af7ad3082f209582d\"" }
+            };
+        }
+
         #region Response headers
         [Fact]
         public void Location_ReadAndWriteProperty_CallsForwardedToHttpGeneralHeaders()
@@ -594,6 +632,27 @@ namespace System.Net.Http.Tests
 
             headers.TryAddWithoutValidation("Trailer", ",custom2, ,");
             Assert.Equal(2, headers.Trailer.Count);
+        }
+
+        [Theory, MemberData(nameof(AllowedTrailingHeaders))]
+        public void Trailer_AddAndGetAllowedContentHeader_Success(string name, string value)
+        {
+            var trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
+
+            trailingHeaders.Add(name, value);
+
+            var actualHeaderValues = trailingHeaders.GetValues(name).ToArray();
+            Assert.Equal(1, actualHeaderValues.Length);
+
+            Assert.Equal(value, actualHeaderValues[0]);
+        }
+
+        [Theory, MemberData(nameof(ProhibitedTrailingHeaders))]
+        public void Trailer_AddProhibitedHeader_ThrowsException(string header)
+        {
+            var trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
+
+            Assert.Throws<InvalidOperationException>(() => trailingHeaders.Add(header, "ABC"));
         }
 
         [Fact]

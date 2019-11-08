@@ -512,9 +512,9 @@ namespace System.Net.Http
                         if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             Debug.Assert(_trailers != null);
-                            _trailers.Add(KeyValuePair.Create(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue));
+                            _trailers.Add(KeyValuePair.Create((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue));
                         }
-                        else if (descriptor.HeaderType == HttpHeaderType.Content)
+                        else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                         {
                             Debug.Assert(_response != null);
                             _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
@@ -522,7 +522,7 @@ namespace System.Net.Http
                         else
                         {
                             Debug.Assert(_response != null);
-                            _response.Headers.TryAddWithoutValidation(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                            _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         }
                     }
                 }

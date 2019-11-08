@@ -12,8 +12,9 @@ namespace System.Net.Http.Headers
         Response = 0b100,
         Content = 0b1000,
         Custom = 0b10000,
+        NonTrailing = 0b100000,
 
-        All = 0b11111,
+        All = 0b111111,
         None = 0
     }
 }

@@ -42,31 +42,6 @@ namespace System.Net.Http
         private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
-        private static readonly HashSet<KnownHeader> s_disallowedTrailers = new HashSet<KnownHeader>    // rfc7230 4.1.2.
-        {
-            // Message framing headers.
-            KnownHeaders.TransferEncoding, KnownHeaders.ContentLength,
-
-            // Routing headers.
-            KnownHeaders.Host,
-
-            // Request modifiers: controls and conditionals.
-            // rfc7231#section-5.1: Controls.
-            KnownHeaders.CacheControl, KnownHeaders.Expect, KnownHeaders.MaxForwards, KnownHeaders.Pragma, KnownHeaders.Range, KnownHeaders.TE,
-
-            // rfc7231#section-5.2: Conditionals.
-            KnownHeaders.IfMatch, KnownHeaders.IfNoneMatch, KnownHeaders.IfModifiedSince, KnownHeaders.IfUnmodifiedSince, KnownHeaders.IfRange,
-
-            // Authentication headers.
-            KnownHeaders.Authorization, KnownHeaders.SetCookie,
-
-            // Response control data.
-            // rfc7231#section-7.1: Control Data.
-            KnownHeaders.Age, KnownHeaders.Expires, KnownHeaders.Date, KnownHeaders.Location, KnownHeaders.RetryAfter, KnownHeaders.Vary, KnownHeaders.Warning,
-
-            // Content-Encoding, Content-Type, Content-Range, and Trailer itself.
-            KnownHeaders.ContentEncoding, KnownHeaders.ContentType, KnownHeaders.ContentRange, KnownHeaders.Trailer
-        };
 
         private readonly HttpConnectionPool _pool;
         private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
@@ -923,7 +898,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
-            if (isFromTrailer && descriptor.KnownHeader != null && s_disallowedTrailers.Contains(descriptor.KnownHeader))
+            if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
@@ -960,15 +935,15 @@ namespace System.Net.Http
             // Request headers returned on the response must be treated as custom headers.
             if (isFromTrailer)
             {
-                response.TrailingHeaders.TryAddWithoutValidation(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                response.TrailingHeaders.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
-            else if (descriptor.HeaderType == HttpHeaderType.Content)
+            else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
             {
                 response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
             else
             {
-                response.Headers.TryAddWithoutValidation(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
         }
 

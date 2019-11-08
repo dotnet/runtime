@@ -20,6 +20,7 @@ namespace System.Net.Http.Headers
 
         private object[] _specialCollectionsSlots;
         private HttpGeneralHeaders _generalHeaders;
+        private bool _containsTrailingHeaders;
 
         #region Response Headers
 
@@ -141,9 +142,11 @@ namespace System.Net.Http.Headers
 
         #endregion
 
-        internal HttpResponseHeaders()
-            : base(HttpHeaderType.General | HttpHeaderType.Response | HttpHeaderType.Custom, HttpHeaderType.Request)
+        internal HttpResponseHeaders(bool containsTrailingHeaders = false)
+            : base(containsTrailingHeaders ? HttpHeaderType.All ^ HttpHeaderType.Request : HttpHeaderType.General | HttpHeaderType.Response | HttpHeaderType.Custom,
+                  HttpHeaderType.Request)
         {
+            _containsTrailingHeaders = containsTrailingHeaders;
         }
 
         internal override void AddHeaders(HttpHeaders sourceHeaders)
@@ -157,6 +160,18 @@ namespace System.Net.Http.Headers
             {
                 GeneralHeaders.AddSpecialsFrom(sourceResponseHeaders._generalHeaders);
             }
+        }
+
+        internal override bool IsAllowedHeaderName(HeaderDescriptor descriptor)
+        {
+            if (!_containsTrailingHeaders)
+                return true;
+
+            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(descriptor.Name);
+            if (knownHeader == null)
+                return true;
+
+            return (knownHeader.HeaderType & HttpHeaderType.NonTrailing) == 0;
         }
 
         private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));

@@ -54,8 +54,8 @@ namespace System.Net.Http.Headers
             // Should be no overlap
             Debug.Assert((allowedHeaderTypes & treatAsCustomHeaderTypes) == 0);
 
-            _allowedHeaderTypes = allowedHeaderTypes;
-            _treatAsCustomHeaderTypes = treatAsCustomHeaderTypes;
+            _allowedHeaderTypes = allowedHeaderTypes & ~HttpHeaderType.NonTrailing;
+            _treatAsCustomHeaderTypes = treatAsCustomHeaderTypes & ~HttpHeaderType.NonTrailing;
         }
 
         internal Dictionary<HeaderDescriptor, HeaderStoreItemInfo> HeaderStore => _headerStore;
@@ -997,8 +997,15 @@ namespace System.Net.Http.Headers
             return info.ParsedValue;
         }
 
+        internal virtual bool IsAllowedHeaderName(HeaderDescriptor descriptor) => true;
+
         private void PrepareHeaderInfoForAdd(HeaderDescriptor descriptor, out HeaderStoreItemInfo info, out bool addToStore)
         {
+            if (!IsAllowedHeaderName(descriptor))
+            {
+                throw new InvalidOperationException(string.Format(SR.net_http_headers_not_allowed_header_name, descriptor.Name));
+            }
+
             info = null;
             addToStore = false;
             if (!TryGetAndParseHeaderInfo(descriptor, out info))
@@ -1091,7 +1098,7 @@ namespace System.Net.Http.Headers
                 return descriptor.AsCustomHeader();
             }
 
-            throw new InvalidOperationException(SR.net_http_headers_not_allowed_header_name);
+            throw new InvalidOperationException(string.Format(SR.net_http_headers_not_allowed_header_name, name));
         }
 
         private bool TryGetHeaderDescriptor(string name, out HeaderDescriptor descriptor)

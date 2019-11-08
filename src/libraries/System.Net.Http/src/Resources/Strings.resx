@@ -145,7 +145,7 @@
     <value>The format of value '{0}' is invalid.</value>
   </data>
   <data name="net_http_headers_not_allowed_header_name" xml:space="preserve">
-    <value>Misused header name. Make sure request headers are used with HttpRequestMessage, response headers with HttpResponseMessage, and content headers with HttpContent objects.</value>
+    <value>Misused header name, '{0}'. Make sure request headers are used with HttpRequestMessage, response headers with HttpResponseMessage, and content headers with HttpContent objects.</value>
   </data>
   <data name="net_http_headers_invalid_host_header" xml:space="preserve">
     <value>The specified value is not a valid 'Host' header string.</value>
