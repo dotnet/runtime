@@ -1721,6 +1721,20 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
+void
+mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
+						  gint64* memory_load_bytes,
+						  gint64* total_available_memory_bytes,
+						  gint64* heap_size_bytes,
+						  gint64* fragmented_bytes)
+{
+	*high_memory_load_threshold_bytes = 0;
+	*memory_load_bytes = 0;
+	*total_available_memory_bytes = 0;
+	*heap_size_bytes = 0;
+	*fragmented_bytes = 0;
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (boehm_gc);

@@ -57,6 +57,9 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
+/* Used for GetGCMemoryInfo */
+SgenGCInfo sgen_gc_info;
+
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 
@@ -2564,6 +2567,22 @@ mono_gc_get_heap_size (void)
 {
 	return (int64_t)sgen_gc_get_total_heap_allocation ();
 }
+
+void
+mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
+						  gint64* memory_load_bytes,
+						  gint64* total_available_memory_bytes,
+						  gint64* heap_size_bytes,
+						  gint64* fragmented_bytes)
+{
+	*high_memory_load_threshold_bytes = sgen_gc_info.high_memory_load_threshold_bytes;
+	*fragmented_bytes = sgen_gc_info.fragmented_bytes;
+	
+	*heap_size_bytes = sgen_gc_info.heap_size_bytes;
+
+	*memory_load_bytes = sgen_gc_info.memory_load_bytes;
+	*total_available_memory_bytes = sgen_gc_info.total_available_memory_bytes;
+}	
 
 MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)

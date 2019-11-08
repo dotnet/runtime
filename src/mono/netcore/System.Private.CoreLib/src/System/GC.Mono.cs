@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace System
 {
@@ -236,10 +237,22 @@ namespace System
 			return 1024 * 1024 * 16;
 		}
 
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		static extern void _GetGCMemoryInfo (out long highMemoryLoadThresholdBytes,
+										out long memoryLoadBytes,
+										out long totalAvailableMemoryBytes,
+										out long heapSizeBytes,
+										out long fragmentedBytes); 
+
 		public static GCMemoryInfo GetGCMemoryInfo ()
 		{
-			// TODO: Implement
-			return default;
+			_GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
+							 out long memoryLoadBytes,
+							 out long totalAvailableMemoryBytes,
+							 out long heapSizeBytes,
+							 out long fragmentedBytes );
+			
+			return new GCMemoryInfo(highMemoryLoadThresholdBytes, memoryLoadBytes, totalAvailableMemoryBytes, heapSizeBytes, fragmentedBytes);
 		}
 
 		internal static T[] AllocateUninitializedArray<T> (int length)

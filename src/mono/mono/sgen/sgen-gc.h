@@ -743,6 +743,16 @@ typedef struct _SgenRememberedSet {
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
 } SgenRememberedSet;
 
+typedef struct _SgenGCInfo {
+	guint64 fragmented_bytes;
+	guint64 heap_size_bytes;
+	guint64 high_memory_load_threshold_bytes;
+	guint64 memory_load_bytes;
+	guint64 total_available_memory_bytes;
+} SgenGCInfo;
+
+extern SgenGCInfo sgen_gc_info;
+
 SgenRememberedSet *sgen_get_remset (void);
 
 /*
