@@ -970,6 +970,11 @@ def run_tests(host_os,
         print("Setting RunCrossGen=true")
         os.environ["RunCrossGen"] = "true"
 
+    if run_crossgen2_tests:
+        print("Running tests R2R (Crossgen2)")
+        print("Setting RunCrossGen2=true")
+        os.environ["RunCrossGen2"] = "true"
+
     if large_version_bubble:
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "true"

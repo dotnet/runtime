@@ -76,8 +76,10 @@ if /i "%1" == "skipgeneratelayout"                      (set __SkipGenerateLayou
 if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
+if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgentests"      (set RunCrossGen=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
+if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 REM tieredcompilation is on by default now, but setting this environment variable is harmless and I didn't want to break any automation that might be using it just yet
 if /i "%1" == "tieredcompilation"                       (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
@@ -174,6 +176,10 @@ if defined __BuildXUnitWrappers (
 
 if defined RunCrossGen (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen_tests
+)
+
+if defined RunCrossGen2 (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen2_tests
 )
 
 if defined __DoCrossgen (

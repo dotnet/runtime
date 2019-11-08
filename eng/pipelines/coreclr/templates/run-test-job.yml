@@ -9,6 +9,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   readyToRun: false
+  crossgen2: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
@@ -76,6 +77,11 @@ jobs:
         value: 'crossgen'
       - name: LogNamePrefix
         value: TestRunLogs_R2R
+      - ${{ if eq(parameters.crossgen2, true) }}:
+        - name: crossgenArg
+          value: 'crossgen2'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
@@ -240,7 +246,8 @@ jobs:
           timeoutPerTestCollectionInMinutes: 300
           timeoutPerTestInMinutes: 90
 
-        runCrossGen: ${{ parameters.readyToRun }}
+        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:

@@ -26,6 +26,7 @@
         HelixType=$(_HelixType);
         PublishTestResults=$(_PublishTestResults);
         RunCrossGen=$(_RunCrossGen);
+        RunCrossGen2=$(_RunCrossGen2);
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
@@ -172,9 +173,11 @@
     <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
     <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
     <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
+    <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
@@ -192,6 +195,7 @@
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
     <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -206,6 +210,7 @@
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
     <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />

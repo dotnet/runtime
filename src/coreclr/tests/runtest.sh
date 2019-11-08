@@ -24,6 +24,7 @@ function print_usage {
     echo '  --test-env                       : Script to set environment variables for tests'
     echo '  --crossgen                       : Precompiles the framework managed assemblies'
     echo '  --runcrossgentests               : Runs the ready to run tests' 
+    echo '  --runcrossgen2tests              : Runs the ready to run tests compiled with Crossgen2' 
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -328,6 +329,9 @@ do
         --runcrossgentests)
             export RunCrossGen=1
             ;;
+        --runcrossgen2tests)
+            export RunCrossGen2=1
+            ;;
         --corefxtests)
             export RunCoreFXTests=1
             ;;
@@ -545,6 +549,10 @@ fi
 
 if [ ! -z "$RunCrossGen" ]; then
     runtestPyArguments+=("--run_crossgen_tests")
+fi
+
+if [ ! -z "$RunCrossGen2" ]; then
+    runtestPyArguments+=("--run_crossgen2_tests")
 fi
 
 if (($doCrossgen!=0)); then

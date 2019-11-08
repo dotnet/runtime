@@ -166,30 +166,67 @@ generate_layout()
     fi
 
     # Precompile framework assemblies with crossgen if required
-    if [ $__DoCrossgen -ne 0 ]; then
+    if [[ $__DoCrossgen != 0 || $__DoCrossgen2 != 0 ]]; then
         precompile_coreroot_fx
     fi
 }
 
 precompile_coreroot_fx()
 {
-    echo "${__MsgPrefix}Running crossgen on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
-
+    local overlayDir=$CORE_ROOT
+    local compilerName=Crossgen
+    
     # Read the exclusion file for this platform
     skipCrossGenFiles=($(read_array "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt"))
     skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
 
-    local overlayDir=$CORE_ROOT
+    # Temporary output folder for Crossgen2-compiled assemblies
+    local outputDir=${overlayDir}/out
+
+    # Delete previously crossgened assemblies
+    rm ${overlayDir}/*.ni.dll
+
+    # Collect reference assemblies for Crossgen2
+    local crossgen2References=""
+
+    if [[ $__DoCrossgen2 != 0 ]]; then
+        compilerName=Crossgen2
+
+        mkdir ${outputDir}
+
+        skipCrossGenFiles+=('System.Private.CoreLib.dll')
+        skipCrossGenFiles+=('System.Runtime.Serialization.Formatters.dll')
+        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
+        skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
+        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
+        skipCrossGenFiles+=('CommandLine.dll')
+
+        for reference in ${overlayDir}/*.dll
+        do
+            crossgen2References+=" -r:${reference}"
+        done
+    fi
+
+    echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
     filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
     for fileToPrecompile in ${filesToPrecompile}
     do
-        local filename=${fileToPrecompile}
+        local filename=${fileToPrecompile}        
         if is_skip_crossgen_test "$(basename $filename)"; then
                 continue
         fi
+
         echo Precompiling $filename
-        $__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
+
+        if [[ $__DoCrossgen != 0 ]]; then
+            $__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
+        fi
+
+        if [[ $__DoCrossgen2 != 0 ]]; then
+            ${overlayDir}/crossgen2/crossgen2 ${crossgen2References} -O --inputbubble --out ${outputDir}/$(basename $filename) $filename 1>$filename.stdout 2>$filename.stderr
+        fi
+
         local exitCode=$?
         if [[ $exitCode != 0 ]]; then
             if grep -q -e '0x80131018' $filename.stderr; then
@@ -204,6 +241,12 @@ precompile_coreroot_fx()
             rm $filename.{stdout,stderr}
         fi
     done
+
+    if [[ $__DoCrossgen2 != 0 ]]; then
+        # Copy the Crossgen-compiled assemblies back to CORE_ROOT
+        mv -f ${outputDir}/* ${overlayDir}/
+        rm -r ${outputDir}
+    fi
 }
 
 declare -a skipCrossGenFiles
@@ -731,6 +774,7 @@ __GenerateTestHostOnly=
 __priority1=
 __BuildTestWrappersOnly=
 __DoCrossgen=0
+__DoCrossgen2=0
 __CopyNativeTestBinaries=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
 __SkipGenerateLayout=0
@@ -941,6 +985,10 @@ while :; do
 
         crossgen)
             __DoCrossgen=1
+            ;;
+
+        crossgen2)
+            __DoCrossgen2=1
             ;;
 
         bindir)

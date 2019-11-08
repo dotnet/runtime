@@ -15,6 +15,7 @@ parameters:
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
+  runCrossGen2: ''
   helixProjectArguments: ''
   runInUnloadableContext: ''
   longRunningGcTests: ''
@@ -45,6 +46,7 @@ steps:
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
+      _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
@@ -83,6 +85,7 @@ steps:
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
+      _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}

@@ -47,12 +47,35 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
           mkdir IL
           cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
           mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
-          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
-          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
+          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
+          echo $__Command
+          $__Command
           __cgExitCode=$?
           if [ $__cgExitCode -ne 0 ]
           then
             echo Crossgen failed with exitcode: $__cgExitCode
+            ReleaseLock
+            exit 1
+          fi
+        fi 
+        ReleaseLock       
+    fi        
+fi        
+# CrossGen2 Script
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+    if [ ! -f $(MSBuildProjectName).org ]%3B then
+        TakeLock
+        if [ ! -f $(MSBuildProjectName).org ]%3B then
+          mkdir IL
+          cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
+          mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
+          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen2/crossgen2" -r:$CORE_ROOT/*.dll --targetarch=x64 -O --inputbubble -o:$(scriptPath)$(MSBuildProjectName).dll $(scriptPath)$(MSBuildProjectName).org
+          echo $__Command
+          $__Command
+          __cg2ExitCode=$?
+          if [ $__cg2ExitCode -ne 0 ]
+          then
+            echo Crossgen2 failed with exitcode: $__cg2ExitCode
             ReleaseLock
             exit 1
           fi
@@ -85,13 +108,36 @@ if defined RunCrossGen (
             mkdir IL
             copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
             ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
-            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
-            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
+            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths !CORE_ROOT!%3B%25cd%25 /in %21scriptPath%21$(MSBuildProjectName).org /out %21scriptPath%21\$(MSBuildProjectName).dll
+            echo "!__Command!"
+            call !__Command!
             set CrossGenStatus=!ERRORLEVEL!
         )
         call :ReleaseLock
         IF NOT !CrossGenStatus!==0 (
             ECHO Crossgen failed with exitcode - !CrossGenStatus!
+            Exit /b 1
+        )
+    )
+) 
+REM CrossGen2 Script
+if defined RunCrossGen2 ( 
+    if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
+    if not exist "$(MSBuildProjectName).org" (
+        call :TakeLock
+        set CrossGen2Status=0
+        if not exist "$(MSBuildProjectName).org" (
+            mkdir IL
+            copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
+            ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
+            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2" %21scriptPath%21$(MSBuildProjectName).org -o:%21scriptPath%21$(MSBuildProjectName).dll --targetarch:x64 -O --inputbubble -r:!CORE_ROOT!\*.dll
+            echo "!__Command!"
+            call !__Command!
+            set CrossGen2Status=!ERRORLEVEL!
+        )
+        call :ReleaseLock
+        IF NOT !CrossGen2Status!==0 (
+            ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
             Exit /b 1
         )
     )
