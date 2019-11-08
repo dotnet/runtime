@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ILCompiler
 {
@@ -27,6 +29,11 @@ namespace ILCompiler
         public override bool ContainsType(TypeDesc type)
         {
             return type == _method.OwningType;
+        }
+
+        public override bool VersionsWithModule(ModuleDesc module)
+        {
+            return ((EcmaMethod)_method.GetTypicalMethodDefinition()).Module == module;
         }
 
         public override bool GeneratesPInvoke(MethodDesc method)

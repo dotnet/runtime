@@ -161,6 +161,11 @@ namespace ILCompiler
             return true;
         }
 
+        public override bool VersionsWithModule(ModuleDesc module)
+        {
+            return _versionBubbleModuleSet.Contains(module);
+        }
+
         public override bool VersionsWithType(TypeDesc typeDesc)
         {
             return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&

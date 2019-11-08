@@ -60,12 +60,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private string _inputModuleName;
 
-        public ManifestMetadataTableNode(EcmaModule inputModule)
+        /// <summary>
+        /// Node factory for the compilation
+        /// </summary>
+        private readonly NodeFactory _nodeFactory;
+
+        public ManifestMetadataTableNode(EcmaModule inputModule, NodeFactory nodeFactory)
             : base(inputModule.Context.Target)
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _manifestAssemblies = new List<AssemblyName>();
             _signatureEmitters = new List<ISignatureEmitter>();
+            _nodeFactory = nodeFactory;
 
             _inputModuleName = inputModule.Assembly.GetName().Name;
 
@@ -90,19 +96,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int ModuleToIndex(EcmaModule module)
         {
             AssemblyName assemblyName = module.Assembly.GetName();
-            int assemblyRefIndex;
-            if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))
+
+            if (!_manifestAssemblies.Contains(assemblyName))
             {
                 if (_emissionCompleted)
                 {
-                    throw new Exception("mustn't add new assemblies after signatures have been materialized");
+                    throw new InvalidOperationException("Adding a new assembly after signatures have been materialized.");
                 }
 
-                assemblyRefIndex = _nextModuleId++;
+                // If we're going to add a module to the manifest, it has to be part of the version bubble, otherwise
+                // the verification logic would be broken at runtime.
+                Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
+
                 _manifestAssemblies.Add(assemblyName);
-                _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
+                if (!_assemblyRefToModuleIdMap.ContainsKey(assemblyName.Name))
+                    _assemblyRefToModuleIdMap.Add(assemblyName.Name, _nextModuleId);
+
+                _nextModuleId++;
             }
-            return assemblyRefIndex;
+
+            return _assemblyRefToModuleIdMap[assemblyName.Name];
         }
 
         public override int ClassCode => 791828335;

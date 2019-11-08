@@ -29,6 +29,13 @@ namespace ILCompiler
         /// <returns>True if the given method versions with the current compilation module group</returns>
         public virtual bool VersionsWithMethodBody(MethodDesc methodDesc) => ContainsMethodBody(methodDesc, unboxingStub: false);
 
+        /// <summary>
+        /// Returns true when a given module belongs to the same version bubble as the compilation module group.
+        /// </summary>
+        /// <param name="module">Module to check</param>
+        /// <returns>True if the given module versions with the current compilation module group</returns>
+        public abstract bool VersionsWithModule(ModuleDesc module);
+
         public abstract bool GeneratesPInvoke(MethodDesc method);
     }
 }
