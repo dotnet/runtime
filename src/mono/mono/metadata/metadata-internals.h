@@ -562,11 +562,10 @@ struct _MonoImage {
 	MonoConcurrentHashTable *var_gparam_cache;
 	MonoConcurrentHashTable *mvar_gparam_cache;
 
+#ifndef ENABLE_NETCORE
 	/* Maps malloc-ed char* pinvoke scope -> MonoDl* */
 	GHashTable *pinvoke_scopes;
-
-	/* Maps malloc-ed char* pinvoke scope -> malloced-ed char* filename */
-	GHashTable *pinvoke_scope_filenames;
+#endif
 
 	/* Indexed by MonoGenericParam pointers */
 	GHashTable **gshared_types;

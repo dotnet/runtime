@@ -1059,6 +1059,7 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 
 #ifdef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (native_library)
 #endif
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */

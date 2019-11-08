@@ -191,6 +191,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
 	int lflags = mono_dl_convert_flags (flags);
+	char *found_name;
 
 	if (error_msg)
 		*error_msg = NULL;
@@ -209,6 +210,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 
 	// No GC safe transition because this is called early in main.c
 	lib = mono_dl_open_file (name, lflags);
+	if (lib)
+		found_name = g_strdup (name);
 
 	if (!lib) {
 		GSList *node;
@@ -223,6 +226,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 			
 			if (lib != NULL){
 				dl_fallback = handler;
+				found_name = g_strdup (name);
 				break;
 			}
 		}
@@ -247,6 +251,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		g_free (lname);
 		if (llname) {
 			lib = mono_dl_open_file (llname, lflags);
+			if (lib)
+				found_name = g_strdup (llname);
 #if defined (_AIX)
 			/*
 			 * HACK: deal with AIX archive members because libtool
@@ -260,6 +266,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 				char *llaixname;
 				llaixname = g_strconcat (llname, "(shr_64.o)", (const char*)NULL);
 				lib = mono_dl_open_file (llaixname, lflags);
+				if (lib)
+					found_name = g_strdup (llaixname);
 				/* XXX: try another suffix like (shr.o)? */
 				g_free (llaixname);
 			}
@@ -274,8 +282,10 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 			return NULL;
 		}
 	}
+	mono_refcount_init (module, NULL);
 	module->handle = lib;
 	module->dl_fallback = dl_fallback;
+	module->full_name = found_name;
 	return module;
 }
 
@@ -338,6 +348,7 @@ mono_dl_close (MonoDl *module)
 	} else
 		mono_dl_close_handle (module);
 	
+	g_free (module->full_name);
 	g_free (module);
 }
 

@@ -7,6 +7,7 @@
 
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl-fallback.h"
+#include "mono/utils/refcount.h"
 
 #ifdef TARGET_WIN32
 #define MONO_SOLIB_EXT ".dll"
@@ -21,9 +22,12 @@
 #endif
 
 typedef struct {
+	// Only used in native-library.c, native library lock should be held when modifying
+	// Incremented on NativeLibrary.Load calls, decremented on NativeLibrary.Free
+	MonoRefCount ref;
 	void *handle;
 	int main_module;
-
+	char *full_name;
 	/* If not NULL, use the methods in MonoDlFallbackHandler instead of the LL_* methods */
 	MonoDlFallbackHandler *dl_fallback;
 } MonoDl;

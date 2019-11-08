@@ -38,6 +38,11 @@ struct _MonoAssemblyLoadContext {
 	 * collectible, the handle is weak, otherwise it's strong.
 	 */
 	uint32_t gchandle;
+
+	// Used in native-library.c for the hash table below; do not access anywhere else
+	MonoCoopMutex pinvoke_lock;
+	// Maps malloc-ed char* pinvoke scope -> MonoDl*
+	GHashTable *pinvoke_scopes;
 };
 #endif /* ENABLE_NETCORE */
 
@@ -59,7 +64,10 @@ mono_global_dllmap_cleanup (void);
 #endif
 
 void
-mono_cached_module_cleanup (void);
+mono_global_loader_cache_init (void);
+
+void
+mono_global_loader_cache_cleanup (void);
 
 #ifdef ENABLE_NETCORE
 void

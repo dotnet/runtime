@@ -933,7 +933,3 @@
 -nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
 
 -nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
-
-# Requires NativeLibrary implementation
--nomethod System.Net.Tests.HttpWebRequestTest.ServicePoint_GetValue_ExpectedResult
-

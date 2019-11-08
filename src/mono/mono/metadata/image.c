@@ -2441,8 +2441,9 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->mvar_gparam_cache)
 		mono_conc_hashtable_destroy (image->mvar_gparam_cache);
 	free_hash (image->wrapper_param_names);
+#ifndef ENABLE_NETCORE
 	free_hash (image->pinvoke_scopes);
-	free_hash (image->pinvoke_scope_filenames);
+#endif
 	free_hash (image->native_func_wrapper_cache);
 	mono_conc_hashtable_destroy (image->typespec_cache);
 	free_hash (image->weak_field_indexes);

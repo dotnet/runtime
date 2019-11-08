@@ -98,6 +98,17 @@ Different names indicate different scenarios, but the same code.
 #define MONO_API_ERROR_INIT(error) 	error_init_internal (error)
 #define error_init_reuse(error) 	error_init_internal (error)
 
+#define ERROR_LOCAL_BEGIN(local, parent, skip_overwrite) do { \
+MonoError local; \
+gboolean local ## _overwrite_temp = skip_overwrite; \
+error_init_internal (&local); \
+if (!local ## _overwrite_temp) \
+	parent = &local; \
+
+#define ERROR_LOCAL_END(local) if (!local ## _overwrite_temp) \
+	mono_error_cleanup (&local); \
+} while (0) \
+
 // Historical deferred initialization was called error_init.
 
 // possible bug detection that did not work

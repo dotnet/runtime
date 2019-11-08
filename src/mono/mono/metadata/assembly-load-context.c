@@ -22,7 +22,9 @@ mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain)
 	alc->domain = domain;
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
+	alc->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	mono_coop_mutex_init (&alc->assemblies_lock);
+	mono_coop_mutex_init (&alc->pinvoke_lock);
 }
 
 void
@@ -53,7 +55,9 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	 */
 
 	alc->loaded_assemblies = NULL;
+	g_hash_table_destroy (alc->pinvoke_scopes);
 	mono_coop_mutex_destroy (&alc->assemblies_lock);
+	mono_coop_mutex_destroy (&alc->pinvoke_lock);
 
 	mono_loaded_images_free (alc->loaded_images);
 

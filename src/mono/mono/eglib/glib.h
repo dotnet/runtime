@@ -623,6 +623,7 @@ void            g_hash_table_insert_replace  (GHashTable *hash, gpointer key, gp
 guint           g_hash_table_size            (GHashTable *hash);
 GList          *g_hash_table_get_keys        (GHashTable *hash);
 GList          *g_hash_table_get_values      (GHashTable *hash);
+gboolean        g_hash_table_contains (GHashTable *hash, gconstpointer key);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 gpointer        g_hash_table_lookup          (GHashTable *hash, gconstpointer key);
 gboolean        g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value);
@@ -646,6 +647,7 @@ guint           g_spaced_primes_closest      (guint x);
 
 #define g_hash_table_insert(h,k,v)    g_hash_table_insert_replace ((h),(k),(v),FALSE)
 #define g_hash_table_replace(h,k,v)   g_hash_table_insert_replace ((h),(k),(v),TRUE)
+#define g_hash_table_add(h,k)         g_hash_table_insert_replace ((h),(k),(k),TRUE)
 
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 gboolean g_direct_equal (gconstpointer v1, gconstpointer v2);

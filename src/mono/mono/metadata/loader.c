@@ -88,6 +88,8 @@ mono_loader_init ()
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
+		mono_global_loader_cache_init ();
+
 		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
 
 		mono_counters_init ();
@@ -110,7 +112,7 @@ mono_loader_cleanup (void)
 #ifndef DISABLE_DLLMAP
 	mono_global_dllmap_cleanup ();
 #endif
-	mono_cached_module_cleanup ();
+	mono_global_loader_cache_cleanup ();
 
 	mono_native_tls_free (loader_lock_nest_id);
 

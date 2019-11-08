@@ -670,6 +670,13 @@
 		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException">
 			<method signature="System.Void .ctor(System.String)" />
 		</type>
+
+		<!-- native-library.c: mono_class_get_native_library_class -->
+		<type fullname="System.Runtime.InteropServices.NativeLibrary">
+			<method name="MonoLoadLibraryCallbackStub" />
+			<method name="MonoResolveUnmanagedDll" />
+			<method name="MonoResolveUnmanagedDllUsingEvent" />
+		</type>
 		
 		<!-- domain.c: mono_defaults.monitor_class -->
 		<!-- monitor.c / method-to-ir.c: Enter and Exit are only string comparison (safe to link) -->

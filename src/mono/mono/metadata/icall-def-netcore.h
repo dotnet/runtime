@@ -368,6 +368,12 @@ HANDLES(MARSHAL_34, "StructureToPtr", ves_icall_System_Runtime_InteropServices_M
 HANDLES(MARSHAL_41, "copy_from_unmanaged_fixed", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged, void, 5, (gconstpointer, gint32, MonoArray, gint32, gpointer))
 HANDLES(MARSHAL_42, "copy_to_unmanaged_fixed", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged, void, 5, (MonoArray, gint32, gpointer, gint32, gconstpointer))
 
+ICALL_TYPE(NATIVEL, "System.Runtime.InteropServices.NativeLibrary", NATIVEL_1)
+HANDLES(NATIVEL_1, "FreeLib", ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib, void, 1, (gpointer))
+HANDLES(NATIVEL_2, "GetSymbol", ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol, gpointer, 3, (gpointer, MonoString, MonoBoolean))
+HANDLES(NATIVEL_3, "LoadByName", ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName, gpointer, 5, (MonoString, MonoReflectionAssembly, MonoBoolean, guint32, MonoBoolean))
+HANDLES(NATIVEL_4, "LoadFromPath", ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath, gpointer, 2, (MonoString, MonoBoolean))
+
 ICALL_TYPE(ALC, "System.Runtime.Loader.AssemblyLoadContext", ALC_5)
 HANDLES(ALC_5, "GetLoadContextForAssembly", ves_icall_System_Runtime_Loader_AssemblyLoadContext_GetLoadContextForAssembly, gpointer, 1, (MonoReflectionAssembly))
 HANDLES(ALC_4, "InternalGetLoadedAssemblies", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies, MonoArray, 0, ())

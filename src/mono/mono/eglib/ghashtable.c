@@ -305,6 +305,14 @@ g_hash_table_size (GHashTable *hash)
 	return hash->in_use;
 }
 
+gboolean
+g_hash_table_contains (GHashTable *hash, gconstpointer key)
+{
+	g_return_val_if_fail (key != NULL, FALSE);
+
+	return g_hash_table_lookup_extended (hash, key, NULL, NULL);
+}
+
 gpointer
 g_hash_table_lookup (GHashTable *hash, gconstpointer key)
 {
