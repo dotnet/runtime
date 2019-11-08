@@ -6519,11 +6519,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleBySearch(NDirectMethodDesc * pMD
 void NDirect::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
 {
     STANDARD_VM_CONTRACT;
-
-    // FreeLibrary doesn't throw if the input is null.
-    // This avoids further null propagation/check while freeing resources (ex: in finally blocks)
-    if (handle == NULL)
-        return;
+    _ASSERTE(handle != NULL);
 
 #ifndef FEATURE_PAL
     BOOL retVal = FreeLibrary(handle);

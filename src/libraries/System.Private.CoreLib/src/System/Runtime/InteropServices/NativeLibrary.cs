@@ -130,6 +130,8 @@ namespace System.Runtime.InteropServices
         /// <param name="handle">The native library handle to be freed</param>
         public static void Free(IntPtr handle)
         {
+            if (handle == IntPtr.Zero)
+                return;
             FreeLib(handle);
         }
 
