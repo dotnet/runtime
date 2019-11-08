@@ -98,9 +98,6 @@
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>

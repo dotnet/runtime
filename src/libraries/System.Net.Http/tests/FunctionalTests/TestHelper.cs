@@ -154,34 +154,6 @@ namespace System.Net.Http.Functional.Tests
             allowUnencryptedHttp2Field.SetValue(settings, true);
         }
 
-        public static bool NativeHandlerSupportsSslConfiguration()
-        {
-#if TargetsWindows
-            return true;
-#else
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return false;
-            }
-
-            // For other Unix-based systems it's true if (and only if) the currect openssl backend
-            // is used with libcurl.
-            bool hasAnyOpenSsl =
-                Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSslDescriptionPrefix, StringComparison.OrdinalIgnoreCase) ?? false;
-
-            if (!hasAnyOpenSsl)
-            {
-                return false;
-            }
-
-            // We're on an OpenSSL-based system, with an OpenSSL backend.
-            // Ask the product how it feels about this.
-            Type interopHttp = typeof(HttpClient).Assembly.GetType("Interop+Http");
-            PropertyInfo hasMatchingOpenSslVersion = interopHttp.GetProperty("HasMatchingOpenSslVersion", BindingFlags.Static | BindingFlags.NonPublic);
-            return (bool)hasMatchingOpenSslVersion.GetValue(null);
-#endif
-        }
-
         public static byte[] GenerateRandomContent(int size)
         {
             byte[] data = new byte[size];

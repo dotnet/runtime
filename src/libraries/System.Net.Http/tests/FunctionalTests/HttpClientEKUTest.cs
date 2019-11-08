@@ -18,20 +18,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientEKUTest : HttpClientHandlerTestBase
     {
-        // Curl + OSX SecureTransport doesn't support the custom certificate callback.
-        private static bool BackendSupportsCustomCertificateHandling =>
-#if TargetsWindows
-            true;
-#else
-            TestHelper.NativeHandlerSupportsSslConfiguration();
-#endif
-
         private static bool CanTestCertificates =>
-            Capability.IsTrustedRootCertificateInstalled() &&
-            (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
-
-        private static bool CanTestClientCertificates =>
-            CanTestCertificates && BackendSupportsCustomCertificateHandling;
+            Capability.IsTrustedRootCertificateInstalled() && Capability.AreHostsFileNamesInstalled();
 
         public const int TestTimeoutMilliseconds = 15 * 1000;
 
@@ -91,7 +79,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanTestClientCertificates))]
+        [ConditionalFact(nameof(CanTestCertificates))]
         public async Task HttpClient_NoEKUClientAuth_Ok()
         {
             var options = new HttpsTestServer.Options();
@@ -115,7 +103,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanTestClientCertificates))]
+        [ConditionalFact(nameof(CanTestCertificates))]
         public async Task HttpClient_ServerEKUClientAuth_Fails()
         {
             var options = new HttpsTestServer.Options();

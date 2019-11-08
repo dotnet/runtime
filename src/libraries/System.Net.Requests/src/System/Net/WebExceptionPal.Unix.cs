@@ -11,8 +11,6 @@ namespace System.Net
     {
         internal static WebExceptionStatus GetStatusFromException(HttpRequestException ex)
         {
-            WebExceptionStatus status;
-
             // Issue 2384: update WebException.GetStatusFromException after System.Net.Http API changes
             //
             // For now, we use the .HResult of the exception to help us map to a suitable
@@ -20,17 +18,7 @@ namespace System.Net
             // the underlying .NET Core and .NET Native versions of the System.Net.Http stack.
             // In the future, the HttpRequestException will have its own .Status property that is
             // an enum type that is more compatible directly with the WebExceptionStatus enum.
-            switch (ex.HResult)
-            {
-                case (int)Interop.Http.CURLcode.CURLE_COULDNT_RESOLVE_HOST:
-                    status = WebExceptionStatus.NameResolutionFailure;
-                    break;
-                default:
-                    status = GetStatusFromExceptionHelper(ex);
-                    break;
-            }
-
-            return status;
+            return GetStatusFromExceptionHelper(ex);
         }
     }
 }

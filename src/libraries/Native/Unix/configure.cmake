@@ -736,40 +736,6 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
-check_c_source_compiles(
-    "
-    #include <curl/multi.h>
-    int main(void) { int i = CURLM_ADDED_ALREADY; return 0; }
-    "
-    HAVE_CURLM_ADDED_ALREADY)
-
-check_c_source_compiles(
-    "
-    #include <curl/multi.h>
-    int main(void) { int i = CURL_HTTP_VERSION_2TLS; return 0; }
-    "
-    HAVE_CURL_HTTP_VERSION_2TLS)
-
-check_c_source_compiles(
-    "
-    #include <curl/multi.h>
-    int main(void) { int i = CURLPIPE_MULTIPLEX; return 0; }
-    "
-    HAVE_CURLPIPE_MULTIPLEX)
-
-check_c_source_compiles(
-    "
-    #include <curl/curl.h>
-    int main(void)
-    {
-        int i = CURL_SSLVERSION_TLSv1_0;
-        i = CURL_SSLVERSION_TLSv1_1;
-        i = CURL_SSLVERSION_TLSv1_2;
-        return 0;
-    }
-    "
-    HAVE_CURL_SSLVERSION_TLSv1_012)
-
 option(HeimdalGssApi "use heimdal implementation of GssApi" OFF)
 
 if (HeimdalGssApi)

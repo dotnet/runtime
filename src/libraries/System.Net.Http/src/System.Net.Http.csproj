@@ -469,12 +469,6 @@
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.netcoreapp.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.EasyRequest.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.MultiAgent.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlException.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.CurlResponseMessage.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlResponseHeaderReader.cs" />
     <Compile Include="$(CommonPath)\System\StrongToWeakReference.cs">
       <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
     </Compile>
@@ -513,24 +507,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Multi.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Multi.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.SList.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.SList.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
       <Link>Common\System\CharArrayHelpers.cs</Link>
@@ -633,11 +609,6 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
       <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.ClientCertificateProvider.cs" />
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.SslProvider.Linux.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.SslProvider.OSX.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

@@ -63,40 +63,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
-        {
-            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
-            {
-                return;
-            }
-
-            using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
-                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
-            }
-        }
-
-        [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
-        {
-            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
-            {
-                return;
-            }
-
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ClientCertificates.Add(Configuration.Certificates.GetClientCertificate());
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
-            }
-        }
-
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -114,12 +80,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, false)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
-            if (!BackendSupportsCustomCertificateHandling || IsCurlHandler) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
-            {
-                _output.WriteLine($"Skipping {nameof(Manual_CertificateOnlySentWhenValid_Success)}()");
-                return;
-            }
-
             var options = new LoopbackServer.Options { UseSsl = true };
 
             X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
@@ -170,12 +130,6 @@ namespace System.Net.Http.Functional.Tests
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
-            if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
-            {
-                _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
-                return;
-            }
-
             var options = new LoopbackServer.Options { UseSsl = true };
 
             async Task MakeAndValidateRequest(HttpClient client, LoopbackServer server, Uri url, X509Certificate2 cert)
@@ -231,12 +185,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(ClientCertificateOption.Automatic)]
         public async Task AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable(ClientCertificateOption mode)
         {
-            if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
-            {
-                _output.WriteLine($"Skipping {nameof(AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable)}()");
-                return;
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -254,24 +202,6 @@ namespace System.Net.Http.Functional.Tests
 
                     await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
                 }, new LoopbackServer.Options { UseSsl = true });
-            }
-        }
-
-        private bool BackendSupportsCustomCertificateHandling
-        {
-            get
-            {
-#if TargetsWindows
-                return true;
-#else
-                if (UseSocketsHttpHandler)
-                {
-                    // Socket Handler is independent of platform curl.
-                    return true;
-                }
-
-                return TestHelper.NativeHandlerSupportsSslConfiguration();
-#endif
             }
         }
     }

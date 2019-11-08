@@ -28,7 +28,7 @@ namespace System.Net.Http
                 string envVar = Environment.GetEnvironmentVariable(SocketsHttpHandlerEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
-                    // Use WinHttpHandler on Windows and CurlHandler on Unix.
+                    // Use WinHttpHandler on Windows.
                     return false;
                 }
 
