@@ -51,7 +51,6 @@ namespace System.Data.SqlClient.SNI
             catch (Exception e)
             {
                 SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, SNICommon.InternalExceptionError, e);
-                throw;
             }
         }
 
