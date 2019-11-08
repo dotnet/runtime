@@ -239,6 +239,7 @@ if "%GIT%" == "" (
 )
 
 :: Make sure llvm submodule is up to date.
+echo Updating submodule "%LLVM_DIR%"
 "%GIT%" submodule update --init -- "%LLVM_DIR%"
 if not ERRORLEVEL == 0 (
     "%GIT%" submodule init -- "%LLVM_DIR%"
@@ -276,6 +277,13 @@ if not "%CMAKE_GENERATOR_ARCH%" == "" (
     set CMAKE_GENERATOR_ARCH=-A %CMAKE_GENERATOR_ARCH%
 )
 
+:: Check if LLVM_DIR is just repro root or if we should build
+:: a llvm subfolder within that repository.
+set "LLVM_SOURCE_DIR=%LLVM_DIR%"
+if exist "%LLVM_SOURCE_DIR%\llvm\CMakeLists.txt" (
+	set "LLVM_SOURCE_DIR=%LLVM_DIR%\llvm"
+)
+
 :: Run cmake.
 "%CMAKE%" ^
 -DCMAKE_INSTALL_PREFIX="%LLVM_INSTALL_DIR%" ^
@@ -293,7 +301,7 @@ if not "%CMAKE_GENERATOR_ARCH%" == "" (
 %CMAKE_GENERATOR_ARGS% ^
 -G "%CMAKE_GENERATOR%" ^
 %CMAKE_GENERATOR_ARCH% ^
-"%LLVM_DIR%"
+"%LLVM_SOURCE_DIR%"
 
 if not ERRORLEVEL == 0 (
     goto ON_ERROR
