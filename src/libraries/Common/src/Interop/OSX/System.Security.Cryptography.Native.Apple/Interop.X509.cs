@@ -85,6 +85,14 @@ internal static partial class Interop
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509MoveToKeychain(
+            SafeSecCertificateHandle certHandle,
+            SafeKeychainHandle targetKeychain,
+            SafeSecKeyRefHandle privateKeyHandle,
+            out SafeSecIdentityHandle pIdentityHandleOut,
+            out int pOSStatus);
+
         internal static byte[] X509GetRawData(SafeSecCertificateHandle cert)
         {
             int osStatus;
@@ -117,11 +125,7 @@ internal static partial class Interop
             bool exportable,
             out SafeSecIdentityHandle identityHandle)
         {
-            SafeSecCertificateHandle certHandle;
-            int osStatus;
-            int ret;
-
-            SafeCreateHandle cfPassphrase = s_nullExportString;
+            SafeCreateHandle cfPassphrase = null;
             bool releasePassword = false;
 
             try
@@ -129,27 +133,16 @@ internal static partial class Interop
                 if (!importPassword.IsInvalid)
                 {
                     importPassword.DangerousAddRef(ref releasePassword);
-                    IntPtr passwordHandle = importPassword.DangerousGetHandle();
-
-                    if (passwordHandle != IntPtr.Zero)
-                    {
-                        cfPassphrase = CoreFoundation.CFStringCreateWithCString(passwordHandle);
-                    }
+                    cfPassphrase = CoreFoundation.CFStringCreateFromSpan(importPassword.DangerousGetSpan());
                 }
 
-                ret = AppleCryptoNative_X509ImportCertificate(
+                return X509ImportCertificate(
                     bytes,
-                    bytes.Length,
                     contentType,
                     cfPassphrase,
                     keychain,
-                    exportable ? 1 : 0,
-                    out certHandle,
-                    out identityHandle,
-                    out osStatus);
-
-                SafeTemporaryKeychainHandle.TrackItem(certHandle);
-                SafeTemporaryKeychainHandle.TrackItem(identityHandle);
+                    exportable,
+                    out identityHandle);
             }
             finally
             {
@@ -158,11 +151,36 @@ internal static partial class Interop
                     importPassword.DangerousRelease();
                 }
 
-                if (cfPassphrase != s_nullExportString)
-                {
-                    cfPassphrase.Dispose();
-                }
+                cfPassphrase?.Dispose();
             }
+        }
+
+        internal static SafeSecCertificateHandle X509ImportCertificate(
+            byte[] bytes,
+            X509ContentType contentType,
+            SafeCreateHandle importPassword,
+            SafeKeychainHandle keychain,
+            bool exportable,
+            out SafeSecIdentityHandle identityHandle)
+        {
+            SafeSecCertificateHandle certHandle;
+            int osStatus;
+
+            SafeCreateHandle cfPassphrase = importPassword ?? s_nullExportString;
+
+            int ret = AppleCryptoNative_X509ImportCertificate(
+                bytes,
+                bytes.Length,
+                contentType,
+                cfPassphrase,
+                keychain,
+                exportable ? 1 : 0,
+                out certHandle,
+                out identityHandle,
+                out osStatus);
+
+            SafeTemporaryKeychainHandle.TrackItem(certHandle);
+            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
 
             if (ret == 1)
             {
@@ -383,6 +401,56 @@ internal static partial class Interop
 
             Debug.Fail($"AppleCryptoNative_X509CopyWithPrivateKey returned {result}");
             throw new CryptographicException();
+        }
+
+        internal static SafeSecIdentityHandle X509MoveToKeychain(
+            SafeSecCertificateHandle cert,
+            SafeKeychainHandle targetKeychain,
+            SafeSecKeyRefHandle privateKey)
+        {
+            SafeSecIdentityHandle identityHandle;
+            int osStatus;
+
+            int result = AppleCryptoNative_X509MoveToKeychain(
+                cert,
+                targetKeychain,
+                privateKey ?? SafeSecKeyRefHandle.InvalidHandle,
+                out identityHandle,
+                out osStatus);
+
+            if (result == 0)
+            {
+                identityHandle.Dispose();
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (result != 1)
+            {
+                Debug.Fail($"AppleCryptoNative_X509MoveToKeychain returned {result}");
+                throw new CryptographicException();
+            }
+
+            if (privateKey?.IsInvalid == false)
+            {
+                // If a PFX has a mismatched association between a private key and the
+                // certificate public key then MoveToKeychain will write the NULL SecIdentityRef
+                // (after cleaning up the temporary key).
+                //
+                // When that happens, just treat the import as public-only.
+                if (!identityHandle.IsInvalid)
+                {
+                    return identityHandle;
+                }
+            }
+
+            // If the cert in the PFX had no key, but it was imported with PersistKeySet (imports into
+            // the default keychain) and a matching private key was already there, then an
+            // identityHandle could be found. But that's not desirable, since neither Windows or Linux would
+            // do that matching.
+            //
+            // So dispose the handle, no matter what.
+            identityHandle.Dispose();
+            return null;
         }
 
         private static byte[] X509Export(X509ContentType contentType, SafeCreateHandle cfPassphrase, IntPtr[] certHandles)

@@ -246,7 +246,6 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.GetCertContentType.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.PublicKey.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.X500DistinguishedName.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs</Link>
     </Compile>
@@ -296,9 +295,6 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
@@ -307,6 +303,15 @@
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyFormatHelper.cs">
+      <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\PasswordBasedEncryption.cs">
+      <Link>Common\System\Security\Cryptography\PasswordBasedEncryption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Pkcs12Kdf.cs">
+      <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
     </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ReasonFlagsAsn.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CachedDirectoryStoreProvider.cs" />
@@ -578,13 +583,6 @@
       <Link>Common\System\Security\Cryptography\Asn1\ECPrivateKey.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\ECPrivateKey.xml</DependentUpon>
     </Compile>
-    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</DependentUpon>
-    </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\FieldID.xml">
       <Link>Common\System\Security\Cryptography\Asn1\FieldID.xml</Link>
     </AsnXml>
@@ -592,12 +590,94 @@
       <Link>Common\System\Security\Cryptography\Asn1\FieldID.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\FieldID.xml</DependentUpon>
     </Compile>
-    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</Link>
     </AsnXml>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
+    </Compile>
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\DigestInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</Link>
@@ -627,6 +707,27 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</Link>
     </AsnXml>
@@ -638,44 +739,12 @@
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
-    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
-    </Compile>
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainVerifier.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ManagedCertificateFinder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ManagedX509ExtensionProcessor.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnixExportProvider.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnixPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
   </ItemGroup>

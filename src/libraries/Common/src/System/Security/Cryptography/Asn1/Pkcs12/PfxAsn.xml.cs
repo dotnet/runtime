@@ -8,14 +8,14 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs12
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct PfxAsn
     {
         internal byte Version;
-        internal System.Security.Cryptography.Pkcs.Asn1.ContentInfoAsn AuthSafe;
-        internal System.Security.Cryptography.Pkcs.Asn1.MacData? MacData;
+        internal System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn AuthSafe;
+        internal System.Security.Cryptography.Asn1.Pkcs12.MacData? MacData;
       
         internal void Encode(AsnWriter writer)
         {
@@ -73,12 +73,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            System.Security.Cryptography.Pkcs.Asn1.ContentInfoAsn.Decode(sequenceReader, out decoded.AuthSafe);
+            System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn.Decode(sequenceReader, out decoded.AuthSafe);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Pkcs.Asn1.MacData tmpMacData;
-                System.Security.Cryptography.Pkcs.Asn1.MacData.Decode(sequenceReader, out tmpMacData);
+                System.Security.Cryptography.Asn1.Pkcs12.MacData tmpMacData;
+                System.Security.Cryptography.Asn1.Pkcs12.MacData.Decode(sequenceReader, out tmpMacData);
                 decoded.MacData = tmpMacData;
 
             }

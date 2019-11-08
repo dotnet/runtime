@@ -2,7 +2,7 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="DigestInfoAsn"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Asn1">
 
   <!--
     https://tools.ietf.org/html/rfc2313#section-10.1.2

@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
-
+using CFIndex = System.IntPtr;
 
 internal static partial class Interop
 {
@@ -37,6 +37,24 @@ internal static partial class Interop
             kCFStringEncodingUTF32BE        = 0x18000100,
             kCFStringEncodingUTF32LE        = 0x1c000100
         }
+
+        /// <summary>
+        /// Creates a CFStringRef from a specified range of memory with a specified encoding.
+        /// Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="alloc">Should be IntPtr.Zero</param>
+        /// <param name="bytes">The pointer to the beginning of the encoded string.</param>
+        /// <param name="numBytes">The number of bytes in the encoding to read.</param>
+        /// <param name="encoding">The encoding type.</param>
+        /// <param name="isExternalRepresentation">Whether or not a BOM is present.</param>
+        /// <returns>A CFStringRef on success, otherwise a SafeCreateHandle(IntPtr.Zero).</returns>
+        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
+        private static extern SafeCreateHandle CFStringCreateWithBytes(
+            IntPtr alloc,
+            IntPtr bytes,
+            CFIndex numBytes,
+            CFStringBuiltInEncodings encoding,
+            bool isExternalRepresentation);
 
         /// <summary>
         /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
@@ -84,6 +102,25 @@ internal static partial class Interop
         internal static SafeCreateHandle CFStringCreateWithCString(IntPtr utf8str)
         {
             return CFStringCreateWithCString(IntPtr.Zero, utf8str, CFStringBuiltInEncodings.kCFStringEncodingUTF8);
+        }
+
+        /// <summary>
+        /// Creates a CFStringRef from a span of chars.
+        /// Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="source">The chars to make a CFString version of.</param>
+        /// <returns>A CFStringRef on success, otherwise a SafeCreateHandle(IntPtr.Zero).</returns>
+        internal static unsafe SafeCreateHandle CFStringCreateFromSpan(ReadOnlySpan<char> source)
+        {
+            fixed (char* sourcePtr = source)
+            {
+                return CFStringCreateWithBytes(
+                    IntPtr.Zero,
+                    (IntPtr)sourcePtr,
+                    new CFIndex(source.Length * 2),
+                    CFStringBuiltInEncodings.kCFStringEncodingUTF16,
+                    isExternalRepresentation: false);
+            }
         }
 
         /// <summary>

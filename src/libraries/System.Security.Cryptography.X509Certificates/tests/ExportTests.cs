@@ -48,7 +48,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfx()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -65,7 +64,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfxWithPassword()
         {
             const string password = "Cotton";
@@ -84,7 +82,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfxVerifyPassword()
         {
             const string password = "Cotton";

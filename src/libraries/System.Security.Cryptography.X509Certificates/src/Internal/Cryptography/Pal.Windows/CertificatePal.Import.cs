@@ -8,6 +8,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 using Internal.Cryptography.Pal.Native;
@@ -185,14 +186,16 @@ namespace Internal.Cryptography.Pal
                     else
                     {
                         if (pCertContext.IsInvalid)
-                            pCertContext = pEnumContext.Duplicate(); // Doesn't have a private key but hang on to it anyway in case we don't find any certs with a private key.
+                        {
+                            // Doesn't have a private key but hang on to it anyway in case we don't find any certs with a private key.
+                            pCertContext = pEnumContext.Duplicate();
+                        }
                     }
                 }
 
                 if (pCertContext.IsInvalid)
                 {
-                    // For compat, setting "hr" to ERROR_INVALID_PARAMETER even though ERROR_INVALID_PARAMETER is not actually an HRESULT.
-                    throw ErrorCode.ERROR_INVALID_PARAMETER.ToCryptographicException();
+                    throw new CryptographicException(SR.Cryptography_Pfx_NoCertificates);
                 }
 
                 return pCertContext;

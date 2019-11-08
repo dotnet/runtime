@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -69,16 +71,36 @@ namespace Internal.Cryptography.Pal
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
+            ICertificatePal pal;
+
             // If we can't open the file, fail right away.
             using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(fileName, "rb"))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(fileBio);
 
-                return FromBio(fileBio, password);
+                pal = FromBio(fileBio);
             }
+
+            if (pal == null)
+            {
+                PkcsFormatReader.TryReadPkcs12(
+                    File.ReadAllBytes(fileName),
+                    password,
+                    out pal,
+                    out Exception exception);
+
+                if (exception != null)
+                {
+                    throw exception;
+                }
+
+                Debug.Assert(pal != null);
+            }
+
+            return pal;
         }
 
-        private static ICertificatePal FromBio(SafeBioHandle bio, SafePasswordHandle password)
+        private static ICertificatePal FromBio(SafeBioHandle bio)
         {
             int bioPosition = Interop.Crypto.BioTell(bio);
 
@@ -114,28 +136,7 @@ namespace Internal.Cryptography.Pal
                 return certPal;
             }
 
-            // Rewind, try again.
-            RewindBio(bio, bioPosition);
-
-            // Capture the exception so in case of failure, the call to BioSeek does not override it.
-            Exception openSslException;
-            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPal, out openSslException))
-            {
-                return certPal;
-            }
-
-            // Since we aren't going to finish reading, leaving the buffer where it was when we got
-            // it seems better than leaving it in some arbitrary other position.
-            //
-            // Use BioSeek directly for the last seek attempt, because any failure here should instead
-            // report the already created (but not yet thrown) exception.
-            if (Interop.Crypto.BioSeek(bio, bioPosition) < 0)
-            {
-                Interop.Crypto.ErrClearError();
-            }
-
-            Debug.Assert(openSslException != null);
-            throw openSslException;
+            return null;
         }
 
         internal static void RewindBio(SafeBioHandle bio, int bioPosition)
@@ -148,9 +149,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static bool TryReadX509Der(byte[] rawData, out ICertificatePal certPal)
+        internal static bool TryReadX509Der(ReadOnlySpan<byte> rawData, out ICertificatePal certPal)
         {
-            SafeX509Handle certHandle = Interop.Crypto.DecodeX509(rawData, rawData.Length);
+            SafeX509Handle certHandle = Interop.Crypto.DecodeX509(
+                ref MemoryMarshal.GetReference(rawData),
+                rawData.Length);
 
             if (certHandle.IsInvalid)
             {

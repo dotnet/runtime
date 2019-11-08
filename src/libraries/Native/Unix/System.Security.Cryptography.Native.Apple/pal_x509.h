@@ -174,3 +174,20 @@ DLLEXPORT int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cer
                                                            SecKeychainRef targetKeychain,
                                                            SecIdentityRef* pIdentityOut,
                                                            int32_t* pOSStatus);
+
+/*
+Move the specified certificate and key to the target keychain.
+Both the certificate and the key must be ephemeral (not a member of any keychain).
+If the private key was specified then search for an identity and present it via pIdentityOut.
+
+Returns 1 on success, 0 on failure, any other value indicates invalid state.
+
+Output:
+pIdentityOut: Receives the SecIdentityRef of the mated cert/key pair, when applicable.
+pOSStatus: Receives the result of the last executed system call.
+*/
+DLLEXPORT int32_t AppleCryptoNative_X509MoveToKeychain(SecCertificateRef cert,
+                                                       SecKeychainRef keychain,
+                                                       SecKeyRef privateKey,
+                                                       SecIdentityRef* pIdentityOut,
+                                                       int32_t* pOSStatus);

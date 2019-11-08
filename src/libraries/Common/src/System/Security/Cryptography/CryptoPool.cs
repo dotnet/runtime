@@ -13,6 +13,14 @@ namespace System.Security.Cryptography
 
         internal static byte[] Rent(int minimumLength) => ArrayPool<byte>.Shared.Rent(minimumLength);
 
+        internal static void Return(ArraySegment<byte> arraySegment)
+        {
+            Debug.Assert(arraySegment.Array != null);
+            Debug.Assert(arraySegment.Offset == 0);
+
+            Return(arraySegment.Array, arraySegment.Count);
+        }
+
         internal static void Return(byte[] array, int clearSize = ClearAll)
         {
             Debug.Assert(clearSize <= array.Length);

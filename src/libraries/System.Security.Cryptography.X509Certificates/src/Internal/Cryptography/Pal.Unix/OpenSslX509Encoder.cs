@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -134,19 +135,17 @@ namespace Internal.Cryptography.Pal
 
                     OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
                 }
+            }
 
-                // X509ContentType.Pkcs12 (aka PFX)
+            // X509ContentType.Pkcs12 (aka PFX)
+            {
+                OpenSslPkcs12Reader pkcs12Reader;
+
+                if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
                 {
-                    OpenSslPkcs12Reader pkcs12Reader;
+                    pkcs12Reader.Dispose();
 
-                    if (OpenSslPkcs12Reader.TryRead(fileBio, out pkcs12Reader))
-                    {
-                        pkcs12Reader.Dispose();
-
-                        return X509ContentType.Pkcs12;
-                    }
-
-                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
+                    return X509ContentType.Pkcs12;
                 }
             }
 

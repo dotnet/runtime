@@ -4,8 +4,9 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using Internal.Cryptography;
 
@@ -40,72 +41,7 @@ namespace System.Security.Cryptography.Pkcs
                         IntegrityMode));
             }
 
-            Debug.Assert(_decoded.MacData.HasValue);
-
-            HashAlgorithmName hashAlgorithm;
-            int expectedOutputSize;
-
-            string algorithmValue = _decoded.MacData.Value.Mac.DigestAlgorithm.Algorithm.Value;
-
-            switch (algorithmValue)
-            {
-                case Oids.Md5:
-                    expectedOutputSize = 128 >> 3;
-                    hashAlgorithm = HashAlgorithmName.MD5;
-                    break;
-                case Oids.Sha1:
-                    expectedOutputSize = 160 >> 3;
-                    hashAlgorithm = HashAlgorithmName.SHA1;
-                    break;
-                case Oids.Sha256:
-                    expectedOutputSize = 256 >> 3;
-                    hashAlgorithm = HashAlgorithmName.SHA256;
-                    break;
-                case Oids.Sha384:
-                    expectedOutputSize = 384 >> 3;
-                    hashAlgorithm = HashAlgorithmName.SHA384;
-                    break;
-                case Oids.Sha512:
-                    expectedOutputSize = 512 >> 3;
-                    hashAlgorithm = HashAlgorithmName.SHA512;
-                    break;
-                default:
-                    throw new CryptographicException(
-                        SR.Format(SR.Cryptography_UnknownHashAlgorithm, algorithmValue));
-            }
-
-            if (_decoded.MacData.Value.Mac.Digest.Length != expectedOutputSize)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            // Cannot use the ArrayPool or stackalloc here because CreateHMAC needs a properly bounded array.
-            byte[] derived = new byte[expectedOutputSize];
-
-            int iterationCount =
-                PasswordBasedEncryption.NormalizeIterationCount(_decoded.MacData.Value.IterationCount);
-
-            Pkcs12Kdf.DeriveMacKey(
-                password,
-                hashAlgorithm,
-                iterationCount,
-                _decoded.MacData.Value.MacSalt.Span,
-                derived);
-
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithm, derived))
-            {
-                hmac.AppendData(_authSafeContents.Span);
-
-                if (!hmac.TryGetHashAndReset(derived, out int bytesWritten) || bytesWritten != expectedOutputSize)
-                {
-                    Debug.Fail($"TryGetHashAndReset wrote {bytesWritten} bytes when {expectedOutputSize} was expected");
-                    throw new CryptographicException();
-                }
-
-                return CryptographicOperations.FixedTimeEquals(
-                    derived,
-                    _decoded.MacData.Value.Mac.Digest.Span);
-            }
+            return _decoded.VerifyMac(password, _authSafeContents.Span);
         }
 
         public static Pkcs12Info Decode(

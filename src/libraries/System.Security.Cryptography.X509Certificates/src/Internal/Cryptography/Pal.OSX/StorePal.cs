@@ -32,9 +32,6 @@ namespace Internal.Cryptography.Pal
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
-            SafeKeychainHandle keychain;
-            bool exportable = true;
-
             if (contentType == X509ContentType.Pkcs12)
             {
                 if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
@@ -42,36 +39,44 @@ namespace Internal.Cryptography.Pal
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
                 }
 
-                exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
+                bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
 
                 bool persist =
                     (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
 
-                keychain = persist
+                SafeKeychainHandle keychain = persist
                     ? Interop.AppleCrypto.SecKeychainCopyDefault()
                     : Interop.AppleCrypto.CreateTemporaryKeychain();
-            }
-            else
-            {
-                keychain = SafeTemporaryKeychainHandle.InvalidHandle;
-                password = SafePasswordHandle.InvalidHandle;
+
+                return ImportPkcs12(rawData, password, exportable, keychain);
             }
 
-            // Only dispose tmpKeychain on the exception path, otherwise it's managed by AppleCertLoader.
+            SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(
+                rawData,
+                contentType,
+                password,
+                SafeTemporaryKeychainHandle.InvalidHandle,
+                exportable: true);
+
+            return new AppleCertLoader(certs, null);
+        }
+
+        private static ILoaderPal ImportPkcs12(
+            byte[] rawData,
+            SafePasswordHandle password,
+            bool exportable,
+            SafeKeychainHandle keychain)
+        {
+            ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
+
             try
             {
-                SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(
-                    rawData,
-                    contentType,
-                    password,
-                    keychain,
-                    exportable);
-
-                // If the default keychain was used, null will be passed to the loader.
-                return new AppleCertLoader(certs, keychain as SafeTemporaryKeychainHandle);
+                reader.Decrypt(password);
+                return new ApplePkcs12CertLoader(reader, keychain, password, exportable);
             }
             catch
             {
+                reader.Dispose();
                 keychain.Dispose();
                 throw;
             }

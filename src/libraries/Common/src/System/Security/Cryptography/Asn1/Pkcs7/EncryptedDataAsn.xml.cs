@@ -9,14 +9,14 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs7
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct SafeBagAsn
+    internal partial struct EncryptedDataAsn
     {
-        internal string BagId;
-        internal ReadOnlyMemory<byte> BagValue;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] BagAttributes;
+        internal int Version;
+        internal System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn EncryptedContentInfo;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[] UnprotectedAttributes;
       
         internal void Encode(AsnWriter writer)
         {
@@ -27,41 +27,39 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             writer.PushSequence(tag);
             
-            writer.WriteObjectIdentifier(BagId);
-            writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(BagValue.Span);
-            writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            writer.WriteInteger(Version);
+            EncryptedContentInfo.Encode(writer);
 
-            if (BagAttributes != null)
+            if (UnprotectedAttributes != null)
             {
 
-                writer.PushSetOf();
-                for (int i = 0; i < BagAttributes.Length; i++)
+                writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
+                for (int i = 0; i < UnprotectedAttributes.Length; i++)
                 {
-                    BagAttributes[i].Encode(writer); 
+                    UnprotectedAttributes[i].Encode(writer); 
                 }
-                writer.PopSetOf();
+                writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
 
             }
 
             writer.PopSequence(tag);
         }
 
-        internal static SafeBagAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static EncryptedDataAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
         
-        internal static SafeBagAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static EncryptedDataAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
             
-            Decode(reader, expectedTag, out SafeBagAsn decoded);
+            Decode(reader, expectedTag, out EncryptedDataAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out SafeBagAsn decoded)
+        internal static void Decode(AsnReader reader, out EncryptedDataAsn decoded)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -69,29 +67,29 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             Decode(reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out SafeBagAsn decoded)
+        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out EncryptedDataAsn decoded)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
 
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader explicitReader;
             AsnReader collectionReader;
             
-            decoded.BagId = sequenceReader.ReadObjectIdentifierAsString();
 
-            explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            decoded.BagValue = explicitReader.ReadEncodedValue();
-            explicitReader.ThrowIfNotEmpty();
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
 
+            System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn.Decode(sequenceReader, out decoded.EncryptedContentInfo);
 
-            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.SetOf))
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                // Decode SEQUENCE OF for BagAttributes
+                // Decode SEQUENCE OF for UnprotectedAttributes
                 {
-                    collectionReader = sequenceReader.ReadSetOf();
+                    collectionReader = sequenceReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
                     var tmpList = new List<System.Security.Cryptography.Asn1.AttributeAsn>();
                     System.Security.Cryptography.Asn1.AttributeAsn tmpItem;
 
@@ -101,7 +99,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                         tmpList.Add(tmpItem);
                     }
 
-                    decoded.BagAttributes = tmpList.ToArray();
+                    decoded.UnprotectedAttributes = tmpList.ToArray();
                 }
 
             }

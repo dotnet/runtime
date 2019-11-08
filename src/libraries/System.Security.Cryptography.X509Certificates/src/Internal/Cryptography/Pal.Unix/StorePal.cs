@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -56,11 +57,11 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                return FromBio(bio, password);
+                return FromBio(fileName, bio, password);
             }
         }
 
-        private static ILoaderPal FromBio(SafeBioHandle bio, SafePasswordHandle password)
+        private static ILoaderPal FromBio(string fileName, SafeBioHandle bio, SafePasswordHandle password)
         {
             int bioPosition = Interop.Crypto.BioTell(bio);
             Debug.Assert(bioPosition >= 0);
@@ -103,7 +104,8 @@ namespace Internal.Cryptography.Pal
 
             // Capture the exception so in case of failure, the call to BioSeek does not override it.
             Exception openSslException;
-            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPals, out openSslException))
+            byte[] data = File.ReadAllBytes(fileName);
+            if (PkcsFormatReader.TryReadPkcs12(data, password, out certPals, out openSslException))
             {
                 return ListToLoaderPal(certPals);
             }

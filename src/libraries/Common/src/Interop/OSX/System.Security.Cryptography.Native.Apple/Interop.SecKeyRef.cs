@@ -357,5 +357,18 @@ namespace System.Security.Cryptography.Apple
 {
     internal sealed class SafeSecKeyRefHandle : SafeKeychainItemHandle
     {
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && SafeHandleCache<SafeSecKeyRefHandle>.IsCachedInvalidHandle(this))
+            {
+                return;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public static SafeSecKeyRefHandle InvalidHandle =>
+            SafeHandleCache<SafeSecKeyRefHandle>.GetInvalidHandle(
+                () => new SafeSecKeyRefHandle());
     }
 }

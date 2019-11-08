@@ -8,13 +8,13 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs7
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct CertBagAsn
+    internal partial struct ContentInfoAsn
     {
-        internal string CertId;
-        internal ReadOnlyMemory<byte> CertValue;
+        internal string ContentType;
+        internal ReadOnlyMemory<byte> Content;
       
         internal void Encode(AsnWriter writer)
         {
@@ -25,28 +25,28 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             writer.PushSequence(tag);
             
-            writer.WriteObjectIdentifier(CertId);
+            writer.WriteObjectIdentifier(ContentType);
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(CertValue.Span);
+            writer.WriteEncodedValue(Content.Span);
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             writer.PopSequence(tag);
         }
 
-        internal static CertBagAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static ContentInfoAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
         
-        internal static CertBagAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static ContentInfoAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             AsnReader reader = new AsnReader(encoded, ruleSet);
             
-            Decode(reader, expectedTag, out CertBagAsn decoded);
+            Decode(reader, expectedTag, out ContentInfoAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out CertBagAsn decoded)
+        internal static void Decode(AsnReader reader, out ContentInfoAsn decoded)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             Decode(reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out CertBagAsn decoded)
+        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out ContentInfoAsn decoded)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -63,10 +63,10 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader explicitReader;
             
-            decoded.CertId = sequenceReader.ReadObjectIdentifierAsString();
+            decoded.ContentType = sequenceReader.ReadObjectIdentifierAsString();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            decoded.CertValue = explicitReader.ReadEncodedValue();
+            decoded.Content = explicitReader.ReadEncodedValue();
             explicitReader.ThrowIfNotEmpty();
 
 

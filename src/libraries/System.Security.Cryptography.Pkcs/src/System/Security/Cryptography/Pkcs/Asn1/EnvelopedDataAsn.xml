@@ -22,7 +22,7 @@
   <asn:SetOf name="RecipientInfos">
     <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientInfoAsn" />
   </asn:SetOf>
-  <asn:AsnType name="EncryptedContentInfo" typeName="System.Security.Cryptography.Pkcs.Asn1.EncryptedContentInfoAsn" />
+  <asn:AsnType name="EncryptedContentInfo" typeName="System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn" />
   <asn:SetOf name="UnprotectedAttributes" implicitTag="1" optional="true">
     <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" />
   </asn:SetOf>

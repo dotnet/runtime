@@ -8,14 +8,14 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs12
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct MacData
     {
         private static readonly byte[] s_defaultIterationCount = { 0x02, 0x01, 0x01 };
   
-        internal System.Security.Cryptography.Pkcs.Asn1.DigestInfoAsn Mac;
+        internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
         internal ReadOnlyMemory<byte> MacSalt;
         internal int IterationCount;
       
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader defaultReader;
             
-            System.Security.Cryptography.Pkcs.Asn1.DigestInfoAsn.Decode(sequenceReader, out decoded.Mac);
+            System.Security.Cryptography.Asn1.DigestInfoAsn.Decode(sequenceReader, out decoded.Mac);
 
             if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpMacSalt))
             {

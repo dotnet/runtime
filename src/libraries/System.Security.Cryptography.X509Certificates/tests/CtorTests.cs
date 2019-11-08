@@ -367,11 +367,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else // Any Unix
             {
-                // OpenSSL encodes the function name into the error code. However, the function name differs
-                // between versions (OpenSSL 1.0, OpenSSL 1.1 and BoringSSL) and it's subject to change in
-                // the future, so don't test for the exact match and mask out the function code away. The
-                // component number (high 8 bits) and error code  (low 12 bits) should remain the same.
-                Assert.Equal(0x0D00003A, ex.HResult & 0xFF000FFF);
+                Assert.Equal(new CryptographicException("message").HResult, ex.HResult);
             }
         }
 

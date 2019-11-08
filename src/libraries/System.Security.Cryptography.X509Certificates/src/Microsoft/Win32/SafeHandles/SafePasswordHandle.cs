@@ -11,33 +11,35 @@ namespace Microsoft.Win32.SafeHandles
     /// <summary>
     /// Wrap a string- or SecureString-based object. A null value indicates IntPtr.Zero should be used.
     /// </summary>
-    internal sealed partial class SafePasswordHandle : SafeHandle
+    internal sealed partial class SafePasswordHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        internal int Length { get; private set; }
+
         public SafePasswordHandle(string password)
-            : base(IntPtr.Zero, ownsHandle: true)
+            : base(ownsHandle: true)
         {
             if (password != null)
             {
-                SetHandle(CreateHandle(password));
+                handle = Marshal.StringToHGlobalUni(password);
+                Length = password.Length;
             }
         }
 
         public SafePasswordHandle(SecureString password)
-            : base(IntPtr.Zero, ownsHandle: true)
+            : base(ownsHandle: true)
         {
             if (password != null)
             {
-                SetHandle(CreateHandle(password));
+                handle = Marshal.SecureStringToGlobalAllocUnicode(password);
+                Length = password.Length;
             }
         }
 
         protected override bool ReleaseHandle()
         {
-            if (handle != IntPtr.Zero)
-            {
-                FreeHandle();
-            }
+            Marshal.ZeroFreeGlobalAllocUnicode(handle);
             SetHandle((IntPtr)(-1));
+            Length = 0;
             return true;
         }
 
@@ -51,7 +53,18 @@ namespace Microsoft.Win32.SafeHandles
             base.Dispose(disposing);
         }
 
-        public override bool IsInvalid => handle == (IntPtr)(-1);
+        internal ReadOnlySpan<char> DangerousGetSpan()
+        {
+            if (IsInvalid)
+            {
+                return default;
+            }
+
+            unsafe
+            {
+                return new ReadOnlySpan<char>((char*)handle, Length);
+            }
+        }
 
         public static SafePasswordHandle InvalidHandle =>
             SafeHandleCache<SafePasswordHandle>.GetInvalidHandle(

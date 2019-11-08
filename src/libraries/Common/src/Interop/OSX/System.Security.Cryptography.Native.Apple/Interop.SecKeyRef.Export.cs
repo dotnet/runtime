@@ -23,13 +23,13 @@ internal static partial class Interop
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
-        internal static byte[] SecKeyExport(
+        internal static SafeCFDataHandle SecKeyExportData(
             SafeSecKeyRefHandle key,
             bool exportPrivate,
-            string password)
+            ReadOnlySpan<char> password)
         {
             SafeCreateHandle exportPassword = exportPrivate
-                ? CoreFoundation.CFStringCreateWithCString(password)
+                ? CoreFoundation.CFStringCreateFromSpan(password)
                 : s_nullExportString;
 
             int ret;
@@ -53,25 +53,31 @@ internal static partial class Interop
                 }
             }
 
-            byte[] exportedData;
-
-            using (cfData)
+            if (ret == 1)
             {
-                if (ret == 0)
-                {
-                    throw CreateExceptionForOSStatus(osStatus);
-                }
-
-                if (ret != 1)
-                {
-                    Debug.Fail($"AppleCryptoNative_SecKeyExport returned {ret}");
-                    throw new CryptographicException();
-                }
-
-                exportedData = CoreFoundation.CFGetData(cfData);
+                return cfData;
             }
 
-            return exportedData;
+            cfData.Dispose();
+
+            if (ret == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SecKeyExport returned {ret}");
+            throw new CryptographicException();
+        }
+
+        internal static byte[] SecKeyExport(
+            SafeSecKeyRefHandle key,
+            bool exportPrivate,
+            string password)
+        {
+            using (SafeCFDataHandle cfData = SecKeyExportData(key, exportPrivate, password))
+            {
+                return CoreFoundation.CFGetData(cfData);
+            }
         }
     }
 }

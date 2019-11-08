@@ -6,7 +6,6 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -632,7 +631,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2745, TestPlatforms.AnyUnix)]
         public static void ImportMultiplePrivateKeysPfx()
         {
             using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx))
@@ -722,7 +720,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2746, TestPlatforms.AnyUnix)]
         public static void ExportEmpty_Pkcs12()
         {
             var collection = new X509Certificate2Collection();
@@ -733,7 +730,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportUnrelatedPfx()
         {
             // Export multiple certificates which are not part of any kind of certificate chain.
@@ -799,7 +795,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2743, TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         public static void ExportMultiplePrivateKeys()
         {
             var collection = new X509Certificate2Collection();
@@ -813,37 +808,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 int originalPrivateKeyCount = collection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
                 Assert.Equal(2, originalPrivateKeyCount);
 
-                // Export, re-import.
-                byte[] exported;
-
-                bool expectSuccess =
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-
-                try
-                {
-                    exported = collection.Export(X509ContentType.Pkcs12);
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    // [ActiveIssue(2743, TestPlatforms.AnyUnix)]
-                    // Our Unix builds can't export more than one private key in a single PFX, so this is
-                    // their exit point.
-                    //
-                    // If Windows gets here, or any exception other than PlatformNotSupportedException is raised,
-                    // let that fail the test.
-                    if (expectSuccess)
-                    {
-                        throw;
-                    }
-
-                    return;
-                }
-
-                // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
-                // above)
-                Assert.True(expectSuccess, "Test is expected to fail on this platform");
-
+                byte[] exported = collection.Export(X509ContentType.Pkcs12);
+                
                 using (ImportedCollection ic = Cert.Import(exported))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
@@ -864,7 +830,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(26397, TestPlatforms.OSX)]
         public static void CanAddMultipleCertsWithSinglePrivateKey()
         {
             using (var oneWithKey = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible))

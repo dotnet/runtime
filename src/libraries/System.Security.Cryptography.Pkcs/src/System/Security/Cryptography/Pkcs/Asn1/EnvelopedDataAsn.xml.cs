@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.OriginatorInfoAsn? OriginatorInfo;
         internal System.Security.Cryptography.Pkcs.Asn1.RecipientInfoAsn[] RecipientInfos;
-        internal System.Security.Cryptography.Pkcs.Asn1.EncryptedContentInfoAsn EncryptedContentInfo;
+        internal System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn EncryptedContentInfo;
         internal System.Security.Cryptography.Asn1.AttributeAsn[] UnprotectedAttributes;
       
         internal void Encode(AsnWriter writer)
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 decoded.RecipientInfos = tmpList.ToArray();
             }
 
-            System.Security.Cryptography.Pkcs.Asn1.EncryptedContentInfoAsn.Decode(sequenceReader, out decoded.EncryptedContentInfo);
+            System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn.Decode(sequenceReader, out decoded.EncryptedContentInfo);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {

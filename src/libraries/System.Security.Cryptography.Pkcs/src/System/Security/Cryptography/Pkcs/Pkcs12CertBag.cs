@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.Pkcs.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 

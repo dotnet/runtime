@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;

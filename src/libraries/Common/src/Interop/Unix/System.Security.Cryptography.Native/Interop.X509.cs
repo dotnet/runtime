@@ -21,7 +21,7 @@ internal static partial class Interop
         internal static extern SafeX509CrlHandle DecodeX509Crl(byte[] buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
-        internal static extern SafeX509Handle DecodeX509(byte[] buf, int len);
+        internal static extern SafeX509Handle DecodeX509(ref byte buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static extern int GetX509DerSize(SafeX509Handle x);

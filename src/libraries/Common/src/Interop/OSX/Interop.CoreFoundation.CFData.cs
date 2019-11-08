@@ -20,6 +20,13 @@ internal static partial class Interop
         [DllImport(Libraries.CoreFoundationLibrary)]
         private static extern CFIndex CFDataGetLength(SafeCFDataHandle cfData);
 
+        internal static unsafe Span<byte> CFDataDangerousGetSpan(SafeCFDataHandle cfData)
+        {
+            long length = CFDataGetLength(cfData).ToInt64();
+            byte* dataBytes = CFDataGetBytePtr(cfData);
+            return new Span<byte>(dataBytes, checked((int)length));
+        }
+
         internal static byte[] CFGetData(SafeCFDataHandle cfData)
         {
             bool addedRef = false;
@@ -27,23 +34,7 @@ internal static partial class Interop
             try
             {
                 cfData.DangerousAddRef(ref addedRef);
-                long length = CFDataGetLength(cfData).ToInt64();
-
-                if (length == 0)
-                {
-                    return Array.Empty<byte>();
-                }
-
-                byte[] bytes = new byte[length];
-
-                unsafe
-                {
-                    byte* dataBytes = CFDataGetBytePtr(cfData);
-                    Marshal.Copy((IntPtr)dataBytes, bytes, 0, bytes.Length);
-                }
-
-                return bytes;
-
+                return CFDataDangerousGetSpan(cfData).ToArray();
             }
             finally
             {

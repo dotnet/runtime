@@ -21,7 +21,7 @@ namespace Internal.Cryptography
             return chars;
         }
 
-        private static void ToHexArrayUpper(byte[] bytes, Span<char> chars)
+        private static void ToHexArrayUpper(ReadOnlySpan<byte> bytes, Span<char> chars)
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
             int i = 0;
@@ -207,6 +207,35 @@ namespace Internal.Cryptography
                 // Skip past the current value.
                 reader.ReadEncodedValue();
             }
+        }
+
+        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
+        {
+            AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
+
+            if (reader.PeekEncodedValue().Length != encodedOctetString.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            // Almost everything in X.509 is DER-encoded, which means Octet String values are
+            // encoded as a primitive (non-segmented)
+            //
+            // Even in BER Octet Strings are usually encoded as a primitive.
+            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+            {
+                return primitiveContents;
+            }
+
+            byte[] tooBig = new byte[encodedOctetString.Length];
+
+            if (reader.TryCopyOctetStringBytes(tooBig, out int bytesWritten))
+            {
+                return tooBig.AsMemory(0, bytesWritten);
+            }
+
+            Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
+            throw new CryptographicException();
         }
     }
 
