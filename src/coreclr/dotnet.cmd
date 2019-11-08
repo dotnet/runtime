@@ -17,7 +17,6 @@ set DOTNET_MULTILEVEL_LOOKUP=0
 :: Disable first run since we do not need all ASP.NET packages restored.
 set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
-echo Installing dotnet using Arcade...
 set PS_DOTNET_INSTALL_SCRIPT=". %__RepoRootDir%eng\common\tools.ps1; InitializeDotNetCli($true)"
 set "PS_COMMAND=powershell -NoProfile -ExecutionPolicy unrestricted -Command %PS_DOTNET_INSTALL_SCRIPT%"
 
