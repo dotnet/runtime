@@ -6,7 +6,16 @@ namespace System.Runtime.CompilerServices
 {
 	partial class RuntimeFeature
 	{
-		public static bool IsDynamicCodeSupported => true;
-		public static bool IsDynamicCodeCompiled => true;
+		public static bool IsDynamicCodeSupported
+		{
+			[Intrinsic]  // the JIT/AOT compiler will change this flag to false for FullAOT scenarios, otherwise true
+			get { throw new NotImplementedException (); }
+		}
+
+		public static bool IsDynamicCodeCompiled
+		{
+			[Intrinsic]  // the JIT/AOT compiler will change this flag to false for FullAOT scenarios, otherwise true
+			get { throw new NotImplementedException (); }
+		}
 	}
 }

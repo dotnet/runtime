@@ -20,6 +20,8 @@ namespace System
 
 		internal bool IsRuntimeImplemented () => this.UnderlyingSystemType is RuntimeType;
 
+		internal virtual bool IsTypeBuilder () => false;
+
 		public bool IsInterface {
 			get {
 				if (this is RuntimeType rt)

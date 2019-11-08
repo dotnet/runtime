@@ -1907,6 +1907,18 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		ins->type = STACK_I4;
 		return ins;
 	}
+
+	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true
+	if (in_corlib &&
+		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
+		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
+		if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") || !strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
+			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			ins->type = STACK_I4;
+			return ins;
+		}
+	}
+
 #endif
 
 	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);

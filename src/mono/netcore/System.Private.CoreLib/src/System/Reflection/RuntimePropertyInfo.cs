@@ -360,9 +360,8 @@ namespace System.Reflection
 			
 		public override object GetValue (object obj, object[] index)
 		{
-			if (index == null || index.Length == 0) {
+			if ((index == null || index.Length == 0) && RuntimeFeature.IsDynamicCodeSupported) {
 				/*FIXME we should check if the number of arguments matches the expected one, otherwise the error message will be pretty criptic.*/
-#if !FULL_AOT_RUNTIME
 				if (cached_getter == null) {
 					MethodInfo method = GetGetMethod (true);
 					if (method == null)
@@ -383,7 +382,6 @@ namespace System.Reflection
 						throw new TargetInvocationException (ex);
 					}
 				}
-#endif
 			}
 
 			return GetValue (obj, BindingFlags.Default, null, index, null);

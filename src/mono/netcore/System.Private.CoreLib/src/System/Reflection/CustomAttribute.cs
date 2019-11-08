@@ -28,9 +28,6 @@ using System.Reflection;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if !FULL_AOT_RUNTIME
-using System.Reflection.Emit;
-#endif
 
 using System.Collections.Generic;
 
@@ -46,11 +43,7 @@ namespace System.Reflection
 		static bool IsUserCattrProvider (object obj)
 		{
 			Type type = obj as Type;
-#if !FULL_AOT_RUNTIME
-			if ((type is RuntimeType) || (RuntimeFeature.IsDynamicCodeSupported && type is TypeBuilder))
-#else
-			if (type is RuntimeType)
-#endif
+			if ((type is RuntimeType) || (RuntimeFeature.IsDynamicCodeSupported && type?.IsTypeBuilder () == true))
 				return false;
 			if ((obj is Type))
 				return true;

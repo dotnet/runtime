@@ -1756,6 +1756,8 @@ namespace System.Reflection.Emit
 			}
 		}
 
+		internal override bool IsTypeBuilder () => true;
+
 		public override bool IsConstructedGenericType {
 			get { return false; }
 		}
