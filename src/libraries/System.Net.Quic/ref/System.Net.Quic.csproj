@@ -3,6 +3,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System.Net.Quic.Temporary.cs" />
     <Compile Include="System.Net.Quic.cs" />
   </ItemGroup>
   <ItemGroup>

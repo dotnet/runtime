@@ -9,9 +9,9 @@ using System.Threading;
 
 namespace System.Net.Quic
 {
-    public sealed class QuicConnection : System.IDisposable
+    public sealed partial class QuicConnection : System.IDisposable
     {
-        public QuicConnection(IPEndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null, bool mock = false) { }
+        public QuicConnection(IPEndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null) { }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public bool Connected => throw null;
         public IPEndPoint LocalEndPoint => throw null;
@@ -22,9 +22,9 @@ namespace System.Net.Quic
         public void Close() => throw null;
         public void Dispose() => throw null;
     }
-    public sealed class QuicListener : IDisposable
+    public sealed partial class QuicListener : IDisposable
     {
-        public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions, bool mock = false) { }
+        public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public IPEndPoint ListenEndPoint => throw null;
         public System.Threading.Tasks.ValueTask<QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Close() => throw null;

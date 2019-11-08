@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
-using System.Net.Security;
-using System.Net.Sockets;
+using System.Net.Quic.Implementations;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,37 +11,16 @@ namespace System.Net.Quic
 {
     public sealed class QuicStream : Stream
     {
-        private bool _disposed = false;
-        private readonly long _streamId;
-        private bool _canRead;
-        private bool _canWrite;
-        private QuicConnection _connection;
+        private readonly QuicStreamProvider _provider;
 
-        // !!! TEMPORARY FOR QUIC MOCK SUPPORT
-        private readonly bool _mock = false;
-        private Socket _socket = null;
-
-        // Constructor for outbound streams
-        // !!! TEMPORARY FOR QUIC MOCK SUPPORT
-        internal QuicStream(QuicConnection connection, long streamId, bool bidirectional)
+        internal QuicStream(QuicStreamProvider provider)
         {
-            _mock = true;
-            _connection = connection;
-            _streamId = streamId;
-            _canRead = bidirectional;
-            _canWrite = true;
+            _provider = provider;
         }
 
-        // Constructor for inbound streams
-        // !!! TEMPORARY FOR QUIC MOCK SUPPORT
-        internal QuicStream(Socket socket, long streamId, bool bidirectional)
-        {
-            _mock = true;
-            _socket = socket;
-            _streamId = streamId;
-            _canRead = true;
-            _canWrite = bidirectional;
-        }
+        //
+        // Boilerplate implementation stuff
+        //
 
         public override bool CanSeek => false;
         public override long Length => throw new NotSupportedException();
@@ -105,172 +82,37 @@ namespace System.Net.Quic
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        private async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
-        {
-            Debug.Assert(_mock);
-            Debug.Assert(_connection != null, "Stream not connected but no connection???");
-
-            _socket = await _connection.CreateOutboundMockStreamAsync(_streamId).ConfigureAwait(false);
-
-            // Don't need to hold on to the connection any longer.
-            _connection = null;
-        }
-
         /// <summary>
         /// QUIC stream ID.
         /// </summary>
-        public long StreamId
-        {
-            get
-            {
-                CheckDisposed();
-                return _streamId;
-            }
-        }
+        public long StreamId => _provider.StreamId;
 
-        public override bool CanRead => _canRead;
+        public override bool CanRead => _provider.CanRead;
 
-        public override int Read(Span<byte> buffer)
-        {
-            CheckDisposed();
+        public override int Read(Span<byte> buffer) => _provider.Read(buffer);
 
-            if (!_canRead)
-            {
-                throw new NotSupportedException();
-            }
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _provider.ReadAsync(buffer, cancellationToken);
 
-            if (_mock)
-            {
-                return _socket.Receive(buffer);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override bool CanWrite => _provider.CanWrite;
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
+        public override void Write(ReadOnlySpan<byte> buffer) => _provider.Write(buffer);
 
-            if (!_canRead)
-            {
-                throw new NotSupportedException();
-            }
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, cancellationToken);
 
-            if (_mock)
-            {
-                if (_socket == null)
-                {
-                    await ConnectAsync(cancellationToken).ConfigureAwait(false);
-                }
+        public override void Flush() => _provider.Flush();
 
-                return await _socket.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
-        public override bool CanWrite => _canWrite;
+        public void ShutdownRead() => _provider.ShutdownRead();
 
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            CheckDisposed();
-
-            if (!_canWrite)
-            {
-                throw new NotSupportedException();
-            }
-
-            if (_mock)
-            {
-                _socket.Send(buffer);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            if (!_canWrite)
-            {
-                throw new NotSupportedException();
-            }
-
-            if (_mock)
-            {
-                if (_socket == null)
-                {
-                    await ConnectAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                await _socket.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override void Flush()
-        {
-            CheckDisposed();
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            CheckDisposed();
-
-            return Task.CompletedTask;
-        }
-
-        public void ShutdownRead()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ShutdownWrite()
-        {
-            CheckDisposed();
-
-            if (_mock)
-            {
-                _socket.Shutdown(SocketShutdown.Send);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(QuicStream));
-            }
-        }
+        public void ShutdownWrite() => _provider.ShutdownWrite();
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (disposing)
             {
-                _disposed = true;
-
-                if (_mock)
-                {
-                    _socket?.Dispose();
-                    _socket = null;
-                }
+                _provider.Dispose();
             }
-
-            base.Dispose(disposing);
         }
     }
 }
