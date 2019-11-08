@@ -7754,9 +7754,6 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 typedef void (*VoidVoidCallback) (void);
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
 
-static jmp_buf test_jmp_buf;
-static guint32 test_gchandle;
-
 typedef long long MonoObject;
 typedef MonoObject MonoException;
 typedef int32_t mono_bool;
@@ -7794,6 +7791,10 @@ mono_test_init_symbols (void)
 	sym_inited = 1;
 }
 
+#ifndef TARGET_WASM
+
+static jmp_buf test_jmp_buf;
+static guint32 test_gchandle;
 
 static void
 mono_test_longjmp_callback (guint32 gchandle)
@@ -7816,6 +7817,8 @@ mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handl
 		*out_handle = test_gchandle;
 	}
 }
+
+#endif
 
 LIBTEST_API void STDCALL
 mono_test_marshal_bstr (void *ptr)
