@@ -10,10 +10,8 @@ using Internal.Runtime.CompilerServices;
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
 using nuint = System.UInt64;
-using nint = System.UInt64;
 #else
 using nuint = System.UInt32;
-using nint = System.UInt32;
 #endif
 
 namespace System
@@ -39,53 +37,8 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __ZeroMemory(void* b, nuint byteLength);
 
-        // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.
-        private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
-
-        internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
-        {
-            if (byteCount <= BulkMoveWithWriteBarrierChunk)
-                __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
-            else
-                _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
-        }
-
-        // Non-inlinable wrapper around the loop for copying large blocks in chunks
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
-        {
-            Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
-
-            if (Unsafe.AreSame(ref destination, ref source))
-                return;
-
-            if ((nuint)(nint)Unsafe.ByteOffset(ref destination, ref source) >= byteCount)
-            {
-                // Copy forwards
-                do
-                {
-                    byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
-                    destination = ref Unsafe.AddByteOffset(ref destination, BulkMoveWithWriteBarrierChunk);
-                    source = ref Unsafe.AddByteOffset(ref source, BulkMoveWithWriteBarrierChunk);
-                }
-                while (byteCount > BulkMoveWithWriteBarrierChunk);
-            }
-            else
-            {
-                // Copy backwards
-                do
-                {
-                    byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
-                }
-                while (byteCount > BulkMoveWithWriteBarrierChunk);
-            }
-            __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        internal static extern void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);

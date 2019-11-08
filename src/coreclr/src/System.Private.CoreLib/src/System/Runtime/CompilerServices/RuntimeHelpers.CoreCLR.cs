@@ -149,9 +149,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object GetUninitializedObjectInternal(Type type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateUninitializedClone(object obj);
-
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>()
@@ -191,21 +188,6 @@ namespace System.Runtime.CompilerServices
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe nuint GetRawObjectDataSize(object obj)
-        {
-            MethodTable* pMT = GetMethodTable(obj);
-
-            // See comment on RawArrayData for details
-            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
-            if (pMT->HasComponentSize)
-                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
-
-            GC.KeepAlive(obj); // Keep MethodTable alive
-
-            return rawSize;
-        }
 
         [Intrinsic]
         internal static ref byte GetRawSzArrayData(this Array array) =>
