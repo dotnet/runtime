@@ -23,7 +23,7 @@ namespace System.Threading.Tests
         [InlineData("")]
         public void Mutex_Create_NameMultipleNew(string name)
         {
-            var security = GetBasicMutexSecurity();
+            MutexSecurity security = GetBasicMutexSecurity();
 
             using Mutex mutex1 = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
             using Mutex mutex2 = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
@@ -33,7 +33,7 @@ namespace System.Threading.Tests
         public void Mutex_Create_CreateNewExisting()
         {
             string name = GetRandomName();
-            var security = GetBasicMutexSecurity();
+            MutexSecurity security = GetBasicMutexSecurity();
 
             using Mutex mutexNew      = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
             using Mutex mutexExisting = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: false);
@@ -76,7 +76,7 @@ namespace System.Threading.Tests
         [InlineData(false, MutexRights.Modify, AccessControlType.Deny)]
         public void Mutex_Create_SpecificParameters(bool initiallyOwned, MutexRights rights, AccessControlType accessControl)
         {
-            var security = GetMutexSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
+            MutexSecurity security = GetMutexSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
             CreateAndVerifyMutex(initiallyOwned, GetRandomName(), security, expectedCreatedNew: true).Dispose();
 
         }
@@ -91,9 +91,9 @@ namespace System.Threading.Tests
 
         private MutexSecurity GetMutexSecurity(WellKnownSidType sid, MutexRights rights, AccessControlType accessControl)
         {
-            var security = new MutexSecurity();
+            MutexSecurity security = new MutexSecurity();
             SecurityIdentifier identity = new SecurityIdentifier(sid, null);
-            var accessRule = new MutexAccessRule(identity, rights, accessControl);
+            MutexAccessRule accessRule = new MutexAccessRule(identity, rights, accessControl);
             security.AddAccessRule(accessRule);
             return security;
         }

@@ -48,7 +48,7 @@ namespace System.Threading.Tests
         [InlineData("")]
         public void Semaphore_Create_NameMultipleNew(string name)
         {
-            var security = GetBasicSemaphoreSecurity();
+            SemaphoreSecurity security = GetBasicSemaphoreSecurity();
             bool expectedCreatedNew = true;
 
             using Semaphore semaphore1 = CreateAndVerifySemaphore(
@@ -70,7 +70,7 @@ namespace System.Threading.Tests
         public void Semaphore_Create_CreateNewExisting()
         {
             string name = GetRandomName();
-            var security = GetBasicSemaphoreSecurity();
+            SemaphoreSecurity security = GetBasicSemaphoreSecurity();
 
             using Semaphore SemaphoreNew = CreateAndVerifySemaphore(
                 DefaultInitialCount,
@@ -129,7 +129,7 @@ namespace System.Threading.Tests
         [InlineData(SemaphoreRights.Modify | SemaphoreRights.Synchronize, AccessControlType.Deny)]
         public void Semaphore_Create_SpecificSecurity(SemaphoreRights rights, AccessControlType accessControl)
         {
-            var security = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
+            SemaphoreSecurity security = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
 
             CreateAndVerifySemaphore(
                 DefaultInitialCount,
@@ -150,9 +150,9 @@ namespace System.Threading.Tests
 
         private SemaphoreSecurity GetSemaphoreSecurity(WellKnownSidType sid, SemaphoreRights rights, AccessControlType accessControl)
         {
-            var security = new SemaphoreSecurity();
+            SemaphoreSecurity security = new SemaphoreSecurity();
             SecurityIdentifier identity = new SecurityIdentifier(sid, null);
-            var accessRule = new SemaphoreAccessRule(identity, rights, accessControl);
+            SemaphoreAccessRule accessRule = new SemaphoreAccessRule(identity, rights, accessControl);
             security.AddAccessRule(accessRule);
             return security;
         }
