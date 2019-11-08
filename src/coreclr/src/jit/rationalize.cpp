@@ -37,21 +37,6 @@ genTreeOps addrForm(genTreeOps loadForm)
     }
 }
 
-// return op that is the load equivalent of the given addr opcode
-genTreeOps loadForm(genTreeOps addrForm)
-{
-    switch (addrForm)
-    {
-        case GT_LCL_VAR_ADDR:
-            return GT_LCL_VAR;
-        case GT_LCL_FLD_ADDR:
-            return GT_LCL_FLD;
-        default:
-            noway_assert(!"not a local address opcode\n");
-            unreached();
-    }
-}
-
 // copy the flags determined by mask from src to dst
 void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
 {
@@ -93,14 +78,33 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
         return;
     }
 
-    // If we have GT_IND(GT_LCL_VAR_ADDR) and the GT_LCL_VAR_ADDR is TYP_BYREF/TYP_I_IMPL,
-    // and the var is a SIMD type, replace the expression by GT_LCL_VAR.
+    // If we have GT_IND(GT_LCL_VAR_ADDR) and the var is a SIMD type,
+    // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
     GenTree* addr = tree->AsIndir()->Addr();
-    if (addr->OperIsLocalAddr() && comp->isAddrOfSIMDType(addr))
+    if (addr->OperIs(GT_LCL_VAR_ADDR) && comp->lvaGetDesc(addr->AsLclVar())->lvSIMDType)
     {
         BlockRange().Remove(tree);
 
-        addr->SetOper(loadForm(addr->OperGet()));
+        var_types lclType = comp->lvaGetDesc(addr->AsLclVar())->TypeGet();
+
+        if (lclType == simdType)
+        {
+            addr->SetOper(GT_LCL_VAR);
+        }
+        else
+        {
+            addr->SetOper(GT_LCL_FLD);
+            addr->AsLclFld()->gtLclOffs  = 0;
+            addr->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+
+            if (((addr->gtFlags & GTF_VAR_DEF) != 0) && (genTypeSize(simdType) < genTypeSize(lclType)))
+            {
+                addr->gtFlags |= GTF_VAR_USEASG;
+            }
+
+            comp->lvaSetVarDoNotEnregister(addr->AsLclFld()->GetLclNum() DEBUGARG(Compiler::DNER_LocalField));
+        }
+
         addr->gtType = simdType;
         use.ReplaceWith(comp, addr);
     }

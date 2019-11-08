@@ -7768,27 +7768,6 @@ private:
         return isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle());
     }
 
-    // Returns true if the type of the tree is a byref of TYP_SIMD
-    bool isAddrOfSIMDType(GenTree* tree)
-    {
-        if (tree->TypeGet() == TYP_BYREF || tree->TypeGet() == TYP_I_IMPL)
-        {
-            switch (tree->OperGet())
-            {
-                case GT_ADDR:
-                    return varTypeIsSIMD(tree->gtGetOp1());
-
-                case GT_LCL_VAR_ADDR:
-                    return lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvSIMDType;
-
-                default:
-                    return isSIMDTypeLocal(tree);
-            }
-        }
-
-        return false;
-    }
-
     static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
     {
         return (intrinsicId == SIMDIntrinsicEqual || intrinsicId == SIMDIntrinsicLessThan ||
