@@ -272,5 +272,15 @@ run-tests-coreclr: prepare update-tests-coreclr corerun
 	echo "Failed: $$failures"
 endif
 
+run-tests-coreclr-%: prepare update-tests-coreclr
+	@echo ""
+	@echo "***************** $* *********************"
+	@test_sh=$$(find . -type f -name "$*.sh" | head -n 1); \
+	if [ ! -z "$$test_sh" ]; then \
+		MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 sh $$test_sh -coreroot="$(realpath $(SHAREDRUNTIME))"; \
+	else \
+		echo "Test file $*.sh not found"; \
+	fi
+
 distdir:
 distclean:
