@@ -137,6 +137,210 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: RBIT Vd.16B, Vn.16B
             /// </summary>
             public static Vector128<sbyte> ReverseElementBits(Vector128<sbyte> value) => ReverseElementBits(value);
+
+            /// <summary>
+            /// uint8x8_t vzip2_u8(uint8x8_t a, uint8x8_t b)
+            ///   A64: ZIP2 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<byte> ZipHigh(Vector64<byte> left, Vector64<byte> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int16x4_t vzip2_s16(int16x4_t a, int16x4_t b)
+            ///   A64: ZIP2 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<short> ZipHigh(Vector64<short> left, Vector64<short> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int32x2_t vzip2_s32(int32x2_t a, int32x2_t b)
+            ///   A64: ZIP2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<int> ZipHigh(Vector64<int> left, Vector64<int> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int8x8_t vzip2_s8(int8x8_t a, int8x8_t b)
+            ///   A64: ZIP2 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<sbyte> ZipHigh(Vector64<sbyte> left, Vector64<sbyte> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// float32x2_t vzip2_f32(float32x2_t a, float32x2_t b)
+            ///   A64: ZIP2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> ZipHigh(Vector64<float> left, Vector64<float> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint16x4_t vzip2_u16(uint16x4_t a, uint16x4_t b)
+            ///   A64: ZIP2 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<ushort> ZipHigh(Vector64<ushort> left, Vector64<ushort> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint32x2_t vzip2_u32(uint32x2_t a, uint32x2_t b)
+            ///   A64: ZIP2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<uint> ZipHigh(Vector64<uint> left, Vector64<uint> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint8x16_t vzip2q_u8(uint8x16_t a, uint8x16_t b)
+            ///   A64: ZIP2 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> ZipHigh(Vector128<byte> left, Vector128<byte> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// float64x2_t vzip2q_f64(float64x2_t a, float64x2_t b)
+            ///   A64: ZIP2 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ZipHigh(Vector128<double> left, Vector128<double> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int16x8_t vzip2q_s16(int16x8_t a, int16x8_t b)
+            ///   A64: ZIP2 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> ZipHigh(Vector128<short> left, Vector128<short> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int32x4_t vzip2q_s32(int32x4_t a, int32x4_t b)
+            ///   A64: ZIP2 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> ZipHigh(Vector128<int> left, Vector128<int> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int64x2_t vzip2q_s64(int64x2_t a, int64x2_t b)
+            ///   A64: ZIP2 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> ZipHigh(Vector128<long> left, Vector128<long> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// int8x16_t vzip2q_u8(int8x16_t a, int8x16_t b)
+            ///   A64: ZIP2 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> ZipHigh(Vector128<sbyte> left, Vector128<sbyte> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// float32x4_t vzip2q_f32(float32x4_t a, float32x4_t b)
+            ///   A64: ZIP2 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> ZipHigh(Vector128<float> left, Vector128<float> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint16x8_t vzip2q_u16(uint16x8_t a, uint16x8_t b)
+            ///   A64: ZIP2 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> ZipHigh(Vector128<ushort> left, Vector128<ushort> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint32x4_t vzip2q_u32(uint32x4_t a, uint32x4_t b)
+            ///   A64: ZIP2 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> ZipHigh(Vector128<uint> left, Vector128<uint> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint64x2_t vzip2q_u64(uint64x2_t a, uint64x2_t b)
+            ///   A64: ZIP2 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> ZipHigh(Vector128<ulong> left, Vector128<ulong> right) => ZipHigh(left, right);
+
+            /// <summary>
+            /// uint8x8_t vzip1_u8(uint8x8_t a, uint8x8_t b)
+            ///   A64: ZIP1 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<byte> ZipLow(Vector64<byte> left, Vector64<byte> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int16x4_t vzip1_s16(int16x4_t a, int16x4_t b)
+            ///   A64: ZIP1 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<short> ZipLow(Vector64<short> left, Vector64<short> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int32x2_t vzip1_s32(int32x2_t a, int32x2_t b)
+            ///   A64: ZIP1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<int> ZipLow(Vector64<int> left, Vector64<int> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int8x8_t vzip1_s8(int8x8_t a, int8x8_t b)
+            ///   A64: ZIP1 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<sbyte> ZipLow(Vector64<sbyte> left, Vector64<sbyte> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// float32x2_t vzip1_f32(float32x2_t a, float32x2_t b)
+            ///   A64: ZIP1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> ZipLow(Vector64<float> left, Vector64<float> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint16x4_t vzip1_u16(uint16x4_t a, uint16x4_t b)
+            ///   A64: ZIP1 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<ushort> ZipLow(Vector64<ushort> left, Vector64<ushort> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint32x2_t vzip1_u32(uint32x2_t a, uint32x2_t b)
+            ///   A64: ZIP1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<uint> ZipLow(Vector64<uint> left, Vector64<uint> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint8x16_t vzip1q_u8(uint8x16_t a, uint8x16_t b)
+            ///   A64: ZIP1 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> ZipLow(Vector128<byte> left, Vector128<byte> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// float64x2_t vzip1q_f64(float64x2_t a, float64x2_t b)
+            ///   A64: ZIP1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ZipLow(Vector128<double> left, Vector128<double> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int16x8_t vzip1q_s16(int16x8_t a, int16x8_t b)
+            ///   A64: ZIP1 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> ZipLow(Vector128<short> left, Vector128<short> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int32x4_t vzip1q_s32(int32x4_t a, int32x4_t b)
+            ///   A64: ZIP1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> ZipLow(Vector128<int> left, Vector128<int> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int64x2_t vzip1q_s64(int64x2_t a, int64x2_t b)
+            ///   A64: ZIP1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> ZipLow(Vector128<long> left, Vector128<long> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// int8x16_t vzip1q_u8(int8x16_t a, int8x16_t b)
+            ///   A64: ZIP1 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> ZipLow(Vector128<sbyte> left, Vector128<sbyte> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// float32x4_t vzip1q_f32(float32x4_t a, float32x4_t b)
+            ///   A64: ZIP1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> ZipLow(Vector128<float> left, Vector128<float> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint16x8_t vzip1q_u16(uint16x8_t a, uint16x8_t b)
+            ///   A64: ZIP1 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> ZipLow(Vector128<ushort> left, Vector128<ushort> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint32x4_t vzip1q_u32(uint32x4_t a, uint32x4_t b)
+            ///   A64: ZIP1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> ZipLow(Vector128<uint> left, Vector128<uint> right) => ZipLow(left, right);
+
+            /// <summary>
+            /// uint64x2_t vzip1q_u64(uint64x2_t a, uint64x2_t b)
+            ///   A64: ZIP1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> ZipLow(Vector128<ulong> left, Vector128<ulong> right) => ZipLow(left, right);
         }
 
         /// <summary>
