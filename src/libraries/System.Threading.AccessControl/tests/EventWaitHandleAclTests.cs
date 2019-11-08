@@ -92,7 +92,9 @@ namespace System.Threading.Tests
         [Fact]
         public void EventWaitHandle_Create_BeyondMaxPathLength()
         {
-            string name = new string('x', Interop.Kernel32.MAX_PATH + 100);
+            // GetRandomName prevents name collision when two tests run at the same time
+            string name = GetRandomName() + new string('x', Interop.Kernel32.MAX_PATH);
+
             EventWaitHandleSecurity security = GetBasicEventWaitHandleSecurity();
             EventResetMode mode = EventResetMode.AutoReset;
 
