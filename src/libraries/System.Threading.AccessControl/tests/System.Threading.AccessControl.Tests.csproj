@@ -8,6 +8,7 @@
     <Compile Include="AclTests.cs" />
     <Compile Include="MutexAclTests.cs" />
     <Compile Include="MutexSecurityTests.cs" />
+    <Compile Include="SemaphoreAclTests.cs" />
     <Compile Include="ThreadingAclExtensionsTests.cs" />
   </ItemGroup>
 </Project>
