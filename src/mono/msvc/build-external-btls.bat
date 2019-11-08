@@ -235,6 +235,7 @@ if "%GIT%" == "" (
 )
 
 :: Make sure boringssl submodule is up to date.
+echo Updating submodule "%BTLS_DIR%"
 "%GIT%" submodule update --init -- "%BTLS_DIR%"
 if not ERRORLEVEL == 0 (
     "%GIT%" submodule init -- "%BTLS_DIR%"
