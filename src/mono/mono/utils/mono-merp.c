@@ -343,7 +343,6 @@ mono_merp_send (MERPStruct *merp)
 		exit (-1);
 	} else {
 		int status;
-		waitpid (pid, &status, 0);
 		int exit_status = FALSE;
 
 		while (TRUE) {
