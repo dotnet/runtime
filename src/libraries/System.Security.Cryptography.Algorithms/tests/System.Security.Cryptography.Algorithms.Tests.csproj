@@ -122,7 +122,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -131,7 +131,7 @@
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

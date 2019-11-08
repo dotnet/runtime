@@ -3,7 +3,7 @@
     <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.csproj'">.cs</ResourcesSourceFileExtension>
     <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.vbproj'">.vb</ResourcesSourceFileExtension>
 
-    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' AND Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
     <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
     <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
     <StringResourcesName Condition="'$(StringResourcesName)' == ''">FxResources.$(AssemblyName).$(StringResourcesClassName)</StringResourcesName>
@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
-  <ItemGroup Condition="'$(StringResourcesPath)' != '' AND '$(OmitResources)' != 'true'">
+  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">
     <EmbeddedResource Include="$(StringResourcesPath)">
       <Visible>true</Visible>
       <ManifestResourceName>$(StringResourcesName)</ManifestResourceName>
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <!-- Include common SR helper when resources are included unless SkipCommonResourcesIncludes is set. -->
-  <ItemGroup Condition="Exists('$(StringResourcesPath)') AND '$(OmitResources)' != 'true' AND '$(SkipCommonResourcesIncludes)' == ''">
+  <ItemGroup Condition="Exists('$(StringResourcesPath)') and '$(OmitResources)' != 'true' and '$(SkipCommonResourcesIncludes)' == ''">
     <Compile Include="$(CommonPath)/System/SR$(ResourcesSourceFileExtension)">
       <Visible>true</Visible>
       <Link>Resources/Common/SR$(ResourcesSourceFileExtension)</Link>

@@ -1,21 +1,21 @@
 <Project InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework">
 
   <PropertyGroup>
-    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' and '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
     <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(NuGetPackageRoot)$(NETStandardLibraryPackage)\$(NETStandardLibraryVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
 
-    <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
-    <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
-    <IncludeNativeFiles Condition="'$(IncludeNativeFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeNativeFiles>
+    <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' and '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
+    <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' and '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
+    <IncludeNativeFiles Condition="'$(IncludeNativeFiles)' == '' and '$(PackageTargetRuntime)' != ''">true</IncludeNativeFiles>
 
     <RefFileTargetPath Condition="'$(RefFileTargetPath)' == ''">ref/$(TargetFramework)</RefFileTargetPath>
-    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' AND '$(PackageTargetRuntime)' == ''">lib/$(TargetFramework)</LibFileTargetPath>
-    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</LibFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' == ''">lib/$(TargetFramework)</LibFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</LibFileTargetPath>
 
-    <NativeFileTargetPath Condition="'$(NativeFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/native</NativeFileTargetPath>
+    <NativeFileTargetPath Condition="'$(NativeFileTargetPath)' == '' and '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/native</NativeFileTargetPath>
     <NativeBinDir Condition="'$(PackageTargetRuntimeSuffix)' == 'aot'">$(NativeBinDir)-aot</NativeBinDir>
   </PropertyGroup>
 
@@ -42,11 +42,11 @@
   </ItemGroup>
 
   <Target Name="_CheckForFiles">
-    <Error Condition="'$(IncludeReferenceFiles)' == 'true' AND '@(RefFile)' == ''"
+    <Error Condition="'$(IncludeReferenceFiles)' == 'true' and '@(RefFile)' == ''"
            Text="IncludeReferenceFiles was specified but no file props were found in '$(RefBinDir)'" />
-    <Error Condition="'$(IncludeLibFiles)' == 'true' AND '@(LibFile)' == ''"
+    <Error Condition="'$(IncludeLibFiles)' == 'true' and '@(LibFile)' == ''"
            Text="IncludeLibFiles was specified but no file props were found in '$(LibBinDir)'" />
-    <Error Condition="'$(IncludeNativeFiles)' == 'true' AND '@(NativeFile)' == ''"
+    <Error Condition="'$(IncludeNativeFiles)' == 'true' and '@(NativeFile)' == ''"
            Text="IncludeNativeFiles was specified but no files were found in '$(NativeBinDir)'" />
   </Target>
 
@@ -83,11 +83,11 @@
   <Target Name="GetClosureFiles">
     <!-- sets up ClosureFile items that are organized by file-set -->
     <ItemGroup>
-      <ClosureFile Include="@(RefFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')" >
+      <ClosureFile Include="@(RefFile)" Condition="Exists('%(FullPath)') and ('%(Extension)' == '.dll' or '%(Extension)' == '$(LibraryFileExtension)')" >
         <FileSet>reference</FileSet>
       </ClosureFile>
 
-      <ClosureFile Include="@(LibFile);@(NativeFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')">
+      <ClosureFile Include="@(LibFile);@(NativeFile)" Condition="Exists('%(FullPath)') and ('%(Extension)' == '.dll' or '%(Extension)' == '$(LibraryFileExtension)')">
         <FileSet>runtime</FileSet>
       </ClosureFile>
     </ItemGroup>
@@ -170,7 +170,7 @@
     <ItemGroup>
       <File>
         <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
-        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
+        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' and'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
       </File>
     </ItemGroup>
   </Target>

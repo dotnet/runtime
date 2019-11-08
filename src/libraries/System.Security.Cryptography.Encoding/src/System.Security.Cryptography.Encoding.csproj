@@ -56,7 +56,7 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
     <Compile Include="Internal\Cryptography\AsnFormatter.Unix.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslAsnFormatter.cs" />

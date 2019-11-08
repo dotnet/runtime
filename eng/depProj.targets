@@ -70,8 +70,8 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="CoreCompile" Condition="'@(PackageReference)' != '' Or '@(PackageDownload)' == ''">
 
-    <Error Condition="'$(NuGetDeploySourceItem)' != 'ReferenceCopyLocalPaths' AND
-                      '$(NuGetDeploySourceItem)' != 'Reference' AND
+    <Error Condition="'$(NuGetDeploySourceItem)' != 'ReferenceCopyLocalPaths' and
+                      '$(NuGetDeploySourceItem)' != 'Reference' and
                       '$(NuGetDeploySourceItem)' != 'Analyzer'"
            Text="Unexpected value for NuGetDeploySourceItem:'$(NuGetDeploySourceItem)'.  Expected ReferenceCopyLocalPaths, Reference, or Analyzer." />
 
@@ -122,7 +122,7 @@ See the LICENSE file in the project root for more information.
   <Target Name="FilterNugetPackages" 
           BeforeTargets="ResolveAssemblyReferences"
           DependsOnTargets="ResolvePackageAssets"
-          Condition="'@(PackageToInclude)' != '' OR '@(PackageToExclude)' != '' OR '@(FileToInclude)' != '' OR '@(FileToExclude)' != ''">
+          Condition="'@(PackageToInclude)' != '' or '@(PackageToExclude)' != '' or '@(FileToInclude)' != '' or '@(FileToExclude)' != ''">
     <ItemGroup>
       <_nuGetDeploy Include="@($(NuGetDeploySourceItem))"/>
       <_nuGetDeployByFileName Include="@(_nuGetDeploy->'%(FileName)')">

@@ -18,10 +18,10 @@
     <ILLinkTrimInputSymbols>$(ILLinkTrimInputPath)$(TargetName).pdb</ILLinkTrimInputSymbols>
     <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
 
-    <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' AND Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
+    <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
-    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' AND '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
+    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
@@ -73,7 +73,7 @@
       <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
       <!-- keep type-forward assemblies (facades) -->
       <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- keep types and members required by Debugger-related attributes -->
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
@@ -96,7 +96,7 @@
     <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
     <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
           DestinationFolder="$(ILLinkTrimInputPath)"
-          Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')"
+          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')"
     />
 
     <ItemGroup>
@@ -174,11 +174,11 @@
           Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <ItemGroup>
       <PreTrimmedItem Condition="Exists('$(ILLinkTrimInputAssembly)')" Include="$(ILLinkTrimInputAssembly)" />
-      <PreTrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimInputSymbols)')" Include="$(ILLinkTrimInputSymbols)" />
+      <PreTrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimInputSymbols)')" Include="$(ILLinkTrimInputSymbols)" />
       <FileWrites Include="@(PreTrimmedItem)" />
 
       <TrimmedItem Condition="Exists('$(ILLinkTrimAssemblyPath)')" Include="$(ILLinkTrimAssemblyPath)" />
-      <TrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')" Include="$(ILLinkTrimAssemblySymbols)" />
+      <TrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')" Include="$(ILLinkTrimAssemblySymbols)" />
 
       <TrimmingReport Condition="Exists('$(AsmDiffReport)')" Include="$(AsmDiffReport)" />
       <TrimmingReport Condition="Exists('$(AsmDiffList)')" Include="$(AsmDiffList)" />

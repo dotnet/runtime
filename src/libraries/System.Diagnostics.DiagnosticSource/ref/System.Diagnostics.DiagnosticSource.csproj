@@ -4,7 +4,7 @@
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net45' or '$(TargetGroup)' == 'netfx'">
     <DefineConstants>$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -14,7 +14,7 @@
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' or '$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
   </ItemGroup>
 

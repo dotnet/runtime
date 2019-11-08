@@ -2,12 +2,12 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true' and '$(TargetsLinux)' != 'true' and '$(TargetsOSX)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Linux-Debug;netstandard2.0-Linux-Release;netstandard2.0-OSX-Debug;netstandard2.0-OSX-Release;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND ('$(TargetsWindows)' == 'true' OR '$(TargetsLinux)' == 'true' OR '$(TargetsOSX)' == 'true')">
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and ('$(TargetsWindows)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true')">
     <Compile Include="System\IO\Ports\Handshake.cs" />
     <Compile Include="System\IO\Ports\InternalResources.cs" />
     <Compile Include="System\IO\Ports\Parity.cs" />
@@ -24,7 +24,7 @@
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DCB.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DCB.cs</Link>
@@ -145,7 +145,7 @@
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\Ports\SerialPort.OSX.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'  OR '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'  or '$(TargetsOSX)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
     <Compile Include="Interop\Unix\Interop.Termios.cs" />
@@ -184,7 +184,7 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />

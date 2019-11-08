@@ -30,7 +30,7 @@
 
   <Target Name="VerifyReferenceClosure"
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' == ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' == ''">
     <ItemGroup>
       <_refClosureFileNames Include="@(ReferencePath->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -46,7 +46,7 @@
 
   <Target Name="VerifyReferenceTypes" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyTypes)' == 'true' AND '$(RuntimeIdentifier)' == ''">
+          Condition="'$(ShouldVerifyTypes)' == 'true' and '$(RuntimeIdentifier)' == ''">
     <ItemGroup>
       <_refTypesFileNames Include="@(ReferencePath->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -62,7 +62,7 @@
 
   <Target Name="VerifyRuntimeClosure" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' != ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != ''">
     <ItemGroup>
       <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -78,7 +78,7 @@
 
   <Target Name="VerifyRuntimeTypes" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyTypes)' == 'true' AND '$(RuntimeIdentifier)' != ''">
+          Condition="'$(ShouldVerifyTypes)' == 'true' and '$(RuntimeIdentifier)' != ''">
     <ItemGroup>
       <_runTypesFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -129,7 +129,7 @@
     <TestDependsOn>_getTestProjects</TestDependsOn>
     <!-- Runs ResolveReferences once up front in order to ensure we don't run it for the first time concurrently during testing.
          This is needed to avoid sharing violations when RAR and ResolvePackageAssets write out state files. -->
-    <TestDependsOn Condition="'$(ShouldVerifyClosure)' == 'true' OR '$(ShouldVerifyTypes)' == 'true'">$(TestDependsOn);ResolveReferences</TestDependsOn>
+    <TestDependsOn Condition="'$(ShouldVerifyClosure)' == 'true' or '$(ShouldVerifyTypes)' == 'true'">$(TestDependsOn);ResolveReferences</TestDependsOn>
   </PropertyGroup>
   <!-- Runs all tests scenarios for this project -->
   <Target Name="Test"

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'">$(DefineConstants);FEATURE_ECPARAMETERS</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'net462'">$(DefineConstants);FEATURE_ECPARAMETERS</DefineConstants>
     <!-- FEATURE_DSA_HASHDATA is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
     <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->

@@ -14,7 +14,7 @@
 
     <MakeDir Condition="'$(DotNetBuildOffline)' != 'true'" Directories="$(_notSupportedSourceDirectory)" />
     
-    <Error Condition="'$(DotNetBuildOffline)' == 'true' AND !Exists('$(NotSupportedSourceFile)')"
+    <Error Condition="'$(DotNetBuildOffline)' == 'true' and !Exists('$(NotSupportedSourceFile)')"
            Text="Error NotSupportedSourceFile '$(NotSupportedSourceFile)' did not exist under DotNetSourceBuildIntermediatePath." />
 
     <!-- DotNetBuildOffline == true, don't use GenAPI and include source from DotNetSourceBuildIntermediatePath -->  

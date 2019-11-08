@@ -10,7 +10,7 @@
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Condition="'$(SerializeProjects)'=='true' and '%(Identity)' != ''"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
              ContinueOnError="ErrorAndStop" />
 

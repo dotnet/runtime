@@ -1,5 +1,5 @@
 <Project>
-  <Import Condition="Exists($(AnalyzerPropsFile)) AND '$(EnableAnalyzers)' == 'true'" Project="$(AnalyzerPropsFile)" />
+  <Import Condition="Exists($(AnalyzerPropsFile)) and '$(EnableAnalyzers)' == 'true'" Project="$(AnalyzerPropsFile)" />
 
   <!-- This target is executed when building a project and EnableAnalyzers property is set to true. 
   It will populate the Analyzer item that is passed to the compiler with the analyzers restored
@@ -20,9 +20,9 @@
       <Analyzer Include="@(ResolvedAnalyzer)" />
     </ItemGroup>
 
-    <Warning Text="AnalyzersToExclude and AnalyzersToInclude shouldn't be set together, they are mutually exclusive." Condition="'@(AnalyzersToExclude)' != '' AND '@(AnalyzersToInclude)' != ''" />
+    <Warning Text="AnalyzersToExclude and AnalyzersToInclude shouldn't be set together, they are mutually exclusive." Condition="'@(AnalyzersToExclude)' != '' and '@(AnalyzersToInclude)' != ''" />
 
-    <ItemGroup Condition="'@(AnalyzersToExclude)' != '' OR '@(AnalyzersToInclude)' != ''">
+    <ItemGroup Condition="'@(AnalyzersToExclude)' != '' or '@(AnalyzersToInclude)' != ''">
       <_AnalyzersToFileName Include="@(Analyzer -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_AnalyzersToFileName>

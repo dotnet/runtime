@@ -133,7 +133,7 @@
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal\Windows\AlgId.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.Decode.cs" />
@@ -154,7 +154,7 @@
     <Compile Include="Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs</Link>
     </Compile>
@@ -370,7 +370,7 @@
     </Compile>
   </ItemGroup>
   <!-- Common types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
@@ -379,7 +379,7 @@
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">

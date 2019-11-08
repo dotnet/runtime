@@ -3,7 +3,7 @@
   <PropertyGroup Condition="'$(IsEligibleForNgenOptimization)' == ''">
      <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
-     <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' OR '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <Target Name="SetApplyNgenOptimization"

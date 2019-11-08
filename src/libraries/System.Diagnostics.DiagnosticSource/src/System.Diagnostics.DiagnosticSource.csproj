@@ -9,9 +9,9 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' OR '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
@@ -39,13 +39,13 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Runtime.Remoting" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' OR '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' OR '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' AND '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

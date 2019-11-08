@@ -28,8 +28,8 @@
       <_excludeCompile Condition="@(Dependency->WithMetadataValue('Exclude', 'Compile')->Count()) == @(Dependency->Count())">true</_excludeCompile>
     </PropertyGroup>
     <Error Text="Cannot have Exclude=Compile dependencies when targeting a desktop TFM. @(Dependency). You can exclude the reference asset in the package by setting the ExcludeReferenceAssets property to true in your project." 
-           Condition="$([System.String]::Copy('%(Dependency.TargetFramework)').StartsWith('net4')) AND 
-                      '$(_excludeCompile)' == 'true' AND
+           Condition="$([System.String]::Copy('%(Dependency.TargetFramework)').StartsWith('net4')) and 
+                      '$(_excludeCompile)' == 'true' and
                       '%(Dependency.Identity)' != '_._'" />
   </Target>
 </Project>

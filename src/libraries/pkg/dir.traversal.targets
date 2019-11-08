@@ -20,9 +20,9 @@
   <Target Name="FilterProjectsPackageRID" Condition="'@(BuildRID)' != ''">
     <ItemGroup>
       <!-- Build identity package, when SkipBuildIdentityPackage is not set -->
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '' AND '$(SkipBuildIdentityPackage)' != 'true'" />
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '' and '$(SkipBuildIdentityPackage)' != 'true'" />
       <!-- Build packages for current RID, when SkipBuildRuntimePackage is not set -->
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' AND '$(SkipBuildRuntimePackage)' != 'true'" />
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' and '$(SkipBuildRuntimePackage)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>

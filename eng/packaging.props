@@ -45,7 +45,7 @@
     <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
   </PropertyGroup>
 
-  <Import Condition="Exists('$(PkgDir)baseline\baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
+  <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--

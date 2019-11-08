@@ -125,7 +125,7 @@
       <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>

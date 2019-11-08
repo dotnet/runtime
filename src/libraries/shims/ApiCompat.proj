@@ -67,7 +67,7 @@
       <_netStandard21OnlyRef>$(NetStandard21RefPath)netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>
-      <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) OR $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
+      <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) or $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(UpdateNETStandardBaseline)">

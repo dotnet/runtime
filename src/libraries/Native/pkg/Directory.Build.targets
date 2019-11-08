@@ -38,7 +38,7 @@
       <NonWindowsSymbolFile Include="@(NativeDylibFile -> '%(Identity).dwarf')" />
 
       <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
-      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') and '$(SkipPackagingXplatSymbols)'!='true'" />
 
       <File Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)">
         <IsSymbolFile>true</IsSymbolFile>
@@ -46,11 +46,11 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)'!='' AND '@(ExistingWindowsSymbolFile)'==''">true</NeedsPlaceholderPdb>
+      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)'!='' and '@(ExistingWindowsSymbolFile)'==''">true</NeedsPlaceholderPdb>
     </PropertyGroup>
 
     <ItemGroup>
-      <File Include="$(MSBuildThisFileDirectory)\_.pdb" Condition="'$(NeedsPlaceholderPdb)'=='true' AND '$(PackageTargetRuntime)'!=''">
+      <File Include="$(MSBuildThisFileDirectory)\_.pdb" Condition="'$(NeedsPlaceholderPdb)'=='true' and '$(PackageTargetRuntime)'!=''">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
         <IsSymbolFile>true</IsSymbolFile>
       </File>

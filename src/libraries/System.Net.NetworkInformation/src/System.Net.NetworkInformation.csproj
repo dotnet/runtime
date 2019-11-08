@@ -227,7 +227,7 @@
     </Compile>
   </ItemGroup>
   <!-- OSX -->
-  <ItemGroup Condition=" '$(TargetsOsx)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOsx)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
