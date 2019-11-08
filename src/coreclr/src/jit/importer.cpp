@@ -1385,9 +1385,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     if ((dest == nullptr) && (destAddr->OperGet() == GT_ADDR))
     {
         GenTree* destNode = destAddr->gtGetOp1();
-        // If the actual destination is a local, or already a block node, or is a node that
+        // If the actual destination is a local, a GT_INDEX or a block node, or is a node that
         // will be morphed, don't insert an OBJ(ADDR) if it already has the right type.
-        if ((destNode->gtOper == GT_INDEX) || destNode->OperIsBlk() || (destNode->OperGet() == GT_LCL_VAR))
+        if (destNode->OperIs(GT_LCL_VAR, GT_INDEX) || destNode->OperIsBlk())
         {
             var_types destType = destNode->TypeGet();
             // If one or both types are TYP_STRUCT (one may not yet be normalized), they are compatible
