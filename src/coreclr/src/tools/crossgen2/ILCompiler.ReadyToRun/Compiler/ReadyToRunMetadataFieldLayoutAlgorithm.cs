@@ -758,7 +758,7 @@ namespace ILCompiler
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type)))
+            if (MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
