@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Microsoft.NET.HostModel.ComHost
 {
-    class ComHost
+    public class ComHost
     {
         // These need to match RESOURCEID_CLISDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
