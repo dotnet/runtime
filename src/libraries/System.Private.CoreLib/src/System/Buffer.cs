@@ -40,7 +40,7 @@ namespace System
             nuint uSrcLen = (nuint)src.LongLength;
             if (src.GetType() != typeof(byte[]))
             {
-                if (!IsPrimitiveTypeArray(src))
+                if (!src.GetCorElementTypeOfElementType().IsPrimitiveType())
                     throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
                 uSrcLen *= (nuint)src.GetElementSize();
             }
@@ -51,7 +51,7 @@ namespace System
                 uDstLen = (nuint)dst.LongLength;
                 if (dst.GetType() != typeof(byte[]))
                 {
-                    if (!IsPrimitiveTypeArray(dst))
+                    if (!dst.GetCorElementTypeOfElementType().IsPrimitiveType())
                         throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
                     uDstLen *= (nuint)dst.GetElementSize();
                 }
@@ -81,7 +81,7 @@ namespace System
                 throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
-            if (!IsPrimitiveTypeArray(array))
+            if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             nuint byteLength = (nuint)array.LongLength * (nuint)array.GetElementSize();

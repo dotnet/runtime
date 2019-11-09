@@ -3670,4 +3670,7 @@
   <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
     <value>Argument cannot be null or empty.</value>
   </data>
+  <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
+    <value>Length of items must be same as length of keys.</value>
+  </data>
 </root>

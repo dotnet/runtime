@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
@@ -475,16 +476,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
+        internal extern CorElementType GetCorElementTypeOfElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZLastIndexOf(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZReverse(Array array, int index, int count);
+        private extern bool IsValueOfElementType(object value);
 
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.

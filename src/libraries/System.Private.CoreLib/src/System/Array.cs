@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
@@ -472,15 +473,6 @@ namespace System
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
             comparer ??= Comparer.Default;
-#if !CORERT
-            if (comparer == Comparer.Default)
-            {
-                int retval;
-                bool r = TrySZBinarySearch(array, index, length, value, out retval);
-                if (r)
-                    return retval;
-            }
-#endif
 
             int lo = index;
             int hi = index + length - 1;
@@ -511,32 +503,92 @@ namespace System
                         hi = i - 1;
                     }
                 }
+                return ~lo;
             }
-            else
-            {
-                while (lo <= hi)
-                {
-                    int i = GetMedian(lo, hi);
 
-                    int c;
-                    try
+            if (comparer == Comparer.Default)
+            {
+                CorElementType et = array.GetCorElementTypeOfElementType();
+                if (et.IsPrimitiveType()
+                    // IntPtr/UIntPtr does not implement IComparable
+                    && (et != CorElementType.ELEMENT_TYPE_I) && (et != CorElementType.ELEMENT_TYPE_U))
+                {
+                    if (value == null)
+                        return ~index;
+
+                    if (array.IsValueOfElementType(value))
                     {
-                        c = comparer.Compare(array.GetValue(i), value);
+                        int adjustedIndex = index - lb;
+                        int result = -1;
+                        switch (et)
+                        {
+                            case CorElementType.ELEMENT_TYPE_I1:
+                                result = GenericBinarySearch<sbyte>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_U1:
+                            case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                                result = GenericBinarySearch<byte>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_I2:
+                                result = GenericBinarySearch<short>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_U2:
+                            case CorElementType.ELEMENT_TYPE_CHAR:
+                                result = GenericBinarySearch<ushort>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_I4:
+                                result = GenericBinarySearch<int>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_U4:
+                                result = GenericBinarySearch<uint>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_I8:
+                                result = GenericBinarySearch<long>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_U8:
+                                result = GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                result = GenericBinarySearch<float>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                result = GenericBinarySearch<double>(array, adjustedIndex, length, value);
+                                break;
+                            default:
+                                Debug.Fail("All primitive types should be handled above");
+                                break;
+                        }
+
+                        return (result >= 0) ? (index + result) : ~(index + ~result);
+
+                        static int GenericBinarySearch<T>(Array array, int adjustedIndex, int length, object value) where T: struct, IComparable<T>
+                            => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.As<byte, T>(ref value.GetRawData()));
                     }
-                    catch (Exception e)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-                        return default;
-                    }
-                    if (c == 0) return i;
-                    if (c < 0)
-                    {
-                        lo = i + 1;
-                    }
-                    else
-                    {
-                        hi = i - 1;
-                    }
+                }
+            }
+
+            while (lo <= hi)
+            {
+                int i = GetMedian(lo, hi);
+
+                int c;
+                try
+                {
+                    c = comparer.Compare(array.GetValue(i), value);
+                }
+                catch (Exception e)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                    return default;
+                }
+                if (c == 0) return i;
+                if (c < 0)
+                {
+                    lo = i + 1;
+                }
+                else
+                {
+                    hi = i - 1;
                 }
             }
             return ~lo;
@@ -921,14 +973,6 @@ namespace System
             if (count < 0 || count > array.Length - startIndex + lb)
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-#if !CORERT
-            // Try calling a quick native method to handle primitive types.
-            int retVal;
-            bool r = TrySZIndexOf(array, startIndex, count, value, out retVal);
-            if (r)
-                return retVal;
-#endif
-
             int endIndex = startIndex + count;
             if (array is object[] objArray)
             {
@@ -949,22 +993,77 @@ namespace System
                             return i;
                     }
                 }
+                return -1;
             }
-            else
+
+            CorElementType et = array.GetCorElementTypeOfElementType();
+            if (et.IsPrimitiveType())
             {
-                for (int i = startIndex; i < endIndex; i++)
+                if (value == null)
+                    return lb - 1;
+
+                if (array.IsValueOfElementType(value))
                 {
-                    object? obj = array.GetValue(i);
-                    if (obj == null)
+                    int adjustedIndex = startIndex - lb;
+                    int result = -1;
+                    switch (et)
                     {
-                        if (value == null)
-                            return i;
+                        case CorElementType.ELEMENT_TYPE_I1:
+                        case CorElementType.ELEMENT_TYPE_U1:
+                        case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                            result = GenericIndexOf<byte>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I2:
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+                            result = GenericIndexOf<char>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                        case CorElementType.ELEMENT_TYPE_U4:
+#if !BIT64
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
+                            result = GenericIndexOf<int>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+#if BIT64
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
+                            result = GenericIndexOf<long>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            result = GenericIndexOf<float>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            result = GenericIndexOf<double>(array, value, adjustedIndex, count);
+                            break;
+                        default:
+                            Debug.Fail("All primitive types should be handled above");
+                            break;
                     }
-                    else
-                    {
-                        if (obj.Equals(value))
-                            return i;
-                    }
+
+                    return (result >= 0 ? startIndex : lb) + result;
+
+                    static int GenericIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
+                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).IndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                object? obj = array.GetValue(i);
+                if (obj == null)
+                {
+                    if (value == null)
+                        return i;
+                }
+                else
+                {
+                    if (obj.Equals(value))
+                        return i;
                 }
             }
             // Return one less than the lower bound of the array.  This way,
@@ -1104,14 +1203,6 @@ namespace System
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
-#if !CORERT
-            // Try calling a quick native method to handle primitive types.
-            int retVal;
-            bool r = TrySZLastIndexOf(array, startIndex, count, value, out retVal);
-            if (r)
-                return retVal;
-#endif
-
             int endIndex = startIndex - count + 1;
             if (array is object[] objArray)
             {
@@ -1132,22 +1223,77 @@ namespace System
                             return i;
                     }
                 }
+                return -1;
             }
-            else
+
+            CorElementType et = array.GetCorElementTypeOfElementType();
+            if (et.IsPrimitiveType())
             {
-                for (int i = startIndex; i >= endIndex; i--)
+                if (value == null)
+                    return lb - 1;
+
+                if (array.IsValueOfElementType(value))
                 {
-                    object? obj = array.GetValue(i);
-                    if (obj == null)
+                    int adjustedIndex = endIndex - lb;
+                    int result = -1;
+                    switch (et)
                     {
-                        if (value == null)
-                            return i;
+                        case CorElementType.ELEMENT_TYPE_I1:
+                        case CorElementType.ELEMENT_TYPE_U1:
+                        case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                            result = GenericLastIndexOf<byte>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I2:
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+                            result = GenericLastIndexOf<char>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                        case CorElementType.ELEMENT_TYPE_U4:
+#if !BIT64
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
+                            result = GenericLastIndexOf<int>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+#if BIT64
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
+                            result = GenericLastIndexOf<long>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            result = GenericLastIndexOf<float>(array, value, adjustedIndex, count);
+                            break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            result = GenericLastIndexOf<double>(array, value, adjustedIndex, count);
+                            break;
+                        default:
+                            Debug.Fail("All primitive types should be handled above");
+                            break;
                     }
-                    else
-                    {
-                        if (obj.Equals(value))
-                            return i;
-                    }
+
+                    return (result >= 0 ? endIndex : lb) + result;
+
+                    static int GenericLastIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
+                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).LastIndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                }
+            }
+
+            for (int i = startIndex; i >= endIndex; i--)
+            {
+                object? obj = array.GetValue(i);
+                if (obj == null)
+                {
+                    if (value == null)
+                        return i;
+                }
+                else
+                {
+                    if (obj.Equals(value))
+                        return i;
                 }
             }
             return lb - 1;  // Return lb-1 for arrays with negative lower bounds.
@@ -1298,28 +1444,53 @@ namespace System
             if (length <= 1)
                 return;
 
-#if !CORERT
-            bool r = TrySZReverse(array, index, length);
-            if (r)
-                return;
+            int adjustedIndex = index - lowerBound;
+            switch (array.GetCorElementTypeOfElementType())
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    UnsafeArrayAsSpan<byte>(array, adjustedIndex, length).Reverse();
+                    return;
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                    UnsafeArrayAsSpan<short>(array, adjustedIndex, length).Reverse();
+                    return;
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
+#if !BIT64
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
 #endif
-
-            if (array is object[] objArray)
-            {
-                Array.Reverse<object>(objArray, index, length);
+                case CorElementType.ELEMENT_TYPE_R4:
+                    UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
+                    return;
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
+#if BIT64
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                case CorElementType.ELEMENT_TYPE_R8:
+                    UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
+                    return;
+                case CorElementType.ELEMENT_TYPE_OBJECT:
+                case CorElementType.ELEMENT_TYPE_ARRAY:
+                case CorElementType.ELEMENT_TYPE_SZARRAY:
+                    UnsafeArrayAsSpan<object>(array, adjustedIndex, length).Reverse();
+                    return;
             }
-            else
+
+            int i = index;
+            int j = index + length - 1;
+            while (i < j)
             {
-                int i = index;
-                int j = index + length - 1;
-                while (i < j)
-                {
-                    object? temp = array.GetValue(i);
-                    array.SetValue(array.GetValue(j), i);
-                    array.SetValue(temp, j);
-                    i++;
-                    j--;
-                }
+                object? temp = array.GetValue(i);
+                array.SetValue(array.GetValue(j), i);
+                array.SetValue(temp, j);
+                i++;
+                j--;
             }
         }
 
@@ -1464,127 +1635,83 @@ namespace System
             if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            if (length > 1)
+            if (length <= 1)
+                return;
+
+            comparer ??= Comparer.Default;
+
+            if (keys is object[] objKeys)
             {
-                comparer ??= Comparer.Default;
-
-                if (comparer == Comparer.Default)
-                {
-                    switch (Type.GetTypeCode(keys.GetType().GetElementType()))
-                    {
-                        case TypeCode.Boolean:
-                            if (TryGenericSort(keys as bool[], items, index, length)) return;
-                            break;
-                        case TypeCode.Byte:
-                            if (TryGenericSort(keys as byte[], items, index, length)) return;
-                            break;
-                        case TypeCode.Char:
-                            if (TryGenericSort(keys as char[], items, index, length)) return;
-                            break;
-                        case TypeCode.Double:
-                            if (TryGenericSort(keys as double[], items, index, length)) return;
-                            break;
-                        case TypeCode.Int16:
-                            if (TryGenericSort(keys as short[], items, index, length)) return;
-                            break;
-                        case TypeCode.Int32:
-                            if (TryGenericSort(keys as int[], items, index, length)) return;
-                            break;
-                        case TypeCode.Int64:
-                            if (TryGenericSort(keys as long[], items, index, length)) return;
-                            break;
-                        case TypeCode.SByte:
-                            if (TryGenericSort(keys as sbyte[], items, index, length)) return;
-                            break;
-                        case TypeCode.Single:
-                            if (TryGenericSort(keys as float[], items, index, length)) return;
-                            break;
-                        case TypeCode.String:
-                            if (TryGenericSort(keys as string[], items, index, length)) return;
-                            break;
-                        case TypeCode.UInt16:
-                            if (TryGenericSort(keys as ushort[], items, index, length)) return;
-                            break;
-                        case TypeCode.UInt32:
-                            if (TryGenericSort(keys as uint[], items, index, length)) return;
-                            break;
-                        case TypeCode.UInt64:
-                            if (TryGenericSort(keys as ulong[], items, index, length)) return;
-                            break;
-                    }
-
-                    static bool TryGenericSort<TKey>(TKey[]? keys, Array? items, int index, int length)
-                    {
-                        if (keys != null)
-                        {
-                            if (items is null)
-                            {
-                                Sort(keys, index, length);
-                                return true;
-                            }
-
-                            switch (Type.GetTypeCode(items.GetType().GetElementType()))
-                            {
-                                case TypeCode.Boolean:
-                                    if (items is bool[] boolItems) { Sort(keys, boolItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Byte:
-                                    if (items is byte[] byteItems) { Sort(keys, byteItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Char:
-                                    if (items is char[] charItems) { Sort(keys, charItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Double:
-                                    if (items is double[] doubleItems) { Sort(keys, doubleItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Int16:
-                                    if (items is short[] shortItems) { Sort(keys, shortItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Int32:
-                                    if (items is int[] intItems) { Sort(keys, intItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Int64:
-                                    if (items is long[] longItems) { Sort(keys, longItems, index, length); return true; }
-                                    break;
-                                case TypeCode.SByte:
-                                    if (items is sbyte[] sbyteItems) { Sort(keys, sbyteItems, index, length); return true; }
-                                    break;
-                                case TypeCode.Single:
-                                    if (items is float[] floatItems) { Sort(keys, floatItems, index, length); return true; }
-                                    break;
-                                case TypeCode.String:
-                                    if (items is string[] stringItems) { Sort(keys, stringItems, index, length); return true; }
-                                    break;
-                                case TypeCode.UInt16:
-                                    if (items is ushort[] ushortItems) { Sort(keys, ushortItems, index, length); return true; }
-                                    break;
-                                case TypeCode.UInt32:
-                                    if (items is uint[] uintItems) { Sort(keys, uintItems, index, length); return true; }
-                                    break;
-                                case TypeCode.UInt64:
-                                    if (items is ulong[] ulongItems) { Sort(keys, ulongItems, index, length); return true; }
-                                    break;
-                            }
-                        }
-
-                        return false;
-                    }
-                }
-
-                object[]? objKeys = keys as object[];
-                object[]? objItems = null;
-                if (objKeys != null)
-                    objItems = items as object[];
-
-                if (objKeys != null && (items == null || objItems != null))
+                object[]? objItems = items as object[];
+                if (items == null || objItems != null)
                 {
                     new SorterObjectArray(objKeys, objItems, comparer).Sort(index, length);
-                }
-                else
-                {
-                    new SorterGenericArray(keys, items, comparer).Sort(index, length);
+                    return;
                 }
             }
+
+            if (comparer == Comparer.Default)
+            {
+                CorElementType et = keys.GetCorElementTypeOfElementType();
+                if (items == null || items.GetCorElementTypeOfElementType() == et)
+                {
+                    int adjustedIndex = index - keysLowerBound;
+                    switch (et)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I1:
+                            GenericSort<sbyte>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_U1:
+                        case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                            GenericSort<byte>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_I2:
+                            GenericSort<short>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+                            GenericSort<ushort>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                            GenericSort<int>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_U4:
+                            GenericSort<uint>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                            GenericSort<long>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_U8:
+                            GenericSort<ulong>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericSort<float>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericSort<double>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+                            // IntPtr/UIntPtr does not implement IComparable
+                            break;
+                    }
+
+                    static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T: struct
+                    {
+                        Span<T> keysSpan = UnsafeArrayAsSpan<T>(keys, adjustedIndex, length);
+                        if (items != null)
+                        {
+                            keysSpan.Sort<T, T>(UnsafeArrayAsSpan<T>(items, adjustedIndex, length));
+                        }
+                        else
+                        {
+                            keysSpan.Sort<T>();
+                        }
+                    }
+                }
+            }
+
+            new SorterGenericArray(keys, items, comparer).Sort(index, length);
         }
 
         public static void Sort<T>(T[] array)
@@ -1711,7 +1838,6 @@ namespace System
             return true;
         }
 
-#if !CORERT
         // Private value type used by the Sort methods.
         private readonly struct SorterObjectArray
         {
@@ -1726,7 +1852,7 @@ namespace System
                 this.comparer = comparer;
             }
 
-            internal void SwapIfGreaterWithItems(int a, int b)
+            internal void SwapIfGreater(int a, int b)
             {
                 if (a != b)
                 {
@@ -1796,14 +1922,14 @@ namespace System
                         }
                         if (partitionSize == 2)
                         {
-                            SwapIfGreaterWithItems(lo, hi);
+                            SwapIfGreater(lo, hi);
                             return;
                         }
                         if (partitionSize == 3)
                         {
-                            SwapIfGreaterWithItems(lo, hi - 1);
-                            SwapIfGreaterWithItems(lo, hi);
-                            SwapIfGreaterWithItems(hi - 1, hi);
+                            SwapIfGreater(lo, hi - 1);
+                            SwapIfGreater(lo, hi);
+                            SwapIfGreater(hi - 1, hi);
                             return;
                         }
 
@@ -1829,9 +1955,9 @@ namespace System
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
                 // Sort lo, mid and hi appropriately, then pick mid as the pivot.
-                SwapIfGreaterWithItems(lo, mid);
-                SwapIfGreaterWithItems(lo, hi);
-                SwapIfGreaterWithItems(mid, hi);
+                SwapIfGreater(lo, mid);
+                SwapIfGreater(lo, hi);
+                SwapIfGreater(mid, hi);
 
                 object pivot = keys[mid];
                 Swap(mid, hi - 1);
@@ -1932,7 +2058,7 @@ namespace System
                 this.comparer = comparer;
             }
 
-            internal void SwapIfGreaterWithItems(int a, int b)
+            internal void SwapIfGreater(int a, int b)
             {
                 if (a != b)
                 {
@@ -2002,14 +2128,14 @@ namespace System
                         }
                         if (partitionSize == 2)
                         {
-                            SwapIfGreaterWithItems(lo, hi);
+                            SwapIfGreater(lo, hi);
                             return;
                         }
                         if (partitionSize == 3)
                         {
-                            SwapIfGreaterWithItems(lo, hi - 1);
-                            SwapIfGreaterWithItems(lo, hi);
-                            SwapIfGreaterWithItems(hi - 1, hi);
+                            SwapIfGreater(lo, hi - 1);
+                            SwapIfGreater(lo, hi);
+                            SwapIfGreater(hi - 1, hi);
                             return;
                         }
 
@@ -2035,9 +2161,9 @@ namespace System
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
 
-                SwapIfGreaterWithItems(lo, mid);
-                SwapIfGreaterWithItems(lo, hi);
-                SwapIfGreaterWithItems(mid, hi);
+                SwapIfGreater(lo, mid);
+                SwapIfGreater(lo, hi);
+                SwapIfGreater(mid, hi);
 
                 object? pivot = keys.GetValue(mid);
                 Swap(mid, hi - 1);
@@ -2126,6 +2252,10 @@ namespace System
             }
         }
 
+        private static Span<T> UnsafeArrayAsSpan<T>(Array array, int adjustedIndex, int length) =>
+            new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawArrayData()), array.Length).Slice(adjustedIndex, length);
+
+#if !CORERT
         public IEnumerator GetEnumerator()
         {
             int lowerBound = GetLowerBound(0);

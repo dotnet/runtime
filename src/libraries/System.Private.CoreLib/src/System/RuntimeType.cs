@@ -187,8 +187,6 @@ namespace System
                     typeCode = TypeCode.Single; break;
                 case CorElementType.ELEMENT_TYPE_R8:
                     typeCode = TypeCode.Double; break;
-                case CorElementType.ELEMENT_TYPE_STRING:
-                    typeCode = TypeCode.String; break;
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     if (this == Convert.ConvertTypes[(int)TypeCode.Decimal])
                         typeCode = TypeCode.Decimal;

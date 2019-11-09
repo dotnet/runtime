@@ -2,7 +2,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(BCLTYPE_SOURCES
     arraynative.cpp
-    arrayhelpers.cpp
     oavariant.cpp
     objectnative.cpp
     stringnative.cpp

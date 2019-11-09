@@ -20,11 +20,6 @@ namespace System
 {
     public partial class Buffer
     {
-        // Returns a bool to indicate if the array is of primitive data types
-        // or not.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsPrimitiveTypeArray(Array array);
-
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]

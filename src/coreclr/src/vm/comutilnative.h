@@ -68,8 +68,6 @@ public:
 class Buffer
 {
 public:
-    static FCDECL1(FC_BOOL_RET, IsPrimitiveTypeArray, ArrayBase *arrayUNSAFE);
-
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 
     static void QCALLTYPE MemMove(void *dst, void *src, size_t length);

@@ -834,6 +834,8 @@ namespace System
                     return SR.Rank_MultiDimNotSupported;
                 case ExceptionResource.Arg_TypeNotSupported:
                     return SR.Arg_TypeNotSupported;
+                case ExceptionResource.Argument_SpansMustHaveSameLength:
+                    return SR.Argument_SpansMustHaveSameLength;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";

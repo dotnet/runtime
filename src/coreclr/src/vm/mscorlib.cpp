@@ -53,7 +53,6 @@
 #include "proftoeeinterfaceimpl.h"
 
 #include "appdomainnative.hpp"
-#include "arrayhelpers.h"
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"

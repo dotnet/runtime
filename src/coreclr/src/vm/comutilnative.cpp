@@ -668,22 +668,6 @@ void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
     memmove(dst, src, length);
 }
 
-// Returns a bool to indicate if the array is of primitive types or not.
-FCIMPL1(FC_BOOL_RET, Buffer::IsPrimitiveTypeArray, ArrayBase *arrayUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(arrayUNSAFE != NULL);
-
-    // Check the type from the contained element's handle
-    TypeHandle elementTH = arrayUNSAFE->GetArrayElementTypeHandle();
-    BOOL fIsPrimitiveTypeArray = CorTypeInfo::IsPrimitiveType_NoThrow(elementTH.GetVerifierCorElementType());
-
-    FC_RETURN_BOOL(fIsPrimitiveTypeArray);
-
-}
-FCIMPLEND
-
 //
 // GCInterface
 //
