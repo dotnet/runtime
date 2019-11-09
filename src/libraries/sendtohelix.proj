@@ -33,9 +33,17 @@
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
     test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
-    <TestRunNamePrefix Condition="'$(IsPackageTesting)' == 'true'">PackageTests-$(ConfigurationGroup)-$(ArchGroup)</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'AllConfigurations'">
+    <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -48,7 +56,7 @@
   <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetGroup)' == 'AllConfigurations'">
     <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
 
-    <HelixCommand>%HELIX_CORRELATION_PAYLOAD%\tools\dotnet.exe msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>

@@ -33,15 +33,12 @@
     <TestToolsDir>$(TestSupportDir)tools/</TestToolsDir>
     <TestProjectDir>$(TestDir)projects/</TestProjectDir>
     <TestPackageDir>$(ArtifactsBinDir)testPackages</TestPackageDir>
-    <TestDotNetPath>$(TestToolsDir)/dotnet</TestDotNetPath>
+    <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
 
     <ProjectTemplate>project.csproj.template</ProjectTemplate>
   </PropertyGroup>
 
   <ItemGroup>
-    <TestSupportFiles Include="$(DotNetRoot)**\*.*" Exclude="$(DotNetRoot)sdk\NuGetFallbackFolder\**\*.*">
-      <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
-    </TestSupportFiles>
     <TestSupportFiles Include="$(LibrariesProjectRoot)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
