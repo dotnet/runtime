@@ -218,7 +218,7 @@ struct ResolveHolder
 
 #define Dataregionbase  _pCounter
 #define DATA_OFFSET(_fieldHigh) (DWORD)((offsetof(ResolveStub, _fieldHigh ) - offsetof(ResolveStub, Dataregionbase)) & 0xffffffff)
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint) + sizeof(ResolveStub::_resolveEntryPoint) * n)) & 0xffffffff)
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint) + sizeof(*ResolveStub::_resolveEntryPoint) * n)) & 0xffffffff)
 
          //ldr x12, [x0,#Object.m_pMethTab ] ; methodTable from object in x0
          _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_DWORD; //0xF940000C
@@ -318,7 +318,7 @@ struct ResolveHolder
          // }
 
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _slowEntryPoint) + sizeof(ResolveStub::_slowEntryPoint) * n)) & 0xffffffff )
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _slowEntryPoint) + sizeof(*ResolveStub::_slowEntryPoint) * n)) & 0xffffffff )
          n = 0;
          // ;;slowEntryPoint:
          // ;;fall through to the slow case
@@ -349,7 +349,7 @@ struct ResolveHolder
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
-#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(ResolveStub::_failEntryPoint) * n)) & 0xffffffff)
+#define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * n)) & 0xffffffff)
          n = 0;
 
          //;;failEntryPoint
