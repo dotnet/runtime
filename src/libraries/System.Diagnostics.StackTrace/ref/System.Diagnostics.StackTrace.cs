@@ -47,7 +47,7 @@ namespace System.Diagnostics
         public StackTrace(int skipFrames, bool fNeedFileInfo) { }
         public virtual int FrameCount { get { throw null; } }
         public virtual System.Diagnostics.StackFrame? GetFrame(int index) { throw null; }
-        public virtual System.Diagnostics.StackFrame?[] GetFrames() { throw null; }
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
         public override string ToString() { throw null; }
     }
 }
