@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
@@ -57,17 +58,32 @@ namespace System.IO.Tests
         /// Watches the Created WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Created event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
             FileSystemEventHandler handler = (o, e) =>
             {
+                if (e.ChangeType != WatcherChangeTypes.Created)
+                {
+                    _output?.WriteLine("Unexpected event {0} while waiting for {1}", e.ChangeType, WatcherChangeTypes.Created);
+                    Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
+                }
+
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
                 if (expectedPaths != null)
                 {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    try
+                    {
+                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output?.WriteLine(ex.ToString());
+                        throw;
+                    }
                 }
+
                 eventOccurred.Set();
             };
 
@@ -79,15 +95,28 @@ namespace System.IO.Tests
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
             FileSystemEventHandler handler = (o, e) =>
             {
-                Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
+                if (e.ChangeType != WatcherChangeTypes.Deleted)
+                {
+                    _output?.WriteLine("Unexpected event {0} while waiting for {1}", e.ChangeType, WatcherChangeTypes.Deleted);
+                    Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
+                }
+
                 if (expectedPaths != null)
                 {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    try
+                    {
+                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output?.WriteLine(ex.ToString());
+                        throw;
+                    }
                 }
                 eventOccurred.Set();
             };
@@ -100,16 +129,29 @@ namespace System.IO.Tests
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, RenamedEventHandler Handler) WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, RenamedEventHandler Handler) WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
             RenamedEventHandler handler = (o, e) =>
             {
-                Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
+                if (e.ChangeType != WatcherChangeTypes.Renamed)
+                {
+                    _output?.WriteLine("Unexpected event {0} while waiting for {1}", e.ChangeType, WatcherChangeTypes.Renamed);
+                    Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
+                }
+
                 if (expectedPaths != null)
                 {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    try
+                    {
+                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output?.WriteLine(ex.ToString());
+                        throw;
+                    }
                 }
                 eventOccurred.Set();
             };
