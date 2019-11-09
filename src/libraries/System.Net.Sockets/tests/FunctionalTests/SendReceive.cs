@@ -1207,7 +1207,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(SocketError.Success, error);
                     } while (bytesReceivedTotal != SegmentCount);
 
-                    Assert.Equal(sendBuffer, receiveBuffer);
+                    AssertExtensions.Equal(sendBuffer, receiveBuffer);
                 }
             }
         }

@@ -163,6 +163,12 @@ namespace System
 #nullable disable
             where T : System.IEquatable<T> { throw null; }
 #nullable restore
+        public static void Sort<T>(this System.Span<T> span) { }
+        public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
+        public static void Sort<T>(this System.Span<T> span, System.Comparison<T> comparison) { }
+        public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items) { }
+        public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
+        public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value)
 #nullable disable
