@@ -145,30 +145,6 @@ namespace System.Runtime.Loader
 			dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
 		}
 
-#region Copied from AssemblyLoadContext.CoreCLR.cs, being moved to shared
-		private IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
-		{
-			IntPtr resolvedDll = IntPtr.Zero;
-
-			Func<Assembly, string, IntPtr>? dllResolveHandler = _resolvingUnmanagedDll;
-
-			if (dllResolveHandler != null)
-			{
-				// Loop through the event subscribers and return the first non-null native library handle
-				foreach (Func<Assembly, string, IntPtr> handler in dllResolveHandler.GetInvocationList())
-				{
-					resolvedDll = handler(assembly, unmanagedDllName);
-					if (resolvedDll != IntPtr.Zero)
-					{
-						return resolvedDll;
-					}
-				}
-			}
-
-			return IntPtr.Zero;
-		}
-#endregion
-
 #region Copied from AssemblyLoadContext.CoreCLR.cs, modified until our AssemblyBuilder implementation is functional
 		private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
 		{
