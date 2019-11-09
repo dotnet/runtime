@@ -4,6 +4,15 @@
 
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
+
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     public partial class Object
@@ -16,7 +25,22 @@ namespace System
         // object.  This is always a shallow copy of the instance. The method is protected
         // so that other object may only call this method on themselves.  It is intended to
         // support the ICloneable interface.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        protected extern object MemberwiseClone();
+        protected unsafe object MemberwiseClone()
+        {
+            object clone = RuntimeHelpers.AllocateUninitializedClone(this);
+
+            // copy contents of "this" to the clone
+
+            nuint byteCount = RuntimeHelpers.GetRawObjectDataSize(clone);
+            ref byte src = ref this.GetRawData();
+            ref byte dst = ref clone.GetRawData();
+
+            if (RuntimeHelpers.GetMethodTable(clone)->ContainsGCPointers)
+                Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+            else
+                Buffer.Memmove(ref dst, ref src, byteCount);
+
+            return clone;
+        }
     }
 }
