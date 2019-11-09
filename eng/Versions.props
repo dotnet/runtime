@@ -43,9 +43,9 @@
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.19557.1</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.19557.1</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.19555.8</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.19555.8</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.19555.8</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.19558.7</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.19558.7</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.19558.7</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
