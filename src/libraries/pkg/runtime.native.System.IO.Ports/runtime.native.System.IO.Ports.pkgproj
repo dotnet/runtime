@@ -13,7 +13,7 @@
     <_buildRIDWithMetadata Include="@(BuildRID)">
       <Version>$(PackageVersion)</Version>
     </_buildRIDWithMetadata>
-    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
+    <IndexedDependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>

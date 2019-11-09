@@ -6,8 +6,8 @@
 
   <Target Name="ApplyBaselineToStaticDependencies" 
           BeforeTargets="AssignPkgProjPackageDependenciesTargetFramework"
-          Condition="'@(Dependency)' != ''">
-    <ApplyBaseLine OriginalDependencies="@(Dependency)"
+          Condition="'@(IndexedDependency)' != ''">
+    <ApplyBaseLine OriginalDependencies="@(IndexedDependency)"
                    BaseLinePackages="@(BaseLinePackage)"
                    PackageIndexes="@(PackageIndex)"
                    Apply="$(BaseLinePackageDependencies)">
@@ -23,7 +23,6 @@
     </ApplyPreReleaseSuffix>
     
     <ItemGroup>
-      <Dependency Remove="@(Dependency)" />
       <Dependency Include="@(_SuffixedStaticDependencies)" />
     </ItemGroup>
   </Target>

@@ -26,7 +26,7 @@
       <TargetRuntime>%(Identity)</TargetRuntime>
       <Version>$(PackageVersion)</Version>
     </_buildRIDWithMetadata>
-    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
+    <IndexedDependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
   </ItemGroup>
 
   <!-- Bring in lib content from binplaced lib props -->
