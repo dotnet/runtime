@@ -2946,9 +2946,6 @@ public:
         pInfo->m_wNumDicts  = numDicts;
         pInfo->m_wNumTyPars = numTyPars;
     }
-
-    DWORD GetDictionarySlotsSize();
-
 #endif // !DACCESS_COMPILE
     PTR_GenericsDictInfo GetGenericsDictInfo()
     {
@@ -2960,8 +2957,6 @@ public:
     // Get a pointer to the dictionary for this instantiated type
     // (The instantiation is stored in the initial slots of the dictionary)
     // If not instantiated, return NULL
-    // This operation is not multi-threaded safe: other thread can update the 
-    // dictionary pointer during a dictionary size expansion.
     PTR_Dictionary GetDictionary();
 
 #ifdef FEATURE_PREJIT
@@ -4066,10 +4061,7 @@ private:
     inline DWORD GetInterfaceMapSize();
 
     // The instantiation/dictionary comes at the end of the MethodTable after
-    // the interface map.
-    // This operation is not multi-threaded safe: it uses the dictionary layout to compute
-    // the size, and the dictionary layout can be updated by other threads in the case of a
-    // generic dictionary size expansion.
+    //  the interface map.
     inline DWORD GetInstAndDictSize();
 
 private:
