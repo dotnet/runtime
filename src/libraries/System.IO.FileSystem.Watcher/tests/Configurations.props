@@ -3,6 +3,7 @@
     <BuildConfigurations>
       netcoreapp-Linux;
       netcoreapp-OSX;
+      netcoreapp-FreeBSD;
       netcoreapp-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

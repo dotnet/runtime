@@ -74,7 +74,7 @@
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\System.Native\Interop.INotify.cs">
       <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
@@ -125,7 +125,7 @@
       <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>

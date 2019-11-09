@@ -50,6 +50,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [PlatformSpecific(~TestPlatforms.FreeBSD)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
