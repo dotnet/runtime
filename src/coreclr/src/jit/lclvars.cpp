@@ -1978,13 +1978,17 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
     {
         unsigned  simdSize;
         var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
-        if (simdBaseType != TYP_UNKNOWN)
+        if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
         {
-            fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
-            fieldInfo.fldSize = simdSize;
+            // We will only promote fields of SIMD types that fit into a SIMD register.
+            if (simdBaseType != TYP_UNKNOWN)
+            {
+                fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
+                fieldInfo.fldSize = simdSize;
 #ifdef DEBUG
-            retypedFieldsMap.Set(fieldInfo.fldHnd, fieldInfo.fldType, RetypedAsScalarFieldsMap::Overwrite);
+                retypedFieldsMap.Set(fieldInfo.fldHnd, fieldInfo.fldType, RetypedAsScalarFieldsMap::Overwrite);
 #endif // DEBUG
+            }
         }
     }
 #endif // FEATURE_SIMD
