@@ -17,7 +17,6 @@ namespace System.Net.Http.Functional.Tests
     {
         private static readonly string s_simpleContent = "Hello World\r\n";
 
-        // Retry logic is supported by SocketsHttpHandler, CurlHandler and netfx.  Only WinHttp does not support.
         private bool IsRetrySupported => !IsWinHttpHandler;
 
         public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
@@ -66,11 +65,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
-            if (!UseSocketsHttpHandler)
+            if (IsWinHttpHandler)
             {
                 // WinHttpHandler does not support Expect: 100-continue.
-                // And the test is expecting specific behaviors of how SocketsHttpHandler does pooling;
-                // it generally works on CurlHandler, but not always.
                 return;
             }
 
@@ -121,7 +118,7 @@ namespace System.Net.Http.Functional.Tests
             private readonly Task _connectionClosed;
             private readonly TaskCompletionSource<bool> _sendingContent;
 
-            // The content needs to be large enough to force Expect: 100-Continue behavior in libcurl.
+            // The content needs to be large enough to force Expect: 100-Continue behavior in SocketsHttpHandler.
             private readonly string _longContent = new String('a', 1025);
 
             public SynchronizedSendContent(TaskCompletionSource<bool> sendingContent, Task connectionClosed)

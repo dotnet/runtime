@@ -68,11 +68,8 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                if (!IsCurlHandler) // libcurl sends Basic auth preemptively when only basic creds are provided; other handlers wait for 407.
-                {
-                    await server.AcceptConnectionSendResponseAndCloseAsync(
-                        HttpStatusCode.ProxyAuthenticationRequired, "Proxy-Authenticate: Basic\r\n");
-                }
+                await server.AcceptConnectionSendResponseAndCloseAsync(
+                    HttpStatusCode.ProxyAuthenticationRequired, "Proxy-Authenticate: Basic\r\n");
 
                 List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
                 Assert.Equal(expectCreds, LoopbackServer.GetRequestHeaderValue(headers, "Proxy-Authorization"));
@@ -93,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
             {
-                // libcurl will read a default proxy from the http_proxy environment variable.  Ensure that when it does,
+                // SocketsHttpHandler can read a default proxy from the http_proxy environment variable.  Ensure that when it does,
                 // our default proxy credentials are used.  To avoid messing up anything else in this process, we run the
                 // test in another process.
                 var psi = new ProcessStartInfo();

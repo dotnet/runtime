@@ -44,15 +44,6 @@ namespace System.Net.Http.Functional.Tests
             // Issue: #22089
             requestOnlyThisProtocol |= PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls;
 
-            if (PlatformDetection.IsMacOsCatalinaOrHigher && acceptedProtocol == SslProtocols.Tls && IsCurlHandler)
-            {
-                // Issue: #39989
-                // When the server uses SslProtocols.Tls, on MacOS, SecureTransport ends up picking a cipher suite
-                // for TLS1.2, even though server said it was only using TLS1.0. LibreSsl throws error that
-                // wrong cipher is used for TLS1.0.
-                throw new SkipTestException("OSX may pick future cipher suites when asked for TLS1.0");
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {

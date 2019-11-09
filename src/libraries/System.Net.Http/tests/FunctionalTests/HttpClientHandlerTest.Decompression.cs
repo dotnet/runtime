@@ -117,13 +117,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
-            if (IsCurlHandler && encodingName == "br")
-            {
-                // 'Content-Encoding' response header with Brotli causes error
-                // with some Linux distros of libcurl.
-                return;
-            }
-
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
 
@@ -213,12 +206,6 @@ namespace System.Net.Http.Functional.Tests
             string encodings,
             string manualAcceptEncodingHeaderValues)
         {
-            if (IsCurlHandler)
-            {
-                // Skip these tests on CurlHandler, dotnet/corefx #29905.
-                return;
-            }
-
             if (!UseSocketsHttpHandler &&
                 (encodings.Contains("br") || manualAcceptEncodingHeaderValues.Contains("br")))
             {

@@ -5,7 +5,7 @@
 namespace System.Net.Http
 {
     /// <summary>
-    /// Defines names of DiagnosticListener and Write events for WinHttpHandler, CurlHandler, and HttpHandlerToFilter.
+    /// Defines names of DiagnosticListener and Write events for DiagnosticHandler
     /// </summary>
     internal static class DiagnosticsHandlerLoggingStrings
     {

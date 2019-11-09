@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient())
             {
-                Assert.Equal(PlatformDetection.IsInAppContainer ? new Version(2, 0) : new Version(1, 1), client.DefaultRequestVersion);
+                Assert.Equal(HttpVersion.Version11, client.DefaultRequestVersion);
                 Assert.Same(client.DefaultRequestVersion, client.DefaultRequestVersion);
             }
         }

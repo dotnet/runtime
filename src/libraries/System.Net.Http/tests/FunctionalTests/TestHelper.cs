@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
             object socketsHttpHandler = socketsHttpHandlerField.GetValue(handler);
             if (socketsHttpHandler == null)
             {
-                // Not using SocketsHttpHandler, i.e. using WinHttpHandler or CurlHandler.
+                // Not using SocketsHttpHandler, e.g. using WinHttpHandler.
                 return;
             }
 

@@ -1616,7 +1616,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    SetDefaultRequestVersion(client, HttpVersion.Version20);
+                    client.DefaultRequestVersion = HttpVersion.Version20;
                     Task<string> request1 = client.GetStringAsync(url);
 
                     Http2LoopbackConnection connection = await server.EstablishConnectionAsync();

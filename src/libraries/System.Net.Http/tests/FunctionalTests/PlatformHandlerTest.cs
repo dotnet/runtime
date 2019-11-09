@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)] // Curl has issues with trailing headers https://github.com/curl/curl/issues/1354
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task GetAsync_TrailingHeaders_Ignored(bool includeTrailerHeader)
         {
            await LoopbackServer.CreateServerAsync(async (server, url) =>

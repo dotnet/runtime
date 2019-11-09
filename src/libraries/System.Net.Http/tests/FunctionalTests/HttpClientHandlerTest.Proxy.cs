@@ -67,13 +67,6 @@ namespace System.Net.Http.Functional.Tests
             bool secureServer,
             bool proxyClosesConnectionAfterFirst407Response)
         {
-            if (PlatformDetection.IsFedora && IsCurlHandler)
-            {
-                // CurlHandler seems unstable on Fedora26 and returns error
-                // "System.Net.Http.CurlException : Failure when receiving data from the peer".
-                return;
-            }
-
             if (PlatformDetection.IsWindowsNanoServer && IsWinHttpHandler && proxyAuthScheme == AuthenticationSchemes.Digest)
             {
                 // WinHTTP doesn't support Digest very well and is disabled on Nano.
@@ -87,12 +80,6 @@ namespace System.Net.Http.Functional.Tests
                 // System.Net.Security.NegotiateStreamPal.AcquireCredentialsHandle():
                 //        "GSSAPI operation failed with error - An invalid status code was supplied
                 //         Configuration file does not specify default realm)."
-                return;
-            }
-
-            if (IsCurlHandler && proxyAuthScheme != AuthenticationSchemes.Basic)
-            {
-                // Issue #27870 curl HttpHandler can only do basic auth to proxy.
                 return;
             }
 
@@ -193,9 +180,8 @@ namespace System.Net.Http.Functional.Tests
                             _output.WriteLine($"expectedAuth={expectedAuth}");
                             string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
 
-                            // Check last request to proxy server. CurlHandler will use pre-auth for Basic proxy auth,
-                            // so there might only be 1 request received by the proxy server. Other handlers won't use
-                            // pre-auth for proxy so there would be 2 requests.
+                            // Check last request to proxy server. Handlers that don't use
+                            // pre-auth for proxy will make 2 requests.
                             int requestCount = proxyServer.Requests.Count;
                             _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
                             Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
@@ -249,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
 
-                Type expectedType = IsNetfxHandler || UseSocketsHttpHandler ?
+                Type expectedType = UseSocketsHttpHandler ?
                     typeof(NotSupportedException) :
                     typeof(HttpRequestException);
 
@@ -261,13 +247,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Proxy_SendSecureRequestThruProxy_ConnectTunnelUsed()
         {
-            if (PlatformDetection.IsFedora && IsCurlHandler)
-            {
-                // CurlHandler seems unstable on Fedora26 and returns error
-                // "System.Net.Http.CurlException : Failure when receiving data from the peer".
-                return;
-            }
-
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -285,12 +264,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public async Task ProxyAuth_Digest_Succeeds()
         {
-            if (IsCurlHandler)
-            {
-                // Issue #27870 CurlHandler can only do basic auth to proxy.
-                return;
-            }
-
             const string expectedUsername = "testusername";
             const string expectedPassword = "testpassword";
             const string authHeader = "Proxy-Authenticate: Digest realm=\"NetCore\", nonce=\"PwOnWgAAAAAAjnbW438AAJSQi1kAAAAA\", qop=\"auth\", stale=false\r\n";

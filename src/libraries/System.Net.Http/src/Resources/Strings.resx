@@ -276,12 +276,6 @@
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
   </data>
-  <data name="net_http_unix_invalid_credential" xml:space="preserve">
-    <value>The libcurl library in use ({0}) does not support different credentials for different authentication schemes.</value>
-  </data>
-  <data name="net_http_unix_https_support_unavailable_libcurl" xml:space="preserve">
-    <value>The libcurl library in use ({0}) does not support HTTPS.</value>
-  </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
@@ -389,21 +383,6 @@
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed stream.</value>
-  </data>
-  <data name="net_http_libcurl_callback_notsupported_sslbackend" xml:space="preserve">
-    <value>The handler does not support custom handling of certificates with this combination of libcurl ({0}) and its SSL backend ("{1}"). An SSL backend based on "{2}" is required. Consider using System.Net.Http.SocketsHttpHandler.</value>
-  </data>
-  <data name="net_http_libcurl_callback_notsupported_os" xml:space="preserve">
-    <value>The handler does not support custom handling of certificates on this operating system. Consider using System.Net.Http.SocketsHttpHandler.</value>
-  </data>
-  <data name="net_http_libcurl_clientcerts_notsupported_sslbackend" xml:space="preserve">
-    <value>The handler does not support client authentication certificates with this combination of libcurl ({0}) and its SSL backend ("{1}"). An SSL backend based on "{2}" is required. Consider using System.Net.Http.SocketsHttpHandler.</value>
-  </data>
-  <data name="net_http_libcurl_clientcerts_notsupported_os" xml:space="preserve">
-    <value>The handler does not support client authentication certificates on this operating system. Consider using System.Net.Http.SocketsHttpHandler.</value>
-  </data>
-  <data name="net_http_libcurl_revocation_notsupported_sslbackend" xml:space="preserve">
-    <value>The handler does not support changing revocation settings with this combination of libcurl ({0}) and its SSL backend ("{1}"). An SSL backend based on "{2}" is required. Consider using System.Net.Http.SocketsHttpHandler.</value>
   </data>
   <data name="net_http_feature_requires_Windows10Version1607" xml:space="preserve">
     <value>Using this feature requires Windows 10 Version 1607.</value>

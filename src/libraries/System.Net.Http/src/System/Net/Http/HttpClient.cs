@@ -604,8 +604,8 @@ namespace System.Net.Http
             // left for the finalizer to handle, or the developer can explicitly dispose of the
             // content when they're done with it.  But it allows request content to be reused,
             // and more importantly it enables handlers that allow receiving of the response before
-            // fully sending the request.  Prior to this change, a handler like CurlHandler would
-            // fail trying to access certain sites, if the site sent its response before it had
+            // fully sending the request.  Prior to this change, a handler that supported duplex communication
+            // would fail trying to access certain sites, if the site sent its response before it had
             // completely received the request: CurlHandler might then find that the request content
             // was disposed of while it still needed to read from it.
         }

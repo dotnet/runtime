@@ -206,13 +206,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
-            if (IsCurlHandler)
-            {
-                // CurlHandler ignores container cookies when custom Cookie header is set.
-                // SocketsHttpHandler behaves the expected way. Not worth fixing in CurlHandler as it is going away.
-                throw new SkipTestException("Platform limitation with curl");
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -240,13 +233,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent()
         {
-            if (IsCurlHandler)
-            {
-                // CurlHandler ignores container cookies when custom Cookie header is set.
-                // SocketsHttpHandler behaves the expected way. Not worth fixing in CurlHandler as it is going away.
-                throw new SkipTestException("Platform limitation with curl");
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -453,12 +439,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ReceiveInvalidSetCookieHeader_ValidCookiesAdded()
         {
-            if (IsNetfxHandler)
-            {
-                // NetfxHandler incorrectly only processes one valid cookie
-                return;
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();

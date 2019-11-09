@@ -188,12 +188,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
-            if (IsCurlHandler)
-            {
-                // doesn't cancel
-                return;
-            }
-
             if (LoopbackServerFactory.IsHttp2 && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2
@@ -253,13 +247,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
-            if (IsCurlHandler)
-            {
-                // Issue #27065
-                // throws OperationCanceledException from Stream.CopyToAsync/ReadAsync
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -327,12 +314,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (IsCurlHandler)
-            {
-                // With CurlHandler, this test sometimes hangs.
-                throw new SkipTestException("Skipping on unstable platform handler");
-            }
-
             if (LoopbackServerFactory.IsHttp2)
             {
                 // HTTP/2 does not use connection limits.

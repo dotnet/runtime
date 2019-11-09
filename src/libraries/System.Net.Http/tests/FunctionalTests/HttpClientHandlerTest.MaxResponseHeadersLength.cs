@@ -61,12 +61,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task InfiniteSingleHeader_ThrowsException()
         {
-            if (IsCurlHandler)
-            {
-                // libcurl fails with an out of memory error
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -106,12 +100,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(ResponseWithManyHeadersData))]
         public async Task ThresholdExceeded_ThrowsException(string responseHeaders, int? maxResponseHeadersLength, bool shouldSucceed)
         {
-            if (IsCurlHandler)
-            {
-                // libcurl often fails with out of memory errors
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())

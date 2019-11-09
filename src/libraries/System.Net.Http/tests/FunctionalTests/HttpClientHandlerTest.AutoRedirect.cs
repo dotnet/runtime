@@ -95,13 +95,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
-            if (IsCurlHandler && statusCode == 300 && oldMethod == "POST")
-            {
-                // Known behavior: curl does not change method to "GET"
-                // https://github.com/dotnet/corefx/issues/26434
-                newMethod = "POST";
-            }
-
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
@@ -151,13 +144,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(303)]
         public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(int statusCode)
         {
-            if (IsCurlHandler && statusCode == 300)
-            {
-                // ISSUE #26434:
-                // CurlHandler doesn't change POST to GET for 300 response (see above test).
-                return;
-            }
-
             if (IsWinHttpHandler)
             {
                 // ISSUE #27440:
@@ -296,7 +282,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
             // [ActiveIssue(24819, TestPlatforms.Windows)]
-            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore && !UseSocketsHttpHandler)
+            if (IsWinHttpHandler)
             {
                 return;
             }
@@ -455,12 +441,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate(
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
-            if (IsCurlHandler)
-            {
-                // libcurl doesn't append fragment component to CURLINFO_EFFECTIVE_URL after redirect
-                return;
-            }
-
             if (IsWinHttpHandler)
             {
                 // According to https://tools.ietf.org/html/rfc7231#section-7.1.2,
@@ -580,21 +560,13 @@ namespace System.Net.Http.Functional.Tests
             credentialCache.Add(uri, "Basic", _credential);
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            if (PlatformDetection.IsInAppContainer)
+            handler.Credentials = credentialCache;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                // UWP does not support CredentialCache for Credentials.
-                Assert.Throws<PlatformNotSupportedException>(() => handler.Credentials = credentialCache);
-            }
-            else
-            {
-                handler.Credentials = credentialCache;
-                using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+                using (HttpResponseMessage response = await client.GetAsync(redirectUri))
                 {
-                    using (HttpResponseMessage response = await client.GetAsync(redirectUri))
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        Assert.Equal(uri, response.RequestMessage.RequestUri);
-                    }
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
                 }
             }
         }

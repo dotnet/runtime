@@ -37,11 +37,10 @@ components
 * libc6-dev
 * libssl-dev
 * libkrb5-dev
-* libcurl4-openssl-dev
 * zlib1g-dev
 
 `sudo apt-get install git clang-9 cmake make libc6-dev libssl-dev libkrb5-dev
-libcurl4-openssl-dev zlib1g-dev`
+zlib1g-dev`
 
 #### Managed build
 

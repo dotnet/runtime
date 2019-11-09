@@ -24,8 +24,6 @@ namespace System.Net.Http.Functional.Tests
         protected virtual bool UseHttp2 => false;
 
         protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows;
-        protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
-        protected bool IsNetfxHandler => false;
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
@@ -38,40 +36,25 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
-        protected HttpClient CreateHttpClient(HttpMessageHandler handler)
-        {
-            var client = new HttpClient(handler);
-            SetDefaultRequestVersion(client, VersionFromUseHttp2);
-            return client;
-        }
+        protected HttpClient CreateHttpClient(HttpMessageHandler handler) =>
+            new HttpClient(handler) { DefaultRequestVersion = VersionFromUseHttp2 };
 
         protected static HttpClient CreateHttpClient(string useSocketsHttpHandlerBoolString, string useHttp2String) =>
             CreateHttpClient(CreateHttpClientHandler(useSocketsHttpHandlerBoolString, useHttp2String), useHttp2String);
 
-        protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useHttp2String)
-        {
-            var client = new HttpClient(handler);
-            SetDefaultRequestVersion(client, GetVersion(bool.Parse(useHttp2String)));
-            return client;
-        }
+        protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useHttp2String) =>
+            new HttpClient(handler) { DefaultRequestVersion = GetVersion(bool.Parse(useHttp2String)) };
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler, UseHttp2);
 
         protected static HttpClientHandler CreateHttpClientHandler(string useSocketsHttpHandlerBoolString, string useHttp2LoopbackServerString) =>
             CreateHttpClientHandler(bool.Parse(useSocketsHttpHandlerBoolString), bool.Parse(useHttp2LoopbackServerString));
 
-        protected static void SetDefaultRequestVersion(HttpClient client, Version version)
-        {
-            PropertyInfo pi = client.GetType().GetProperty("DefaultRequestVersion", BindingFlags.Public | BindingFlags.Instance);
-            Debug.Assert(pi != null || !PlatformDetection.IsNetCore);
-            pi?.SetValue(client, version);
-        }
-
         protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler, bool useHttp2LoopbackServer = false)
         {
             HttpClientHandler handler;
 
-            if (PlatformDetection.IsInAppContainer || useSocketsHttpHandler)
+            if (useSocketsHttpHandler)
             {
                 handler = new HttpClientHandler();
             }
@@ -130,9 +113,7 @@ namespace System.Net.Http.Functional.Tests
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }
 
-            var client = new HttpClient(wrappedHandler);
-            SetDefaultRequestVersion(client, remoteServer.HttpVersion);
-            return client;
+            return new HttpClient(wrappedHandler) { DefaultRequestVersion = remoteServer.HttpVersion };
         }
 
         private sealed class VersionCheckerHttpHandler : DelegatingHandler

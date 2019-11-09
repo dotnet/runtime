@@ -274,9 +274,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            // On macOS (libcurl+darwinssl) we cannot turn revocation off.
-            // But we also can't realistically say that the default value for
-            // CheckCertificateRevocationList throws in the general case.
             try
             {
                 using (HttpClient client = CreateHttpClient())

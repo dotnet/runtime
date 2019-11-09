@@ -75,7 +75,7 @@ build /p:BuildNative=false
 build -clean
 ```
 ### Build Native
-The native build produces shims over libc, openssl, gssapi, libcurl and libz.
+The native build produces shims over libc, openssl, gssapi, and libz.
 The build system uses CMake to generate Makefiles using clang.
 The build also uses git for generating some version information.
 

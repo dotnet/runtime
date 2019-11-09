@@ -751,14 +751,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
-            if (IsCurlHandler)
-            {
-                // The only way to throw a synchronous exception for CurlHandler through
-                // DiagnosticHandler is when the Request uri scheme is Https, and the
-                // backend doesn't support SSL.
-                return;
-            }
-
             RemoteExecutor.Invoke((useSocketsHttpHandlerString, useHttp2String) =>
             {
                 bool exceptionLogged = false;
@@ -1135,14 +1127,7 @@ namespace System.Net.Http.Functional.Tests
                         // Getting the Task first from the .SendAsync() call also tests
                         // that the exception comes from the async Task path.
                         Task t = handler.SendAsync(null);
-                        if (PlatformDetection.IsInAppContainer)
-                        {
-                            await Assert.ThrowsAsync<HttpRequestException>(() => t);
-                        }
-                        else
-                        {
-                            await Assert.ThrowsAsync<ArgumentNullException>(() => t);
-                        }
+                        await Assert.ThrowsAsync<ArgumentNullException>(() => t);
                     }
                 }
 

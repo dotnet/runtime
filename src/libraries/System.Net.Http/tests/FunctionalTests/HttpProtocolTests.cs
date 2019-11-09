@@ -167,7 +167,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(7)]
         public async Task GetAsync_ResponseUnknownVersion1X_Success(int responseMinorVersion)
         {
-            bool reportAs11 = false;
             bool reportAs00 = !UseSocketsHttpHandler;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -186,12 +185,7 @@ namespace System.Net.Http.Functional.Tests
 
                     using (HttpResponseMessage response = await getResponseTask)
                     {
-                        if (reportAs11)
-                        {
-                            Assert.Equal(1, response.Version.Major);
-                            Assert.Equal(1, response.Version.Minor);
-                        }
-                        else if (reportAs00)
+                        if (reportAs00)
                         {
                             Assert.Equal(0, response.Version.Major);
                             Assert.Equal(0, response.Version.Minor);
@@ -251,24 +245,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(4, 2)]
         public async Task GetAsyncVersion11_BadResponseVersion_ThrowsOr00(int responseMajorVersion, int responseMinorVersion)
         {
-            // Full framework reports 1.0 or 1.1, depending on minor version, instead of throwing
-            bool reportAs1X = false;
-
-            // CurlHandler reports these as 0.0, except for 2.0 which is reported as 2.0, instead of throwing.
-            bool reportAs00 = false;
-            bool reportAs20 = false;
-            if (!PlatformDetection.IsWindows && !UseSocketsHttpHandler)
-            {
-                if (responseMajorVersion == 2 && responseMinorVersion == 0)
-                {
-                    reportAs20 = true;
-                }
-                else
-                {
-                    reportAs00 = true;
-                }
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -281,40 +257,7 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
-                    if (reportAs00)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                        using (HttpResponseMessage response = await getResponseTask)
-                        {
-                            Assert.Equal(0, response.Version.Major);
-                            Assert.Equal(0, response.Version.Minor);
-                        }
-                    }
-                    else if (reportAs20)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                        using (HttpResponseMessage response = await getResponseTask)
-                        {
-                            Assert.Equal(2, response.Version.Major);
-                            Assert.Equal(0, response.Version.Minor);
-                        }
-                    }
-                    else if (reportAs1X)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                        using (HttpResponseMessage response = await getResponseTask)
-                        {
-                            Assert.Equal(1, response.Version.Major);
-                            Assert.Equal(responseMinorVersion == 0 ? 0 : 1, response.Version.Minor);
-                        }
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
-                    }
+                    await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
         }
@@ -355,7 +298,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-                // WinRT, WinHttpHandler, and CurlHandler will trim space characters.
+                // WinHttpHandler will trim space characters.
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonNoSpace);
             }
         }
@@ -364,8 +307,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 200", 200, "")] // This test data requires the fix in .NET Framework 4.7.3
         [InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
         [InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
-        // Only CurlHandler will trim the '\t' at the end and causing failure.
-        // [InlineData("HTTP/1.1 999 this\ttoo\t", 999, "this\ttoo\t")]
         public async Task GetAsync_StatusLineNotFollowRFC_SuccessOnCore(string statusLine, int expectedStatusCode, string expectedReason)
         {
             await GetAsyncSuccessHelper(statusLine, expectedStatusCode, expectedReason);
@@ -401,44 +342,32 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/A.1 200 OK";
             yield return "HTTP/X.Y.Z 200 OK";
 
-            // Only pass on .NET Core Windows & SocketsHttpHandler.
-            if (PlatformDetection.IsNetCore && !PlatformDetection.IsInAppContainer && PlatformDetection.IsWindows)
-            {
-                yield return "HTTP/0.1 200 OK";
-                yield return "HTTP/3.5 200 OK";
-                yield return "HTTP/1.12 200 OK";
-                yield return "HTTP/12.1 200 OK";
-                yield return "HTTP/1.1 200 O\rK";
-            }
+            yield return "HTTP/0.1 200 OK";
+            yield return "HTTP/3.5 200 OK";
+            yield return "HTTP/1.12 200 OK";
+            yield return "HTTP/12.1 200 OK";
+            yield return "HTTP/1.1 200 O\rK";
 
-            // Skip these test cases on CurlHandler since the behavior is different.
-            if (PlatformDetection.IsWindows)
-            {
-                yield return "HTTP/1.A 200 OK";
-                yield return "HTTP/1.1 ";
-                yield return "HTTP/1.1 !11";
-                yield return "HTTP/1.1 a11";
-                yield return "HTTP/1.1 abc";
-                yield return "HTTP/1.1\t\t";
-                yield return "HTTP/1.1\t";
-                yield return "HTTP/1.1  ";
-            }
+            yield return "HTTP/1.A 200 OK";
+            yield return "HTTP/1.1 ";
+            yield return "HTTP/1.1 !11";
+            yield return "HTTP/1.1 a11";
+            yield return "HTTP/1.1 abc";
+            yield return "HTTP/1.1\t\t";
+            yield return "HTTP/1.1\t";
+            yield return "HTTP/1.1  ";
 
             yield return "HTTP/1.1 200OK";
             yield return "HTTP/1.1 20c";
             yield return "HTTP/1.1 23";
             yield return "HTTP/1.1 2bc";
 
-            // Skip these test cases on CurlHandler since the behavior is different.
-            if (PlatformDetection.IsWindows)
-            {
-                yield return "NOTHTTP/1.1";
-                yield return "HTTP 1.1 200 OK";
-                yield return "ABCD/1.1 200 OK";
-                yield return "HTTP/1.1";
-                yield return "HTTP\\1.1 200 OK";
-                yield return "NOTHTTP/1.1 200 OK";
-            }
+            yield return "NOTHTTP/1.1";
+            yield return "HTTP 1.1 200 OK";
+            yield return "ABCD/1.1 200 OK";
+            yield return "HTTP/1.1";
+            yield return "HTTP\\1.1 200 OK";
+            yield return "NOTHTTP/1.1 200 OK";
         }
 
         public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
@@ -453,19 +382,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ReasonPhraseHasLF_BehaviorDifference()
         {
-            string responseString = "HTTP/1.1 200 O\n";
-            int expectedStatusCode = 200;
-            string expectedReason = "O";
-
-            if (IsNetfxHandler)
-            {
-                // .NET Framework will throw HttpRequestException.
-                await GetAsyncThrowsExceptionHelper(responseString);
-            }
-            else
-            {
-                await GetAsyncSuccessHelper(responseString, expectedStatusCode, expectedReason);
-            }
+            await GetAsyncSuccessHelper("HTTP/1.1 200 O\n", 200, "O");
         }
 
         [Theory]
@@ -479,7 +396,7 @@ namespace System.Net.Http.Functional.Tests
                 // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
                 await GetAsyncThrowsExceptionHelper(responseString);
             }
-            // WinRT, WinHttpHandler, and CurlHandler will succeed.
+            // WinHttpHandler will succeed.
         }
 
         private async Task GetAsyncThrowsExceptionHelper(string responseString)
@@ -605,12 +522,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("SometHING", "SometHING")]
         public async Task CustomMethod_SentUppercasedIfKnown(string specifiedMethod, string expectedMethod)
         {
-            if (IsCurlHandler && specifiedMethod == "get")
-            {
-                // CurlHandler doesn't special-case "get" and sends it in the original casing.
-                expectedMethod = specifiedMethod;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())

@@ -28,12 +28,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
         {
-            if (IsCurlHandler)
-            {
-                // CurlHandler rewinds the stream at the end: https://github.com/dotnet/corefx/issues/23782
-                return;
-            }
-
             const string requestBody = "ABC";
 
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))

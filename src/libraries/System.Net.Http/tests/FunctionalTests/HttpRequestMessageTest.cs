@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpRequestMessageTest : HttpClientHandlerTestBase
     {
-        private readonly Version _expectedRequestMessageVersion = PlatformDetection.IsInAppContainer ? new Version(2,0) : new Version(1, 1);
+        private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;
 
         public HttpRequestMessageTest(ITestOutputHelper output) : base(output) { }
 
@@ -224,7 +224,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HEAD")]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
-            if (IsWinHttpHandler || IsNetfxHandler)
+            if (IsWinHttpHandler)
             {
                 // Some platform handlers differ but we don't take it as failure.
                 return;

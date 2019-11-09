@@ -50,11 +50,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            // Digest authentication does not work with domain credentials on CurlHandler. This is blocked by the behavior of LibCurl.
-            NetworkCredential credentials = (IsCurlHandler && authenticateHeader.ToLowerInvariant().Contains("digest")) ?
-                s_credentialsNoDomain :
-                s_credentials;
-
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -65,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
                     server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, serverAuthenticateHeader);
 
                 await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(TestHelper.PassingTestTimeoutMilliseconds,
-                    CreateAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, credentials), serverTask);
+                    CreateAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, s_credentials), serverTask);
             }, options);
         }
 
@@ -90,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
         public async Task HttpClientHandler_MultipleAuthenticateHeaders_Succeeds(string authenticateHeader)
         {
-            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
+            if (PlatformDetection.IsWindowsNanoServer)
             {
                 // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
@@ -110,7 +105,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: NTLM\r\n", "Digest", "Negotiate")]
         public async Task HttpClientHandler_MultipleAuthenticateHeaders_PicksSupported(string authenticateHeader, string supportedAuth, string unsupportedAuth)
         {
-            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
+            if (PlatformDetection.IsWindowsNanoServer)
             {
                 // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
@@ -159,13 +154,9 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { $"Basic realm=\"testrealm\", " +
                     $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}"))}\", algorithm=MD5", true };
 
-            if (PlatformDetection.IsNetCore)
-            {
-                // TODO: #28060: Fix failing authentication test cases on Framework run.
-                yield return new object[] { "Basic something, Digest something", false };
-                yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=MD5 " +
-                    $"Basic realm=\"testrealm\"", false };
-            }
+            yield return new object[] { "Basic something, Digest something", false };
+            yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=MD5 " +
+                $"Basic realm=\"testrealm\"", false };
         }
 
         [Theory]
@@ -177,13 +168,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Negotiate")]
         public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string credCacheScheme)
         {
-            if (IsCurlHandler && credCacheScheme != null)
-            {
-                // When provided with a credential that targets just one auth scheme,
-                // libcurl will often proactively send an auth header.
-                return;
-            }
-
             const int NumRequests = 3;
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -226,13 +210,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Basic", "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string credCacheScheme, string authResponse)
         {
-            if (IsCurlHandler && credCacheScheme != null)
-            {
-                // When provided with a credential that targets just one auth scheme,
-                // libcurl will often proactively send an auth header.
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -439,13 +416,6 @@ namespace System.Net.Http.Functional.Tests
                 // Third request, contains Basic auth header but challenges anyway
                 headers = headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, "WWW-Authenticate: Basic realm=\"hello\"\r\n");
                 Assert.Contains(headers, header => header.Contains("Authorization"));
-
-                if (IsNetfxHandler)
-                {
-                    // For some reason, netfx tries one more time.
-                    headers = headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, "WWW-Authenticate: Basic realm=\"hello\"\r\n");
-                    Assert.Contains(headers, header => header.Contains("Authorization"));
-                }
             });
         }
 
@@ -455,13 +425,6 @@ namespace System.Net.Http.Functional.Tests
             if (IsWinHttpHandler)
             {
                 // WinHttpHandler fails with Unauthorized after the basic preauth fails.
-                return;
-            }
-
-            if (IsCurlHandler)
-            {
-                // When provided with a credential that targets just one auth scheme,
-                // libcurl will often proactively send an auth header.
                 return;
             }
 
@@ -503,16 +466,14 @@ namespace System.Net.Http.Functional.Tests
             string server = Configuration.Http.WindowsServerHttpHost;
             string authEndPoint = "showidentity.ashx";
 
-            yield return new object[] { $"http://{server}/test/auth/ntlm/{authEndPoint}", false };
-            yield return new object[] { $"https://{server}/test/auth/ntlm/{authEndPoint}", false };
+            yield return new object[] { $"http://{server}/test/auth/ntlm/{authEndPoint}" };
+            yield return new object[] { $"https://{server}/test/auth/ntlm/{authEndPoint}" };
 
-            // Curlhandler (due to libcurl bug) cannot do Negotiate (SPNEGO) Kerberos to NTLM fallback.
-            yield return new object[] { $"http://{server}/test/auth/negotiate/{authEndPoint}", true };
-            yield return new object[] { $"https://{server}/test/auth/negotiate/{authEndPoint}", true };
+            yield return new object[] { $"http://{server}/test/auth/negotiate/{authEndPoint}" };
+            yield return new object[] { $"https://{server}/test/auth/negotiate/{authEndPoint}" };
 
             // Server requires TLS channel binding token (cbt) with NTLM authentication.
-            // CurlHandler (due to libcurl bug) cannot do NTLM authentication with cbt.
-            yield return new object[] { $"https://{server}/test/auth/ntlm-epa/{authEndPoint}", true };
+            yield return new object[] { $"https://{server}/test/auth/ntlm-epa/{authEndPoint}" };
         }
 
         private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
@@ -575,11 +536,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
         public async Task Credentials_DomainJoinedServerUsesKerberos_Success()
         {
-            if (IsCurlHandler)
-            {
-                throw new SkipTestException("Skipping test on CurlHandler (libCurl)");
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -598,7 +554,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
         public async Task Credentials_DomainJoinedServerUsesKerberos_UseIpAddressAndHostHeader_Success()
         {
-            if (IsCurlHandler || IsWinHttpHandler)
+            if (IsWinHttpHandler)
             {
                 throw new SkipTestException("Skipping test on platform handlers (CurlHandler, WinHttpHandler)");
             }
@@ -628,13 +584,8 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(nameof(IsNtlmInstalled), nameof(IsWindowsServerAvailable))]
         [MemberData(nameof(ServerUsesWindowsAuthentication_MemberData))]
-        public async Task Credentials_ServerUsesWindowsAuthentication_Success(string server, bool skipOnCurlHandler)
+        public async Task Credentials_ServerUsesWindowsAuthentication_Success(string server)
         {
-            if (IsCurlHandler && skipOnCurlHandler)
-            {
-                throw new SkipTestException("CurlHandler (libCurl) doesn't handle Negotiate with NTLM fallback nor CBT");
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -656,11 +607,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Negotiate")]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
         {
-            if (authScheme == "Negotiate" && IsCurlHandler)
-            {
-                throw new SkipTestException("CurlHandler (libCurl) doesn't handle Negotiate with NTLM fallback");
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
