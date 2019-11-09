@@ -18,7 +18,7 @@
     "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.19557.1",
     "Microsoft.DotNet.CoreFxTesting": "5.0.0-beta.19557.1",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
-    "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19557.2",
+    "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19558.3",
     "Microsoft.Build.NoTargets": "1.0.53",
     "Microsoft.Build.Traversal": "2.0.2"
   }

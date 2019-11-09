@@ -28,17 +28,17 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>94a60d5238f654ab22f162ad3d6dac01adcdaeb8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19557.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19558.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>0e97c7389d70551ff4179b922b700d9ff41eded3</Sha>
+      <Sha>a0bbdf98efd5b96c041d8b49d2a61d0ce5bf3212</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19557.2">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19558.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>0e97c7389d70551ff4179b922b700d9ff41eded3</Sha>
+      <Sha>a0bbdf98efd5b96c041d8b49d2a61d0ce5bf3212</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha1.19557.2">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha1.19558.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>0e97c7389d70551ff4179b922b700d9ff41eded3</Sha>
+      <Sha>a0bbdf98efd5b96c041d8b49d2a61d0ce5bf3212</Sha>
     </Dependency>
     <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha.1.19557.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
