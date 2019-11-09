@@ -27,7 +27,6 @@ namespace System.ServiceProcess
         private IntPtr _statusHandle;
         private ServiceControlCallbackEx _commandCallbackEx;
         private ServiceMainCallback _mainCallback;
-        private IntPtr _handleName;
         private ManualResetEvent _startCompletedSignal;
         private ExceptionDispatchInfo _startFailedException;
         private int _acceptedCommands;
@@ -308,12 +307,6 @@ namespace System.ServiceProcess
         /// </devdoc>
         protected override void Dispose(bool disposing)
         {
-            if (_handleName != (IntPtr)0)
-            {
-                Marshal.FreeHGlobal(_handleName);
-                _handleName = (IntPtr)0;
-            }
-
             _nameFrozen = false;
             _commandPropsFrozen = false;
             _disposed = true;
@@ -594,34 +587,27 @@ namespace System.ServiceProcess
         ///       contains multiple associated services. Loads the specified services into memory so they can be
         ///       started.</para>
         /// </devdoc>
-        public static void Run(ServiceBase[] services)
+        public static unsafe void Run(ServiceBase[] services)
         {
             if (services == null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
-            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();
-
-            IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeOfSERVICE_TABLE_ENTRY));
+            IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeof(SERVICE_TABLE_ENTRY)));
+            Span<SERVICE_TABLE_ENTRY> entries = new Span<SERVICE_TABLE_ENTRY>((void*)entriesPointer, services.Length + 1);
+            entries.Clear();
             try
             {
-                SERVICE_TABLE_ENTRY[] entries = new SERVICE_TABLE_ENTRY[services.Length];
                 bool multipleServices = services.Length > 1;
-                IntPtr structPtr;
 
+                // The members of the last entry in the table must have NULL values to designate the end of the table.
+                // Leave the last element in the entries span to be zeroed out.
                 for (int index = 0; index < services.Length; ++index)
                 {
-                    services[index].Initialize(multipleServices);
-                    entries[index] = services[index].GetEntry();
-                    structPtr = entriesPointer + sizeOfSERVICE_TABLE_ENTRY * index;
-                    Marshal.StructureToPtr(entries[index], structPtr, fDeleteOld: false);
+                    ServiceBase service = services[index];
+                    service.Initialize(multipleServices);
+                    // This method allocates on unmanaged heap; Make sure that the contents are freed after use.
+                    entries[index] = service.GetEntry();
                 }
-
-                SERVICE_TABLE_ENTRY lastEntry = new SERVICE_TABLE_ENTRY();
-
-                lastEntry.callback = null;
-                lastEntry.name = (IntPtr)0;
-                structPtr = entriesPointer + sizeOfSERVICE_TABLE_ENTRY * services.Length;
-                Marshal.StructureToPtr(lastEntry, structPtr, fDeleteOld: false);
 
                 // While the service is running, this function will never return. It will return when the service
                 // is stopped.
@@ -659,6 +645,13 @@ namespace System.ServiceProcess
             }
             finally
             {
+                // Free the pointer to the name of the service on the unmanaged heap.
+                for (int i = 0; i < entries.Length; i++)
+                {
+                    Marshal.FreeHGlobal(entries[i].name);
+                }
+
+                // Free the unmanaged array containing the entries.
                 Marshal.FreeHGlobal(entriesPointer);
             }
         }
@@ -708,20 +701,21 @@ namespace System.ServiceProcess
 
                 _mainCallback = new ServiceMainCallback(this.ServiceMainCallback);
                 _commandCallbackEx = new ServiceControlCallbackEx(this.ServiceCommandCallbackEx);
-                _handleName = Marshal.StringToHGlobalUni(this.ServiceName);
 
                 _initialized = true;
             }
         }
 
+        // Make sure that the name field is freed after use. We allocate a new string to avoid holding one central handle,
+        // which may lead to dangling pointer if Dispose is called in other thread.
         private SERVICE_TABLE_ENTRY GetEntry()
         {
-            SERVICE_TABLE_ENTRY entry = new SERVICE_TABLE_ENTRY();
-
             _nameFrozen = true;
-            entry.callback = _mainCallback;
-            entry.name = _handleName;
-            return entry;
+            return new SERVICE_TABLE_ENTRY()
+            {
+                callback = Marshal.GetFunctionPointerForDelegate(_mainCallback),
+                name = Marshal.StringToHGlobalUni(_serviceName)
+            };
         }
 
         private int ServiceCommandCallbackEx(int command, int eventType, IntPtr eventData, IntPtr eventContext)

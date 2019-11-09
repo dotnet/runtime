@@ -15,7 +15,7 @@ internal partial class Interop
         public struct SERVICE_TABLE_ENTRY
         {
             public IntPtr name;
-            public ServiceMainCallback callback;
+            public IntPtr callback;
         }
     }
 }
