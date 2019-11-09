@@ -30,7 +30,7 @@ namespace System.Text
     // used mostly to distinguish UTF-8 text from other encodings, and doesn't
     // switch the byte orderings.
 
-    public class UTF8Encoding : Encoding
+    public partial class UTF8Encoding : Encoding
     {
         /*
             bytes   bits    UTF-8 representation
@@ -47,13 +47,15 @@ namespace System.Text
 
         private const int UTF8_CODEPAGE = 65001;
 
-        // Allow for de-virtualization (see https://github.com/dotnet/coreclr/pull/9230)
-        internal sealed class UTF8EncodingSealed : UTF8Encoding
-        {
-            public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
+        /// <summary>
+        /// Transcoding to UTF-8 bytes from UTF-16 input chars will result in a maximum 3:1 expansion.
+        /// </summary>
+        /// <remarks>
+        /// Supplementary code points are expanded to UTF-8 from UTF-16 at a 4:2 ratio,
+        /// so 3:1 is still the correct value for maximum expansion.
+        /// </remarks>
+        private const int MaxUtf8BytesPerChar = 3;
 
-            public override ReadOnlySpan<byte> Preamble => _emitUTF8Identifier ? PreambleSpan : default;
-        }
 
         // Used by Encoding.UTF8 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -63,7 +65,7 @@ namespace System.Text
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        internal readonly bool _emitUTF8Identifier = false;
+        private readonly bool _emitUTF8Identifier = false;
 
         private readonly bool _isThrowException = false;
 
@@ -786,8 +788,7 @@ namespace System.Text
             if (EncoderFallback.MaxCharCount > 1)
                 byteCount *= EncoderFallback.MaxCharCount;
 
-            // Max 3 bytes per char.  (4 bytes per 2 chars for surrogates)
-            byteCount *= 3;
+            byteCount *= MaxUtf8BytesPerChar;
 
             if (byteCount > 0x7fffffff)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
