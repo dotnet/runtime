@@ -738,7 +738,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
+        internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
             IntPtr resolvedDll = IntPtr.Zero;
 
