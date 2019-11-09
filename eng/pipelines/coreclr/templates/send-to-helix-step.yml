@@ -24,7 +24,7 @@ parameters:
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
-  - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects ${{ parameters.coreClrRepoRoot }}\eng\empty.csproj
+  - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
     displayName: Restore blob feed tasks
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
@@ -58,7 +58,7 @@ steps:
 
 - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
-  - script: $(Build.SourcesDirectory)/eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects ${{ parameters.coreClrRepoRoot }}/eng/empty.csproj
+  - script: $(Build.SourcesDirectory)/eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.csproj
     displayName: Restore blob feed tasks
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
