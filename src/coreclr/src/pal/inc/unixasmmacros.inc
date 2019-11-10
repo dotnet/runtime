@@ -20,6 +20,8 @@
 
 #if defined(__APPLE__)
 #define C_PLTFUNC(name) _##name
+#elif defined(_ARM64_)
+#define C_PLTFUNC(name) name
 #else
 #define C_PLTFUNC(name) name@PLT
 #endif
