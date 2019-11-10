@@ -74,9 +74,6 @@ initTargetDistroRid()
     # Only pass ROOTFS_DIR if cross is specified.
     if (( ${__CrossBuild} == 1 )); then
         passedRootfsDir=${ROOTFS_DIR}
-    elif [ "${__BuildArch}" != "${__HostArch}" ]; then
-        echo "Error, you are building a cross scenario without passing -cross."
-        exit 1
     fi
 
     initDistroRidGlobal ${__BuildOS} ${__BuildArch} ${__PortableBuild} ${passedRootfsDir}
@@ -1036,6 +1033,10 @@ while :; do
 
     shift
 done
+
+if [ "${__BuildArch}" != "${__HostArch}" ]; then
+    __CrossBuild=1
+fi
 
 __CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__BuildOS=$__BuildOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
