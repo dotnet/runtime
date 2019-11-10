@@ -906,6 +906,61 @@ namespace System
             // Try to see if its one of the enum values, then we return a String back else the value
             return InternalFormat((RuntimeType)GetType(), ToUInt64()) ?? ValueToString();
         }
+
+        public int CompareTo(object? target)
+        {
+            if (target == this)
+                return 0;
+
+            if (target == null)
+                return 1; // all values are greater than null
+
+            if (GetType() != target.GetType())
+                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, target.GetType(), GetType()));
+
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pTargetValue = ref target.GetRawData();
+
+            switch (InternalGetCorElementType())
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                    return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return pThisValue.CompareTo(pTargetValue);
+                case CorElementType.ELEMENT_TYPE_I2:
+                    return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                    return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_I4:
+#if !BIT64
+                case CorElementType.ELEMENT_TYPE_I:
+#endif
+                    return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_U4:
+#if !BIT64
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                    return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_I8:
+#if BIT64
+                case CorElementType.ELEMENT_TYPE_I:
+#endif
+                    return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_U8:
+#if BIT64
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
+                    return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_R4:
+                    return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
+                case CorElementType.ELEMENT_TYPE_R8:
+                    return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
+        }
         #endregion
 
         #region IFormattable

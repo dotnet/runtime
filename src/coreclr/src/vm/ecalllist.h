@@ -80,7 +80,6 @@ FCFuncStart(gEnumFuncs)
     QCFuncElement("GetEnumValuesAndNames",  ReflectionEnum::GetEnumValuesAndNames)
     FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
     FCFuncElement("Equals", ReflectionEnum::InternalEquals)
-    FCFuncElement("InternalCompareTo", ReflectionEnum::InternalCompareTo)
     FCFuncElement("InternalHasFlag", ReflectionEnum::InternalHasFlag)
 FCFuncEnd()
 

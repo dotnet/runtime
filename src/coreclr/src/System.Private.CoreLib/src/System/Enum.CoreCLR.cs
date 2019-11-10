@@ -146,36 +146,5 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
             return rtType;
         }
-
-        public int CompareTo(object? target)
-        {
-            const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
-            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported underlying type
-
-            if (this == null)
-                throw new NullReferenceException();
-
-            int ret = InternalCompareTo(this, target);
-
-            if (ret < retIncompatibleMethodTables)
-            {
-                // -1, 0 and 1 are the normal return codes
-                return ret;
-            }
-            else if (ret == retIncompatibleMethodTables)
-            {
-                Type thisType = this.GetType();
-                Type targetType = target!.GetType();
-
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, targetType, thisType));
-            }
-            else
-            {
-                // assert valid return code (3)
-                Debug.Assert(ret == retInvalidEnumType, "Enum.InternalCompareTo return code was invalid");
-
-                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            }
-        }
     }
 }
