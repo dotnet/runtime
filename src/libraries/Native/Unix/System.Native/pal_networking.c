@@ -2821,12 +2821,16 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
 
-#elif HAVE_SENDFILE_6
+#elif HAVE_SENDFILE_6 || HAVE_SENDFILE_7
     *sent = 0;
     while (1) // in case we need to retry for an EINTR
     {
         off_t len = count;
+#if HAVE_SENDFILE_7
+        ssize_t res = sendfile(infd, outfd, (off_t)offset, (size_t)count, NULL, &len, 0);
+#else
         ssize_t res = sendfile(infd, outfd, (off_t)offset, &len, NULL, 0);
+#endif
         assert(len >= 0);
 
         // If the call succeeded, store the number of bytes sent, and return.  We add

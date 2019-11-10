@@ -256,7 +256,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS doesn't have an equivalent of DontFragment
+        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // BSD like doesn't have an equivalent of DontFragment
         [Fact]
         public void DontFragment_Roundtrips()
         {

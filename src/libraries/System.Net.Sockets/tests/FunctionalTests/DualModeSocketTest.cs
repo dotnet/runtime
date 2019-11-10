@@ -2419,6 +2419,11 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.True(socket.DualMode);
             }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            {
+                // This is not valid check on FreeBSD.
+                // Accepted socket is never DualMode and cannot be changed.
+            }
             else
             {
                 Assert.True((listenOn != IPAddress.IPv6Any && !listenOn.IsIPv4MappedToIPv6) || socket.DualMode);

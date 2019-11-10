@@ -359,6 +359,16 @@ check_c_source_compiles(
     "
     HAVE_SENDFILE_6)
 
+check_c_source_compiles(
+    "
+    #include <stdlib.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/uio.h>
+    int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
+    "
+    HAVE_SENDFILE_7)
+
 check_symbol_exists(
     clonefile
     "sys/clonefile.h"

@@ -766,7 +766,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // SendBufferSize, ReceiveBufferSize = 0 not supported on OSX.
+        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // SendBufferSize, ReceiveBufferSize = 0 not supported on BSD like stacks.
         public async Task SendRecv_NoBuffering_Success()
         {
             if (UsesSync) return;

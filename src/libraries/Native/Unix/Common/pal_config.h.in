@@ -49,6 +49,7 @@
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_SENDFILE_4
 #cmakedefine01 HAVE_SENDFILE_6
+#cmakedefine01 HAVE_SENDFILE_7
 #cmakedefine01 HAVE_CLONEFILE
 #cmakedefine01 HAVE_GETNAMEINFO_SIGNED_FLAGS
 #cmakedefine01 HAVE_GETPEEREID

@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
+        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
         public async Task ConnectGetsCanceledByDispose()
         {
             bool usesApm = UsesApm ||
