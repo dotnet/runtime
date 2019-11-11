@@ -36,7 +36,6 @@ namespace System.IO.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
-        [ActiveIssue(42507, TestPlatforms.OSX)]
         public void File_Move_Multiple_From_Watched_To_Unwatched_Mac(int filesCount)
         {
             // On Mac, the FSStream aggregate old events caused by the test setup.

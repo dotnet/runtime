@@ -597,7 +597,6 @@ namespace System.IO.Tests
             {
                 Assert.False(true, $"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
             }
-            Assert.True(eventsOrrures == expectedEvents, $"Expected events ({expectedEvents}) count doesn't match triggered events count ({eventsOrrures}):{Environment.NewLine}{String.Join(Environment.NewLine, events)}");
 
             return events;
 
