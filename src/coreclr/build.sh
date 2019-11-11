@@ -235,7 +235,7 @@ build_native()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $__ProjectRoot/eng/empty.csproj \
+            "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $__RepoRootDir/eng/empty.csproj \
                                                    /p:NativeVersionFile=$__versionSourceFile \
                                                    /t:GenerateNativeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -1063,7 +1063,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
-export __ArtifactsIntermediatesDir="$__ProjectDir/artifacts/obj"
+export __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 
