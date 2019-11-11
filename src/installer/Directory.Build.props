@@ -20,7 +20,7 @@
     Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
     $(Subset) automatically when creating project-to-project dependencies.
   -->
-  <Import Project="$(RepositoryEngineeringDir)Build.props" />
+  <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
 
   <!--
     Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
