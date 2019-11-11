@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
 
 namespace System.IO
 {
@@ -339,14 +340,14 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
 
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() which a subclass might have overridden.
-            // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
-            // Similarly, if we weren't opened for asynchronous I/O, call to the base implementation so that
-            // Read is invoked asynchronously.
-            if (GetType() != typeof(FileStream) || !_useAsyncIO)
+            if (GetType() != typeof(FileStream))
+            {
+                // If we have been inherited into a subclass, the following implementation could be incorrect
+                // since it does not call through to Read() which a subclass might have overridden.
+                // To be safe we will only use this implementation in cases where we know it is safe to do so,
+                // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
@@ -354,15 +355,23 @@ namespace System.IO
             if (IsClosed)
                 throw Error.GetFileNotOpen();
 
+            if (!_useAsyncIO)
+            {
+                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
+                // Read is invoked asynchronously.  But we can do so using the base Stream's internal helper
+                // that bypasses delegating to BeginRead, since we already know this is FileStream rather
+                // than something derived from it and what our BeginRead implementation is going to do.
+                return (Task<int>)base.BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+            }
+
             return ReadAsyncTask(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
             {
-                // If we're not using async I/O, delegate to the base, which will queue a call to Read.
-                // Or if this isn't a concrete FileStream, a derived type may have overridden ReadAsync(byte[],...),
+                // If this isn't a concrete FileStream, a derived type may have overridden ReadAsync(byte[],...),
                 // which was introduced first, so delegate to the base which will delegate to that.
                 return base.ReadAsync(buffer, cancellationToken);
             }
@@ -375,6 +384,17 @@ namespace System.IO
             if (IsClosed)
             {
                 throw Error.GetFileNotOpen();
+            }
+
+            if (!_useAsyncIO)
+            {
+                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
+                // Read is invoked asynchronously.  But if we have a byte[], we can do so using the base Stream's
+                // internal helper that bypasses delegating to BeginRead, since we already know this is FileStream
+                // rather than something derived from it and what our BeginRead implementation is going to do.
+                return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
+                    new ValueTask<int>((Task<int>)base.BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                    base.ReadAsync(buffer, cancellationToken);
             }
 
             Task<int>? t = ReadAsyncInternal(buffer, cancellationToken, out int synchronousResult);
@@ -447,12 +467,14 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
 
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.
-            // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
-            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
+            {
+                // If we have been inherited into a subclass, the following implementation could be incorrect
+                // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.
+                // To be safe we will only use this implementation in cases where we know it is safe to do so,
+                // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
@@ -460,15 +482,23 @@ namespace System.IO
             if (IsClosed)
                 throw Error.GetFileNotOpen();
 
+            if (!_useAsyncIO)
+            {
+                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
+                // Write is invoked asynchronously.  But we can do so using the base Stream's internal helper
+                // that bypasses delegating to BeginWrite, since we already know this is FileStream rather
+                // than something derived from it and what our BeginWrite implementation is going to do.
+                return (Task)base.BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+            }
+
             return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
             {
-                // If we're not using async I/O, delegate to the base, which will queue a call to Write.
-                // Or if this isn't a concrete FileStream, a derived type may have overridden WriteAsync(byte[],...),
+                // If this isn't a concrete FileStream, a derived type may have overridden WriteAsync(byte[],...),
                 // which was introduced first, so delegate to the base which will delegate to that.
                 return base.WriteAsync(buffer, cancellationToken);
             }
@@ -481,6 +511,17 @@ namespace System.IO
             if (IsClosed)
             {
                 throw Error.GetFileNotOpen();
+            }
+
+            if (!_useAsyncIO)
+            {
+                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
+                // Write is invoked asynchronously.  But if we have a byte[], we can do so using the base Stream's
+                // internal helper that bypasses delegating to BeginWrite, since we already know this is FileStream
+                // rather than something derived from it and what our BeginWrite implementation is going to do.
+                return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
+                    new ValueTask((Task)BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                    base.WriteAsync(buffer, cancellationToken);
             }
 
             return WriteAsyncInternal(buffer, cancellationToken);
