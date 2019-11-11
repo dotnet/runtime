@@ -32,12 +32,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static readonly Pkcs9LocalKeyId s_keyIdOne = new Pkcs9LocalKeyId(new byte[] { 1 });
 
-        // Windows 10 (1803? 1809? 1903?) changed the PFX loader to only fail unloadable keys that were
-        // referenced by certs.
-        // So our Unix loader can do the same.
+        // Windows 7 and 8.1 both fail the PFX load if any key is unloadable (even if not referenced).
+        // Windows 10 1903, 1809, and 1607 all only fail when an unloadable key was actually needed.
+        // It's possible the transition is in 1507 or 1511, but 1511 is out of support and we haven't
+        // seen a failure on 1507 yet, so marking the transition as 1607 (RS1).
+        //
+        // Our Unix loader matches the current Windows 10 behavior.
         private static readonly bool s_loaderFailsKeysEarly =
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
-            !PlatformDetection.IsWindows10Version1803OrGreater;
+            !PlatformDetection.IsWindows10Version1607OrGreater;
 
         protected abstract void ReadPfx(
             byte[] pfxBytes,
