@@ -133,7 +133,6 @@ fi
 
 if [ ${#actInt[@]} -eq 0 ] || [ "$subsetCategory" != "libraries" ]; then
     arguments="-restore -build $arguments"
-    echo "${#actInt[@]}"
 fi
 
 arguments="$arguments $extraargs"
