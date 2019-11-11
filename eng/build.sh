@@ -52,6 +52,10 @@ build=false
 buildtests=false
 subsetCategory=''
 
+# Check if an action is passed in
+declare -a actions=("r" "restore" "b" "build" "rebuild" "t" "test" "buildtests")
+actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
   case "$opt" in
@@ -127,14 +131,11 @@ if [[ "$buildtests" == true ]]; then
   fi
 fi
 
-# Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "rebuild" "t" "test" "buildtests")
-actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 if [ ${#actInt[@]} -eq 0 ] || [ "$subsetCategory" != "libraries" ]; then
     arguments="-restore -build $arguments"
+    echo "${#actInt[@]}"
 fi
 
 arguments="$arguments $extraargs"
 
 "$scriptroot/common/build.sh" $arguments
-exit $?

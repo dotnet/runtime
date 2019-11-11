@@ -47,12 +47,8 @@
       artifacts to the test layout, then running the test subset.
   -->
 
-  <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
-  </PropertyGroup>
-
   <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
-  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(MSBuildProjectFile)' == 'Build.proj'" />
+  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'" />
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer</DefaultSubsetCategories>
@@ -69,7 +65,7 @@
 
   <ItemGroup>
     <!-- Global -->
-    <SubsetName Include="RegenerateReadmeTable" Category="" OnDemand="true" Description="Regenerates the table of asset links in the README.md file." />    
+    <SubsetName Include="RegenerateReadmeTable" Category="" OnDemand="true" Description="Regenerates the table of asset links in the README.md file." />
 
     <!-- Libraries -->
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />

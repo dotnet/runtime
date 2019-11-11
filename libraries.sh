@@ -14,4 +14,3 @@ done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 "$scriptroot/build.sh" --subsetCategory libraries $@
-exit $?
