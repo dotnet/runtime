@@ -3,10 +3,6 @@
     <PackageConfigurations>
       netstandard2.0-Unix;
       netstandard2.0-Windows_NT;
-      netstandard1.2;
-      netstandard1.3;
-      netstandard2.0;
-      net461-Windows_NT;
       netcoreapp2.1;
       netcoreapp2.1-Unix;
       netcoreapp2.1-Windows_NT;
@@ -16,7 +12,7 @@
       netcoreapp;
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
-      netfx-Windows_NT;
+      _netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

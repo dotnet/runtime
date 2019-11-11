@@ -1,8 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Must match version supported by frameworks which support 4.1.* inbox.
-         Can be removed when API is added and this assembly is versioned to 4.2.* -->
-    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.1.2.0</AssemblyVersion>
     <Nullable>enable</Nullable>
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>

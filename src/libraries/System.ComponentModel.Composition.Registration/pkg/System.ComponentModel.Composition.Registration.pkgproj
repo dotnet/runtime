@@ -2,8 +2,9 @@
     <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
     <ItemGroup>
     <ProjectReference Include="..\ref\System.ComponentModel.Composition.Registration.csproj">
-      <SupportedFramework>netcoreapp3.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp3.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+    <SupportedFramework Include="net45" Version="4.0.0.0" />
     <ProjectReference Include="..\src\System.ComponentModel.Composition.Registration.csproj" />
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>

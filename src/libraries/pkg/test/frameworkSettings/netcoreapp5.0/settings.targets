@@ -3,6 +3,8 @@
     <TargetFramework>netcoreapp5.0</TargetFramework>
     <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <!-- This should be enabled once we have updating assembly versions in our targeting pack. -->
+    <ShouldVerifyClosure>false</ShouldVerifyClosure>
   </PropertyGroup>
 
   <ItemGroup>

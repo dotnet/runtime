@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard2.0;
-      net461;      
+      net461;   
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

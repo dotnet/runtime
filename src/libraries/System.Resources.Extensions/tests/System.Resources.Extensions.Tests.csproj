@@ -3,8 +3,6 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
-  <PropertyGroup>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="MyResourceType.cs" />
     <Compile Include="TestData.cs" />
@@ -16,7 +14,7 @@
       <Link>TypeNameComparer.cs</Link>
     </Compile>
     <Compile Include="TypeNameComparerTests.cs" />
-    <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" />
+    <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="$(RootNamespace).%(FileName)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />    

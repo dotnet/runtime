@@ -62,6 +62,9 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs">
       <Version>4.5.2</Version>
     </PackageReference>
+    <PackageReference Include="System.Data.SqlClient">
+      <Version>4.7.0</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

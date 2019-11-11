@@ -2,13 +2,10 @@
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp2.1;
-      netstandard2.0;
-      net461;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
       netcoreapp;
-      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
