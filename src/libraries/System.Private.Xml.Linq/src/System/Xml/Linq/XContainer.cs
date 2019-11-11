@@ -904,8 +904,8 @@ namespace System.Xml.Linq
 
         private sealed class ContentReader
         {
-            private readonly NamespaceCache _eCache = new NamespaceCache();
-            private readonly NamespaceCache _aCache = new NamespaceCache();
+            private readonly NamespaceCache _eCache;
+            private readonly NamespaceCache _aCache;
             private readonly IXmlLineInfo _lineInfo;
             private XContainer _currentContainer;
             private string _baseUri;

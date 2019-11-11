@@ -266,7 +266,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private StringConcat _strConcat = new StringConcat();
+        private StringConcat _strConcat;
 
         // returns false if attribute is actualy namespace
         private bool ReadAttribute(ref Record rec)

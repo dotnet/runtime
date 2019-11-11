@@ -1374,7 +1374,7 @@ namespace System.Drawing
 
             public static StartupInput GetDefault()
             {
-                StartupInput result = new StartupInput();
+                StartupInput result = default;
                 result.GdiplusVersion = 1;
                 // result.DebugEventCallback = null;
                 result.SuppressBackgroundThread = false;

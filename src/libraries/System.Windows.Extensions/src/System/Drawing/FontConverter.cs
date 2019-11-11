@@ -37,7 +37,7 @@ namespace System.Drawing
                         culture = CultureInfo.CurrentCulture;
                     }
 
-                    ValueStringBuilder sb = new ValueStringBuilder();
+                    ValueStringBuilder sb = default;
                     sb.Append(font.Name);
                     sb.Append(culture.TextInfo.ListSeparator[0] + " ");
                     sb.Append(font.Size.ToString(culture.NumberFormat));

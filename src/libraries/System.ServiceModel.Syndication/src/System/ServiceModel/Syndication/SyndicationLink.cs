@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class SyndicationLink : IExtensibleSyndicationObject
     {
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
         private long _length;
 
         public SyndicationLink(Uri uri) : this(uri, null, null, null, 0)

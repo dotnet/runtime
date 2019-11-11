@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Pkcs
             hasher.AppendData(data.Span);
             byte[] dataHash = hasher.GetHashAndReset();
 
-            SignerInfoAsn newSignerInfo = new SignerInfoAsn();
+            SignerInfoAsn newSignerInfo = default;
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm;
 
             // If the user specified attributes (not null, count > 0) we need attributes.
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 // Use the serializer/deserializer to DER-normalize the attribute order.
-                SignedAttributesSet signedAttrsSet = new SignedAttributesSet();
+                SignedAttributesSet signedAttrsSet = default;
                 signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
                     signedAttrs.ToArray(),
                     normalized => hasher.AppendData(normalized));

@@ -342,7 +342,7 @@ namespace Internal.Cryptography.Pal
             // check to see if we can figure out what key number it needs to re-open.
             int keySpec = GuessKeySpec(provider, keyName, machineKey, cngKey.AlgorithmGroup);
 
-            CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
+            CRYPT_KEY_PROV_INFO keyProvInfo = default;
 
             fixed (char* keyNamePtr = cngKey.KeyName)
             fixed (char* provNamePtr = cngKey.Provider.Provider)
@@ -529,7 +529,7 @@ namespace Internal.Cryptography.Pal
 
             // Make a new pal from bytes.
             CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
-            CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
+            CRYPT_KEY_PROV_INFO keyProvInfo = default;
 
             fixed (char* keyName = keyContainerInfo.KeyContainerName)
             fixed (char* provName = keyContainerInfo.ProviderName)

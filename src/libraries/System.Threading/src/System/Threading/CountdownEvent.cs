@@ -225,7 +225,7 @@ namespace System.Threading
             Debug.Assert(_event != null);
 
             int observedCount;
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
             while (true)
             {
                 observedCount = _currentCount;
@@ -332,7 +332,7 @@ namespace System.Threading
 
             // Loop around until we successfully increment the count.
             int observedCount;
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
             while (true)
             {
                 observedCount = _currentCount;
@@ -417,7 +417,7 @@ namespace System.Threading
         /// disposed.</exception>
         public void Wait()
         {
-            Wait(Timeout.Infinite, new CancellationToken());
+            Wait(Timeout.Infinite, CancellationToken.None);
         }
 
 
@@ -465,7 +465,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
-            return Wait((int)totalMilliseconds, new CancellationToken());
+            return Wait((int)totalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
@@ -512,7 +512,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool Wait(int millisecondsTimeout)
         {
-            return Wait(millisecondsTimeout, new CancellationToken());
+            return Wait(millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>

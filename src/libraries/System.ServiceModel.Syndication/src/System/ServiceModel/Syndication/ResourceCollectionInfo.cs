@@ -13,7 +13,7 @@ namespace System.ServiceModel.Syndication
         private static IEnumerable<string> s_singleEmptyAccept;
         private Collection<string> _accepts;
         private Collection<CategoriesDocument> _categories;
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
 
         public ResourceCollectionInfo()
         {

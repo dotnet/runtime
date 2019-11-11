@@ -244,7 +244,7 @@ namespace System.ComponentModel
                 culture = CultureInfo.CurrentCulture;
             }
 
-            _flagState = new BitVector32();
+            _flagState = default;
 
             // read only property-backend fields.
 

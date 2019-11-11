@@ -15,7 +15,7 @@ namespace System.Globalization
             {
                 fixed (char* overrideDigits = digits)
                 {
-                    var numberBuffer = new Number.NumberBuffer();
+                    Number.NumberBuffer numberBuffer = default;
                     numberBuffer.overrideDigits = overrideDigits + startIndex;
                     numberBuffer.precision = precision;
                     numberBuffer.scale = scale;
@@ -44,7 +44,7 @@ namespace System.Globalization
             out bool sign
             )
         {
-            FormatProvider.Number.NumberBuffer numberBuffer = new FormatProvider.Number.NumberBuffer();
+            FormatProvider.Number.NumberBuffer numberBuffer = default;
 
             unsafe
             {

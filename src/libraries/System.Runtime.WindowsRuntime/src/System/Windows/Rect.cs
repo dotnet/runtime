@@ -260,7 +260,7 @@ namespace Windows.Foundation
 
         private static Rect CreateEmptyRect()
         {
-            Rect rect = new Rect();
+            Rect rect = default;
 
             // TODO: for consistency with width/height we should change these
             //       to assign directly to the backing fields.

@@ -296,7 +296,7 @@ namespace System.Numerics
 
             public static BigNumberBuffer Create()
             {
-                BigNumberBuffer number = new BigNumberBuffer();
+                BigNumberBuffer number = default;
                 number.digits = new StringBuilder();
                 return number;
             }

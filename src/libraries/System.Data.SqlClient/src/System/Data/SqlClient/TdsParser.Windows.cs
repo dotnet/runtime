@@ -93,7 +93,7 @@ namespace System.Data.SqlClient
 
         private SNIErrorDetails GetSniErrorDetails()
         {
-            SNIErrorDetails details = new SNIErrorDetails();
+            SNIErrorDetails details = default;
 
             if (TdsParserStateObjectFactory.UseManagedSNI)
             {

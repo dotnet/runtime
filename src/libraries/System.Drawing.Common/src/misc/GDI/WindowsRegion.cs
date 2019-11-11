@@ -143,7 +143,7 @@ namespace System.Drawing.Internal
                 return new Rectangle(-int.MaxValue, -int.MaxValue, int.MaxValue, int.MaxValue);
             }
 
-            var rect = new Interop.Gdi32.RECT();
+            Interop.Gdi32.RECT rect = default;
             Interop.Gdi32.GetRgnBox(new HandleRef(this, _nativeHandle), ref rect);
             return new Rectangle(new Point(rect.left, rect.top), rect.Size);
         }

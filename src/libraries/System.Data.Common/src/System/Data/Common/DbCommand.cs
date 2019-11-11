@@ -125,7 +125,7 @@ namespace System.Data.Common
             }
             else
             {
-                CancellationTokenRegistration registration = new CancellationTokenRegistration();
+                CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
@@ -166,7 +166,7 @@ namespace System.Data.Common
             }
             else
             {
-                CancellationTokenRegistration registration = new CancellationTokenRegistration();
+                CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
@@ -198,7 +198,7 @@ namespace System.Data.Common
             }
             else
             {
-                CancellationTokenRegistration registration = new CancellationTokenRegistration();
+                CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);

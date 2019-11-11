@@ -215,7 +215,7 @@ namespace Windows.UI.Xaml.Media
 
         private static Matrix CreateIdentity()
         {
-            Matrix matrix = new Matrix();
+            Matrix matrix = default;
             matrix.SetMatrix(1, 0,
                              0, 1,
                              0, 0);

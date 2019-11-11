@@ -384,7 +384,7 @@ namespace System.IO.Ports
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
-            SpinWait sw = new SpinWait();
+            SpinWait sw = default;
             while (!_writeQueue.IsEmpty)
             {
                 sw.SpinOnce();

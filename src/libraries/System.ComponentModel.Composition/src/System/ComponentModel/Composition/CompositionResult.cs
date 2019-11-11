@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition
 {
     internal struct CompositionResult
     {
-        public static readonly CompositionResult SucceededResult = new CompositionResult();
+        public static readonly CompositionResult SucceededResult;
         private readonly IEnumerable<CompositionError> _errors;
 
         public CompositionResult(params CompositionError[] errors)

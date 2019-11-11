@@ -17,8 +17,6 @@ namespace System.Drawing.Imaging
         /// </summary>
         public ColorMap()
         {
-            _oldColor = new Color();
-            _newColor = new Color();
         }
 
         /// <summary>

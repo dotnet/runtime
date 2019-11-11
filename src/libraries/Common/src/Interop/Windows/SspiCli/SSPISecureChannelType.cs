@@ -99,7 +99,7 @@ namespace System.Net
             refHandle = SafeFreeContextBufferChannelBinding.CreateEmptyHandle();
 
             // Bindings is on the stack, so there's no need for a fixed block.
-            SecPkgContext_Bindings bindings = new SecPkgContext_Bindings();
+            SecPkgContext_Bindings bindings = default;
             return SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, attribute, &bindings, refHandle);
         }
 

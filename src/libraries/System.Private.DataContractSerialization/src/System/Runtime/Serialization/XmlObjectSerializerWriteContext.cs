@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
 #endif
     {
-        private ObjectReferenceStack _byValObjectsInScope = new ObjectReferenceStack();
+        private ObjectReferenceStack _byValObjectsInScope;
         private XmlSerializableWriter _xmlSerializableWriter;
         private const int depthToCheckCyclicReference = 512;
         private ObjectToIdCache _serializedObjects;

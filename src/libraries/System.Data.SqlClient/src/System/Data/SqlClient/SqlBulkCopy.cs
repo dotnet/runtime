@@ -2773,7 +2773,7 @@ namespace System.Data.SqlClient
                 {
                     if (_isAsyncBulkCopy)
                     {
-                        CancellationTokenRegistration regReconnectCancel = new CancellationTokenRegistration();
+                        CancellationTokenRegistration regReconnectCancel = default;
                         TaskCompletionSource<object> cancellableReconnectTS = new TaskCompletionSource<object>();
                         if (cts.CanBeCanceled)
                         {

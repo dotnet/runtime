@@ -70,7 +70,7 @@ namespace System.Drawing
         {
             IntPtr graphicsContext = objc_msgSend(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
             IntPtr ctx = objc_msgSend(graphicsContext, sel_registerName("graphicsPort"));
-            Rect bounds = new Rect();
+            Rect bounds = default;
 
             CGContextSaveGState(ctx);
 
@@ -105,8 +105,8 @@ namespace System.Drawing
                 return new CarbonContext(port, context, (int)desktop_bounds.size.width, (int)desktop_bounds.size.height);
             }
 
-            QDRect window_bounds = new QDRect();
-            Rect view_bounds = new Rect();
+            QDRect window_bounds = default(QDRect);
+            Rect view_bounds = default(Rect);
 
             port = GetWindowPort(window);
 

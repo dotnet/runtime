@@ -11,7 +11,7 @@ namespace System.ServiceModel.Syndication
     public class Workspace : IExtensibleSyndicationObject
     {
         private Collection<ResourceCollectionInfo> _collections;
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
 
         public Workspace()
         {

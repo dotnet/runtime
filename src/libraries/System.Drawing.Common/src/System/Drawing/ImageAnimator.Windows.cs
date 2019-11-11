@@ -221,7 +221,7 @@ namespace System.Drawing
             // writer queue.  See ReaderWriterLock.AcquireWriterLock method in the MSDN.
 
             bool readerLockHeld = s_rwImgListLock.IsReaderLockHeld;
-            LockCookie lockDowngradeCookie = new LockCookie();
+            LockCookie lockDowngradeCookie = default;
 
             t_threadWriterLockWaitCount++;
 
@@ -326,7 +326,7 @@ namespace System.Drawing
             // Acquire a writer lock to modify the image info list - See comments on Animate() about this locking.
 
             bool readerLockHeld = s_rwImgListLock.IsReaderLockHeld;
-            LockCookie lockDowngradeCookie = new LockCookie();
+            LockCookie lockDowngradeCookie = default;
 
             t_threadWriterLockWaitCount++;
 

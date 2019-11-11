@@ -464,7 +464,7 @@ namespace System.ServiceProcess
             {
                 using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_STATUS))
                 {
-                    Interop.Advapi32.SERVICE_STATUS svcStatus = new Interop.Advapi32.SERVICE_STATUS();
+                    Interop.Advapi32.SERVICE_STATUS svcStatus = default;
                     bool success = Interop.Advapi32.QueryServiceStatus(serviceHandle, &svcStatus);
                     if (!success)
                         throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -750,7 +750,7 @@ namespace System.ServiceProcess
         {
             using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_PAUSE_CONTINUE))
             {
-                Interop.Advapi32.SERVICE_STATUS status = new Interop.Advapi32.SERVICE_STATUS();
+                Interop.Advapi32.SERVICE_STATUS status = default;
                 bool result = Interop.Advapi32.ControlService(serviceHandle, Interop.Advapi32.ControlOptions.CONTROL_PAUSE, &status);
                 if (!result)
                 {
@@ -765,7 +765,7 @@ namespace System.ServiceProcess
         {
             using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_PAUSE_CONTINUE))
             {
-                Interop.Advapi32.SERVICE_STATUS status = new Interop.Advapi32.SERVICE_STATUS();
+                Interop.Advapi32.SERVICE_STATUS status = default;
                 bool result = Interop.Advapi32.ControlService(serviceHandle, Interop.Advapi32.ControlOptions.CONTROL_CONTINUE, &status);
                 if (!result)
                 {
@@ -779,7 +779,7 @@ namespace System.ServiceProcess
         {
             using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_USER_DEFINED_CONTROL))
             {
-                Interop.Advapi32.SERVICE_STATUS status = new Interop.Advapi32.SERVICE_STATUS();
+                Interop.Advapi32.SERVICE_STATUS status = default;
                 bool result = Interop.Advapi32.ControlService(serviceHandle, command, &status);
                 if (!result)
                 {
@@ -831,7 +831,7 @@ namespace System.ServiceProcess
                     throw;
                 }
 
-                GCHandle argPtrsHandle = new GCHandle();
+                GCHandle argPtrsHandle = default;
                 try
                 {
                     argPtrsHandle = GCHandle.Alloc(argPtrs, GCHandleType.Pinned);
@@ -872,7 +872,7 @@ namespace System.ServiceProcess
                     }
                 }
 
-                Interop.Advapi32.SERVICE_STATUS status = new Interop.Advapi32.SERVICE_STATUS();
+                Interop.Advapi32.SERVICE_STATUS status = default;
                 bool result = Interop.Advapi32.ControlService(serviceHandle, Interop.Advapi32.ControlOptions.CONTROL_STOP, &status);
                 if (!result)
                 {

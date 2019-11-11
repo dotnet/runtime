@@ -265,7 +265,7 @@ namespace System.IO.Pipelines
         {
             // Write all completed segments and whatever remains in the current segment
             // and flush the result.
-            var reg = new CancellationTokenRegistration();
+            CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
             {
                 reg = cancellationToken.UnsafeRegister(state => ((StreamPipeWriter)state!).Cancel(), this);

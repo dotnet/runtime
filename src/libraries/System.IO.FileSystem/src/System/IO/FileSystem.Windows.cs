@@ -72,7 +72,7 @@ namespace System.IO
 
         public static FileAttributes GetAttributes(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -82,7 +82,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -99,7 +99,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -109,7 +109,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
@@ -185,7 +185,7 @@ namespace System.IO
                 return;
             }
 
-            Interop.Kernel32.WIN32_FIND_DATA findData = new Interop.Kernel32.WIN32_FIND_DATA();
+            Interop.Kernel32.WIN32_FIND_DATA findData = default;
             GetFindData(fullPath, ref findData);
             if (IsNameSurrogateReparsePoint(ref findData))
             {

@@ -431,7 +431,7 @@ namespace System.Drawing.Internal
         /// </summary>
         public void TranslateTransform(int dx, int dy)
         {
-            var origin = new Point();
+            Point origin = default;
             Interop.Gdi32.OffsetViewportOrgEx(new HandleRef(this, _hDC), dx, dy, ref origin);
         }
 

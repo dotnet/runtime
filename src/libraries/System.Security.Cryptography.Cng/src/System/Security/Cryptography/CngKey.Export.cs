@@ -138,7 +138,7 @@ namespace System.Security.Cryptography
                 {
                     Interop.NCrypt.NCryptBuffer* buffers = stackalloc Interop.NCrypt.NCryptBuffer[3];
 
-                    Interop.NCrypt.PBE_PARAMS pbeParams = new Interop.NCrypt.PBE_PARAMS();
+                    Interop.NCrypt.PBE_PARAMS pbeParams = default;
                     Span<byte> salt = new Span<byte>(pbeParams.rgbSalt, Interop.NCrypt.PBE_PARAMS.RgbSaltSize);
                     RandomNumberGenerator.Fill(salt);
                     pbeParams.Params.cbSalt = salt.Length;

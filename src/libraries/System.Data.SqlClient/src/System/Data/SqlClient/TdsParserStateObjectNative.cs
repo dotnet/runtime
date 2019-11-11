@@ -45,7 +45,7 @@ namespace System.Data.SqlClient
 
         private SNINativeMethodWrapper.ConsumerInfo CreateConsumerInfo(bool async)
         {
-            SNINativeMethodWrapper.ConsumerInfo myInfo = new SNINativeMethodWrapper.ConsumerInfo();
+            SNINativeMethodWrapper.ConsumerInfo myInfo = default;
 
             Debug.Assert(_outBuff.Length == _inBuff.Length, "Unexpected unequal buffers.");
 

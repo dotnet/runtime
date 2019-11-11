@@ -310,7 +310,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(graphics));
             }
 
-            Interop.User32.LOGFONT logFont = new Interop.User32.LOGFONT();
+            Interop.User32.LOGFONT logFont = default;
             Gdip.CheckStatus(Gdip.GdipGetLogFontW(
                 new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), ref logFont));
 

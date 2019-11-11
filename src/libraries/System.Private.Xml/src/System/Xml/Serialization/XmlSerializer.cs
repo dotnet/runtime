@@ -125,7 +125,7 @@ namespace System.Xml.Serialization
 #pragma warning restore 0414
         private readonly Type _primitiveType;
         private XmlMapping _mapping;
-        private XmlDeserializationEvents _events = new XmlDeserializationEvents();
+        private XmlDeserializationEvents _events;
         internal string DefaultNamespace = null;
         private Type _rootType;
         private bool _isReflectionBasedSerializer = false;

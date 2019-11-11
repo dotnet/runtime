@@ -14,7 +14,7 @@ namespace System.Drawing
     [TypeConverter("System.Drawing.RectangleConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public struct Rectangle : IEquatable<Rectangle>
     {
-        public static readonly Rectangle Empty = new Rectangle();
+        public static readonly Rectangle Empty;
 
         private int x; // Do not rename (binary serialization)
         private int y; // Do not rename (binary serialization)

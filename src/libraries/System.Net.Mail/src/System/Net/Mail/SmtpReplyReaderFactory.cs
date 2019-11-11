@@ -98,7 +98,7 @@ namespace System.Net.Mail
             {
                 return info[0];
             }
-            return new LineInfo();
+            return default;
         }
 
         internal SmtpReplyReader GetNextReplyReader()
@@ -296,7 +296,7 @@ namespace System.Net.Mail
             {
                 return info[0];
             }
-            return new LineInfo();
+            return default;
         }
 
         internal LineInfo[] ReadLines(SmtpReplyReader caller)

@@ -5664,7 +5664,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
-                RowDiffIdUsageSection rowDiffIdUsage = new RowDiffIdUsageSection();
+                RowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
                     bool fDataFound = false;
@@ -5904,7 +5904,7 @@ namespace System.Data
 
         internal XmlReadMode ReadXml(XmlReader reader, XmlReadMode mode, bool denyResolving)
         {
-            RowDiffIdUsageSection rowDiffIdUsage = new RowDiffIdUsageSection();
+            RowDiffIdUsageSection rowDiffIdUsage = default;
             try
             {
                 bool fSchemaFound = false;

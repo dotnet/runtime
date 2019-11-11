@@ -368,7 +368,7 @@ namespace System.Xml.Schema
             bool schemasLockObtained = false;
             try
             {
-                SpinWait spinner = new SpinWait();
+                SpinWait spinner = default;
                 while (true)
                 {
                     Monitor.TryEnter(InternalSyncObject, ref thisLockObtained);

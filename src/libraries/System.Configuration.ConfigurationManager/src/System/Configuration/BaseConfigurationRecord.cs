@@ -163,7 +163,7 @@ namespace System.Configuration
         internal BaseConfigurationRecord()
         {
             // not strictly necessary, but compiler spits out a warning without this initiailization
-            _flags = new SafeBitVector32();
+            _flags = default;
         }
 
         protected abstract SimpleBitVector32 ClassFlags { get; }

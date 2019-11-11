@@ -456,7 +456,7 @@ namespace System.Drawing
             writer.Write((ushort)1);    // only one icon
 
             // when transformed into a bitmap only a single image exists
-            IconDirEntry ide = new IconDirEntry();
+            IconDirEntry ide = default;
             ide.width = (byte)bitmap.Width;
             ide.height = (byte)bitmap.Height;
             ide.colorCount = 0; // 32 bbp == 0, for palette size
@@ -465,7 +465,7 @@ namespace System.Drawing
             ide.bitCount = 32;
             ide.imageOffset = 22;   // 22 is the first icon position (for single icon files)
 
-            BitmapInfoHeader bih = new BitmapInfoHeader();
+            BitmapInfoHeader bih = default;
             bih.biSize = (uint)Marshal.SizeOf(typeof(BitmapInfoHeader));
             bih.biWidth = bitmap.Width;
             bih.biHeight = 2 * bitmap.Height; // include both XOR and AND images

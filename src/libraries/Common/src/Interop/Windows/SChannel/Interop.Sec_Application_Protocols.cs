@@ -37,7 +37,7 @@ internal static partial class Interop
                 }
             }
 
-            Sec_Application_Protocols protocols = new Sec_Application_Protocols();
+            Sec_Application_Protocols protocols = default;
 
             int protocolListConstSize = sizeof(Sec_Application_Protocols) - sizeof(uint) /* offsetof(Sec_Application_Protocols, ProtocolExtensionType) */;
             protocols.ProtocolListsSize = (uint)(protocolListConstSize + protocolListSize);

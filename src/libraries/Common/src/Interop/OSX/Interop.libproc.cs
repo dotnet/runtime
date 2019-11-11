@@ -473,7 +473,7 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException(nameof(pid), SR.NegativePidNotSupported);
             }
 
-            rusage_info_v3 info = new rusage_info_v3();
+            rusage_info_v3 info = default;
 
             // Get the PIDs rusage info
             int result = proc_pid_rusage(pid, RUSAGE_INFO_V3, &info);

@@ -14,7 +14,7 @@ namespace System.Drawing
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public readonly struct Color : IEquatable<Color>
     {
-        public static readonly Color Empty = new Color();
+        public static readonly Color Empty;
 
         // -------------------------------------------------------------------
         //  static list of "web" colors...

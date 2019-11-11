@@ -80,7 +80,7 @@ namespace System.Diagnostics
                 processHandle = ProcessManager.OpenProcess(processId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.Advapi32.ProcessOptions.PROCESS_VM_READ, true);
 
                 IntPtr[] moduleHandles = new IntPtr[64];
-                GCHandle moduleHandlesArrayHandle = new GCHandle();
+                GCHandle moduleHandlesArrayHandle = default;
                 int moduleCount = 0;
                 while (true)
                 {

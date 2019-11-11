@@ -972,7 +972,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_receiveBufferCount >= 2, $"Expected to at least have the first two bytes of the header.");
 
-            var header = new MessageHeader();
+            MessageHeader header = default;
             Span<byte> receiveBufferSpan = _receiveBuffer.Span;
 
             header.Fin = (receiveBufferSpan[_receiveBufferOffset] & 0x80) != 0;

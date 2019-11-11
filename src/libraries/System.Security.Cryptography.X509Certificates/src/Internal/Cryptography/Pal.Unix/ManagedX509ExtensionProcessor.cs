@@ -69,7 +69,7 @@ namespace Internal.Cryptography.Pal
             bool hasPathLengthConstraint,
             int pathLengthConstraint)
         {
-            BasicConstraintsAsn constraints = new BasicConstraintsAsn();
+            BasicConstraintsAsn constraints = default;
 
             constraints.CA = certificateAuthority;
             if (hasPathLengthConstraint)
@@ -194,7 +194,7 @@ namespace Internal.Cryptography.Pal
             // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
             // of the DER structural bytes.
 
-            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn();
+            SubjectPublicKeyInfoAsn spki = default;
             spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = key.Oid, Parameters = key.EncodedParameters.RawData };
             spki.SubjectPublicKey = key.EncodedKeyValue.RawData;
 

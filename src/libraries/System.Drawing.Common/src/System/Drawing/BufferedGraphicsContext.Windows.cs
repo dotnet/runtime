@@ -259,7 +259,7 @@ namespace System.Drawing
             }
 
             IntPtr hbmRet = IntPtr.Zero;
-            var pbmi = new NativeMethods.BITMAPINFO_FLAT();
+            NativeMethods.BITMAPINFO_FLAT pbmi = default;
 
             // Validate hdc.
             Interop.Gdi32.ObjectType objType = Interop.Gdi32.GetObjectType(hdc);

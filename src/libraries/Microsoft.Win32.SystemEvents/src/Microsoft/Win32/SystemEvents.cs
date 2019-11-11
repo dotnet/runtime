@@ -87,7 +87,7 @@ namespace Microsoft.Win32
                         s_isUserInteractive = true;
 
                         int lengthNeeded = 0;
-                        Interop.User32.USEROBJECTFLAGS flags = new Interop.User32.USEROBJECTFLAGS();
+                        Interop.User32.USEROBJECTFLAGS flags = default;
 
                         if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
                         {
@@ -1267,7 +1267,7 @@ namespace Microsoft.Win32
 
                 if (_windowHandle != IntPtr.Zero)
                 {
-                    Interop.User32.MSG msg = new Interop.User32.MSG();
+                    Interop.User32.MSG msg = default(Interop.User32.MSG);
 
                     bool keepRunning = true;
 

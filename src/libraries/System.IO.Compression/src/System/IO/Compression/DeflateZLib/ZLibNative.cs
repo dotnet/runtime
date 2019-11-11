@@ -182,7 +182,6 @@ namespace System.IO.Compression
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
             {
-                _zStream = new ZStream();
                 _zStream.Init();
 
                 _initializationState = State.NotInitialized;

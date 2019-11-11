@@ -801,7 +801,7 @@ namespace System.Data.SqlClient
         public static TdsDateTime FromDateTime(DateTime dateTime, byte cb)
         {
             SqlDateTime sqlDateTime;
-            TdsDateTime tdsDateTime = new TdsDateTime();
+            TdsDateTime tdsDateTime = default;
 
             Debug.Assert(cb == 8 || cb == 4, "Invalid date time size!");
 

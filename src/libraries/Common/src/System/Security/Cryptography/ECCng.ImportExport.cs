@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
                 {
                     BCRYPT_ECCFULLKEY_BLOB* pBcryptBlob = (BCRYPT_ECCFULLKEY_BLOB*)pEcBlob;
 
-                    var primeCurve = new ECCurve();
+                    ECCurve primeCurve = default;
                     primeCurve.CurveType = ConvertToCurveTypeEnum(pBcryptBlob->CurveType);
                     primeCurve.Hash = GetHashAlgorithmName(pBcryptBlob->CurveGenerationAlgId);
 
@@ -467,8 +467,8 @@ namespace System.Security.Cryptography
 
             using (SafeUnicodeStringHandle safeCurveName = new SafeUnicodeStringHandle(curveName))
             {
-                var desc = new Interop.BCrypt.BCryptBufferDesc();
-                var buff = new Interop.BCrypt.BCryptBuffer();
+                Interop.BCrypt.BCryptBufferDesc desc = default;
+                Interop.BCrypt.BCryptBuffer buff = default;
 
                 IntPtr descPtr = IntPtr.Zero;
                 IntPtr buffPtr = IntPtr.Zero;

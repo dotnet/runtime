@@ -592,7 +592,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public string DomainNameDns;
         [MarshalAs(UnmanagedType.LPWStr)]
         public string DomainForestName;
-        public Guid DomainGuid = new Guid();
+        public Guid DomainGuid = default;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

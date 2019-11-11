@@ -45,7 +45,7 @@ namespace Internal.Cryptography.Pal
                 using (SafeChainEngineHandle storeHandle = GetChainEngine(trustMode, customTrustStore, useMachineContext))
                 using (SafeCertStoreHandle extraStoreHandle = ConvertStoreToSafeHandle(extraStore))
                 {
-                    CERT_CHAIN_PARA chainPara = new CERT_CHAIN_PARA();
+                    CERT_CHAIN_PARA chainPara = default;
                     chainPara.cbSize = Marshal.SizeOf<CERT_CHAIN_PARA>();
 
                     int applicationPolicyCount;
@@ -96,7 +96,7 @@ namespace Internal.Cryptography.Pal
                 // Need to get a valid SafeCertStoreHandle otherwise the default stores will be trusted
                 using (SafeCertStoreHandle customTrustStoreHandle = ConvertStoreToSafeHandle(customTrustStore, true))
                 {
-                    CERT_CHAIN_ENGINE_CONFIG customChainEngine = new CERT_CHAIN_ENGINE_CONFIG();
+                    CERT_CHAIN_ENGINE_CONFIG customChainEngine = default;
                     customChainEngine.cbSize = Marshal.SizeOf<CERT_CHAIN_ENGINE_CONFIG>();
                     customChainEngine.hExclusiveRoot = customTrustStoreHandle.DangerousGetHandle();
                     chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);

@@ -498,7 +498,7 @@ namespace Windows.UI.Xaml.Media.Media3D
 
         public static Matrix3D operator *(Matrix3D matrix1, Matrix3D matrix2)
         {
-            Matrix3D matrix3D = new Matrix3D();
+            Matrix3D matrix3D = default;
 
             matrix3D.M11 = matrix1.M11 * matrix2.M11 +
                            matrix1.M12 * matrix2.M21 +
@@ -588,7 +588,7 @@ namespace Windows.UI.Xaml.Media.Media3D
 
         private static Matrix3D CreateIdentity()
         {
-            Matrix3D matrix3D = new Matrix3D();
+            Matrix3D matrix3D = default;
             matrix3D.SetMatrix(1, 0, 0, 0,
                                0, 1, 0, 0,
                                0, 0, 1, 0,

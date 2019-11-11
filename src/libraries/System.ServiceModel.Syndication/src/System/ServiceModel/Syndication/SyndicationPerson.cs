@@ -11,7 +11,7 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class SyndicationPerson : IExtensibleSyndicationObject
     {
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
 
         public SyndicationPerson() : this((string)null)
         {

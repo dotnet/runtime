@@ -411,7 +411,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 string keyName = (QilLiteral)name;
 
-                _compiler.ParseQName(keyName, out string prefix, out string local, new ThrowErrorHelper());
+                _compiler.ParseQName(keyName, out string prefix, out string local, default(ThrowErrorHelper));
                 string nsUri = ResolvePrefixThrow(/*ignoreDefaultNs:*/true, prefix);
                 QilName qname = _f.QName(local, nsUri, prefix);
 
@@ -643,7 +643,7 @@ namespace System.Xml.Xsl.Xslt
         private XmlQualifiedName ResolveQNameThrow(bool ignoreDefaultNs, QilNode qilName)
         {
             string name = (QilLiteral)qilName;
-            _compiler.ParseQName(name, out string prefix, out string local, new ThrowErrorHelper());
+            _compiler.ParseQName(name, out string prefix, out string local, default(ThrowErrorHelper));
             string nsUri = ResolvePrefixThrow(/*ignoreDefaultNs:*/ignoreDefaultNs, prefix);
 
             return new XmlQualifiedName(local, nsUri);

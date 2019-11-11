@@ -93,7 +93,7 @@ namespace System.Net
                             pBuffer = (byte*)pBufferAsIntPtr;
                             offset = 0;
                         }
-                        Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                        Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = default;
                         dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                         dataChunk.pBuffer = (byte*)(pBuffer + offset);
                         dataChunk.BufferLength = dataToWrite;
@@ -316,7 +316,7 @@ namespace System.Net
                     Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                     if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
                     {
-                        Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                        Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = default;
                         dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                         dataChunk.pBuffer = (byte*)pBuffer;
                         dataChunk.BufferLength = (uint)s_chunkTerminator.Length;

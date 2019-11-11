@@ -2201,7 +2201,7 @@ namespace System.Transactions
                 }
 
                 // Just create a new transaction.
-                TransactionOptions options = new TransactionOptions();
+                TransactionOptions options = default;
 
                 options.IsolationLevel = tx._outcomeSource._isoLevel;
                 options.Timeout = newTimeout;

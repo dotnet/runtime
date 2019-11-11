@@ -842,7 +842,7 @@ namespace System
                 }
                 else
                 {
-                    var pathSegments = new ArrayBuilder<string>();
+                    ArrayBuilder<string> pathSegments = default;
                     int current = 0;
                     while (current < path.Length)
                     {

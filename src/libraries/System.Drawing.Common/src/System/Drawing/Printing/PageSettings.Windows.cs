@@ -186,7 +186,7 @@ namespace System.Drawing.Printing
         {
             get
             {
-                RectangleF printableArea = new RectangleF();
+                RectangleF printableArea = default;
                 DeviceContext dc = printerSettings.CreateInformationContext(this);
                 HandleRef hdc = new HandleRef(dc, dc.Hdc);
 

@@ -256,7 +256,7 @@ nameof(boundedCapacity), boundedCapacity,
 #if DEBUG
             bool tryAddReturnValue =
 #endif
-            TryAddWithNoTimeValidation(item, Timeout.Infinite, new CancellationToken());
+            TryAddWithNoTimeValidation(item, Timeout.Infinite, CancellationToken.None);
 #if DEBUG
             Debug.Assert(tryAddReturnValue, "TryAdd() was expected to return true.");
 #endif
@@ -305,7 +305,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="System.InvalidOperationException">The underlying collection didn't accept the item.</exception>
         public bool TryAdd(T item)
         {
-            return TryAddWithNoTimeValidation(item, 0, new CancellationToken());
+            return TryAddWithNoTimeValidation(item, 0, CancellationToken.None);
         }
 
         /// <summary>
@@ -329,7 +329,7 @@ nameof(boundedCapacity), boundedCapacity,
         public bool TryAdd(T item, TimeSpan timeout)
         {
             ValidateTimeout(timeout);
-            return TryAddWithNoTimeValidation(item, (int)timeout.TotalMilliseconds, new CancellationToken());
+            return TryAddWithNoTimeValidation(item, (int)timeout.TotalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
@@ -351,7 +351,7 @@ nameof(boundedCapacity), boundedCapacity,
         public bool TryAdd(T item, int millisecondsTimeout)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
-            return TryAddWithNoTimeValidation(item, millisecondsTimeout, new CancellationToken());
+            return TryAddWithNoTimeValidation(item, millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -450,7 +450,7 @@ nameof(boundedCapacity), boundedCapacity,
                 // spins until all adders finish then throw IOE
                 // The idea behind to spin until all adders finish, is to avoid to return to the caller with IOE while there are still some adders have
                 // not been finished yet
-                SpinWait spinner = new SpinWait();
+                SpinWait spinner = default;
                 while (true)
                 {
                     int observedAdders = _currentAdders;
@@ -1475,7 +1475,7 @@ nameof(boundedCapacity), boundedCapacity,
             if (IsAddingCompleted)
                 return;
 
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 int observedAdders = _currentAdders;

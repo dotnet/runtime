@@ -109,7 +109,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             CmsRecipient recipient,
             out bool v0Recipient)
         {
-            KeyTransRecipientInfoAsn ktri = new KeyTransRecipientInfoAsn();
+            KeyTransRecipientInfoAsn ktri = default;
 
             if (recipient.RecipientIdentifierType == SubjectIdentifierType.SubjectKeyIdentifier)
             {

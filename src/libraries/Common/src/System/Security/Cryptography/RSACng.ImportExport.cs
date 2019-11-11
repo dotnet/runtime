@@ -294,7 +294,7 @@ namespace System.Security.Cryptography
             public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
             byte[] rsaBlob = ExportKeyBlob(includePrivateParameters);
-            RSAParameters rsaParams = new RSAParameters();
+            RSAParameters rsaParams = default;
             ExportParameters(ref rsaParams, rsaBlob, includePrivateParameters);
             return rsaParams;
         }

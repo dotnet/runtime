@@ -133,7 +133,7 @@ namespace System.Net.WebSockets
                 NetEventSource.Enter(this, HttpWebSocket.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
-            CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
+            CancellationTokenRegistration cancellationTokenRegistration = default;
 
             int bytesRead = 0;
             try
@@ -357,7 +357,7 @@ namespace System.Net.WebSockets
                 NetEventSource.Enter(this);
             }
 
-            CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
+            CancellationTokenRegistration cancellationTokenRegistration = default;
 
             try
             {
@@ -419,7 +419,7 @@ namespace System.Net.WebSockets
                 NetEventSource.Enter(this, HttpWebSocket.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
-            CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
+            CancellationTokenRegistration cancellationTokenRegistration = default;
 
             try
             {
@@ -608,7 +608,7 @@ namespace System.Net.WebSockets
                 NetEventSource.Enter(this);
             }
 
-            CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
+            CancellationTokenRegistration cancellationTokenRegistration = default;
 
             try
             {
@@ -1097,9 +1097,9 @@ namespace System.Net.WebSockets
                 {
                     _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[2];
                     _dataChunksGCHandle = GCHandle.Alloc(_dataChunks, GCHandleType.Pinned);
-                    _dataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[0] = default;
                     _dataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                    _dataChunks[1] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[1] = default;
                     _dataChunks[1].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                 }
 

@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
 {
     public class ServiceDocument : IExtensibleSyndicationObject
     {
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
         private Collection<Workspace> _workspaces;
 
         public ServiceDocument() : this(null)

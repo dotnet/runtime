@@ -84,7 +84,7 @@ namespace Windows.Foundation
 
         private static Size CreateEmptySize()
         {
-            Size size = new Size();
+            Size size = default;
             // We can't set these via the property setters because negatives widths
             // are rejected in those APIs.
             size._width = float.NegativeInfinity;

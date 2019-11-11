@@ -673,7 +673,7 @@ namespace System.Threading
                 throw GetInvalidTimeoutException(nameof(millisecondsTimeout));
             }
 
-            var lockCookie = new LockCookie();
+            LockCookie lockCookie = default;
             int threadID = GetCurrentThreadID();
             lockCookie._threadID = threadID;
 
@@ -876,7 +876,7 @@ namespace System.Threading
 
         public LockCookie ReleaseLock()
         {
-            var lockCookie = new LockCookie();
+            LockCookie lockCookie = default;
             int threadID = GetCurrentThreadID();
             lockCookie._threadID = threadID;
 

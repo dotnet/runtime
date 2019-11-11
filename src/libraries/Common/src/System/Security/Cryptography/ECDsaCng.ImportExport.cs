@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
             public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
             {
                 byte[] blob = ExportFullKeyBlob(includePrivateParameters);
-                ECParameters ecparams = new ECParameters();
+                ECParameters ecparams = default;
                 ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters);
                 return ecparams;
             }
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
             /// <returns>The key and named curve parameters used by the ECC object.</returns>
             public override ECParameters ExportParameters(bool includePrivateParameters)
             {
-                ECParameters ecparams = new ECParameters();
+                ECParameters ecparams = default;
 
                 string curveName = GetCurveName(out string oidValue);
 

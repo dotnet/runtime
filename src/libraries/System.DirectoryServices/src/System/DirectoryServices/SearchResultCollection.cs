@@ -107,7 +107,7 @@ namespace System.DirectoryServices
                 throw new ObjectDisposedException(GetType().Name);
 
             // get the dirsync cookie back
-            AdsSearchColumn column = new AdsSearchColumn();
+            AdsSearchColumn column = default;
             AdsSearchColumn* pColumn = &column;
             SearchObject.GetColumn(Handle, _adsDirsynCookieName, (INTPTR_INTPTRCAST)pColumn);
             try
@@ -135,7 +135,7 @@ namespace System.DirectoryServices
                 throw new ObjectDisposedException(GetType().Name);
 
             // get the vlv response back
-            AdsSearchColumn column = new AdsSearchColumn();
+            AdsSearchColumn column = default;
             AdsSearchColumn* pColumn = &column;
             SearchObject.GetColumn(Handle, _adsVLVResponseName, (INTPTR_INTPTRCAST)pColumn);
             try
@@ -274,7 +274,7 @@ namespace System.DirectoryServices
                 {
                     try
                     {
-                        AdsSearchColumn column = new AdsSearchColumn();
+                        AdsSearchColumn column = default;
                         AdsSearchColumn* pColumn = &column;
                         _results.SearchObject.GetColumn(_results.Handle, pszColumnName, (INTPTR_INTPTRCAST)pColumn);
                         try

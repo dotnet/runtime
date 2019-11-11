@@ -591,7 +591,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public static void EvtSetChannelConfigProperty(EventLogHandle handle, UnsafeNativeMethods.EvtChannelConfigPropertyId enumType, object val)
         {
-            UnsafeNativeMethods.EvtVariant varVal = new UnsafeNativeMethods.EvtVariant();
+            UnsafeNativeMethods.EvtVariant varVal = default;
 
             CoTaskMemSafeHandle taskMem = new CoTaskMemSafeHandle();
 

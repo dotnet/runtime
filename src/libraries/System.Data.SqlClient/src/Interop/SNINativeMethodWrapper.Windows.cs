@@ -291,7 +291,7 @@ namespace System.Data.SqlClient
         internal static unsafe uint SNIOpenMarsSession(ConsumerInfo consumerInfo, SNIHandle parent, ref IntPtr pConn, bool fSync)
         {
             // initialize consumer info for MARS
-            Sni_Consumer_Info native_consumerInfo = new Sni_Consumer_Info();
+            Sni_Consumer_Info native_consumerInfo = default;
             MarshalConsumerInfo(consumerInfo, ref native_consumerInfo);
 
             return SNIOpenWrapper(ref native_consumerInfo, "session:", parent, out pConn, fSync);
@@ -301,7 +301,7 @@ namespace System.Data.SqlClient
         {
             fixed (byte* pin_instanceName = &instanceName[0])
             {
-                SNI_CLIENT_CONSUMER_INFO clientConsumerInfo = new SNI_CLIENT_CONSUMER_INFO();
+                SNI_CLIENT_CONSUMER_INFO clientConsumerInfo = default;
 
                 // initialize client ConsumerInfo part first
                 MarshalConsumerInfo(consumerInfo, ref clientConsumerInfo.ConsumerInfo);

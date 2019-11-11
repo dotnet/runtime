@@ -21,7 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             int piarg = 0;
             int cargUnique = 0;
 
-            UserStringBuilder builder = new UserStringBuilder();
+            UserStringBuilder builder = default;
 
             for (int iarg = 0; iarg < args.Length; iarg++)
             {

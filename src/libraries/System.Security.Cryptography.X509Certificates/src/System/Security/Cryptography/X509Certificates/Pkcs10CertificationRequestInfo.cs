@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Helpers.ValidateDer(signatureAlgorithmAsn.Parameters.Value);
             }
 
-            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn();
+            SubjectPublicKeyInfoAsn spki = default;
             spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = PublicKey.Oid, Parameters = PublicKey.EncodedParameters.RawData };
             spki.SubjectPublicKey = PublicKey.EncodedKeyValue.RawData;
 

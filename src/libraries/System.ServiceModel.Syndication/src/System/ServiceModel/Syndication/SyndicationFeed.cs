@@ -21,7 +21,7 @@ namespace System.ServiceModel.Syndication
         private Collection<SyndicationPerson> _authors;
         private Collection<SyndicationCategory> _categories;
         private Collection<SyndicationPerson> _contributors;
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
         private IEnumerable<SyndicationItem> _items;
         private DateTimeOffset _lastUpdatedTime;
         private Collection<SyndicationLink> _links;

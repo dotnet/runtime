@@ -60,7 +60,7 @@ namespace System.Reflection.Internal
             byte[] givenArray = array;
             array = null;
 
-            var union = new ByteArrayUnion();
+            ByteArrayUnion union = default;
             union.UnderlyingArray = givenArray;
             return union.ImmutableArray;
         }
@@ -82,7 +82,7 @@ namespace System.Reflection.Internal
         /// <returns>The underlying array, or null if <see cref="ImmutableArray{T}.IsDefault"/> is true.</returns>
         internal static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
-            var union = new ByteArrayUnion();
+            ByteArrayUnion union = default;
             union.ImmutableArray = array;
             return union.UnderlyingArray;
         }

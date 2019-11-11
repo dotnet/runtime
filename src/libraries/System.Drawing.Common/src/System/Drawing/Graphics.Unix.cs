@@ -151,7 +151,7 @@ namespace System.Drawing
 
             window = LibX11Functions.XRootWindow(Gdip.Display, 0);
             defvisual = LibX11Functions.XDefaultVisual(Gdip.Display, 0);
-            XVisualInfo visual = new XVisualInfo();
+            XVisualInfo visual = default;
 
             /* Get XVisualInfo for this visual */
             visual.visualid = LibX11Functions.XVisualIDFromVisual(defvisual);

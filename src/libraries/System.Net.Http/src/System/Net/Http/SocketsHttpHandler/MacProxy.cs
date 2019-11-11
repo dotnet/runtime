@@ -62,7 +62,7 @@ namespace System.Net.Http
                 CFRunLoopStop(runLoop);
             };
 
-            var clientContext = new CFStreamClientContext();
+            CFStreamClientContext clientContext = default;
             CFRunLoopSourceRef loopSource =
                 proxy.ProxyType == CFProxy.kCFProxyTypeAutoConfigurationURL ?
                 CFNetworkExecuteProxyAutoConfigurationURL(proxy.AutoConfigurationURL, cfurl, cb, ref clientContext) :

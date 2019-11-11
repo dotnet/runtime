@@ -189,7 +189,7 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public readonly struct MemberRelationship
     {
-        public static readonly MemberRelationship Empty = new MemberRelationship();
+        public static readonly MemberRelationship Empty;
 
         /// <summary>
         /// Creates a new member relationship.

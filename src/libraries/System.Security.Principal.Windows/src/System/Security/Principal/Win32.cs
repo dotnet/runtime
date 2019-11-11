@@ -42,7 +42,7 @@ namespace System.Security.Principal
         {
             SafeLsaPolicyHandle policyHandle;
 
-            var attributes = new Interop.OBJECT_ATTRIBUTES();
+            Interop.OBJECT_ATTRIBUTES attributes = default;
             uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out policyHandle);
             if (error == 0)
             {

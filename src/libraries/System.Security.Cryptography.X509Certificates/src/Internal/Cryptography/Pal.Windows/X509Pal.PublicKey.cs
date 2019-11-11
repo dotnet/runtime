@@ -84,7 +84,7 @@ namespace Internal.Cryptography.Pal
                 {
                     blobFormat = CngKeyBlobFormat.EccPublicBlob;
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
-                    ECParameters ecparams = new ECParameters();
+                    ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
                     ecdsa = new ECDsaCng();

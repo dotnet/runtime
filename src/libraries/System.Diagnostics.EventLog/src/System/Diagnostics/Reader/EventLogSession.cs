@@ -105,7 +105,7 @@ namespace System.Diagnostics.Eventing.Reader
             _user = user;
             _logOnType = logOnType;
 
-            UnsafeNativeMethods.EvtRpcLogin erLogin = new UnsafeNativeMethods.EvtRpcLogin();
+            UnsafeNativeMethods.EvtRpcLogin erLogin = default;
             erLogin.Server = _server;
             erLogin.User = _user;
             erLogin.Domain = _domain;

@@ -13,7 +13,7 @@ internal partial class Interop
 
         internal static unsafe int RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi)
         {
-            osvi = new RTL_OSVERSIONINFOEX();
+            osvi = default;
             osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
             return RtlGetVersion(ref osvi);
         }

@@ -32,7 +32,7 @@ namespace System.IO.Pipes
             SafePipeHandle newServerHandle;
 
             // Create the two pipe handles that make up the anonymous pipe.
-            var pinningHandle = new GCHandle();
+            GCHandle pinningHandle = default;
             try
             {
                 Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);

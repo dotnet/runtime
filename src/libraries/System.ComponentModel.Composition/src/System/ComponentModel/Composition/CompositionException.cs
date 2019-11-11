@@ -264,7 +264,7 @@ namespace System.ComponentModel.Composition
         {
             List<IEnumerable<CompositionError>> paths = new List<IEnumerable<CompositionError>>();
 
-            VisitContext context = new VisitContext();
+            VisitContext context = default;
             context.Path = new Stack<CompositionError>();
             context.LeafVisitor = path =>
             {

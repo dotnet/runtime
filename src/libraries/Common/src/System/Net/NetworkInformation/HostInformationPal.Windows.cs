@@ -34,7 +34,7 @@ namespace System.Net.NetworkInformation
         {
             uint size = 0;
             SafeLocalAllocHandle buffer = null;
-            Interop.IpHlpApi.FIXED_INFO fixedInfo = new Interop.IpHlpApi.FIXED_INFO();
+            Interop.IpHlpApi.FIXED_INFO fixedInfo = default;
 
             // First we need to get the size of the buffer
             uint result = Interop.IpHlpApi.GetNetworkParams(SafeLocalAllocHandle.InvalidHandle, ref size);

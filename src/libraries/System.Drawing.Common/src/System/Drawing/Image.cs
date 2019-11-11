@@ -269,7 +269,7 @@ namespace System.Drawing
         {
             get
             {
-                Guid guid = new Guid();
+                Guid guid = default;
 
                 int status = Gdip.GdipGetImageRawFormat(new HandleRef(this, nativeImage), ref guid);
                 Gdip.CheckStatus(status);

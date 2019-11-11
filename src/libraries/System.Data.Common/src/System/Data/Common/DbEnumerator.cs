@@ -95,7 +95,7 @@ namespace System.Data.Common
             PropertyDescriptor[] props = new PropertyDescriptor[_reader.FieldCount];
             for (int i = 0; i < si.Length; i++)
             {
-                SchemaInfo s = new SchemaInfo();
+                SchemaInfo s = default;
                 s.name = _reader.GetName(i);
                 s.type = _reader.GetFieldType(i);
                 s.typeName = _reader.GetDataTypeName(i);

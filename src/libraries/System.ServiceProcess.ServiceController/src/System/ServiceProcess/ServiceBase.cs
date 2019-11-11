@@ -23,7 +23,7 @@ namespace System.ServiceProcess
     /// </devdoc>
     public class ServiceBase : Component
     {
-        private SERVICE_STATUS _status = new SERVICE_STATUS();
+        private SERVICE_STATUS _status;
         private IntPtr _statusHandle;
         private ServiceControlCallbackEx _commandCallbackEx;
         private ServiceMainCallback _mainCallback;

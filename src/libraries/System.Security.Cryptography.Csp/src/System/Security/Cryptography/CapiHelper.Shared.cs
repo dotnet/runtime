@@ -178,7 +178,7 @@ namespace Internal.NativeCrypto
 
                 uint expAsDword = br.ReadUInt32();
 
-                RSAParameters rsaParameters = new RSAParameters();
+                RSAParameters rsaParameters = default;
                 rsaParameters.Exponent = ExponentAsBytes(expAsDword);
                 rsaParameters.Modulus = br.ReadReversed(modulusLength);
                 if (includePrivateParameters)

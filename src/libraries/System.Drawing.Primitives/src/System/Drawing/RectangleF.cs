@@ -16,7 +16,7 @@ namespace System.Drawing
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Drawing.RectangleF'/> class.
         /// </summary>
-        public static readonly RectangleF Empty = new RectangleF();
+        public static readonly RectangleF Empty;
 
         private float x; // Do not rename (binary serialization)
         private float y; // Do not rename (binary serialization)

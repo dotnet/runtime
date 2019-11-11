@@ -791,7 +791,7 @@ namespace System.Collections.Concurrent
                             // we need to make sure all array copiers are finished
                             if (_activeCopiers > 0)
                             {
-                                SpinWait sw = new SpinWait();
+                                SpinWait sw = default;
                                 while (_activeCopiers > 0) sw.SpinOnce();
                             }
 

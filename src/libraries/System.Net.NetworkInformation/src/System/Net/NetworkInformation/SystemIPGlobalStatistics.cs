@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
     /// IP statistics.
     internal class SystemIPGlobalStatistics : IPGlobalStatistics
     {
-        private readonly Interop.IpHlpApi.MibIpStats _stats = new Interop.IpHlpApi.MibIpStats();
+        private readonly Interop.IpHlpApi.MibIpStats _stats = default;
 
         private SystemIPGlobalStatistics() { }
 

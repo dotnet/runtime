@@ -497,7 +497,7 @@ namespace System.Drawing.Imaging
 
         public void SetWrapMode(WrapMode mode)
         {
-            SetWrapMode(mode, new Color(), false);
+            SetWrapMode(mode, default(Color), false);
         }
 
         public void SetWrapMode(WrapMode mode, Color color)

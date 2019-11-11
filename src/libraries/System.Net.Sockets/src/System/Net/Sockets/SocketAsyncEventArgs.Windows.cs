@@ -1192,7 +1192,7 @@ namespace System.Net.Sockets
                 // The operation could complete so quickly that it races with the code
                 // initiating it.  Wait until that initiation code has completed before
                 // we try to undo the state it configures.
-                var sw = new SpinWait();
+                SpinWait sw = default;
                 while (_singleBufferHandleState == SingleBufferHandleState.InProcess)
                 {
                     sw.SpinOnce();
@@ -1233,7 +1233,7 @@ namespace System.Net.Sockets
             else
             {
                 // Other.
-                _receiveMessageFromPacketInfo = new IPPacketInformation();
+                _receiveMessageFromPacketInfo = default;
             }
         }
 

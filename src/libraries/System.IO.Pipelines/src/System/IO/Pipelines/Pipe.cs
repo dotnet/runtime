@@ -352,7 +352,7 @@ namespace System.IO.Pipelines
             // If the writer is completed (which it will be most of the time) then return a completed ValueTask
             if (_writerAwaitable.IsCompleted)
             {
-                var flushResult = new FlushResult();
+                FlushResult flushResult = default;
                 GetFlushResult(ref flushResult);
                 result = new ValueTask<FlushResult>(flushResult);
             }

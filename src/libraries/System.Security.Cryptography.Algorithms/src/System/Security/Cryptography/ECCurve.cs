@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static ECCurve Create(Oid oid)
         {
-            ECCurve curve = new ECCurve();
+            ECCurve curve = default;
             curve.CurveType = ECCurveType.Named;
             curve.Oid = oid;
             return curve;

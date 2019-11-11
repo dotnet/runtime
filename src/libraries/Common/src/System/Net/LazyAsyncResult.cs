@@ -491,7 +491,7 @@ namespace System.Net
             // can benefit from the synchronization of _intCompleted).  That means you can get here before _result got
             // set (although rarely - once every eight hours of stress).  Handle that case with a spin-lock.
 
-            SpinWait sw = new SpinWait();
+            SpinWait sw = default;
             while (_result == DBNull.Value)
             {
                 sw.SpinOnce();

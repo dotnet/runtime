@@ -533,7 +533,7 @@ namespace System.Data.SqlClient
 
             internal NullBitmap Clone()
             {
-                NullBitmap newBitmap = new NullBitmap();
+                NullBitmap newBitmap = default;
                 newBitmap._nullBitmap = _nullBitmap == null ? null : (byte[])_nullBitmap.Clone();
                 newBitmap._columnsCount = _columnsCount;
                 return newBitmap;

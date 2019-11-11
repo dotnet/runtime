@@ -100,7 +100,7 @@ namespace System.Net.Sockets
                     bool canceledOperations = false;
 
                     // Wait until it's safe.
-                    SpinWait sw = new SpinWait();
+                    SpinWait sw = default;
                     while (!_released)
                     {
                         // The socket was not released due to the SafeHandle being used.

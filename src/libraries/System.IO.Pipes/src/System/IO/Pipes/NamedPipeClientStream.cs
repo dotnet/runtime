@@ -144,7 +144,7 @@ namespace System.IO.Pipes
         {
             // This is the main connection loop. It will loop until the timeout expires.
             int elapsed = 0;
-            var sw = new SpinWait();
+            SpinWait sw = default;
             do
             {
                 cancellationToken.ThrowIfCancellationRequested();

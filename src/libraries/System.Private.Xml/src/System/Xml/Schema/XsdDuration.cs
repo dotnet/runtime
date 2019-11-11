@@ -438,7 +438,7 @@ namespace System.Xml.Schema
             int value, pos, numDigits;
             Parts parts = Parts.HasNone;
 
-            result = new XsdDuration();
+            result = default;
 
             s = s.Trim();
             length = s.Length;

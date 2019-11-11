@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Json
         private readonly bool _useSimpleDictionaryFormat;
 
         public XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
-            : base(null, int.MaxValue, new StreamingContext(), true)
+            : base(null, int.MaxValue, default(StreamingContext), true)
 
         {
             _jsonSerializer = serializer;
@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         internal XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializerImpl serializer, DataContract rootTypeDataContract)
-            : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(), false)
+            : base(serializer, serializer.MaxItemsInObjectGraph, default(StreamingContext), false)
         {
             _emitXsiType = serializer.EmitTypeInformation;
             this.rootTypeDataContract = rootTypeDataContract;

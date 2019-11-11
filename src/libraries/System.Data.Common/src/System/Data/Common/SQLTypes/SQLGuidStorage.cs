@@ -101,7 +101,7 @@ namespace System.Data.Common
 
         public override object ConvertXmlToObject(string s)
         {
-            SqlGuid newValue = new SqlGuid();
+            SqlGuid newValue = default;
             string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
             StringReader strReader = new StringReader(tempStr);
 

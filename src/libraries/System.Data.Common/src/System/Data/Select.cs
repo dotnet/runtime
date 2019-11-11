@@ -773,7 +773,7 @@ namespace System.Data
             int lo = FindFirstMatchingRecord();
             if (lo == -1)
             {
-                return new Range();
+                return default;
             }
             int hi = FindLastMatchingRecord(lo);
             Debug.Assert(lo <= hi, "GetBinaryFilteredRecords : Invalid Search Results");

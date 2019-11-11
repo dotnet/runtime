@@ -54,11 +54,11 @@ namespace System.Net.Http
             // Verify the hostName matches the certificate.
             unsafe
             {
-                var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA();
+                Interop.Crypt32.CERT_CHAIN_POLICY_PARA cppStruct = default;
                 cppStruct.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA);
                 cppStruct.dwFlags = 0;
 
-                var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA();
+                Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA eppStruct = default;
                 eppStruct.cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA);
                 eppStruct.dwAuthType = Interop.Crypt32.AuthType.AUTHTYPE_SERVER;
 
@@ -71,7 +71,7 @@ namespace System.Net.Http
                         Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                         ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG;
 
-                    var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
+                    Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
                     status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
                     if (Interop.Crypt32.CertVerifyCertificateChainPolicy(
                             (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL,

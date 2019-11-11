@@ -1964,7 +1964,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
             try
             {
-                DataTable.DSRowDiffIdUsageSection rowDiffIdUsage = new DataTable.DSRowDiffIdUsageSection();
+                DataTable.DSRowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
                     bool fDataFound = false;
@@ -2483,7 +2483,7 @@ namespace System.Data
                     return ReadXml(reader);
                 }
 
-                DataTable.DSRowDiffIdUsageSection rowDiffIdUsage = new DataTable.DSRowDiffIdUsageSection();
+                DataTable.DSRowDiffIdUsageSection rowDiffIdUsage = default;
                 try
                 {
                     bool fSchemaFound = false;

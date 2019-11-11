@@ -644,7 +644,7 @@ namespace System.Data
 
             if (IndexTree.NIL == nodeId)
             {
-                return new Range();
+                return default;
             }
             int recordIndex = _records.GetIndexByNode(nodeId);
 

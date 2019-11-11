@@ -107,7 +107,7 @@ namespace System.Xml.Xsl.Xslt
             _invkGen = new InvokeGenerator(_f, debug);
             _matcherBuilder = new MatcherBuilder(_f, _refReplacer, _invkGen);
             _singlFocus = new SingletonFocus(_f);
-            _funcFocus = new FunctionFocus();
+            _funcFocus = default;
             _curLoop = new LoopFocus(_f);
             _strConcat = new QilStrConcatenator(_f);
             _varHelper = new VariableHelper(_f);

@@ -178,7 +178,7 @@ namespace System.Net.Security
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
-            _handle = new Interop.SspiCli.CredHandle();
+            _handle = default;
         }
 
 #if TRACE_VERBOSE

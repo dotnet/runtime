@@ -1869,7 +1869,7 @@ namespace System.Xml.Schema
                 runningPositions = new List<RangePositionInfo>();
                 context.RunningPositions = runningPositions;
             }
-            RangePositionInfo rposInfo = new RangePositionInfo();
+            RangePositionInfo rposInfo = default;
             rposInfo.curpos = _firstpos.Clone();
 
             rposInfo.rangeCounters = new decimal[_minMaxNodesCount];
@@ -1987,8 +1987,8 @@ namespace System.Xml.Schema
                         rposInfo = runningPositions[j];
                         if (matchCount + 2 >= runningPositions.Count)
                         {
-                            runningPositions.Add(new RangePositionInfo());
-                            runningPositions.Add(new RangePositionInfo());
+                            runningPositions.Add(default(RangePositionInfo));
+                            runningPositions.Add(default(RangePositionInfo));
                         }
                         RangePositionInfo newRPosInfo = runningPositions[matchCount];
                         if (newRPosInfo.rangeCounters == null)

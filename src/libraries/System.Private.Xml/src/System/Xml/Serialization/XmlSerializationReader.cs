@@ -968,7 +968,7 @@ namespace System.Xml.Serialization
             char[] chars = value.ToCharArray();
             int charsLength = chars.Length;
 
-            SoapArrayInfo soapArrayInfo = new SoapArrayInfo();
+            SoapArrayInfo soapArrayInfo = default;
 
             // Parse backwards to get length first, then optional dimensions, then qname.
             int pos = charsLength - 1;
@@ -1039,7 +1039,7 @@ namespace System.Xml.Serialization
 
         private SoapArrayInfo ParseSoap12ArrayType(string itemType, string arraySize)
         {
-            SoapArrayInfo soapArrayInfo = new SoapArrayInfo();
+            SoapArrayInfo soapArrayInfo = default;
 
             if (itemType != null && itemType.Length > 0)
                 soapArrayInfo.qname = itemType;

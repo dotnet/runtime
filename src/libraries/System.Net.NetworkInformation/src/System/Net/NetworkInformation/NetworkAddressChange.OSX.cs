@@ -124,7 +124,7 @@ namespace System.Net.NetworkInformation
         {
             Debug.Assert(s_dynamicStoreRef == null);
 
-            var storeContext = new Interop.SystemConfiguration.SCDynamicStoreContext();
+            Interop.SystemConfiguration.SCDynamicStoreContext storeContext = default;
             using (SafeCreateHandle storeName = Interop.CoreFoundation.CFStringCreateWithCString("NetworkAddressChange.OSX"))
             {
                 s_dynamicStoreRef = Interop.SystemConfiguration.SCDynamicStoreCreate(

@@ -263,7 +263,7 @@ namespace System
                 if (_cachedInputRecord.eventType == Interop.KEY_EVENT)
                     return true;
 
-                Interop.InputRecord ir = new Interop.InputRecord();
+                Interop.InputRecord ir = default;
                 int numEventsRead = 0;
                 while (true)
                 {
@@ -706,8 +706,8 @@ namespace System
             Interop.Kernel32.CHAR_INFO[] data = new Interop.Kernel32.CHAR_INFO[sourceWidth * sourceHeight];
             bufferSize.X = (short)sourceWidth;
             bufferSize.Y = (short)sourceHeight;
-            Interop.Kernel32.COORD bufferCoord = new Interop.Kernel32.COORD();
-            Interop.Kernel32.SMALL_RECT readRegion = new Interop.Kernel32.SMALL_RECT();
+            Interop.Kernel32.COORD bufferCoord = default;
+            Interop.Kernel32.SMALL_RECT readRegion = default;
             readRegion.Left = (short)sourceLeft;
             readRegion.Right = (short)(sourceLeft + sourceWidth - 1);
             readRegion.Top = (short)sourceTop;
@@ -720,7 +720,7 @@ namespace System
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
             // Overwrite old section
-            Interop.Kernel32.COORD writeCoord = new Interop.Kernel32.COORD();
+            Interop.Kernel32.COORD writeCoord = default;
             writeCoord.X = (short)sourceLeft;
             Interop.Kernel32.Color c = ConsoleColorToColorAttribute(sourceBackColor, true);
             c |= ConsoleColorToColorAttribute(sourceForeColor, false);
@@ -740,7 +740,7 @@ namespace System
             }
 
             // Write text to new location
-            Interop.Kernel32.SMALL_RECT writeRegion = new Interop.Kernel32.SMALL_RECT();
+            Interop.Kernel32.SMALL_RECT writeRegion = default;
             writeRegion.Left = (short)targetLeft;
             writeRegion.Right = (short)(targetLeft + sourceWidth);
             writeRegion.Top = (short)targetTop;
@@ -752,7 +752,7 @@ namespace System
 
         public static void Clear()
         {
-            Interop.Kernel32.COORD coordScreen = new Interop.Kernel32.COORD();
+            Interop.Kernel32.COORD coordScreen = default;
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi;
             bool success;
             int conSize;
@@ -793,7 +793,7 @@ namespace System
         public static void SetCursorPosition(int left, int top)
         {
             IntPtr hConsole = OutputHandle;
-            Interop.Kernel32.COORD coords = new Interop.Kernel32.COORD();
+            Interop.Kernel32.COORD coords = default;
             coords.X = (short)left;
             coords.Y = (short)top;
             if (!Interop.Kernel32.SetConsoleCursorPosition(hConsole, coords))
@@ -846,7 +846,7 @@ namespace System
             if (height < srWindow.Bottom + 1 || height >= short.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
 
-            Interop.Kernel32.COORD size = new Interop.Kernel32.COORD();
+            Interop.Kernel32.COORD size = default;
             size.X = (short)width;
             size.Y = (short)height;
             if (!Interop.Kernel32.SetConsoleScreenBufferSize(OutputHandle, size))
@@ -969,7 +969,7 @@ namespace System
             // If the buffer is smaller than this new window size, resize the
             // buffer to be large enough.  Include window position.
             bool resizeBuffer = false;
-            Interop.Kernel32.COORD size = new Interop.Kernel32.COORD();
+            Interop.Kernel32.COORD size = default;
             size.X = csbi.dwSize.X;
             size.Y = csbi.dwSize.Y;
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
@@ -1062,7 +1062,7 @@ namespace System
                 {
                     throw new IOException(SR.IO_NoConsole);
                 }
-                return new Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
+                return default;
             }
 
             // Note that if stdout is redirected to a file, the console handle may be a file.
@@ -1074,7 +1074,7 @@ namespace System
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE && !throwOnNoConsole)
-                    return new Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
+                    return default;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 

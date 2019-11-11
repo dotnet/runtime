@@ -156,7 +156,7 @@ namespace System.Drawing.Imaging
                 if (this.MetafileSize == 0)
                 {
                     // GDI+ compatibility;
-                    return new Rectangle();
+                    return default;
                 }
 
                 return new Rectangle(header.x, header.y, header.width, header.height);

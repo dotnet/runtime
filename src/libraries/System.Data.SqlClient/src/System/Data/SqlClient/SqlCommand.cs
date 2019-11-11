@@ -1644,7 +1644,7 @@ namespace System.Data.SqlClient
 
             TaskCompletionSource<int> source = new TaskCompletionSource<int>();
 
-            CancellationTokenRegistration registration = new CancellationTokenRegistration();
+            CancellationTokenRegistration registration = default;
             if (cancellationToken.CanBeCanceled)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -1727,7 +1727,7 @@ namespace System.Data.SqlClient
 
             TaskCompletionSource<SqlDataReader> source = new TaskCompletionSource<SqlDataReader>();
 
-            CancellationTokenRegistration registration = new CancellationTokenRegistration();
+            CancellationTokenRegistration registration = default;
             if (cancellationToken.CanBeCanceled)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -1872,7 +1872,7 @@ namespace System.Data.SqlClient
 
             TaskCompletionSource<XmlReader> source = new TaskCompletionSource<XmlReader>();
 
-            CancellationTokenRegistration registration = new CancellationTokenRegistration();
+            CancellationTokenRegistration registration = default;
             if (cancellationToken.CanBeCanceled)
             {
                 if (cancellationToken.IsCancellationRequested)

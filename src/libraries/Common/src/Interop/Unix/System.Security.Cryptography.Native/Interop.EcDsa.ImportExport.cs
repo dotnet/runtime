@@ -113,7 +113,7 @@ internal static partial class Interop
             SafeBignumHandle qx_bn, qy_bn, d_bn;
             IntPtr d_bn_not_owned;
             int qx_cb, qy_cb, d_cb;
-            ECParameters parameters = new ECParameters();
+            ECParameters parameters = default;
 
             bool refAdded = false;
             try
@@ -254,7 +254,7 @@ internal static partial class Interop
                     int cbSubgroupOrder = GetMax(order_cb, d_cb);
 
                     // Copy values to ECParameters
-                    ECParameters parameters = new ECParameters();
+                    ECParameters parameters = default;
                     parameters.Q = new ECPoint
                     {
                         X = Crypto.ExtractBignum(qx_bn, cbFieldLength),

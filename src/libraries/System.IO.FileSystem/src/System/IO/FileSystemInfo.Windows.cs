@@ -145,7 +145,7 @@ namespace System.IO
         {
             if (_dataInitialized == -1)
             {
-                _data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+                _data = default;
                 Refresh();
             }
 

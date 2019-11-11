@@ -948,7 +948,7 @@ namespace System.Xml.XPath
         public static object XPathEvaluate(this XNode node, string expression, IXmlNamespaceResolver resolver)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
-            return new XPathEvaluator().Evaluate<object>(node, expression, resolver);
+            return default(XPathEvaluator).Evaluate<object>(node, expression, resolver);
         }
 
         /// <summary>
@@ -997,7 +997,7 @@ namespace System.Xml.XPath
         public static IEnumerable<XElement> XPathSelectElements(this XNode node, string expression, IXmlNamespaceResolver resolver)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
-            return (IEnumerable<XElement>)new XPathEvaluator().Evaluate<XElement>(node, expression, resolver);
+            return (IEnumerable<XElement>)default(XPathEvaluator).Evaluate<XElement>(node, expression, resolver);
         }
 
         private static XText CalibrateText(XText n)

@@ -33,7 +33,7 @@ namespace Windows.UI.Xaml.Media.Animation
                 throw new ArgumentOutOfRangeException(nameof(timeSpan));
             }
 
-            KeyTime keyTime = new KeyTime();
+            KeyTime keyTime = default;
 
             keyTime._timeSpan = timeSpan;
 

@@ -161,7 +161,7 @@ namespace System.Xml.Xsl.Runtime
 
             Uri collationUri;
             CultureInfo cultInfo = null;
-            Options options = new Options();
+            Options options = default;
 
             if (throwOnError)
             {

@@ -38,7 +38,7 @@ namespace System.Configuration
             // The conversion is true -> OverrideMode.Inherit
             // The conversion is false -> OverrideMode.Deny
             // This is consistent with Whidbey where true means true unless there is a false somewhere above
-            OverrideModeSetting result = new OverrideModeSetting();
+            OverrideModeSetting result = default;
 
             result.SetMode(allowOverride ? OverrideMode.Inherit : OverrideMode.Deny);
             result._mode |= XmlDefinedLegacy;
@@ -48,7 +48,7 @@ namespace System.Configuration
 
         internal static OverrideModeSetting CreateFromXmlReadValue(OverrideMode mode)
         {
-            OverrideModeSetting result = new OverrideModeSetting();
+            OverrideModeSetting result = default;
 
             result.SetMode(mode);
             result._mode |= XmlDefinedNewMode;

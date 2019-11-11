@@ -104,7 +104,7 @@ namespace System.Linq
                 Debug.Assert(!_hasOnlyCollections);
 
                 var builder = new SparseArrayBuilder<TSource>(initialize: true);
-                var deferredCopies = new ArrayBuilder<int>();
+                ArrayBuilder<int> deferredCopies = default;
 
                 for (int i = 0; ; i++)
                 {

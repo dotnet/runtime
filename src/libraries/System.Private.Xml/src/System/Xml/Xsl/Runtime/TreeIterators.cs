@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Create(XPathNavigator context, XmlNavigatorFilter filter, bool orSelf)
         {
-            AncestorIterator wrapped = new AncestorIterator();
+            AncestorIterator wrapped = default;
             wrapped.Create(context, filter, orSelf);
             _stack.Reset();
 
@@ -602,7 +602,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Create(XPathNavigator context, XmlNavigatorFilter filter)
         {
-            XPathPrecedingDocOrderIterator wrapped = new XPathPrecedingDocOrderIterator();
+            XPathPrecedingDocOrderIterator wrapped = default;
             wrapped.Create(context, filter);
             _stack.Reset();
 

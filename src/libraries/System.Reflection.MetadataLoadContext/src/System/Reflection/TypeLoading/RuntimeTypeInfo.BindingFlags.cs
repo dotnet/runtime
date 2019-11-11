@@ -17,7 +17,7 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(types != null);
 
             QueryResult<ConstructorInfo> queryResult = Query<ConstructorInfo>(bindingAttr);
-            ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>();
+            ListBuilder<ConstructorInfo> candidates = default;
             foreach (ConstructorInfo candidate in queryResult)
             {
                 if (candidate.QualifiesBasedOnParameterCount(bindingAttr, callConvention, types))
@@ -81,7 +81,7 @@ namespace System.Reflection.TypeLoading
             {
                 // Group #2: This group of api takes a set of parameter types and an optional binder.
                 QueryResult<MethodInfo> queryResult = Query<MethodInfo>(name, bindingAttr);
-                ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>();
+                ListBuilder<MethodInfo> candidates = default;
                 foreach (MethodInfo candidate in queryResult)
                 {
                     if (genericParameterCount != GenericParameterCountAny && genericParameterCount != candidate.GetGenericParameterCount())
@@ -124,7 +124,7 @@ namespace System.Reflection.TypeLoading
             {
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder.
                 QueryResult<PropertyInfo> queryResult = Query<PropertyInfo>(name, bindingAttr);
-                ListBuilder<PropertyInfo> candidates = new ListBuilder<PropertyInfo>();
+                ListBuilder<PropertyInfo> candidates = default;
                 foreach (PropertyInfo candidate in queryResult)
                 {
                     if (types == null || (candidate.GetIndexParameters().Length == types.Length))

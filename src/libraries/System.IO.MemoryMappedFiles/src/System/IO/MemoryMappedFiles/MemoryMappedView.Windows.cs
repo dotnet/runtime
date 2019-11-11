@@ -46,7 +46,7 @@ namespace System.IO.MemoryMappedFiles
             }
 
             // Query the view for its size and allocation type
-            Interop.Kernel32.MEMORY_BASIC_INFORMATION viewInfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
+            Interop.Kernel32.MEMORY_BASIC_INFORMATION viewInfo = default;
             Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
             ulong viewSize = (ulong)viewInfo.RegionSize;
 
@@ -72,7 +72,7 @@ namespace System.IO.MemoryMappedFiles
                     throw Win32Marshal.GetExceptionForWin32Error(lastError);
                 }
                 // again query the view for its new size
-                viewInfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
+                viewInfo = default;
                 Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
                 viewSize = (ulong)viewInfo.RegionSize;
             }
@@ -119,7 +119,7 @@ namespace System.IO.MemoryMappedFiles
                     if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
                         throw Win32Marshal.GetExceptionForWin32Error(error);
 
-                    SpinWait spinWait = new SpinWait();
+                    SpinWait spinWait = default;
                     for (int w = 0; w < MaxFlushWaits; w++)
                     {
                         int pause = (1 << w);  // MaxFlushRetries should never be over 30

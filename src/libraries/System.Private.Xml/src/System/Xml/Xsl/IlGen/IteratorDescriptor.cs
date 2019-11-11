@@ -58,7 +58,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static StorageDescriptor None()
         {
-            return new StorageDescriptor();
+            return default;
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static StorageDescriptor Stack(Type itemStorageType, bool isCached)
         {
-            StorageDescriptor storage = new StorageDescriptor();
+            StorageDescriptor storage = default;
             storage._location = ItemLocation.Stack;
             storage._itemStorageType = itemStorageType;
             storage._isCached = isCached;
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static StorageDescriptor Parameter(int paramIndex, Type itemStorageType, bool isCached)
         {
-            StorageDescriptor storage = new StorageDescriptor();
+            StorageDescriptor storage = default;
             storage._location = ItemLocation.Parameter;
             storage._locationObject = paramIndex;
             storage._itemStorageType = itemStorageType;
@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.IlGen
                          typeof(IList<>).MakeGenericType(itemStorageType).IsAssignableFrom(loc.LocalType),
                          "Type " + itemStorageType + " does not match the local variable's type");
 
-            StorageDescriptor storage = new StorageDescriptor();
+            StorageDescriptor storage = default;
             storage._location = ItemLocation.Local;
             storage._locationObject = loc;
             storage._itemStorageType = itemStorageType;
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(locIter.LocalType.GetMethod("get_Current").ReturnType == itemStorageType,
                          "Type " + itemStorageType + " does not match type of Current property.");
 
-            StorageDescriptor storage = new StorageDescriptor();
+            StorageDescriptor storage = default;
             storage._location = ItemLocation.Current;
             storage._locationObject = locIter;
             storage._itemStorageType = itemStorageType;
@@ -127,7 +127,7 @@ namespace System.Xml.Xsl.IlGen
                          typeof(IList<>).MakeGenericType(itemStorageType).IsAssignableFrom(methGlobal.ReturnType),
                          "Type " + itemStorageType + " does not match the global method's return type");
 
-            StorageDescriptor storage = new StorageDescriptor();
+            StorageDescriptor storage = default;
             storage._location = ItemLocation.Global;
             storage._locationObject = methGlobal;
             storage._itemStorageType = itemStorageType;

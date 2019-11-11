@@ -1640,7 +1640,7 @@ namespace System.Xml.Xsl.IlGen
                             if (AllowReplace(XmlILOptimization.EliminateStrConcat, local0))
                             {
                                 // Concatenate all constant arguments
-                                StringConcat concat = new StringConcat();
+                                StringConcat concat = default;
                                 concat.Delimiter = local3;
 
                                 foreach (QilLiteral lit in local2)

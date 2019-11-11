@@ -1043,7 +1043,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    CancellationTokenRegistration registration = new CancellationTokenRegistration();
+                    CancellationTokenRegistration registration = default;
                     if (cancellationToken.CanBeCanceled)
                     {
                         registration = cancellationToken.Register(s => ((TaskCompletionSource<DbConnectionInternal>)s).TrySetCanceled(), completion);

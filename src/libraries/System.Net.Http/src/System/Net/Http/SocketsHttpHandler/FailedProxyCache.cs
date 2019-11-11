@@ -36,7 +36,7 @@ namespace System.Net.Http
 
         // This lock can be folded into _nextFlushTicks for space optimization, but
         // this class should only have a single instance so would rather have clarity.
-        private SpinLock _flushLock = new SpinLock();
+        private SpinLock _flushLock = new SpinLock(enableThreadOwnerTracking: false); // mutable struct; do not make this readonly
 
         /// <summary>
         /// Checks when a proxy will become usable.

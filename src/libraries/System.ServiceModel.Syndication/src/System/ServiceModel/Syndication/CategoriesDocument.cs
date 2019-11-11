@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
 {
     public abstract class CategoriesDocument : IExtensibleSyndicationObject
     {
-        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private ExtensibleSyndicationObject _extensions;
 
         internal CategoriesDocument()
         {

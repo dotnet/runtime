@@ -545,7 +545,7 @@ namespace System.Net.Sockets
 
         public static SocketError SetMulticastOption(SafeSocketHandle handle, SocketOptionName optionName, MulticastOption optionValue)
         {
-            Interop.Winsock.IPMulticastRequest ipmr = new Interop.Winsock.IPMulticastRequest();
+            Interop.Winsock.IPMulticastRequest ipmr = default;
 
 #pragma warning disable CS0618 // Address is marked obsolete
             ipmr.MulticastAddress = unchecked((int)optionValue.Group.Address);
@@ -590,7 +590,7 @@ namespace System.Net.Sockets
 
         public static SocketError SetIPv6MulticastOption(SafeSocketHandle handle, SocketOptionName optionName, IPv6MulticastOption optionValue)
         {
-            Interop.Winsock.IPv6MulticastRequest ipmr = new Interop.Winsock.IPv6MulticastRequest();
+            Interop.Winsock.IPv6MulticastRequest ipmr = default;
 
             ipmr.MulticastAddress = optionValue.Group.GetAddressBytes();
             ipmr.InterfaceIndex = unchecked((int)optionValue.InterfaceIndex);
@@ -607,7 +607,7 @@ namespace System.Net.Sockets
 
         public static SocketError SetLingerOption(SafeSocketHandle handle, LingerOption optionValue)
         {
-            Interop.Winsock.Linger lngopt = new Interop.Winsock.Linger();
+            Interop.Winsock.Linger lngopt = default;
             lngopt.OnOff = optionValue.Enabled ? (ushort)1 : (ushort)0;
             lngopt.Time = (ushort)optionValue.LingerTime;
 
@@ -666,7 +666,7 @@ namespace System.Net.Sockets
 
         public static SocketError GetMulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out MulticastOption optionValue)
         {
-            Interop.Winsock.IPMulticastRequest ipmr = new Interop.Winsock.IPMulticastRequest();
+            Interop.Winsock.IPMulticastRequest ipmr = default;
             int optlen = Interop.Winsock.IPMulticastRequest.Size;
 
             // This can throw ObjectDisposedException.
@@ -703,7 +703,7 @@ namespace System.Net.Sockets
 
         public static SocketError GetIPv6MulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out IPv6MulticastOption optionValue)
         {
-            Interop.Winsock.IPv6MulticastRequest ipmr = new Interop.Winsock.IPv6MulticastRequest();
+            Interop.Winsock.IPv6MulticastRequest ipmr = default;
 
             int optlen = Interop.Winsock.IPv6MulticastRequest.Size;
 
@@ -727,7 +727,7 @@ namespace System.Net.Sockets
 
         public static SocketError GetLingerOption(SafeSocketHandle handle, out LingerOption optionValue)
         {
-            Interop.Winsock.Linger lngopt = new Interop.Winsock.Linger();
+            Interop.Winsock.Linger lngopt = default;
             int optlen = 4;
 
             // This can throw ObjectDisposedException.
@@ -757,7 +757,7 @@ namespace System.Net.Sockets
 
                 IntPtr rawHandle = handle.DangerousGetHandle();
                 IntPtr* fileDescriptorSet = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
-                Interop.Winsock.TimeValue IOwait = new Interop.Winsock.TimeValue();
+                Interop.Winsock.TimeValue IOwait = default;
 
                 // A negative timeout value implies an indefinite wait.
                 int socketCount;
@@ -853,7 +853,7 @@ namespace System.Net.Sockets
                 {
                     if (microseconds != -1)
                     {
-                        Interop.Winsock.TimeValue IOwait = new Interop.Winsock.TimeValue();
+                        Interop.Winsock.TimeValue IOwait = default;
                         MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
 
                         socketCount =

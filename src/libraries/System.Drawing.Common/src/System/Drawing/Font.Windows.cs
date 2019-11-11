@@ -226,7 +226,7 @@ namespace System.Drawing
         /// </summary>
         public static Font FromHfont(IntPtr hfont)
         {
-            var logFont = new Interop.User32.LOGFONT();
+            Interop.User32.LOGFONT logFont = default;
             SafeNativeMethods.GetObject(new HandleRef(null, hfont), ref logFont);
 
             using (ScreenDC dc = ScreenDC.Create())
@@ -309,7 +309,7 @@ namespace System.Drawing
             }
 
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
-            logFont = new Interop.User32.LOGFONT();
+            logFont = default;
 
             Marshal.StructureToPtr(lf, new IntPtr(&logFont), fDeleteOld: false);
 

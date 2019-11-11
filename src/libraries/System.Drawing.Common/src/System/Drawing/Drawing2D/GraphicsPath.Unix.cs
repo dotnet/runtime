@@ -625,7 +625,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
         {
-            Rectangle layout = new Rectangle();
+            Rectangle layout = default;
             layout.X = origin.X;
             layout.Y = origin.Y;
             AddString(s, family, style, emSize, layout, format);
@@ -633,7 +633,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
         {
-            RectangleF layout = new RectangleF();
+            RectangleF layout = default;
             layout.X = origin.X;
             layout.Y = origin.Y;
             AddString(s, family, style, emSize, layout, format);

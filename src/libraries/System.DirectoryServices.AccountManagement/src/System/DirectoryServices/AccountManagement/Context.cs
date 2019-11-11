@@ -682,7 +682,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private void DoServerVerifyAndPropRetrieval()
         {
-            _serverProperties = new ServerProperties();
+            _serverProperties = default;
             if (_contextType == ContextType.ApplicationDirectory || _contextType == ContextType.Domain)
             {
                 ReadServerConfig(_name, ref _serverProperties);

@@ -124,8 +124,7 @@ namespace System.Net
         {
             ValidateV2Property(); // CheckDispose and initilize HttpListener in the case of app.config timeouts
 
-            Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo =
-                new Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO();
+            Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = default;
 
             timeoutinfo.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
             timeoutinfo.DrainEntityBody =
@@ -345,7 +344,7 @@ namespace System.Net
             // Set the association between request queue and url group. After this, requests for registered urls will
             // get delivered to this request queue.
             //
-            Interop.HttpApi.HTTP_BINDING_INFO info = new Interop.HttpApi.HTTP_BINDING_INFO();
+            Interop.HttpApi.HTTP_BINDING_INFO info = default;
             info.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
             info.RequestQueueHandle = DangerousGetHandle();
 
@@ -366,7 +365,7 @@ namespace System.Net
             // is fine since http.sys allows to set HttpServerBindingProperty multiple times for valid
             // Url groups.
             //
-            Interop.HttpApi.HTTP_BINDING_INFO info = new Interop.HttpApi.HTTP_BINDING_INFO();
+            Interop.HttpApi.HTTP_BINDING_INFO info = default;
             info.Flags = Interop.HttpApi.HTTP_FLAGS.NONE;
             info.RequestQueueHandle = IntPtr.Zero;
 
@@ -1676,8 +1675,8 @@ namespace System.Net
         private void SendError(ulong requestId, HttpStatusCode httpStatusCode, ArrayList challenges)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"RequestId: {requestId}");
-            Interop.HttpApi.HTTP_RESPONSE httpResponse = new Interop.HttpApi.HTTP_RESPONSE();
-            httpResponse.Version = new Interop.HttpApi.HTTP_VERSION();
+            Interop.HttpApi.HTTP_RESPONSE httpResponse = default;
+            httpResponse.Version = default;
             httpResponse.Version.MajorVersion = (ushort)1;
             httpResponse.Version.MinorVersion = (ushort)1;
             httpResponse.StatusCode = (ushort)httpStatusCode;
@@ -1699,8 +1698,8 @@ namespace System.Net
                     httpResponse.Headers.UnknownHeaderCount = checked((ushort)(challenges == null ? 0 : challenges.Count));
                     GCHandle[] challengeHandles = null;
                     Interop.HttpApi.HTTP_UNKNOWN_HEADER[] headersArray = null;
-                    GCHandle headersArrayHandle = new GCHandle();
-                    GCHandle wwwAuthenticateHandle = new GCHandle();
+                    GCHandle headersArrayHandle = default;
+                    GCHandle wwwAuthenticateHandle = default;
                     if (httpResponse.Headers.UnknownHeaderCount > 0)
                     {
                         challengeHandles = new GCHandle[httpResponse.Headers.UnknownHeaderCount];
@@ -1924,7 +1923,7 @@ namespace System.Net
             {
                 int oldValue;
 
-                SpinWait spin = new SpinWait();
+                SpinWait spin = default;
                 while ((oldValue = Interlocked.CompareExchange(ref _ownershipState, 1, 0)) == 2)
                 {
                     // Must block until it equals 3 - we must be in the callback right now.

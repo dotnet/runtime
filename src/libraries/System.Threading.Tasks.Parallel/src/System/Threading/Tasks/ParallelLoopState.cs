@@ -208,7 +208,7 @@ namespace System.Threading.Tasks
             int oldLBI = pflags._lowestBreakIteration;
             if (iteration < oldLBI)
             {
-                SpinWait wait = new SpinWait();
+                SpinWait wait = default;
                 while (Interlocked.CompareExchange(
                     ref pflags._lowestBreakIteration,
                         iteration,
@@ -249,7 +249,7 @@ namespace System.Threading.Tasks
             long oldLBI = pflags.LowestBreakIteration;
             if (iteration < oldLBI)
             {
-                SpinWait wait = new SpinWait();
+                SpinWait wait = default;
                 while (Interlocked.CompareExchange(
                     ref pflags._lowestBreakIteration,
                         iteration,
@@ -419,7 +419,7 @@ namespace System.Threading.Tasks
 
         internal bool AtomicLoopStateUpdate(int newState, int illegalStates, ref int oldState)
         {
-            SpinWait sw = new SpinWait();
+            SpinWait sw = default;
 
             do
             {

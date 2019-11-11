@@ -200,7 +200,7 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(chainContext, cpp.dwFlags);
 
-            var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
+            Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
             status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
 
             bool errorCode =

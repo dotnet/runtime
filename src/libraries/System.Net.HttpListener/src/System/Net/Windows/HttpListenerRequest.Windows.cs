@@ -148,7 +148,7 @@ namespace System.Net
         {
             get
             {
-                Guid guid = new Guid();
+                Guid guid = default;
                 *(1 + (ulong*)&guid) = RequestId;
                 return guid;
             }

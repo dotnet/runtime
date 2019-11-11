@@ -844,7 +844,7 @@ namespace System.Xml.Linq
         {
             if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
 
-            XElement e = new XElement(new AsyncConstructionSentry());
+            XElement e = new XElement(default(AsyncConstructionSentry));
             await e.ReadElementFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
 
             cancellationToken.ThrowIfCancellationRequested();

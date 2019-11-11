@@ -162,7 +162,7 @@ namespace System.Drawing
             IntPtr newObject;
             FontStyle newStyle = FontStyle.Regular;
             float newSize;
-            Interop.User32.LOGFONT lf = new Interop.User32.LOGFONT();
+            Interop.User32.LOGFONT lf = default;
 
             // Sanity. Should we throw an exception?
             if (hfont == IntPtr.Zero)

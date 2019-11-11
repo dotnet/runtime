@@ -402,7 +402,7 @@ namespace System.IO.Pipes
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             if ((inheritability & HandleInheritability.Inheritable) != 0)
             {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+                secAttrs = default;
                 secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
                 secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }

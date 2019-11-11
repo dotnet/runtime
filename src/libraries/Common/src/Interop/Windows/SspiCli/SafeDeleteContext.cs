@@ -29,7 +29,7 @@ namespace System.Net.Security
 
         protected SafeDeleteContext() : base(IntPtr.Zero, true)
         {
-            _handle = new Interop.SspiCli.CredHandle();
+            _handle = default;
         }
 
         public override bool IsInvalid

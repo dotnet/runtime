@@ -37,11 +37,11 @@ namespace Internal.Cryptography.Pal
 
             unsafe
             {
-                CERT_CHAIN_POLICY_PARA para = new CERT_CHAIN_POLICY_PARA();
+                CERT_CHAIN_POLICY_PARA para = default;
                 para.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
                 para.dwFlags = (int)flags;
 
-                CERT_CHAIN_POLICY_STATUS status = new CERT_CHAIN_POLICY_STATUS();
+                CERT_CHAIN_POLICY_STATUS status = default;
                 status.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
 
                 if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))

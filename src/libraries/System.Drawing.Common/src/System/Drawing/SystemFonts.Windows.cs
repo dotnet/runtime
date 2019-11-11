@@ -117,7 +117,7 @@ namespace System.Drawing
             {
                 Font iconTitleFont = null;
 
-                var itfont = new Interop.User32.LOGFONT();
+                Interop.User32.LOGFONT itfont = default;
                 if (Interop.User32.SystemParametersInfoW(Interop.User32.SystemParametersAction.SPI_GETICONTITLELOGFONT, (uint)sizeof(Interop.User32.LOGFONT), &itfont, 0))
                 {
                     iconTitleFont = GetFontFromData(itfont);

@@ -49,7 +49,7 @@ internal static partial class Interop
                 Span<NCryptBuffer> parameters = stackalloc NCryptBuffer[4];
                 int parameterCount = 0;
                 // We always need to marshal the hashing function
-                NCryptBuffer hashAlgorithmBuffer = new NCryptBuffer();
+                NCryptBuffer hashAlgorithmBuffer = default;
                 hashAlgorithmBuffer.cbBuffer = (hashAlgorithm.Length + 1) * sizeof(char);
                 hashAlgorithmBuffer.BufferType = BufferType.KdfHashAlgorithm;
                 hashAlgorithmBuffer.pvBuffer = hashAlgorithmString;
@@ -67,7 +67,7 @@ internal static partial class Interop
 
                         if (pHmacKey != null)
                         {
-                            NCryptBuffer hmacKeyBuffer = new NCryptBuffer();
+                            NCryptBuffer hmacKeyBuffer = default;
                             hmacKeyBuffer.cbBuffer = hmacKey.Length;
                             hmacKeyBuffer.BufferType = BufferType.KdfHmacKey;
                             hmacKeyBuffer.pvBuffer = new IntPtr(pHmacKey);
@@ -78,7 +78,7 @@ internal static partial class Interop
 
                         if (pSecretPrepend != null)
                         {
-                            NCryptBuffer secretPrependBuffer = new NCryptBuffer();
+                            NCryptBuffer secretPrependBuffer = default;
                             secretPrependBuffer.cbBuffer = secretPrepend.Length;
                             secretPrependBuffer.BufferType = BufferType.KdfSecretPrepend;
                             secretPrependBuffer.pvBuffer = new IntPtr(pSecretPrepend);
@@ -89,7 +89,7 @@ internal static partial class Interop
 
                         if (pSecretAppend != null)
                         {
-                            NCryptBuffer secretAppendBuffer = new NCryptBuffer();
+                            NCryptBuffer secretAppendBuffer = default;
                             secretAppendBuffer.cbBuffer = secretAppend.Length;
                             secretAppendBuffer.BufferType = BufferType.KdfSecretAppend;
                             secretAppendBuffer.pvBuffer = new IntPtr(pSecretAppend);
@@ -126,7 +126,7 @@ internal static partial class Interop
         {
             fixed (NCryptBuffer* pParameters = &MemoryMarshal.GetReference(parameters))
             {
-                NCryptBufferDesc parameterDesc = new NCryptBufferDesc();
+                NCryptBufferDesc parameterDesc = default;
                 parameterDesc.ulVersion = 0;
                 parameterDesc.cBuffers = parameters.Length;
                 parameterDesc.pBuffers = new IntPtr(pParameters);
@@ -225,13 +225,13 @@ internal static partial class Interop
             {
                 fixed (byte* pLabel = label, pSeed = seed)
                 {
-                    NCryptBuffer labelBuffer = new NCryptBuffer();
+                    NCryptBuffer labelBuffer = default;
                     labelBuffer.cbBuffer = label.Length;
                     labelBuffer.BufferType = BufferType.KdfTlsLabel;
                     labelBuffer.pvBuffer = new IntPtr(pLabel);
                     buffers[0] = labelBuffer;
 
-                    NCryptBuffer seedBuffer = new NCryptBuffer();
+                    NCryptBuffer seedBuffer = default;
                     seedBuffer.cbBuffer = seed.Length;
                     seedBuffer.BufferType = BufferType.KdfTlsSeed;
                     seedBuffer.pvBuffer = new IntPtr(pSeed);

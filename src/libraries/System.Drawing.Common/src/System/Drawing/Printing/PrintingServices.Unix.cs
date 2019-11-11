@@ -902,7 +902,7 @@ namespace System.Drawing.Printing
                 default_page_settings.PrinterResolution.X,
                 default_page_settings.PrinterResolution.Y, ref graphics);
 
-            DOCINFO doc = new DOCINFO();
+            DOCINFO doc = default;
             doc.filename = name;
             doc.settings = settings;
             doc.default_page_settings = default_page_settings;

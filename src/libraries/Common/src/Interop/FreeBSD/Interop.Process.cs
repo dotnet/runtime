@@ -396,7 +396,7 @@ internal static partial class Interop
         /// </returns>
         public static unsafe proc_stats GetThreadInfo(int pid, int tid)
         {
-            proc_stats ret = new proc_stats();
+            proc_stats ret = default;
             kinfo_proc* info = null;
             int count;
 

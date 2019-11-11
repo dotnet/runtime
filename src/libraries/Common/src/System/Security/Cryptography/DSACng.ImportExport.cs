@@ -337,7 +337,7 @@ namespace System.Security.Cryptography
 
                 unsafe
                 {
-                    DSAParameters dsaParams = new DSAParameters();
+                    DSAParameters dsaParams = default;
 
                     fixed (byte* pDsaBlob = dsaBlob)
                     {

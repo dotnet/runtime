@@ -235,7 +235,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                 //current head is empty and it is NOT the last segment,
                 //it means another thread is growing new segment
                 {
-                    SpinWait spin = new SpinWait();
+                    SpinWait spin = default;
                     while (head.IsEmpty)
                     {
                         if (head.Next == null)
@@ -319,7 +319,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             tail = _tail;
             headLow = head.Low;
             tailHigh = tail.High;
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
 
             //we loop until the observed values are stable and sensible.
             //This ensures that any update order by other methods can be tolerated.
@@ -456,7 +456,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         {
             try
             {
-                SpinWait spin = new SpinWait();
+                SpinWait spin = default;
 
                 if (head == tail)
                 {
@@ -534,7 +534,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// </param>
         public void Enqueue(T item)
         {
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
             while (true)
             {
                 Segment tail = _tail;
@@ -779,7 +779,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             /// <returns>return false only if the current segment is empty</returns>
             internal bool TryRemove(out T result)
             {
-                SpinWait spin = new SpinWait();
+                SpinWait spin = default;
                 int lowLocal = Low, highLocal = High;
                 while (lowLocal <= highLocal)
                 {
@@ -788,7 +788,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                     {
                         //if the specified value is not available (this spot is taken by a push operation,
                         // but the value is not written into yet), then spin
-                        SpinWait spinLocal = new SpinWait();
+                        SpinWait spinLocal = default;
                         while (!_state[lowLocal]._value)
                         {
                             spinLocal.SpinOnce();
@@ -814,7 +814,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                             //while the *current* thread is doing *this* Dequeue operation, and finds that it needs to
                             //dispose the current (and ONLY) segment. Then we need to wait till thread A finishes its
                             //Grow operation, this is the reason of having the following while loop
-                            spinLocal = new SpinWait();
+                            spinLocal = default;
                             while (_next == null)
                             {
                                 spinLocal.SpinOnce();
@@ -847,7 +847,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                 int lowLocal = Low;
                 if (lowLocal > High)
                     return false;
-                SpinWait spin = new SpinWait();
+                SpinWait spin = default;
                 while (!_state[lowLocal]._value)
                 {
                     spin.SpinOnce();
@@ -866,7 +866,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             {
                 for (int i = start; i <= end; i++)
                 {
-                    SpinWait spin = new SpinWait();
+                    SpinWait spin = default;
                     while (!_state[i]._value)
                     {
                         spin.SpinOnce();

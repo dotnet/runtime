@@ -1998,7 +1998,7 @@ namespace System.Net.WebSockets
                     }
 
                     Interop.WebSocket.Buffer payloadBuffer;
-                    payloadBuffer = new Interop.WebSocket.Buffer();
+                    payloadBuffer = default;
                     _webSocket._internalBuffer.PinSendBuffer(buffer.Value, out _BufferHasBeenPinned);
                     payloadBuffer.Data.BufferData = _webSocket._internalBuffer.ConvertPinnedSendPayloadToNative(buffer.Value);
                     payloadBuffer.Data.BufferLength = (uint)buffer.Value.Count;
@@ -2074,7 +2074,7 @@ namespace System.Net.WebSockets
                         return null;
                     }
 
-                    Interop.WebSocket.Buffer payloadBuffer = new Interop.WebSocket.Buffer();
+                    Interop.WebSocket.Buffer payloadBuffer = default;
                     if (CloseReason != null)
                     {
                         byte[] blob = Encoding.UTF8.GetBytes(CloseReason);

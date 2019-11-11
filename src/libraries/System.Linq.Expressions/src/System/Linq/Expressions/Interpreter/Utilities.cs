@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     if (_keysAndValues[i].Key == key)
                     {
-                        _keysAndValues[i] = new KeyValuePair<TKey, TValue>();
+                        _keysAndValues[i] = default;
                         return;
                     }
                 }

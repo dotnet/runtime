@@ -217,9 +217,9 @@ namespace System.Drawing
             {
                 if (_iconSize.IsEmpty)
                 {
-                    var info = new SafeNativeMethods.ICONINFO();
+                    SafeNativeMethods.ICONINFO info = default;
                     SafeNativeMethods.GetIconInfo(new HandleRef(this, Handle), ref info);
-                    var bitmap = new SafeNativeMethods.BITMAP();
+                    SafeNativeMethods.BITMAP bitmap = default;
 
                     if (info.hbmColor != IntPtr.Zero)
                     {
@@ -760,9 +760,9 @@ namespace System.Drawing
             else if (_bestBitDepth == 0 || _bestBitDepth == 32)
             {
                 // This may be a 32bpp icon or an icon without any data.
-                var info = new SafeNativeMethods.ICONINFO();
+                SafeNativeMethods.ICONINFO info = default;
                 SafeNativeMethods.GetIconInfo(new HandleRef(this, _handle), ref info);
-                var bmp = new SafeNativeMethods.BITMAP();
+                SafeNativeMethods.BITMAP bmp = default;
                 try
                 {
                     if (info.hbmColor != IntPtr.Zero)

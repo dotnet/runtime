@@ -209,7 +209,7 @@ namespace System.Data.Common
 
         public override object ConvertXmlToObject(string s)
         {
-            SqlInt32 newValue = new SqlInt32();
+            SqlInt32 newValue = default;
             string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
             StringReader strReader = new StringReader(tempStr);
 

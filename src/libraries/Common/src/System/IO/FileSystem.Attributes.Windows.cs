@@ -25,7 +25,7 @@ namespace System.IO
 
         private static bool DirectoryExists(string path, out int lastError)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
 
             return
@@ -36,7 +36,7 @@ namespace System.IO
 
         public static bool FileExists(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
             return
@@ -96,7 +96,7 @@ namespace System.IO
                         // pagefile.sys case. As such we're probably stuck filtering out specific
                         // cases that we know we don't want to retry on.
 
-                        var findData = new Interop.Kernel32.WIN32_FIND_DATA();
+                        Interop.Kernel32.WIN32_FIND_DATA findData = default;
                         using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path, ref findData))
                         {
                             if (handle.IsInvalid)

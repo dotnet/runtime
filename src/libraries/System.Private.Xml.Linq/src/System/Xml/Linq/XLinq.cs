@@ -201,7 +201,7 @@ namespace System.Xml.Linq
         public ElementWriter(XmlWriter writer)
         {
             _writer = writer;
-            _resolver = new NamespaceResolver();
+            _resolver = default;
         }
 
         public void WriteElement(XElement e)
@@ -535,7 +535,7 @@ namespace System.Xml.Linq
             _writer = w;
             _element = null;
             _attributes = new List<XAttribute>();
-            _resolver = new NamespaceResolver();
+            _resolver = default;
         }
 
         private void FlushElement()

@@ -502,7 +502,7 @@ namespace System.DirectoryServices
                 }
 
                 // the new option is available, set it so we get the new PutEx behavior that will allow multiple changes
-                Variant value = new Variant();
+                Variant value = default;
                 value.varType = 11; //VT_BOOL
                 value.boolvalue = -1;
                 ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).SetOption(8, value);

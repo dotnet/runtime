@@ -104,7 +104,7 @@ namespace System.Net.Sockets
             else
             {
                 // Other
-                _ipPacketInformation = new IPPacketInformation();
+                _ipPacketInformation = default;
             }
         }
 

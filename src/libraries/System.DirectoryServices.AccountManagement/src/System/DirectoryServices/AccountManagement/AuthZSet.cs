@@ -56,7 +56,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                UnsafeNativeMethods.LUID luid = new UnsafeNativeMethods.LUID();
+                UnsafeNativeMethods.LUID luid = default;
                 luid.low = 0;
                 luid.high = 0;
 

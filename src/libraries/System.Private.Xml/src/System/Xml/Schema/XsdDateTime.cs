@@ -137,7 +137,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDateTime(string text, XsdDateTimeFlags kinds) : this()
         {
-            Parser parser = new Parser();
+            Parser parser = default;
             if (!parser.Parse(text, kinds))
             {
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, text, kinds));
@@ -162,10 +162,10 @@ namespace System.Xml.Schema
 
         internal static bool TryParse(string text, XsdDateTimeFlags kinds, out XsdDateTime result)
         {
-            Parser parser = new Parser();
+            Parser parser = default;
             if (!parser.Parse(text, kinds))
             {
-                result = new XsdDateTime();
+                result = default;
                 return false;
             }
             result = new XsdDateTime(parser);

@@ -1027,7 +1027,7 @@ namespace System.Net.Http
             if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy ||
                 state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseWinInetProxy)
             {
-                var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
+                Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo = default;
                 bool updateProxySettings = false;
                 Uri uri = state.RequestMessage.RequestUri;
 

@@ -216,7 +216,7 @@ namespace Windows.UI.Xaml
         {
             get
             {
-                Duration duration = new Duration();
+                Duration duration = default;
                 duration._durationType = DurationType.Automatic;
 
                 return duration;
@@ -227,7 +227,7 @@ namespace Windows.UI.Xaml
         {
             get
             {
-                Duration duration = new Duration();
+                Duration duration = default;
                 duration._durationType = DurationType.Forever;
 
                 return duration;

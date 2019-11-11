@@ -67,7 +67,7 @@ namespace System.Diagnostics
         private const int Flag_disposed = 0x100;
         private const int Flag_sourceVerified = 0x200;
 
-        private BitVector32 boolFlags = new BitVector32();
+        private BitVector32 boolFlags;
 
         private Hashtable messageLibraries;
         private static readonly Hashtable listenerInfos = new Hashtable(StringComparer.OrdinalIgnoreCase);

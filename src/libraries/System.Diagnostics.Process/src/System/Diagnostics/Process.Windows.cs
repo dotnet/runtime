@@ -462,9 +462,9 @@ namespace System.Diagnostics
             StringBuilder commandLine = BuildCommandLine(startInfo.FileName, StartInfo.Arguments);
             Process.AppendArguments(commandLine, StartInfo.ArgumentList);
 
-            Interop.Kernel32.STARTUPINFO startupInfo = new Interop.Kernel32.STARTUPINFO();
-            Interop.Kernel32.PROCESS_INFORMATION processInfo = new Interop.Kernel32.PROCESS_INFORMATION();
-            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+            Interop.Kernel32.STARTUPINFO startupInfo = default;
+            Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
             SafeProcessHandle procSH = new SafeProcessHandle();
             SafeThreadHandle threadSH = new SafeThreadHandle();
 
@@ -836,7 +836,7 @@ namespace System.Diagnostics
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
         private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = default;
             securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;
 
             SafeFileHandle hTmp = null;

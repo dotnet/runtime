@@ -178,10 +178,11 @@ namespace System.Text.Json
         /// <returns>"true" if successfully parsed.</returns>
         private static bool TryParseDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeParseData parseData)
         {
+            parseData = default;
+
             // Source does not have enough characters for YYYY-MM-DD
             if (source.Length < 10)
             {
-                parseData = default;
                 return false;
             }
 
@@ -196,8 +197,6 @@ namespace System.Text.Json
             // Note: 5.2.2.2 "Representations with reduced precision" allows for
             // just [year]["-"][month] (a) and just [year] (b), but we currently
             // don't permit it.
-
-            parseData = new DateTimeParseData();
 
             {
                 uint digit1 = source[0] - (uint)'0';

@@ -71,17 +71,17 @@ namespace System.Drawing.Imaging
         }
 
         public Metafile(IntPtr referenceHdc, EmfType emfType, string description) :
-            this(referenceHdc, new RectangleF(), MetafileFrameUnit.GdiCompatible, emfType, description)
+            this(referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, emfType, description)
         {
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string description) :
-            this(stream, referenceHdc, new RectangleF(), MetafileFrameUnit.GdiCompatible, type, description)
+            this(stream, referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, type, description)
         {
         }
 
         public Metafile(string fileName, IntPtr referenceHdc, EmfType type, string description) :
-            this(fileName, referenceHdc, new RectangleF(), MetafileFrameUnit.GdiCompatible, type, description)
+            this(fileName, referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, type, description)
         {
         }
 

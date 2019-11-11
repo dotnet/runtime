@@ -62,7 +62,7 @@ namespace System.Configuration
             _flags[FlagInheritInChildApps] = true;
             _flags[FlagForceSave] = false;
 
-            _modifiedFlags = new SimpleBitVector32();
+            _modifiedFlags = default;
         }
 
         private bool IsRuntime => _flags[FlagAttached] &&
@@ -403,7 +403,7 @@ namespace System.Configuration
 
         internal void ResetModifiedFlags()
         {
-            _modifiedFlags = new SimpleBitVector32();
+            _modifiedFlags = default;
         }
 
         internal bool IsModifiedFlags()

@@ -39,7 +39,7 @@ namespace System.Net.NetworkInformation
 
         internal static Interop.IpHlpApi.MibIfRow2 GetIfEntry2(long index)
         {
-            Interop.IpHlpApi.MibIfRow2 ifRow = new Interop.IpHlpApi.MibIfRow2();
+            Interop.IpHlpApi.MibIfRow2 ifRow = default;
             if (index == 0)
             {
                 return ifRow;

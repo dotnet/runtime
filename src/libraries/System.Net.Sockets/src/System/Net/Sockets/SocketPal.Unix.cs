@@ -1405,7 +1405,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetLingerOption(SafeSocketHandle handle, out LingerOption optionValue)
         {
-            var opt = new Interop.Sys.LingerOption();
+            Interop.Sys.LingerOption opt = default;
             Interop.Error err = Interop.Sys.GetLingerOption(handle, &opt);
             if (err != Interop.Error.SUCCESS)
             {

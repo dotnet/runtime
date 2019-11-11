@@ -1690,7 +1690,7 @@ namespace System.Diagnostics
                                                                                                     out securityDescriptorPointer, IntPtr.Zero))
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
 
-                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+                    Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //
@@ -1752,7 +1752,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.CantMapFileView);
 
                     // figure out what size the share memory really is.
-                    Interop.Kernel32.MEMORY_BASIC_INFORMATION meminfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
+                    Interop.Kernel32.MEMORY_BASIC_INFORMATION meminfo = default;
                     if (Interop.Kernel32.VirtualQuery(_fileViewAddress, ref meminfo, (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION)) == UIntPtr.Zero)
                         throw new InvalidOperationException(SR.CantGetMappingSize);
 

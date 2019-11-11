@@ -634,7 +634,7 @@ namespace System.Collections.Concurrent
             {
                 if (queue._currentOp != (int)Operation.None)
                 {
-                    var spinner = new SpinWait();
+                    SpinWait spinner = default;
                     do { spinner.SpinOnce(); }
                     while (queue._currentOp != (int)Operation.None);
                 }
@@ -975,7 +975,7 @@ namespace System.Collections.Concurrent
                         // steal operations happening at the time.
                         if ((head - (_tailIndex - 2) >= 0) && _currentOp == (int)Operation.Add)
                         {
-                            var spinner = new SpinWait();
+                            SpinWait spinner = default;
                             do
                             {
                                 spinner.SpinOnce();

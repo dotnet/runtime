@@ -429,7 +429,7 @@ namespace System.DirectoryServices.AccountManagement
             public string DomainNameDns;
             [MarshalAs(UnmanagedType.LPWStr)]
             public string DomainForestName;
-            public Guid DomainGuid = new Guid();
+            public Guid DomainGuid;
         }
 
         /*
@@ -462,7 +462,7 @@ namespace System.DirectoryServices.AccountManagement
             public string DomainControllerName = null;
             public string DomainControllerAddress = null;
             public int DomainControllerAddressType = 0;
-            public Guid DomainGuid = new Guid();
+            public Guid DomainGuid;
             public string DomainName = null;
             public string DnsForestName = null;
             public int Flags = 0;

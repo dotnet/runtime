@@ -675,7 +675,7 @@ namespace System.DirectoryServices
             AdsSearchPreferenceInfo info;
 
             // search scope
-            info = new AdsSearchPreferenceInfo();
+            info = default;
             info.dwSearchPref = (int)AdsSearchPreferences.SEARCH_SCOPE;
             info.vValue = new AdsValueHelper((int)SearchScope).GetStruct();
             prefList.Add(info);
@@ -683,7 +683,7 @@ namespace System.DirectoryServices
             // size limit
             if (_sizeLimit != 0 || !findMoreThanOne)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.SIZE_LIMIT;
                 info.vValue = new AdsValueHelper(findMoreThanOne ? SizeLimit : 1).GetStruct();
                 prefList.Add(info);
@@ -692,14 +692,14 @@ namespace System.DirectoryServices
             // time limit
             if (ServerTimeLimit >= new TimeSpan(0))
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.TIME_LIMIT;
                 info.vValue = new AdsValueHelper((int)ServerTimeLimit.TotalSeconds).GetStruct();
                 prefList.Add(info);
             }
 
             // propertyNamesOnly
-            info = new AdsSearchPreferenceInfo();
+            info = default;
             info.dwSearchPref = (int)AdsSearchPreferences.ATTRIBTYPES_ONLY;
             info.vValue = new AdsValueHelper(PropertyNamesOnly).GetStruct();
             prefList.Add(info);
@@ -707,7 +707,7 @@ namespace System.DirectoryServices
             // Timeout
             if (ClientTimeout >= new TimeSpan(0))
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.TIMEOUT;
                 info.vValue = new AdsValueHelper((int)ClientTimeout.TotalSeconds).GetStruct();
                 prefList.Add(info);
@@ -716,7 +716,7 @@ namespace System.DirectoryServices
             // page size
             if (PageSize != 0)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.PAGESIZE;
                 info.vValue = new AdsValueHelper(PageSize).GetStruct();
                 prefList.Add(info);
@@ -725,14 +725,14 @@ namespace System.DirectoryServices
             // page time limit
             if (ServerPageTimeLimit >= new TimeSpan(0))
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.PAGED_TIME_LIMIT;
                 info.vValue = new AdsValueHelper((int)ServerPageTimeLimit.TotalSeconds).GetStruct();
                 prefList.Add(info);
             }
 
             // chase referrals
-            info = new AdsSearchPreferenceInfo();
+            info = default;
             info.dwSearchPref = (int)AdsSearchPreferences.CHASE_REFERRALS;
             info.vValue = new AdsValueHelper((int)ReferralChasing).GetStruct();
             prefList.Add(info);
@@ -740,7 +740,7 @@ namespace System.DirectoryServices
             // asynchronous
             if (Asynchronous == true)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.ASYNCHRONOUS;
                 info.vValue = new AdsValueHelper(Asynchronous).GetStruct();
                 prefList.Add(info);
@@ -749,7 +749,7 @@ namespace System.DirectoryServices
             // tombstone
             if (Tombstone == true)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.TOMBSTONE;
                 info.vValue = new AdsValueHelper(Tombstone).GetStruct();
                 prefList.Add(info);
@@ -758,7 +758,7 @@ namespace System.DirectoryServices
             // attributescopequery
             if (_attributeScopeQuerySpecified)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.ATTRIBUTE_QUERY;
                 info.vValue = new AdsValueHelper(AttributeScopeQuery, AdsType.ADSTYPE_CASE_IGNORE_STRING).GetStruct();
                 prefList.Add(info);
@@ -767,7 +767,7 @@ namespace System.DirectoryServices
             // derefalias
             if (DerefAlias != DereferenceAlias.Never)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.DEREF_ALIASES;
                 info.vValue = new AdsValueHelper((int)DerefAlias).GetStruct();
                 prefList.Add(info);
@@ -776,7 +776,7 @@ namespace System.DirectoryServices
             // securitymask
             if (SecurityMasks != SecurityMasks.None)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.SECURITY_MASK;
                 info.vValue = new AdsValueHelper((int)SecurityMasks).GetStruct();
                 prefList.Add(info);
@@ -785,7 +785,7 @@ namespace System.DirectoryServices
             // extendeddn
             if (ExtendedDN != ExtendedDN.None)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.EXTENDED_DN;
                 info.vValue = new AdsValueHelper((int)ExtendedDN).GetStruct();
                 prefList.Add(info);
@@ -794,14 +794,14 @@ namespace System.DirectoryServices
             // dirsync
             if (directorySynchronizationSpecified)
             {
-                info = new AdsSearchPreferenceInfo();
+                info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.DIRSYNC;
                 info.vValue = new AdsValueHelper(DirectorySynchronization.GetDirectorySynchronizationCookie(), AdsType.ADSTYPE_PROV_SPECIFIC).GetStruct();
                 prefList.Add(info);
 
                 if (DirectorySynchronization.Option != DirectorySynchronizationOptions.None)
                 {
-                    info = new AdsSearchPreferenceInfo();
+                    info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.DIRSYNC_FLAG;
                     info.vValue = new AdsValueHelper((int)DirectorySynchronization.Option).GetStruct();
                     prefList.Add(info);
@@ -817,9 +817,9 @@ namespace System.DirectoryServices
                 // sort
                 if (Sort.PropertyName != null && Sort.PropertyName.Length > 0)
                 {
-                    info = new AdsSearchPreferenceInfo();
+                    info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.SORT_ON;
-                    AdsSortKey sortKey = new AdsSortKey();
+                    AdsSortKey sortKey = default;
                     sortKey.pszAttrType = Marshal.StringToCoTaskMemUni(Sort.PropertyName);
                     ptrToFree = sortKey.pszAttrType; // so we can free it later.
                     sortKey.pszReserved = (IntPtr)0;
@@ -833,7 +833,7 @@ namespace System.DirectoryServices
                 // vlv
                 if (directoryVirtualListViewSpecified)
                 {
-                    info = new AdsSearchPreferenceInfo();
+                    info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.VLV;
                     AdsVLV vlvValue = new AdsVLV();
                     vlvValue.beforeCount = _vlv.BeforeCount;
@@ -875,7 +875,7 @@ namespace System.DirectoryServices
                 // cacheResults
                 if (_cacheResultsSpecified)
                 {
-                    info = new AdsSearchPreferenceInfo();
+                    info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.CACHE_RESULTS;
                     info.vValue = new AdsValueHelper(CacheResults).GetStruct();
                     prefList.Add(info);

@@ -198,7 +198,7 @@ namespace System.Net.Http
             // won't actually discover a PAC file on the network since WPAD protocol isn't configured.
             if (_proxyHelper.AutoSettingsUsed && !_proxyHelper.RecentAutoDetectionFailure)
             {
-                var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
+                Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo = default;
                 try
                 {
                     if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))

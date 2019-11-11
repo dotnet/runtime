@@ -157,7 +157,7 @@ namespace Internal.NativeCrypto
                     byte bVersion;
                     ReadKeyBlobHeader(br, out bVersion);
 
-                    DSAParameters dsaParameters = new DSAParameters();
+                    DSAParameters dsaParameters = default;
 
                     if (bVersion > 2)
                     {

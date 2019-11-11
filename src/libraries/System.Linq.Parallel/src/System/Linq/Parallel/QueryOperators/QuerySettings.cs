@@ -212,7 +212,7 @@ namespace System.Linq.Parallel
         // Returns the default settings
         internal static QuerySettings Empty
         {
-            get { return new QuerySettings(null, null, new CancellationToken(), null, null); }
+            get { return new QuerySettings(null, null, CancellationToken.None, null, null); }
         }
 
         // Cleanup internal state once the entire query is complete.

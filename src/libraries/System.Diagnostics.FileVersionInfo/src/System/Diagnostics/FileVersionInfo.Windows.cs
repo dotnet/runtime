@@ -84,7 +84,7 @@ namespace System.Diagnostics
                 return (Interop.Version.VS_FIXEDFILEINFO)Marshal.PtrToStructure<Interop.Version.VS_FIXEDFILEINFO>(memRef);
             }
 
-            return new Interop.Version.VS_FIXEDFILEINFO();
+            return default;
         }
 
         private static unsafe string GetFileVersionLanguage(IntPtr memPtr)

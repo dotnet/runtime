@@ -139,19 +139,19 @@ namespace System.Net
                 {
                     chunkHeaderBuffer = GetChunkHeader(size, out chunkHeaderOffset);
 
-                    _dataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[0] = default;
                     _dataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                     _dataChunks[0].BufferLength = (uint)(chunkHeaderBuffer.Length - chunkHeaderOffset);
 
                     objectsToPin[0] = chunkHeaderBuffer;
 
-                    _dataChunks[1] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[1] = default;
                     _dataChunks[1].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                     _dataChunks[1].BufferLength = (uint)size;
 
                     objectsToPin[1] = buffer;
 
-                    _dataChunks[2] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[2] = default;
                     _dataChunks[2].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                     _dataChunks[2].BufferLength = (uint)s_CRLFArray.Length;
 
@@ -159,7 +159,7 @@ namespace System.Net
                 }
                 else
                 {
-                    _dataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[0] = default;
                     _dataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                     _dataChunks[0].BufferLength = (uint)size;
 

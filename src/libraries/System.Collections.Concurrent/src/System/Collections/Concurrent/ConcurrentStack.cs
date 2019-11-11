@@ -379,7 +379,7 @@ namespace System.Collections.Concurrent
         /// <param name="tail">The tail pointer to the new list</param>
         private void PushCore(Node head, Node tail)
         {
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
 
             // Keep trying to CAS the existing head with the new node until we succeed.
             do
@@ -600,7 +600,7 @@ namespace System.Collections.Concurrent
         /// the <see cref="ConcurrentStack{T}"/>.</returns>
         private int TryPopCore(int count, out Node? poppedHead)
         {
-            SpinWait spin = new SpinWait();
+            SpinWait spin = default;
 
             // Try to CAS the head with its current next.  We stop when we succeed or
             // when we notice that the stack is empty, whichever comes first.

@@ -67,7 +67,7 @@ namespace Windows.UI.Xaml.Media.Animation
         {
             get
             {
-                RepeatBehavior forever = new RepeatBehavior();
+                RepeatBehavior forever = default;
                 forever.Type = RepeatBehaviorType.Forever;
 
                 return forever;

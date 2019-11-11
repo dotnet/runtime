@@ -85,14 +85,14 @@ namespace System.Diagnostics
             if (newCounterType == Interop.Kernel32.PerformanceCounterOptions.PERF_ELAPSED_TIME)
                 return (float)GetElapsedTime(oldSample, newSample);
 
-            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER();
-            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER();
+            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue = default;
+            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue = default;
 
             FillInValues(oldSample, newSample, ref oldPdhValue, ref newPdhValue);
 
             LoadPerfCounterDll();
 
-            Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pdhFormattedValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE();
+            Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pdhFormattedValue = default;
             long timeBase = newSample.SystemFrequency;
             int result = Interop.PerfCounter.FormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
                                                           ref timeBase, ref newPdhValue, ref oldPdhValue, ref pdhFormattedValue);

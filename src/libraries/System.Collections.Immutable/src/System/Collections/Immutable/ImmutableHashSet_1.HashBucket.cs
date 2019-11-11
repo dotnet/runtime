@@ -215,7 +215,7 @@ namespace System.Collections.Immutable
                     if (_additionalElements.IsEmpty)
                     {
                         result = OperationResult.SizeChanged;
-                        return new HashBucket();
+                        return default;
                     }
                     else
                     {

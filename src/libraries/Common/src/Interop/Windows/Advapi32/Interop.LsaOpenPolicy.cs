@@ -24,7 +24,7 @@ internal static partial class Interop
             int AccessMask,
             out SafeLsaPolicyHandle PolicyHandle)
         {
-            var systemNameUnicode = new UNICODE_STRING();
+            UNICODE_STRING systemNameUnicode = default;
             if (SystemName != null)
             {
                 fixed (char* c = SystemName)

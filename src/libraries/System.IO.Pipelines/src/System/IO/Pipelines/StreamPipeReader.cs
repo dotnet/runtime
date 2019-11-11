@@ -205,7 +205,7 @@ namespace System.IO.Pipelines
                 return new ReadResult(buffer: default, isCanceled: false, isCompleted: true);
             }
 
-            var reg = new CancellationTokenRegistration();
+            CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
             {
                 reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
@@ -291,7 +291,7 @@ namespace System.IO.Pipelines
                 return true;
             }
 
-            result = new ReadResult();
+            result = default;
             return false;
         }
 

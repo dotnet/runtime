@@ -16,7 +16,7 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             MetadataReader reader = Reader;
 
-            InternalManifestResourceInfo result = new InternalManifestResourceInfo();
+            InternalManifestResourceInfo result = default;
             ManifestResourceHandleCollection manifestResources = reader.ManifestResources;
             foreach (ManifestResourceHandle resourceHandle in manifestResources)
             {

@@ -3914,7 +3914,7 @@ namespace System.Data.SqlClient
 
             multiPartTableName = default(MultiPartTableName);
 
-            mpt = new MultiPartTableName();
+            mpt = default;
             byte nParts;
 
             // Find out how many parts in the TDS stream

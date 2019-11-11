@@ -1463,7 +1463,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(font));
 
             RectangleF layout = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
-            RectangleF boundingBox = new RectangleF();
+            RectangleF boundingBox = default;
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),
@@ -1487,7 +1487,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(font));
 
             RectangleF layout = new RectangleF(origin.X, origin.Y, 0, 0);
-            RectangleF boundingBox = new RectangleF();
+            RectangleF boundingBox = default;
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),
@@ -1513,7 +1513,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(font));
 
             RectangleF layout = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
-            RectangleF boundingBox = new RectangleF();
+            RectangleF boundingBox = default;
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),

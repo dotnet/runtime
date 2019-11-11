@@ -32,7 +32,7 @@ namespace System.Net
         internal HttpListenerResponse()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
-            _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
+            _nativeResponse = default;
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
             _nativeResponse.Version.MinorVersion = 1;
@@ -64,7 +64,7 @@ namespace System.Net
         public void CopyFrom(HttpListenerResponse templateResponse)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"templateResponse {templateResponse}");
-            _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
+            _nativeResponse = default;
             _responseState = ResponseState.Created;
             _webHeaders = templateResponse._webHeaders;
             _boundaryType = templateResponse._boundaryType;

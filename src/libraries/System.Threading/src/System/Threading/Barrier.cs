@@ -334,7 +334,7 @@ namespace System.Threading
                 throw new InvalidOperationException(SR.Barrier_InvalidOperation_CalledFromPHA);
             }
 
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             long newPhase = 0;
             while (true)
             {
@@ -435,7 +435,7 @@ namespace System.Threading
                 throw new InvalidOperationException(SR.Barrier_InvalidOperation_CalledFromPHA);
             }
 
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 int currentTotal = _currentTotalCount;
@@ -486,7 +486,7 @@ namespace System.Threading
         /// disposed.</exception>
         public void SignalAndWait()
         {
-            SignalAndWait(new CancellationToken());
+            SignalAndWait(CancellationToken.None);
         }
 
         /// <summary>
@@ -535,7 +535,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool SignalAndWait(TimeSpan timeout)
         {
-            return SignalAndWait(timeout, new CancellationToken());
+            return SignalAndWait(timeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -589,7 +589,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool SignalAndWait(int millisecondsTimeout)
         {
-            return SignalAndWait(millisecondsTimeout, new CancellationToken());
+            return SignalAndWait(millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -637,7 +637,7 @@ namespace System.Threading
             int current;
             int currentTotal;
             long phase;
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 currentTotal = _currentTotalCount;
@@ -838,7 +838,7 @@ namespace System.Threading
             //1- The event is set
             //2- the phase count is incremented more than one time, this means the next phase is finished as well,
             //but the event will be reset again, so we check the phase count instead
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (!currentPhaseEvent.IsSet && CurrentPhaseNumber - observedPhase <= 1)
             {
                 spinner.SpinOnce();

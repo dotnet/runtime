@@ -335,7 +335,7 @@ namespace System.DirectoryServices.Protocols
                     throw new ObjectDisposedException(GetType().Name);
                 }
 
-                var tempHandle = new SecurityHandle();
+                SecurityHandle tempHandle = default;
 
                 int error = Wldap32.ldap_get_option_sechandle(_connection._ldapHandle, LdapOption.LDAP_OPT_SECURITY_CONTEXT, ref tempHandle);
                 ErrorChecking.CheckAndSetLdapError(error);

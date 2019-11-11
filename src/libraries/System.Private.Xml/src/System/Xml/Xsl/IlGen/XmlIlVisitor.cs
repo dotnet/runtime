@@ -731,7 +731,7 @@ namespace System.Xml.Xsl.IlGen
         /// </remarks>
         protected override QilNode VisitOr(QilBinary ndOr)
         {
-            Label lblTemp = new Label();
+            Label lblTemp = default;
 
             // Visit left branch
             switch (_iterCurr.CurrentBranchingContext)
@@ -819,7 +819,7 @@ namespace System.Xml.Xsl.IlGen
         /// </remarks>
         protected override QilNode VisitNot(QilUnary ndNot)
         {
-            Label lblTemp = new Label();
+            Label lblTemp = default;
 
             // Visit operand
             // Reverse branch types
@@ -1153,7 +1153,7 @@ namespace System.Xml.Xsl.IlGen
         private void Sequence(QilList ndSeq)
         {
             LocalBuilder locIdx, locList;
-            Label lblStart, lblNext, lblOnEnd = new Label();
+            Label lblStart, lblNext, lblOnEnd = default;
             Label[] arrSwitchLabels;
             int i;
             Type itemStorageType = GetItemStorageType(ndSeq);
@@ -4413,7 +4413,7 @@ namespace System.Xml.Xsl.IlGen
 
             // By default, do not create a new iteration label
             hasOnEnd = false;
-            lblOnEnd = new Label();
+            lblOnEnd = default;
 
             // If loop is not involved in Xml construction, or if loop returns exactly one value, then do nothing
             if (!info.PushToWriterLast || nd.XmlType.IsSingleton)

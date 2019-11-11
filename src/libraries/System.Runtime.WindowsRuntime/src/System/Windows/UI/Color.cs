@@ -41,7 +41,7 @@ namespace Windows.UI
 
         public static Color FromArgb(byte a, byte r, byte g, byte b)
         {
-            Color c1 = new Color();
+            Color c1 = default;
 
             c1.A = a;
             c1.R = r;

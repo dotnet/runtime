@@ -163,7 +163,7 @@ namespace Microsoft.SqlServer.Server
             {
                 if (_columns.Count <= ordinal)
                 {
-                    SmiColumnOrder order = new SmiColumnOrder();
+                    SmiColumnOrder order = default;
                     order.Order = SortOrder.Unspecified;
                     order.SortOrdinal = -1;
                     return order;

@@ -22,7 +22,7 @@ namespace System.Net.Http
 
         public WinInetProxyHelper()
         {
-            var proxyConfig = new Interop.WinHttp.WINHTTP_CURRENT_USER_IE_PROXY_CONFIG();
+            Interop.WinHttp.WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxyConfig = default;
 
             try
             {

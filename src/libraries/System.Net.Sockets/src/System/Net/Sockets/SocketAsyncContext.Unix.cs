@@ -202,7 +202,7 @@ namespace System.Net.Sockets
                 CancellationRegistration.Dispose();
 
                 // Try to transition from Waiting to Cancelled
-                var spinWait = new SpinWait();
+                SpinWait spinWait = default;
                 bool keepWaiting = true;
                 while (keepWaiting)
                 {
