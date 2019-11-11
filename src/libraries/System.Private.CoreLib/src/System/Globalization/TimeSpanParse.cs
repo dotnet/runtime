@@ -268,7 +268,7 @@ namespace System.Globalization
                 {
                     if (!_posLocInit)
                     {
-                        _posLoc = new TimeSpanFormat.FormatLiterals();
+                        _posLoc = default;
                         _posLoc.Init(_fullPosPattern, false);
                         _posLocInit = true;
                     }
@@ -282,7 +282,7 @@ namespace System.Globalization
                 {
                     if (!_negLocInit)
                     {
-                        _negLoc = new TimeSpanFormat.FormatLiterals();
+                        _negLoc = default;
                         _negLoc.Init(_fullNegPattern, false);
                         _negLocInit = true;
                     }
@@ -685,7 +685,7 @@ namespace System.Globalization
 
             var tokenizer = new TimeSpanTokenizer(input);
 
-            var raw = new TimeSpanRawInfo();
+            TimeSpanRawInfo raw = default;
             raw.Init(DateTimeFormatInfo.GetInstance(formatProvider));
 
             TimeSpanToken tok = tokenizer.GetNextToken();
@@ -729,7 +729,7 @@ namespace System.Globalization
         {
             if (raw._lastSeenTTT == TTT.Num)
             {
-                TimeSpanToken tok = new TimeSpanToken();
+                TimeSpanToken tok = default;
                 tok._ttt = TTT.Sep;
                 if (!raw.ProcessToken(ref tok, ref result))
                 {
@@ -1459,7 +1459,7 @@ namespace System.Globalization
         /// and exists for performance/appcompat with legacy callers who cannot move onto the globalized Parse overloads.
         /// </summary>
         private static bool TryParseTimeSpanConstant(ReadOnlySpan<char> input, ref TimeSpanResult result) =>
-            new StringParser().TryParse(input, ref result);
+            default(StringParser).TryParse(input, ref result);
 
         private ref struct StringParser
         {

@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = default;
             AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
 
             IntPtr pNativeHome = IntPtr.Zero;
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = default;
             AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
 
             IntPtr pNativeHome = IntPtr.Zero;

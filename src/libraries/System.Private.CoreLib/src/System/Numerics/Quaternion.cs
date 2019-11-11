@@ -224,7 +224,7 @@ namespace System.Numerics
         {
             float trace = matrix.M11 + matrix.M22 + matrix.M33;
 
-            Quaternion q = new Quaternion();
+            Quaternion q = default;
 
             if (trace > 0.0f)
             {
@@ -346,7 +346,7 @@ namespace System.Numerics
             float t = amount;
             float t1 = 1.0f - t;
 
-            Quaternion r = new Quaternion();
+            Quaternion r = default;
 
             float dot = quaternion1.X * quaternion2.X + quaternion1.Y * quaternion2.Y +
                         quaternion1.Z * quaternion2.Z + quaternion1.W * quaternion2.W;

@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
 
         internal void Disable()
         {
-            this = new DataCollector();
+            this = default;
         }
 
         /// <summary>

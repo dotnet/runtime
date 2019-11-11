@@ -17,7 +17,7 @@ namespace System.Runtime
         private static bool CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)
         {
             bool r;
-            Interop.Kernel32.MEMORYSTATUSEX memory = new Interop.Kernel32.MEMORYSTATUSEX();
+            Interop.Kernel32.MEMORYSTATUSEX memory = default;
             r = Interop.Kernel32.GlobalMemoryStatusEx(ref memory);
             if (!r)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -61,7 +61,7 @@ namespace System.Runtime
                 return 0;
 
             ulong largestFreeRegion = 0;
-            Interop.Kernel32.MEMORY_BASIC_INFORMATION memInfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
+            Interop.Kernel32.MEMORY_BASIC_INFORMATION memInfo = default;
             UIntPtr sizeOfMemInfo = (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION);
 
             while (((ulong)address) + size < s_topOfMemory)

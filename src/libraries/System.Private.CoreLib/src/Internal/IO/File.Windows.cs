@@ -12,7 +12,7 @@ namespace Internal.IO
     {
         internal static bool InternalExists(string fullPath)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
             return (errorCode == 0) && (data.dwFileAttributes != -1)
@@ -40,7 +40,7 @@ namespace Internal.IO
                         // FindFirstFile, however, will. Historically we always gave back attributes
                         // for marked-for-deletion files.
 
-                        var findData = new Interop.Kernel32.WIN32_FIND_DATA();
+                        Interop.Kernel32.WIN32_FIND_DATA findData = default;
                         using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path, ref findData))
                         {
                             if (handle.IsInvalid)

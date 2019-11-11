@@ -183,7 +183,7 @@ namespace System.Threading
         public void Wait()
         {
             // Call wait with infinite timeout
-            Wait(Timeout.Infinite, new CancellationToken());
+            Wait(Timeout.Infinite, CancellationToken.None);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace System.Threading
             }
 
             // Call wait with the timeout milliseconds
-            return Wait((int)timeout.TotalMilliseconds, new CancellationToken());
+            return Wait((int)timeout.TotalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace System.Threading
         /// negative number other than -1, which represents an infinite time-out.</exception>
         public bool Wait(int millisecondsTimeout)
         {
-            return Wait(millisecondsTimeout, new CancellationToken());
+            return Wait(millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -331,7 +331,7 @@ namespace System.Threading
                     // lessen that extra expense of doing a proper wait.
                     int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
 
-                    var spinner = new SpinWait();
+                    SpinWait spinner = default;
                     while (spinner.Count < spinCount)
                     {
                         spinner.SpinOnce(sleep1Threshold: -1);

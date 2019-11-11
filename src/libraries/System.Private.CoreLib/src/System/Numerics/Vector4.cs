@@ -23,7 +23,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                return new Vector4();
+                return default;
             }
         }
         /// <summary>

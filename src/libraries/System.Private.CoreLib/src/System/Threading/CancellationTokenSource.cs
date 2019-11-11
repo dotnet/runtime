@@ -494,7 +494,7 @@ namespace System.Threading
                 // run the minor risk of having _callbackPartitions reinitialized (after it was cleared to null during Dispose).
                 if (_disposed)
                 {
-                    return new CancellationTokenRegistration();
+                    return default;
                 }
 
                 // Get the partitions...
@@ -792,7 +792,7 @@ namespace System.Threading
         /// </summary>
         internal void WaitForCallbackToComplete(long id)
         {
-            var sw = new SpinWait();
+            SpinWait sw = default;
             while (ExecutingCallback == id)
             {
                 sw.SpinOnce();  // spin, as we assume callback execution is fast and that this situation is rare.

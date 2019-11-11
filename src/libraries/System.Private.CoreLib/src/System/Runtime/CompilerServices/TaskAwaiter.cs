@@ -281,7 +281,7 @@ namespace System.Runtime.CompilerServices
                 TplEventSource innerEtwLog = TplEventSource.Log;
 
                 // ETW event for Task Wait End.
-                Guid prevActivityId = new Guid();
+                Guid prevActivityId = default;
                 bool bEtwLogEnabled = innerEtwLog.IsEnabled();
                 if (bEtwLogEnabled)
                 {

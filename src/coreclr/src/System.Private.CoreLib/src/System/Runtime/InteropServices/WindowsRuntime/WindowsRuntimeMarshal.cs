@@ -664,7 +664,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                         Log("[WinRT_Eventing] Adding (" + instance + "," + removeMethod.Method + ") into cache\n");
 
-                        eventCacheEntry = new EventCacheEntry();
+                        eventCacheEntry = default;
                         eventCacheEntry.registrationTable = new ConditionalWeakTable<object, EventRegistrationTokenListWithCount>();
                         eventCacheEntry.tokenListCount = new TokenListCount(eventCacheKey);
 

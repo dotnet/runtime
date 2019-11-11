@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public struct EventToken
     {
-        public static readonly EventToken Empty = new EventToken();
+        public static readonly EventToken Empty = default;
 
         internal EventToken(int eventToken)
         {

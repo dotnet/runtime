@@ -49,7 +49,7 @@ namespace System
 
         internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
-            DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult resultData = default;       // The buffer to store the parsing result.
             resultData.Init(s);
 
             if (TryParseExact(s, format, dtfi, style, ref resultData))
@@ -64,7 +64,7 @@ namespace System
 
         internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
-            DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult resultData = default;       // The buffer to store the parsing result.
             resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
 
@@ -102,7 +102,7 @@ namespace System
         internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult result = default;       // The buffer to store the parsing result.
             result.Init(s);
             if (TryParseExactMultiple(s, formats, dtfi, style, ref result))
             {
@@ -117,7 +117,7 @@ namespace System
         internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult result = default;       // The buffer to store the parsing result.
             result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParseExactMultiple(s, formats, dtfi, style, ref result))
@@ -134,7 +134,7 @@ namespace System
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
-            DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult resultData = default;       // The buffer to store the parsing result.
             resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
 
@@ -153,7 +153,7 @@ namespace System
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
-            DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult resultData = default;       // The buffer to store the parsing result.
             resultData.Init(s);
 
             if (TryParseExactMultiple(s, formats, dtfi, style, ref resultData))
@@ -202,7 +202,7 @@ namespace System
                 }
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
-                DateTimeResult innerResult = new DateTimeResult();       // The buffer to store the parsing result.
+                DateTimeResult innerResult = default;       // The buffer to store the parsing result.
                 innerResult.Init(s);
                 innerResult.flags = result.flags;
                 if (TryParseExact(s, formats[i], dtfi, style, ref innerResult))
@@ -2426,7 +2426,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult result = default;       // The buffer to store the parsing result.
             result.Init(s);
             if (TryParse(s, dtfi, styles, ref result))
             {
@@ -2440,7 +2440,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out TimeSpan offset)
         {
-            DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult result = default;       // The buffer to store the parsing result.
             result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParse(s, dtfi, styles, ref result))
@@ -2456,7 +2456,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result)
         {
-            DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult resultData = default;       // The buffer to store the parsing result.
             resultData.Init(s);
 
             if (TryParse(s, dtfi, styles, ref resultData))
@@ -2471,7 +2471,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
         {
-            DateTimeResult parseResult = new DateTimeResult();       // The buffer to store the parsing result.
+            DateTimeResult parseResult = default;       // The buffer to store the parsing result.
             parseResult.Init(s);
             parseResult.flags |= ParseFlags.CaptureOffset;
 
@@ -2512,9 +2512,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DS dps = DS.BEGIN;     // Date Parsing State.
             bool reachTerminalState = false;
 
-            DateTimeToken dtok = new DateTimeToken();      // The buffer to store the parsing token.
+            DateTimeToken dtok = default;      // The buffer to store the parsing token.
             dtok.suffix = TokenType.SEP_Unk;
-            DateTimeRawInfo raw = new DateTimeRawInfo();    // The buffer to store temporary parsing information.
+            DateTimeRawInfo raw = default;    // The buffer to store temporary parsing information.
             unsafe
             {
                 int* numberPointer = stackalloc int[3];
@@ -4469,7 +4469,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DateTimeFormatInfo dtfi,
             ref DateTimeResult result)
         {
-            ParsingInfo parseInfo = new ParsingInfo();
+            ParsingInfo parseInfo = default;
             parseInfo.Init();
 
             parseInfo.calendar = dtfi.Calendar;
@@ -5775,7 +5775,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal DTSubString GetSubString()
         {
-            DTSubString sub = new DTSubString();
+            DTSubString sub = default;
             sub.index = Index;
             sub.s = Value;
             while (Index + sub.length < Length)

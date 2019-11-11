@@ -348,7 +348,7 @@ namespace System.Threading
             // lock acquired failed and waiters updated
 
             // *** Step 2, Spinning and Yielding
-            var spinner = new SpinWait();
+            SpinWait spinner = default;
             if (turn > Environment.ProcessorCount)
             {
                 spinner.Count = SpinWait.YieldThreshold;
@@ -388,7 +388,7 @@ namespace System.Threading
         /// </summary>
         private void DecrementWaiters()
         {
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 int observedOwner = _owner;
@@ -419,7 +419,7 @@ namespace System.Threading
                 throw new LockRecursionException(SR.SpinLock_TryEnter_LockRecursionException);
             }
 
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
 
             // Loop until the lock has been successfully acquired or, if specified, the timeout expires.
             while (true)

@@ -27,7 +27,7 @@ namespace System.IO
 
         public static DisableMediaInsertionPrompt Create()
         {
-            DisableMediaInsertionPrompt prompt = new DisableMediaInsertionPrompt();
+            DisableMediaInsertionPrompt prompt = default;
             prompt._disableSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out prompt._oldMode);
             return prompt;
         }

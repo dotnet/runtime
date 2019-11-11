@@ -259,7 +259,7 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                var spinner = new SpinWait();
+                SpinWait spinner = default;
                 while (true)
                 {
                     // Capture the head and tail, as well as the head's head and tail.
@@ -536,7 +536,7 @@ namespace System.Collections.Concurrent
             // an enqueuer to finish storing it.  Spin until it's there.
             if ((segment._slots[i].SequenceNumber & segment._slotsMask) != expectedSequenceNumberAndMask)
             {
-                var spinner = new SpinWait();
+                SpinWait spinner = default;
                 while ((Volatile.Read(ref segment._slots[i].SequenceNumber) & segment._slotsMask) != expectedSequenceNumberAndMask)
                 {
                     spinner.SpinOnce();

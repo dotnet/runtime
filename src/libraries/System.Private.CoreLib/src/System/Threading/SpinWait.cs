@@ -324,7 +324,7 @@ namespace System.Threading
             {
                 startTime = TimeoutHelper.GetTime();
             }
-            SpinWait spinner = new SpinWait();
+            SpinWait spinner = default;
             while (!condition())
             {
                 if (millisecondsTimeout == 0)

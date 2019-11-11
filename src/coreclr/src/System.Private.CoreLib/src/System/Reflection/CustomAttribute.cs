@@ -273,7 +273,7 @@ namespace System.Reflection
                 }
             }
 
-            return new CustomAttributeTypedArgument();
+            return default;
         }
         #endregion
 
@@ -755,7 +755,7 @@ namespace System.Reflection
             m_fieldOrProperty = fieldOrProperty;
             m_padding = fieldOrProperty;
             m_type = type;
-            m_encodedArgument = new CustomAttributeEncodedArgument();
+            m_encodedArgument = default;
         }
 
         public CustomAttributeEncodedArgument EncodedArgument => m_encodedArgument;
@@ -770,7 +770,7 @@ namespace System.Reflection
         public CustomAttributeCtorParameter(CustomAttributeType type)
         {
             m_type = type;
-            m_encodedArgument = new CustomAttributeEncodedArgument();
+            m_encodedArgument = default;
         }
 
         public CustomAttributeEncodedArgument CustomAttributeEncodedArgument => m_encodedArgument;
@@ -958,7 +958,7 @@ namespace System.Reflection
                 return attributes;
             }
 
-            RuntimeType.ListBuilder<object> result = new RuntimeType.ListBuilder<object>();
+            RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
             bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
@@ -1001,7 +1001,7 @@ namespace System.Reflection
                 return attributes;
             }
 
-            RuntimeType.ListBuilder<object> result = new RuntimeType.ListBuilder<object>();
+            RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
             bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
@@ -1146,9 +1146,9 @@ namespace System.Reflection
         private static object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType? attributeFilterType)
         {
-            RuntimeType.ListBuilder<object> attributes = new RuntimeType.ListBuilder<object>();
+            RuntimeType.ListBuilder<object> attributes = default;
 
-            AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, new RuntimeType.ListBuilder<object>());
+            AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
 
             bool useObjectArray = attributeFilterType == null || attributeFilterType.IsValueType || attributeFilterType.ContainsGenericParameters;
             RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : attributeFilterType!;
@@ -1349,7 +1349,7 @@ namespace System.Reflection
             }
 
             // Visibility checks
-            MetadataToken tkParent = new MetadataToken();
+            MetadataToken tkParent = default;
 
             if (decoratedToken.IsParamDef)
             {
@@ -1383,7 +1383,7 @@ namespace System.Reflection
             // otherwise we check access against the module.
             RuntimeTypeHandle parentTypeHandle = tkParent.IsTypeDef ?
                                                     decoratedModule.ModuleHandle.ResolveTypeHandle(tkParent) :
-                                                    new RuntimeTypeHandle();
+                                                    default;
 
             RuntimeTypeHandle attributeTypeHandle = attributeType.TypeHandle;
 
@@ -1559,7 +1559,7 @@ namespace System.Reflection
         {
             Debug.Assert(type != null);
             Debug.Assert(caType != null);
-            pcas = new RuntimeType.ListBuilder<Attribute>();
+            pcas = default;
 
             bool all = caType == typeof(object) || caType == typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
@@ -1600,7 +1600,7 @@ namespace System.Reflection
         {
             Debug.Assert(method != null);
             Debug.Assert(caType != null);
-            pcas = new RuntimeType.ListBuilder<Attribute>();
+            pcas = default;
 
             bool all = caType == typeof(object) || caType == typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
@@ -1641,7 +1641,7 @@ namespace System.Reflection
         {
             Debug.Assert(parameter != null);
             Debug.Assert(caType != null);
-            pcas = new RuntimeType.ListBuilder<Attribute>();
+            pcas = default;
 
             bool all = caType == typeof(object) || caType == typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
@@ -1699,7 +1699,7 @@ namespace System.Reflection
             Debug.Assert(field != null);
             Debug.Assert(caType != null);
 
-            pcas = new RuntimeType.ListBuilder<Attribute>();
+            pcas = default;
 
             bool all = caType == typeof(object) || caType == typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))

@@ -12,7 +12,7 @@ namespace System.Reflection.Emit
     /// </summary>
     public struct FieldToken
     {
-        public static readonly FieldToken Empty = new FieldToken();
+        public static readonly FieldToken Empty = default;
 
         private readonly object _class;
 

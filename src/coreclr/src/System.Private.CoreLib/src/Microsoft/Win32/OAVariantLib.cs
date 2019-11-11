@@ -79,7 +79,7 @@ namespace Microsoft.Win32
                 throw new ArgumentNullException(nameof(targetClass));
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
-            Variant result = new Variant();
+            Variant result = default;
             ChangeTypeEx(ref result, ref source,
                          culture.LCID,
                          targetClass.TypeHandle.Value, GetCVTypeFromClass(targetClass), options);

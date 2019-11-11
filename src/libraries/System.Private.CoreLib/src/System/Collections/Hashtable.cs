@@ -669,7 +669,7 @@ namespace System.Collections
                     // Our memory model guarantee if we pick up the change in bucket from another processor,
                     // we will see the 'isWriterProgress' flag to be true or 'version' is changed in the reader.
                     //
-                    SpinWait spin = new SpinWait();
+                    SpinWait spin = default;
                     while (true)
                     {
                         // this is volatile read, following memory accesses can not be moved ahead of it.

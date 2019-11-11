@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public struct TypeToken
     {
-        public static readonly TypeToken Empty = new TypeToken();
+        public static readonly TypeToken Empty = default;
 
         internal TypeToken(int typeToken)
         {

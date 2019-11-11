@@ -133,7 +133,7 @@ namespace System.Collections.Concurrent
             Slot[] slots = _slots;
 
             // Loop in case of contention...
-            var spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 // Get the head at which to try to dequeue.
@@ -215,7 +215,7 @@ namespace System.Collections.Concurrent
             Slot[] slots = _slots;
 
             // Loop in case of contention...
-            var spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 // Get the head at which to try to peek.
@@ -270,7 +270,7 @@ namespace System.Collections.Concurrent
             Slot[] slots = _slots;
 
             // Loop in case of contention...
-            var spinner = new SpinWait();
+            SpinWait spinner = default;
             while (true)
             {
                 // Get the tail at which to try to return.

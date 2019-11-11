@@ -18,7 +18,7 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
-        public static readonly Guid Empty = new Guid();
+        public static readonly Guid Empty = default;
 
         private int _a;   // Do not rename (binary serialization)
         private short _b; // Do not rename (binary serialization)

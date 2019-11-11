@@ -94,8 +94,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventSourceActivity Start(string? eventName)
         {
-            var options = new EventSourceOptions();
-            var data = new EmptyStruct();
+            EventSourceOptions options = default;
+            EmptyStruct data = default;
             return this.Start(eventName, ref options, ref data);
         }
         /// <summary>
@@ -103,7 +103,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventSourceActivity Start(string? eventName, EventSourceOptions options)
         {
-            var data = new EmptyStruct();
+            EmptyStruct data = default;
             return this.Start(eventName, ref options, ref data);
         }
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventSourceActivity Start<T>(string? eventName, T data)
         {
-            var options = new EventSourceOptions();
+            EventSourceOptions options = default;
             return this.Start(eventName, ref options, ref data);
         }
 
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void Stop<T>(string? eventName)
         {
-            var data = new EmptyStruct();
+            EmptyStruct data = default;
             this.Stop(eventName, ref data);
         }
         /// <summary>
@@ -175,7 +175,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">The data to include in the event.</param>
         public void Write<T>(string? eventName, T data)
         {
-            var options = new EventSourceOptions();
+            EventSourceOptions options = default;
             this.Write(this.eventSource, eventName, ref options, ref data);
         }
         /// <summary>
@@ -190,7 +190,7 @@ namespace System.Diagnostics.Tracing
         /// </param>
         public void Write(string? eventName, EventSourceOptions options)
         {
-            var data = new EmptyStruct();
+            EmptyStruct data = default;
             this.Write(this.eventSource, eventName, ref options, ref data);
         }
         /// <summary>
@@ -202,8 +202,8 @@ namespace System.Diagnostics.Tracing
         /// </param>
         public void Write(string? eventName)
         {
-            var options = new EventSourceOptions();
-            var data = new EmptyStruct();
+            EventSourceOptions options = default;
+            EmptyStruct data = default;
             this.Write(this.eventSource, eventName, ref options, ref data);
         }
         /// <summary>
@@ -222,7 +222,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.state == State.Started)
             {
-                var data = new EmptyStruct();
+                EmptyStruct data = default;
                 this.Stop(null, ref data);
             }
         }

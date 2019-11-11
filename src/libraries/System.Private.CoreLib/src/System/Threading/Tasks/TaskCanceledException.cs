@@ -69,7 +69,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="task">A task that has been canceled.</param>
         public TaskCanceledException(Task? task) :
-            base(SR.TaskCanceledException_ctor_DefaultMessage, task != null ? task.CancellationToken : new CancellationToken())
+            base(SR.TaskCanceledException_ctor_DefaultMessage, task != null ? task.CancellationToken : CancellationToken.None)
         {
             _canceledTask = task;
         }

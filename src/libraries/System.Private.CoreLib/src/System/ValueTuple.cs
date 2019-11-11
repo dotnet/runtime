@@ -141,7 +141,7 @@ namespace System
         /// <summary>Creates a new struct 0-tuple.</summary>
         /// <returns>A 0-tuple.</returns>
         public static ValueTuple Create() =>
-            new ValueTuple();
+            default;
 
         /// <summary>Creates a new struct 1-tuple, or singleton.</summary>
         /// <typeparam name="T1">The type of the first component of the tuple.</typeparam>

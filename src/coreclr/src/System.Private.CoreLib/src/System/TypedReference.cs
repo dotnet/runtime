@@ -54,7 +54,7 @@ namespace System
                 targetType = fieldType;
             }
 
-            TypedReference result = new TypedReference();
+            TypedReference result = default;
 
             // reference to TypedReference is banned, so have to pass result as pointer
             unsafe

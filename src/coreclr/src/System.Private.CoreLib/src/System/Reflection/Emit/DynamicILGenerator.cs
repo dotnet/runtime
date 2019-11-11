@@ -767,9 +767,9 @@ namespace System.Reflection.Emit
 
         internal override void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle)
         {
-            typeHandle = new IntPtr();
-            methodHandle = new IntPtr();
-            fieldHandle = new IntPtr();
+            typeHandle = default;
+            methodHandle = default;
+            fieldHandle = default;
 
             object? handle = m_scope[token];
 

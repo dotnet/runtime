@@ -475,7 +475,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, _data.GetType(), expectedBoxedType.Name), HResults.TYPE_E_TYPEMISMATCH);
             }
 
-            T unboxed = new T();
+            T unboxed = default;
 
             fixed (byte* pData = &_data.GetRawData())
             {

@@ -434,7 +434,7 @@ namespace System.Reflection
 
         public ConstArray GetSigOfMethodDef(int methodToken)
         {
-            ConstArray signature = new ConstArray();
+            ConstArray signature = default;
 
             _GetSigOfMethodDef(m_metadataImport2, methodToken, ref signature);
 
@@ -448,7 +448,7 @@ namespace System.Reflection
 
         public ConstArray GetSignatureFromToken(int token)
         {
-            ConstArray signature = new ConstArray();
+            ConstArray signature = default;
 
             _GetSignatureFromToken(m_metadataImport2, token, ref signature);
 
@@ -512,7 +512,7 @@ namespace System.Reflection
 
         public ConstArray GetSigOfFieldDef(int fieldToken)
         {
-            ConstArray fieldMarshal = new ConstArray();
+            ConstArray fieldMarshal = default;
 
             _GetSigOfFieldDef(m_metadataImport2, fieldToken, ref fieldMarshal);
 
@@ -526,7 +526,7 @@ namespace System.Reflection
 
         public ConstArray GetFieldMarshal(int fieldToken)
         {
-            ConstArray fieldMarshal = new ConstArray();
+            ConstArray fieldMarshal = default;
 
             _GetFieldMarshal(m_metadataImport2, fieldToken, ref fieldMarshal);
 

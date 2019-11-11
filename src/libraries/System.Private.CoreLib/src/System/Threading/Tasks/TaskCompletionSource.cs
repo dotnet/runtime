@@ -118,7 +118,7 @@ namespace System.Threading.Tasks
         private void SpinUntilCompleted()
         {
             // Spin wait until the completion is finalized by another thread.
-            var sw = new SpinWait();
+            SpinWait sw = default;
             while (!_task.IsCompleted)
                 sw.SpinOnce();
         }

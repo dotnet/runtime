@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets an awaiter for this <see cref="YieldAwaitable"/>.</summary>
         /// <returns>An awaiter for this awaitable.</returns>
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
-        public YieldAwaiter GetAwaiter() { return new YieldAwaiter(); }
+        public YieldAwaiter GetAwaiter() { return default; }
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
@@ -163,7 +163,7 @@ namespace System.Runtime.CompilerServices
                     log.TaskWaitContinuationStarted(((Task<int>)continuationIdTask).Result);
 
                     // ETW event for Task Wait End.
-                    Guid prevActivityId = new Guid();
+                    Guid prevActivityId = default;
                     // Ensure the continuation runs under the correlated activity ID generated above
                     if (log.TasksSetActivityIds)
                         EventSource.SetCurrentThreadActivityId(TplEventSource.CreateGuidForTaskID(((Task<int>)continuationIdTask).Result), out prevActivityId);

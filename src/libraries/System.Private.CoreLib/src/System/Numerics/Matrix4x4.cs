@@ -1512,7 +1512,7 @@ namespace System.Numerics
                     Vector3** pVectorBasis = (Vector3**)&vectorBasis;
 
                     Matrix4x4 matTemp = Matrix4x4.Identity;
-                    CanonicalBasis canonicalBasis = new CanonicalBasis();
+                    CanonicalBasis canonicalBasis = default;
                     Vector3* pCanonicalBasis = &canonicalBasis.Row0;
 
                     canonicalBasis.Row0 = new Vector3(1.0f, 0.0f, 0.0f);

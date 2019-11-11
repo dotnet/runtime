@@ -134,7 +134,7 @@ namespace System.Globalization
         {
             datePatterns = null;
 
-            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            EnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
@@ -359,7 +359,7 @@ namespace System.Globalization
         {
             monthNames = null;
 
-            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            EnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
@@ -407,7 +407,7 @@ namespace System.Globalization
         {
             calendarData = null;
 
-            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            EnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)

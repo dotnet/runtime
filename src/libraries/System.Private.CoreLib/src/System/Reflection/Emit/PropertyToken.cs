@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
 {
     public struct PropertyToken
     {
-        public static readonly PropertyToken Empty = new PropertyToken();
+        public static readonly PropertyToken Empty = default;
 
         internal PropertyToken(int propertyToken)
         {

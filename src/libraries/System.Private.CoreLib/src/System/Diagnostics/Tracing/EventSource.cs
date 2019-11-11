@@ -536,7 +536,7 @@ namespace System.Diagnostics.Tracing
             {
                 // We ignore errors to keep with the convention that EventSources do not throw
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
-                Guid retVal = new Guid();
+                Guid retVal = default;
 #if FEATURE_MANAGED_ETW
 #if PLATFORM_WINDOWS
                 Interop.Advapi32.EventActivityIdControl(
@@ -1700,7 +1700,7 @@ namespace System.Diagnostics.Tracing
             }
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
-            var hash = new Sha1ForNonSecretPurposes();
+            Sha1ForNonSecretPurposes hash = default;
             hash.Start();
             hash.Append(namespaceBytes);
             hash.Append(bytes);
@@ -2172,7 +2172,7 @@ namespace System.Diagnostics.Tracing
                     fixed (char* msgStringPtr = msgString)
                     {
                         EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
-                        EventProvider.EventData data = new EventProvider.EventData();
+                        EventProvider.EventData data = default;
                         data.Ptr = (ulong)msgStringPtr;
                         data.Size = (uint)(2 * (msgString.Length + 1));
                         data.Reserved = 0;
@@ -2935,7 +2935,7 @@ namespace System.Diagnostics.Tracing
                 // we don't want the manifest to show up in the event log channels so we specify as keywords
                 // everything but the first 8 bits (reserved for the 8 channels)
                 var manifestDescr = new EventDescriptor(0xFFFE, 1, 0, 0, 0xFE, 0xFFFE, 0x00ffFFFFffffFFFF);
-                ManifestEnvelope envelope = new ManifestEnvelope();
+                ManifestEnvelope envelope = default;
 
                 envelope.Format = ManifestEnvelope.ManifestFormats.SimpleXmlFormat;
                 envelope.MajorVersion = 1;

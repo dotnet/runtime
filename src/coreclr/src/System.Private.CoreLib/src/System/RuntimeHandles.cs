@@ -623,7 +623,7 @@ namespace System
     // When in doubt, do not use.
     internal struct RuntimeMethodHandleInternal
     {
-        internal static RuntimeMethodHandleInternal EmptyHandle => new RuntimeMethodHandleInternal();
+        internal static RuntimeMethodHandleInternal EmptyHandle => default;
 
         internal bool IsNullHandle()
         {
@@ -1120,7 +1120,7 @@ namespace System
 
         private static ModuleHandle GetEmptyMH()
         {
-            return new ModuleHandle();
+            return default;
         }
 
         #region Private Data Members
@@ -1404,12 +1404,12 @@ namespace System
             m_returnTypeORfieldType = returnType;
             m_managedCallingConventionAndArgIteratorFlags = (byte)callingConvention;
 
-            GetSignature(null, 0, new RuntimeFieldHandleInternal(), method, null);
+            GetSignature(null, 0, default, method, null);
         }
 
         public Signature(IRuntimeMethodInfo methodHandle, RuntimeType declaringType)
         {
-            GetSignature(null, 0, new RuntimeFieldHandleInternal(), methodHandle, declaringType);
+            GetSignature(null, 0, default, methodHandle, declaringType);
         }
 
         public Signature(IRuntimeFieldInfo fieldHandle, RuntimeType declaringType)
@@ -1420,7 +1420,7 @@ namespace System
 
         public Signature(void* pCorSig, int cCorSig, RuntimeType declaringType)
         {
-            GetSignature(pCorSig, cCorSig, new RuntimeFieldHandleInternal(), null, declaringType);
+            GetSignature(pCorSig, cCorSig, default, null, declaringType);
         }
         #endregion
 

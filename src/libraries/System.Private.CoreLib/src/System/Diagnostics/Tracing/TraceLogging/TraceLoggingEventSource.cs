@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tracing
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                eventSourceName == null ? new Guid() : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
+                eventSourceName == null ? default : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
                 eventSourceName!,
                 config, traits)
         {
@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            var options = new EventSourceOptions();
+            EventSourceOptions options = default;
             this.WriteImpl(eventName, ref options, null, null, null, SimpleEventTypes<EmptyStruct>.Instance);
         }
 
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            var options = new EventSourceOptions();
+            EventSourceOptions options = default;
             this.WriteImpl(eventName, ref options, data, null, null, SimpleEventTypes<T>.Instance);
         }
 

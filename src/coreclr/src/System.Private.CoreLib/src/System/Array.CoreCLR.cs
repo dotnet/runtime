@@ -319,7 +319,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             fixed (int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             return TypedReference.InternalToObject(&elemref);
@@ -330,7 +330,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 1, &index);
             return TypedReference.InternalToObject(&elemref);
         }
@@ -344,7 +344,7 @@ namespace System
             pIndices[0] = index1;
             pIndices[1] = index2;
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 2, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
@@ -359,7 +359,7 @@ namespace System
             pIndices[1] = index2;
             pIndices[2] = index3;
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 3, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
@@ -369,7 +369,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 1, &index);
             InternalSetValue(&elemref, value);
         }
@@ -383,7 +383,7 @@ namespace System
             pIndices[0] = index1;
             pIndices[1] = index2;
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 2, pIndices);
             InternalSetValue(&elemref, value);
         }
@@ -398,7 +398,7 @@ namespace System
             pIndices[1] = index2;
             pIndices[2] = index3;
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             InternalGetReference(&elemref, 3, pIndices);
             InternalSetValue(&elemref, value);
         }
@@ -410,7 +410,7 @@ namespace System
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
-            TypedReference elemref = new TypedReference();
+            TypedReference elemref = default;
             fixed (int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             InternalSetValue(&elemref, value);

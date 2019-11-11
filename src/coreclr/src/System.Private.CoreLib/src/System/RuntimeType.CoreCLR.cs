@@ -519,7 +519,7 @@ namespace System
 
                 private unsafe RuntimeMethodInfo[] PopulateMethods(Filter filter)
                 {
-                    ListBuilder<RuntimeMethodInfo> list = new ListBuilder<RuntimeMethodInfo>();
+                    ListBuilder<RuntimeMethodInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
@@ -695,7 +695,7 @@ namespace System
                         return Array.Empty<RuntimeConstructorInfo>();
                     }
 
-                    ListBuilder<RuntimeConstructorInfo> list = new ListBuilder<RuntimeConstructorInfo>();
+                    ListBuilder<RuntimeConstructorInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
 
@@ -745,7 +745,7 @@ namespace System
 
                 private RuntimeFieldInfo[] PopulateFields(Filter filter)
                 {
-                    ListBuilder<RuntimeFieldInfo> list = new ListBuilder<RuntimeFieldInfo>();
+                    ListBuilder<RuntimeFieldInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
 
@@ -947,7 +947,7 @@ namespace System
 
                 private RuntimeType[] PopulateInterfaces(Filter filter)
                 {
-                    ListBuilder<RuntimeType> list = new ListBuilder<RuntimeType>();
+                    ListBuilder<RuntimeType> list = default;
 
                     RuntimeType declaringType = ReflectedType;
 
@@ -1049,7 +1049,7 @@ namespace System
                     if (MdToken.IsNullToken(tkEnclosingType))
                         return Array.Empty<RuntimeType>();
 
-                    ListBuilder<RuntimeType> list = new ListBuilder<RuntimeType>();
+                    ListBuilder<RuntimeType> list = default;
 
                     RuntimeModule moduleHandle = RuntimeTypeHandle.GetModule(declaringType);
                     MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle);
@@ -1093,7 +1093,7 @@ namespace System
                         new Dictionary<string, RuntimeEventInfo>();
 
                     RuntimeType declaringType = ReflectedType;
-                    ListBuilder<RuntimeEventInfo> list = new ListBuilder<RuntimeEventInfo>();
+                    ListBuilder<RuntimeEventInfo> list = default;
 
                     if (!RuntimeTypeHandle.IsInterface(declaringType))
                     {
@@ -1185,7 +1185,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    ListBuilder<RuntimePropertyInfo> list = new ListBuilder<RuntimePropertyInfo>();
+                    ListBuilder<RuntimePropertyInfo> list = default;
 
                     if (!RuntimeTypeHandle.IsInterface(declaringType))
                     {
@@ -2944,12 +2944,12 @@ namespace System
         {
             if (name is null) throw new ArgumentNullException();
 
-            ListBuilder<MethodInfo> methods = new ListBuilder<MethodInfo>();
-            ListBuilder<ConstructorInfo> constructors = new ListBuilder<ConstructorInfo>();
-            ListBuilder<PropertyInfo> properties = new ListBuilder<PropertyInfo>();
-            ListBuilder<EventInfo> events = new ListBuilder<EventInfo>();
-            ListBuilder<FieldInfo> fields = new ListBuilder<FieldInfo>();
-            ListBuilder<Type> nestedTypes = new ListBuilder<Type>();
+            ListBuilder<MethodInfo> methods = default;
+            ListBuilder<ConstructorInfo> constructors = default;
+            ListBuilder<PropertyInfo> properties = default;
+            ListBuilder<EventInfo> events = default;
+            ListBuilder<FieldInfo> fields = default;
+            ListBuilder<Type> nestedTypes = default;
 
             int totalCount = 0;
 
@@ -3140,7 +3140,7 @@ namespace System
         {
             get
             {
-                Guid result = new Guid();
+                Guid result = default;
                 GetGUID(ref result);
                 return result;
             }

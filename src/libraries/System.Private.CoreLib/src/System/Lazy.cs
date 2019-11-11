@@ -380,7 +380,7 @@ namespace System
 
         private void PublicationOnlyWaitForOtherThreadToPublish()
         {
-            var spinWait = new SpinWait();
+            SpinWait spinWait = default;
             while (!ReferenceEquals(_state, null))
             {
                 // We get here when PublicationOnly temporarily sets _state to LazyHelper.PublicationOnlyWaitForOtherThreadToPublish.

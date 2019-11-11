@@ -451,7 +451,7 @@ namespace System.Reflection
             int slot = RuntimeMethodHandle.GetSlot(this);
             RuntimeType declaringType = (RuntimeType)DeclaringType!;
             RuntimeType? baseDeclaringType = declaringType;
-            RuntimeMethodHandleInternal baseMethodHandle = new RuntimeMethodHandleInternal();
+            RuntimeMethodHandleInternal baseMethodHandle = default;
 
             do
             {

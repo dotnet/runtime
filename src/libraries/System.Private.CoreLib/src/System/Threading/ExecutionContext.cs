@@ -92,7 +92,7 @@ namespace System.Threading
             }
 
             executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
-            var asyncFlowControl = new AsyncFlowControl();
+            AsyncFlowControl asyncFlowControl = default;
             currentThread._executionContext = executionContext;
             asyncFlowControl.Initialize(currentThread);
             return asyncFlowControl;
