@@ -633,17 +633,15 @@ void dumpILRange(const BYTE* const codeAddr, unsigned codeSize) // in bytes
  */
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
 {
-    const int   bufSize = 17;
-    static char num1[bufSize];
-
-    static char num2[bufSize];
-
+    const int    bufSize = 65; // Supports a BitVec of up to 256 bits
+    static char  num1[bufSize];
+    static char  num2[bufSize];
     static char* nump = num1;
 
+    assert(bufSize > roundUp(BitVecTraits::GetSize(traits), (unsigned)sizeof(char)) / 8);
+
     char* temp = nump;
-
-    nump = (nump == num1) ? num2 : num1;
-
+    nump       = (nump == num1) ? num2 : num1;
     sprintf_s(temp, bufSize, "%s", BitVecOps::ToString(traits, set));
 
     return temp;
@@ -651,11 +649,9 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
 
 const char* refCntWtd2str(unsigned refCntWtd)
 {
-    const int   bufSize = 17;
-    static char num1[bufSize];
-
-    static char num2[bufSize];
-
+    const int    bufSize = 17;
+    static char  num1[bufSize];
+    static char  num2[bufSize];
     static char* nump = num1;
 
     char* temp = nump;

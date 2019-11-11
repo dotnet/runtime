@@ -6115,9 +6115,24 @@ protected:
 
     static const int MIN_CSE_COST = 2;
 
-    // Keeps tracked cse indices
-    BitVecTraits* cseTraits;
-    EXPSET_TP     cseFull;
+    // BitVec trait information only used by the optCSE_canSwap() method, for the  CSE_defMask and CSE_useMask.
+    // This BitVec uses one bit per CSE candidate
+    BitVecTraits* cseMaskTraits; // one bit per CSE candidate
+
+    // BitVec trait information for computing CSE availability using the CSE_DataFlow algorithm.
+    // Two bits are allocated per CSE candidate to compute CSE availability
+    // plus an extra bit to handle the initial unvisited case.
+    // (See CSE_DataFlow::EndMerge for an explaination of why this is necessary)
+    //
+    // The two bits per CSE candidate have the following meanings:
+    //     11 - The CSE is available, and is also available when considering calls as killing availability.
+    //     10 - The CSE is available, but is not available when considering calls as killing availability.
+    //     00 - The CSE is not available
+    //     01 - An illegal combination
+    //
+    BitVecTraits* cseLivenessTraits;
+
+    EXPSET_TP cseCallKillsMask; // Computed once - A mask that is used to kill available CSEs at callsites
 
     /* Generic list of nodes - used by the CSE logic */
 
@@ -6241,8 +6256,7 @@ protected:
     unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
     unsigned optCSEstart;          // The first local variable number that is a CSE
     unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are
-                                   // scanning for CSE expressions
+    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCS
 
     bool optIsCSEcandidate(GenTree* tree);
 

@@ -8191,6 +8191,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             GenTree* result = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
             result->gtFlags |= GTF_DONT_CSE;
 
+            compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
+
 #ifdef DEBUG
             if (verbose)
             {
@@ -8282,6 +8284,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             return fgMorphTree(optTree);
         }
     }
+
+    compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
 
     // Make sure that return buffers containing GC pointers that aren't too large are pointers into the stack.
     GenTree* origDest = nullptr; // Will only become non-null if we do the transformation (and thus require

@@ -443,10 +443,11 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_CLONED_FINALLY_BEGIN    0x100000000 // First block of a cloned finally region
 #define BBF_CLONED_FINALLY_END      0x200000000 // Last block of a cloned finally region
+#define BBF_HAS_CALL                0x400000000 // BB contains a call
 
 // clang-format on
 
-#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x400000000 // Block is dominated by exceptional entry.
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
 
 // Flags that relate blocks to loop structure.
 
