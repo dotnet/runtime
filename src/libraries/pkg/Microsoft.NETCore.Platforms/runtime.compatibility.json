@@ -270,6 +270,23 @@
     "any",
     "base"
   ],
+  "arch": [
+    "arch",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "arch-x64": [
+    "arch-x64",
+    "arch",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "base": [
     "base"
   ],

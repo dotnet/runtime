@@ -25,6 +25,11 @@
       <Versions>21</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="arch">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="centos">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>

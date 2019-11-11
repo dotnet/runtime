@@ -121,6 +121,17 @@
         "any"
       ]
     },
+    "arch": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "arch-x64": {
+      "#import": [
+        "arch",
+        "linux-x64"
+      ]
+    },
     "base": {
       "#import": []
     },
