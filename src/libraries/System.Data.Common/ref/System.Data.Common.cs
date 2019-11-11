@@ -116,13 +116,9 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string ColumnName { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute(typeof(string))]
-        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Type DataType { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataSetDateTime.UnspecifiedLocal)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public System.Data.DataSetDateTime DateTimeMode { get { throw null; } set { } }
-        public object DefaultValue { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string Expression { get { throw null; } set { } }
@@ -634,7 +630,6 @@ namespace System.Data
         public System.Data.DataRelationCollection ParentRelations { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string Prefix { get { throw null; } set { } }
-        public System.Data.DataColumn[] PrimaryKey { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.SerializationFormat.Xml)]
         public System.Data.SerializationFormat RemotingFormat { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -884,9 +879,6 @@ namespace System.Data
         System.ComponentModel.ListSortDescriptionCollection System.ComponentModel.IBindingListView.SortDescriptions { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Data.DataTable Table { get { throw null; } set { } }
         public event System.EventHandler Initialized { add { } remove { } }
         public event System.ComponentModel.ListChangedEventHandler ListChanged { add { } remove { } }
         public virtual System.Data.DataRowView AddNew() { throw null; }

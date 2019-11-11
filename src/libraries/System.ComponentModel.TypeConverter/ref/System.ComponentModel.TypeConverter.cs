@@ -2269,10 +2269,14 @@ namespace System.Timers
     {
         public Timer() { }
         public Timer(double interval) { }
+        [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AutoReset { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(false)]
         public bool Enabled { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(100d)]
         public double Interval { get { throw null; } set { } }
         public override System.ComponentModel.ISite Site { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(null)]
         public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
         public event System.Timers.ElapsedEventHandler Elapsed { add { } remove { } }
         public void BeginInit() { }

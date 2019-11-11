@@ -33,6 +33,7 @@
     <ProjectReference Include="..\..\System.Data.Common\ref\System.Data.Common.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />

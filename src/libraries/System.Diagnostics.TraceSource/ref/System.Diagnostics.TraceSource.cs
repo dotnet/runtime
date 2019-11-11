@@ -305,6 +305,7 @@ namespace System.Diagnostics
         public void TraceInformation(string message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceInformation(string format, params object[] args) { }
+        [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceTransfer(int id, string message, System.Guid relatedActivityId) { }
     }
     [System.Diagnostics.SwitchLevelAttribute(typeof(System.Diagnostics.TraceLevel))]

@@ -184,7 +184,7 @@ namespace System
             {
                 private readonly object _dummy;
                 private readonly int _dummyPrimitive;
-                public byte Current { get { throw null; } }
+                public readonly byte Current { get { throw null; } }
                 public bool MoveNext() { throw null; }
                 void System.IDisposable.Dispose() { }
                 object System.Collections.IEnumerator.Current { get { throw null; } }

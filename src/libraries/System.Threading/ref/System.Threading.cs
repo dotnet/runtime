@@ -390,10 +390,8 @@ namespace System.Threading
         public static void SetSynchronizationContext(System.Threading.SynchronizationContext? syncContext) { }
         protected void SetWaitNotificationRequired() { }
         [System.CLSCompliantAttribute(false)]
-        [System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute]
         public virtual int Wait(System.IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute]
         protected static int WaitHelper(System.IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) { throw null; }
     }
     public partial class SynchronizationLockException : System.SystemException

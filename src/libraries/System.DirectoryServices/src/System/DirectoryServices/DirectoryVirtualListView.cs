@@ -123,6 +123,7 @@ namespace System.DirectoryServices
             }
         }
 
+        [DefaultValue("")]
         public string Target
         {
             get => _target;

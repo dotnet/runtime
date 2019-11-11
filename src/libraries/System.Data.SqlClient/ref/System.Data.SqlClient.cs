@@ -499,7 +499,6 @@ namespace System.Data.SqlClient
         public bool Encrypt { get { throw null; } set { } }
         public bool Enlist { get { throw null; } set { } }
         public string FailoverPartner { get { throw null; } set { } }
-        public string InitialCatalog { get { throw null; } set { } }
         public bool IntegratedSecurity { get { throw null; } set { } }
         public override object this[string keyword] { get { throw null; } set { } }
         public override System.Collections.ICollection Keys { get { throw null; } }
@@ -750,16 +749,20 @@ namespace System.Data.SqlClient
         public int LocaleId { get { throw null; } set { } }
         public int Offset { get { throw null; } set { } }
         public override string ParameterName { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute((byte)0)]
         public new byte Precision { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute((byte)0)]
         public new byte Scale { get { throw null; } set { } }
         public override int Size { get { throw null; } set { } }
         public override string SourceColumn { get { throw null; } set { } }
         public override bool SourceColumnNullMapping { get { throw null; } set { } }
         public override System.Data.DataRowVersion SourceVersion { get { throw null; } set { } }
+        [System.Data.Common.DbProviderSpecificTypePropertyAttribute(true)]
         public System.Data.SqlDbType SqlDbType { get { throw null; } set { } }
         public object SqlValue { get { throw null; } set { } }
         public string TypeName { get { throw null; } set { } }
         public string UdtTypeName { get { throw null; } set { } }
+        [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.StringConverter))]
         public override object Value { get { throw null; } set { } }
         public string XmlSchemaCollectionDatabase { get { throw null; } set { } }
         public string XmlSchemaCollectionName { get { throw null; } set { } }

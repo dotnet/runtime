@@ -251,15 +251,15 @@ namespace System.IO.Enumeration
         private int _dummyPrimitive;
         public System.IO.FileAttributes Attributes { get { throw null; } }
         public System.DateTimeOffset CreationTimeUtc { get { throw null; } }
-        public System.ReadOnlySpan<char> Directory { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> Directory { get { throw null; } }
         public System.ReadOnlySpan<char> FileName { get { throw null; } }
         public bool IsDirectory { get { throw null; } }
         public bool IsHidden { get { throw null; } }
         public System.DateTimeOffset LastAccessTimeUtc { get { throw null; } }
         public System.DateTimeOffset LastWriteTimeUtc { get { throw null; } }
         public long Length { get { throw null; } }
-        public System.ReadOnlySpan<char> OriginalRootDirectory { get { throw null; } }
-        public System.ReadOnlySpan<char> RootDirectory { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> OriginalRootDirectory { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> RootDirectory { get { throw null; } }
         public System.IO.FileSystemInfo ToFileSystemInfo() { throw null; }
         public string ToFullPath() { throw null; }
         public string ToSpecifiedFullPath() { throw null; }

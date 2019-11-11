@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.Xml
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public string IssuerName { get { throw null; } set { } }
-        public string SerialNumber { get { throw null; } set { } }
+        public string IssuerName { readonly get { throw null; } set { } }
+        public string SerialNumber { readonly get { throw null; } set { } }
     }
 }

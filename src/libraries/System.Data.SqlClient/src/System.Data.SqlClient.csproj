@@ -508,6 +508,7 @@
     <Reference Condition="'$(TargetFramework)' != 'netstandard2.0'" Include="System.Data.Common" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.IO" />
+    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
@@ -520,14 +521,12 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
@@ -551,6 +550,7 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

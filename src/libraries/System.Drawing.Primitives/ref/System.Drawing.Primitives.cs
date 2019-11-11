@@ -459,7 +459,7 @@ namespace System.Drawing
         public void Inflate(int width, int height) { }
         public void Intersect(System.Drawing.Rectangle rect) { }
         public static System.Drawing.Rectangle Intersect(System.Drawing.Rectangle a, System.Drawing.Rectangle b) { throw null; }
-        public bool IntersectsWith(System.Drawing.Rectangle rect) { throw null; }
+        public readonly bool IntersectsWith(System.Drawing.Rectangle rect) { throw null; }
         public void Offset(System.Drawing.Point pos) { }
         public void Offset(int x, int y) { }
         public static bool operator ==(System.Drawing.Rectangle left, System.Drawing.Rectangle right) { throw null; }

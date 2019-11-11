@@ -17,3 +17,5 @@ MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.GetSigna
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.SignatureAlgorithm.get()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SubjectIdentifier.MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)' does not exist in the reference but it does exist in the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Security.Cryptography.Xml.X509IssuerSerial.IssuerName.get()' in the implementation but not the reference.
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Security.Cryptography.Xml.X509IssuerSerial.SerialNumber.get()' in the implementation but not the reference.

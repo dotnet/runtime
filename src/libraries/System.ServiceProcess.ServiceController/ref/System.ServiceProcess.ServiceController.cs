@@ -23,6 +23,7 @@ namespace System.ServiceProcess
     {
         public const int MaxNameLength = 80;
         public ServiceBase() { }
+        [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AutoLog { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool CanHandlePowerEvent { get { throw null; } set { } }
@@ -34,6 +35,8 @@ namespace System.ServiceProcess
         public bool CanShutdown { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool CanStop { get { throw null; } set { } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public virtual System.Diagnostics.EventLog EventLog { get { throw null; } }
         public int ExitCode { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]

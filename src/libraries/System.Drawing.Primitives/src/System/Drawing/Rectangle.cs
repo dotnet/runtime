@@ -236,7 +236,7 @@ namespace System.Drawing
             (X <= rect.X) && (rect.X + rect.Width <= X + Width) &&
             (Y <= rect.Y) && (rect.Y + rect.Height <= Y + Height);
 
-        public override int GetHashCode() => HashCode.Combine(X, Y, Width, Height);
+        public override readonly int GetHashCode() => HashCode.Combine(X, Y, Width, Height);
 
         /// <summary>
         /// Inflates this <see cref='System.Drawing.Rectangle'/> by the specified amount.

@@ -3173,7 +3173,6 @@ namespace System
         public static System.Type GetTargetType(System.TypedReference value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.TypedReference MakeTypedReference(object target, System.Reflection.FieldInfo[] flds) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static void SetTypedReference(System.TypedReference target, object? value) { }
         public static System.RuntimeTypeHandle TargetTypeToken(System.TypedReference value) { throw null; }
         public static object ToObject(System.TypedReference value) { throw null; }
@@ -8432,7 +8431,7 @@ namespace System.Threading.Tasks.Sources
         private TResult _result;
         private object _dummy;
         private int _dummyPrimitive;
-        public bool RunContinuationsAsynchronously { get { throw null; } set { } }
+        public bool RunContinuationsAsynchronously { readonly get { throw null; } set { } }
         public short Version { get { throw null; } }
         public TResult GetResult(short token) { throw null; }
         public System.Threading.Tasks.Sources.ValueTaskSourceStatus GetStatus(short token) { throw null; }

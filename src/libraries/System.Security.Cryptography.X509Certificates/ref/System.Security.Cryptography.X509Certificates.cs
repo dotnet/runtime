@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Security.Cryptography.X509Certificates.X509ChainStatusFlags Status { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainStatusFlags Status { readonly get { throw null; } set { } }
         public string StatusInformation { get { throw null; } set { } }
     }
     [System.FlagsAttribute]

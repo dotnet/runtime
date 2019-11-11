@@ -142,10 +142,8 @@ namespace System.Diagnostics
     public sealed partial class EventLogTraceListener : System.Diagnostics.TraceListener
     {
         public EventLogTraceListener() { }
-        [System.CLSCompliantAttribute(false)]
         public EventLogTraceListener(System.Diagnostics.EventLog eventLog) { }
         public EventLogTraceListener(string source) { }
-        [System.CLSCompliantAttribute(false)]
         public System.Diagnostics.EventLog EventLog { get { throw null; } set { } }
         public override string Name { get { throw null; } set { } }
         public override void Close() { }

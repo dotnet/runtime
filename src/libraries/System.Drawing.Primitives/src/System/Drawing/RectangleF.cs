@@ -258,7 +258,7 @@ namespace System.Drawing
         /// <summary>
         /// Determines if this rectangle intersects with rect.
         /// </summary>
-        public bool IntersectsWith(RectangleF rect) =>
+        public readonly bool IntersectsWith(RectangleF rect) =>
             (rect.X < X + Width) && (X < rect.X + rect.Width) && (rect.Y < Y + Height) && (Y < rect.Y + rect.Height);
 
         /// <summary>

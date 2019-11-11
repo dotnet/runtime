@@ -37,9 +37,7 @@ namespace System.ComponentModel
         public BackgroundWorker() { }
         public bool CancellationPending { get { throw null; } }
         public bool IsBusy { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute(false)]
         public bool WorkerReportsProgress { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute(false)]
         public bool WorkerSupportsCancellation { get { throw null; } set { } }
         public event System.ComponentModel.DoWorkEventHandler DoWork { add { } remove { } }
         public event System.ComponentModel.ProgressChangedEventHandler ProgressChanged { add { } remove { } }

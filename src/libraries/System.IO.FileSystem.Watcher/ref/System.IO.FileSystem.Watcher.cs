@@ -81,10 +81,10 @@ namespace System.IO
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.IO.WatcherChangeTypes ChangeType { get { throw null; } set { } }
-        public string Name { get { throw null; } set { } }
-        public string OldName { get { throw null; } set { } }
-        public bool TimedOut { get { throw null; } set { } }
+        public System.IO.WatcherChangeTypes ChangeType { readonly get { throw null; } set { } }
+        public string Name { readonly get { throw null; } set { } }
+        public string OldName { readonly get { throw null; } set { } }
+        public bool TimedOut { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum WatcherChangeTypes

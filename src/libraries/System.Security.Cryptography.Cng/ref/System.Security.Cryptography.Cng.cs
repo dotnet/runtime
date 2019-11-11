@@ -201,8 +201,8 @@ namespace System.Security.Cryptography
         private object _dummy;
         private int _dummyPrimitive;
         public CngProperty(string name, byte[] value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
-        public string Name { get { throw null; } }
-        public System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
+        public readonly string Name { get { throw null; } }
+        public readonly System.Security.Cryptography.CngPropertyOptions Options {  get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Security.Cryptography.CngProperty other) { throw null; }
         public override int GetHashCode() { throw null; }
