@@ -795,17 +795,18 @@ namespace System.Globalization
         {
             get
             {
-                if (_sLocalizedDisplayName == null)
+                string? localizedDisplayName = _sLocalizedDisplayName;
+                if (localizedDisplayName == null)
                 {
                     if (IsSupplementalCustomCulture)
                     {
                         if (IsNeutralCulture)
                         {
-                            _sLocalizedDisplayName = NativeLanguageName;
+                            localizedDisplayName = NativeLanguageName;
                         }
                         else
                         {
-                            _sLocalizedDisplayName = NativeName;
+                            localizedDisplayName = NativeName;
                         }
                     }
                     else
@@ -817,15 +818,15 @@ namespace System.Globalization
 
                             if (Name.Equals(ZH_CHT, StringComparison.OrdinalIgnoreCase))
                             {
-                                _sLocalizedDisplayName = GetLanguageDisplayName("zh-Hant");
+                                localizedDisplayName = GetLanguageDisplayName("zh-Hant");
                             }
                             else if (Name.Equals(ZH_CHS, StringComparison.OrdinalIgnoreCase))
                             {
-                                _sLocalizedDisplayName = GetLanguageDisplayName("zh-Hans");
+                                localizedDisplayName = GetLanguageDisplayName("zh-Hans");
                             }
                             else
                             {
-                                _sLocalizedDisplayName = GetLanguageDisplayName(Name);
+                                localizedDisplayName = GetLanguageDisplayName(Name);
                             }
                         }
                         catch
@@ -833,13 +834,14 @@ namespace System.Globalization
                             // do nothing
                         }
                     }
+
                     // If it hasn't been found (Windows 8 and up), fallback to the system
-                    if (string.IsNullOrEmpty(_sLocalizedDisplayName))
+                    if (string.IsNullOrEmpty(localizedDisplayName))
                     {
                         // If its neutral use the language name
                         if (IsNeutralCulture)
                         {
-                            _sLocalizedDisplayName = LocalizedLanguageName;
+                            localizedDisplayName = LocalizedLanguageName;
                         }
                         else
                         {
@@ -851,17 +853,19 @@ namespace System.Globalization
                                 ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
                                 !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
                             {
-                                _sLocalizedDisplayName = NativeName;
+                                localizedDisplayName = NativeName;
                             }
                             else
                             {
-                                _sLocalizedDisplayName = GetLocaleInfo(LocaleStringData.LocalizedDisplayName);
+                                localizedDisplayName = GetLocaleInfo(LocaleStringData.LocalizedDisplayName);
                             }
                         }
                     }
+
+                    _sLocalizedDisplayName = localizedDisplayName;
                 }
 
-                return _sLocalizedDisplayName;
+                return localizedDisplayName;
             }
         }
 
@@ -872,27 +876,28 @@ namespace System.Globalization
         {
             get
             {
-                if (_sEnglishDisplayName == null)
+                string? englishDisplayName = _sEnglishDisplayName;
+                if (englishDisplayName == null)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        _sEnglishDisplayName = EnglishLanguageName;
+                        englishDisplayName = EnglishLanguageName;
                         // differentiate the legacy display names
                         switch (_sName)
                         {
                             case "zh-CHS":
                             case "zh-CHT":
-                                _sEnglishDisplayName += " Legacy";
+                                englishDisplayName += " Legacy";
                                 break;
                         }
                     }
                     else
                     {
-                        _sEnglishDisplayName = GetLocaleInfo(LocaleStringData.EnglishDisplayName);
+                        englishDisplayName = GetLocaleInfo(LocaleStringData.EnglishDisplayName);
 
                         // if it isn't found build one:
-                        if (string.IsNullOrEmpty(_sEnglishDisplayName))
+                        if (string.IsNullOrEmpty(englishDisplayName))
                         {
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
@@ -900,7 +905,7 @@ namespace System.Globalization
                             if (EnglishLanguageName[^1] == ')')
                             {
                                 // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
-                                _sEnglishDisplayName = string.Concat(
+                                englishDisplayName = string.Concat(
                                     EnglishLanguageName.AsSpan(0, _sEnglishLanguage!.Length - 1),
                                     ", ",
                                     EnglishCountryName,
@@ -909,12 +914,15 @@ namespace System.Globalization
                             else
                             {
                                 // "English" + "United States" -> "English (United States)"
-                                _sEnglishDisplayName = EnglishLanguageName + " (" + EnglishCountryName + ")";
+                                englishDisplayName = EnglishLanguageName + " (" + EnglishCountryName + ")";
                             }
                         }
                     }
+
+                    _sEnglishDisplayName = englishDisplayName;
                 }
-                return _sEnglishDisplayName;
+
+                return englishDisplayName;
             }
         }
 
@@ -925,36 +933,40 @@ namespace System.Globalization
         {
             get
             {
-                if (_sNativeDisplayName == null)
+                string? nativeDisplayName = _sNativeDisplayName;
+                if (nativeDisplayName == null)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        _sNativeDisplayName = NativeLanguageName;
+                        nativeDisplayName = NativeLanguageName;
                         // differentiate the legacy display names
                         switch (_sName)
                         {
                             case "zh-CHS":
-                                _sNativeDisplayName += " \u65E7\u7248";
+                                nativeDisplayName += " \u65E7\u7248";
                                 break;
                             case "zh-CHT":
-                                _sNativeDisplayName += " \u820A\u7248";
+                                nativeDisplayName += " \u820A\u7248";
                                 break;
                         }
                     }
                     else
                     {
-                        _sNativeDisplayName = GetLocaleInfo(LocaleStringData.NativeDisplayName);
+                        nativeDisplayName = GetLocaleInfo(LocaleStringData.NativeDisplayName);
 
                         // if it isn't found build one:
-                        if (string.IsNullOrEmpty(_sNativeDisplayName))
+                        if (string.IsNullOrEmpty(nativeDisplayName))
                         {
                             // These should primarily be "Deutsch (Deutschland)" type names
-                            _sNativeDisplayName = NativeLanguageName + " (" + NativeCountryName + ")";
+                            nativeDisplayName = NativeLanguageName + " (" + NativeCountryName + ")";
                         }
                     }
+
+                    _sNativeDisplayName = nativeDisplayName;
                 }
-                return _sNativeDisplayName;
+
+                return nativeDisplayName;
             }
         }
 
@@ -1050,23 +1062,23 @@ namespace System.Globalization
         {
             get
             {
-                if (_sLocalizedCountry == null)
+                string? localizedCountry = _sLocalizedCountry;
+                if (localizedCountry == null)
                 {
                     try
                     {
-                        _sLocalizedCountry = GetRegionDisplayName(TwoLetterISOCountryName);
+                        localizedCountry = GetRegionDisplayName();
                     }
                     catch
                     {
                         // do nothing. we'll fallback
                     }
 
-                    if (_sLocalizedCountry == null)
-                    {
-                        _sLocalizedCountry = NativeCountryName;
-                    }
+                    localizedCountry ??= NativeCountryName;
+                    _sLocalizedCountry = localizedCountry;
                 }
-                return _sLocalizedCountry;
+
+                return localizedCountry;
             }
         }
 

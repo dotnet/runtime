@@ -292,7 +292,7 @@ namespace System.Globalization
             }
         }
 
-        private string GetRegionDisplayName(string isoCountryCode)
+        private string GetRegionDisplayName()
         {
             // If the current UI culture matching the OS UI language, we'll get the display name from the OS.
             // otherwise, we use the native name as we don't carry resources for the region display names anyway.
