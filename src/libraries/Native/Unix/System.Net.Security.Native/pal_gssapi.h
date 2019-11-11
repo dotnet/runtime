@@ -90,6 +90,11 @@ Shims the gss_release_name method.
 DLLEXPORT uint32_t NetSecurityNative_ReleaseName(uint32_t* minorStatus, GssName** inputName);
 
 /*
+Shims the gss_acquire_cred method with GSS_C_ACCEPT.
+*/
+DLLEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus, GssCredId** outputCredHandle);
+
+/*
 Shims the gss_acquire_cred method with SPNEGO oids with  GSS_C_INITIATE.
 */
 DLLEXPORT uint32_t
@@ -133,11 +138,13 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 Shims the gss_accept_sec_context method.
 */
 DLLEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
+                                                      GssCredId* acceptorCredHandle,
                                                       GssCtxId** contextHandle,
                                                       uint8_t* inputBytes,
                                                       uint32_t inputLength,
                                                       PAL_GssBuffer* outBuffer,
-                                                      uint32_t* retFlags);
+                                                      uint32_t* retFlags,
+                                                      int32_t* isNtlmUsed);
 
 /*
 

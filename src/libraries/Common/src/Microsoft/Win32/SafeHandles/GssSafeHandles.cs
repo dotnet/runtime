@@ -74,6 +74,21 @@ namespace Microsoft.Win32.SafeHandles
     {
         private static readonly Lazy<bool> s_IsNtlmInstalled = new Lazy<bool>(InitIsNtlmInstalled);
 
+        public static SafeGssCredHandle CreateAcceptor()
+        {
+            SafeGssCredHandle retHandle = null;
+            Interop.NetSecurityNative.Status status;
+            Interop.NetSecurityNative.Status minorStatus;
+
+            status = Interop.NetSecurityNative.AcquireAcceptorCred(out minorStatus, out retHandle);
+            if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+            {
+                throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+            }
+
+            return retHandle;
+        }
+
         /// <summary>
         ///  returns the handle for the given credentials.
         ///  The method returns an invalid handle if the username is null or empty.
@@ -110,7 +125,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     retHandle.Dispose();
-                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus, null);
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
                 }
             }
 

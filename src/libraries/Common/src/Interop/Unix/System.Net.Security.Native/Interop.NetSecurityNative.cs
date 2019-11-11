@@ -48,6 +48,11 @@ internal static partial class Interop
             out Status minorStatus,
             ref IntPtr inputName);
 
+        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcquireAcceptorCred")]
+        internal static extern Status AcquireAcceptorCred(
+            out Status minorStatus,
+            out SafeGssCredHandle outputCredHandle);
+
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredSpNego")]
         internal static extern Status InitiateCredSpNego(
             out Status minorStatus,
@@ -101,11 +106,13 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
         internal static extern Status AcceptSecContext(
             out Status minorStatus,
+            SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
             byte[] inputBytes,
             int inputLength,
             ref GssBuffer token,
-            out uint retFlags);
+            out uint retFlags,
+            out bool isNtlmUsed);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DeleteSecContext")]
         internal static extern Status DeleteSecContext(

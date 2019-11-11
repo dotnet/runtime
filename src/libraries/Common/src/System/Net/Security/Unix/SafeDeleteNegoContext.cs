@@ -12,9 +12,19 @@ namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
+        private SafeGssCredHandle _acceptorCredential;
         private SafeGssNameHandle _targetName;
         private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
+
+        public SafeGssCredHandle AcceptorCredential
+        {
+            get
+            {
+                _acceptorCredential ??= SafeGssCredHandle.CreateAcceptor();
+                return _acceptorCredential;
+            }
+        }
 
         public SafeGssNameHandle TargetName
         {
@@ -77,6 +87,12 @@ namespace System.Net.Security
                 {
                     _targetName.Dispose();
                     _targetName = null;
+                }
+
+                if (_acceptorCredential != null)
+                {
+                    _acceptorCredential.Dispose();
+                    _acceptorCredential = null;
                 }
             }
             base.Dispose(disposing);

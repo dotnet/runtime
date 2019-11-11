@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class NetSecurityNative
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct GssBuffer : IDisposable
+        internal struct GssBuffer : IDisposable
         {
             internal ulong _length;
             internal IntPtr _data;
@@ -51,6 +51,10 @@ internal static partial class Interop
                 Marshal.Copy(_data, destination, 0, destinationLength);
                 return destination;
             }
+
+            internal unsafe ReadOnlySpan<byte> Span => (_data != IntPtr.Zero && _length != 0) ?
+                new ReadOnlySpan<byte>(_data.ToPointer(), checked((int)_length)) :
+                default;
 
             public void Dispose()
             {

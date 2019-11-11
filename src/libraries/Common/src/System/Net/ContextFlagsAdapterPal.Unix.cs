@@ -23,7 +23,6 @@ namespace System.Net
         private static readonly ContextFlagMapping[] s_contextFlagMapping = new[]
         {
             new ContextFlagMapping(Interop.NetSecurityNative.GssFlags.GSS_C_CONF_FLAG, ContextFlagsPal.Confidentiality),
-            new ContextFlagMapping(Interop.NetSecurityNative.GssFlags.GSS_C_IDENTIFY_FLAG, ContextFlagsPal.InitIdentify),
             new ContextFlagMapping(Interop.NetSecurityNative.GssFlags.GSS_C_MUTUAL_FLAG, ContextFlagsPal.MutualAuth),
             new ContextFlagMapping(Interop.NetSecurityNative.GssFlags.GSS_C_REPLAY_FLAG, ContextFlagsPal.ReplayDetect),
             new ContextFlagMapping(Interop.NetSecurityNative.GssFlags.GSS_C_SEQUENCE_FLAG, ContextFlagsPal.SequenceDetect),
@@ -34,6 +33,20 @@ namespace System.Net
         internal static ContextFlagsPal GetContextFlagsPalFromInterop(Interop.NetSecurityNative.GssFlags gssFlags, bool isServer)
         {
             ContextFlagsPal flags = ContextFlagsPal.None;
+
+            // GSS_C_IDENTIFY_FLAG is handled separately as its value can either be AcceptIdentify (used by server) or InitIdentify (used by client)
+            if ((gssFlags & Interop.NetSecurityNative.GssFlags.GSS_C_IDENTIFY_FLAG) != 0)
+            {
+                flags |= isServer ? ContextFlagsPal.AcceptIdentify : ContextFlagsPal.InitIdentify;
+            }
+
+            foreach (ContextFlagMapping mapping in s_contextFlagMapping)
+            {
+                if ((gssFlags & mapping.GssFlags) == mapping.GssFlags)
+                {
+                    flags |= mapping.ContextFlag;
+                }
+            }
 
             // GSS_C_INTEG_FLAG is handled separately as its value can either be AcceptIntegrity (used by server) or InitIntegrity (used by client)
             if ((gssFlags & Interop.NetSecurityNative.GssFlags.GSS_C_INTEG_FLAG) != 0)
@@ -55,6 +68,22 @@ namespace System.Net
         internal static Interop.NetSecurityNative.GssFlags GetInteropFromContextFlagsPal(ContextFlagsPal flags, bool isServer)
         {
             Interop.NetSecurityNative.GssFlags gssFlags = 0;
+
+            // GSS_C_IDENTIFY_FLAG is set if either AcceptIdentify (used by server) or InitIdentify (used by client) is set
+            if (isServer)
+            {
+                if ((flags & ContextFlagsPal.AcceptIdentify) != 0)
+                {
+                    gssFlags |= Interop.NetSecurityNative.GssFlags.GSS_C_IDENTIFY_FLAG;
+                }
+            }
+            else
+            {
+                if ((flags & ContextFlagsPal.InitIdentify) != 0)
+                {
+                    gssFlags |= Interop.NetSecurityNative.GssFlags.GSS_C_IDENTIFY_FLAG;
+                }
+            }
 
             // GSS_C_INTEG_FLAG is set if either AcceptIntegrity (used by server) or InitIntegrity (used by client) is set
             if (isServer)

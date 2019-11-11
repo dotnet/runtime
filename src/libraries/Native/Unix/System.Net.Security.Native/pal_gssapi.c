@@ -299,32 +299,52 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 }
 
 uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
+                                            GssCredId* acceptorCredHandle,
                                             GssCtxId** contextHandle,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
                                             PAL_GssBuffer* outBuffer,
-                                            uint32_t* retFlags)
+                                            uint32_t* retFlags,
+                                            int32_t* isNtlmUsed)
 {
     assert(minorStatus != NULL);
+    assert(acceptorCredHandle != NULL);
     assert(contextHandle != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
+    assert(isNtlmUsed != NULL);
     // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
 
+    gss_OID mechType = GSS_C_NO_OID;
     uint32_t majorStatus = gss_accept_sec_context(minorStatus,
                                                   contextHandle,
-                                                  GSS_C_NO_CREDENTIAL,
+                                                  acceptorCredHandle,
                                                   &inputToken,
                                                   GSS_C_NO_CHANNEL_BINDINGS,
                                                   NULL,
-                                                  NULL,
+                                                  &mechType,
                                                   &gssBuffer,
                                                   retFlags,
                                                   NULL,
                                                   NULL);
+
+#if HAVE_GSS_SPNEGO_MECHANISM
+    gss_OID ntlmMech = GSS_NTLM_MECHANISM;
+#else
+    gss_OID ntlmMech = &gss_mech_ntlm_OID_desc;
+#endif
+
+    *isNtlmUsed = (gss_oid_equal(mechType, ntlmMech) != 0) ? 1 : 0;
+
+    // The gss_ntlmssp provider doesn't support impersonation or delegation but fails to set the GSS_C_IDENTIFY_FLAG
+    // flag. So, we'll set it here to keep the behavior consistent with Windows platform.
+    if (*isNtlmUsed == 1)
+    {
+        *retFlags |= GSS_C_IDENTIFY_FLAG;
+    }
 
     NetSecurityNative_MoveBuffer(&gssBuffer, outBuffer);
     return majorStatus;
@@ -492,6 +512,19 @@ static uint32_t NetSecurityNative_AcquireCredWithPassword(uint32_t* minorStatus,
 #endif
 
     return majorStatus;
+}
+
+uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus,
+                                               GssCredId** outputCredHandle)
+{
+    return gss_acquire_cred(minorStatus,
+                            GSS_C_NO_NAME,
+                            GSS_C_INDEFINITE,
+                            GSS_C_NO_OID_SET,
+                            GSS_C_ACCEPT,
+                            outputCredHandle,
+                            NULL,
+                            NULL);
 }
 
 uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
