@@ -359,7 +359,7 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-Wl,--build-id=sha1)
+  add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
 endif(CLR_CMAKE_PLATFORM_LINUX)
 if(CLR_CMAKE_PLATFORM_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
