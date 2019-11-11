@@ -398,12 +398,17 @@ namespace System.Security.Cryptography
                         {
                             source.CopyTo(sourceRent);
 
-                            int written = encryptor.TransformBlock(
-                                sourceRent,
-                                0,
-                                fullBlocksLength,
-                                destination,
-                                0);
+                            int written = 0;
+
+                            if (fullBlocksLength != 0)
+                            {
+                                written = encryptor.TransformBlock(
+                                    sourceRent,
+                                    0,
+                                    fullBlocksLength,
+                                    destination,
+                                    0);
+                            }
 
                             byte[] lastBlock = encryptor.TransformFinalBlock(
                                 sourceRent,

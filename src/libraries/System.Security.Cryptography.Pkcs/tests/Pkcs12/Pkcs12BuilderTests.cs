@@ -481,5 +481,33 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
 
             Assert.Equal(3 + encode1.Length, encode2.Length);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void BuildWithEmptySafeContents(bool encrypted)
+        {
+            string pw = nameof(BuildWithEmptySafeContents);
+
+            Pkcs12Builder builder = new Pkcs12Builder();
+            Pkcs12SafeContents empty = new Pkcs12SafeContents();
+
+            if (encrypted)
+            {
+                builder.AddSafeContentsEncrypted(empty, pw, s_win7Pbe);
+            }
+            else
+            {
+                builder.AddSafeContentsUnencrypted(empty);
+            }
+
+            builder.SealWithMac(pw, HashAlgorithmName.SHA1, 1);
+            byte[] pfxBytes = builder.Encode();
+
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+            coll.Import(pfxBytes, pw, default);
+
+            Assert.Equal(0, coll.Count);
+        }
     }
 }
