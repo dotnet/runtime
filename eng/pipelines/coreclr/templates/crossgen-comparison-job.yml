@@ -83,12 +83,8 @@ jobs:
 
 
     # Populate Core_Root
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) generatelayoutonly
-        displayName: Populate Core_Root
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd $(buildConfig) $(archType) generateLayoutOnly
-        displayName: Populate Core_Root
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+      displayName: Populate Core_Root
 
 
     # Create baseline output on the host (x64) machine
@@ -96,7 +92,7 @@ jobs:
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/tests/scripts/crossgen_comparison.py
+        scriptPath: $(coreClrRepoRoot)/tests/scripts/crossgen_comparison.py
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
