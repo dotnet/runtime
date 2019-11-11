@@ -14,6 +14,11 @@
       signing that isn't (can't be?) supported by Arcade's single pass, such as MSIs and bundles:
       https://github.com/dotnet/arcade/issues/388
   -->
+
+  <PropertyGroup>
+    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+  </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
   <Target Name="CheckSpecifiedSubsetValidity"
