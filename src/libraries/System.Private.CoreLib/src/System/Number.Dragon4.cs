@@ -420,7 +420,7 @@ namespace System
                 //      compare(value, 0.5)
                 //      compare(scale * value, scale * 0.5)
                 //      compare(2 * scale * value, scale)
-                scaledValue.Multiply(2);
+                scaledValue.ShiftLeft(1); // Multiply by 2
                 int compare = BigInteger.Compare(ref scaledValue, ref scale);
                 roundDown = compare < 0;
 
