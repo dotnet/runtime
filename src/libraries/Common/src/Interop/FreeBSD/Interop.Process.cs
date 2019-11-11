@@ -213,15 +213,13 @@ internal static partial class Interop
         /// <returns>Returns a list of PIDs corresponding to all running processes</returns>
         internal static unsafe int[] ListAllPids()
         {
-            int numProcesses = 0;
             int[] pids;
-            kinfo_proc * entries = null;
+            kinfo_proc * entries = GetProcInfo(0, false, out int numProcesses);
             int idx;
 
             try
             {
-                entries = GetProcInfo(0, false, out numProcesses);
-                if (entries == null || numProcesses <= 0)
+                if (numProcesses <= 0)
                 {
                     throw new Win32Exception(SR.CantGetAllPids);
                 }
@@ -340,20 +338,18 @@ internal static partial class Interop
         /// </returns>
         public static unsafe ProcessInfo GetProcessInfoById(int pid)
         {
-            kinfo_proc* kinfo = null;
-            int count;
-            ProcessInfo info;
-
             // Negative PIDs are invalid
             if (pid < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
+            kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
+            ProcessInfo info;
+
             try
             {
-                kinfo = GetProcInfo(pid, true, out count);
-                if (kinfo == null || count < 1)
+                if (count < 1)
                 {
                     throw new ArgumentOutOfRangeException(nameof(pid));
                 }
