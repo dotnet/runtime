@@ -1,44 +1,5 @@
 #!/usr/bin/env bash
 
-__PortableBuild=1
-
-initTargetDistroRid()
-{
-    source ${__ProjectDir}/init-distro-rid.sh
-
-    # Only pass ROOTFS_DIR if cross is specified.
-    if (( ${__CrossBuild} == 1 )); then
-        passedRootfsDir=${ROOTFS_DIR}
-    fi
-
-    initDistroRidGlobal ${__BuildOS} ${__BuildArch} ${__PortableBuild} ${passedRootfsDir}
-}
-
-isMSBuildOnNETCoreSupported()
-{
-    __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
-
-    if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
-        return
-    fi
-
-    if [ "$__HostArch" == "x64" ]; then
-        if [ "$__HostOS" == "Linux" ]; then
-            __isMSBuildOnNETCoreSupported=1
-            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64")
-            for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
-            do
-                if [ "${__DistroRid}" == "$UNSUPPORTED_RID" ]; then
-                    __isMSBuildOnNETCoreSupported=0
-                    break
-                fi
-            done
-        elif [ "$__HostOS" == "OSX" ]; then
-            __isMSBuildOnNETCoreSupported=1
-        fi
-    fi
-}
-
 build_test_wrappers()
 {
     if [ $__BuildTestWrappers -ne -0 ]; then
@@ -175,9 +136,9 @@ precompile_coreroot_fx()
 {
     local overlayDir=$CORE_ROOT
     local compilerName=Crossgen
-    
+
     # Read the exclusion file for this platform
-    skipCrossGenFiles=($(read_array "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt"))
+    skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
     skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
 
     # Temporary output folder for Crossgen2-compiled assemblies
@@ -212,7 +173,7 @@ precompile_coreroot_fx()
     filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
     for fileToPrecompile in ${filesToPrecompile}
     do
-        local filename=${fileToPrecompile}        
+        local filename=${fileToPrecompile}
         if is_skip_crossgen_test "$(basename $filename)"; then
                 continue
         fi
@@ -258,25 +219,6 @@ function is_skip_crossgen_test {
         fi
     done
     return 1
-}
-
-# Get an array of items by reading the specified file line by line.
-function read_array {
-    local theArray=()
-
-    if [ ! -f "$1" ]; then
-        return
-    fi
-
-    # bash in Mac OS X doesn't support 'readarray', so using alternate way instead.
-    # readarray -t theArray < "$1"
-    # Any line that starts with '#' is ignored.
-    while IFS='' read -r line || [ -n "$line" ]; do
-        if [[ $line != "#"* ]]; then
-            theArray[${#theArray[@]}]=$line
-        fi
-    done < "$1"
-    echo ${theArray[@]}
 }
 
 generate_testhost()
@@ -468,7 +410,7 @@ build_MSBuild_projects()
 
             buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
             buildArgs+=("${extraBuildParameters[@]}")
-            buildArgs+=("${__CommonMSBuildArgs[@]}")
+            buildArgs+=("${__CommonMSBuildArgs}")
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
@@ -502,7 +444,7 @@ build_MSBuild_projects()
 
         buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
         buildArgs+=("${extraBuildParameters[@]}")
-        buildArgs+=("${__CommonMSBuildArgs[@]}")
+        buildArgs+=("${__CommonMSBuildArgs}")
         buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
         # Disable warnAsError - coreclr issue 19922
@@ -583,7 +525,7 @@ build_native_projects()
         nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__TestDir\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
-        
+
         if [ $? != 0  ]; then
             echo "${__ErrMsgPrefix}Failed to generate $message build project!"
             exit 1
@@ -604,7 +546,7 @@ build_native_projects()
     echo "Executing cmake --build \"$intermediatesForBuild\" --target install -j $__NumProc"
 
     cmake --build "$intermediatesForBuild" --target install -j $__NumProc
-    
+
     local exit_code=$?
     if [ $exit_code != 0 ]; then
         echo "${__ErrMsgPrefix}Failed to build $message."
@@ -614,37 +556,15 @@ build_native_projects()
     echo "Native tests build success!"
 }
 
-usage()
-{
-    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [runtests] [bindir]"
-    echo "BuildArch can be: x64, x86, arm, armel, arm64"
-    echo "BuildType can be: debug, checked, release"
-    echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
-    echo "ninja - target ninja instead of GNU make"
-    echo "clangx.y - optional argument to build using clang version x.y - supported version 3.5 - 6.0"
-    echo "gccx.y - optional argument to build using gcc version x.y."
-    echo "cross - optional argument to signify cross compilation,"
-    echo "      - will use ROOTFS_DIR environment variable if set."
-    echo "portableLinux - build for Portable Linux Distribution"
-    echo "portablebuild - Use portable build."
-    echo "verbose - optional argument to enable verbose build output."
-    echo "rebuild - if tests have already been built - rebuild them"
-    echo "skipnative: skip the native tests build"
-    echo "skipmanaged: skip the managed section of the test build"
-    echo "buildtestwrappersonly - only build the test wrappers"
-    echo "generatelayoutonly - only pull down dependencies and build coreroot"
-    echo "generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost"
-    echo "skiprestorepackages - skip package restore"
-    echo "crossgen - Precompiles the framework managed assemblies in coreroot"
-    echo "runtests - run tests after building them"
-    echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
-    echo "msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
-    echo "priority1 - include priority=1 tests in the build"
-    echo "copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests."
-    echo "skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost."
-    exit 1
-}
-
+usage_list=("-buildtestwrappersonly - only build the test wrappers.")
+usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
+usage_list+=("-crossgen - Precompiles the framework managed assemblies in coreroot.")
+usage_list+=("-generatelayoutonly - only pull down dependencies and build coreroot.")
+usage_list+=("-generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost.")
+usage_list+=("-priority1 - include priority=1 tests in the build.")
+usage_list+=("-runtests - run tests after building them.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.")
+usage_list+=("-skiprestorepackages - skip package restore.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -656,374 +576,49 @@ if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
 fi
 # END SECTION to remove after repo consolidation
 
-# Use uname to determine what the CPU is.
-CPUName=$(uname -p)
-
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ "$CPUName" == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
-
-case $CPUName in
-    i686)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=x86
-        __HostArch=x86
-        ;;
-
-    x86_64)
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-
-    armv7l)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=arm
-        __HostArch=arm
-        ;;
-
-    aarch64)
-        __BuildArch=arm64
-        __HostArch=arm64
-        ;;
-
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-esac
-
-# Use uname to determine what the OS is.
-OSName=$(uname -s)
-case $OSName in
-    Linux)
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-
-    Darwin)
-        __BuildOS=OSX
-        __HostOS=OSX
-        ;;
-
-    FreeBSD)
-        __BuildOS=FreeBSD
-        __HostOS=FreeBSD
-        ;;
-
-    OpenBSD)
-        __BuildOS=OpenBSD
-        __HostOS=OpenBSD
-        ;;
-
-    NetBSD)
-        __BuildOS=NetBSD
-        __HostOS=NetBSD
-        ;;
-
-    SunOS)
-        __BuildOS=SunOS
-        __HostOS=SunOS
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-esac
-
-__BuildType=Debug
-__CodeCoverage=
-__IncludeTests=INCLUDE_TESTS
-
-# Set the various build properties here so that CMake and MSBuild can pick them up
-export __ProjectDir="$__ProjectRoot"
-__SourceDir="$__ProjectDir/src"
-__RootBinDir="$__ProjectDir/bin"
-__DotNetCli="$__ProjectDir/dotnet.sh"
-__UnprocessedBuildArgs=
-__CommonMSBuildArgs=
-__MSBCleanBuildArgs=
-__UseNinja=0
-__VerboseBuild=0
-__SkipRestore=""
-__SkipNative=0
-__SkipManaged=0
-__SkipConfigure=0
-__SkipGenerateVersion=0
-__ConfigureOnly=0
-__CrossBuild=0
-__ClangMajorVersion=0
-__ClangMinorVersion=0
-__GccBuild=0
-__GccMajorVersion=0
-__GccMinorVersion=0
-__SkipRestorePackages=0
-__DistroRid=""
-__cmakeargs=""
-__PortableLinux=0
-__msbuildonunsupportedplatform=0
-__NativeTestIntermediatesDir=
-__RunTests=0
-__RebuildTests=0
-__BuildTestWrappers=1
-__GenerateLayoutOnly=
-__GenerateTestHostOnly=
-__priority1=
-__BuildTestWrappersOnly=
-__DoCrossgen=0
-__DoCrossgen2=0
-__CopyNativeTestBinaries=0
-__CopyNativeProjectsAfterCombinedTestBuild=true
-__SkipGenerateLayout=0
-CORE_ROOT=
-
-while :; do
-    if [ $# -le 0 ]; then
-        break
-    fi
-
-    lowerI="$(echo $1 | awk '{print tolower($0)}')"
-    case $lowerI in
-        -\?|-h|--help)
-            usage
-            exit 1
-            ;;
-
-        x86)
-            __BuildArch=x86
-            ;;
-
-        x64)
-            __BuildArch=x64
-            ;;
-
-        arm)
-            __BuildArch=arm
-            ;;
-
-        armel)
-            __BuildArch=armel
-            ;;
-
-        arm64)
-            __BuildArch=arm64
-            ;;
-
-        debug)
-            __BuildType=Debug
-            ;;
-
-        checked)
-            __BuildType=Checked
-            ;;
-
-        release)
-            __BuildType=Release
-            ;;
-
-        ci|-ci)
-            __ArcadeScriptArgs="--ci"
-            __ErrMsgPrefix="##vso[task.logissue type=error]"
-            ;;
-
-        coverage)
-            __CodeCoverage=Coverage
-            ;;
-
-        cross)
-            __CrossBuild=1
-            ;;
-
-        portablebuild=false)
-            __PortableBuild=0
-            ;;
-
-        portablelinux)
-            if [ "$__BuildOS" == "Linux" ]; then
-                __PortableLinux=1
-            else
-                echo "ERROR: portableLinux not supported for non-Linux platforms."
-                exit 1
-            fi
-            ;;
-
-        verbose)
-            __VerboseBuild=1
-            ;;
-
-        clang3.5|-clang3.5)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=5
-            ;;
-
-        clang3.6|-clang3.6)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
-            ;;
-
-        clang3.7|-clang3.7)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=7
-            ;;
-
-        clang3.8|-clang3.8)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=8
-            ;;
-
-        clang3.9|-clang3.9)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
-            ;;
-
-        clang4.0|-clang4.0)
-            __ClangMajorVersion=4
-            __ClangMinorVersion=0
-            ;;
-
-        clang5.0|-clang5.0)
-            __ClangMajorVersion=5
-            __ClangMinorVersion=0
-            ;;
-
-        clang6.0|-clang6.0)
-            __ClangMajorVersion=6
-            __ClangMinorVersion=0
-            ;;
-
-        clang7|-clang7)
-            __ClangMajorVersion=7
-            __ClangMinorVersion=
-            ;;
-
-        clang8|-clang8)
-            __ClangMajorVersion=8
-            __ClangMinorVersion=
-            ;;
-
-        clang9|-clang9)
-            __ClangMajorVersion=9
-            __ClangMinorVersion=
-            ;;
-
-        gcc5|-gcc5)
-            __GccMajorVersion=5
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc6|-gcc6)
-            __GccMajorVersion=6
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc7|-gcc7)
-            __GccMajorVersion=7
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc8|-gcc8)
-            __GccMajorVersion=8
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc9|-gcc9)
-            __GccMajorVersion=9
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc|-gcc)
-            __GccMajorVersion=
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        ninja)
-            __UseNinja=1
-            ;;
-
-        runtests)
-            __RunTests=1
-            ;;
-
-        rebuild)
-            __RebuildTests=1
-            ;;
-
-        skipnative|-skipnative)
-            __SkipNative=1
-            __CopyNativeProjectsAfterCombinedTestBuild=false
-            ;;
-
-        skipmanaged|-skipmanaged)
-            __SkipManaged=1
-            __BuildTestWrappers=0
-            ;;
-
-        buildtestwrappersonly)
+handle_arguments() {
+    case $1 in
+        buildtestwrappersonly|-buildtestwrappersonly)
             __BuildTestWrappersOnly=1
             ;;
 
-        generatelayoutonly)
-            __GenerateLayoutOnly=1
-            ;;
-
-        generatetesthostonly)
-            __GenerateTestHostOnly=1
-            ;;
-
-        skiprestorepackages)
-            __SkipRestorePackages=1
-            ;;
-
-        crossgen)
-            __DoCrossgen=1
-            ;;
-
-        crossgen2)
-            __DoCrossgen2=1
-            ;;
-
-        bindir)
-            if [ -n "$2" ]; then
-                __RootBinDir="$2"
-                if [ ! -d $__RootBinDir ]; then
-                    mkdir $__RootBinDir
-                fi
-                __RootBinParent=$(dirname $__RootBinDir)
-                __RootBinName=${__RootBinDir##*/}
-                __RootBinDir="$(cd $__RootBinParent &>/dev/null && printf %s/%s $PWD $__RootBinName)"
-                shift
-            else
-                echo "ERROR: 'bindir' requires a non-empty option argument"
-                exit 1
-            fi
-            ;;
-
-        msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
-            ;;
-
-        priority1)
-            __priority1=1
-            __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
-            ;;
-
-        copynativeonly)
+        copynativeonly|-copynativeonly)
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
             ;;
 
-        skipgeneratelayout)
+        crossgen|-crossgen)
+            __DoCrossgen=1
+            ;;
+
+        crossgen2|-crossgen2)
+            __DoCrossgen2=1
+            ;;
+
+        generatetesthostonly|-generatetesthostonly)
+            __GenerateTestHostOnly=1
+            ;;
+
+        generatelayoutonly|-generatelayoutonly)
+            __GenerateLayoutOnly=1
+            ;;
+
+        priority1|-priority1)
+            __priority1=1
+            __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
+            ;;
+
+        runtests|-runtests)
+            __RunTests=1
+            ;;
+
+        skiprestorepackages|-skiprestorepackages)
+            __SkipRestorePackages=1
+            ;;
+
+        skipgeneratelayout|-skipgeneratelayout)
             __SkipGenerateLayout=1
             ;;
 
@@ -1031,41 +626,56 @@ while :; do
             __UnprocessedBuildArgs+=("$1")
             ;;
     esac
+}
 
-    shift
-done
+__BuildArch=
+__BuildType=Debug
+__CodeCoverage=
+__IncludeTests=INCLUDE_TESTS
 
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-if [ `uname` = "FreeBSD" ]; then
-  __NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
-elif [ `uname` = "NetBSD" ]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [ `uname` = "Darwin" ]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
+# Set the various build properties here so that CMake and MSBuild can pick them up
+export __ProjectDir="$__ProjectRoot"
+__BuildTestWrappers=1
+__BuildTestWrappersOnly=
+__ClangMajorVersion=0
+__ClangMinorVersion=0
+__CommonMSBuildArgs=
+__ConfigureOnly=0
+__CopyNativeProjectsAfterCombinedTestBuild=true
+__CopyNativeTestBinaries=0
+__CrossBuild=0
+__DistroRid=""
+__DoCrossgen=0
+__DoCrossgen2=0
+__DotNetCli="$__ProjectDir/dotnet.sh"
+__GccBuild=0
+__GccMajorVersion=0
+__GccMinorVersion=0
+__GenerateLayoutOnly=
+__GenerateTestHostOnly=
+__MSBCleanBuildArgs=
+__NativeTestIntermediatesDir=
+__PortableBuild=1
+__RebuildTests=0
+__RootBinDir="$__ProjectDir/bin"
+__RunTests=0
+__SkipConfigure=0
+__SkipGenerateLayout=0
+__SkipGenerateVersion=0
+__SkipManaged=0
+__SkipNative=0
+__SkipRestore=""
+__SkipRestorePackages=0
+__SourceDir="$__ProjectDir/src"
+__UnprocessedBuildArgs=
+__UseNinja=0
+__VerboseBuild=0
+__cmakeargs=""
+__msbuildonunsupportedplatform=0
+__priority1=
+CORE_ROOT=
 
-__CommonMSBuildArgs=("/p:__BuildArch=$__BuildArch" "/p:__BuildType=$__BuildType" "/p:__BuildOS=$__BuildOS" "/nodeReuse:false")
-
-# Configure environment if we are doing a verbose build
-if [ $__VerboseBuild == 1 ]; then
-    export VERBOSE=1
-    __CommonMSBuildArgs+=("/v:detailed")
-fi
-
-# Set default clang version
-if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
-    if [[ "$__BuildArch" == "arm" || "$__BuildArch" == "armel" ]]; then
-        __ClangMajorVersion=5
-        __ClangMinorVersion=0
-    else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=9
-    fi
-fi
+source "$__ProjectRoot"/_build-commons.sh
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"

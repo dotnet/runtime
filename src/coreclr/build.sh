@@ -23,61 +23,22 @@ fi
 
 export PYTHON
 
-usage()
-{
-    echo "Usage: $0 [BuildArch] [BuildType] [-verbose] [-coverage] [-cross] [-gccx.y] [-clangx.y] [-ninja] [-configureonly] [-skipconfigure] [-skipnative] [-skipcrossarchnative] [-skipmanaged] [-skipmscorlib] [-stripsymbols] [-ignorewarnings] [-cmakeargs] [-bindir]"
-    echo "BuildArch can be: -x64, -x86, -arm, -armel, -arm64"
-    echo "BuildType can be: -debug, -checked, -release"
-    echo "-coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
-    echo "-ninja - target ninja instead of GNU make"
-    echo "-gccx.y - optional argument to build using gcc version x.y."
-    echo "-clangx.y - optional argument to build using clang version x.y."
-    echo "-cross - optional argument to signify cross compilation,"
-    echo "       - will use ROOTFS_DIR environment variable if set."
-    echo "-nopgooptimize - do not use profile guided optimizations."
-    echo "-pgoinstrument - generate instrumented code for profile guided optimization enabled binaries."
-    echo "-ibcinstrument - generate IBC-tuning-enabled native images when invoking crossgen."
-    echo "-configureonly - do not perform any builds; just configure the build."
-    echo "-skipconfigure - skip build configuration."
-    echo "-skipnative - do not build native components."
-    echo "-skipcrossarchnative - do not build cross-architecture native components."
-    echo "-skipmanaged - do not build managed components."
-    echo "-skipmscorlib - do not build mscorlib.dll."
-    echo "-skipnuget - skip building nuget packages."
-    echo "-skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
-    echo "-skipcrossgen - skip native image generation"
-    echo "-skipmanagedtools -- skip build tools such as R2Rdump and RunInContext"
-    echo "-crossgenonly - only run native image generation"
-    echo "-partialngen - build CoreLib as PartialNGen"
-    echo "-verbose - optional argument to enable verbose build output."
-    echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
-    echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
-    echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
-    echo "-stripSymbols - Optional argument to strip native symbols during the build."
-    echo "-skipgenerateversion - disable version generation even if MSBuild is supported."
-    echo "-ignorewarnings - do not treat warnings as errors"
-    echo "-cmakeargs - user-settable additional arguments passed to CMake."
-    echo "-bindir - output directory (defaults to $__ProjectRoot/bin)"
-    echo "-msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
-    echo "-numproc - set the number of build processes."
-    echo "-portablebuild - pass -portablebuild=false to force a non-portable build."
-    echo "-staticanalyzer - build with clang static analyzer enabled."
-    exit 1
-}
-
-initTargetDistroRid()
-{
-    source ${__ProjectDir}/init-distro-rid.sh
-
-    local passedRootfsDir=""
-
-    # Only pass ROOTFS_DIR if cross is specified.
-    if (( ${__CrossBuild} == 1 )); then
-        passedRootfsDir=${ROOTFS_DIR}
-    fi
-
-    initDistroRidGlobal ${__BuildOS} ${__BuildArch} ${__PortableBuild} ${passedRootfsDir}
-}
+usage_list=("-crossgenonly: only run native image generation.")
+usage_list+=("-disableoss: Disable Open Source Signing for System.Private.CoreLib.")
+usage_list+=("-ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.")
+usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
+usage_list+=("-officialbuildid=^<ID^>: specify the official build ID to be used by this build.")
+usage_list+=("-partialngen: build CoreLib as PartialNGen.")
+usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
+usage_list+=("-skipcrossgen: skip native image generation.")
+usage_list+=("-skipcrossarchnative: Disable Open Source Signing for System.Private.CoreLib.")
+usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
+usage_list+=("-skipmscorlib: generate IBC-tuning-enabled native images when invoking crossgen.")
+usage_list+=("-skipnuget: do not use profile guided optimizations.")
+usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
+usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
+usage_list+=("-staticanalyzer: skip native image generation.")
+usage_list+=("-stripSymbols: skip native image generation.")
 
 setup_dirs()
 {
@@ -103,7 +64,7 @@ check_prereqs()
     # Check presence of CMake on the path
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
 
-    function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; } 
+    function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
     local cmake_version=$(cmake --version | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+")
 
@@ -265,7 +226,7 @@ build_native()
             echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
             source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
         fi
-        
+
         if [[ -n "$__CodeCoverage" ]]; then
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
@@ -273,7 +234,7 @@ build_native()
         nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
-    
+
         if [ $? != 0  ]; then
             echo "${__ErrMsgPrefix}Failed to generate $message build project!"
             exit 1
@@ -306,7 +267,7 @@ build_native()
 
         cmake --build "$intermediatesForBuild" --target install -j $__NumProc
     fi
-    
+
     local exit_code=$?
     if [ $exit_code != 0 ]; then
         echo "${__ErrMsgPrefix}Failed to build $message."
@@ -344,32 +305,6 @@ build_cross_architecture_components()
 
     export CROSSCOMPILE=1
 }
-
-isMSBuildOnNETCoreSupported()
-{
-    __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
-
-    if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
-        return
-    fi
-
-    if [ $__SkipManaged == 1 ]; then
-        __isMSBuildOnNETCoreSupported=0
-        return
-    fi
-
-    if [[ ("$__HostOS" == "Linux") && ("$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "arm64") ]]; then
-         __isMSBuildOnNETCoreSupported=1
-    fi
-    if [ "$__HostArch" == "x64" ]; then
-        if [ "$__HostOS" == "OSX" ]; then
-            __isMSBuildOnNETCoreSupported=1
-        elif [ "$__HostOS" == "FreeBSD" ]; then
-            __isMSBuildOnNETCoreSupported=1
-        fi
-    fi
-}
-
 
 build_CoreLib_ni()
 {
@@ -549,6 +484,88 @@ generate_NugetPackages()
     fi
 }
 
+handle_arguments() {
+    case $1 in
+        crossgenonly|-crossgenonly)
+            __SkipMSCorLib=1
+            __SkipCoreCLR=1
+            __CrossgenOnly=1
+            ;;
+
+        disableoss|-disableoss)
+            __SignTypeArg="/p:SignType=real"
+            ;;
+
+        ibcinstrument|-ibcinstrument)
+            __IbcTuning="/Tuning"
+            ;;
+
+        ignorewarnings|-ignorewarnings)
+            __IgnoreWarnings=1
+            __cmakeargs="$__cmakeargs -DCLR_CMAKE_WARNINGS_ARE_ERRORS=OFF"
+            ;;
+
+        nopgooptimize|-nopgooptimize)
+            __PgoOptimize=0
+            __SkipRestoreOptData=1
+            ;;
+
+        officialbuildid=*|-officialbuildid=*)
+            __Id=$(echo "$1" | cut -d'=' -f 2)
+            __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
+            ;;
+
+        partialngen|-partialngen)
+            __PartialNgen=1
+            ;;
+
+        pgoinstrument|-pgoinstrument)
+            __PgoInstrument=1
+            ;;
+
+        skipcoreclr|-skipcoreclr)
+            # Accept "skipcoreclr" for backwards-compatibility.
+            __SkipCoreCLR=1
+            ;;
+
+        skipcrossarchnative|-skipcrossarchnative)
+            __SkipCrossArchNative=1
+            ;;
+
+        skipcrossgen|-skipcrossgen)
+            __SkipCrossgen=1
+            ;;
+
+        skipmanagedtools|-skipmanagedtools)
+            __BuildManagedTools=0
+            ;;
+
+        skipmscorlib|-skipmscorlib)
+            __SkipMSCorLib=1
+            ;;
+
+        skipnuget|-skipnuget|skipbuildpackages|-skipbuildpackages)
+            __SkipNuget=1
+            ;;
+
+        skiprestore|-skiprestore)
+            __SkipRestoreArg="/p:RestoreDuringBuild=false"
+            ;;
+
+        staticanalyzer|-staticanalyzer)
+            __StaticAnalyzer=1
+            ;;
+
+        stripsymbols|-stripsymbols)
+            __cmakeargs="$__cmakeargs -DSTRIP_SYMBOLS=true"
+            ;;
+
+        *)
+            __UnprocessedBuildArgs+=("$1")
+            ;;
+    esac
+}
+
 echo "Commencing CoreCLR Repo build"
 
 # Argument types supported by this script:
@@ -570,491 +587,59 @@ if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
 fi
 # END SECTION to remove after repo consolidation
 
-# Use uname to determine what the CPU is.
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ "$CPUName" == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
-
-case $CPUName in
-    i686)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=x86
-        __HostArch=x86
-        ;;
-
-    x86_64)
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-
-    armv7l)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=arm
-        __HostArch=arm
-        ;;
-
-    aarch64)
-        __BuildArch=arm64
-        __HostArch=arm64
-        ;;
-
-    amd64)
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-esac
-
-# Use uname to determine what the OS is.
-OSName=$(uname -s)
-case $OSName in
-    Linux)
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-
-    Darwin)
-        __BuildOS=OSX
-        __HostOS=OSX
-        ;;
-
-    FreeBSD)
-        __BuildOS=FreeBSD
-        __HostOS=FreeBSD
-        ;;
-
-    OpenBSD)
-        __BuildOS=OpenBSD
-        __HostOS=OpenBSD
-        ;;
-
-    NetBSD)
-        __BuildOS=NetBSD
-        __HostOS=NetBSD
-        ;;
-
-    SunOS)
-        __BuildOS=SunOS
-        __HostOS=SunOS
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-esac
-
+__BuildArch=
 __BuildType=Debug
 __CodeCoverage=
 __IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
-__ProjectDir="$__ProjectRoot"
-__SourceDir="$__ProjectDir/src"
-__RootBinDir="$__ProjectDir/bin"
-__UnprocessedBuildArgs=
-__CommonMSBuildArgs=
-__MSBCleanBuildArgs=
-__UseNinja=0
-__VerboseBuild=0
-__PgoInstrument=0
-__PgoOptimize=1
-__IbcTuning=""
-__ConfigureOnly=0
-__SkipConfigure=0
-__SkipManaged=0
-__SkipRestore=""
-__SkipNuget=0
-__SkipCoreCLR=0
-__SkipCrossArchNative=0
-__SkipMSCorLib=0
-__SkipRestoreOptData=0
-__SkipCrossgen=0
-__CrossgenOnly=0
-__PartialNgen=0
-__CrossBuild=0
+__BuildManagedTools=1
 __ClangMajorVersion=0
 __ClangMinorVersion=0
+__CommonMSBuildArgs=
+__ConfigureOnly=0
+__CrossBuild=0
+__CrossgenOnly=0
+__DistroRid=""
 __GccBuild=0
 __GccMajorVersion=0
 __GccMinorVersion=0
-__DistroRid=""
-__cmakeargs=""
-__SkipGenerateVersion=0
-__PortableBuild=1
-__msbuildonunsupportedplatform=0
-__PgoOptDataPath=""
 __IbcOptDataPath=""
-__BuildManagedTools=1
-__SkipRestoreArg="/p:RestoreDuringBuild=true"
-__SignTypeArg=""
+__IbcTuning=""
+__MSBCleanBuildArgs=
 __OfficialBuildIdArg=""
+__PartialNgen=0
+__PgoInstrument=0
+__PgoOptDataPath=""
+__PgoOptimize=1
+__PortableBuild=1
+__ProjectDir="$__ProjectRoot"
+__RootBinDir="$__ProjectDir/bin"
+__SignTypeArg=""
+__SkipConfigure=0
+__SkipCoreCLR=0
+__SkipCrossArchNative=0
+__SkipCrossgen=0
+__SkipGenerateVersion=0
+__SkipMSCorLib=0
+__SkipManaged=0
+__SkipNuget=0
+__SkipRestore=""
+__SkipRestoreArg="/p:RestoreDuringBuild=true"
+__SkipRestoreOptData=0
+__SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
+__UnprocessedBuildArgs=
+__UseNinja=0
+__VerboseBuild=0
+__ValidateCrossArg=1
+__cmakeargs=""
+__msbuildonunsupportedplatform=0
 
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-if [ `uname` = "FreeBSD" ]; then
-  __NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
-elif [ `uname` = "NetBSD" ]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [ `uname` = "Darwin" ]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
-
-while :; do
-    if [ $# -le 0 ]; then
-        break
-    fi
-
-    lowerI="$(echo $1 | awk '{print tolower($0)}')"
-    case $lowerI in
-        -\?|-h|--help)
-            usage
-            exit 1
-            ;;
-
-        x86|-x86)
-            __BuildArch=x86
-            ;;
-
-        x64|-x64)
-            __BuildArch=x64
-            ;;
-
-        arm|-arm)
-            __BuildArch=arm
-            ;;
-
-        armel|-armel)
-            __BuildArch=armel
-            ;;
-
-        arm64|-arm64)
-            __BuildArch=arm64
-            ;;
-
-        debug|-debug)
-            __BuildType=Debug
-            ;;
-
-        checked|-checked)
-            __BuildType=Checked
-            ;;
-
-        release|-release)
-            __BuildType=Release
-            ;;
-
-        ci|-ci)
-            __ArcadeScriptArgs="--ci"
-            __ErrMsgPrefix="##vso[task.logissue type=error]"
-            ;;
-
-        coverage|-coverage)
-            __CodeCoverage=Coverage
-            ;;
-
-        cross|-cross)
-            __CrossBuild=1
-            ;;
-
-        -portablebuild=false)
-            __PortableBuild=0
-            ;;
-
-        verbose|-verbose)
-            __VerboseBuild=1
-            ;;
-
-        stripsymbols|-stripsymbols)
-            __cmakeargs="$__cmakeargs -DSTRIP_SYMBOLS=true"
-            ;;
-
-        clang3.5|-clang3.5)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=5
-            ;;
-
-        clang3.6|-clang3.6)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
-            ;;
-
-        clang3.7|-clang3.7)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=7
-            ;;
-
-        clang3.8|-clang3.8)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=8
-            ;;
-
-        clang3.9|-clang3.9)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
-            ;;
-
-        clang4.0|-clang4.0)
-            __ClangMajorVersion=4
-            __ClangMinorVersion=0
-            ;;
-
-        clang5.0|-clang5.0)
-            __ClangMajorVersion=5
-            __ClangMinorVersion=0
-            ;;
-
-        clang6.0|-clang6.0)
-            __ClangMajorVersion=6
-            __ClangMinorVersion=0
-            ;;
-
-        clang7|-clang7)
-            __ClangMajorVersion=7
-            __ClangMinorVersion=
-            ;;
-
-        clang8|-clang8)
-            __ClangMajorVersion=8
-            __ClangMinorVersion=
-            ;;
-
-        clang9|-clang9)
-            __ClangMajorVersion=9
-            __ClangMinorVersion=
-            ;;
-
-        gcc5|-gcc5)
-            __GccMajorVersion=5
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc6|-gcc6)
-            __GccMajorVersion=6
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc7|-gcc7)
-            __GccMajorVersion=7
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc8|-gcc8)
-            __GccMajorVersion=8
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc9|-gcc9)
-            __GccMajorVersion=9
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc|-gcc)
-            __GccMajorVersion=
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        ninja|-ninja)
-            __UseNinja=1
-            ;;
-
-        pgoinstrument|-pgoinstrument)
-            __PgoInstrument=1
-            ;;
-
-        nopgooptimize|-nopgooptimize)
-            __PgoOptimize=0
-            __SkipRestoreOptData=1
-            ;;
-
-        ibcinstrument|-ibcinstrument)
-            __IbcTuning="/Tuning"
-            ;;
-
-        configureonly|-configureonly)
-            __ConfigureOnly=1
-            __SkipMSCorLib=1
-            __SkipNuget=1
-            ;;
-
-        skipconfigure|-skipconfigure)
-            __SkipConfigure=1
-            ;;
-
-        skipnative|-skipnative)
-            # Use "skipnative" to use the same option name as build.cmd.
-            __SkipCoreCLR=1
-            ;;
-
-        skipcoreclr|-skipcoreclr)
-            # Accept "skipcoreclr" for backwards-compatibility.
-            __SkipCoreCLR=1
-            ;;
-
-        skipcrossarchnative|-skipcrossarchnative)
-            __SkipCrossArchNative=1
-            ;;
-
-        skipmanaged|-skipmanaged)
-            __SkipManaged=1
-            ;;
-
-        skipmscorlib|-skipmscorlib)
-            __SkipMSCorLib=1
-            ;;
-
-        skipgenerateversion|-skipgenerateversion)
-            __SkipGenerateVersion=1
-            ;;
-
-        skiprestoreoptdata|-skiprestoreoptdata)
-            __SkipRestoreOptData=1
-            ;;
-
-        skipcrossgen|-skipcrossgen)
-            __SkipCrossgen=1
-            ;;
-
-        skipmanagedtools | -skipmanagedtools)
-            __BuildManagedTools=0
-            ;;
-
-        crossgenonly|-crossgenonly)
-            __SkipMSCorLib=1
-            __SkipCoreCLR=1
-            __CrossgenOnly=1
-            ;;
-        partialngen|-partialngen)
-            __PartialNgen=1
-            ;;
-
-        skipnuget|-skipnuget|skipbuildpackages|-skipbuildpackages)
-            __SkipNuget=1
-            ;;
-
-        ignorewarnings|-ignorewarnings)
-            __IgnoreWarnings=1
-            __cmakeargs="$__cmakeargs -DCLR_CMAKE_WARNINGS_ARE_ERRORS=OFF"
-            ;;
-
-        cmakeargs|-cmakeargs)
-            if [ -n "$2" ]; then
-                __cmakeargs="$__cmakeargs $2"
-                shift
-            else
-                echo "ERROR: 'cmakeargs' requires a non-empty option argument"
-                exit 1
-            fi
-            ;;
-
-        bindir|-bindir)
-            if [ -n "$2" ]; then
-                __RootBinDir="$2"
-                if [ ! -d $__RootBinDir ]; then
-                    mkdir $__RootBinDir
-                fi
-                __RootBinParent=$(dirname $__RootBinDir)
-                __RootBinName=${__RootBinDir##*/}
-                __RootBinDir="$(cd $__RootBinParent &>/dev/null && printf %s/%s $PWD $__RootBinName)"
-                shift
-            else
-                echo "ERROR: 'bindir' requires a non-empty option argument"
-                exit 1
-            fi
-            ;;
-        msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
-            ;;
-        numproc|-numproc)
-            if [ -n "$2" ]; then
-              __NumProc="$2"
-              shift
-            else
-              echo "ERROR: 'numproc' requires a non-empty option argument"
-              exit 1
-            fi
-            ;;
-        osgroup|-osgroup)
-            if [ -n "$2" ]; then
-              __BuildOS="$2"
-              shift
-            else
-              echo "ERROR: 'osgroup' requires a non-empty option argument"
-              exit 1
-            fi
-            ;;
-        rebuild|-rebuild)
-            echo "ERROR: 'Rebuild' is not supported.  Please remove it."
-            exit 1
-            ;;
-
-        -skiprestore)
-            __SkipRestoreArg="/p:RestoreDuringBuild=false"
-            ;;
-
-        -disableoss)
-            __SignTypeArg="/p:SignType=real"
-            ;;
-
-        -officialbuildid=*)
-            __Id=$(echo $1| cut -d'=' -f 2)
-            __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
-            ;;
-
-        -staticanalyzer)
-            __StaticAnalyzer=1
-            ;;
-
-        --)
-            # Skip -Option=Value style argument passing
-            ;;
-
-        *)
-            __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
-            ;;
-    esac
-
-    shift
-done
+source "$__ProjectRoot"/_build-commons.sh
 
 if [ "${__BuildArch}" != "${__HostArch}" ]; then
     __CrossBuild=1
-fi
-
-__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__BuildOS=$__BuildOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
-
-# Configure environment if we are doing a verbose build
-if [ $__VerboseBuild == 1 ]; then
-    export VERBOSE=1
-    __CommonMSBuildArgs="$__CommonMSBuildArgs /v:detailed"
-fi
-
-# Set default clang version
-if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
-    if [[ "$__BuildArch" == "arm" || "$__BuildArch" == "armel" ]]; then
-        __ClangMajorVersion=5
-        __ClangMinorVersion=0
-    else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=9
-    fi
 fi
 
 # Set dependent variables
