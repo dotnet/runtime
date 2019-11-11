@@ -2064,9 +2064,9 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef FEATURE_PAL
     UndoRevert(bReverted, token);
+#endif // !FEATURE_PAL
     if (pName != NULL)
         SetThreadName(m_ThreadHandle, pName);
-#endif // !FEATURE_PAL
 
     return bRet;
 }
@@ -2123,9 +2123,8 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
-#ifndef FEATURE_PAL
+
     SetThreadName(hThread, pName);
-#endif // !FEATURE_PAL
 
 
     if (pThreadId)

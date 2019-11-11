@@ -292,4 +292,11 @@ HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription)
     return g_pfnSetThreadDescription(hThread, lpThreadDescription);
 }
 
+#else //!FEATURE_PAL
+
+HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription)
+{
+    return SetThreadDescription(hThread, lpThreadDescription);
+}
+
 #endif //!FEATURE_PAL

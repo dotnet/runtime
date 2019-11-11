@@ -1578,7 +1578,123 @@ GetThreadTimes(
     return (retval);
 }
 
+HRESULT
+PALAPI
+SetThreadDescription(    
+    IN HANDLE hThread,
+    IN PCWSTR lpThreadDescription)
+{
+    CPalThread *pThread;
+    PAL_ERROR palError;
 
+    PERF_ENTRY(SetThreadDescription);
+    ENTRY("SetThreadDescription(hThread=%p,lpThreadDescription=%p)\n", hThread, lpThreadDescription);
+
+    pThread = InternalGetCurrentThread();
+
+    palError = InternalSetThreadDescription(
+        pThread,
+        hThread,
+        lpThreadDescription
+        );
+
+    if (NO_ERROR != palError)
+    {
+        pThread->SetLastError(palError);
+    }
+
+    LOGEXIT("SetThreadDescription");
+    PERF_EXIT(SetThreadDescription);
+
+    return HRESULT_FROM_WIN32(palError);
+}
+
+PAL_ERROR
+CorUnix::InternalSetThreadDescription(
+    CPalThread *pThread,
+    HANDLE hTargetThread,
+    PCWSTR lpThreadDescription
+)
+{
+    PAL_ERROR palError = NO_ERROR;
+    CPalThread *pTargetThread = NULL;
+    IPalObject *pobjThread = NULL;
+    int error;
+    int nameSize;
+    char *nameBuf = NULL;
+
+// The exact API of pthread_setname_np varies very wildly depending on OS.
+// For now, only Linux is implemented.
+#if defined(__linux__)
+
+    palError = InternalGetThreadDataFromHandle(
+        pThread,
+        hTargetThread,
+        &pTargetThread,
+        &pobjThread
+        );
+
+    if (NO_ERROR != palError)
+    {
+        goto InternalSetThreadDescriptionExit;
+    }
+
+    pTargetThread->Lock(pThread);
+
+    /* translate the wide char lpThreadDescription string to multibyte string */
+    nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+
+    if (0 == nameSize)
+    {
+        palError = ERROR_INTERNAL_ERROR;
+        goto InternalSetThreadDescriptionExit;
+    }
+
+    nameBuf = (char *)PAL_malloc(nameSize);
+    if (nameBuf == NULL)
+    {
+        palError = ERROR_OUTOFMEMORY;
+        goto InternalSetThreadDescriptionExit;
+    }
+
+    if (WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL,
+                            NULL) != nameSize)
+    {
+        palError = ERROR_INTERNAL_ERROR;
+        goto InternalSetThreadDescriptionExit;
+    }
+
+    // Null terminate early.
+    // pthread_setname_np only accepts up to 16 chars.
+    nameBuf[15] = '\0';
+
+    error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
+
+    if (error != 0) 
+    {
+        palError = ERROR_INTERNAL_ERROR;
+    }
+
+InternalSetThreadDescriptionExit:
+
+    if (NULL != pTargetThread)
+    {
+        pTargetThread->Unlock(pThread);
+    }
+
+    if (NULL != pobjThread)
+    {
+        pobjThread->ReleaseReference(pThread);
+    }
+
+    if (NULL != nameBuf) {
+        PAL_free(nameBuf);
+    }
+
+#endif // defined(__linux__)
+
+    return palError;
+}
 
 void *
 CPalThread::ThreadEntry(

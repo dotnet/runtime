@@ -170,6 +170,7 @@ nativeStringResourceTable_mscorrc_debug
 #SetFilePointer
 #SetLastError
 #SetErrorMode
+#SetThreadDescription
 #Sleep
 #SleepEx
 #SwitchToThread

@@ -1824,9 +1824,8 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
                                         lpThreadArgs,       // arguments
                                         CREATE_SUSPENDED,
                                         &threadId);
-#ifndef FEATURE_PAL
+
             SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
-#endif // !FEATURE_PAL
             if (threadHandle != NULL)
                 lpThreadArgs.SuppressRelease();
         }

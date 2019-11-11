@@ -1283,14 +1283,13 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
 
     Thread* pThread = &(*thread);
 
-#ifndef FEATURE_PAL
     // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
     // if more and more threads get a meaningful name
+    // Will also show up in Linux in gdb and such.
     if (len > 0 && name != NULL && pThread->GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         SetThreadName(pThread->GetThreadHandle(), name);
     }
-#endif
 
 #ifdef PROFILING_SUPPORTED
     {
