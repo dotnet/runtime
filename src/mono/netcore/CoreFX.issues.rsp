@@ -518,11 +518,6 @@
 ##  System.Threading.Tests
 ####################################################################
 
-# Monitor.LockContentionCount is not implemented
-# Implementation https://github.com/mono/mono/issues/15155
-# https://github.com/mono/mono/issues/15156
--nomethod System.Threading.Tests.MonitorTests.Enter_HasToWait_LockContentionCountTest
-
 # Process hangs and test fails with [ERROR] FATAL UNHANDLED EXCEPTION: System.Threading.WaitHandleCannotBeOpenedException: No handle of the given name exists.
 # https://github.com/mono/mono/issues/15157
 -nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic

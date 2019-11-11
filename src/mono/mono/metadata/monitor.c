@@ -791,6 +791,10 @@ signal_monitor (gpointer mon_untyped)
 	mono_coop_mutex_unlock (mon->entry_mutex);
 }
 
+#ifdef ENABLE_NETCORE
+static gint64 thread_contentions; /* for Monitor.LockContentionCount, otherwise mono_perfcounters struct is used */
+#endif
+
 /* If allow_interruption==TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
  */ 
@@ -847,6 +851,10 @@ retry:
 	/* The object must be locked by someone else... */
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->thread_contentions);
+#else
+#ifdef ENABLE_NETCORE
+	mono_atomic_inc_i64 (&thread_contentions);
+#endif
 #endif
 
 	/* If ms is 0 we don't block, but just fail straight away */
@@ -1511,7 +1519,7 @@ ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void)
 #ifndef DISABLE_PERFCOUNTERS
 	return mono_perfcounters->thread_contentions;
 #else
-	return 0;
+	return thread_contentions;
 #endif
 }
 #endif
