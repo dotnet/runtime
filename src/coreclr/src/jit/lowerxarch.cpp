@@ -2901,6 +2901,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             return supportsUnalignedSIMDLoads;
         }
 
+        case NI_AVX_ExtractVector128:
+        case NI_AVX2_ExtractVector128:
+        {
+            return false;
+        }
+
         default:
         {
             assert(!node->isContainableHWIntrinsic());
