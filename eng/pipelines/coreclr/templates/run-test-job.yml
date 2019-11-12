@@ -257,7 +257,7 @@ jobs:
 
         # Choose which tests to send to Helix: CoreFX or CoreCLR.
         ${{ if eq(parameters.corefxTests, true) }}:
-          helixProjectArguments: '$(coreClrRepoRoot)/eng/helixcorefxtests.proj'
+          helixProjectArguments: '$(Build.SourcesDirectory)/eng/helixcorefxtests.proj'
         ${{ if ne(parameters.corefxTests, true) }}:
           helixProjectArguments: '$(coreClrRepoRoot)/tests/src/helixpublishwitharcade.proj'
 

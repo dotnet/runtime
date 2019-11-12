@@ -117,7 +117,7 @@ set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildTyp
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
 :: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set?
-if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
+if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
 REM We are not running in the official build scenario, call runtest.py

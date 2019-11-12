@@ -277,7 +277,7 @@ if "%__SkipRestorePackages%" == "1" goto SkipRestoreProduct
 
 echo %__MsgPrefix%Restoring CoreCLR product from packages
 
-if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%
+if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
 
 set __BuildLogRootName=Restore_Product
