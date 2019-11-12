@@ -273,8 +273,9 @@ build_native()
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        echo "Invoking \"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
-        source "$scriptDir/gen-buildsys.sh" "$__ProjectRoot" "$intermediatesForBuild" $platformArch $__BuildType $generator $scan_build "$extraCmakeArguments" "$__cmakeargs"
+        nextCommand="CONFIG_DIR=\"$__RepoRootDir/eng/common/cross\" \"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
+        echo "Invoking $nextCommand"
+        eval $nextCommand
     
         if [ $? != 0  ]; then
             echo "${__ErrMsgPrefix}Failed to generate $message build project!"
