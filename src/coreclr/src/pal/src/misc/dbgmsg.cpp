@@ -467,66 +467,86 @@ Notes :
 int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
                LPCSTR function, LPCSTR file, INT line, LPCSTR format, ...)
 {
-    CHAR *buffer = (CHAR*)alloca(DBG_BUFFER_SIZE);
+    struct ErrnoHolder
+    {
+        int value;
+        ErrnoHolder() : value(errno) { }
+        ~ErrnoHolder()
+        {
+            errno = value;
+        }
+    } errno_holder;
+
     CHAR indent[MAX_NESTING+1];
-    LPSTR buffer_ptr;
-    INT output_size;
-    va_list args;
-    void *thread_id;
-    int old_errno = 0;
-
-    old_errno = errno;
-
     if(!DBG_get_indent(level, format, indent))
     {
+        // Note: we will drop log messages here if the indent gets too high, and we won't print
+        //       an error when this occurs.
         return 1;
     }
 
-    thread_id = (void *)THREADSilentGetCurrentThreadId();
+    void *thread_id = (void *)THREADSilentGetCurrentThreadId();
 
+    CHAR buffer[DBG_BUFFER_SIZE];
+    INT output_size;
     if(bHeader)
     {
         /* Print file instead of function name for ENTRY messages, because those
            already include the function name */
         /* also print file name for ASSERTs, to match Win32 behavior */
+        LPCSTR location;
         if( DLI_ENTRY == level || DLI_ASSERT == level || DLI_EXIT == level)
-        {
-            output_size=snprintf(buffer, DBG_BUFFER_SIZE,
-                                 "{%p" MODULE_FORMAT "} %-5s [%-7s] at %s.%d: ",
-                                 thread_id, MODULE_ID
-                                 dbg_level_names[level], dbg_channel_names[channel], file, line);
-        }
+            location = file;
         else
+            location = function;
+        output_size=snprintf(buffer, DBG_BUFFER_SIZE,
+                             "{%p" MODULE_FORMAT "} %-5s [%-7s] at %s.%d: ",
+                             thread_id, MODULE_ID
+                             dbg_level_names[level], dbg_channel_names[channel], location, line);
+        if( output_size < 0)
         {
-            output_size=snprintf(buffer, DBG_BUFFER_SIZE,
-                                 "{%p" MODULE_FORMAT "} %-5s [%-7s] at %s.%d: ",
-                                 thread_id, MODULE_ID
-                                 dbg_level_names[level], dbg_channel_names[channel], function, line);
+            fprintf(stderr, "ERROR : DBG_printf: snprintf header failed errno:%d (%s)\n", errno, strerror(errno));
+            output_size = 0; // don't return, just drop the header from the log message
         }
-
-        if(output_size + 1 > DBG_BUFFER_SIZE)
+        else if (output_size > DBG_BUFFER_SIZE)
         {
-            fprintf(stderr, "ERROR : buffer overflow in DBG_printf");
-            return 1;
+            output_size = DBG_BUFFER_SIZE;
         }
-
-        buffer_ptr=buffer+output_size;
     }
     else
     {
-        buffer_ptr = buffer;
         output_size = 0;
     }
 
-    va_start(args, format);
-
-    output_size+=_vsnprintf_s(buffer_ptr, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
-                              format, args);
-    va_end(args);
-
-    if( output_size > DBG_BUFFER_SIZE )
     {
-        fprintf(stderr, "ERROR : buffer overflow in DBG_printf");
+        va_list args;
+        va_start(args, format);
+        INT result = _vsnprintf_s(buffer+output_size, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
+                                  format, args);
+        va_end(args);
+        if( result < 0 )
+        {
+            // if we didn't get data from _vsnprintf_s, print an error and exit
+            if ( output_size == 0 || buffer[output_size] == '\0' )
+            {
+                fprintf(stderr, "ERROR : DBG_printf: vsnprintf_s failed errno:%d (%s)\n", errno, strerror(errno));
+                return 1;
+            }
+            else if (output_size < DBG_BUFFER_SIZE)
+            {
+                fprintf(stderr, "ERROR : DBG_printf: message truncated, vsnprintf_s failed errno:%d (%s)\n", errno, strerror(errno));
+                // do not return, print what we have
+            }
+        }
+        else
+        {
+            output_size+=result;
+        }
+    }
+
+    if( output_size >= DBG_BUFFER_SIZE )
+    {
+        fprintf(stderr, "ERROR : DBG_printf: message truncated");
     }
 
     /* Use a Critical section before calling printf code to
@@ -547,12 +567,6 @@ int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     // Some systems support displaying a GUI dialog. We attempt this only for asserts.
     if ( level == DLI_ASSERT )
         PAL_DisplayDialog("PAL ASSERT", buffer);
-
-    if ( old_errno != errno )
-    {
-        fprintf( stderr,"ERROR: errno changed by DBG_printf\n" );
-        errno = old_errno;
-    }
 
     return 1;
 }
