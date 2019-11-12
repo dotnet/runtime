@@ -384,3 +384,14 @@ jobs:
         artifactName: '$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
+
+    # Zip and publish the final helix submitted tests
+    - template: upload-artifact-step.yml
+      parameters:
+        rootFolder: $(testRootFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(finalTestArtifactName)
+        displayName: 'Final_Submitted_Tests_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
