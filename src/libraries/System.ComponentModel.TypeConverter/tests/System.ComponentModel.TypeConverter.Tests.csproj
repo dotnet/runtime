@@ -16,6 +16,8 @@
   <ItemGroup>
     <Compile Include="Design\Serialization\ComponentSerializationServiceTests.cs" />
     <Compile Include="Design\StandardCommandsTests.cs" />
+    <Compile Include="Extensions\EnumeratorExtensions.cs" />
+    <Compile Include="MaskedTextProviderTests.cs" />
     <Compile Include="Mocks\MockDesigner.cs" />
     <Compile Include="Mocks\MockDesignerHost.cs" />
     <Compile Include="NestedContainerTests.cs" />
@@ -165,5 +167,4 @@
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
 </Project>
