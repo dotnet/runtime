@@ -75,7 +75,7 @@ if [ "$CROSSCOMPILE" == "1" ]; then
         exit 1
     fi
     export TARGET_BUILD_ARCH=$build_arch
-    cmake_extra_defines="$cmake_extra_defines -C ${__CoreClrDir}/src/pal/tools/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -C ${__CoreClrDir}/tryrun.cmake"
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=${__RepoRootDir}/eng/common/cross/toolchain.cmake"
 fi
 
