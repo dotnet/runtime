@@ -64,13 +64,15 @@ libmonodismain_a_SOURCES =	\
 
 monodis_SOURCES =
 
+BUNDLE_ZLIB_PATH=$(top_builddir)/mono/zlib/libz.la
+
 if HAVE_SYS_ZLIB
 Z_LIBS= -lz
 else
 if HAVE_STATIC_ZLIB
 Z_LIBS=$(STATIC_ZLIB_PATH)
 else
-Z_LIBS=
+Z_LIBS=$(BUNDLE_ZLIB_PATH)
 endif
 endif
 

@@ -103,39 +103,15 @@ support_sources += \
 endif
 endif
 
-ZLIB_SOURCES = \
-	../../support/adler32.c \
-	../../support/crc32.c \
-	../../support/crc32.h \
-	../../support/deflate.c \
-	../../support/deflate.h \
-	../../support/gzguts.h	\
-	../../support/infback.c \
-	../../support/inffast.c \
-	../../support/inffast.h \
-	../../support/inffixed.h \
-	../../support/inflate.c \
-	../../support/inflate.h \
-	../../support/inftrees.c \
-	../../support/inftrees.h \
-	../../support/trees.c \
-	../../support/trees.h \
-	../../support/zconf.h \
-	../../support/zlib.h \
-	../../support/zutil.c \
-	../../support/zutil.h
-
+BUNDLE_ZLIB_PATH=$(top_builddir)/mono/zlib/libz.la
 
 if HAVE_STATIC_ZLIB
-Z_SOURCE = 
-Z_LIBS = $(STATIC_ZLIB_PATH)
+Z_LIBS=$(STATIC_ZLIB_PATH)
 else
 if HAVE_SYS_ZLIB
-Z_SOURCE = 
-Z_LIBS= -lz
+Z_LIBS=-lz
 else
-Z_SOURCE = $(ZLIB_SOURCES)
-Z_LIBS=
+Z_LIBS=$(BUNDLE_ZLIB_PATH)
 endif
 endif
 
@@ -166,7 +142,7 @@ libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" 
 #
 # Support is a separate library because it is not valid C++.
 #
-libmonoruntime_support_la_SOURCES = $(support_sources) $(Z_SOURCE)
+libmonoruntime_support_la_SOURCES = $(support_sources)
 libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
 

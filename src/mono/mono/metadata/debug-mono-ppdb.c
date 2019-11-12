@@ -30,7 +30,7 @@
 #include <mono/utils/mono-logger-internals.h>
 
 #if HOST_WIN32
-#include "../../support/zlib.h"
+#include "../zlib/zlib.h"
 #elif HAVE_SYS_ZLIB
 #include <zlib.h>
 #endif
