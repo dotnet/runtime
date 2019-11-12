@@ -63,7 +63,7 @@ def main(argv):
         print('Bad path to coreclr')
         return -1
 
-    coreclr = args.coreclr
+    coreclr = args.coreclr.replace('/', os.sep)
     repoRoot = os.path.join(coreclr, '..', '..')
 
     # Remove after repo consolidation
