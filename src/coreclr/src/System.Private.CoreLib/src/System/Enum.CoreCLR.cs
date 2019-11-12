@@ -21,9 +21,6 @@ namespace System
         private static extern object InternalBoxEnum(RuntimeType enumType, long value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int InternalCompareTo(object thisRef, object? target);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern CorElementType InternalGetCorElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
