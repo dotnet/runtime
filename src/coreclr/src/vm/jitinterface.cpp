@@ -5764,7 +5764,7 @@ void CEEInfo::getCallInfo(
 
     pResult->methodFlags = getMethodAttribsInternal(pResult->hMethod);
 
-    SignatureKind signatureKind = flags & CORINFO_CALLINFO_CALLVIRT ? SK_VIRTUAL_CALLSITE : SK_CALLSITE;
+    SignatureKind signatureKind = flags & CORINFO_CALLINFO_CALLVIRT && !(pResult->kind == CORINFO_CALL) ? SK_VIRTUAL_CALLSITE : SK_CALLSITE;
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
