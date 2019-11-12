@@ -1208,7 +1208,7 @@ namespace Mono.Linker.Steps {
 			MarkNamedMethod (type, method_name);
 		}
 
-		void MarkTypeConverterLikeDependency (CustomAttribute attribute, Func<MethodDefinition, bool> predicate)
+		protected virtual void MarkTypeConverterLikeDependency (CustomAttribute attribute, Func<MethodDefinition, bool> predicate)
 		{
 			var args = attribute.ConstructorArguments;
 			if (args.Count < 1)
