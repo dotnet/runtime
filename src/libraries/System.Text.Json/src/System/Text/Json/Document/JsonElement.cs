@@ -495,9 +495,9 @@ namespace System.Text.Json
 
             var jsonNode = (JsonNode)_parent;
 
-            if (jsonNode is JsonString)
+            if (jsonNode is JsonString jsonString)
             {
-                throw new NotSupportedException();
+                return jsonString.TryGetBytesFromBase64(out value);
             }
 
             throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);

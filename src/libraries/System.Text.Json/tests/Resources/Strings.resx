@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -20270,5 +20271,11 @@ tiline\"another\" String\\"],"str":"\"\""}</value>
   </data>
   <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
     <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
+  </data>
+  <data name="LoremIpsum40Words" xml:space="preserve">
+    <value>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur viverra neque at erat laoreet, at sagittis arcu efficitur. Ut pulvinar eros nec odio cursus eleifend. Maecenas viverra elementum porttitor. Nullam mi velit, malesuada commodo tristique eu, mollis a velit. Morbi.</value>
+  </data>
+  <data name="LoremIpsum40WordsBase64" xml:space="preserve">
+    <value>TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdC4gQ3VyYWJpdHVyIHZpdmVycmEgbmVxdWUgYXQgZXJhdCBsYW9yZWV0LCBhdCBzYWdpdHRpcyBhcmN1IGVmZmljaXR1ci4gVXQgcHVsdmluYXIgZXJvcyBuZWMgb2RpbyBjdXJzdXMgZWxlaWZlbmQuIE1hZWNlbmFzIHZpdmVycmEgZWxlbWVudHVtIHBvcnR0aXRvci4gTnVsbGFtIG1pIHZlbGl0LCBtYWxlc3VhZGEgY29tbW9kbyB0cmlzdGlxdWUgZXUsIG1vbGxpcyBhIHZlbGl0LiBNb3JiaS4=</value>
   </data>
 </root>
