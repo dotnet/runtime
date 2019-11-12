@@ -157,9 +157,12 @@ def main(argv):
 
     os.chdir(current_dir)
 
+    patchFilePath = os.path.join(coreclr, "format.patch")
+
     if returncode != 0:
         # Create a patch file
-        patchFile = open("format.patch", "w")
+        print("Creating patch file " + patchFilePath)
+        patchFile = open(patchFilePath, "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
         output,error = proc.communicate()
 

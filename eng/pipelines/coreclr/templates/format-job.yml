@@ -27,21 +27,17 @@ jobs:
     - task: DotNetCoreInstaller@0
       inputs:
         packageType: 'sdk'
-        version: '3.1.100-preview3-010431'
+        version: '2.1.402'
     - task: PythonScript@0
       displayName: Run tests/scripts/format.py
       inputs:
         scriptSource: 'filePath'
-        ${{ if startsWith(variables['Build.DefinitionName'], 'runtime') }}:
-          scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/format.py
-          arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
-        ${{ if not(startsWith(variables['Build.DefinitionName'], 'runtime')) }}:
-          scriptPath: $(Build.SourcesDirectory)/tests/scripts/format.py
-          arguments: '-c $(Build.SourcesDirectory) -o $(osGroup) -a $(archType)'
+        scriptPath: $(coreClrRepoRoot)/tests/scripts/format.py
+        arguments: '-c $(coreClrRepoRoot) -o $(osGroup) -a $(archType)'
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/format.patch'
+        PathtoPublish: '$(coreClrRepoRoot)/format.patch'
         ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()
