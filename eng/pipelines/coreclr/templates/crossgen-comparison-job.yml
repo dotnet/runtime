@@ -122,7 +122,7 @@ jobs:
           Creator: $(Creator)
         WorkItemTimeout: 1:00 # 1 hour
         WorkItemDirectory: '$(binDirectory)'
-        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/tests/scripts'
+        CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen;
