@@ -77,7 +77,9 @@ namespace System.Numerics
             [Intrinsic]
             get => s_zero;
         }
+#pragma warning disable 0649 // never assigned to
         private static readonly Vector<T> s_zero;
+#pragma warning restore 0649
 
         /// <summary>
         /// Returns a vector containing all ones.
