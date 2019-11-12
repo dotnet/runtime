@@ -31,7 +31,6 @@ set __IlasmRoundTrip=
 set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __SkipGenerateLayout=
 set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
@@ -71,8 +70,6 @@ if /i "%1" == "jitminopts"                              (set COMPlus_JITMinOpts=
 if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
 if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
-if /i "%1" == "GenerateLayoutOnly"                      (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "skipgeneratelayout"                      (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
 if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
@@ -123,13 +120,6 @@ set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildTyp
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-REM At this point in the script there will be a divergence in how the tests are run.
-REM For official builds we will continue to run tests using the un-unified scripting
-REM which relies on msbuild and calls runtest.proj directly. For all other scenarios
-REM runtest.py will handle setup and will then call runtest.proj
-
-if defined __GenerateLayoutOnly goto SetupMSBuildAndCallRuntestProj
-
 REM We are not running in the official build scenario, call runtest.py
 
 set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
@@ -160,14 +150,6 @@ if defined __TestEnv (
 
 if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
-)
-
-if not defined __SkipGenerateLayout (
-    set __RuntestPyArgs=%__RuntestPyArgs% --generate_layout
-)
-
-if defined __GenerateLayoutOnly (
-    set __RuntestPyArgs=%__RuntestPyArgs% --generate_layout_only
 )
 
 if defined __BuildXUnitWrappers (
@@ -239,13 +221,11 @@ set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType
 
 REM Prepare the Test Drop
 
-if not defined __GenerateLayoutOnly (
-    echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
-    REM Cleans any NI from the last run
-    powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
-    REM Cleans up any lock folder used for synchronization from last run
-    powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
-)
+echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
+REM Cleans any NI from the last run
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+REM Cleans up any lock folder used for synchronization from last run
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
 
 if defined CORE_ROOT goto SkipCoreRootSetup
 
@@ -281,11 +261,6 @@ if defined __DoCrossgen (
 
 REM Delete the unecessary mscorlib.ni file.
 if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
-
-if defined __GenerateLayoutOnly (
-    echo %__MsgPrefix%Done generating layout.
-    exit /b 0
-)
 
 ::Check if the test Binaries are built
 if not exist %XunitTestBinBase% (
@@ -538,8 +513,6 @@ echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, 
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo VSVersion ^<vs_version^>    - VS2017 or VS2019 ^(default: VS2019^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
-echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
-echo skipgeneratelayout        - Do not generate the core root. Used for cross target testing.
 echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
 echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
@@ -572,6 +545,5 @@ echo Note that arguments are not case-sensitive.
 echo.
 echo Examples:
 echo   %0 x86 checked
-echo   %0 x64 checked GenerateLayoutOnly
 echo   %0 x64 release
 exit /b 1

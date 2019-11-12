@@ -121,12 +121,11 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--jitdisasm", dest="jitdisasm", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen_tests", dest="run_crossgen_tests", action="store_true", default=False)
+parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--precompile_core_root", dest="precompile_core_root", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
-parser.add_argument("--generate_layout", dest="generate_layout", action="store_true", default=False)
-parser.add_argument("--generate_layout_only", dest="generate_layout_only", action="store_true", default=False)
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
@@ -909,6 +908,7 @@ def run_tests(host_os,
               is_jitdasm=False,
               is_ilasm=False,
               is_illink=False,
+              run_crossgen2_tests=False,
               run_crossgen_tests=False,
               large_version_bubble=False,
               run_sequential=False,
@@ -930,6 +930,7 @@ def run_tests(host_os,
         is_jitdasm(bool)            :
         is_ilasm(bool)              :
         is_illink(bool)             :
+        run_crossgen2_tests(bool)   :
         run_crossgen_tests(bool)    :
         run_sequential(bool)        :
         limited_core_dumps(bool)    :
@@ -1074,13 +1075,13 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    require_built_test_dir = not args.generate_layout_only and True
-    require_built_core_root = not args.generate_layout_only and True
+    require_built_test_dir = True
+    require_built_core_root = True
 
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=require_built_test_dir, 
                                           require_built_core_root=require_built_core_root, 
-                                          require_built_product_dir=args.generate_layout_only)
+                                          require_built_product_dir=False)
 
     normal_location = os.path.join(coreclr_setup_args.bin_location, "tests", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type))
 
@@ -1099,55 +1100,8 @@ def setup_args(args):
                                       "Unsupported configuration: %s.\nSupported configurations: %s" % (corrected_build_type, ", ".join(coreclr_setup_args.valid_build_types)))
 
     if args.test_location is not None and coreclr_setup_args.test_location != normal_location:
-        test_location = args.test_location
-
-        # Remove optional end os.path.sep
-        if test_location[-1] == os.path.sep:
-            test_location = test_location[:-1]
-
-        if normal_location.lower() != test_location.lower() and os.path.isdir(normal_location):
-            # Remove the existing directory if there is one.
-            shutil.rmtree(normal_location)
-
-            print("Non-standard test location being used.")
-            print("Overwrite the standard location with these tests.")
-            print("TODO: Change runtest.proj to allow running from non-standard test location.")
-            print("")
-
-            print("cp -r %s %s" % (coreclr_setup_args.test_location, normal_location))
-            shutil.copytree(coreclr_setup_args.test_location, normal_location)
-
-            test_location = normal_location
-
-            # unset core_root so it can be put in the default location
-            core_root = None
-
-            # Force the core_root to be setup again.
-            args.generate_layout = True
-
-            coreclr_setup_args.verify(test_location,
-                                      "test_location",
-                                      lambda arg: True,
-                                      "Error setting test location.")
-
-    coreclr_setup_args.verify(args,
-                              "generate_layout_only",
-                              lambda arg: True,
-                              "Error setting generate_layout_only")
-
-    if coreclr_setup_args.generate_layout_only:
-        # Force generate_layout
-        coreclr_setup_args.verify(args,
-                                "generate_layout",
-                                lambda arg: True,
-                                "Error setting generate_layout",
-                                modify_arg=lambda arg: True)
-    
-    else:
-        coreclr_setup_args.verify(args,
-                                "generate_layout",
-                                lambda arg: True,
-                                "Error setting generate_layout")
+        print ("Error, msbuild currently expects tests in bin/tests/...")
+        raise Exception("Error, msbuild currently expects tests in bin/tests/...")
 
     coreclr_setup_args.verify(args,
                               "test_env",
@@ -1208,6 +1162,11 @@ def setup_args(args):
                               "run_crossgen_tests",
                               lambda arg: True,
                               "Error setting run_crossgen_tests")
+
+    coreclr_setup_args.verify(args,
+                              "run_crossgen2_tests",
+                              lambda unused: True,
+                              "Error setting run_crossgen2_tests")
 
     coreclr_setup_args.verify(args,
                               "precompile_core_root",
@@ -1424,199 +1383,6 @@ def precompile_core_root(test_location,
         call_crossgen(dll, env)
 
     print("")
-
-def setup_core_root(host_os, 
-                    arch, 
-                    build_type, 
-                    coreclr_repo_location, 
-                    test_native_bin_location,
-                    product_location,
-                    test_location,
-                    core_root):
-    """ Setup the core root
-
-    Args:
-        host_os(str)                : os
-        arch(str)                   : architecture
-        build_type(str)             : build configuration
-        coreclr_repo_location(str)  : coreclr repo location
-        product_location(str)       : Product location
-        core_root(str)              : Location for core_root
-    """
-    global g_verbose
-
-    assert os.path.isdir(product_location)
-
-    # Create core_root if it does not exist
-    if os.path.isdir(core_root):
-        shutil.rmtree(core_root)
-        
-    os.makedirs(core_root)
-
-    # Setup the dotnetcli location
-    dotnetcli_location = os.path.join(coreclr_repo_location, "dotnet%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
-
-    # Set global env variables.
-    os.environ["__BuildLogRootName"] = "Restore_Product"
-
-    if host_os != "Windows_NT":
-        os.environ["__DistroRid"] = "%s-%s" % ("osx" if sys.platform == "darwin" else "linux", arch)
-
-    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary"]
-
-    if host_os == "Windows_NT":
-        command += ["/nodeReuse:false"]
-
-    command += ["/p:RestoreDefaultOptimizationDataPackage=false",
-                "/p:PortableBuild=true",
-                "/p:UsePartialNGENOptimization=false",
-                "/maxcpucount",
-                os.path.join(coreclr_repo_location, "tests", "build.proj")]
-
-    logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
-    if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir)
-
-    log_path = os.path.join(logs_dir, "Restore_Product%s_%s_%s" % (host_os, arch, build_type))
-    build_log = log_path + ".log"
-    wrn_log = log_path + ".wrn"
-    err_log = log_path + ".err"
-
-    command += ["/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
-                "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
-                "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log]
-
-    if g_verbose:
-        command += ["/v:detailed"]
-
-    command += ["/t:BatchRestorePackages",
-                "/p:__BuildType=%s" % build_type,
-                "/p:__BuildArch=%s" % arch,
-                "/p:__BuildOS=%s" % host_os]
-
-    print("Restoring packages...")
-    print(" ".join(command))
-
-    sys.stdout.flush() # flush output before creating sub-process
-    if not g_verbose:
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    else:
-        proc = subprocess.Popen(command)
-
-    try:
-        proc.communicate()
-    except KeyboardInterrupt:
-        proc.kill()
-        sys.exit(1)
-
-    if proc.returncode != 0:
-        print("Error: package restore failed.")
-        return False
-
-    os.environ["__BuildLogRootName"] = ""
-
-    # Copy restored packages to core_root
-    # Set global env variables.
-    os.environ["__BuildLogRootName"] = "Tests_Overlay_Managed"
-
-    if host_os != "Windows_NT":
-        os.environ["__DistroRid"] = "%s-%s" % ("osx" if sys.platform == "darwin" else "linux", arch)
-        os.environ["__RuntimeId"] = os.environ["__DistroRid"]
-
-    os.environ["Core_Root"] = core_root
-    os.environ["xUnitTestBinBase"] = os.path.dirname(os.path.dirname(core_root))
-
-    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary"]
-
-    if host_os == "Windows_NT":
-        command += ["/nodeReuse:false"]
-
-    command += ["/p:RestoreDefaultOptimizationDataPackage=false",
-                "/p:PortableBuild=true",
-                "/p:UsePartialNGENOptimization=false",
-                "/maxcpucount",
-                os.path.join(coreclr_repo_location, "tests", "src", "runtest.proj")]
-
-    logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
-    if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir)
-
-    log_path = os.path.join(logs_dir, "Tests_Overlay_Managed%s_%s_%s" % (host_os, arch, build_type))
-    build_log = log_path + ".log"
-    wrn_log = log_path + ".wrn"
-    err_log = log_path + ".err"
-
-    command += ["/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
-                "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
-                "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log]
-
-    if g_verbose:
-        command += ["/v:detailed"]
-
-    command += ["/t:CreateTestOverlay",
-                "/p:__BuildType=%s" % build_type,
-                "/p:__BuildArch=%s" % arch,
-                "/p:__BuildOS=%s" % host_os]
-
-    print("")
-    print("Creating Core_Root...")
-    print(" ".join(command))
-
-    sys.stdout.flush() # flush output before creating sub-process
-    if not g_verbose:
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    else:
-        proc = subprocess.Popen(command)
-
-    try:
-        proc.communicate()
-    except KeyboardInterrupt:
-        proc.kill()
-        sys.exit(1)
-
-    if proc.returncode != 0:
-        print("Error: creating Core_Root failed.")
-        return False
-
-    os.environ["__BuildLogRootName"] = ""
-    os.environ["xUnitTestBinBase"] = ""
-    os.environ["__RuntimeId"] = ""
-
-    def copy_tree(src, dest):
-        """ Simple copy from src to dest
-        """
-        assert os.path.isdir(src)
-        assert os.path.isdir(dest)
-
-        for item in os.listdir(src):
-            if ".nuget" in item:
-                pass
-            item = os.path.join(src, item)
-
-            if os.path.isfile(item):
-                shutil.copy2(item, dest)
-
-                if host_os != "Windows_NT":
-                    # Set executable bit
-                    os.chmod(os.path.join(dest, os.path.basename(item)), 0o774)
-            else:
-                new_dir = os.path.join(dest, os.path.basename(item))
-                if os.path.isdir(new_dir):
-                    shutil.rmtree(new_dir)
-                
-                shutil.copytree(item, new_dir)
-
-    # Copy the product dir to the core_root directory
-    print("")
-    print("Copying Product Bin to Core_Root:")
-    print("cp -r %s%s* %s" % (product_location, os.path.sep, core_root))
-    copy_tree(product_location, core_root)
-    print("---------------------------------------------------------------------")
-    print("")
-    print("Core_Root setup.")
-    print("")
-
-    return True
 
 if sys.version_info.major < 3:
     def to_unicode(s):
@@ -2017,23 +1783,6 @@ def do_setup(host_os,
     # Setup the tools for the repo.
     setup_tools(host_os, coreclr_repo_location)
 
-    if unprocessed_args.generate_layout:
-        success = setup_core_root(host_os, 
-                                  arch, 
-                                  build_type, 
-                                  coreclr_repo_location, 
-                                  test_native_bin_location, 
-                                  product_location,
-                                  test_location, 
-                                  core_root)
-
-        if not success:
-            print("Error: GenerateLayout failed.")
-            sys.exit(1)
-
-        if unprocessed_args.generate_layout_only:
-            sys.exit(0)
-
     if unprocessed_args.precompile_core_root:
         precompile_core_root(test_location, host_os, arch, core_root, use_jit_disasm=args.jitdisasm, altjit_name=unprocessed_args.crossgen_altjit)
   
@@ -2068,6 +1817,7 @@ def do_setup(host_os,
                      is_jitdasm=unprocessed_args.jitdisasm,
                      is_ilasm=unprocessed_args.ilasmroundtrip,
                      is_illink=unprocessed_args.il_link, 
+                     run_crossgen2_tests=unprocessed_args.run_crossgen2_tests,
                      run_crossgen_tests=unprocessed_args.run_crossgen_tests,
                      large_version_bubble=unprocessed_args.large_version_bubble,
                      run_sequential=unprocessed_args.sequential,

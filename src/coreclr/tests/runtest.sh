@@ -14,8 +14,6 @@ function print_usage {
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies.'
     echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
     echo '  --build-overlay-only             : Build coreoverlay only, and skip running tests.'
-    echo '  --generateLayoutOnly             : Build Core_Root only and skip running tests'
-    echo '  --generateLayout                 : Force generating layout, even if core_root is passed.'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  -v, --verbose                    : Show output from each test.'
@@ -208,7 +206,6 @@ testEnv=
 playlistFile=
 showTime=
 noLFConversion=
-buildOverlayOnly=
 gcsimulator=
 longgc=
 limitedCoreDumps=
@@ -223,8 +220,6 @@ jitdisasm=0
 ilasmroundtrip=
 buildXUnitWrappers=
 printLastResultsOnly=
-generateLayoutOnly=
-generateLayout=
 runSequential=0
 runincontext=0
 
@@ -388,15 +383,6 @@ do
         --no-lf-conversion)
             noLFConversion=ON
             ;;
-        --build-overlay-only)
-            buildOverlayOnly=ON
-            ;;
-        --generateLayoutOnly)
-            generateLayoutOnly=1
-            ;;
-        --generateLayout)
-            generateLayout=1
-            ;;
         --limitedDumpGeneration)
             limitedCoreDumps=ON
             ;;
@@ -527,15 +513,6 @@ fi
 
 if (($verbose!=0)); then
     runtestPyArguments+=("--verbose")
-fi
-
-if [ ! -z "$buildOverlayOnly" ] || [ ! -z "$generateLayoutOnly" ]; then
-    echo "Will only Generate Core_Root"
-    runtestPyArguments+=("--generate_layout_only")
-fi
-
-if [ ! -z "$generateLayout" ]; then
-    runtestPyArguments+=("--generate_layout")
 fi
 
 if [ ! "$runSequential" -eq 0 ]; then
