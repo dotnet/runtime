@@ -7814,10 +7814,14 @@ void Module::ExpandAll(DataImage *image)
                 if (TypeFromToken(token) == mdtMethodDef)
                 {
                     MethodDesc *  pMD = LookupMethodDef(token);
-                    //
-                    // Record a reference to a hot non-generic method
-                    //
-                    image->GetPreloader()->MethodReferencedByCompiledCode((CORINFO_METHOD_HANDLE)pMD);
+
+                    if (pMD != NULL)
+                    {
+                        //
+                        // Record a reference to a hot non-generic method
+                        //
+                        image->GetPreloader()->MethodReferencedByCompiledCode((CORINFO_METHOD_HANDLE)pMD);
+                    }
                 }
                 else if (TypeFromToken(token) == ibcMethodSpec)
                 {
