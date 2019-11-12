@@ -582,18 +582,29 @@ namespace System.Runtime.Loader
             return context.ResolveSatelliteAssembly(assemblyName);
         }
 
-        private Assembly? GetFirstResolvedAssembly(AssemblyName assemblyName)
+        private Assembly? GetFirstResolvedAssemblyFromResolvingEvent(AssemblyName assemblyName)
         {
             Assembly? resolvedAssembly = null;
 
-            Func<AssemblyLoadContext, AssemblyName, Assembly>? assemblyResolveHandler = _resolving;
+            Func<AssemblyLoadContext, AssemblyName, Assembly>? resolvingHandler = _resolving;
 
-            if (assemblyResolveHandler != null)
+            if (resolvingHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null Assembly instance
-                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in assemblyResolveHandler.GetInvocationList())
+                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in resolvingHandler.GetInvocationList())
                 {
                     resolvedAssembly = handler(this, assemblyName);
+#if CORECLR
+                    if (AssemblyLoadContext.IsTracingEnabled())
+                    {
+                        AssemblyLoadContext.TraceResolvingHandlerInvoked(
+                            assemblyName.FullName,
+                            handler.Method.Name,
+                            this != AssemblyLoadContext.Default ? ToString() : Name,
+                            resolvedAssembly?.FullName,
+                            resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
+                    }
+#endif // CORECLR
                     if (resolvedAssembly != null)
                     {
                         return resolvedAssembly;
@@ -606,6 +617,11 @@ namespace System.Runtime.Loader
 
         private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
+            if (string.IsNullOrEmpty(requestedSimpleName))
+            {
+                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
+            }
+
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;
 
@@ -619,10 +635,6 @@ namespace System.Runtime.Loader
             }
 
             // The simple names should match at the very least
-            if (string.IsNullOrEmpty(requestedSimpleName))
-            {
-                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
-            }
             if (string.IsNullOrEmpty(loadedSimpleName) || !requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
@@ -648,8 +660,8 @@ namespace System.Runtime.Loader
         {
             string? simpleName = assemblyName.Name;
 
-            // Invoke the AssemblyResolve event callbacks if wired up
-            Assembly? assembly = GetFirstResolvedAssembly(assemblyName);
+            // Invoke the Resolving event callbacks if wired up
+            Assembly? assembly = GetFirstResolvedAssemblyFromResolvingEvent(assemblyName);
             if (assembly != null)
             {
                 assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
@@ -692,6 +704,16 @@ namespace System.Runtime.Loader
             foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
             {
                 Assembly? asm = handler(AppDomain.CurrentDomain, args);
+#if CORECLR
+                if (eventHandler == AssemblyResolve && AssemblyLoadContext.IsTracingEnabled())
+                {
+                    AssemblyLoadContext.TraceAssemblyResolveHandlerInvoked(
+                        name,
+                        handler.Method.Name,
+                        asm?.FullName,
+                        asm != null && !asm.IsDynamic ? asm.Location : null);
+                }
+#endif // CORECLR
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
                 if (ret != null)
                     return ret;

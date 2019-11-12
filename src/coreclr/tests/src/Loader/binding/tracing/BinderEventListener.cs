@@ -15,22 +15,65 @@ namespace BinderTracingTests
 {
     internal class BindOperation
     {
-        internal AssemblyName AssemblyName;
-        internal string AssemblyPath;
-        internal AssemblyName RequestingAssembly;
-        internal string AssemblyLoadContext;
-        internal string RequestingAssemblyLoadContext;
+        public AssemblyName AssemblyName { get; internal set; }
+        public string AssemblyPath { get; internal set; }
+        public AssemblyName RequestingAssembly { get; internal set; }
+        public string AssemblyLoadContext { get; internal set; }
+        public string RequestingAssemblyLoadContext { get; internal set; }
 
-        internal bool Success;
-        internal AssemblyName ResultAssemblyName;
-        internal string ResultAssemblyPath;
-        internal bool Cached;
+        public bool Success { get; internal set; }
+        public AssemblyName ResultAssemblyName { get; internal set; }
+        public string ResultAssemblyPath { get; internal set; }
+        public bool Cached { get; internal set; }
 
-        internal Guid ActivityId;
-        internal Guid ParentActivityId;
+        public Guid ActivityId { get; internal set; }
+        public Guid ParentActivityId { get; internal set; }
 
-        internal bool Completed;
-        internal bool Nested;
+        public bool Completed { get; internal set; }
+        public bool Nested { get; internal set; }
+
+        public List<HandlerInvocation> AssemblyLoadContextResolvingHandlers { get; internal set; }
+        public List<HandlerInvocation> AppDomainAssemblyResolveHandlers { get; internal set; }
+
+        public List<BindOperation> NestedBinds { get; internal set; }
+
+        public BindOperation()
+        {
+            AssemblyLoadContextResolvingHandlers = new List<HandlerInvocation>();
+            AppDomainAssemblyResolveHandlers = new List<HandlerInvocation>();
+            NestedBinds = new List<BindOperation>();
+        }
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(AssemblyName);
+            sb.Append($" - Request: Path={AssemblyPath}, ALC={AssemblyLoadContext}, RequestingAssembly={RequestingAssembly}, RequestingALC={RequestingAssemblyLoadContext}");
+            sb.Append($" - Result: Success={Success}, Name={ResultAssemblyName}, Path={ResultAssemblyPath}, Cached={Cached}");
+            return sb.ToString();
+        }
+    }
+
+    internal class HandlerInvocation
+    {
+        public AssemblyName AssemblyName { get; internal set; }
+        public string HandlerName { get; internal set; }
+        public string AssemblyLoadContext { get; internal set; }
+
+        public AssemblyName ResultAssemblyName { get; internal set; }
+        public string ResultAssemblyPath { get; internal set; }
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"{HandlerName} - ");
+            sb.Append($"Request: Name={AssemblyName.FullName}");
+            if (!string.IsNullOrEmpty(AssemblyLoadContext))
+                sb.Append($", ALC={AssemblyLoadContext}");
+
+            sb.Append($" - Result: Name={ResultAssemblyName?.FullName}, Path={ResultAssemblyPath}");
+            return sb.ToString();
+        }
     }
 
     internal sealed class BinderEventListener : EventListener
@@ -80,34 +123,32 @@ namespace BinderTracingTests
             if (data.EventSource.Name != "Microsoft-Windows-DotNETRuntime")
                 return;
 
-            object GetData(string name) => data.Payload[data.PayloadNames.IndexOf(name)];
-            string GetDataString(string name) => GetData(name).ToString();
+            object GetData(string name)
+            {
+                int index = data.PayloadNames.IndexOf(name);
+                return index >= 0 ? data.Payload[index] : null;
+            };
+            string GetDataString(string name) => GetData(name) as string;
 
             switch (data.EventName)
             {
                 case "AssemblyLoadStart":
+                {
+                    BindOperation bindOperation = ParseAssemblyLoadStartEvent(data, GetDataString);
                     lock (eventsLock)
                     {
                         Assert.IsTrue(!bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStart should not exist for same activity ID ");
-                        var bindOperation = new BindOperation()
-                        {
-                            AssemblyName = new AssemblyName(GetDataString("AssemblyName")),
-                            AssemblyPath = GetDataString("AssemblyPath"),
-                            AssemblyLoadContext = GetDataString("AssemblyLoadContext"),
-                            RequestingAssemblyLoadContext = GetDataString("RequestingAssemblyLoadContext"),
-                            ActivityId = data.ActivityId,
-                            ParentActivityId = data.RelatedActivityId,
-                            Nested = bindOperations.ContainsKey(data.RelatedActivityId)
-                        };
-                        string requestingAssembly = GetDataString("RequestingAssembly");
-                        if (!string.IsNullOrEmpty(requestingAssembly))
-                        {
-                            bindOperation.RequestingAssembly = new AssemblyName(requestingAssembly);
-                        }
+                        bindOperation.Nested = bindOperations.ContainsKey(data.RelatedActivityId);
                         bindOperations.Add(data.ActivityId, bindOperation);
+                        if (bindOperation.Nested)
+                        {
+                            bindOperations[data.RelatedActivityId].NestedBinds.Add(bindOperation);
+                        }
                     }
                     break;
+                }
                 case "AssemblyLoadStop":
+                {
                     lock (eventsLock)
                     {
                         Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStop should have a matching AssemblyBindStart");
@@ -123,7 +164,68 @@ namespace BinderTracingTests
                         bind.Completed = true;
                     }
                     break;
+                }
+                case "AssemblyLoadContextResolvingHandlerInvoked":
+                {
+                    HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    lock (eventsLock)
+                    {
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadContextResolvingHandlerInvoked should have a matching AssemblyBindStart");
+                        BindOperation bind = bindOperations[data.ActivityId];
+                        bind.AssemblyLoadContextResolvingHandlers.Add(handlerInvocation);
+                    }
+                    break;
+                }
+                case "AppDomainAssemblyResolveHandlerInvoked":
+                {
+                    HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
+                    lock (eventsLock)
+                    {
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AppDomainAssemblyResolveHandlerInvoked should have a matching AssemblyBindStart");
+                        BindOperation bind = bindOperations[data.ActivityId];
+                        bind.AppDomainAssemblyResolveHandlers.Add(handlerInvocation);
+                    }
+                    break;
+                }
             }
+        }
+
+        private BindOperation ParseAssemblyLoadStartEvent(EventWrittenEventArgs data, Func<string, string> getDataString)
+        {
+            var bindOperation = new BindOperation()
+            {
+                AssemblyName = new AssemblyName(getDataString("AssemblyName")),
+                AssemblyPath = getDataString("AssemblyPath"),
+                AssemblyLoadContext = getDataString("AssemblyLoadContext"),
+                RequestingAssemblyLoadContext = getDataString("RequestingAssemblyLoadContext"),
+                ActivityId = data.ActivityId,
+                ParentActivityId = data.RelatedActivityId,
+            };
+            string requestingAssembly = getDataString("RequestingAssembly");
+            if (!string.IsNullOrEmpty(requestingAssembly))
+            {
+                bindOperation.RequestingAssembly = new AssemblyName(requestingAssembly);
+            }
+
+            return bindOperation;
+        }
+
+        private HandlerInvocation ParseHandlerInvokedEvent(Func<string, string> getDataString)
+        {
+            var handlerInvocation = new HandlerInvocation()
+            {
+                AssemblyName = new AssemblyName(getDataString("AssemblyName")),
+                HandlerName = getDataString("HandlerName"),
+                AssemblyLoadContext = getDataString("AssemblyLoadContext"),
+                ResultAssemblyPath = getDataString("ResultAssemblyPath")
+            };
+            string resultName = getDataString("ResultAssemblyName");
+            if (!string.IsNullOrEmpty(resultName))
+            {
+                handlerInvocation.ResultAssemblyName = new AssemblyName(resultName);
+            }
+
+            return handlerInvocation;
         }
     }
 }

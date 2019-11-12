@@ -513,6 +513,8 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InternalStartProfile",   MultiCoreJITNative::InternalStartProfile)
 #endif // defined(FEATURE_MULTICOREJIT)
     FCFuncElement("IsTracingEnabled", AssemblyNative::IsTracingEnabled)
+    QCFuncElement("TraceResolvingHandlerInvoked", AssemblyNative::TraceResolvingHandlerInvoked)
+    QCFuncElement("TraceAssemblyResolveHandlerInvoked", AssemblyNative::TraceAssemblyResolveHandlerInvoked)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyNameFuncs)
