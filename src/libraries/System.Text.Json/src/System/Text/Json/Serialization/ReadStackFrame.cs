@@ -213,18 +213,13 @@ namespace System.Text.Json
             }
 
             JsonClassInfo runtimeClassInfo = jsonPropertyInfo.RuntimeClassInfo;
-            if (runtimeClassInfo.CreateObject != null)
+
+            if (runtimeClassInfo.CreateObject == null)
             {
-                return runtimeClassInfo.CreateObject();
+                ThrowHelper.ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(jsonPropertyInfo.DeclaredPropertyType);
             }
-            else
-            {
-                // Could not create an instance to be returned. For derived types, this means there is no parameterless ctor.
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    jsonPropertyInfo.DeclaredPropertyType,
-                    jsonPropertyInfo.ParentClassType,
-                    jsonPropertyInfo.PropertyInfo);
-            }
+
+            return runtimeClassInfo.CreateObject();
         }
 
         public static object CreateDictionaryValue(ref ReadStack state)
@@ -257,18 +252,13 @@ namespace System.Text.Json
             }
 
             JsonClassInfo runtimeClassInfo = jsonPropertyInfo.RuntimeClassInfo;
-            if (runtimeClassInfo.CreateObject != null)
+
+            if (runtimeClassInfo.CreateObject == null)
             {
-                return runtimeClassInfo.CreateObject();
+                ThrowHelper.ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(jsonPropertyInfo.DeclaredPropertyType);
             }
-            else
-            {
-                // Could not create an instance to be returned. For derived types, this means there is no parameterless ctor.
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    jsonPropertyInfo.DeclaredPropertyType,
-                    jsonPropertyInfo.ParentClassType,
-                    jsonPropertyInfo.PropertyInfo);
-            }
+
+            return runtimeClassInfo.CreateObject();
         }
 
         public Type GetElementType()
