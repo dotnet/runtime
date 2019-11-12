@@ -479,6 +479,12 @@ namespace System
 			return false;
 		}
 
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal extern CorElementType GetCorElementTypeOfElementType();
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		extern bool IsValueOfElementType(object value);
+
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static bool CanChangePrimitive (Type srcType, Type dstType, bool reliable);
 

@@ -882,6 +882,7 @@ exit:
 
 #endif
 
+#ifndef ENABLE_NETCORE
 MonoArrayHandle
 ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoArrayHandle lengths, MonoArrayHandle bounds, MonoError *error)
 {
@@ -939,6 +940,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoAr
 
 	return mono_array_new_full_handle (MONO_HANDLE_DOMAIN (type), aklass, sizes, lower_bounds, error);
 }
+#endif
 
 gint32
 ves_icall_System_Array_GetRank (MonoObjectHandle arr, MonoError *error)
@@ -949,6 +951,21 @@ ves_icall_System_Array_GetRank (MonoObjectHandle arr, MonoError *error)
 
 	return result;
 }
+
+#ifdef ENABLE_NETCORE
+gint32
+ves_icall_System_Array_GetCorElementTypeOfElementType (MonoArrayHandle arr, MonoError *error)
+{
+	MonoType *type = mono_type_get_underlying_type (m_class_get_byval_arg (m_class_get_element_class (mono_handle_class (arr))));
+	return type->type;
+}
+
+gint32
+ves_icall_System_Array_IsValueOfElementType (MonoArrayHandle arr, MonoObjectHandle obj, MonoError *error)
+{
+	return m_class_get_element_class (mono_handle_class (arr)) == mono_handle_class (obj);
+}
+#endif
 
 static mono_array_size_t
 mono_array_get_length (MonoArrayHandle arr, gint32 dimension, MonoError *error)
@@ -997,6 +1014,7 @@ ves_icall_System_Array_GetLowerBound (MonoArrayHandle arr, gint32 dimension, Mon
 						: 0;
 }
 
+#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Array_ClearInternal (MonoArrayHandle arr, int idx, int length, MonoError *error)
 {
@@ -1005,6 +1023,7 @@ ves_icall_System_Array_ClearInternal (MonoArrayHandle arr, int idx, int length, 
 	int sz = mono_array_element_size (mono_handle_class (arr));
 	mono_gc_bzero_atomic (mono_array_addr_with_size_fast (MONO_HANDLE_RAW (arr), sz, idx), length * sz);
 }
+#endif
 
 MonoBoolean
 ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArrayHandle dest, int dest_idx, int length, MonoError *error)
@@ -4261,6 +4280,7 @@ ves_icall_System_Enum_InternalGetCorElementType (MonoObjectHandle this_handle, M
 	return (int)m_class_get_byval_arg (m_class_get_element_class (klass))->type;
 }
 
+#ifndef ENABLE_NETCORE
 int
 ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectHandle otherHandle, MonoError *error)
 {
@@ -4325,6 +4345,7 @@ ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectH
 	/* indicates that the enum was of an unsupported underlying type */
 	return 3;
 }
+#endif
 
 #ifndef ENABLE_NETCORE
 int
@@ -7314,13 +7335,13 @@ mono_array_get_byte_length (MonoArrayHandle array)
 	}
 }
 
+#ifndef ENABLE_NETCORE
 gint32
 ves_icall_System_Buffer_ByteLengthInternal (MonoArrayHandle array, MonoError* error)
 {
 	return mono_array_get_byte_length (array);
 }
 
-#ifndef ENABLE_NETCORE
 void
 ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32 count)
 {

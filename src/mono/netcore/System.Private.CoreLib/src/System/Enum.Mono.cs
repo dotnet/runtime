@@ -24,22 +24,6 @@ namespace System
 			}
 		}
 
-		public int CompareTo (object? target)
-		{
-			const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
-
-			int ret = InternalCompareTo (this, target);
-
-			if (ret < retIncompatibleMethodTables)
-				// -1, 0 and 1 are the normal return codes
-				return ret;
-
-			if (ret == retIncompatibleMethodTables)
-				throw new ArgumentException (SR.Format (SR.Arg_EnumAndObjectMustBeSameType, target!.GetType (), GetType ()));
-
-			throw new InvalidOperationException (SR.InvalidOperation_UnknownEnumType);
-		}
-
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern bool InternalHasFlag (Enum flags);
 
@@ -127,9 +111,6 @@ namespace System
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		static extern object InternalBoxEnum (RuntimeType enumType, long value);
-
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		static extern int InternalCompareTo (object o1, object? o2);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern CorElementType InternalGetCorElementType ();

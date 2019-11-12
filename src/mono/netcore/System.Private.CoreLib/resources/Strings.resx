@@ -1462,6 +1462,9 @@
   <data name="Argument_SigIsFinalized" xml:space="preserve">
     <value>Completed signature cannot be modified.</value>
   </data>
+  <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
+    <value>Length of items must be same as length of keys.</value>
+  </data>
   <data name="Argument_StreamNotReadable" xml:space="preserve">
     <value>Stream was not readable.</value>
   </data>

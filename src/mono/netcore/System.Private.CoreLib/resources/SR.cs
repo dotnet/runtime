@@ -465,6 +465,7 @@ partial class SR
 	public const string Argument_ShouldNotSpecifyExceptionType = "Should not specify exception type for catch clause for filter block.";
 	public const string Argument_ShouldOnlySetVisibilityFlags = "Should only set visibility flags when creating EnumBuilder.";
 	public const string Argument_SigIsFinalized = "Completed signature cannot be modified.";
+	public const string Argument_SpansMustHaveSameLength = "Length of items must be same as length of keys.";
 	public const string Argument_StreamNotReadable = "Stream was not readable.";
 	public const string Argument_StreamNotWritable = "Stream was not writable.";
 	public const string Argument_StringFirstCharIsZero = "The first char in the string is the null character.";
