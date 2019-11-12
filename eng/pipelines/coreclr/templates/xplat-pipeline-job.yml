@@ -80,9 +80,9 @@ jobs:
         value: '/'
 
     - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr
+      value: '$(Build.SourcesDirectory)/src/coreclr'
 
-    - ${{ if not(startsWith(variables['Build.DefinitionName'], 'runtime')) }}:'
+    - ${{ if not(startsWith(variables['Build.DefinitionName'], 'runtime')) }}:
 
       - name: coreClrRepoRoot
         value: '$(Build.SourcesDirectory)'

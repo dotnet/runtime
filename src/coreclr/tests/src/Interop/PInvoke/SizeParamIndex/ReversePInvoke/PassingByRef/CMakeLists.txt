@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6) 
-project (ReversePInvokePassingByRefNative) 
+project (RPIP_ByRefNative)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 include_directories("..") 
 set(SOURCES 
@@ -7,7 +7,8 @@ set(SOURCES
 ) 
 # Additional files to reference: 
 # add the executable 
-add_library (ReversePInvokePassingByRefNative SHARED ${SOURCES}) 
-target_link_libraries(ReversePInvokePassingByRefNative ${LINK_LIBRARIES_ADDITIONAL}) 
+add_library (RPIP_ByRefNative SHARED ${SOURCES}) 
+set_property (TARGET RPIP_ByRefNative PROPERTY OUTPUT_NAME ReversePInvokePassingByRefNative)
+target_link_libraries(RPIP_ByRefNative ${LINK_LIBRARIES_ADDITIONAL}) 
 # add the install targets 
-install (TARGETS ReversePInvokePassingByRefNative DESTINATION bin) 
+install (TARGETS RPIP_ByRefNative DESTINATION bin) 
