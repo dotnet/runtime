@@ -263,7 +263,11 @@ namespace System.Net.Security
                     tokenBytes = tokenBytes.Slice(0, length - 1);
                 }
 
+#if NETSTANDARD2_0
+                return Encoding.UTF8.GetString(tokenBytes.ToArray(), 0, tokenBytes.Length);
+#else
                 return Encoding.UTF8.GetString(tokenBytes);
+#endif
             }
             finally
             {
