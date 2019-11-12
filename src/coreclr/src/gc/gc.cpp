@@ -30474,8 +30474,13 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
             {
                 // we found the correct segment, but it's not the segment our caller is in
 
-                // our caller should still be in the previous segment
-                assert(heap_segment_next_in_range(seg) == segment);
+                // our caller should still be in one of the previous segments
+#ifdef _DEBUG
+                for (heap_segment* cur_seg = seg; cur_seg != segment; cur_seg = heap_segment_next_in_range(cur_seg))
+                {                    
+                    assert(cur_seg);
+                }
+#endif //_DEBUG
 
                 // keep the chunk index for later
                 old_chunk_index = chunk_index;
