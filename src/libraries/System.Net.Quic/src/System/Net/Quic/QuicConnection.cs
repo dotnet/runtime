@@ -44,6 +44,8 @@ namespace System.Net.Quic
 
         public IPEndPoint RemoteEndPoint => _provider.RemoteEndPoint;
 
+        public SslApplicationProtocol NegotiatedApplicationProtocol => _provider.NegotiatedApplicationProtocol;
+
         /// <summary>
         /// Connect to the remote endpoint.
         /// </summary>

@@ -19,6 +19,7 @@ namespace System.Net.Quic
         public QuicStream OpenUnidirectionalStream() => throw null;
         public QuicStream OpenBidirectionalStream() => throw null;
         public System.Threading.Tasks.ValueTask<QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
         public void Close() => throw null;
         public void Dispose() => throw null;
     }

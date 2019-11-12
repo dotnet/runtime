@@ -62,6 +62,8 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndPoint.Address, _remoteEndPoint.Port);
 
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
+
         internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();

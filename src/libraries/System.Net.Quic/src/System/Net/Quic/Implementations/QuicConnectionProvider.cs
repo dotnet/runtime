@@ -23,6 +23,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default);
 
+        internal abstract System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get; }
+
         internal abstract void Close();
 
         public abstract void Dispose();
