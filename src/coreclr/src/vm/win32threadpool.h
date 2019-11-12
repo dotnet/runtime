@@ -749,7 +749,9 @@ public:
 #else // !FEATURE_PAL
             if (PAL_HasGetCurrentProcessorNumber())
             {
-                processorNumber = GetCurrentProcessorNumber();
+                // On linux, GetCurrentProcessorNumber which uses sched_getcpu() can return a value greater than the number
+                // of processors reported by sysconf(_SC_NPROCESSORS_ONLN) when using OpenVZ kernel.
+                processorNumber = GetCurrentProcessorNumber()%NumberOfProcessors;
             }
 #endif // !FEATURE_PAL
             return pRecycledListPerProcessor[processorNumber][memType];
