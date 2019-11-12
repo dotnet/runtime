@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Test.IO.Streams;
 using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Tests
@@ -29,6 +32,77 @@ namespace System.Security.Cryptography.Hashing.Tests
             Assert.Equal(input.Sum(b => (long)b), BitConverter.ToInt64(output, 0));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(4096)]
+        [InlineData(4097)]
+        [InlineData(10000)]
+        public async Task VerifyComputeHashAsync(int size)
+        {
+            int fullCycles = size / 256;
+            int partial = size % 256;
+            // SUM(0..255) is 32640
+            const long CycleSum = 32640L;
+
+            // The formula for additive sum IS n*(n+1)/2, but size is a count and the first n is 0,
+            // which happens to turn it into (n-1) * n / 2, aka n * (n - 1) / 2.
+            long expectedSum = CycleSum * fullCycles + (partial * (partial - 1) / 2);
+
+            using (PositionValueStream stream = new PositionValueStream(size))
+            using (HashAlgorithm hash = new SummingTestHashAlgorithm())
+            {
+                byte[] result = await hash.ComputeHashAsync(stream);
+                byte[] expected = BitConverter.GetBytes(expectedSum);
+
+                Assert.Equal(expected, result);
+            }
+        }
+
+        [Fact]
+        public async Task ComputeHashAsync_SupportsCancellation()
+        {
+            using (CancellationTokenSource cancellationSource = new CancellationTokenSource(100))
+            using (PositionValueStream stream = new SlowPositionValueStream(10000))
+            using (HashAlgorithm hash = new SummingTestHashAlgorithm())
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                    () => hash.ComputeHashAsync(stream, cancellationSource.Token));
+            }
+        }
+
+        [Fact]
+        public void ComputeHashAsync_Disposed()
+        {
+            using (PositionValueStream stream = new SlowPositionValueStream(10000))
+            using (HashAlgorithm hash = new SummingTestHashAlgorithm())
+            {
+                hash.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () =>
+                    {
+                        // Not returning or awaiting the Task, it never got created.
+                        hash.ComputeHashAsync(stream);
+                    });
+            }
+        }
+
+        [Fact]
+        public void ComputeHashAsync_RequiresStream()
+        {
+            using (HashAlgorithm hash = new SummingTestHashAlgorithm())
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "inputStream",
+                    () =>
+                    {
+                        // Not returning or awaiting the Task, it never got created.
+                        hash.ComputeHashAsync(null);
+                    });
+            }
+        }
+
         private sealed class SummingTestHashAlgorithm : HashAlgorithm
         {
             private long _sum;
@@ -47,6 +121,19 @@ namespace System.Security.Cryptography.Hashing.Tests
             // Do not override HashCore(ReadOnlySpan) and TryHashFinal.  Consuming
             // test verifies that calling the base implementations invokes the array
             // implementations by verifying the right value is produced.
+        }
+
+        private class SlowPositionValueStream : PositionValueStream
+        {
+            public SlowPositionValueStream(int totalCount) : base(totalCount)
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                System.Threading.Thread.Sleep(1000);
+                return base.Read(buffer, offset, count);
+            }
         }
     }
 }
