@@ -64,6 +64,12 @@ def main(argv):
         return -1
 
     coreclr = args.coreclr
+    repoRoot = os.path.join(coreclr, '..', '..')
+
+    # Remove after repo consolidation
+    if not os.path.isfile(os.path.join(repoRoot, '.dotnet-runtime-placeholder')):
+        repoRoot = coreclr
+
     platform = args.os
     arch = args.arch
 
@@ -73,7 +79,7 @@ def main(argv):
 
     bootstrapFilename = ""
 
-    jitUtilsPath = os.path.join(coreclr, "jitutils")
+    jitUtilsPath = os.path.join(repoRoot, "jitutils")
 
     if os.path.isdir(jitUtilsPath):
         print("Deleting " + jitUtilsPath)
@@ -86,7 +92,7 @@ def main(argv):
 
     bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
 
-    bootstrapPath = os.path.join(coreclr, bootstrapFilename)
+    bootstrapPath = os.path.join(repoRoot, bootstrapFilename)
     urlretrieve(bootstrapUrl, bootstrapPath)
 
     if not os.path.isfile(bootstrapPath):
