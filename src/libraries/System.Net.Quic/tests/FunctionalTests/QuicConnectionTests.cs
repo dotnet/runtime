@@ -18,7 +18,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
-            using (QuicListener listener = new QuicListener(new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null, implementationProvider: QuicImplementationProviders.Mock))
+            using (QuicListener listener = new QuicListener(QuicImplementationProviders.Mock, new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null))
             {
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
@@ -26,7 +26,7 @@ namespace System.Net.Quic.Tests
                     Task.Run(async () =>
                         {
                             // Client code
-                            using (QuicConnection connection = new QuicConnection(listenEndPoint, sslClientAuthenticationOptions: null, implementationProvider: QuicImplementationProviders.Mock))
+                            using (QuicConnection connection = new QuicConnection(QuicImplementationProviders.Mock, listenEndPoint, sslClientAuthenticationOptions: null))
                             {
                                 await connection.ConnectAsync();
                                 using (QuicStream stream = connection.OpenBidirectionalStream())
@@ -55,11 +55,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestStreams()
         {
-            using (QuicListener listener = new QuicListener(new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null, implementationProvider: QuicImplementationProviders.Mock))
+            using (QuicListener listener = new QuicListener(QuicImplementationProviders.Mock, new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null))
             {
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
-                using (QuicConnection clientConnection = new QuicConnection(listenEndPoint, sslClientAuthenticationOptions: null, implementationProvider: QuicImplementationProviders.Mock))
+                using (QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.Mock, listenEndPoint, sslClientAuthenticationOptions: null))
                 {
                     Assert.False(clientConnection.Connected);
                     Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);

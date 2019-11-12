@@ -11,15 +11,17 @@ namespace System.Net.Quic
 {
     public sealed partial class QuicConnection : System.IDisposable
     {
-        public QuicConnection(IPEndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null, System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider = null) { }
+        public QuicConnection(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, IPEndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null) { }
     }
     public sealed partial class QuicListener : IDisposable
     {
-        public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions, System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider = null) { }
+        public QuicListener(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
     }
     public static class QuicImplementationProviders
     {
         public static System.Net.Quic.Implementations.QuicImplementationProvider Mock { get { throw null; } }
+
+        public static System.Net.Quic.Implementations.QuicImplementationProvider Default { get { throw null; } }
     }
 }
 namespace System.Net.Quic.Implementations

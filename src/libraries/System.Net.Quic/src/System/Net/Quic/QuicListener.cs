@@ -19,12 +19,12 @@ namespace System.Net.Quic
         /// <param name="listenEndPoint">The local endpoint to listen on.</param>
         /// <param name="sslServerAuthenticationOptions">TLS options for the listener.</param>
         public QuicListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
-            : this(listenEndPoint, sslServerAuthenticationOptions, implementationProvider: null)
+            : this(QuicImplementationProviders.Default, listenEndPoint, sslServerAuthenticationOptions)
         {
         }
 
         // !!! TEMPORARY: Remove "implementationProvider" before shipping
-        public QuicListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions, QuicImplementationProvider implementationProvider = null)
+        public QuicListener(QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
             _provider = implementationProvider.CreateListener(listenEndPoint, sslServerAuthenticationOptions);
         }
