@@ -23604,11 +23604,10 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                     if (fgStructTempNeedsExplicitZeroInit(lvaTable + tmpNum, block))
                     {
-                        tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp),              // Dest
-                                              gtNewIconNode(0),                           // Value
-                                              info.compCompHnd->getClassSize(structType), // Size
-                                              false,                                      // isVolatile
-                                              false);                                     // not copyBlock
+                        tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
+                                              gtNewIconNode(0),              // Value
+                                              false,                         // isVolatile
+                                              false);                        // not copyBlock
 
                         newStmt = gtNewStmt(tree, callILOffset);
                         fgInsertStmtAfter(block, afterStmt, newStmt);

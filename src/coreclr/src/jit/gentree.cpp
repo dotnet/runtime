@@ -6399,26 +6399,10 @@ GenTree* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 // Return Value:
 //    Returns a node representing the struct value at the given address.
 //
-// Notes:
-//    It will currently return a GT_OBJ node for any struct type, but may
-//    return a GT_IND or a non-indirection for a scalar type.
-
-GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 {
     var_types nodeType = impNormStructType(structHnd);
     assert(varTypeIsStruct(nodeType));
-
-    if (!varTypeIsStruct(nodeType))
-    {
-        if ((addr->gtOper == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == nodeType))
-        {
-            return addr->gtGetOp1();
-        }
-        else
-        {
-            return gtNewOperNode(GT_IND, nodeType, addr);
-        }
-    }
 
     GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, typGetObjLayout(structHnd));
 
@@ -6533,19 +6517,10 @@ GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CL
 {
     GenTree* lhs = gtNewStructVal(structHnd, dstAddr);
     GenTree* src = nullptr;
-    unsigned size;
 
-    if (lhs->OperIsBlk())
+    if (lhs->OperIs(GT_OBJ))
     {
-        size = lhs->AsBlk()->GetLayout()->GetSize();
-        if (lhs->OperGet() == GT_OBJ)
-        {
-            gtSetObjGcInfo(lhs->AsObj());
-        }
-    }
-    else
-    {
-        size = genTypeSize(lhs->gtType);
+        gtSetObjGcInfo(lhs->AsObj());
     }
 
     if (srcAddr->OperGet() == GT_ADDR)
@@ -6557,7 +6532,7 @@ GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CL
         src = gtNewOperNode(GT_IND, lhs->TypeGet(), srcAddr);
     }
 
-    GenTree* result = gtNewBlkOpNode(lhs, src, size, isVolatile, true);
+    GenTree* result = gtNewBlkOpNode(lhs, src, isVolatile, true);
     return result;
 }
 
@@ -6725,7 +6700,6 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
 // Arguments:
 //    dst           - Destination or target to copy to / initialize the buffer.
 //    srcOrFillVall - the size of the buffer to copy/initialize or zero, in the case of CpObj.
-//    size          - The size of the buffer or a class token (in the case of CpObj).
 //    isVolatile    - Whether this is a volatile memory operation or not.
 //    isCopyBlock   - True if this is a block copy (rather than a block init).
 //
@@ -6736,7 +6710,7 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
 //    If size is zero, the dst must be a GT_OBJ with the class handle.
 //    'dst' must be a block node or lclVar.
 //
-GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock)
+GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
 {
     assert(dst->OperIsBlk() || dst->OperIsLocal());
     if (isCopyBlock)
@@ -9500,10 +9474,6 @@ void Compiler::gtDispNodeName(GenTree* tree)
     {
         sprintf_s(bufp, sizeof(buf), " %s_ovfl%c", name, 0);
     }
-    else if (tree->OperIsBlk() && !tree->OperIsDynBlk())
-    {
-        sprintf_s(bufp, sizeof(buf), " %s(%d)", name, tree->AsBlk()->GetLayout()->GetSize());
-    }
     else
     {
         sprintf_s(bufp, sizeof(buf), " %s%c", name, 0);
@@ -9985,6 +9955,42 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
         if (tree->gtOper != GT_CAST)
         {
             printf(" %-6s", varTypeName(tree->TypeGet()));
+
+            if (varTypeIsStruct(tree->TypeGet()))
+            {
+                ClassLayout* layout = nullptr;
+
+                if (tree->OperIs(GT_BLK, GT_OBJ, GT_STORE_BLK, GT_STORE_OBJ))
+                {
+                    layout = tree->AsBlk()->GetLayout();
+                }
+                else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+                {
+                    LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVar());
+
+                    if (varTypeIsStruct(varDsc->TypeGet()))
+                    {
+                        layout = varDsc->GetLayout();
+                    }
+                }
+
+                if (layout != nullptr)
+                {
+                    if (layout->IsBlockLayout())
+                    {
+                        printf("<%u>", layout->GetSize());
+                    }
+                    else if (varTypeIsSIMD(tree->TypeGet()))
+                    {
+                        printf("<%s>", layout->GetClassName());
+                    }
+                    else
+                    {
+                        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
+                    }
+                }
+            }
+
             if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR)
             {
                 LclVarDsc* varDsc = &lvaTable[tree->AsLclVarCommon()->GetLclNum()];
@@ -10896,10 +10902,6 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" %s <- %s", varTypeName(toType), varTypeName(fromType));
         }
 
-        if (tree->gtOper == GT_OBJ && (tree->gtFlags & GTF_VAR_DEATH))
-        {
-            printf(" (last use)");
-        }
         if (tree->OperIsBlkOp())
         {
             if (tree->OperIsCopyBlkOp())

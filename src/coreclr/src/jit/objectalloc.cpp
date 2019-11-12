@@ -513,8 +513,6 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     // Initialize the object memory if necessary
     if (comp->fgStructTempNeedsExplicitZeroInit(comp->lvaTable + lclNum, block))
     {
-        unsigned int structSize = comp->lvaTable[lclNum].lvSize();
-
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)
         //   *  ASG       struct (init)
@@ -525,7 +523,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         GenTree*   tree        = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
         const bool isVolatile  = false;
         const bool isCopyBlock = false;
-        tree = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0), structSize, isVolatile, isCopyBlock);
+        tree                   = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0), isVolatile, isCopyBlock);
 
         Statement* newStmt = comp->gtNewStmt(tree);
 

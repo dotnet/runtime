@@ -3132,7 +3132,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             // GT_OBJ instead of GT_BLK nodes to avoid losing information about the actual vector type.
             GenTree* loDest = new (this, GT_BLK)
                 GenTreeBlk(GT_BLK, simdType, dstAddrLo, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* loAsg = gtNewBlkOpNode(loDest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+            GenTree* loAsg = gtNewBlkOpNode(loDest, simdTree,
                                             false, // not volatile
                                             true); // copyBlock
             loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
@@ -3141,7 +3141,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             simdTree        = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, baseType, size);
             GenTree* hiDest = new (this, GT_BLK)
                 GenTreeBlk(GT_BLK, simdType, dstAddrHi, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+            GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree,
                                             false, // not volatile
                                             true); // copyBlock
             hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
@@ -3181,7 +3181,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         GenTree* dest = new (this, GT_BLK)
             GenTreeBlk(GT_BLK, simdType, copyBlkDst, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
         dest->gtFlags |= GTF_GLOB_REF;
-        retVal = gtNewBlkOpNode(dest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+        retVal = gtNewBlkOpNode(dest, simdTree,
                                 false, // not volatile
                                 true); // copyBlock
         retVal->gtFlags |= ((simdTree->gtFlags | copyBlkDst->gtFlags) & GTF_ALL_EFFECT);

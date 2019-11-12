@@ -3364,15 +3364,14 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         dataOffset = eeGetArrayDataOffset(elementType);
     }
 
-    GenTree* dst = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
-    GenTree* blk = gtNewBlockVal(dst, blkSize);
-    GenTree* src = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
+    GenTree* dstAddr = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
+    GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
+    GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
 
-    return gtNewBlkOpNode(blk,     // dst
-                          src,     // src
-                          blkSize, // size
-                          false,   // volatil
-                          true);   // copyBlock
+    return gtNewBlkOpNode(dst,   // dst
+                          src,   // src
+                          false, // volatile
+                          true); // copyBlock
 }
 
 //------------------------------------------------------------------------
@@ -13669,7 +13668,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
-                        unsigned    size   = info.compCompHnd->getClassSize(resolvedToken.hClass);
 
                         if (impIsPrimitive(jitTyp))
                         {
@@ -13689,7 +13687,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             newObjThisPtr = gtNewBlkOpNode(newObjThisPtr,    // Dest
                                                            gtNewIconNode(0), // Value
-                                                           size,             // Size
                                                            false,            // isVolatile
                                                            false);           // not copyBlock
                             impAppendTree(newObjThisPtr, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
@@ -15630,7 +15627,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2  = gtNewIconNode(0);                                     // Value
                 op1  = impPopStack().val;                                    // Dest
                 op1  = gtNewBlockVal(op1, size);
-                op1  = gtNewBlkOpNode(op1, op2, size, (prefixFlags & PREFIX_VOLATILE) != 0, false);
+                op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 goto SPILL_APPEND;
 
             case CEE_INITBLK:
@@ -15654,7 +15651,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
                     size = 0;
                 }
-                op1 = gtNewBlkOpNode(op1, op2, size, (prefixFlags & PREFIX_VOLATILE) != 0, false);
+                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
 
                 goto SPILL_APPEND;
 
@@ -15687,7 +15684,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                 }
 
-                op1 = gtNewBlkOpNode(op1, op2, size, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:

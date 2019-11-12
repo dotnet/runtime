@@ -36,7 +36,7 @@ private:
     }
 
     // SIMD related
-    void RewriteSIMDOperand(LIR::Use& use, bool keepBlk);
+    void RewriteSIMDIndir(LIR::Use& use);
 
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,

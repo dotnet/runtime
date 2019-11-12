@@ -521,16 +521,12 @@ void Compiler::gsParamsToShadows()
         GenTree* opAssign = nullptr;
         if (type == TYP_STRUCT)
         {
-            CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
-            lvaSetStruct(shadowVar, clsHnd, false);
+            lvaSetStruct(shadowVar, varDsc->lvVerTypeInfo.GetClassHandle(), false);
 
-            src = gtNewOperNode(GT_ADDR, TYP_BYREF, src);
-            dst = gtNewOperNode(GT_ADDR, TYP_BYREF, dst);
+            opAssign = gtNewBlkOpNode(dst, src, false, true);
 
-            opAssign                            = gtNewCpObjNode(dst, src, clsHnd, false);
             lvaTable[shadowVar].lvIsMultiRegArg = lvaTable[lclNum].lvIsMultiRegArg;
             lvaTable[shadowVar].lvIsMultiRegRet = lvaTable[lclNum].lvIsMultiRegRet;
         }
@@ -579,11 +575,7 @@ void Compiler::gsParamsToShadows()
                 GenTree* opAssign = nullptr;
                 if (varDsc->TypeGet() == TYP_STRUCT)
                 {
-                    CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    src                         = gtNewOperNode(GT_ADDR, TYP_BYREF, src);
-                    dst                         = gtNewOperNode(GT_ADDR, TYP_BYREF, dst);
-
-                    opAssign = gtNewCpObjNode(dst, src, clsHnd, false);
+                    opAssign = gtNewBlkOpNode(dst, src, false, true);
                 }
                 else
                 {
