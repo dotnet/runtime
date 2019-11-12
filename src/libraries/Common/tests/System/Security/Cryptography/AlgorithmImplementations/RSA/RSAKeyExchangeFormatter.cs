@@ -23,7 +23,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ActiveIssue(40434, TestPlatforms.Windows)]
         [Fact]
         public static void VerifyDecryptKeyExchangePkcs1()
         {
@@ -54,7 +53,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ActiveIssue(40434, TestPlatforms.Windows)]
         [Fact]
         public static void TestKnownValuePkcs1()
         {

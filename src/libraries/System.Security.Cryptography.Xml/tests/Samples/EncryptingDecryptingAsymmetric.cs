@@ -82,7 +82,6 @@ namespace System.Security.Cryptography.Xml.Tests
         public void AsymmetricEncryptionRoundtripUseOAEP() =>
             AsymmetricEncryptionRoundtrip(useOAEP: true); // OAEP is recommended
 
-        [ActiveIssue(40759, TestPlatforms.Windows)]
         [Fact]
         public void AsymmetricEncryptionRoundtrip() =>
             AsymmetricEncryptionRoundtrip(useOAEP: false);

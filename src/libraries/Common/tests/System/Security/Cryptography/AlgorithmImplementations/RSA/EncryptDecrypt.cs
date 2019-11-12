@@ -483,7 +483,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ActiveIssue(40434, TestPlatforms.Windows)]
         [Fact]
         public void RsaDecryptPkcs1LeadingZero()
         {
