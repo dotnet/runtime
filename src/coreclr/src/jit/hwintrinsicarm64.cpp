@@ -260,9 +260,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
+    if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
     {
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
+
+        if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
+        {
+            arg = info.compCompHnd->getArgNext(arg);
+        }
 
         CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
         baseType                      = getBaseTypeAndSizeOfSIMDType(argClass);
@@ -370,6 +375,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
             return gtNewScalarHWIntrinsicNode(baseType, op1, intrinsic);
+        }
+
+        case NI_Crc32_ComputeCrc32:
+        case NI_Crc32_ComputeCrc32C:
+        case NI_Crc32_Arm64_ComputeCrc32:
+        case NI_Crc32_Arm64_ComputeCrc32C:
+        {
+            assert(numArgs == 2);
+
+            argType = JITtype2varType(
+                strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(argList), &argClass)));
+            op2 = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            retNode                                  = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
+            retNode->AsHWIntrinsic()->gtSIMDBaseType = baseType;
+            break;
         }
 
         default:
