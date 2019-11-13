@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
 
@@ -486,6 +487,147 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.NotNull(parsedObject.ParsedChild3);
             Assert.True(parsedObject.ParsedChild3.SequenceEqual(new int[] { 3, 3 }));
+        }
+
+        public class ClassWithNonNullEnumerableGetters
+        {
+            private string[] _array = null;
+            private List<string> _list = null;
+            private StringListWrapper _listWrapper = null;
+            // Immutable array is a struct.
+            private ImmutableArray<string> _immutableArray = default;
+            private ImmutableList<string> _immutableList = null;
+
+            public string[] Array
+            {
+                get => _array ?? new string[] { "-1" };
+                set { _array = value; }
+            }
+
+            public List<string> List
+            {
+                get => _list ?? new List<string> { "-1" };
+                set { _list = value; }
+            }
+
+            public StringListWrapper ListWrapper
+            {
+                get => _listWrapper ?? new StringListWrapper { "-1" };
+                set { _listWrapper = value; }
+            }
+
+            public ImmutableArray<string> MyImmutableArray
+            {
+                get => _immutableArray.IsDefault ? ImmutableArray.CreateRange(new List<string> { "-1" }) : _immutableArray;
+                set { _immutableArray = value; }
+            }
+
+            public ImmutableList<string> MyImmutableList
+            {
+                get => _immutableList ?? ImmutableList.CreateRange(new List<string> { "-1" });
+                set { _immutableList = value; }
+            }
+
+            internal object GetRawArray => _array;
+            internal object GetRawList => _list;
+            internal object GetRawListWrapper => _listWrapper;
+            internal object GetRawImmutableArray => _immutableArray;
+            internal object GetRawImmutableList => _immutableList;
+        }
+
+        [Fact]
+        public static void ClassWithNonNullEnumerableGettersIsParsed()
+        {
+            static void TestRoundTrip(ClassWithNonNullEnumerableGetters obj)
+            {
+                ClassWithNonNullEnumerableGetters roundtrip = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(JsonSerializer.Serialize(obj));
+
+                if (obj.Array != null)
+                {
+                    Assert.Equal(obj.Array.Length, roundtrip.Array.Length);
+                    Assert.Equal(obj.List.Count, roundtrip.List.Count);
+                    Assert.Equal(obj.ListWrapper.Count, roundtrip.ListWrapper.Count);
+                    Assert.Equal(obj.MyImmutableArray.Length, roundtrip.MyImmutableArray.Length);
+                    Assert.Equal(obj.MyImmutableList.Count, roundtrip.MyImmutableList.Count);
+
+                    if (obj.Array.Length > 0)
+                    {
+                        Assert.Equal(obj.Array[0], roundtrip.Array[0]);
+                        Assert.Equal(obj.List[0], roundtrip.List[0]);
+                        Assert.Equal(obj.ListWrapper[0], roundtrip.ListWrapper[0]);
+                        Assert.Equal(obj.MyImmutableArray[0], roundtrip.MyImmutableArray[0]);
+                        Assert.Equal(obj.MyImmutableList[0], roundtrip.MyImmutableList[0]);
+                    }
+                }
+                else
+                {
+                    Assert.Null(obj.GetRawArray);
+                    Assert.Null(obj.GetRawList);
+                    Assert.Null(obj.GetRawListWrapper);
+                    Assert.Null(obj.GetRawImmutableList);
+                    Assert.Null(roundtrip.GetRawArray);
+                    Assert.Null(roundtrip.GetRawList);
+                    Assert.Null(roundtrip.GetRawListWrapper);
+                    Assert.Null(roundtrip.GetRawImmutableList);
+                    Assert.Equal(obj.GetRawImmutableArray, roundtrip.GetRawImmutableArray);
+                }
+            }
+
+            const string inputJsonWithCollectionElements =
+                @"{
+                    ""Array"":[""1""],
+                    ""List"":[""2""],
+                    ""ListWrapper"":[""3""],
+                    ""MyImmutableArray"":[""4""],
+                    ""MyImmutableList"":[""5""]
+                }";
+
+            ClassWithNonNullEnumerableGetters obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithCollectionElements);
+            Assert.Equal(1, obj.Array.Length);
+            Assert.Equal("1", obj.Array[0]);
+
+            Assert.Equal(1, obj.List.Count);
+            Assert.Equal("2", obj.List[0]);
+
+            Assert.Equal(1, obj.ListWrapper.Count);
+            Assert.Equal("3", obj.ListWrapper[0]);
+
+            Assert.Equal(1, obj.MyImmutableArray.Length);
+            Assert.Equal("4", obj.MyImmutableArray[0]);
+
+            Assert.Equal(1, obj.MyImmutableList.Count);
+            Assert.Equal("5", obj.MyImmutableList[0]);
+
+            TestRoundTrip(obj);
+
+            const string inputJsonWithoutCollectionElements =
+                @"{
+                    ""Array"":[],
+                    ""List"":[],
+                    ""ListWrapper"":[],
+                    ""MyImmutableArray"":[],
+                    ""MyImmutableList"":[]
+                }";
+
+            obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithoutCollectionElements);
+            Assert.Equal(0, obj.Array.Length);
+            Assert.Equal(0, obj.List.Count);
+            Assert.Equal(0, obj.ListWrapper.Count);
+            Assert.Equal(0, obj.MyImmutableArray.Length);
+            Assert.Equal(0, obj.MyImmutableList.Count);
+            TestRoundTrip(obj);
+
+            // Skip ImmutableArray due to https://github.com/dotnet/corefx/issues/42399.
+            const string inputJsonWithNullCollections =
+                @"{
+                    ""Array"":null,
+                    ""List"":null,
+                    ""ListWrapper"":null,
+                    ""MyImmutableList"":null
+                }";
+
+            obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections);
+            TestRoundTrip(obj);
         }
     }
 }

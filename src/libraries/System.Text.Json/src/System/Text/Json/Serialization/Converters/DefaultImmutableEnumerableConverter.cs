@@ -102,19 +102,16 @@ namespace System.Text.Json.Serialization.Converters
             options.TryAddCreateRangeDelegate(delegateKey, createRangeDelegate);
         }
 
-        public static bool IsImmutableEnumerable(Type type, out bool IsImmutableArray)
+        public static bool IsImmutableEnumerable(Type type)
         {
             if (!type.IsGenericType)
             {
-                IsImmutableArray = false;
                 return false;
             }
 
             switch (type.GetGenericTypeDefinition().FullName)
             {
                 case ImmutableArrayGenericTypeName:
-                    IsImmutableArray = true;
-                    return true;
                 case ImmutableListGenericTypeName:
                 case ImmutableListGenericInterfaceTypeName:
                 case ImmutableStackGenericTypeName:
@@ -124,10 +121,8 @@ namespace System.Text.Json.Serialization.Converters
                 case ImmutableSortedSetGenericTypeName:
                 case ImmutableHashSetGenericTypeName:
                 case ImmutableSetGenericInterfaceTypeName:
-                    IsImmutableArray = false;
                     return true;
                 default:
-                    IsImmutableArray = false;
                     return false;
             }
         }

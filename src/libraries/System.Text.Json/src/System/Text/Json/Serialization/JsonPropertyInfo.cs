@@ -27,7 +27,6 @@ namespace System.Text.Json
         private JsonPropertyInfo _dictionaryValuePropertyPolicy;
 
         public bool CanBeNull { get; private set; }
-        public bool IsImmutableArray { get; private set; }
 
         public ClassType ClassType;
 
@@ -156,12 +155,10 @@ namespace System.Text.Json
                             DefaultImmutableDictionaryConverter.RegisterImmutableDictionary(RuntimePropertyType, ElementType, Options);
                             DictionaryConverter = s_jsonImmutableDictionaryConverter;
                         }
-                        else if (ClassType == ClassType.Enumerable && DefaultImmutableEnumerableConverter.IsImmutableEnumerable(RuntimePropertyType, out bool isImmutableArray))
+                        else if (ClassType == ClassType.Enumerable && DefaultImmutableEnumerableConverter.IsImmutableEnumerable(RuntimePropertyType))
                         {
                             DefaultImmutableEnumerableConverter.RegisterImmutableCollection(RuntimePropertyType, ElementType, Options);
                             EnumerableConverter = s_jsonImmutableEnumerableConverter;
-
-                            IsImmutableArray = isImmutableArray;
                         }
                     }
                 }

@@ -202,9 +202,8 @@ namespace System.Text.Json
 
                 state.Current.TempEnumerableValues = converterList;
 
-                // Clear the value if present to ensure we don't confuse tempEnumerableValues with the collection.
-                if (!jsonPropertyInfo.IsPropertyPolicy &&
-                    !state.Current.JsonPropertyInfo.IsImmutableArray)
+                // Clear the value if present to ensure we don't confuse TempEnumerableValues with the collection.
+                if (!jsonPropertyInfo.IsPropertyPolicy && jsonPropertyInfo.CanBeNull)
                 {
                     jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null);
                 }
@@ -242,8 +241,8 @@ namespace System.Text.Json
 
                 state.Current.TempDictionaryValues = converterDictionary;
 
-                // Clear the value if present to ensure we don't confuse tempEnumerableValues with the collection.
-                if (!jsonPropertyInfo.IsPropertyPolicy)
+                // Clear the value if present to ensure we don't confuse TempDictionaryValues with the collection.
+                if (!jsonPropertyInfo.IsPropertyPolicy && jsonPropertyInfo.CanBeNull)
                 {
                     jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null);
                 }

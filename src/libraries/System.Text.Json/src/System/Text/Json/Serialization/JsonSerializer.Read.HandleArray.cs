@@ -89,6 +89,7 @@ namespace System.Text.Json
             }
 
             IEnumerable value = ReadStackFrame.GetEnumerableValue(ref state.Current);
+            bool setPropertyDirectly = false;
 
             if (state.Current.TempEnumerableValues != null)
             {
@@ -103,6 +104,13 @@ namespace System.Text.Json
 
                 value = converter.CreateFromList(ref state, (IList)value, options);
                 state.Current.TempEnumerableValues = null;
+
+                // Since we used a converter, we just processed an array or an immutable collection. This means we created a new enumerable object.
+                // If we are processing an enumerable property, replace the current value of the property with the new instance.
+                if (state.Current.IsProcessingProperty(ClassType.Enumerable))
+                {
+                    setPropertyDirectly = true;
+                }
             }
             else if (state.Current.IsProcessingProperty(ClassType.Enumerable))
             {
@@ -132,7 +140,7 @@ namespace System.Text.Json
                 state.Pop();
             }
 
-            ApplyObjectToEnumerable(value, ref state);
+            ApplyObjectToEnumerable(value, ref state, setPropertyDirectly);
             return false;
         }
 
@@ -184,9 +192,7 @@ namespace System.Text.Json
                     JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
                     object currentEnumerable = jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
-                    if (currentEnumerable == null ||
-                        // ImmutableArray<T> is a struct, so default value won't be null.
-                        jsonPropertyInfo.IsImmutableArray)
+                    if (currentEnumerable == null)
                     {
                         jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                     }
@@ -266,9 +272,7 @@ namespace System.Text.Json
                     JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
                     object currentEnumerable = jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
-                    if (currentEnumerable == null ||
-                        // ImmutableArray<T> is a struct, so default value won't be null.
-                        jsonPropertyInfo.IsImmutableArray)
+                    if (currentEnumerable == null)
                     {
                         jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                     }
