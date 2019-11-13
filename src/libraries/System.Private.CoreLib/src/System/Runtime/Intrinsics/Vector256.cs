@@ -1846,7 +1846,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the upper 128-bits from.</param>
         /// <param name="value">The value of the lower 128-bits as a <see cref="Vector128{T}" />.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to <paramref name="value" /> and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
@@ -1914,7 +1914,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 128-bits from.</param>
         /// <param name="value">The value of the upper 128-bits as a <see cref="Vector128{T}" />.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to <paramref name="value" /> and the lower 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)

@@ -1765,7 +1765,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the upper 64-bits from.</param>
         /// <param name="value">The value of the lower 64-bits as a <see cref="Vector64{T}" />.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to the specified value and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to <paramref name="value" /> and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
@@ -1795,7 +1795,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 64-bits from.</param>
         /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <returns>A new <see cref="Vector128{T}" /> with the upper 64-bits set to <paramref name="value" /> and the lower 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
