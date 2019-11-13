@@ -67,6 +67,10 @@ namespace Mono.Linker.Steps
 						}
 					}
 				}
+				if (type.Namespace == "System.Reflection.Emit") {
+					foreach (var method in type.Methods)
+						Annotations.SetAction (method, MethodAction.ConvertToThrow);
+				}
 			}
 
 			if (FeatureGlobalization)
