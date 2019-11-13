@@ -45,7 +45,7 @@ namespace ILCompiler
                 throw new NotImplementedException();
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
-            else if (type.IsIntrinsic && (type.Name == "Vector`1") && (type.Namespace == "System.Numerics"))
+            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorOfTType(type))
             {
                 return _vectorFieldLayoutAlgorithm;
             }

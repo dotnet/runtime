@@ -106,5 +106,10 @@ namespace ILCompiler
                 type.Name == "Vector128`1" ||
                 type.Name == "Vector256`1");
         }
+
+        public static bool IsVectorOfTType(DefType type)
+        {
+            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+        }
     }
 }
