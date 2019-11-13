@@ -57,4 +57,4 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
     // *** should never get here ***
     EMIT_BREAKPOINT
 
-NESTED_END ExceptionHijackEnd, _TEXT
+NESTED_END_MARKED ExceptionHijack, _TEXT

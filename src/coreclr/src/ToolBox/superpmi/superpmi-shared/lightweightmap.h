@@ -240,7 +240,7 @@ public:
 
         // If we have RTTI, we can make this assert report the correct type. No RTTI, though, when
         // built with .NET Core, especially when built against the PAL.
-        AssertCodeMsg((ptr - rawData) == size, EXCEPTIONCODE_LWM, "%s - Ended with unexpected sizes %Ix != %x",
+        AssertCodeMsg((unsigned int)(ptr - rawData) == size, EXCEPTIONCODE_LWM, "%s - Ended with unexpected sizes %Ix != %x",
                       "Unknown type" /*typeid(_Item).name()*/, ptr - rawData, size);
     }
 
@@ -519,7 +519,7 @@ public:
             ptr += bufferLength * sizeof(unsigned char);
         }
 
-        AssertCodeMsg((ptr - rawData) == size, EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x",
+        AssertCodeMsg((unsigned int)(ptr - rawData) == size, EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x",
                       ptr - rawData, size);
     }
 
@@ -579,7 +579,7 @@ private:
             delete[] tItems;
         }
 
-        AssertCodeMsg((ptr - rawData) == size, EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x",
+        AssertCodeMsg((unsigned int)(ptr - rawData) == size, EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x",
                       ptr - rawData, size);
     }
 

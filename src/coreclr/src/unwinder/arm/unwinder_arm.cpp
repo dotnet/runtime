@@ -153,16 +153,18 @@ typedef struct _ARM_CONTEXT_OFFSETS
     UINT16      FpscrOffset;
 } ARM_CONTEXT_OFFSETS, *PARM_CONTEXT_OFFSETS;
 
+const UINT16 OFFSET_NONE = (UINT16)~0;
+
 static const ARM_CONTEXT_OFFSETS TrapFrameOffsets =
-{  8, 272, { 248,252,256,260, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, 72 },
-   { 184, 192, 200, 208, 216, 224, 232, 240, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
-     ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0}, 64, 68, 264,
+{  8, 272, { 248,252,256,260, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, 72 },
+   { 184, 192, 200, 208, 216, 224, 232, 240, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE,
+     OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE}, 64, 68, 264,
    268, 176};
 
 static const ARM_CONTEXT_OFFSETS MachineFrameOffsets =
-{  8,   8, {  ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0 },
-   {~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
-    ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0}, 0, ~0,  4, ~0 , ~0};
+{  8,   8, {  OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE },
+   {OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE,
+    OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE, OFFSET_NONE}, 0, OFFSET_NONE,  4, OFFSET_NONE , OFFSET_NONE};
 
 static const ARM_CONTEXT_OFFSETS ContextOffsets =
 { 16, 416, {   4,  8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52 },
@@ -322,7 +324,7 @@ Return Value:
     }
 
     for (RegIndex = 0; RegIndex < 13; RegIndex++) {
-        if (Offsets->RegOffset[RegIndex] != (UINT16)~0) {
+        if (Offsets->RegOffset[RegIndex] != OFFSET_NONE) {
             SourceAddress = ContextRecord->Sp + Offsets->RegOffset[RegIndex];
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
             CONTEXT_REGISTER(ContextRecord, RegIndex) =
@@ -331,7 +333,7 @@ Return Value:
     }
 
     for (RegIndex = 0; RegIndex < 32; RegIndex++) {
-        if (Offsets->FpRegOffset[RegIndex] != (UINT16)~0) {
+        if (Offsets->FpRegOffset[RegIndex] != OFFSET_NONE) {
             SourceAddress = ContextRecord->Sp + Offsets->FpRegOffset[RegIndex];
             UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
             ContextRecord->D[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -350,11 +352,11 @@ Return Value:
     // Link register and PC next
     //
 
-    if (Offsets->LrOffset != (UINT16)~0) {
+    if (Offsets->LrOffset != OFFSET_NONE) {
         SourceAddress = ContextRecord->Sp + Offsets->LrOffset;
         ContextRecord->Lr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
     }
-    if (Offsets->PcOffset != (UINT16)~0) {
+    if (Offsets->PcOffset != OFFSET_NONE) {
         SourceAddress = ContextRecord->Sp + Offsets->PcOffset;
         ContextRecord->Pc = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
 
@@ -370,7 +372,7 @@ Return Value:
     // Finally the stack pointer
     //
 
-    if (Offsets->SpOffset != (UINT16)~0) {
+    if (Offsets->SpOffset != OFFSET_NONE) {
         SourceAddress = ContextRecord->Sp + Offsets->SpOffset;
         ContextRecord->Sp = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
     } else {

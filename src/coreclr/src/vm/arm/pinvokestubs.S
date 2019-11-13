@@ -73,7 +73,7 @@
 
     NESTED_END \__PInvokeGenStubFuncName, _TEXT
 
-.endmacro
+.endm
 
 // ------------------------------------------------------------------
 // IN:
@@ -105,7 +105,7 @@
         str     lr, [r4, #InlinedCallFrame__m_pCallerReturnAddress]
         str     r9, [r4, #InlinedCallFrame__m_pSPAfterProlog]
 
-        ;; r0 = GetThread()
+        // r0 = GetThread()
         bl      C_FUNC(GetThread)
         str     r0, [r4, #InlinedCallFrame__m_pThread]
 

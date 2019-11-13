@@ -345,7 +345,7 @@ struct VTableCallHolder
         return 6 + indirectionsSize + 4;
     }
 
-    static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry)
+    static VTableCallHolder* FromVTableCallEntry(PCODE entry)
     {
         LIMITED_METHOD_CONTRACT;
         return (VTableCallHolder*)(entry & ~THUMB_CODE);

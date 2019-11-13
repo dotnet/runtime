@@ -1092,7 +1092,7 @@ LOCAL_LABEL(CallCppHelper3):
 
 LOCAL_LABEL(AssigningNull):
     // Assigning null doesn't need write barrier
-    adds    r0, r1, LSL #2               // r0 = r0 + (r1 x 4) = array->m_array[idx]
+    adds    r0, r0, r1, LSL #2           // r0 = r0 + (r1 x 4) = array->m_array[idx]
     str     r2, [r0, #PtrArray__m_Array] // array->m_array[idx] = val
     bx      lr
 
@@ -1146,7 +1146,7 @@ LOCAL_LABEL(DoWrite):
 
     // Setup args for JIT_WriteBarrier. r0 = &array->m_array[idx]// r1 = val
     adds    r0, #PtrArray__m_Array     // r0 = &array->m_array
-    adds    r0, r1, LSL #2
+    adds    r0, r0, r1, LSL #2
     mov     r1, r2                     // r1 = val
 
     // Branch to the write barrier (which is already correctly overwritten with

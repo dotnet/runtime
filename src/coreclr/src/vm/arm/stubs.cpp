@@ -951,7 +951,7 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
 // instruction halfword to which it applies. For thumb-2 encodings the offset must be computed before emitting
 // the first of the halfwords.
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (WORD)(offsetof(DispatchStub, _field) - (offsetof(DispatchStub, _entryPoint[n + 2]) & 0xfffffffc))
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(DispatchStub, _field) - ((offsetof(DispatchStub, _entryPoint) + sizeof(*DispatchStub::_entryPoint) * (n + 2)) & 0xfffffffc))
 
     // r0 : object. It can be null as well.
     // when it is null the code causes an AV. This AV is seen by the VM's personality routine
@@ -1033,7 +1033,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
 // instruction halfword to which it applies. For thumb-2 encodings the offset must be computed before emitting
 // the first of the halfwords.
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _resolveEntryPoint[n + 2]) & 0xfffffffc))
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _resolveEntryPoint) + sizeof(*ResolveStub::_resolveEntryPoint) * (n + 2)) & 0xfffffffc))
 
     // ldr r12, [r0 + #Object.m_pMethTab]
     _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_WORD;
@@ -1168,7 +1168,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _ASSERTE((n & 1) == 0);
 
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _slowEntryPoint[n + 2]) & 0xfffffffc))
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _slowEntryPoint) + sizeof(*ResolveStub::_slowEntryPoint) * (n + 2)) & 0xfffffffc))
 
     n = 0;
 
@@ -1196,7 +1196,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _ASSERTE((n & 1) == 0);
 
 #undef PC_REL_OFFSET
-#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint[n + 2]) & 0xfffffffc))
+#define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)) & 0xfffffffc))
 
     n = 0;
 
@@ -1233,7 +1233,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
 
     // resolveEntryPoint:
     // b _resolveEntryPoint
-    offset = (WORD)(offsetof(ResolveStub, _resolveEntryPoint) - offsetof(ResolveStub, _failEntryPoint[n + 2]));
+    offset = (WORD)(offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, _failEntryPoint) + sizeof(*ResolveStub::_failEntryPoint) * (n + 2)));
     _ASSERTE((offset & 1) == 0);
     offset = (offset >> 1) & 0x07ff;
     _stub._failEntryPoint[n++] = 0xe000 | offset;
@@ -1334,14 +1334,14 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     // Save argument registers around the GetThread call. Don't bother with using ldm/stm since this inefficient path anyway.
     for (int reg = 0; reg < 4; reg++)
-        psl->ThumbEmitStoreRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
+        psl->ThumbEmitStoreRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 #endif
 
     psl->ThumbEmitGetThread(regThread);
 
 #ifdef FEATURE_PAL
     for (int reg = 0; reg < 4; reg++)
-        psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r[reg]));
+        psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 #endif
 
     // mov [regFrame + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
@@ -2013,7 +2013,7 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         // 1) First loop will emit the moves that have stack location as the target
         // 2) Second loop will emit moves that have register as the target.
         DWORD idxCurrentLoopBegin = 0, idxCurrentLoopEnd = cArgDescriptors;
-        if (idxFirstMoveToStack != -1)
+        if (idxFirstMoveToStack != (DWORD)-1)
         {
             _ASSERTE(idxFirstMoveToStack < cArgDescriptors);
             idxCurrentLoopBegin = idxFirstMoveToStack;
@@ -2891,7 +2891,7 @@ void StubLinkerCPU::EmitStubLinkFrame(TADDR pFrameVptr, int offsetOfFrame, int o
     // reload argument registers that could have been corrupted by the call
     for (int reg = 0; reg < 4; reg++)
         ThumbEmitLoadRegIndirect(ThumbReg(reg), ThumbReg(4),
-            offsetOfTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, r[reg]));
+            offsetOfTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, r) +  sizeof(*ArgumentRegisters::r) * reg);
 #endif
 
     ThumbEmitLoadRegIndirect(ThumbReg(6), ThumbReg(5), Thread::GetOffsetOfCurrentFrame());

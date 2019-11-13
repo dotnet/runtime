@@ -391,7 +391,7 @@ DumpWriter::WriteNTFileInfo()
 
     for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
     {
-        struct NTFileEntry entry { image.StartAddress(), image.EndAddress(), image.Offset() / pageSize };
+        struct NTFileEntry entry { (unsigned long)image.StartAddress(), (unsigned long)image.EndAddress(), (unsigned long)(image.Offset() / pageSize) };
         if (!WriteData(&entry, sizeof(entry))) {
             return false;
         }

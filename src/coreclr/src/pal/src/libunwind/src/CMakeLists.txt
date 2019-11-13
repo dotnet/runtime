@@ -31,11 +31,11 @@ endif()
 if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     # Ensure that the remote and local unwind code can reside in the same binary without name clashing
     add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
-    # Disable warning in asm: use of SP or PC in the list is deprecated
-    add_compile_options(-Wno-inline-asm)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
+        # Disable warning in asm: use of SP or PC in the list is deprecated
+        add_compile_options(-Wno-inline-asm)
     endif()
     # Disable warning for a bug in the libunwind source src/arm/Gtrace.c:529, but not in code that we exercise
     add_compile_options(-Wno-implicit-function-declaration)

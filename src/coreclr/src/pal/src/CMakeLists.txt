@@ -173,7 +173,9 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if(PAL_CMAKE_PLATFORM_ARCH_ARM)
-  set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
+  endif()
 endif(PAL_CMAKE_PLATFORM_ARCH_ARM)
 
 set(SOURCES

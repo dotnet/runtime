@@ -149,7 +149,7 @@ public:
     static int AlignOf(PrecodeType t)
     {
         SUPPORTS_DAC;
-        int align = PRECODE_ALIGNMENT;
+        unsigned int align = PRECODE_ALIGNMENT;
 
 #if defined(_TARGET_X86_) && defined(HAS_FIXUP_PRECODE)
         // Fixup precodes has to be aligned to allow atomic patching
