@@ -51,16 +51,18 @@
   <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'" />
 
   <PropertyGroup>
-    <DefaultSubsetCategories>libraries-installer</DefaultSubsetCategories>
+    <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
+    <DefaultCoreClrSubsets>all</DefaultCoreClrSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
     <_subsetCategory Condition="'$(SubsetCategory)' == ''">$(DefaultSubsetCategories)</_subsetCategory>
     <_subset Condition="'$(Subset)' != ''">$(Subset.ToLowerInvariant())</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(DefaultInstallerSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(_subset)$(DefaultLibrariesSubsets)</_subset>
+    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('coreclr'))">$(_subset)$(DefaultCoreClrSubsets)</_subset>
   </PropertyGroup>
 
   <ItemGroup>
@@ -69,6 +71,9 @@
 
     <!-- Libraries -->
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
+    
+    <!-- CoreClr -->
+    <SubsetName Include="All" Category="CoreClr" Description="The .NET runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -89,6 +94,11 @@
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('all'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)build.proj" />
+  </ItemGroup>
+
+  <!-- Libraries sets -->
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" />
   </ItemGroup>
 
   <!-- Installer sets -->
