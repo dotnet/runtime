@@ -378,7 +378,6 @@ struct BasicBlock : private LIR::Range
 
     unsigned bbNum; // the block's number
 
-    unsigned bbPostOrderNum; // the block's post order number in the graph.
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
 
@@ -874,6 +873,21 @@ struct BasicBlock : private LIR::Range
 #define BBCT_FILTER_HANDLER 0xFFFFFFFF
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
+    // The following fields are used for loop detection
+    typedef unsigned char loopNumber;
+    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
+
+    // This is the label a loop gets as part of the second, reachability-based
+    // loop discovery mechanism.  This is apparently only used for debugging.
+    // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
+    INDEBUG(loopNumber bbLoopNum;) // set to 'n' for a loop #n header
+
+    loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
+                             // or else NOT_IN_LOOP if this block is not in a loop.
+
+#define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
+#define LOOP_MASK_TP unsigned // must be big enough for a mask
+
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
     union {
         unsigned short bbStkDepth; // stack depth on entry
@@ -894,8 +908,8 @@ struct BasicBlock : private LIR::Range
     BlockSet    bbReach; // Set of all blocks that can reach this one
     BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
                          // Dominator) used to compute the dominance tree.
-    unsigned bbDfsNum;   // The index of this block in DFS reverse post order
-                         // relative to the flow graph.
+
+    unsigned bbPostOrderNum; // the block's post order number in the graph.
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
@@ -994,24 +1008,6 @@ struct BasicBlock : private LIR::Range
     verTypeVal* bbTypesIn;  // list of variable types on  input
     verTypeVal* bbTypesOut; // list of variable types on output
 #endif                      // VERIFIER
-
-    /* The following fields used for loop detection */
-
-    typedef unsigned char loopNumber;
-    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
-
-#ifdef DEBUG
-    // This is the label a loop gets as part of the second, reachability-based
-    // loop discovery mechanism.  This is apparently only used for debugging.
-    // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    loopNumber bbLoopNum; // set to 'n' for a loop #n header
-#endif                    // DEBUG
-
-    loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
-                             // or else NOT_IN_LOOP if this block is not in a loop.
-
-#define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
-#define LOOP_MASK_TP unsigned // must be big enough for a mask
 
 //-------------------------------------------------------------------------
 
@@ -1337,20 +1333,6 @@ struct DfsBlockEntry
     }
 };
 
-struct DfsNumEntry
-{
-    DfsStackState dfsStackState; // The pre/post traversal action for this entry
-    unsigned      dfsNum;        // The corresponding block number for the action
-
-    DfsNumEntry() : dfsStackState(DSS_Invalid), dfsNum(0)
-    {
-    }
-
-    DfsNumEntry(DfsStackState state, unsigned bbNum) : dfsStackState(state), dfsNum(bbNum)
-    {
-    }
-};
-
 /*****************************************************************************
  *
  *  The following call-backs supplied by the client; it's used by the code
@@ -1450,6 +1432,14 @@ public:
         m_pos.Advance(comp, m_block);
         return succ;
     }
+};
+
+// Simple dominator tree node that keeps track of a node's first child and next sibling.
+// The parent is provided by BasicBlock::bbIDom.
+struct DomTreeNode
+{
+    BasicBlock* firstChild;
+    BasicBlock* nextSibling;
 };
 
 /*****************************************************************************/

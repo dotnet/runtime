@@ -107,10 +107,6 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        // Clear post-order numbers and SSA numbers; SSA construction will overwrite these,
-        // but only for reachable code, so clear them to avoid analysis getting confused
-        // by stale annotations in unreachable code.
-        blk->bbPostOrderNum = 0;
         for (Statement* stmt : blk->Statements())
         {
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
@@ -137,10 +133,6 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
     , m_allocator(pCompiler->getAllocator(CMK_SSA))
     , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
     , m_renameStack(m_allocator, pCompiler->lvaCount)
-#ifdef SSA_FEATURE_DOMARR
-    , m_pDomPreOrder(nullptr)
-    , m_pDomPostOrder(nullptr)
-#endif
 {
 }
 
@@ -242,13 +234,6 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 {
     JITDUMP("[SsaBuilder::ComputeImmediateDom]\n");
 
-    // TODO-Cleanup: We currently have two dominance computations happening.  We should unify them; for
-    // now, at least forget the results of the first.
-    for (BasicBlock* blk = m_pCompiler->fgFirstBB; blk != nullptr; blk = blk->bbNext)
-    {
-        blk->bbIDom = nullptr;
-    }
-
     // Add entry point to visited as its IDom is NULL.
     BitVecOps::ClearD(&m_visitedTraits, m_visited);
     BitVecOps::AddElemD(&m_visitedTraits, m_visited, m_pCompiler->fgFirstBB->bbNum);
@@ -321,157 +306,6 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
         }
     }
 }
-
-#ifdef SSA_FEATURE_DOMARR
-/**
- * Walk the DOM tree and compute pre and post-order arrangement of the tree.
- *
- * @param curBlock The current block being operated on at some recursive level.
- * @param domTree The DOM tree as a map (block -> set of child blocks.)
- * @param preIndex The initial index given to the first block visited in pre order.
- * @param postIndex The initial index given to the first block visited in post order.
- *
- * @remarks This would help us answer queries such as "a dom b?" in constant time.
- *          For example, if a dominated b, then Pre[a] < Pre[b] but Post[a] > Post[b]
- */
-void SsaBuilder::DomTreeWalk(BasicBlock* curBlock, BlkToBlkVectorMap* domTree, int* preIndex, int* postIndex)
-{
-    JITDUMP("[SsaBuilder::DomTreeWalk] block %s:\n", curBlock->dspToString());
-
-    // Store the order number at the block number in the pre order list.
-    m_pDomPreOrder[curBlock->bbNum] = *preIndex;
-    ++(*preIndex);
-
-    BlkVector* domChildren = domTree->LookupPointer(curBlock);
-    if (domChildren != nullptr)
-    {
-        for (BasicBlock* child : *domChildren)
-        {
-            if (curBlock != child)
-            {
-                DomTreeWalk(child, domTree, preIndex, postIndex);
-            }
-        }
-    }
-
-    // Store the order number at the block number in the post order list.
-    m_pDomPostOrder[curBlock->bbNum] = *postIndex;
-    ++(*postIndex);
-}
-#endif
-
-/**
- * Using IDom of each basic block, add a mapping from block->IDom -> block.
- * @param pCompiler Compiler instance
- * @param block The basic block that will become the child node of it's iDom.
- * @param domTree The output domTree which will hold the mapping "block->bbIDom" -> "block"
- *
- */
-/* static */
-void SsaBuilder::ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block, BlkToBlkVectorMap* domTree)
-{
-    BasicBlock* bbIDom = block->bbIDom;
-
-    // bbIDom for (only) fgFirstBB will be NULL.
-    if (bbIDom == nullptr)
-    {
-        return;
-    }
-
-    // If the bbIDom map key doesn't exist, create one.
-    BlkVector* domChildren = domTree->Emplace(bbIDom, domTree->GetAllocator());
-
-    DBG_SSA_JITDUMP("Inserting " FMT_BB " as dom child of " FMT_BB ".\n", block->bbNum, bbIDom->bbNum);
-    // Insert the block into the block's set.
-    domChildren->push_back(block);
-}
-
-/**
- * Using IDom of each basic block, compute the whole tree. If a block "b" has IDom "i",
- * then, block "b" is dominated by "i". The mapping then is i -> { ..., b, ... }, in
- * other words, "domTree" is a tree represented by nodes mapped to their children.
- *
- * @param pCompiler Compiler instance
- * @param domTree The output domTree which will hold the mapping "block->bbIDom" -> "block"
- *
- */
-/* static */
-void SsaBuilder::ComputeDominators(Compiler* pCompiler, BlkToBlkVectorMap* domTree)
-{
-    JITDUMP("*************** In SsaBuilder::ComputeDominators(Compiler*, ...)\n");
-
-    // Construct the DOM tree from bbIDom
-    for (BasicBlock* block = pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
-    {
-        ConstructDomTreeForBlock(pCompiler, block, domTree);
-    }
-
-    DBEXEC(pCompiler->verboseSsa, DisplayDominators(domTree));
-}
-
-/**
- * Compute the DOM tree into a map(block -> set of blocks) adjacency representation.
- *
- * Using IDom of each basic block, compute the whole tree. If a block "b" has IDom "i",
- * then, block "b" is dominated by "i". The mapping then is i -> { ..., b, ... }
- *
- * @param postOrder The array of basic blocks arranged in postOrder.
- * @param count The size of valid elements in the postOrder array.
- * @param domTree A map of (block -> set of blocks) tree representation that is empty.
- *
- */
-void SsaBuilder::ComputeDominators(BasicBlock** postOrder, int count, BlkToBlkVectorMap* domTree)
-{
-    JITDUMP("*************** In SsaBuilder::ComputeDominators(BasicBlock** postOrder, int count, ...)\n");
-
-    // Construct the DOM tree from bbIDom
-    for (int i = 0; i < count; ++i)
-    {
-        ConstructDomTreeForBlock(m_pCompiler, postOrder[i], domTree);
-    }
-
-    DBEXEC(m_pCompiler->verboseSsa, DisplayDominators(domTree));
-
-#ifdef SSA_FEATURE_DOMARR
-    // Allocate space for constant time computation of (a DOM b?) query.
-    unsigned bbArrSize = m_pCompiler->fgBBNumMax + 1; // We will use 1-based bbNums as indices into these arrays, so
-                                                      // add 1.
-    m_pDomPreOrder  = new (&m_allocator) int[bbArrSize];
-    m_pDomPostOrder = new (&m_allocator) int[bbArrSize];
-
-    // Initial counters.
-    int preIndex  = 0;
-    int postIndex = 0;
-
-    // Populate the pre and post order of the tree.
-    DomTreeWalk(m_pCompiler->fgFirstBB, domTree, &preIndex, &postIndex);
-#endif
-}
-
-#ifdef DEBUG
-
-/**
- * Display the DOM tree.
- *
- * @param domTree A map of (block -> set of blocks) tree representation.
- */
-/* static */
-void SsaBuilder::DisplayDominators(BlkToBlkVectorMap* domTree)
-{
-    printf("After computing dominator tree: \n");
-    for (BlkToBlkVectorMap::KeyIterator nodes = domTree->Begin(); !nodes.Equal(domTree->End()); ++nodes)
-    {
-        printf(FMT_BB " := {", nodes.Get()->bbNum);
-        int index = 0;
-        for (BasicBlock* child : nodes.GetValue())
-        {
-            printf("%s" FMT_BB, (index++ == 0) ? "" : ",", child->bbNum);
-        }
-        printf("}\n");
-    }
-}
-
-#endif // DEBUG
 
 //------------------------------------------------------------------------
 // ComputeDominanceFrontiers: Compute flow graph dominance frontiers
@@ -1503,14 +1337,11 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 //------------------------------------------------------------------------
 // RenameVariables: Rename all definitions and uses within the compiled method.
 //
-// Arguments:
-//    domTree - The dominator tree
-//
 // Notes:
 //    See Briggs, Cooper, Harvey and Simpson "Practical Improvements to the Construction
 //    and Destruction of Static Single Assignment Form."
 //
-void SsaBuilder::RenameVariables(BlkToBlkVectorMap* domTree)
+void SsaBuilder::RenameVariables()
 {
     JITDUMP("*************** In SsaBuilder::RenameVariables()\n");
 
@@ -1566,59 +1397,32 @@ void SsaBuilder::RenameVariables(BlkToBlkVectorMap* domTree)
         }
     }
 
-    struct BlockWork
+    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor>
     {
-        BasicBlock* m_blk;
-        bool        m_processed; // Whether the this block have already been processed: its var renamed, and children
-                                 // processed.
-                                 // If so, awaiting only BlockPopStacks.
-        BlockWork(BasicBlock* blk, bool processed = false) : m_blk(blk), m_processed(processed)
+        SsaBuilder*     m_builder;
+        SsaRenameState* m_renameStack;
+
+    public:
+        SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_builder(builder), m_renameStack(renameStack)
         {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            // TODO-Cleanup: Move these functions from SsaBuilder to this class.
+            m_builder->BlockRenameVariables(block);
+            m_builder->AddPhiArgsToSuccessors(block);
+        }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_renameStack->PopBlockStacks(block);
         }
     };
-    typedef jitstd::vector<BlockWork> BlockWorkStack;
 
-    BlockWorkStack* blocksToDo = new (m_allocator) BlockWorkStack(m_allocator);
-    blocksToDo->push_back(BlockWork(m_pCompiler->fgFirstBB)); // Probably have to include other roots of dom tree.
-
-    while (blocksToDo->size() != 0)
-    {
-        BlockWork blockWrk = blocksToDo->back();
-        blocksToDo->pop_back();
-        BasicBlock* block = blockWrk.m_blk;
-
-        DBG_SSA_JITDUMP("[SsaBuilder::RenameVariables](" FMT_BB ", processed = %d)\n", block->bbNum,
-                        blockWrk.m_processed);
-
-        if (!blockWrk.m_processed)
-        {
-            // Push the block back on the stack with "m_processed" true, to record the fact that when its children have
-            // been (recursively) processed, we still need to call BlockPopStacks on it.
-            blocksToDo->push_back(BlockWork(block, true));
-
-            BlockRenameVariables(block);
-
-            // Add arguments to PHI nodes in block's successors.
-            AddPhiArgsToSuccessors(block);
-
-            // Recurse with the block's DOM children.
-            BlkVector* domChildren = domTree->LookupPointer(block);
-            if (domChildren != nullptr)
-            {
-                for (BasicBlock* child : *domChildren)
-                {
-                    DBG_SSA_JITDUMP("[SsaBuilder::RenameVariables](pushing dom child " FMT_BB ")\n", child->bbNum);
-                    blocksToDo->push_back(BlockWork(child));
-                }
-            }
-        }
-        else
-        {
-            // Done, pop all SSA numbers pushed in this block.
-            m_renameStack.PopBlockStacks(block);
-            DBG_SSA_JITDUMP("[SsaBuilder::RenameVariables] done with " FMT_BB "\n", block->bbNum);
-        }
-    }
+    SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
+    visitor.WalkTree();
 }
 
 #ifdef DEBUG
@@ -1710,6 +1514,14 @@ void SsaBuilder::Build()
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
+    // TODO-Cleanup: We currently have two dominance computations happening.  We should unify them; for
+    // now, at least forget the results of the first.
+    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        block->bbIDom         = nullptr;
+        block->bbPostOrderNum = 0;
+    }
+
     // Topologically sort the graph.
     int count = TopologicalSort(postOrder, blockCount);
     JITDUMP("[SsaBuilder] Topologically sorted the graph.\n");
@@ -1718,9 +1530,7 @@ void SsaBuilder::Build()
     // Compute IDom(b).
     ComputeImmediateDom(postOrder, count);
 
-    // Compute the dominator tree.
-    BlkToBlkVectorMap* domTree = new (m_allocator) BlkToBlkVectorMap(m_allocator);
-    ComputeDominators(postOrder, count, domTree);
+    m_pCompiler->fgSsaDomTree = m_pCompiler->fgBuildDomTree();
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.
@@ -1737,7 +1547,7 @@ void SsaBuilder::Build()
     InsertPhiFunctions(postOrder, count);
 
     // Rename local variables and collect UD information for each ssa var.
-    RenameVariables(domTree);
+    RenameVariables();
     EndPhase(PHASE_BUILD_SSA_RENAME);
 
 #ifdef DEBUG

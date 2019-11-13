@@ -2395,8 +2395,8 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
 
             unsigned invCount = fgBBcount - *count + 1;
             assert(1 <= invCount && invCount <= fgBBNumMax);
-            fgBBInvPostOrder[invCount] = currentBlock;
-            currentBlock->bbDfsNum     = invCount;
+            fgBBInvPostOrder[invCount]   = currentBlock;
+            currentBlock->bbPostOrderNum = invCount;
             ++(*count);
         }
     }
@@ -2439,13 +2439,13 @@ void Compiler::fgComputeDoms()
     flowList   flRoot;
     BasicBlock bbRoot;
 
-    bbRoot.bbPreds  = nullptr;
-    bbRoot.bbNum    = 0;
-    bbRoot.bbIDom   = &bbRoot;
-    bbRoot.bbDfsNum = 0;
-    bbRoot.bbFlags  = 0;
-    flRoot.flNext   = nullptr;
-    flRoot.flBlock  = &bbRoot;
+    bbRoot.bbPreds        = nullptr;
+    bbRoot.bbNum          = 0;
+    bbRoot.bbIDom         = &bbRoot;
+    bbRoot.bbPostOrderNum = 0;
+    bbRoot.bbFlags        = 0;
+    flRoot.flNext         = nullptr;
+    flRoot.flBlock        = &bbRoot;
 
     fgBBInvPostOrder[0] = &bbRoot;
 
@@ -2575,7 +2575,7 @@ void Compiler::fgComputeDoms()
     }
 #endif
 
-    fgBuildDomTree();
+    fgNumberDomTree(fgBuildDomTree());
 
     fgModified   = false;
     fgDomBBcount = fgBBcount;
@@ -2585,171 +2585,91 @@ void Compiler::fgComputeDoms()
     fgDomsComputed = true;
 }
 
-void Compiler::fgBuildDomTree()
+//------------------------------------------------------------------------
+// fgBuildDomTree: Build the dominator tree for the current flowgraph.
+//
+// Returns:
+//    An array of dominator tree nodes, indexed by BasicBlock::bbNum.
+//
+// Notes:
+//    Immediate dominators must have already been computed in BasicBlock::bbIDom
+//    before calling this.
+//
+DomTreeNode* Compiler::fgBuildDomTree()
 {
-    unsigned    i;
-    BasicBlock* block;
+    JITDUMP("\nInside fgBuildDomTree\n");
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nInside fgBuildDomTree\n");
-    }
-#endif // DEBUG
-
-    // domTree :: The dominance tree represented using adjacency lists. We use BasicBlockList to represent edges.
-    // Indexed by basic block number.
-    unsigned         bbArraySize = fgBBNumMax + 1;
-    BasicBlockList** domTree     = new (this, CMK_DominatorMemory) BasicBlockList*[bbArraySize];
-
-    fgDomTreePreOrder  = new (this, CMK_DominatorMemory) unsigned[bbArraySize];
-    fgDomTreePostOrder = new (this, CMK_DominatorMemory) unsigned[bbArraySize];
+    unsigned     bbArraySize = fgBBNumMax + 1;
+    DomTreeNode* domTree     = new (this, CMK_DominatorMemory) DomTreeNode[bbArraySize];
 
     // Initialize all the data structures.
-    for (i = 0; i < bbArraySize; ++i)
+    for (unsigned i = 0; i < bbArraySize; ++i)
     {
-        domTree[i]           = nullptr;
-        fgDomTreePreOrder[i] = fgDomTreePostOrder[i] = 0;
+        domTree[i].firstChild  = nullptr;
+        domTree[i].nextSibling = nullptr;
     }
 
-    // Build the dominance tree.
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    BasicBlock* imaginaryRoot = fgFirstBB->bbIDom;
+
+    if (imaginaryRoot != nullptr)
     {
-        // If the immediate dominator is not the imaginary root (bbRoot)
-        // we proceed to append this block to the children of the dominator node.
-        if (block->bbIDom->bbNum != 0)
+        // If the first block has a dominator then this must be the imaginary entry block added
+        // by fgComputeDoms, it is not actually part of the flowgraph and should have number 0.
+        assert(imaginaryRoot->bbNum == 0);
+        assert(imaginaryRoot->bbIDom == imaginaryRoot);
+
+        // Clear the imaginary dominator to turn the tree back to a forest.
+        fgFirstBB->bbIDom = nullptr;
+    }
+
+    // If the imaginary root is present then we'll need to create a forest instead of a tree.
+    // Forest roots are chained via DomTreeNode::nextSibling and we keep track of this list's
+    // tail in order to append to it. The head of the list if fgFirstBB, by construction.
+    BasicBlock* rootListTail = fgFirstBB;
+
+    // Traverse the entire block list to build the dominator tree. Skip fgFirstBB
+    // as it is always a root of the dominator forest.
+    for (BasicBlock* block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+    {
+        BasicBlock* parent = block->bbIDom;
+
+        if (parent != imaginaryRoot)
         {
-            int bbNum      = block->bbIDom->bbNum;
-            domTree[bbNum] = new (this, CMK_DominatorMemory) BasicBlockList(block, domTree[bbNum]);
+            assert(block->bbNum < bbArraySize);
+            assert(parent->bbNum < bbArraySize);
+
+            domTree[block->bbNum].nextSibling = domTree[parent->bbNum].firstChild;
+            domTree[parent->bbNum].firstChild = block;
         }
-        else
+        else if (imaginaryRoot != nullptr)
         {
-            // This means this block had bbRoot set as its IDom.  We clear it out
-            // and convert the tree back to a forest.
+            assert(rootListTail->bbNum < bbArraySize);
+
+            domTree[rootListTail->bbNum].nextSibling = block;
+            rootListTail                             = block;
+
+            // Clear the imaginary dominator to turn the tree back to a forest.
             block->bbIDom = nullptr;
         }
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAfter computing the Dominance Tree:\n");
-        fgDispDomTree(domTree);
-    }
-#endif // DEBUG
+    JITDUMP("\nAfter computing the Dominance Tree:\n");
+    DBEXEC(verbose, fgDispDomTree(domTree));
 
-    // Get the bitset that represents the roots of the dominance tree.
-    // Something to note here is that the dominance tree has been converted from a forest to a tree
-    // by using the bbRoot trick on fgComputeDoms. The reason we have a forest instead of a real tree
-    // is because we treat the EH blocks as entry nodes so the real dominance tree is not necessarily connected.
-    BlockSet_ValRet_T domTreeEntryNodes = fgDomTreeEntryNodes(domTree);
-
-    // The preorder and postorder numbers.
-    // We start from 1 to match the bbNum ordering.
-    unsigned preNum  = 1;
-    unsigned postNum = 1;
-
-    // There will be nodes in the dominance tree that will not be reachable:
-    // the catch blocks that return since they don't have any predecessor.
-    // For that matter we'll keep track of how many nodes we can
-    // reach and assert at the end that we visited all of them.
-    unsigned domTreeReachable = fgBBcount;
-
-    // Once we have the dominance tree computed, we need to traverse it
-    // to get the preorder and postorder numbers for each node.  The purpose of
-    // this is to achieve O(1) queries for of the form A dominates B.
-    for (i = 1; i <= fgBBNumMax; ++i)
-    {
-        if (BlockSetOps::IsMember(this, domTreeEntryNodes, i))
-        {
-            if (domTree[i] == nullptr)
-            {
-                // If this is an entry node but there's no children on this
-                // node, it means it's unreachable so we decrement the reachable
-                // counter.
-                --domTreeReachable;
-            }
-            else
-            {
-                // Otherwise, we do a DFS traversal of the dominator tree.
-                fgTraverseDomTree(i, domTree, &preNum, &postNum);
-            }
-        }
-    }
-
-    noway_assert(preNum == domTreeReachable + 1);
-    noway_assert(postNum == domTreeReachable + 1);
-
-    // Once we have all the reachable nodes numbered, we proceed to
-    // assign numbers to the non-reachable ones, just assign incrementing
-    // values.  We must reach fgBBcount at the end.
-
-    for (i = 1; i <= fgBBNumMax; ++i)
-    {
-        if (BlockSetOps::IsMember(this, domTreeEntryNodes, i))
-        {
-            if (domTree[i] == nullptr)
-            {
-                fgDomTreePreOrder[i]  = preNum++;
-                fgDomTreePostOrder[i] = postNum++;
-            }
-        }
-    }
-
-    noway_assert(preNum == fgBBNumMax + 1);
-    noway_assert(postNum == fgBBNumMax + 1);
-    noway_assert(fgDomTreePreOrder[0] == 0);  // Unused first element
-    noway_assert(fgDomTreePostOrder[0] == 0); // Unused first element
-
-#ifdef DEBUG
-    if (0 && verbose)
-    {
-        printf("\nAfter traversing the dominance tree:\n");
-        printf("PreOrder:\n");
-        for (i = 1; i <= fgBBNumMax; ++i)
-        {
-            printf(FMT_BB " : %02u\n", i, fgDomTreePreOrder[i]);
-        }
-        printf("PostOrder:\n");
-        for (i = 1; i <= fgBBNumMax; ++i)
-        {
-            printf(FMT_BB " : %02u\n", i, fgDomTreePostOrder[i]);
-        }
-    }
-#endif // DEBUG
-}
-
-BlockSet_ValRet_T Compiler::fgDomTreeEntryNodes(BasicBlockList** domTree)
-{
-    // domTreeEntryNodes ::  Set that represents which basic blocks are roots of the dominator forest.
-
-    BlockSet domTreeEntryNodes(BlockSetOps::MakeFull(this));
-
-    // First of all we need to find all the roots of the dominance forest.
-
-    for (unsigned i = 1; i <= fgBBNumMax; ++i)
-    {
-        for (BasicBlockList* current = domTree[i]; current != nullptr; current = current->next)
-        {
-            BlockSetOps::RemoveElemD(this, domTreeEntryNodes, current->block->bbNum);
-        }
-    }
-
-    return domTreeEntryNodes;
+    return domTree;
 }
 
 #ifdef DEBUG
-void Compiler::fgDispDomTree(BasicBlockList** domTree)
+void Compiler::fgDispDomTree(DomTreeNode* domTree)
 {
     for (unsigned i = 1; i <= fgBBNumMax; ++i)
     {
-        if (domTree[i] != nullptr)
+        if (domTree[i].firstChild != nullptr)
         {
             printf(FMT_BB " : ", i);
-            for (BasicBlockList* current = domTree[i]; current != nullptr; current = current->next)
+            for (BasicBlock* child = domTree[i].firstChild; child != nullptr; child = domTree[child->bbNum].nextSibling)
             {
-                assert(current->block);
-                printf(FMT_BB " ", current->block->bbNum);
+                printf(FMT_BB " ", child->bbNum);
             }
             printf("\n");
         }
@@ -2759,87 +2679,83 @@ void Compiler::fgDispDomTree(BasicBlockList** domTree)
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// fgTraverseDomTree: Assign pre/post-order numbers to the dominator tree.
+// fgNumberDomTree: Assign pre/post-order numbers to the dominator tree.
 //
 // Arguments:
-//    bbNum   - The basic block number of the starting block
-//    domTree - The dominator tree (as child block lists)
-//    preNum  - Pointer to the pre-number counter
-//    postNum - Pointer to the post-number counter
+//    domTree - The dominator tree node array
 //
 // Notes:
-//    Runs a non-recursive DFS traversal of the dominator tree using an
-//    evaluation stack to assign pre-order and post-order numbers.
-//    These numberings are used to provide constant time lookup for
-//    ancestor/descendent tests between pairs of nodes in the tree.
-
-void Compiler::fgTraverseDomTree(unsigned bbNum, BasicBlockList** domTree, unsigned* preNum, unsigned* postNum)
+//    Runs a non-recursive DFS traversal of the dominator tree to assign
+//    pre-order and post-order numbers. These numbers are used to provide
+//    constant time lookup ancestor/descendent tests between pairs of nodes
+//    in the tree.
+//
+void Compiler::fgNumberDomTree(DomTreeNode* domTree)
 {
-    noway_assert(bbNum <= fgBBNumMax);
-
-    // If the block preorder number is not zero it means we already visited
-    // that node, so we skip it.
-    if (fgDomTreePreOrder[bbNum] == 0)
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
     {
-        // If this is the first time we visit this node, both preorder and postnumber
-        // values must be zero.
-        noway_assert(fgDomTreePostOrder[bbNum] == 0);
+        unsigned m_preNum;
+        unsigned m_postNum;
 
-        // Allocate a local stack to hold the Dfs traversal actions necessary
-        // to compute pre/post-ordering of the dominator tree.
-        ArrayStack<DfsNumEntry> stack(getAllocator(CMK_ArrayStack));
-
-        // Push the first entry number on the stack to seed the traversal.
-        stack.Push(DfsNumEntry(DSS_Pre, bbNum));
-
-        // The search is terminated once all the actions have been processed.
-        while (!stack.Empty())
+    public:
+        NumberDomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : DomTreeVisitor(compiler, domTree)
         {
-            DfsNumEntry current    = stack.Pop();
-            unsigned    currentNum = current.dfsNum;
+        }
 
-            if (current.dfsStackState == DSS_Pre)
+        void Begin()
+        {
+            unsigned bbArraySize           = m_compiler->fgBBNumMax + 1;
+            m_compiler->fgDomTreePreOrder  = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize];
+            m_compiler->fgDomTreePostOrder = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize];
+
+            // Initialize all the data structures.
+            for (unsigned i = 0; i < bbArraySize; ++i)
             {
-                // This pre-visit action corresponds to the first time the
-                // node is encountered during the spanning traversal.
-                noway_assert(fgDomTreePreOrder[currentNum] == 0);
-                noway_assert(fgDomTreePostOrder[currentNum] == 0);
+                m_compiler->fgDomTreePreOrder[i]  = 0;
+                m_compiler->fgDomTreePostOrder[i] = 0;
+            }
 
-                // Assign the preorder number on the first visit.
-                fgDomTreePreOrder[currentNum] = (*preNum)++;
+            // The preorder and postorder numbers.
+            // We start from 1 to match the bbNum ordering.
+            m_preNum  = 1;
+            m_postNum = 1;
+        }
 
-                // Push this nodes post-action on the stack such that all successors
-                // pre-order visits occur before this nodes post-action. We will assign
-                // its post-order numbers when we pop off the stack.
-                stack.Push(DfsNumEntry(DSS_Post, currentNum));
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_compiler->fgDomTreePreOrder[block->bbNum] = m_preNum++;
+        }
 
-                // For each child in the dominator tree process its pre-actions.
-                for (BasicBlockList* child = domTree[currentNum]; child != nullptr; child = child->next)
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_compiler->fgDomTreePostOrder[block->bbNum] = m_postNum++;
+        }
+
+        void End()
+        {
+            noway_assert(m_preNum == m_compiler->fgBBNumMax + 1);
+            noway_assert(m_postNum == m_compiler->fgBBNumMax + 1);
+
+            noway_assert(m_compiler->fgDomTreePreOrder[0] == 0);  // Unused first element
+            noway_assert(m_compiler->fgDomTreePostOrder[0] == 0); // Unused first element
+            noway_assert(m_compiler->fgDomTreePreOrder[1] == 1);  // First block should be first in pre order
+
+#ifdef DEBUG
+            if (m_compiler->verbose)
+            {
+                printf("\nAfter numbering the dominator tree:\n");
+                for (unsigned i = 1; i <= m_compiler->fgBBNumMax; ++i)
                 {
-                    unsigned childNum = child->block->bbNum;
-
-                    // This is a tree so never could have been visited
-                    assert(fgDomTreePreOrder[childNum] == 0);
-
-                    // Push the successor in the dominator tree for pre-actions.
-                    stack.Push(DfsNumEntry(DSS_Pre, childNum));
+                    printf(FMT_BB ": pre=%02u, post=%02u\n", i, m_compiler->fgDomTreePreOrder[i],
+                           m_compiler->fgDomTreePostOrder[i]);
                 }
             }
-            else
-            {
-                // This post-visit action corresponds to the last time the node
-                // is encountered and only after all descendents in the spanning
-                // tree have had pre and post-order numbers assigned.
-
-                assert(current.dfsStackState == DSS_Post);
-                assert(fgDomTreePreOrder[currentNum] != 0);
-                assert(fgDomTreePostOrder[currentNum] == 0);
-
-                // Now assign this nodes post-order number.
-                fgDomTreePostOrder[currentNum] = (*postNum)++;
-            }
+#endif // DEBUG
         }
-    }
+    };
+
+    NumberDomTreeVisitor visitor(this, domTree);
+    visitor.WalkTree();
 }
 
 // This code finds the lowest common ancestor in the
@@ -2852,11 +2768,11 @@ BasicBlock* Compiler::fgIntersectDom(BasicBlock* a, BasicBlock* b)
     BasicBlock* finger2 = b;
     while (finger1 != finger2)
     {
-        while (finger1->bbDfsNum > finger2->bbDfsNum)
+        while (finger1->bbPostOrderNum > finger2->bbPostOrderNum)
         {
             finger1 = finger1->bbIDom;
         }
-        while (finger2->bbDfsNum > finger1->bbDfsNum)
+        while (finger2->bbPostOrderNum > finger1->bbPostOrderNum)
         {
             finger2 = finger2->bbIDom;
         }

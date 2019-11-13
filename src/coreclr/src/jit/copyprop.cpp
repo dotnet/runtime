@@ -435,61 +435,35 @@ void Compiler::optVnCopyProp()
         return;
     }
 
-    CompAllocator allocator(getAllocator(CMK_CopyProp));
-
-    // Compute the domTree to use.
-    BlkToBlkVectorMap* domTree = new (allocator) BlkToBlkVectorMap(allocator);
-    domTree->Reallocate(fgBBcount * 3 / 2); // Prime the allocation
-    SsaBuilder::ComputeDominators(this, domTree);
-
-    struct BlockWork
-    {
-        BasicBlock* m_blk;
-        bool        m_processed;
-
-        BlockWork(BasicBlock* blk, bool processed = false) : m_blk(blk), m_processed(processed)
-        {
-        }
-    };
-    typedef jitstd::vector<BlockWork> BlockWorkStack;
-
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
     VarSetOps::AssignNoCopy(this, optCopyPropKillSet, VarSetOps::MakeEmpty(this));
 
-    // The map from lclNum to its recently live definitions as a stack.
-    LclNumToGenTreePtrStack curSsaName(allocator);
-
-    BlockWorkStack* worklist = new (allocator) BlockWorkStack(allocator);
-
-    worklist->push_back(BlockWork(fgFirstBB));
-    while (!worklist->empty())
+    class CopyPropDomTreeVisitor : public DomTreeVisitor<CopyPropDomTreeVisitor>
     {
-        BlockWork work = worklist->back();
-        worklist->pop_back();
+        // The map from lclNum to its recently live definitions as a stack.
+        LclNumToGenTreePtrStack m_curSsaName;
 
-        BasicBlock* block = work.m_blk;
-        if (work.m_processed)
+    public:
+        CopyPropDomTreeVisitor(Compiler* compiler)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_curSsaName(compiler->getAllocator(CMK_CopyProp))
         {
-            // Pop all the live definitions for this block.
-            optBlockCopyPropPopStacks(block, &curSsaName);
-            continue;
         }
 
-        // Generate copy assertions in this block, and keeping curSsaName variable up to date.
-        worklist->push_back(BlockWork(block, true));
-
-        optBlockCopyProp(block, &curSsaName);
-
-        // Add dom children to work on.
-        BlkVector* domChildren = domTree->LookupPointer(block);
-        if (domChildren != nullptr)
+        void PreOrderVisit(BasicBlock* block)
         {
-            for (BasicBlock* child : *domChildren)
-            {
-                worklist->push_back(BlockWork(child));
-            }
+            // TODO-Cleanup: Move this function from Compiler to this class.
+            m_compiler->optBlockCopyProp(block, &m_curSsaName);
         }
-    }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            // TODO-Cleanup: Move this function from Compiler to this class.
+            m_compiler->optBlockCopyPropPopStacks(block, &m_curSsaName);
+        }
+    };
+
+    CopyPropDomTreeVisitor visitor(this);
+    visitor.WalkTree();
 
     // Tracked variable count increases after CopyProp, so don't keep a shorter array around.
     // Destroy (release) the varset.

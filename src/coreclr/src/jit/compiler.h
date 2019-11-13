@@ -4172,6 +4172,10 @@ public:
     unsigned* fgDomTreePreOrder;
     unsigned* fgDomTreePostOrder;
 
+    // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
+    // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
+    DomTreeNode* fgSsaDomTree;
+
     bool fgBBVarSetsInited;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
@@ -4803,21 +4807,16 @@ protected:
     BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
                                              // Returns this as a set.
 
-    BlockSet_ValRet_T fgDomTreeEntryNodes(BasicBlockList** domTree); // Computes which nodes in the dominance forest are
-                                                                     // root nodes. Returns this as a set.
+    INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
 
-#ifdef DEBUG
-    void fgDispDomTree(BasicBlockList** domTree); // Helper that prints out the Dominator Tree in debug builds.
-#endif                                            // DEBUG
-
-    void fgBuildDomTree(); // Once we compute all the immediate dominator sets for each node in the flow graph
-                           // (performed by fgComputeDoms), this procedure builds the dominance tree represented
-                           // adjacency lists.
+    DomTreeNode* fgBuildDomTree(); // Once we compute all the immediate dominator sets for each node in the flow graph
+                                   // (performed by fgComputeDoms), this procedure builds the dominance tree represented
+                                   // adjacency lists.
 
     // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder
     // traversal of the dominance tree and the dominance query will become A dominates B iif preOrder(A) <= preOrder(B)
     // && postOrder(A) >= postOrder(B) making the computation O(1).
-    void fgTraverseDomTree(unsigned bbNum, BasicBlockList** domTree, unsigned* preNum, unsigned* postNum);
+    void fgNumberDomTree(DomTreeNode* domTree);
 
     // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets, and
     // dominators.
@@ -10327,6 +10326,84 @@ public:
     {
         m_walkData->parent = user;
         return m_walkData->wtpoVisitorFn(use, m_walkData);
+    }
+};
+
+// A dominator tree visitor implemented using the curiosly-recurring-template pattern, similar to GenTreeVisitor.
+template <typename TVisitor>
+class DomTreeVisitor
+{
+protected:
+    Compiler* const    m_compiler;
+    DomTreeNode* const m_domTree;
+
+    DomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : m_compiler(compiler), m_domTree(domTree)
+    {
+    }
+
+    void Begin()
+    {
+    }
+
+    void PreOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void PostOrderVisit(BasicBlock* block)
+    {
+    }
+
+    void End()
+    {
+    }
+
+public:
+    //------------------------------------------------------------------------
+    // WalkTree: Walk the dominator tree, starting from fgFirstBB.
+    //
+    // Notes:
+    //    This performs a non-recursive, non-allocating walk of the tree by using
+    //    DomTreeNode's firstChild and nextSibling links to locate the children of
+    //    a node and BasicBlock's bbIDom parent link to go back up the tree when
+    //    no more children are left.
+    //
+    //    Forests are also supported, provided that all the roots are chained via
+    //    DomTreeNode::nextSibling to fgFirstBB.
+    //
+    void WalkTree()
+    {
+        static_cast<TVisitor*>(this)->Begin();
+
+        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
+        {
+            static_cast<TVisitor*>(this)->PreOrderVisit(block);
+
+            next = m_domTree[block->bbNum].firstChild;
+
+            if (next != nullptr)
+            {
+                assert(next->bbIDom == block);
+                continue;
+            }
+
+            do
+            {
+                static_cast<TVisitor*>(this)->PostOrderVisit(block);
+
+                next = m_domTree[block->bbNum].nextSibling;
+
+                if (next != nullptr)
+                {
+                    assert(next->bbIDom == block->bbIDom);
+                    break;
+                }
+
+                block = block->bbIDom;
+
+            } while (block != nullptr);
+        }
+
+        static_cast<TVisitor*>(this)->End();
     }
 };
 
