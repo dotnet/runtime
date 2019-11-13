@@ -35,7 +35,6 @@ namespace System.IO
             return c == Path.DirectorySeparatorChar;
         }
 
-
         internal static bool IsPartiallyQualified(string path)
         {
             // This is much simpler than Windows where paths can be rooted, but not fully qualified (such as Drive Relative)
