@@ -1998,6 +1998,10 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 	if (td->method == method)
 		return FALSE;
 
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
 	if (!mono_method_get_header_summary (method, &header))
 		return FALSE;
 
@@ -2008,7 +2012,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 	    header.has_clauses)
 		return FALSE;
 
-	if (header.code_size >= INLINE_LENGTH_LIMIT)
+	if (header.code_size >= INLINE_LENGTH_LIMIT && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
 	if (mono_class_needs_cctor_run (method->klass, NULL)) {
