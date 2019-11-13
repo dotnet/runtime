@@ -12,4 +12,4 @@ add_library_clr(jitinterface
     ${NATIVE_SOURCES}
 )
 
-install_clr(jitinterface)
+install_clr(TARGETS jitinterface)

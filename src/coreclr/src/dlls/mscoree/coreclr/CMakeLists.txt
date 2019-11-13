@@ -202,7 +202,8 @@ if(WIN32)
 endif(WIN32)
 
 # add the install targets
-install_clr(coreclr)
+install_clr(TARGETS coreclr)
+install_clr(TARGETS coreclr DESTINATION sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

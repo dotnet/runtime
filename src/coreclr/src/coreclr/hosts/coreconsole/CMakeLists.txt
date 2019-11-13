@@ -28,6 +28,6 @@ else()
     )
 
     # Can't compile on linux yet so only add for windows
-    install_clr(CoreConsole)
+    install_clr(TARGETS CoreConsole)
 
 endif(CLR_CMAKE_PLATFORM_UNIX)

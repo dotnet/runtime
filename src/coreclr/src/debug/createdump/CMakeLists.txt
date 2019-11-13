@@ -48,4 +48,4 @@ target_link_libraries(createdump
 
 add_dependencies(createdump mscordaccore)
 
-install_clr(createdump)
+install_clr(TARGETS createdump)

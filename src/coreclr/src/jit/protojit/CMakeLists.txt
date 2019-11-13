@@ -62,4 +62,4 @@ target_link_libraries(protojit
 )
 
 # add the install targets
-install_clr(protojit)
+install_clr(TARGETS protojit)

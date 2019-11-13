@@ -91,4 +91,4 @@ target_link_libraries(armelnonjit
 )
 
 # add the install targets
-install_clr(armelnonjit)
+install_clr(TARGETS armelnonjit)

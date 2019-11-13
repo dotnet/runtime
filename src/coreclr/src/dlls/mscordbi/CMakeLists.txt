@@ -118,4 +118,5 @@ elseif(CLR_CMAKE_PLATFORM_UNIX)
 endif(WIN32)
 
 # add the install targets
-install_clr(mscordbi)
+install_clr(TARGETS mscordbi)
+install_clr(TARGETS mscordbi DESTINATION sharedFramework)

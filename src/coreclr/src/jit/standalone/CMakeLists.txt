@@ -32,7 +32,8 @@ target_link_libraries(clrjit
 )
 
 # add the install targets
-install_clr(clrjit)
+install_clr(TARGETS clrjit)
+install_clr(TARGETS clrjit DESTINATION sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(clrjit)

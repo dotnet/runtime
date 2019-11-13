@@ -89,4 +89,4 @@ target_link_libraries(protononjit
 )
 
 # add the install targets
-install_clr(protononjit)
+install_clr(TARGETS protononjit)

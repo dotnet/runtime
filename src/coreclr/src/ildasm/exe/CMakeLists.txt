@@ -123,4 +123,4 @@ else()
     )
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-install_clr(ildasm)
+install_clr(TARGETS ildasm)

@@ -5,3 +5,4 @@ if(WIN32)
 endif(WIN32)
 
 _install(FILES SOS_README.md DESTINATION .)
+_install(FILES SOS_README.md DESTINATION sharedFramework)

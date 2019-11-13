@@ -92,5 +92,6 @@ verify_dependencies(
 )
 
 # add the install targets
-install_clr(System.Globalization.Native)
+install_clr(TARGETS System.Globalization.Native)
+install_clr(TARGETS System.Globalization.Native DESTINATION sharedFramework)
 install(TARGETS System.Globalization.Native_Static DESTINATION .)

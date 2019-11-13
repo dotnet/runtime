@@ -75,4 +75,4 @@ target_link_libraries(linuxnonjit
 )
 
 # add the install targets
-install_clr(linuxnonjit)
+install_clr(TARGETS linuxnonjit)

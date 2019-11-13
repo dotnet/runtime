@@ -285,27 +285,43 @@ function(strip_symbols targetName outputFilename)
   endif(CLR_CMAKE_PLATFORM_UNIX)
 endfunction()
 
-function(install_clr targetName)
-  list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
-  if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-    strip_symbols(${targetName} strip_destination_file)
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [DESTINATION destination])
+function(install_clr)
+  set(options "")
+  set(oneValueArgs DESTINATION)
+  set(multiValueArgs TARGETS)
+  cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
-    # We don't need to install the export libraries for our DLLs
-    # since they won't be directly linked against.
-    install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION .)
-    if(WIN32)
-        # We can't use the $<TARGET_PDB_FILE> generator expression here since
-        # the generator expression isn't supported on resource DLLs.
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
-    else()
-        install(FILES ${strip_destination_file} DESTINATION .)
-    endif()
-    if(CLR_CMAKE_PGO_INSTRUMENT)
+  if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
+    message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
+  endif()
+
+  if ("${INSTALL_CLR_DESTINATION}" STREQUAL "")
+    set(INSTALL_CLR_DESTINATION ".")
+  endif()
+
+  foreach(targetName ${INSTALL_CLR_TARGETS})
+    list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
+    if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
+        strip_symbols(${targetName} strip_destination_file)
+
+        # We don't need to install the export libraries for our DLLs
+        # since they won't be directly linked against.
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${INSTALL_CLR_DESTINATION})
         if(WIN32)
-            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION PGD OPTIONAL)
+            # We can't use the $<TARGET_PDB_FILE> generator expression here since
+            # the generator expression isn't supported on resource DLLs.
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${INSTALL_CLR_DESTINATION}/PDB)
+        else()
+            install(FILES ${strip_destination_file} DESTINATION ${INSTALL_CLR_DESTINATION})
+        endif()
+        if(CLR_CMAKE_PGO_INSTRUMENT)
+            if(WIN32)
+                install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${INSTALL_CLR_DESTINATION}/PGD OPTIONAL)
+            endif()
         endif()
     endif()
-  endif()
+  endforeach()
 endfunction()
 
 # Disable PAX mprotect that would prevent JIT and other codegen in coreclr from working.

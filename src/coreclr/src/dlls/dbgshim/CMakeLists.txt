@@ -81,4 +81,5 @@ endif(WIN32)
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
 # add the install targets
-install_clr(dbgshim)
+install_clr(TARGETS dbgshim)
+install_clr(TARGETS dbgshim DESTINATION sharedFramework)

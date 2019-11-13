@@ -4,5 +4,5 @@ add_library_clr(mscorrc SHARED
   ../mscorrc.small.rc
 )
 
-# add the install targets
-install_clr (mscorrc)
+install_clr(TARGETS mscorrc)
+install_clr(TARGETS mscorrc DESTINATION sharedFramework)

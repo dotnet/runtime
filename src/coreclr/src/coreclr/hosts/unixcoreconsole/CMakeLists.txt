@@ -29,4 +29,4 @@ if(NOT CLR_CMAKE_PLATFORM_ANDROID)
   )
 endif()
 
-install_clr(coreconsole)
+install_clr(TARGETS coreconsole)
