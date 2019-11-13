@@ -37,7 +37,7 @@ NOHANDLES(ICALL(ARGI_3, "IntGetNextArgWithType", ves_icall_System_ArgIterator_In
 NOHANDLES(ICALL(ARGI_4, "Setup",                 ves_icall_System_ArgIterator_Setup))
 
 ICALL_TYPE(ARRAY, "System.Array", ARRAY_0)
-HANDLES(ARRAY_0, "CanChangePrimitive",  ves_icall_System_Array_CanChangePrimitive, MonoBoolean, 3, (MonoReflectionType, MonoReflectionType, MonoBoolean))
+NOHANDLES(ICALL(ARRAY_0, "CanChangePrimitive", ves_icall_System_Array_CanChangePrimitive))
 HANDLES(ARRAY_4, "FastCopy",         ves_icall_System_Array_FastCopy, MonoBoolean, 5, (MonoArray, int, MonoArray, int, int))
 HANDLES(ARRAY_4a, "GetCorElementTypeOfElementType", ves_icall_System_Array_GetCorElementTypeOfElementType, gint32, 1, (MonoArray))
 NOHANDLES(ICALL(ARRAY_5, "GetGenericValue_icall", ves_icall_System_Array_GetGenericValue_icall))

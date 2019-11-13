@@ -336,10 +336,13 @@ get_normalized_integral_array_element_type (MonoTypeEnum elementType)
 }
 
 MonoBoolean 
-ves_icall_System_Array_CanChangePrimitive (MonoReflectionTypeHandle ref_src_type, MonoReflectionTypeHandle ref_dst_type, MonoBoolean reliable, MonoError *error)
+ves_icall_System_Array_CanChangePrimitive (MonoReflectionType *volatile* ref_src_type_handle, MonoReflectionType *volatile* ref_dst_type_handle, MonoBoolean reliable)
 {
-	MonoType *src_type = MONO_HANDLE_GETVAL (ref_src_type, type);
-	MonoType *dst_type = MONO_HANDLE_GETVAL (ref_dst_type, type);
+	MonoReflectionType* const ref_src_type = *ref_src_type_handle;
+	MonoReflectionType* const ref_dst_type = *ref_dst_type_handle;
+
+	MonoType *src_type = ref_src_type->type;
+	MonoType *dst_type = ref_dst_type->type;
 
 	g_assert (mono_type_is_primitive (src_type));
 	g_assert (mono_type_is_primitive (dst_type));

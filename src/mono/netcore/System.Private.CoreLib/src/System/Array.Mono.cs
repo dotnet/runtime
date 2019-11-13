@@ -154,7 +154,7 @@ namespace System
 
 			if (reliable) {
 				if (!dst_type.Equals (src_type) &&
-					!(dst_type.IsPrimitive && src_type.IsPrimitive && CanChangePrimitive(dst_type, src_type, true))) {
+					!(dst_type.IsPrimitive && src_type.IsPrimitive && CanChangePrimitive(ref dst_type, ref src_type, true))) {
 					throw new ArrayTypeMismatchException (SR.ArrayTypeMismatch_CantAssignType);
 				}
 			} else {
@@ -219,7 +219,7 @@ namespace System
 				} else if (source.IsPrimitive && target.IsPrimitive) {
 					
 					// Allow primitive type widening
-					return CanChangePrimitive (source, target, false);
+					return CanChangePrimitive (ref source, ref target, false);
 				} else if (!source.IsValueType && !source.IsPointer) {
 					// Source is base class or interface of destination type
 					if (target.IsPointer)
@@ -486,7 +486,7 @@ namespace System
 		extern bool IsValueOfElementType(object value);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static bool CanChangePrimitive (Type srcType, Type dstType, bool reliable);
+		extern static bool CanChangePrimitive (ref Type srcType, ref Type dstType, bool reliable);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal extern static bool FastCopy (Array source, int source_idx, Array dest, int dest_idx, int length);

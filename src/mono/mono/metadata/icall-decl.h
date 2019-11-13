@@ -222,5 +222,6 @@ ICALL_EXPORT void ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void);
 ICALL_EXPORT int ves_icall_Mono_Runtime_CheckCrashReportingLog (const char *directory, MonoBoolean clear);
 ICALL_EXPORT void ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory);
 ICALL_EXPORT void ves_icall_System_Array_InternalCreate (MonoArray *volatile* result, MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds);
+ICALL_EXPORT MonoBoolean ves_icall_System_Array_CanChangePrimitive (MonoReflectionType *volatile* ref_src_type_handle, MonoReflectionType *volatile* ref_dst_type_handle, MonoBoolean reliable);
 
 #endif // __MONO_METADATA_ICALL_H__
