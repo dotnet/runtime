@@ -125,7 +125,9 @@
   <PropertyGroup>
     <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-    <SharedBclSourcesRoot>$(MSBuildThisFileDirectory)shared</SharedBclSourcesRoot>
+    <!-- TODO: Consolidate when moved to runtime repository: dotnet/corefx#42170 -->
+    <SharedBclSourcesRoot Condition="'$(IsRuntimeRepository)' != 'true'">$(MSBuildThisFileDirectory)shared</SharedBclSourcesRoot>
+    <SharedBclSourcesRoot Condition="'$(IsRuntimeRepository)' == 'true'">$(RepoRoot)src\libraries\System.Private.CoreLib\src</SharedBclSourcesRoot>
   </PropertyGroup>
 
   <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
@@ -414,7 +416,7 @@
     <Compile Include="$(CommonPath)\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\SR.cs" />
   </ItemGroup>
-  <Import Project="shared\System.Private.CoreLib.Shared.projitems" />
+  <Import Project="$(SharedBclSourcesRoot)\System.Private.CoreLib.Shared.projitems" />
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
   </PropertyGroup>
