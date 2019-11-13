@@ -20,45 +20,45 @@ namespace System.Transactions
         // The state machines themselves are designed to be internally consistent.  So the only externally visable
         // state transition is to active.  All other state transitions must happen within the state machines
         // themselves.
-        private static TransactionStateActive s_transactionStateActive;
-        private static TransactionStateSubordinateActive s_transactionStateSubordinateActive;
-        private static TransactionStatePhase0 s_transactionStatePhase0;
-        private static TransactionStateVolatilePhase1 s_transactionStateVolatilePhase1;
-        private static TransactionStateVolatileSPC s_transactionStateVolatileSPC;
-        private static TransactionStateSPC s_transactionStateSPC;
-        private static TransactionStateAborted s_transactionStateAborted;
-        private static TransactionStateCommitted s_transactionStateCommitted;
-        private static TransactionStateInDoubt s_transactionStateInDoubt;
+        private static TransactionStateActive? s_transactionStateActive;
+        private static TransactionStateSubordinateActive? s_transactionStateSubordinateActive;
+        private static TransactionStatePhase0? s_transactionStatePhase0;
+        private static TransactionStateVolatilePhase1? s_transactionStateVolatilePhase1;
+        private static TransactionStateVolatileSPC? s_transactionStateVolatileSPC;
+        private static TransactionStateSPC? s_transactionStateSPC;
+        private static TransactionStateAborted? s_transactionStateAborted;
+        private static TransactionStateCommitted? s_transactionStateCommitted;
+        private static TransactionStateInDoubt? s_transactionStateInDoubt;
 
-        private static TransactionStatePromoted s_transactionStatePromoted;
-        private static TransactionStateNonCommittablePromoted s_transactionStateNonCommittablePromoted;
-        private static TransactionStatePromotedP0Wave s_transactionStatePromotedP0Wave;
-        private static TransactionStatePromotedCommitting s_transactionStatePromotedCommitting;
-        private static TransactionStatePromotedPhase0 s_transactionStatePromotedPhase0;
-        private static TransactionStatePromotedPhase1 s_transactionStatePromotedPhase1;
-        private static TransactionStatePromotedP0Aborting s_transactionStatePromotedP0Aborting;
-        private static TransactionStatePromotedP1Aborting s_transactionStatePromotedP1Aborting;
-        private static TransactionStatePromotedAborted s_transactionStatePromotedAborted;
-        private static TransactionStatePromotedCommitted s_transactionStatePromotedCommitted;
-        private static TransactionStatePromotedIndoubt s_transactionStatePromotedIndoubt;
+        private static TransactionStatePromoted? s_transactionStatePromoted;
+        private static TransactionStateNonCommittablePromoted? s_transactionStateNonCommittablePromoted;
+        private static TransactionStatePromotedP0Wave? s_transactionStatePromotedP0Wave;
+        private static TransactionStatePromotedCommitting? s_transactionStatePromotedCommitting;
+        private static TransactionStatePromotedPhase0? s_transactionStatePromotedPhase0;
+        private static TransactionStatePromotedPhase1? s_transactionStatePromotedPhase1;
+        private static TransactionStatePromotedP0Aborting? s_transactionStatePromotedP0Aborting;
+        private static TransactionStatePromotedP1Aborting? s_transactionStatePromotedP1Aborting;
+        private static TransactionStatePromotedAborted? s_transactionStatePromotedAborted;
+        private static TransactionStatePromotedCommitted? s_transactionStatePromotedCommitted;
+        private static TransactionStatePromotedIndoubt? s_transactionStatePromotedIndoubt;
 
-        private static TransactionStateDelegated s_transactionStateDelegated;
-        private static TransactionStateDelegatedSubordinate s_transactionStateDelegatedSubordinate;
-        private static TransactionStateDelegatedP0Wave s_transactionStateDelegatedP0Wave;
-        private static TransactionStateDelegatedCommitting s_transactionStateDelegatedCommitting;
-        private static TransactionStateDelegatedAborting s_transactionStateDelegatedAborting;
-        private static TransactionStatePSPEOperation s_transactionStatePSPEOperation;
+        private static TransactionStateDelegated? s_transactionStateDelegated;
+        private static TransactionStateDelegatedSubordinate? s_transactionStateDelegatedSubordinate;
+        private static TransactionStateDelegatedP0Wave? s_transactionStateDelegatedP0Wave;
+        private static TransactionStateDelegatedCommitting? s_transactionStateDelegatedCommitting;
+        private static TransactionStateDelegatedAborting? s_transactionStateDelegatedAborting;
+        private static TransactionStatePSPEOperation? s_transactionStatePSPEOperation;
 
-        private static TransactionStateDelegatedNonMSDTC s_transactionStateDelegatedNonMSDTC;
-        private static TransactionStatePromotedNonMSDTCPhase0 s_transactionStatePromotedNonMSDTCPhase0;
-        private static TransactionStatePromotedNonMSDTCVolatilePhase1 s_transactionStatePromotedNonMSDTCVolatilePhase1;
-        private static TransactionStatePromotedNonMSDTCSinglePhaseCommit s_transactionStatePromotedNonMSDTCSinglePhaseCommit;
-        private static TransactionStatePromotedNonMSDTCAborted s_transactionStatePromotedNonMSDTCAborted;
-        private static TransactionStatePromotedNonMSDTCCommitted s_transactionStatePromotedNonMSDTCCommitted;
-        private static TransactionStatePromotedNonMSDTCIndoubt s_transactionStatePromotedNonMSDTCIndoubt;
+        private static TransactionStateDelegatedNonMSDTC? s_transactionStateDelegatedNonMSDTC;
+        private static TransactionStatePromotedNonMSDTCPhase0? s_transactionStatePromotedNonMSDTCPhase0;
+        private static TransactionStatePromotedNonMSDTCVolatilePhase1? s_transactionStatePromotedNonMSDTCVolatilePhase1;
+        private static TransactionStatePromotedNonMSDTCSinglePhaseCommit? s_transactionStatePromotedNonMSDTCSinglePhaseCommit;
+        private static TransactionStatePromotedNonMSDTCAborted? s_transactionStatePromotedNonMSDTCAborted;
+        private static TransactionStatePromotedNonMSDTCCommitted? s_transactionStatePromotedNonMSDTCCommitted;
+        private static TransactionStatePromotedNonMSDTCIndoubt? s_transactionStatePromotedNonMSDTCIndoubt;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        internal static object s_classSyncObject;
+        internal static object? s_classSyncObject;
 
         internal static TransactionStateActive TransactionStateActive =>
             LazyInitializer.EnsureInitialized(ref s_transactionStateActive, ref s_classSyncObject, () => new TransactionStateActive());
@@ -176,7 +176,7 @@ namespace System.Transactions
         // Every state must override EnterState
         internal abstract void EnterState(InternalTransaction tx);
 
-        internal virtual void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal virtual void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -188,7 +188,7 @@ namespace System.Transactions
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
-        internal virtual void Rollback(InternalTransaction tx, Exception e)
+        internal virtual void Rollback(InternalTransaction tx, Exception? e)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -256,7 +256,7 @@ namespace System.Transactions
         // Every state derived from the base must override status
         internal abstract TransactionStatus get_Status(InternalTransaction tx);
 
-        internal virtual void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal virtual void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -295,7 +295,7 @@ namespace System.Transactions
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
-        internal virtual void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal virtual void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -524,9 +524,9 @@ namespace System.Transactions
             return TransactionStatus.Active;
         }
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
-            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler)
+            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler?)
                 System.Delegate.Combine(tx._transactionCompletedDelegate, transactionCompletedDelegate);
         }
     }
@@ -550,7 +550,7 @@ namespace System.Transactions
             tx._promoteState.EnterState(tx);
             // Note that just because we did an EnterState above does not mean that the state will be
             // the same when the next method is called.
-            return tx.State.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
+            return tx.State!.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
         }
 
         internal override Enlistment EnlistDurable(
@@ -566,7 +566,7 @@ namespace System.Transactions
             {
                 // These circumstances cause promotion
                 tx._promoteState.EnterState(tx);
-                return tx.State.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
+                return tx.State!.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
             }
 
             // Create a durable enlistment
@@ -604,7 +604,7 @@ namespace System.Transactions
             tx._promoteState.EnterState(tx);
 
             // Forward this call
-            tx.State.GetObjectData(tx, serializationInfo, context);
+            tx.State!.GetObjectData(tx, serializationInfo, context);
         }
 
         internal override void CompleteBlockingClone(InternalTransaction tx)
@@ -623,7 +623,7 @@ namespace System.Transactions
             if (tx._phase0Volatiles._preparedVolatileEnlistments ==
                 tx._phase0VolatileWaveCount + tx._phase0Volatiles._dependentClones)
             {
-                tx.State.Phase0VolatilePrepareDone(tx);
+                tx.State!.Phase0VolatilePrepareDone(tx);
             }
         }
 
@@ -652,7 +652,7 @@ namespace System.Transactions
         internal override void Promote(InternalTransaction tx)
         {
             tx._promoteState.EnterState(tx);
-            tx.State.CheckForFinishedTransaction(tx);
+            tx.State!.CheckForFinishedTransaction(tx);
         }
 
         internal override byte[] PromotedToken(InternalTransaction tx)
@@ -660,9 +660,9 @@ namespace System.Transactions
             if (tx.promotedToken == null)
             {
                 tx._promoteState.EnterState(tx);
-                tx.State.CheckForFinishedTransaction(tx);
+                tx.State!.CheckForFinishedTransaction(tx);
             }
-
+            Debug.Assert(tx.promotedToken != null);
             return tx.promotedToken;
         }
     }
@@ -682,7 +682,7 @@ namespace System.Transactions
             // Yeah it's active.
         }
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Store the given values
             tx._asyncCommit = asyncCommit;
@@ -693,7 +693,7 @@ namespace System.Transactions
             TransactionStatePhase0.EnterState(tx);
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
@@ -820,7 +820,7 @@ namespace System.Transactions
 
         internal override void DisposeRoot(InternalTransaction tx)
         {
-            tx.State.Rollback(tx, null);
+            tx.State!.Rollback(tx, null);
         }
     }
 
@@ -839,7 +839,7 @@ namespace System.Transactions
             Debug.Assert(tx._promoter != null, "Transaction Promoter is Null entering SubordinateActive");
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
@@ -849,6 +849,7 @@ namespace System.Transactions
                 tx._innerException = e;
             }
 
+            Debug.Assert(tx._promoter != null);
             ((ISimpleTransactionSuperior)tx._promoter).Rollback();
             TransactionStateAborted.EnterState(tx);
         }
@@ -861,7 +862,7 @@ namespace System.Transactions
             )
         {
             tx._promoteState.EnterState(tx);
-            return tx.State.EnlistVolatile(tx, enlistmentNotification, enlistmentOptions, atomicTransaction);
+            return tx.State!.EnlistVolatile(tx, enlistmentNotification, enlistmentOptions, atomicTransaction);
         }
 
         internal override Enlistment EnlistVolatile(
@@ -872,20 +873,20 @@ namespace System.Transactions
             )
         {
             tx._promoteState.EnterState(tx);
-            return tx.State.EnlistVolatile(tx, enlistmentNotification, enlistmentOptions, atomicTransaction);
+            return tx.State!.EnlistVolatile(tx, enlistmentNotification, enlistmentOptions, atomicTransaction);
         }
 
         // Every state derived from the base must override status
         internal override TransactionStatus get_Status(InternalTransaction tx)
         {
             tx._promoteState.EnterState(tx);
-            return tx.State.get_Status(tx);
+            return tx.State!.get_Status(tx);
         }
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             tx._promoteState.EnterState(tx);
-            tx.State.AddOutcomeRegistrant(tx, transactionCompletedDelegate);
+            tx.State!.AddOutcomeRegistrant(tx, transactionCompletedDelegate);
         }
 
         internal override bool EnlistPromotableSinglePhase(
@@ -901,14 +902,14 @@ namespace System.Transactions
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
             tx._promoteState.EnterState(tx);
-            tx.State.CreateBlockingClone(tx);
+            tx.State!.CreateBlockingClone(tx);
         }
 
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
             tx._promoteState.EnterState(tx);
-            tx.State.CreateAbortingClone(tx);
+            tx.State!.CreateAbortingClone(tx);
         }
     }
 
@@ -937,8 +938,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase0Prepares())
+                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase0Prepares())
                     {
                         break;
                     }
@@ -965,7 +966,7 @@ namespace System.Transactions
                 enlistmentOptions, atomicTransaction);
 
             // Calling durable enlist in Phase0 may cause the transaction to promote.  Leverage the promoted
-            tx.State.RestartCommitIfNeeded(tx);
+            tx.State!.RestartCommitIfNeeded(tx);
             return en;
         }
 
@@ -983,7 +984,7 @@ namespace System.Transactions
                 enlistmentOptions, atomicTransaction);
 
             // Calling durable enlist in Phase0 may cause the transaction to promote.  Leverage the promoted
-            tx.State.RestartCommitIfNeeded(tx);
+            tx.State!.RestartCommitIfNeeded(tx);
             return en;
         }
 
@@ -1040,7 +1041,7 @@ namespace System.Transactions
             return enlistment;
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             ChangeStateTransactionAborted(tx, e);
         }
@@ -1117,8 +1118,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase0Prepares())
+                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase0Prepares())
                     {
                         break;
                     }
@@ -1149,11 +1150,11 @@ namespace System.Transactions
         internal override void Promote(InternalTransaction tx)
         {
             tx._promoteState.EnterState(tx);
-            tx.State.CheckForFinishedTransaction(tx);
+            tx.State!.CheckForFinishedTransaction(tx);
             tx.State.RestartCommitIfNeeded(tx);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -1172,7 +1173,7 @@ namespace System.Transactions
             tx._promoteState.EnterState(tx);
 
             // Forward this call
-            tx.State.GetObjectData(tx, serializationInfo, context);
+            tx.State!.GetObjectData(tx, serializationInfo, context);
 
             // Restart the commit process.
             tx.State.RestartCommitIfNeeded(tx);
@@ -1189,6 +1190,7 @@ namespace System.Transactions
             // Set the transaction state
             CommonEnterState(tx);
 
+            Debug.Assert(tx._committableTransaction != null);
             // Mark the committable transaction as complete.
             tx._committableTransaction._complete = true;
 
@@ -1210,8 +1212,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
                 {
-                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase1Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase1Prepares())
+                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase1Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase1Prepares())
                     {
                         break;
                     }
@@ -1224,12 +1226,12 @@ namespace System.Transactions
             }
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             ChangeStateTransactionAborted(tx, e);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -1277,7 +1279,7 @@ namespace System.Transactions
             Debug.Assert(tx._phase1Volatiles._volatileEnlistmentCount == 1,
                 "There must be exactly 1 phase 1 volatile enlistment for TransactionStateVolatileSPC");
 
-            tx._phase1Volatiles._volatileEnlistments[0]._twoPhaseState.ChangeStateSinglePhaseCommit(
+            tx._phase1Volatiles._volatileEnlistments[0]._twoPhaseState!.ChangeStateSinglePhaseCommit(
                 tx._phase1Volatiles._volatileEnlistments[0]);
         }
 
@@ -1293,7 +1295,7 @@ namespace System.Transactions
             TransactionStateInDoubt.EnterState(tx);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -1340,7 +1342,7 @@ namespace System.Transactions
             TransactionStateInDoubt.EnterState(tx);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -1366,7 +1368,7 @@ namespace System.Transactions
             }
         }
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             if (transactionCompletedDelegate != null)
             {
@@ -1401,12 +1403,12 @@ namespace System.Transactions
             // Notify the enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalAborted(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalAborted(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalAborted(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalAborted(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the durable enlistment
@@ -1440,12 +1442,12 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Abort is itempotent.  Ignore this if the transaction is already aborted.
         }
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // End Commit Must throw a TransactionAbortedException to let the caller know that the tx aborted.
             throw CreateTransactionAbortedException(tx);
@@ -1478,7 +1480,7 @@ namespace System.Transactions
             // Since the transaction is aborted ignore it.
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             // Yes, yes, yes... I already know.
         }
@@ -1537,13 +1539,13 @@ namespace System.Transactions
             // Notify the phase 0 enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalCommitted(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalCommitted(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the phase 1 enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalCommitted(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalCommitted(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Remove this from the timeout list
@@ -1572,7 +1574,7 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -1600,13 +1602,13 @@ namespace System.Transactions
             // Notify the phase 0 enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalIndoubt(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalIndoubt(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the phase 1 enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalIndoubt(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalIndoubt(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Remove this from the timeout list
@@ -1635,7 +1637,7 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -1818,7 +1820,7 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             Debug.Assert(tx.PromotedTransaction != null, "Promoted state not valid for transaction.");
             // Forward this on to the promoted transaction.
@@ -1841,7 +1843,7 @@ namespace System.Transactions
         }
 
 
-        internal override Guid get_Identifier(InternalTransaction tx)
+        internal override Guid get_Identifier(InternalTransaction? tx)
         {
             if (tx != null && tx.PromotedTransaction != null)
             {
@@ -1854,15 +1856,15 @@ namespace System.Transactions
         }
 
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             // Add this guy to the list of people to be notified of the outcome.
-            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler)
+            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler?)
                 System.Delegate.Combine(tx._transactionCompletedDelegate, transactionCompletedDelegate);
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Store the given values
             tx._asyncCommit = asyncCommit;
@@ -1907,7 +1909,7 @@ namespace System.Transactions
                 if (tx._phase0Volatiles._preparedVolatileEnlistments ==
                     tx._phase0VolatileWaveCount + tx._phase0Volatiles._dependentClones)
                 {
-                    tx.State.Phase0VolatilePrepareDone(tx);
+                    tx.State!.Phase0VolatilePrepareDone(tx);
                 }
             }
             else
@@ -1917,7 +1919,7 @@ namespace System.Transactions
                 Debug.Assert(tx._phase0WaveDependentCloneCount >= 0);
                 if (tx._phase0WaveDependentCloneCount == 0)
                 {
-                    DistributedDependentTransaction dtx = tx._phase0WaveDependentClone;
+                    DistributedDependentTransaction dtx = tx._phase0WaveDependentClone!;
                     tx._phase0WaveDependentClone = null;
 
                     Monitor.Exit(tx);
@@ -1961,7 +1963,7 @@ namespace System.Transactions
                 {
                     // We need to complete our dependent clone on the promoted transaction and null it out
                     // so if we get a new one, a new one will be created on the promoted transaction.
-                    DistributedDependentTransaction dtx = tx._abortingDependentClone;
+                    DistributedDependentTransaction dtx = tx._abortingDependentClone!;
                     tx._abortingDependentClone = null;
 
                     Monitor.Exit(tx);
@@ -1992,6 +1994,7 @@ namespace System.Transactions
             // will handle phase 0 waves.
             if (tx._phase0WaveDependentClone == null)
             {
+                Debug.Assert(tx.PromotedTransaction != null);
                 tx._phase0WaveDependentClone = tx.PromotedTransaction.DependentClone(true);
             }
 
@@ -2013,6 +2016,7 @@ namespace System.Transactions
             {
                 if (null == tx._abortingDependentClone)
                 {
+                    Debug.Assert(tx.PromotedTransaction != null);
                     tx._abortingDependentClone = tx.PromotedTransaction.DependentClone(false);
                 }
                 tx._abortingDependentCloneCount++;
@@ -2044,7 +2048,7 @@ namespace System.Transactions
             // Before forwarding this call to the promoted tx make sure to change
             // the full type info so that only if the promoted tx does not set this
             // then it should be set correctly.
-            serializationInfo.FullTypeName = tx.PromotedTransaction.GetType().FullName;
+            serializationInfo.FullTypeName = tx.PromotedTransaction.GetType().FullName!;
 
             // Now forward the call.
             serializableTx.GetObjectData(serializationInfo, context);
@@ -2088,8 +2092,8 @@ namespace System.Transactions
                 if (tx._innerException == null)
                 {
                     tx._innerException = new TimeoutException(SR.TraceTransactionTimeout);
-                    ;
                 }
+                Debug.Assert(tx.PromotedTransaction != null);
                 tx.PromotedTransaction.Rollback();
 
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -2155,6 +2159,7 @@ namespace System.Transactions
             // Set the transaction state
             CommonEnterState(tx);
 
+            Debug.Assert(tx.PromotedTransaction != null && tx.PromotedTransaction.RealTransaction != null);
             // Let the distributed transaction know that we want to know about the outcome.
             tx.PromotedTransaction.RealTransaction.InternalTransaction = tx;
         }
@@ -2182,7 +2187,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedCommittableTransaction distributedTx = null;
+            DistributedCommittableTransaction? distributedTx = null;
             try
             {
                 TimeSpan newTimeout;
@@ -2235,7 +2240,7 @@ namespace System.Transactions
                 {
                     // There was an exception trying to create the distributed transaction abort
                     // the local transaction and exit.
-                    tx.State.ChangeStateAbortedDuringPromotion(tx);
+                    tx.State!.ChangeStateAbortedDuringPromotion(tx);
                 }
             }
 
@@ -2278,6 +2283,7 @@ namespace System.Transactions
                     volatiles.VolatileDemux = new Phase1VolatileDemultiplexer(tx);
                 }
 
+                Debug.Assert(tx.PromotedTransaction != null);
                 volatiles.VolatileDemux._promotedEnlistment = tx.PromotedTransaction.EnlistVolatile(volatiles.VolatileDemux,
                     phase0 ? EnlistmentOptions.EnlistDuringPrepareRequired : EnlistmentOptions.None);
             }
@@ -2293,6 +2299,7 @@ namespace System.Transactions
             {
                 // Directly enlist the durable enlistment with the resource manager.
                 InternalEnlistment enlistment = tx._durableEnlistment;
+                Debug.Assert(tx.PromotedTransaction != null);
                 IPromotedEnlistment promotedEnlistment = tx.PromotedTransaction.EnlistDurable(
                     enlistment.ResourceManagerIdentifier,
                     (DurableInternalEnlistment)enlistment,
@@ -2317,9 +2324,11 @@ namespace System.Transactions
 
             bool enlistmentsPromoted = false;
 
+            Debug.Assert(tx.PromotedTransaction != null && tx.PromotedTransaction.RealTransaction != null);
             // Tell the real transaction that we want a callback for the outcome.
             tx.PromotedTransaction.RealTransaction.InternalTransaction = tx;
 
+            Debug.Assert(tx.State != null);
             // Promote Phase 0 Volatiles
             try
             {
@@ -2411,7 +2420,7 @@ namespace System.Transactions
 
         internal override void DisposeRoot(InternalTransaction tx)
         {
-            tx.State.Rollback(tx, null);
+            tx.State!.Rollback(tx, null);
         }
     }
 
@@ -2429,7 +2438,7 @@ namespace System.Transactions
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Don't allow this again.
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
@@ -2467,7 +2476,7 @@ namespace System.Transactions
         }
 
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -2491,12 +2500,12 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Use the asynchronous commit provided by the promoted transaction
-            var ctx = (DistributedCommittableTransaction)tx.PromotedTransaction;
+            var ctx = (DistributedCommittableTransaction)tx.PromotedTransaction!;
             ctx.BeginCommit(tx);
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Don't allow this again.
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
@@ -2543,10 +2552,10 @@ namespace System.Transactions
                 // Broadcast preprepare to the volatile subordinates
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(
+                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(
                         tx._phase0Volatiles._volatileEnlistments[i]);
 
-                    if (!tx.State.ContinuePhase0Prepares())
+                    if (!tx.State!.ContinuePhase0Prepares())
                     {
                         break;
                     }
@@ -2566,6 +2575,7 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
+                Debug.Assert(tx._phase0Volatiles.VolatileDemux._promotedEnlistment != null);
                 // Tell the distributed TM that the volatile enlistments are prepared
                 tx._phase0Volatiles.VolatileDemux._promotedEnlistment.Prepared();
             }
@@ -2582,7 +2592,7 @@ namespace System.Transactions
         }
 
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -2616,7 +2626,7 @@ namespace System.Transactions
             // If at this point there are phase1 dependent clones abort the transaction
             if (tx._phase1Volatiles._dependentClones != 0)
             {
-                tx.State.ChangeStateTransactionAborted(tx, null);
+                tx.State!.ChangeStateTransactionAborted(tx, null);
                 return;
             }
 
@@ -2632,9 +2642,9 @@ namespace System.Transactions
                 // Broadcast preprepare to the volatile subordinates
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(
+                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(
                         tx._phase1Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase1Prepares())
+                    if (!tx.State!.ContinuePhase1Prepares())
                     {
                         break;
                     }
@@ -2659,7 +2669,7 @@ namespace System.Transactions
         }
 
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -2679,6 +2689,7 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
+                Debug.Assert(tx._phase1Volatiles.VolatileDemux._promotedEnlistment != null);
                 // Tell the distributed TM that the volatile enlistments are prepared
                 tx._phase1Volatiles.VolatileDemux._promotedEnlistment.Prepared();
             }
@@ -2739,7 +2750,7 @@ namespace System.Transactions
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Don't allow this again.
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
@@ -2764,7 +2775,7 @@ namespace System.Transactions
         }
 
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             // Don't do this yet wait until all of the notifications come back.
         }
@@ -2795,6 +2806,7 @@ namespace System.Transactions
                 Monitor.Exit(tx);
                 try
                 {
+                    Debug.Assert(tx._phase0Volatiles.VolatileDemux._promotedEnlistment != null);
                     // Tell the distributed TM that the tx aborted.
                     tx._phase0Volatiles.VolatileDemux._promotedEnlistment.ForceRollback();
                 }
@@ -2805,6 +2817,7 @@ namespace System.Transactions
             }
             else
             {
+                Debug.Assert(tx.PromotedTransaction != null);
                 // Otherwise make sure that the transaction rolls back.
                 tx.PromotedTransaction.Rollback();
             }
@@ -2835,6 +2848,7 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
+                Debug.Assert(tx._phase1Volatiles.VolatileDemux._promotedEnlistment != null);
                 // Tell the distributed TM that the tx aborted.
                 tx._phase1Volatiles.VolatileDemux._promotedEnlistment.ForceRollback();
             }
@@ -2876,7 +2890,7 @@ namespace System.Transactions
         }
 
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             if (transactionCompletedDelegate != null)
             {
@@ -2920,6 +2934,7 @@ namespace System.Transactions
 
         internal override Guid get_Identifier(InternalTransaction tx)
         {
+            Debug.Assert(tx.PromotedTransaction != null);
             return tx.PromotedTransaction.Identifier;
         }
 
@@ -2930,8 +2945,8 @@ namespace System.Transactions
 
         protected abstract void PromotedTransactionOutcome(InternalTransaction tx);
 
-        private static WaitCallback s_signalMethod;
-        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback));
+        private static WaitCallback? s_signalMethod;
+        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback!));
 
 
         private static void SignalCallback(object state)
@@ -2985,13 +3000,13 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Already done.
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
@@ -3043,7 +3058,7 @@ namespace System.Transactions
         }
 
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             // This may come from a promotable single phase enlistments abort response.
         }
@@ -3289,7 +3304,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedTransaction distributedTx = null;
+            DistributedTransaction? distributedTx = null;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -3316,15 +3331,15 @@ namespace System.Transactions
             }
             finally
             {
-                if (((object)distributedTx) == null)
+                if (((object?)distributedTx) == null)
                 {
                     // There was an exception trying to create the distributed transaction abort
                     // the local transaction and exit.
-                    tx.State.ChangeStateAbortedDuringPromotion(tx);
+                    tx.State!.ChangeStateAbortedDuringPromotion(tx);
                 }
             }
 
-            if (((object)distributedTx) == null)
+            if (((object?)distributedTx) == null)
             {
                 return;
             }
@@ -3375,7 +3390,7 @@ namespace System.Transactions
     // except for the way that commit happens.
     internal class TransactionStateDelegated : TransactionStateDelegatedBase
     {
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Store the given values
             tx._asyncCommit = asyncCommit;
@@ -3389,6 +3404,7 @@ namespace System.Transactions
 
         internal override bool PromoteDurable(InternalTransaction tx)
         {
+            Debug.Assert(tx._durableEnlistment != null);
             // Let the enlistment know that it has been delegated.  For this type of enlistment that
             // is really all that needs to be done.
             tx._durableEnlistment.State.ChangeStateDelegated(tx._durableEnlistment);
@@ -3403,7 +3419,7 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
@@ -3516,7 +3532,7 @@ namespace System.Transactions
             return false;
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Start the process for abort.  Transitioning to the Aborted state will cause
             // the tx.durableEnlistment to get aborted, which is how the non-MSDTC
@@ -3538,16 +3554,16 @@ namespace System.Transactions
         }
 
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             // Add this guy to the list of people to be notified of the outcome.
-            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler)
+            tx._transactionCompletedDelegate = (TransactionCompletedEventHandler?)
                 System.Delegate.Combine(tx._transactionCompletedDelegate, transactionCompletedDelegate);
         }
 
 
         // Start the commit processing by transitioning to TransactionStatePromotedNonMSDTCPhase0.
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             tx._asyncCommit = asyncCommit;
             tx._asyncCallback = asyncCallback;
@@ -3572,7 +3588,7 @@ namespace System.Transactions
                 if (tx._phase0Volatiles._preparedVolatileEnlistments ==
                     tx._phase0VolatileWaveCount + tx._phase0Volatiles._dependentClones)
                 {
-                    tx.State.Phase0VolatilePrepareDone(tx);
+                    tx.State!.Phase0VolatilePrepareDone(tx);
                 }
             }
         }
@@ -3610,7 +3626,7 @@ namespace System.Transactions
                 tx._innerException);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             // Just transition to Aborted. The PSPE will be told to rollback thru the durableEnlistment.
             // This is also overridden in TransactionStatePromotedNonMSDTCSinglePhaseCommit
@@ -3672,7 +3688,7 @@ namespace System.Transactions
 
         internal override void DisposeRoot(InternalTransaction tx)
         {
-            tx.State.Rollback(tx, null);
+            tx.State!.Rollback(tx, null);
         }
     }
 
@@ -3700,8 +3716,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase0Prepares())
+                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase0Prepares())
                     {
                         break;
                     }
@@ -3714,12 +3730,12 @@ namespace System.Transactions
             }
         }
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             ChangeStateTransactionAborted(tx, e);
         }
@@ -3744,8 +3760,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < volatileCount; i++)
                 {
-                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase0Prepares())
+                    tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase0Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase0Prepares())
                     {
                         break;
                     }
@@ -3779,6 +3795,7 @@ namespace System.Transactions
             // Set the transaction state
             CommonEnterState(tx);
 
+            Debug.Assert(tx._committableTransaction != null);
             // Mark the committable transaction as complete.
             tx._committableTransaction._complete = true;
 
@@ -3794,8 +3811,8 @@ namespace System.Transactions
                 // Broadcast prepare to the phase 0 enlistments
                 for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
                 {
-                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.ChangeStatePreparing(tx._phase1Volatiles._volatileEnlistments[i]);
-                    if (!tx.State.ContinuePhase1Prepares())
+                    tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.ChangeStatePreparing(tx._phase1Volatiles._volatileEnlistments[i]);
+                    if (!tx.State!.ContinuePhase1Prepares())
                     {
                         break;
                     }
@@ -3809,12 +3826,12 @@ namespace System.Transactions
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             ChangeStateTransactionAborted(tx, e);
         }
@@ -3879,6 +3896,7 @@ namespace System.Transactions
         {
             CommonEnterState(tx);
 
+            Debug.Assert(tx._durableEnlistment != null);
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -3892,12 +3910,12 @@ namespace System.Transactions
             tx._durableEnlistment.State.ChangeStateCommitting(tx._durableEnlistment);
         }
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // We have told the PSPE enlistment to do a single phase commit. It's too late to rollback.
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
@@ -3915,7 +3933,7 @@ namespace System.Transactions
             TransactionStatePromotedNonMSDTCIndoubt.EnterState(tx);
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             if (tx._innerException == null)
             {
@@ -3994,7 +4012,7 @@ namespace System.Transactions
             }
         }
 
-        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
+        internal override void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler? transactionCompletedDelegate)
         {
             if (transactionCompletedDelegate != null)
             {
@@ -4043,8 +4061,8 @@ namespace System.Transactions
 
         protected abstract void PromotedTransactionOutcome(InternalTransaction tx);
 
-        private static WaitCallback s_signalMethod;
-        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback));
+        private static WaitCallback? s_signalMethod;
+        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback!));
 
         private static void SignalCallback(object state)
         {
@@ -4069,12 +4087,12 @@ namespace System.Transactions
             // Notify the enlistments that the transaction has aborted
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalAborted(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalAborted(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalAborted(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalAborted(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the durable enlistment
@@ -4099,12 +4117,12 @@ namespace System.Transactions
             return TransactionStatus.Aborted;
         }
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Already done.
         }
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
@@ -4129,7 +4147,7 @@ namespace System.Transactions
             // Since the transaction is aborted ignore it.
         }
 
-        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
+        internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
             // This may come from a promotable single phase enlistments abort response.
         }
@@ -4167,13 +4185,13 @@ namespace System.Transactions
             // Notify the phase 0 enlistments that the transaction has committed
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalCommitted(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalCommitted(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the phase 1 enlistments that the transaction has committed
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalCommitted(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalCommitted(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Fire Completion for anyone listening
@@ -4211,13 +4229,13 @@ namespace System.Transactions
             // Notify the phase 0 enlistments that the transaction is indoubt
             for (int i = 0; i < tx._phase0Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState.InternalIndoubt(tx._phase0Volatiles._volatileEnlistments[i]);
+                tx._phase0Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalIndoubt(tx._phase0Volatiles._volatileEnlistments[i]);
             }
 
             // Notify the phase 1 enlistments that the transaction is indoubt
             for (int i = 0; i < tx._phase1Volatiles._volatileEnlistmentCount; i++)
             {
-                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState.InternalIndoubt(tx._phase1Volatiles._volatileEnlistments[i]);
+                tx._phase1Volatiles._volatileEnlistments[i]._twoPhaseState!.InternalIndoubt(tx._phase1Volatiles._volatileEnlistments[i]);
             }
 
             // Fire Completion for anyone listening
@@ -4287,7 +4305,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // We are never going to have an DistributedTransaction for this one.
-            DistributedTransaction distributedTx = null;
+            DistributedTransaction? distributedTx = null;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -4319,7 +4337,7 @@ namespace System.Transactions
                 if (tx.promotedToken == null)
                 {
                     // There was an exception trying to promote the transaction.
-                    tx.State.ChangeStateAbortedDuringPromotion(tx);
+                    tx.State!.ChangeStateAbortedDuringPromotion(tx);
                 }
             }
         }
@@ -4337,7 +4355,7 @@ namespace System.Transactions
         }
 
 
-        internal override void Rollback(InternalTransaction tx, Exception e)
+        internal override void Rollback(InternalTransaction tx, Exception? e)
         {
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
@@ -4347,6 +4365,7 @@ namespace System.Transactions
                 tx._innerException = e;
             }
 
+            Debug.Assert(tx.PromotedTransaction != null);
             tx.PromotedTransaction.Rollback();
             TransactionStatePromotedAborted.EnterState(tx);
         }
@@ -4435,18 +4454,18 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction PSPEPromote(InternalTransaction tx)
+        internal DistributedTransaction? PSPEPromote(InternalTransaction tx)
         {
             bool changeToReturnState = true;
 
-            TransactionState returnState = tx.State;
+            TransactionState? returnState = tx.State;
             Debug.Assert(returnState == TransactionStateDelegated ||
                 returnState == TransactionStateDelegatedSubordinate ||
                 returnState == TransactionStateDelegatedNonMSDTC,
                 "PSPEPromote called from state other than TransactionStateDelegated[NonMSDTC]");
             CommonEnterState(tx);
 
-            DistributedTransaction distributedTx = null;
+            DistributedTransaction? distributedTx = null;
             try
             {
                 if (tx._attemptingPSPEPromote)
@@ -4461,7 +4480,8 @@ namespace System.Transactions
                 }
                 tx._attemptingPSPEPromote = true;
 
-                byte[] propagationToken = tx._promoter.Promote();
+                Debug.Assert(tx._promoter != null);
+                byte[]? propagationToken = tx._promoter.Promote();
 
                 // If the PromoterType is NOT MSDTC, then we can't assume that the returned
                 // byte[] is an MSDTC propagation token and we can't create an DistributedTransaction from it.
@@ -4513,7 +4533,7 @@ namespace System.Transactions
                     try
                     {
                         distributedTx = TransactionInterop.GetDistributedTransactionFromTransmitterPropagationToken(
-                                            propagationToken
+                                            propagationToken!
                                             );
                     }
                     catch (ArgumentException e)
@@ -4595,7 +4615,7 @@ namespace System.Transactions
 
             // Now we need to create the durable enlistment that will replace the PSPE enlistment. Use the internalEnlistment of
             // this newly created durable enlistment as the tx.durableEnlistment.
-            enlistment = tx.State.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
+            enlistment = tx.State!.EnlistDurable(tx, resourceManagerIdentifier, enlistmentNotification, enlistmentOptions, atomicTransaction);
             tx._durableEnlistment = enlistment.InternalEnlistment;
 
             return enlistment;
@@ -4655,6 +4675,7 @@ namespace System.Transactions
             // Forward this on to the promotable single phase enlisment
             Monitor.Exit(tx);
 
+            Debug.Assert(tx._durableEnlistment != null);
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -4691,6 +4712,7 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
+                Debug.Assert(tx._durableEnlistment != null);
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -4707,7 +4729,7 @@ namespace System.Transactions
         }
 
 
-        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
+        internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback? asyncCallback, object? asyncState)
         {
             // Initiate the commit process.
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);

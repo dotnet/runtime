@@ -38,7 +38,7 @@ namespace System.Transactions
                 throw TransactionException.CreateTransactionCompletedException(transaction.DistributedTxId);
             }
 
-            DistributedTransaction distributedTx = transaction.Promote();
+            DistributedTransaction? distributedTx = transaction.Promote();
             if (distributedTx == null)
             {
                 throw DistributedTransaction.NotSupported();
@@ -123,7 +123,7 @@ namespace System.Transactions
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there
             // is, just return that.
-            Transaction transaction = TransactionManager.FindPromotedTransaction(txId);
+            Transaction? transaction = TransactionManager.FindPromotedTransaction(txId);
             if (transaction != null)
             {
                 if (etwLog.IsEnabled())
@@ -194,7 +194,7 @@ namespace System.Transactions
             var txId = new Guid(propagationToken.AsSpan(8, 16));
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there is, just return that.
-            Transaction tx = TransactionManager.FindPromotedTransaction(txId);
+            Transaction? tx = TransactionManager.FindPromotedTransaction(txId);
             if (null != tx)
             {
                 if (etwLog.IsEnabled())

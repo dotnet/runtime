@@ -12,10 +12,10 @@ namespace System.Transactions
     {
         internal abstract void EnterState(InternalEnlistment enlistment);
 
-        internal static EnlistmentStatePromoted _enlistmentStatePromoted;
+        internal static EnlistmentStatePromoted? _enlistmentStatePromoted;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
+        private static object? s_classSyncObject;
 
         internal static EnlistmentStatePromoted EnlistmentStatePromoted =>
             LazyInitializer.EnsureInitialized(ref _enlistmentStatePromoted, ref s_classSyncObject, () => new EnlistmentStatePromoted());
@@ -30,7 +30,7 @@ namespace System.Transactions
             throw TransactionException.CreateEnlistmentStateException(null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
-        internal virtual void ForceRollback(InternalEnlistment enlistment, Exception e)
+        internal virtual void ForceRollback(InternalEnlistment enlistment, Exception? e)
         {
             throw TransactionException.CreateEnlistmentStateException(null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
@@ -40,12 +40,12 @@ namespace System.Transactions
             throw TransactionException.CreateEnlistmentStateException(null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
-        internal virtual void Aborted(InternalEnlistment enlistment, Exception e)
+        internal virtual void Aborted(InternalEnlistment enlistment, Exception? e)
         {
             throw TransactionException.CreateEnlistmentStateException(null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
-        internal virtual void InDoubt(InternalEnlistment enlistment, Exception e)
+        internal virtual void InDoubt(InternalEnlistment enlistment, Exception? e)
         {
             throw TransactionException.CreateEnlistmentStateException(null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
@@ -116,6 +116,7 @@ namespace System.Transactions
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.EnlistmentDone();
             }
             finally
@@ -129,6 +130,7 @@ namespace System.Transactions
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.Prepared();
             }
             finally
@@ -137,11 +139,12 @@ namespace System.Transactions
             }
         }
 
-        internal override void ForceRollback(InternalEnlistment enlistment, Exception e)
+        internal override void ForceRollback(InternalEnlistment enlistment, Exception? e)
         {
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.ForceRollback(e);
             }
             finally
@@ -155,6 +158,7 @@ namespace System.Transactions
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.Committed();
             }
             finally
@@ -163,11 +167,12 @@ namespace System.Transactions
             }
         }
 
-        internal override void Aborted(InternalEnlistment enlistment, Exception e)
+        internal override void Aborted(InternalEnlistment enlistment, Exception? e)
         {
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.Aborted(e);
             }
             finally
@@ -176,11 +181,12 @@ namespace System.Transactions
             }
         }
 
-        internal override void InDoubt(InternalEnlistment enlistment, Exception e)
+        internal override void InDoubt(InternalEnlistment enlistment, Exception? e)
         {
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 enlistment.PromotedEnlistment.InDoubt(e);
             }
             finally
@@ -194,6 +200,7 @@ namespace System.Transactions
             Monitor.Exit(enlistment.SyncRoot);
             try
             {
+                Debug.Assert(enlistment.PromotedEnlistment != null);
                 return enlistment.PromotedEnlistment.GetRecoveryInformation();
             }
             finally

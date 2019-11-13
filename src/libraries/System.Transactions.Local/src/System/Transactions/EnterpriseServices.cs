@@ -16,7 +16,7 @@ namespace System.Transactions
             }
         }
 
-        internal static Transaction GetContextTransaction(ContextData contextData)
+        internal static Transaction? GetContextTransaction(ContextData contextData)
         {
             if (EnterpriseServicesOk)
             {
@@ -30,7 +30,7 @@ namespace System.Transactions
 
         internal static bool UseServiceDomainForCurrent() => false;
 
-        internal static void PushServiceDomain(Transaction newCurrent)
+        internal static void PushServiceDomain(Transaction? newCurrent)
         {
             ThrowNotSupported();
         }

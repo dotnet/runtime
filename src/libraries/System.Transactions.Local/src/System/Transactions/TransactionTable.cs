@@ -9,13 +9,13 @@ namespace System.Transactions
 {
     internal class CheapUnfairReaderWriterLock
     {
-        private object _writerFinishedEvent;
+        private object? _writerFinishedEvent;
 
         private int _readersIn;
         private int _readersOut;
         private bool _writerPresent;
 
-        private object _syncRoot;
+        private object? _syncRoot;
 
         // Spin lock params
         private const int MAX_SPIN_COUNT = 100;
@@ -283,14 +283,14 @@ namespace System.Transactions
 
             while (currentBucketSet.AbsoluteTimeout != txNew.AbsoluteTimeout)
             {
-                BucketSet lastBucketSet = null;
+                BucketSet? lastBucketSet = null;
                 do
                 {
-                    WeakReference nextSetWeak = (WeakReference)currentBucketSet.nextSetWeak;
-                    BucketSet nextBucketSet = null;
+                    WeakReference? nextSetWeak = (WeakReference?)currentBucketSet.nextSetWeak;
+                    BucketSet? nextBucketSet = null;
                     if (nextSetWeak != null)
                     {
-                        nextBucketSet = (BucketSet)nextSetWeak.Target;
+                        nextBucketSet = (BucketSet?)nextSetWeak.Target;
                     }
 
                     if (nextBucketSet == null)
@@ -303,7 +303,7 @@ namespace System.Transactions
                         BucketSet newBucketSet = new BucketSet(this, txNew.AbsoluteTimeout);
                         WeakReference newSetWeak = new WeakReference(newBucketSet);
 
-                        WeakReference oldNextSetWeak = (WeakReference)Interlocked.CompareExchange(
+                        WeakReference? oldNextSetWeak = (WeakReference?)Interlocked.CompareExchange(
                             ref currentBucketSet.nextSetWeak, newSetWeak, nextSetWeak);
                         if (oldNextSetWeak == nextSetWeak)
                         {
@@ -330,15 +330,16 @@ namespace System.Transactions
                     BucketSet newBucketSet = new BucketSet(this, txNew.AbsoluteTimeout);
                     WeakReference newSetWeak = new WeakReference(newBucketSet);
 
+                    Debug.Assert(lastBucketSet != null);
                     newBucketSet.nextSetWeak = lastBucketSet.nextSetWeak;
-                    WeakReference oldNextSetWeak = (WeakReference)Interlocked.CompareExchange(
+                    WeakReference? oldNextSetWeak = (WeakReference?)Interlocked.CompareExchange(
                         ref lastBucketSet.nextSetWeak, newSetWeak, newBucketSet.nextSetWeak);
                     if (oldNextSetWeak == newBucketSet.nextSetWeak)
                     {
                         // Ladies and Gentlemen we have a winner.
                         if (oldNextSetWeak != null)
                         {
-                            BucketSet oldSet = (BucketSet)oldNextSetWeak.Target;
+                            BucketSet? oldSet = (BucketSet?)oldNextSetWeak.Target;
                             if (oldSet != null)
                             {
                                 // prev references are just there to root things for the GC.  If this object is
@@ -375,13 +376,14 @@ namespace System.Transactions
         // Remove a transaction from the table.
         internal void Remove(InternalTransaction tx)
         {
+            Debug.Assert(tx._tableBucket != null);
             tx._tableBucket.Remove(tx);
             tx._tableBucket = null;
         }
 
 
         // Process a timer event
-        private void ThreadTimer(object state)
+        private void ThreadTimer(object? state)
         {
             //
             // Theory of operation.
@@ -409,20 +411,20 @@ namespace System.Transactions
             // that point will timeout so once we've found it then it is just a matter of traversing the
             // structure.
             //
-            BucketSet lastBucketSet = null;
+            BucketSet? lastBucketSet = null;
             BucketSet currentBucketSet = _headBucketSet; // The list always has a head.
 
             // Acquire a writer lock before checking to see if we should disable the timer.
             // Adding of transactions acquires a reader lock and might insert a new BucketSet.
             // If that races with our check for a BucketSet existing, we may not timeout that
             // transaction that is being added.
-            WeakReference nextWeakSet = null;
-            BucketSet nextBucketSet = null;
+            WeakReference? nextWeakSet = null;
+            BucketSet? nextBucketSet = null;
 
-            nextWeakSet = (WeakReference)currentBucketSet.nextSetWeak;
+            nextWeakSet = (WeakReference?)currentBucketSet.nextSetWeak;
             if (nextWeakSet != null)
             {
-                nextBucketSet = (BucketSet)nextWeakSet.Target;
+                nextBucketSet = (BucketSet?)nextWeakSet.Target;
             }
 
             if (nextBucketSet == null)
@@ -431,10 +433,10 @@ namespace System.Transactions
                 try
                 {
                     // Access the nextBucketSet again in writer lock to account for any race before disabling the timeout.
-                    nextWeakSet = (WeakReference)currentBucketSet.nextSetWeak;
+                    nextWeakSet = (WeakReference?)currentBucketSet.nextSetWeak;
                     if (nextWeakSet != null)
                     {
-                        nextBucketSet = (BucketSet)nextWeakSet.Target;
+                        nextBucketSet = (BucketSet?)nextWeakSet.Target;
                     }
 
                     if (nextBucketSet == null)
@@ -470,14 +472,14 @@ namespace System.Transactions
             {
                 do
                 {
-                    nextWeakSet = (WeakReference)currentBucketSet.nextSetWeak;
+                    nextWeakSet = (WeakReference?)currentBucketSet.nextSetWeak;
                     if (nextWeakSet == null)
                     {
                         // Nothing more to do.
                         return;
                     }
 
-                    nextBucketSet = (BucketSet)nextWeakSet.Target;
+                    nextBucketSet = (BucketSet?)nextWeakSet.Target;
                     if (nextBucketSet == null)
                     {
                         // Again nothing more to do.
@@ -498,19 +500,19 @@ namespace System.Transactions
                 // expires, the thread will walk the list again, find the appropriate BucketSet to pinch off, and
                 // then time out the transactions. This means that it is possible for a transaction to live a bit longer,
                 // but not much.
-                WeakReference abortingSetsWeak =
-                    (WeakReference)Interlocked.CompareExchange(ref lastBucketSet.nextSetWeak, null, nextWeakSet);
+                WeakReference? abortingSetsWeak =
+                    (WeakReference?)Interlocked.CompareExchange(ref lastBucketSet.nextSetWeak, null, nextWeakSet);
 
                 if (abortingSetsWeak == nextWeakSet)
                 {
                     // Yea - now proceed to abort the transactions.
-                    BucketSet abortingBucketSets = null;
+                    BucketSet? abortingBucketSets = null;
 
                     do
                     {
                         if (abortingSetsWeak != null)
                         {
-                            abortingBucketSets = (BucketSet)abortingSetsWeak.Target;
+                            abortingBucketSets = (BucketSet?)abortingSetsWeak.Target;
                         }
                         else
                         {
@@ -519,7 +521,7 @@ namespace System.Transactions
                         if (abortingBucketSets != null)
                         {
                             abortingBucketSets.TimeoutTransactions();
-                            abortingSetsWeak = (WeakReference)abortingBucketSets.nextSetWeak;
+                            abortingSetsWeak = (WeakReference?)abortingBucketSets.nextSetWeak;
                         }
                     }
                     while (abortingBucketSets != null);
@@ -539,8 +541,8 @@ namespace System.Transactions
     internal class BucketSet
     {
         // Buckets are kept in sets.  Each element of a set will have the same absoluteTimeout.
-        internal object nextSetWeak;
-        internal BucketSet prevSet;
+        internal object? nextSetWeak;
+        internal BucketSet? prevSet;
 
         private readonly TransactionTable _table;
 
@@ -573,16 +575,16 @@ namespace System.Transactions
 
         internal void TimeoutTransactions()
         {
-            Bucket currentBucket = headBucket;
+            Bucket? currentBucket = headBucket;
             // It will always have a head.
             do
             {
                 currentBucket.TimeoutTransactions();
 
-                WeakReference nextWeakBucket = (WeakReference)currentBucket.nextBucketWeak;
+                WeakReference? nextWeakBucket = (WeakReference?)currentBucket.nextBucketWeak;
                 if (nextWeakBucket != null)
                 {
-                    currentBucket = (Bucket)nextWeakBucket.Target;
+                    currentBucket = (Bucket?)nextWeakBucket.Target;
                 }
                 else
                 {
@@ -599,9 +601,9 @@ namespace System.Transactions
         private bool _timedOut;
         private int _index;
         private readonly int _size;
-        private readonly InternalTransaction[] _transactions;
-        internal WeakReference nextBucketWeak;
-        private Bucket _previous;
+        private readonly InternalTransaction?[] _transactions;
+        internal WeakReference? nextBucketWeak;
+        private Bucket? _previous;
 
         private readonly BucketSet _owningSet;
 
@@ -630,7 +632,7 @@ namespace System.Transactions
                 {
                     lock (tx)
                     {
-                        tx.State.Timeout(tx);
+                        tx.State!.Timeout(tx);
                     }
                 }
             }
@@ -669,12 +671,12 @@ namespace System.Transactions
             for (i = 0; i <= transactionCount && i < _size; i++)
             {
                 Debug.Assert(transactionCount == _index, "Index changed timing out transactions");
-                InternalTransaction tx = _transactions[i];
+                InternalTransaction? tx = _transactions[i];
                 if (tx != null)
                 {
                     lock (tx)
                     {
-                        tx.State.Timeout(tx);
+                        tx.State!.Timeout(tx);
                     }
                 }
             }

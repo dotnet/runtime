@@ -47,7 +47,7 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object obj) => obj is EnlistmentTraceIdentifier && Equals((EnlistmentTraceIdentifier)obj);
+        public override bool Equals(object? obj) => obj is EnlistmentTraceIdentifier enlistmentTraceId && Equals(enlistmentTraceId);
 
         public bool Equals(EnlistmentTraceIdentifier other) =>
             _enlistmentIdentifier == other._enlistmentIdentifier &&

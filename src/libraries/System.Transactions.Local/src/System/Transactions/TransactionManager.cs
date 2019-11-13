@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -13,9 +14,9 @@ using System.Transactions.Distributed;
 
 namespace System.Transactions
 {
-    public delegate Transaction HostCurrentTransactionCallback();
+    public delegate Transaction? HostCurrentTransactionCallback();
 
-    public delegate void TransactionStartedEventHandler(object sender, TransactionEventArgs e);
+    public delegate void TransactionStartedEventHandler(object? sender, TransactionEventArgs e);
 
     public static class TransactionManager
     {
@@ -26,19 +27,19 @@ namespace System.Transactions
         // Hashtable of promoted transactions, keyed by identifier guid.  This is used by
         // FindPromotedTransaction to support transaction equivalence when a transaction is
         // serialized and then deserialized back in this app-domain.
-        private static Hashtable s_promotedTransactionTable;
+        private static Hashtable? s_promotedTransactionTable;
 
         // Sorted Table of transaction timeouts
-        private static TransactionTable s_transactionTable;
+        private static TransactionTable? s_transactionTable;
 
-        private static TransactionStartedEventHandler s_distributedTransactionStartedDelegate;
-        public static event TransactionStartedEventHandler DistributedTransactionStarted
+        private static TransactionStartedEventHandler? s_distributedTransactionStartedDelegate;
+        public static event TransactionStartedEventHandler? DistributedTransactionStarted
         {
             add
             {
                 lock (ClassSyncObject)
                 {
-                    s_distributedTransactionStartedDelegate = (TransactionStartedEventHandler)System.Delegate.Combine(s_distributedTransactionStartedDelegate, value);
+                    s_distributedTransactionStartedDelegate = (TransactionStartedEventHandler?)System.Delegate.Combine(s_distributedTransactionStartedDelegate, value);
                     if (value != null)
                     {
                         ProcessExistingTransactions(value);
@@ -50,7 +51,7 @@ namespace System.Transactions
             {
                 lock (ClassSyncObject)
                 {
-                    s_distributedTransactionStartedDelegate = (TransactionStartedEventHandler)System.Delegate.Remove(s_distributedTransactionStartedDelegate, value);
+                    s_distributedTransactionStartedDelegate = (TransactionStartedEventHandler?)System.Delegate.Remove(s_distributedTransactionStartedDelegate, value);
                 }
             }
         }
@@ -63,9 +64,9 @@ namespace System.Transactions
                 IDictionaryEnumerator e = PromotedTransactionTable.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    WeakReference weakRef = (WeakReference)e.Value;
-                    Transaction tx = (Transaction)weakRef.Target;
-                    if (tx != null)
+                    WeakReference weakRef = (WeakReference)e.Value!;
+
+                    if (weakRef.Target is Transaction tx)
                     {
                         TransactionEventArgs args = new TransactionEventArgs();
                         args._transaction = tx.InternalClone();
@@ -77,7 +78,7 @@ namespace System.Transactions
 
         internal static void FireDistributedTransactionStarted(Transaction transaction)
         {
-            TransactionStartedEventHandler localStartedEventHandler = null;
+            TransactionStartedEventHandler? localStartedEventHandler = null;
             lock (ClassSyncObject)
             {
                 localStartedEventHandler = s_distributedTransactionStartedDelegate;
@@ -92,13 +93,14 @@ namespace System.Transactions
         }
 
         // Data storage for current delegate
-        internal static HostCurrentTransactionCallback s_currentDelegate = null;
+        internal static HostCurrentTransactionCallback? s_currentDelegate = null;
         internal static bool s_currentDelegateSet = false;
 
         // CurrentDelegate
         //
         // Store a delegate to be used to query for an external current transaction.
-        public static HostCurrentTransactionCallback HostCurrentCallback
+        [DisallowNull]
+        public static HostCurrentTransactionCallback? HostCurrentCallback
         {
             // get_HostCurrentCallback is used from get_CurrentTransaction, which doesn't have any permission requirements.
             // We don't expose what is returned from this property in that case.  But we don't want just anybody being able
@@ -161,8 +163,8 @@ namespace System.Transactions
             // Put the recovery information into a stream.
             MemoryStream stream = new MemoryStream(recoveryInformation);
             int recoveryInformationVersion = 0;
-            string nodeName = null;
-            byte[] resourceManagerRecoveryInformation = null;
+            string? nodeName = null;
+            byte[]? resourceManagerRecoveryInformation = null;
 
             try
             {
@@ -229,7 +231,7 @@ namespace System.Transactions
         }
 
 
-        private static DistributedTransactionManager CheckTransactionManager(string nodeName)
+        private static DistributedTransactionManager CheckTransactionManager(string? nodeName)
         {
             DistributedTransactionManager tm = DistributedTransactionManager;
             if (!((tm.NodeName == null && (nodeName == null || nodeName.Length == 0)) ||
@@ -264,7 +266,7 @@ namespace System.Transactions
 
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
+        private static object? s_classSyncObject;
 
         // Helper object for static synchronization
         private static object ClassSyncObject => LazyInitializer.EnsureInitialized(ref s_classSyncObject);
@@ -285,7 +287,7 @@ namespace System.Transactions
         }
 
 
-        private static DefaultSettingsSection s_defaultSettings;
+        private static DefaultSettingsSection? s_defaultSettings;
         private static DefaultSettingsSection DefaultSettings
         {
             get
@@ -300,7 +302,7 @@ namespace System.Transactions
         }
 
 
-        private static MachineSettingsSection s_machineSettings;
+        private static MachineSettingsSection? s_machineSettings;
         private static MachineSettingsSection MachineSettings
         {
             get
@@ -377,7 +379,7 @@ namespace System.Transactions
         // type of the calling object and its provided parameter collection.  This information
         // we be read back by the static Reenlist method to create the necessary transaction
         // manager object with the right parameters in order to do a ReenlistTransaction call.
-        internal static byte[] GetRecoveryInformation(string startupInfo, byte[] resourceManagerRecoveryInformation)
+        internal static byte[] GetRecoveryInformation(string? startupInfo, byte[] resourceManagerRecoveryInformation)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -386,7 +388,7 @@ namespace System.Transactions
             }
 
             MemoryStream stream = new MemoryStream();
-            byte[] returnValue = null;
+            byte[]? returnValue = null;
 
             try
             {
@@ -422,7 +424,7 @@ namespace System.Transactions
         internal static byte[] ConvertToByteArray(object thingToConvert)
         {
             MemoryStream streamToWrite = new MemoryStream();
-            byte[] returnValue = null;
+            byte[]? returnValue = null;
 
             try
             {
@@ -493,14 +495,13 @@ namespace System.Transactions
             return transactionTimeout;
         }
 
-        internal static Transaction FindPromotedTransaction(Guid transactionIdentifier)
+        internal static Transaction? FindPromotedTransaction(Guid transactionIdentifier)
         {
             Hashtable promotedTransactionTable = PromotedTransactionTable;
-            WeakReference weakRef = (WeakReference)promotedTransactionTable[transactionIdentifier];
+            WeakReference? weakRef = (WeakReference?)promotedTransactionTable[transactionIdentifier];
             if (null != weakRef)
             {
-                Transaction tx = weakRef.Target as Transaction;
-                if (null != tx)
+                if (weakRef.Target is Transaction tx)
                 {
                     return tx.InternalClone();
                 }
@@ -518,11 +519,11 @@ namespace System.Transactions
 
         internal static Transaction FindOrCreatePromotedTransaction(Guid transactionIdentifier, DistributedTransaction dtx)
         {
-            Transaction tx = null;
+            Transaction? tx = null;
             Hashtable promotedTransactionTable = PromotedTransactionTable;
             lock (promotedTransactionTable)
             {
-                WeakReference weakRef = (WeakReference)promotedTransactionTable[transactionIdentifier];
+                WeakReference? weakRef = (WeakReference?)promotedTransactionTable[transactionIdentifier];
                 if (null != weakRef)
                 {
                     tx = weakRef.Target as Transaction;
@@ -566,7 +567,7 @@ namespace System.Transactions
             LazyInitializer.EnsureInitialized(ref s_transactionTable, ref s_classSyncObject, () => new TransactionTable());
 
         // Fault in a DistributedTransactionManager if one has not already been created.
-        internal static DistributedTransactionManager distributedTransactionManager;
+        internal static DistributedTransactionManager? distributedTransactionManager;
         internal static DistributedTransactionManager DistributedTransactionManager =>
             // If the distributed transaction manager is not configured, throw an exception
             LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject, () => new DistributedTransactionManager());

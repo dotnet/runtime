@@ -19,8 +19,8 @@ namespace System.Transactions
         protected InternalTransaction _transaction;
 
         // Store the IVolatileEnlistment interface to call back to the Distributed TM
-        internal IPromotedEnlistment _promotedEnlistment;
-        internal IPromotedEnlistment _preparingEnlistment;
+        internal IPromotedEnlistment? _promotedEnlistment;
+        internal IPromotedEnlistment? _preparingEnlistment;
 
         public VolatileDemultiplexer(InternalTransaction transaction)
         {
@@ -32,7 +32,7 @@ namespace System.Transactions
             // Broadcast preprepare to the volatile subordinates
             for (int i = 0; i < volatiles._volatileEnlistmentCount; i++)
             {
-                volatiles._volatileEnlistments[i]._twoPhaseState.InternalCommitted(
+                volatiles._volatileEnlistments[i]._twoPhaseState!.InternalCommitted(
                     volatiles._volatileEnlistments[i]);
             }
         }
@@ -43,7 +43,7 @@ namespace System.Transactions
             // Broadcast preprepare to the volatile subordinates
             for (int i = 0; i < volatiles._volatileEnlistmentCount; i++)
             {
-                volatiles._volatileEnlistments[i]._twoPhaseState.InternalAborted(
+                volatiles._volatileEnlistments[i]._twoPhaseState!.InternalAborted(
                     volatiles._volatileEnlistments[i]);
             }
         }
@@ -53,13 +53,13 @@ namespace System.Transactions
             // Broadcast preprepare to the volatile subordinates
             for (int i = 0; i < volatiles._volatileEnlistmentCount; i++)
             {
-                volatiles._volatileEnlistments[i]._twoPhaseState.InternalIndoubt(
+                volatiles._volatileEnlistments[i]._twoPhaseState!.InternalIndoubt(
                     volatiles._volatileEnlistments[i]);
             }
         }
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
+        private static object? s_classSyncObject;
         internal static object ClassSyncObject
         {
             get
@@ -73,8 +73,8 @@ namespace System.Transactions
             }
         }
 
-        private static WaitCallback s_prepareCallback;
-        private static WaitCallback PrepareCallback => LazyInitializer.EnsureInitialized(ref s_prepareCallback, ref s_classSyncObject, () => new WaitCallback(PoolablePrepare));
+        private static WaitCallback? s_prepareCallback;
+        private static WaitCallback PrepareCallback => LazyInitializer.EnsureInitialized(ref s_prepareCallback, ref s_classSyncObject, () => new WaitCallback(PoolablePrepare!));
 
         protected static void PoolablePrepare(object state)
         {
@@ -112,8 +112,8 @@ namespace System.Transactions
             }
         }
 
-        private static WaitCallback s_commitCallback;
-        private static WaitCallback CommitCallback => LazyInitializer.EnsureInitialized(ref s_commitCallback, ref s_classSyncObject, () => new WaitCallback(PoolableCommit));
+        private static WaitCallback? s_commitCallback;
+        private static WaitCallback CommitCallback => LazyInitializer.EnsureInitialized(ref s_commitCallback, ref s_classSyncObject, () => new WaitCallback(PoolableCommit!));
 
         protected static void PoolableCommit(object state)
         {
@@ -151,8 +151,8 @@ namespace System.Transactions
             }
         }
 
-        private static WaitCallback s_rollbackCallback;
-        private static WaitCallback RollbackCallback => LazyInitializer.EnsureInitialized(ref s_rollbackCallback, ref s_classSyncObject, () => new WaitCallback(PoolableRollback));
+        private static WaitCallback? s_rollbackCallback;
+        private static WaitCallback RollbackCallback => LazyInitializer.EnsureInitialized(ref s_rollbackCallback, ref s_classSyncObject, () => new WaitCallback(PoolableRollback!));
 
         protected static void PoolableRollback(object state)
         {
@@ -190,8 +190,8 @@ namespace System.Transactions
             }
         }
 
-        private static WaitCallback s_inDoubtCallback;
-        private static WaitCallback InDoubtCallback => LazyInitializer.EnsureInitialized(ref s_inDoubtCallback, ref s_classSyncObject, () => new WaitCallback(PoolableInDoubt));
+        private static WaitCallback? s_inDoubtCallback;
+        private static WaitCallback InDoubtCallback => LazyInitializer.EnsureInitialized(ref s_inDoubtCallback, ref s_classSyncObject, () => new WaitCallback(PoolableInDoubt!));
 
         protected static void PoolableInDoubt(object state)
         {
@@ -256,6 +256,7 @@ namespace System.Transactions
 
         protected override void InternalPrepare()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
             try
             {
                 _transaction.State.ChangeStatePromotedPhase0(_transaction);
@@ -282,6 +283,8 @@ namespace System.Transactions
 
         protected override void InternalCommit()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
+
             // Respond immediately to the TM
             _promotedEnlistment.EnlistmentDone();
 
@@ -290,6 +293,8 @@ namespace System.Transactions
 
         protected override void InternalRollback()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
+
             // Respond immediately to the TM
             _promotedEnlistment.EnlistmentDone();
 
@@ -298,6 +303,7 @@ namespace System.Transactions
 
         protected override void InternalInDoubt()
         {
+            Debug.Assert(_transaction.State != null);
             _transaction.State.InDoubtFromDtc(_transaction);
         }
 
@@ -341,6 +347,7 @@ namespace System.Transactions
 
         protected override void InternalPrepare()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
             try
             {
                 _transaction.State.ChangeStatePromotedPhase1(_transaction);
@@ -368,6 +375,8 @@ namespace System.Transactions
 
         protected override void InternalCommit()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
+
             // Respond immediately to the TM
             _promotedEnlistment.EnlistmentDone();
 
@@ -377,6 +386,8 @@ namespace System.Transactions
 
         protected override void InternalRollback()
         {
+            Debug.Assert(_promotedEnlistment != null && _transaction.State != null);
+
             // Respond immediately to the TM
             _promotedEnlistment.EnlistmentDone();
 
@@ -386,6 +397,7 @@ namespace System.Transactions
 
         protected override void InternalInDoubt()
         {
+            Debug.Assert(_transaction.State != null);
             _transaction.State.InDoubtFromDtc(_transaction);
         }
 

@@ -30,7 +30,7 @@ namespace System.Transactions
             }
         }
 
-        public void Aborted(Exception e)
+        public void Aborted(Exception? e)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -97,7 +97,7 @@ namespace System.Transactions
         }
 
 
-        public void InDoubt(Exception e)
+        public void InDoubt(Exception? e)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())

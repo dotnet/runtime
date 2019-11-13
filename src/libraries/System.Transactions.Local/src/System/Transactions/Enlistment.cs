@@ -16,17 +16,17 @@ namespace System.Transactions
 
         void ForceRollback();
 
-        void ForceRollback(Exception e);
+        void ForceRollback(Exception? e);
 
         void Committed();
 
         void Aborted();
 
-        void Aborted(Exception e);
+        void Aborted(Exception? e);
 
         void InDoubt();
 
-        void InDoubt(Exception e);
+        void InDoubt(Exception? e);
 
         byte[] GetRecoveryInformation();
 
@@ -45,20 +45,20 @@ namespace System.Transactions
     internal class InternalEnlistment : ISinglePhaseNotificationInternal
     {
         // Storage for the state of the enlistment.
-        internal EnlistmentState _twoPhaseState;
+        internal EnlistmentState? _twoPhaseState;
 
         // Interface implemented by the enlistment owner for notifications
-        protected IEnlistmentNotification _twoPhaseNotifications;
+        protected IEnlistmentNotification? _twoPhaseNotifications;
 
         // Store a reference to the single phase notification interface in case
         // the enlisment supports it.
-        protected ISinglePhaseNotification _singlePhaseNotifications;
+        protected ISinglePhaseNotification? _singlePhaseNotifications;
 
         // Reference to the containing transaction.
-        protected InternalTransaction _transaction;
+        protected InternalTransaction _transaction = null!;
 
         // Reference to the lightweight transaction.
-        private readonly Transaction _atomicTransaction;
+        private readonly Transaction? _atomicTransaction;
 
         // The EnlistmentTraceIdentifier for this enlistment.
         private EnlistmentTraceIdentifier _traceIdentifier;
@@ -82,11 +82,11 @@ namespace System.Transactions
 
         // Parent Enlistment Object
         private readonly Enlistment _enlistment;
-        private PreparingEnlistment _preparingEnlistment;
-        private SinglePhaseEnlistment _singlePhaseEnlistment;
+        private PreparingEnlistment? _preparingEnlistment;
+        private SinglePhaseEnlistment? _singlePhaseEnlistment;
 
         // If this enlistment is promoted store the object it delegates to.
-        private IPromotedEnlistment _promotedEnlistment;
+        private IPromotedEnlistment? _promotedEnlistment;
 
         // For Recovering Enlistments
         protected InternalEnlistment(Enlistment enlistment, IEnlistmentNotification twoPhaseNotifications)
@@ -113,7 +113,7 @@ namespace System.Transactions
             Enlistment enlistment,
             InternalTransaction transaction,
             IEnlistmentNotification twoPhaseNotifications,
-            ISinglePhaseNotification singlePhaseNotifications,
+            ISinglePhaseNotification? singlePhaseNotifications,
             Transaction atomicTransaction)
         {
             _enlistment = enlistment;
@@ -139,7 +139,10 @@ namespace System.Transactions
 
         internal EnlistmentState State
         {
-            get { return _twoPhaseState; }
+            get {
+                Debug.Assert(_twoPhaseState != null);
+                return _twoPhaseState;
+            }
             set { _twoPhaseState = value; }
         }
 
@@ -182,9 +185,9 @@ namespace System.Transactions
             }
         }
 
-        internal IEnlistmentNotification EnlistmentNotification => _twoPhaseNotifications;
+        internal IEnlistmentNotification? EnlistmentNotification => _twoPhaseNotifications;
 
-        internal ISinglePhaseNotification SinglePhaseNotification => _singlePhaseNotifications;
+        internal ISinglePhaseNotification? SinglePhaseNotification => _singlePhaseNotifications;
 
         internal virtual IPromotableSinglePhaseNotification PromotableSinglePhaseNotification
         {
@@ -195,7 +198,7 @@ namespace System.Transactions
             }
         }
 
-        internal IPromotedEnlistment PromotedEnlistment
+        internal IPromotedEnlistment? PromotedEnlistment
         {
             get { return _promotedEnlistment; }
             set { _promotedEnlistment = value; }
@@ -255,7 +258,7 @@ namespace System.Transactions
             if (Transaction._phase0Volatiles._preparedVolatileEnlistments ==
                 Transaction._phase0VolatileWaveCount + Transaction._phase0Volatiles._dependentClones)
             {
-                Transaction.State.Phase0VolatilePrepareDone(Transaction);
+                Transaction.State!.Phase0VolatilePrepareDone(Transaction);
             }
         }
 
@@ -274,6 +277,7 @@ namespace System.Transactions
             _promotedEnlistment = singlePhaseEnlistment;
             try
             {
+                Debug.Assert(_singlePhaseNotifications != null);
                 _singlePhaseNotifications.SinglePhaseCommit(SinglePhaseEnlistment);
                 spcCommitted = true;
             }
@@ -290,6 +294,7 @@ namespace System.Transactions
             IPromotedEnlistment preparingEnlistment
             )
         {
+            Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = preparingEnlistment;
             _twoPhaseNotifications.Prepare(PreparingEnlistment);
         }
@@ -298,6 +303,7 @@ namespace System.Transactions
             IPromotedEnlistment enlistment
             )
         {
+            Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Commit(Enlistment);
         }
@@ -306,6 +312,7 @@ namespace System.Transactions
             IPromotedEnlistment enlistment
             )
         {
+            Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Rollback(Enlistment);
         }
@@ -314,6 +321,7 @@ namespace System.Transactions
             IPromotedEnlistment enlistment
             )
         {
+            Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.InDoubt(Enlistment);
         }
@@ -329,7 +337,7 @@ namespace System.Transactions
             Guid resourceManagerIdentifier,
             InternalTransaction transaction,
             IEnlistmentNotification twoPhaseNotifications,
-            ISinglePhaseNotification singlePhaseNotifications,
+            ISinglePhaseNotification? singlePhaseNotifications,
             Transaction atomicTransaction) :
             base(enlistment, transaction, twoPhaseNotifications, singlePhaseNotifications, atomicTransaction)
         {
@@ -389,7 +397,7 @@ namespace System.Transactions
             Enlistment enlistment,
             InternalTransaction transaction,
             IEnlistmentNotification twoPhaseNotifications,
-            ISinglePhaseNotification singlePhaseNotifications,
+            ISinglePhaseNotification? singlePhaseNotifications,
             Transaction atomicTransaction)
             : base(enlistment, transaction, twoPhaseNotifications, singlePhaseNotifications, atomicTransaction)
         {
@@ -414,7 +422,7 @@ namespace System.Transactions
                 _transaction._phase1Volatiles._volatileEnlistmentCount +
                 _transaction._phase1Volatiles._dependentClones)
             {
-                _transaction.State.Phase1VolatilePrepareDone(_transaction);
+                _transaction.State!.Phase1VolatilePrepareDone(_transaction);
             }
         }
     }
@@ -433,7 +441,7 @@ namespace System.Transactions
             Guid resourceManagerIdentifier,
             InternalTransaction transaction,
             IEnlistmentNotification twoPhaseNotifications,
-            ISinglePhaseNotification singlePhaseNotifications,
+            ISinglePhaseNotification? singlePhaseNotifications,
             Transaction atomicTransaction)
         {
             _internalEnlistment = new DurableInternalEnlistment(
@@ -449,7 +457,7 @@ namespace System.Transactions
         internal Enlistment(
             InternalTransaction transaction,
             IEnlistmentNotification twoPhaseNotifications,
-            ISinglePhaseNotification singlePhaseNotifications,
+            ISinglePhaseNotification? singlePhaseNotifications,
             Transaction atomicTransaction,
             EnlistmentOptions enlistmentOptions)
         {

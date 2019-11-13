@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Transactions
@@ -26,7 +27,7 @@ namespace System.Transactions
         {
         }
 
-        internal CommittableTransaction(IsolationLevel isoLevel, TimeSpan timeout) : base(isoLevel, (InternalTransaction)null)
+        internal CommittableTransaction(IsolationLevel isoLevel, TimeSpan timeout) : base(isoLevel, (InternalTransaction?)null)
         {
             // object to use for synchronization rather than locking on a public object
             _internalTransaction = new InternalTransaction(timeout, this);
@@ -42,7 +43,7 @@ namespace System.Transactions
             }
         }
 
-        public IAsyncResult BeginCommit(AsyncCallback asyncCallback, object asyncState)
+        public IAsyncResult BeginCommit(AsyncCallback? asyncCallback, object? asyncState)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -63,6 +64,7 @@ namespace System.Transactions
                     throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
                 }
 
+                Debug.Assert(_internalTransaction.State != null);
                 // this.complete will get set to true when the transaction enters a state that is
                 // beyond Phase0.
                 _internalTransaction.State.BeginCommit(_internalTransaction, true, asyncCallback, asyncState);
@@ -99,6 +101,7 @@ namespace System.Transactions
                     throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
                 }
 
+                Debug.Assert(_internalTransaction.State != null);
                 _internalTransaction.State.BeginCommit(_internalTransaction, false, null, null);
 
                 // now that commit has started wait for the monitor on the transaction to know
@@ -134,6 +137,7 @@ namespace System.Transactions
                 return;
             }
 
+            Debug.Assert(_internalTransaction.State != null);
             if (_internalTransaction.State.get_Status(_internalTransaction) == TransactionStatus.Active)
             {
                 lock (_internalTransaction)
@@ -173,6 +177,7 @@ namespace System.Transactions
             {
                 do
                 {
+                    Debug.Assert(_internalTransaction.State != null);
                     if (_internalTransaction.State.IsCompleted(_internalTransaction))
                     {
                         break;
@@ -188,7 +193,7 @@ namespace System.Transactions
             }
         }
 
-        object IAsyncResult.AsyncState => _internalTransaction._asyncState;
+        object? IAsyncResult.AsyncState => _internalTransaction._asyncState;
 
         bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
 
@@ -202,6 +207,7 @@ namespace System.Transactions
                     {
                         if (_internalTransaction._asyncResultEvent == null)
                         {
+                            Debug.Assert(_internalTransaction.State != null);
                             // Demand create an event that is already signaled if the transaction has completed.
                             ManualResetEvent temp = new ManualResetEvent(
                                 _internalTransaction.State.get_Status(_internalTransaction) != TransactionStatus.Active);
@@ -221,6 +227,7 @@ namespace System.Transactions
             {
                 lock (_internalTransaction)
                 {
+                    Debug.Assert(_internalTransaction.State != null);
                     return _internalTransaction.State.get_Status(_internalTransaction) != TransactionStatus.Active;
                 }
             }

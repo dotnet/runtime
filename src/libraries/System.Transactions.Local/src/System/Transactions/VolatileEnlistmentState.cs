@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Transactions
@@ -11,19 +12,19 @@ namespace System.Transactions
     // Base class for all volatile enlistment states
     internal abstract class VolatileEnlistmentState : EnlistmentState
     {
-        private static VolatileEnlistmentActive s_volatileEnlistmentActive;
-        private static VolatileEnlistmentPreparing s_volatileEnlistmentPreparing;
-        private static VolatileEnlistmentPrepared s_volatileEnlistmentPrepared;
-        private static VolatileEnlistmentSPC s_volatileEnlistmentSPC;
-        private static VolatileEnlistmentPreparingAborting s_volatileEnlistmentPreparingAborting;
-        private static VolatileEnlistmentAborting s_volatileEnlistmentAborting;
-        private static VolatileEnlistmentCommitting s_volatileEnlistmentCommitting;
-        private static VolatileEnlistmentInDoubt s_volatileEnlistmentInDoubt;
-        private static VolatileEnlistmentEnded s_volatileEnlistmentEnded;
-        private static VolatileEnlistmentDone s_volatileEnlistmentDone;
+        private static VolatileEnlistmentActive? s_volatileEnlistmentActive;
+        private static VolatileEnlistmentPreparing? s_volatileEnlistmentPreparing;
+        private static VolatileEnlistmentPrepared? s_volatileEnlistmentPrepared;
+        private static VolatileEnlistmentSPC? s_volatileEnlistmentSPC;
+        private static VolatileEnlistmentPreparingAborting? s_volatileEnlistmentPreparingAborting;
+        private static VolatileEnlistmentAborting? s_volatileEnlistmentAborting;
+        private static VolatileEnlistmentCommitting? s_volatileEnlistmentCommitting;
+        private static VolatileEnlistmentInDoubt? s_volatileEnlistmentInDoubt;
+        private static VolatileEnlistmentEnded? s_volatileEnlistmentEnded;
+        private static VolatileEnlistmentDone? s_volatileEnlistmentDone;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
+        private static object? s_classSyncObject;
 
         internal static VolatileEnlistmentActive VolatileEnlistmentActive =>
             LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentActive, ref s_classSyncObject, () => new VolatileEnlistmentActive());
@@ -144,6 +145,7 @@ namespace System.Transactions
                     etwLog.EnlistmentStatus(enlistment, NotificationCall.Prepare);
                 }
 
+                Debug.Assert(enlistment.EnlistmentNotification != null);
                 enlistment.EnlistmentNotification.Prepare(enlistment.PreparingEnlistment);
             }
             finally
@@ -170,11 +172,12 @@ namespace System.Transactions
         }
 
         // The enlistment says to abort start the abort sequence.
-        internal override void ForceRollback(InternalEnlistment enlistment, Exception e)
+        internal override void ForceRollback(InternalEnlistment enlistment, Exception? e)
         {
             // Change enlistment state to aborting
             VolatileEnlistmentEnded.EnterState(enlistment);
 
+            Debug.Assert(enlistment.Transaction.State != null);
             // Start the transaction aborting
             enlistment.Transaction.State.ChangeStateTransactionAborted(enlistment.Transaction, e);
 
@@ -217,6 +220,7 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try // Don't hold this lock while calling into the application code.
             {
+                Debug.Assert(enlistment.SinglePhaseNotification != null);
                 enlistment.SinglePhaseNotification.SinglePhaseCommit(enlistment.SinglePhaseEnlistment);
                 spcCommitted = true;
             }
@@ -235,23 +239,26 @@ namespace System.Transactions
         internal override void EnlistmentDone(InternalEnlistment enlistment)
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
+            Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.ChangeStateTransactionCommitted(enlistment.Transaction);
         }
 
         internal override void Committed(InternalEnlistment enlistment)
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
+            Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.ChangeStateTransactionCommitted(enlistment.Transaction);
         }
 
-        internal override void Aborted(InternalEnlistment enlistment, Exception e)
+        internal override void Aborted(InternalEnlistment enlistment, Exception? e)
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
 
+            Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.ChangeStateTransactionAborted(enlistment.Transaction, e);
         }
 
-        internal override void InDoubt(InternalEnlistment enlistment, Exception e)
+        internal override void InDoubt(InternalEnlistment enlistment, Exception? e)
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
 
@@ -260,6 +267,7 @@ namespace System.Transactions
                 enlistment.Transaction._innerException = e;
             }
 
+            Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.InDoubtFromEnlistment(enlistment.Transaction);
         }
     }
@@ -324,7 +332,7 @@ namespace System.Transactions
         }
 
         // The enlistment says to abort start the abort sequence.
-        internal override void ForceRollback(InternalEnlistment enlistment, Exception e)
+        internal override void ForceRollback(InternalEnlistment enlistment, Exception? e)
         {
             // Change enlistment state to aborting
             VolatileEnlistmentEnded.EnterState(enlistment);
@@ -365,6 +373,7 @@ namespace System.Transactions
                     etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
                 }
 
+                Debug.Assert(enlistment.EnlistmentNotification != null);
                 enlistment.EnlistmentNotification.Rollback(enlistment.SinglePhaseEnlistment);
             }
             finally
@@ -407,6 +416,7 @@ namespace System.Transactions
                     etwLog.EnlistmentStatus(enlistment, NotificationCall.Commit);
                 }
 
+                Debug.Assert(enlistment.EnlistmentNotification != null);
                 // Forward the notification to the enlistment
                 enlistment.EnlistmentNotification.Commit(enlistment.Enlistment);
             }
@@ -440,6 +450,7 @@ namespace System.Transactions
                     etwLog.EnlistmentStatus(enlistment, NotificationCall.InDoubt);
                 }
 
+                Debug.Assert(enlistment.EnlistmentNotification != null);
                 // Forward the notification to the enlistment
                 enlistment.EnlistmentNotification.InDoubt(enlistment.PreparingEnlistment);
             }
@@ -492,7 +503,7 @@ namespace System.Transactions
             // the transaction tells it to do so
         }
 
-        internal override void InDoubt(InternalEnlistment enlistment, Exception e)
+        internal override void InDoubt(InternalEnlistment enlistment, Exception? e)
         {
             // Ignore this in case the enlistment gets here before
             // the transaction tells it to do so

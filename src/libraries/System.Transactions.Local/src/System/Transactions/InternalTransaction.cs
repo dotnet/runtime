@@ -17,9 +17,9 @@ namespace System.Transactions
     {
         // This variable manages the state of the transaction it should be one of the
         // static elements of TransactionState derived from TransactionState.
-        protected TransactionState _transactionState;
+        protected TransactionState? _transactionState;
 
-        internal TransactionState State
+        internal TransactionState? State
         {
             get { return _transactionState; }
             set { _transactionState = value; }
@@ -39,7 +39,7 @@ namespace System.Transactions
         // The promoted token for the transaction.
         // This is set when the transaction is promoted. For an MSDTC transaction, it is the
         // same as the DTC propagation token.
-        internal byte[] promotedToken;
+        internal byte[]? promotedToken;
 
         // This is only used if the promoter type is different than TransactionInterop.PromoterTypeDtc.
         // The promoter is supposed to tell us what the distributed transaction id after promoting it.
@@ -54,7 +54,7 @@ namespace System.Transactions
 #endif
 
         // Finalized object see class definition for the use of this object
-        internal FinalizedObject _finalizedObject;
+        internal FinalizedObject? _finalizedObject;
 
         internal readonly int _transactionHash;
         internal int TransactionHash => _transactionHash;
@@ -84,7 +84,7 @@ namespace System.Transactions
         // operation repeatedly for a given type of transaction.  So if a transaction of a specific
         // type continually causes the array size to be increased the LTM could start
         // allocating a larger array initially for transactions of that type.
-        internal InternalEnlistment _durableEnlistment;
+        internal InternalEnlistment? _durableEnlistment;
         internal VolatileEnlistmentSet _phase0Volatiles;
         internal VolatileEnlistmentSet _phase1Volatiles;
 
@@ -94,7 +94,7 @@ namespace System.Transactions
         // These members are used for promoted waves of dependent blocking clones.  The Ltm
         // does not register individually for each blocking clone created in phase 0.  Instead
         // it multiplexes a single phase 0 blocking clone only created after phase 0 has started.
-        internal DistributedDependentTransaction _phase0WaveDependentClone;
+        internal DistributedDependentTransaction? _phase0WaveDependentClone;
         internal int _phase0WaveDependentCloneCount;
 
         // These members are used for keeping track of aborting dependent clones if we promote
@@ -106,22 +106,22 @@ namespace System.Transactions
         // on the distributed TM takes care of checking to make sure all the aborting dependent
         // clones have completed as part of its Prepare processing.  These are used in conjunction with
         // phase1volatiles.dependentclones.
-        internal DistributedDependentTransaction _abortingDependentClone;
+        internal DistributedDependentTransaction? _abortingDependentClone;
         internal int _abortingDependentCloneCount;
 
         // When the size of the volatile enlistment array grows increase it by this amount.
         internal const int VolatileArrayIncrement = 8;
 
         // Data maintained for TransactionTable participation
-        internal Bucket _tableBucket;
+        internal Bucket? _tableBucket;
         internal int _bucketIndex;
 
         // Delegate to fire on transaction completion
-        internal TransactionCompletedEventHandler _transactionCompletedDelegate;
+        internal TransactionCompletedEventHandler? _transactionCompletedDelegate;
 
         // If this transaction get's promoted keep a reference to the promoted transaction
-        private DistributedTransaction _promotedTransaction;
-        internal DistributedTransaction PromotedTransaction
+        private DistributedTransaction? _promotedTransaction;
+        internal DistributedTransaction? PromotedTransaction
         {
             get { return _promotedTransaction; }
             set
@@ -133,7 +133,7 @@ namespace System.Transactions
 
         // If there was an exception that happened during promotion save that exception so that it
         // can be used as an inner exception to the transaciton aborted exception.
-        internal Exception _innerException = null;
+        internal Exception? _innerException = null;
 
         // Note the number of Transaction objects supported by this object
         internal int _cloneCount;
@@ -143,31 +143,31 @@ namespace System.Transactions
 
         // Double-checked locking pattern requires volatile for read/write synchronization
         // Manual Reset event for IAsyncResult support
-        internal volatile ManualResetEvent _asyncResultEvent;
+        internal volatile ManualResetEvent? _asyncResultEvent;
 
         // Store the callback and state for the caller of BeginCommit
         internal bool _asyncCommit;
-        internal AsyncCallback _asyncCallback;
-        internal object _asyncState;
+        internal AsyncCallback? _asyncCallback;
+        internal object? _asyncState;
 
         // Flag to indicate if we need to be pulsed for tx completion
         internal bool _needPulse;
 
         // Store the transaction information object
-        internal TransactionInformation _transactionInformation;
+        internal TransactionInformation? _transactionInformation;
 
         // Store a reference to the owning Committable Transaction
-        internal readonly CommittableTransaction _committableTransaction;
+        internal readonly CommittableTransaction? _committableTransaction;
 
         // Store a reference to the outcome source
         internal readonly Transaction _outcomeSource;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
+        private static object? s_classSyncObject;
 
-        internal Guid DistributedTxId => State.get_Identifier(this);
+        internal Guid DistributedTxId => State!.get_Identifier(this);
 
-        private static string s_instanceIdentifier;
+        private static string? s_instanceIdentifier;
         internal static string InstanceIdentifier =>
             LazyInitializer.EnsureInitialized(ref s_instanceIdentifier, ref s_classSyncObject, () => Guid.NewGuid().ToString() + ":");
 
@@ -198,7 +198,7 @@ namespace System.Transactions
             }
         }
 
-        internal ITransactionPromoter _promoter;
+        internal ITransactionPromoter? _promoter;
 
         // This member is used to allow a PSPE enlistment to call Transaction.PSPEPromoteAndConvertToEnlistDurable when it is
         // asked to promote a transaction. The value is set to true in TransactionStatePSPEOperation.PSPEPromote before the
@@ -291,15 +291,17 @@ namespace System.Transactions
 
         internal static void DistributedTransactionOutcome(InternalTransaction tx, TransactionStatus status)
         {
-            FinalizedObject fo = null;
+            FinalizedObject? fo = null;
 
             lock (tx)
             {
                 if (null == tx._innerException)
                 {
+                    Debug.Assert(tx.PromotedTransaction != null);
                     tx._innerException = tx.PromotedTransaction.InnerException;
                 }
 
+                Debug.Assert(tx.State! != null);
                 switch (status)
                 {
                     case TransactionStatus.Committed:
@@ -356,6 +358,7 @@ namespace System.Transactions
                 Monitor.Exit(this); // Don't hold a lock calling user code.
                 try
                 {
+                    Debug.Assert(_committableTransaction != null);
                     _asyncCallback(_committableTransaction);
                 }
                 finally
@@ -368,7 +371,7 @@ namespace System.Transactions
         // Fire completion to anyone registered for outcome
         internal void FireCompletion()
         {
-            TransactionCompletedEventHandler eventHandlers = _transactionCompletedDelegate;
+            TransactionCompletedEventHandler? eventHandlers = _transactionCompletedDelegate;
 
             if (eventHandlers != null)
             {
@@ -429,7 +432,7 @@ namespace System.Transactions
             Hashtable promotedTransactionTable = TransactionManager.PromotedTransactionTable;
             lock (promotedTransactionTable)
             {
-                WeakReference weakRef = (WeakReference)promotedTransactionTable[_identifier];
+                WeakReference? weakRef = (WeakReference?)promotedTransactionTable[_identifier];
                 if (null != weakRef)
                 {
                     if (weakRef.Target != null)

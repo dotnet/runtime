@@ -12,11 +12,11 @@ namespace System.Transactions
         public CommittableTransaction() { }
         public CommittableTransaction(System.TimeSpan timeout) { }
         public CommittableTransaction(System.Transactions.TransactionOptions options) { }
-        object System.IAsyncResult.AsyncState { get { throw null; } }
+        object? System.IAsyncResult.AsyncState { get { throw null; } }
         System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { throw null; } }
         bool System.IAsyncResult.CompletedSynchronously { get { throw null; } }
         bool System.IAsyncResult.IsCompleted { get { throw null; } }
-        public System.IAsyncResult BeginCommit(System.AsyncCallback asyncCallback, object asyncState) { throw null; }
+        public System.IAsyncResult BeginCommit(System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public void Commit() { }
         public void EndCommit(System.IAsyncResult asyncResult) { }
     }
@@ -47,7 +47,7 @@ namespace System.Transactions
         Automatic = 1,
         Full = 2,
     }
-    public delegate System.Transactions.Transaction HostCurrentTransactionCallback();
+    public delegate System.Transactions.Transaction? HostCurrentTransactionCallback();
     [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IDtcTransaction
     {
@@ -88,13 +88,13 @@ namespace System.Transactions
     }
     public partial interface ITransactionPromoter
     {
-        byte[] Promote();
+        byte[]? Promote();
     }
     public partial class PreparingEnlistment : System.Transactions.Enlistment
     {
         internal PreparingEnlistment() { }
         public void ForceRollback() { }
-        public void ForceRollback(System.Exception e) { }
+        public void ForceRollback(System.Exception? e) { }
         public void Prepared() { }
         public byte[] RecoveryInformation() { throw null; }
     }
@@ -102,10 +102,10 @@ namespace System.Transactions
     {
         internal SinglePhaseEnlistment() { }
         public void Aborted() { }
-        public void Aborted(System.Exception e) { }
+        public void Aborted(System.Exception? e) { }
         public void Committed() { }
         public void InDoubt() { }
-        public void InDoubt(System.Exception e) { }
+        public void InDoubt(System.Exception? e) { }
     }
     public sealed partial class SubordinateTransaction : System.Transactions.Transaction
     {
@@ -114,11 +114,11 @@ namespace System.Transactions
     public partial class Transaction : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal Transaction() { }
-        public static System.Transactions.Transaction Current { get { throw null; } set { } }
+        public static System.Transactions.Transaction? Current { get { throw null; } set { } }
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } }
         public System.Guid PromoterType { get { throw null; } }
         public System.Transactions.TransactionInformation TransactionInformation { get { throw null; } }
-        public event System.Transactions.TransactionCompletedEventHandler TransactionCompleted { add { } remove { } }
+        public event System.Transactions.TransactionCompletedEventHandler? TransactionCompleted { add { } remove { } }
         public System.Transactions.Transaction Clone() { throw null; }
         public System.Transactions.DependentTransaction DependentClone(System.Transactions.DependentCloneOption cloneOption) { throw null; }
         public void Dispose() { }
@@ -128,14 +128,14 @@ namespace System.Transactions
         public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification, System.Guid promoterType) { throw null; }
         public System.Transactions.Enlistment EnlistVolatile(System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
         public System.Transactions.Enlistment EnlistVolatile(System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public byte[] GetPromotedToken() { throw null; }
-        public static bool operator ==(System.Transactions.Transaction x, System.Transactions.Transaction y) { throw null; }
-        public static bool operator !=(System.Transactions.Transaction x, System.Transactions.Transaction y) { throw null; }
+        public static bool operator ==(System.Transactions.Transaction? x, System.Transactions.Transaction? y) { throw null; }
+        public static bool operator !=(System.Transactions.Transaction? x, System.Transactions.Transaction? y) { throw null; }
         public System.Transactions.Enlistment PromoteAndEnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Transactions.ISinglePhaseNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
         public void Rollback() { }
-        public void Rollback(System.Exception e) { }
+        public void Rollback(System.Exception? e) { }
         public void SetDistributedTransactionIdentifier(System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Guid distributedTransactionIdentifier) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext context) { }
     }
@@ -143,28 +143,28 @@ namespace System.Transactions
     {
         public TransactionAbortedException() { }
         protected TransactionAbortedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TransactionAbortedException(string message) { }
-        public TransactionAbortedException(string message, System.Exception innerException) { }
+        public TransactionAbortedException(string? message) { }
+        public TransactionAbortedException(string? message, System.Exception? innerException) { }
     }
-    public delegate void TransactionCompletedEventHandler(object sender, System.Transactions.TransactionEventArgs e);
+    public delegate void TransactionCompletedEventHandler(object? sender, System.Transactions.TransactionEventArgs e);
     public partial class TransactionEventArgs : System.EventArgs
     {
         public TransactionEventArgs() { }
-        public System.Transactions.Transaction Transaction { get { throw null; } }
+        public System.Transactions.Transaction? Transaction { get { throw null; } }
     }
     public partial class TransactionException : System.SystemException
     {
         public TransactionException() { }
         protected TransactionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TransactionException(string message) { }
-        public TransactionException(string message, System.Exception innerException) { }
+        public TransactionException(string? message) { }
+        public TransactionException(string? message, System.Exception? innerException) { }
     }
     public partial class TransactionInDoubtException : System.Transactions.TransactionException
     {
         public TransactionInDoubtException() { }
         protected TransactionInDoubtException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TransactionInDoubtException(string message) { }
-        public TransactionInDoubtException(string message, System.Exception innerException) { }
+        public TransactionInDoubtException(string? message) { }
+        public TransactionInDoubtException(string? message, System.Exception? innerException) { }
     }
     public partial class TransactionInformation
     {
@@ -188,9 +188,10 @@ namespace System.Transactions
     public static partial class TransactionManager
     {
         public static System.TimeSpan DefaultTimeout { get { throw null; } }
-        public static System.Transactions.HostCurrentTransactionCallback HostCurrentCallback { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public static System.Transactions.HostCurrentTransactionCallback? HostCurrentCallback { get { throw null; } set { } }
         public static System.TimeSpan MaximumTimeout { get { throw null; } }
-        public static event System.Transactions.TransactionStartedEventHandler DistributedTransactionStarted { add { } remove { } }
+        public static event System.Transactions.TransactionStartedEventHandler? DistributedTransactionStarted { add { } remove { } }
         public static void RecoveryComplete(System.Guid resourceManagerIdentifier) { }
         public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { throw null; }
     }
@@ -198,15 +199,15 @@ namespace System.Transactions
     {
         public TransactionManagerCommunicationException() { }
         protected TransactionManagerCommunicationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TransactionManagerCommunicationException(string message) { }
-        public TransactionManagerCommunicationException(string message, System.Exception innerException) { }
+        public TransactionManagerCommunicationException(string? message) { }
+        public TransactionManagerCommunicationException(string? message, System.Exception? innerException) { }
     }
     public partial struct TransactionOptions
     {
         private int _dummyPrimitive;
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
         public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
@@ -215,8 +216,8 @@ namespace System.Transactions
     {
         public TransactionPromotionException() { }
         protected TransactionPromotionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TransactionPromotionException(string message) { }
-        public TransactionPromotionException(string message, System.Exception innerException) { }
+        public TransactionPromotionException(string? message) { }
+        public TransactionPromotionException(string? message, System.Exception? innerException) { }
     }
     public sealed partial class TransactionScope : System.IDisposable
     {
@@ -248,7 +249,7 @@ namespace System.Transactions
         RequiresNew = 1,
         Suppress = 2,
     }
-    public delegate void TransactionStartedEventHandler(object sender, System.Transactions.TransactionEventArgs e);
+    public delegate void TransactionStartedEventHandler(object? sender, System.Transactions.TransactionEventArgs e);
     public enum TransactionStatus
     {
         Active = 0,

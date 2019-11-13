@@ -177,17 +177,17 @@ namespace System.Transactions
         // Transactions Events
         //
         [NonEvent]
-        public static string IdOf(object value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
+        public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
         [NonEvent]
-        public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
+        public static int GetHashCode(object? value) => value?.GetHashCode() ?? 0;
 
         #region Transaction Creation
         /// <summary>Trace an event when a new transaction is created.</summary>
         /// <param name="transaction">The transaction that was created.</param>
         /// <param name="type">The type of transaction.</param>Method
         [NonEvent]
-        internal void TransactionCreated(Transaction transaction, string type)
+        internal void TransactionCreated(Transaction transaction, string? type)
         {
             Debug.Assert(transaction != null, "Transaction needed for the ETW event.");
 
@@ -201,7 +201,7 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_CREATED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.Create, Message = "Transaction Created. ID is {0}, type is {1}")]
-        private void TransactionCreated(string transactionIdentifier, string type)
+        private void TransactionCreated(string transactionIdentifier, string? type)
         {
             SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_CREATED_EVENTID, transactionIdentifier, type);
@@ -267,7 +267,7 @@ namespace System.Transactions
         /// <param name="message">The message for the exception.</param>
         /// <param name="innerExceptionStr">The inner exception.</param>
         [NonEvent]
-        internal void TransactionExceptionTrace(TraceSourceType traceSource, TransactionExceptionType type, string message, string innerExceptionStr)
+        internal void TransactionExceptionTrace(TraceSourceType traceSource, TransactionExceptionType type, string? message, string? innerExceptionStr)
         {
             if (IsEnabled(EventLevel.Error, ALL_KEYWORDS))
             {
@@ -287,7 +287,7 @@ namespace System.Transactions
         /// <param name="message">The message for the exception.</param>
         /// <param name="innerExceptionStr">The inner exception.</param>
         [NonEvent]
-        internal void TransactionExceptionTrace(TransactionExceptionType type, string message, string innerExceptionStr)
+        internal void TransactionExceptionTrace(TransactionExceptionType type, string? message, string? innerExceptionStr)
         {
             if (IsEnabled(EventLevel.Error, ALL_KEYWORDS))
             {
@@ -296,14 +296,14 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_EXCEPTION_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Error, Task = Tasks.TransactionException, Message = "Transaction Exception. Type is {0}, message is {1}, InnerException is {2}")]
-        private void TransactionExceptionBase(string type, string message, string innerExceptionStr)
+        private void TransactionExceptionBase(string? type, string? message, string? innerExceptionStr)
         {
             SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_EXCEPTION_BASE_EVENTID, type, message, innerExceptionStr);
         }
 
         [Event(TRANSACTION_EXCEPTION_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Error, Task = Tasks.TransactionException, Message = "Transaction Exception. Type is {0}, message is {1}, InnerException is {2}")]
-        private void TransactionExceptionLtm(string type, string message, string innerExceptionStr)
+        private void TransactionExceptionLtm(string? type, string? message, string? innerExceptionStr)
         {
             SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_EXCEPTION_LTM_EVENTID, type, message, innerExceptionStr);
@@ -315,7 +315,7 @@ namespace System.Transactions
         /// <param name="type">The type of transaction.</param>
         /// <param name="operation">The operationont the transaction.</param>
         [NonEvent]
-        internal void InvalidOperation(string type, string operation)
+        internal void InvalidOperation(string? type, string? operation)
         {
             if (IsEnabled(EventLevel.Error, ALL_KEYWORDS))
             {
@@ -324,7 +324,7 @@ namespace System.Transactions
             }
         }
         [Event(TRANSACTION_INVALID_OPERATION_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Error, Task = Tasks.Transaction, Opcode = Opcodes.InvalidOperation, Message = "Transaction Invalid Operation. ID is {0}, type is {1} and operation is {2}")]
-        private void TransactionInvalidOperation(string transactionIdentifier, string type, string operation)
+        private void TransactionInvalidOperation(string? transactionIdentifier, string? type, string? operation)
         {
             SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_INVALID_OPERATION_EVENTID, transactionIdentifier, type, operation);
@@ -336,7 +336,7 @@ namespace System.Transactions
         /// <param name="transaction">The transaction to rollback.</param>
         /// <param name="type">The type of transaction.</param>
         [NonEvent]
-        internal void TransactionRollback(Transaction transaction, string type)
+        internal void TransactionRollback(Transaction transaction, string? type)
         {
             Debug.Assert(transaction != null, "Transaction needed for the ETW event.");
 
@@ -350,7 +350,7 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_ROLLBACK_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Rollback, Message = "Transaction Rollback. ID is {0}, type is {1}")]
-        private void TransactionRollback(string transactionIdentifier, string type)
+        private void TransactionRollback(string transactionIdentifier, string? type)
         {
             SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_ROLLBACK_EVENTID, transactionIdentifier, type);
@@ -362,7 +362,7 @@ namespace System.Transactions
         /// <param name="transaction">The transaction that do dependent clone.</param>
         /// <param name="type">The type of transaction.</param>
         [NonEvent]
-        internal void TransactionDependentCloneComplete(Transaction transaction, string type)
+        internal void TransactionDependentCloneComplete(Transaction transaction, string? type)
         {
             Debug.Assert(transaction != null, "Transaction needed for the ETW event.");
 
@@ -376,7 +376,7 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.DependentCloneComplete, Message = "Transaction Dependent Clone Completed. ID is {0}, type is {1}")]
-        private void TransactionDependentCloneComplete(string transactionIdentifier, string type)
+        private void TransactionDependentCloneComplete(string transactionIdentifier, string? type)
         {
             SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, transactionIdentifier, type);
@@ -388,7 +388,7 @@ namespace System.Transactions
         /// <param name="transaction">The transaction to commit.</param>
         /// <param name="type">The type of transaction.</param>
         [NonEvent]
-        internal void TransactionCommit(Transaction transaction, string type)
+        internal void TransactionCommit(Transaction transaction, string? type)
         {
             Debug.Assert(transaction != null, "Transaction needed for the ETW event.");
 
@@ -402,7 +402,7 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_COMMIT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Transaction, Opcode = Opcodes.Commit, Message = "Transaction Commit: ID is {0}, type is {1}")]
-        private void TransactionCommit(string transactionIdentifier, string type)
+        private void TransactionCommit(string transactionIdentifier, string? type)
         {
             SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_COMMIT_EVENTID, transactionIdentifier, type);
@@ -592,7 +592,7 @@ namespace System.Transactions
         /// <param name="thisOrContextObject">'this', or another object that serves to provide context for the operation.</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodEnter(TraceSourceType traceSource, object thisOrContextObject, [CallerMemberName] string methodname = null)
+        internal void MethodEnter(TraceSourceType traceSource, object? thisOrContextObject, [CallerMemberName] string? methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
@@ -615,7 +615,7 @@ namespace System.Transactions
         /// <param name="traceSource"> trace source</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodEnter(TraceSourceType traceSource, [CallerMemberName] string methodname = null)
+        internal void MethodEnter(TraceSourceType traceSource, [CallerMemberName] string? methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
@@ -635,19 +635,19 @@ namespace System.Transactions
         }
 
         [Event(METHOD_ENTER_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
-        private void MethodEnterTraceLtm(string thisOrContextObject, string methodname)
+        private void MethodEnterTraceLtm(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_LTM_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_ENTER_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
-        private void MethodEnterTraceBase(string thisOrContextObject, string methodname)
+        private void MethodEnterTraceBase(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_BASE_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_ENTER_DISTRIBUTED_EVENTID, Keywords = Keywords.TraceDistributed, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
-        private void MethodEnterTraceDistributed(string thisOrContextObject, string methodname)
+        private void MethodEnterTraceDistributed(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_DISTRIBUTED_EVENTID, thisOrContextObject, methodname);
@@ -660,7 +660,7 @@ namespace System.Transactions
         /// <param name="thisOrContextObject">'this', or another object that serves to provide context for the operation.</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodExit(TraceSourceType traceSource, object thisOrContextObject, [CallerMemberName] string methodname = null)
+        internal void MethodExit(TraceSourceType traceSource, object? thisOrContextObject, [CallerMemberName] string? methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
@@ -683,7 +683,7 @@ namespace System.Transactions
         /// <param name="traceSource"> trace source</param>
         /// <param name="methodname">The name of method.</param>
         [NonEvent]
-        internal void MethodExit(TraceSourceType traceSource, [CallerMemberName] string methodname = null)
+        internal void MethodExit(TraceSourceType traceSource, [CallerMemberName] string? methodname = null)
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
@@ -703,19 +703,19 @@ namespace System.Transactions
         }
 
         [Event(METHOD_EXIT_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
-        private void MethodExitTraceLtm(string thisOrContextObject, string methodname)
+        private void MethodExitTraceLtm(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_LTM_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_EXIT_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
-        private void MethodExitTraceBase(string thisOrContextObject, string methodname)
+        private void MethodExitTraceBase(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_BASE_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_EXIT_DISTRIBUTED_EVENTID, Keywords = Keywords.TraceDistributed, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
-        private void MethodExitTraceDistributed(string thisOrContextObject, string methodname)
+        private void MethodExitTraceDistributed(string thisOrContextObject, string? methodname)
         {
             SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_DISTRIBUTED_EVENTID, thisOrContextObject, methodname);
@@ -942,7 +942,7 @@ namespace System.Transactions
         /// <summary>Trace an event when there is an internal error on transactionscope.</summary>
         /// <param name="error">The error information.</param>
         [NonEvent]
-        internal void TransactionScopeInternalError(string error)
+        internal void TransactionScopeInternalError(string? error)
         {
             if (IsEnabled(EventLevel.Critical, ALL_KEYWORDS))
             {
@@ -951,7 +951,7 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Critical, Task = Tasks.TransactionScope, Opcode = Opcodes.InternalError, Message = "Transactionscope internal error: {0}")]
-        private void TransactionScopeInternalErrorTrace(string error)
+        private void TransactionScopeInternalErrorTrace(string? error)
         {
             SetActivityId(string.Empty);
             WriteEvent(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, error);

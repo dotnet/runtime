@@ -52,7 +52,7 @@ namespace System.Transactions
             }
         }
 
-        public void ForceRollback(Exception e)
+        public void ForceRollback(Exception? e)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())

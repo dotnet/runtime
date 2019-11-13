@@ -6,6 +6,6 @@ namespace System.Transactions
 {
     public interface ITransactionPromoter
     {
-        byte[] Promote();
+        byte[]? Promote();
     }
 }

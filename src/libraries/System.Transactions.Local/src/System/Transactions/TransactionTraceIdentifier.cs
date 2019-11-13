@@ -34,7 +34,7 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object obj) => obj is TransactionTraceIdentifier && Equals((TransactionTraceIdentifier)obj);
+        public override bool Equals(object? obj) => obj is TransactionTraceIdentifier transactionTraceId && Equals(transactionTraceId);
 
         public bool Equals(TransactionTraceIdentifier other) =>
             _cloneIdentifier == other._cloneIdentifier &&

@@ -8,7 +8,7 @@ namespace System.Transactions.Distributed
 {
     internal sealed class DistributedTransactionManager
     {
-        internal object NodeName { get; set; }
+        internal object? NodeName { get; set; }
 
         internal IPromotedEnlistment ReenlistTransaction(Guid resourceManagerIdentifier, byte[] resourceManagerRecoveryInformation, RecoveringInternalEnlistment internalEnlistment)
         {
@@ -74,12 +74,12 @@ namespace System.Transactions.Distributed
             throw new PlatformNotSupportedException();
         }
 
-        internal Exception InnerException { get; set; }
+        internal Exception? InnerException { get; set; }
         internal Guid Identifier { get; set; }
-        internal RealDistributedTransaction RealTransaction { get; set; }
+        internal RealDistributedTransaction? RealTransaction { get; set; }
         internal TransactionTraceIdentifier TransactionTraceId { get; set; }
         internal IsolationLevel IsolationLevel { get; set; }
-        internal Transaction SavedLtmPromotedTransaction { get; set; }
+        internal Transaction? SavedLtmPromotedTransaction { get; set; }
 
         internal void Dispose()
         {
@@ -149,7 +149,7 @@ namespace System.Transactions.Distributed
 
         internal class RealDistributedTransaction
         {
-            internal InternalTransaction InternalTransaction { get; set; }
+            internal InternalTransaction? InternalTransaction { get; set; }
         }
     }
 
