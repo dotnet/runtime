@@ -78,8 +78,8 @@
         <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
           <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
         </Compile>
-        <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
-          <Link>ProductionCode\Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+        <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+          <Link>ProductionCode\System\Threading\Tasks\TaskToApm.cs</Link>
         </Compile>
       </ItemGroup>
       <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

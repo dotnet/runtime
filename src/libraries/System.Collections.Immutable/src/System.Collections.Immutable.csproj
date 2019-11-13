@@ -84,13 +84,13 @@
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\Versioning\NonVersionableAttribute.cs">
+    <Compile Include="$(CoreLibDir)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\CoreLib\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+      <Link>System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

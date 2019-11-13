@@ -6,8 +6,8 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
-      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
+    <Compile Include="$(CoreLibDir)System\PasteArguments.cs">
+      <Link>System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
@@ -39,15 +39,15 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
-      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
+    <Compile Include="$(CoreLibDir)System\PasteArguments.Windows.cs">
+      <Link>System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
-      <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
+    <Compile Include="$(CoreLibDir)System\PasteArguments.Unix.cs">
+      <Link>System\PasteArguments.Unix.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

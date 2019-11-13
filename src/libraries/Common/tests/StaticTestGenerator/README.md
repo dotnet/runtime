@@ -101,7 +101,7 @@ Xunit.Sdk.ThrowsException: Assert.Throws() Failure
 Expected: typeof(System.PlatformNotSupportedException)
 Actual:   typeof(System.ArgumentException): Handle is not initialized.
    at System.ArgIterator..ctor(IntPtr arglist)
-   at System.ArgIterator..ctor(RuntimeArgumentHandle arglist) in F:\vsagent\80\s\src\System.Private.CoreLib\src\System\ArgIterator.cs:line 39
+   at System.ArgIterator..ctor(RuntimeArgumentHandle arglist) in F:\vsagent\80\s\src\System\ArgIterator.cs:line 39
    at System.Tests.ArgIteratorTests.<>c.<ArgIterator_Throws_PlatformNotSupportedException>b__6_0()
    at Xunit.Assert.RecordException(Action testCode) in C:\projects\xunit\src\xunit.assert\Asserts\Record.cs:line 28
 

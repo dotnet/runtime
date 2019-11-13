@@ -20,11 +20,11 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>ProductionCode\Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>ProductionCode\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
@@ -86,8 +86,8 @@
     <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\WhitespaceReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
-      <Link>ProductionCode\Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+      <Link>ProductionCode\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs</Link>

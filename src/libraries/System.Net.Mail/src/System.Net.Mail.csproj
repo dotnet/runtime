@@ -234,8 +234,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
       <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>

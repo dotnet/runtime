@@ -260,6 +260,9 @@
   <PropertyGroup>
     <CommonPath>$(LibrariesProjectRoot)Common\src</CommonPath>
     <CommonTestPath>$(LibrariesProjectRoot)Common\tests</CommonTestPath>
+
+    <CoreLibDir Condition="'$(IsRuntimeRepository)' != 'true'">$([MSBuild]::NormalizeDirectory('$(CommonPath)', 'CoreLib'))</CoreLibDir>
+    <CoreLibDir Condition="'$(IsRuntimeRepository)' == 'true'">$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibDir>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->

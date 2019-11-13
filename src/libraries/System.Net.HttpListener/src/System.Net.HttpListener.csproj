@@ -100,7 +100,7 @@
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
     <Compile Include="System\Net\Windows\CookieExtensions.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CoreLibDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
@@ -140,8 +140,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs">
+      <Link>Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WebSocket\Interop.Structs.cs">
       <Link>Common\Interop\Windows\WebSocket\Interop.Structs.cs</Link>
@@ -188,7 +188,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
       <Link>Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
       <Link>Common\Interop\Windows\mincore\Interop.CancelIoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
@@ -197,8 +197,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\mincore\Interop.LoadLibraryEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\CoreLib\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs</Link>
@@ -209,8 +209,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
       <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CoreLibDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
@@ -283,8 +283,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
       <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
@@ -354,8 +354,8 @@
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Sockets" />

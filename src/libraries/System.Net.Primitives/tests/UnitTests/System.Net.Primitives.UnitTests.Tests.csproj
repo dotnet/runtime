@@ -59,7 +59,7 @@
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
       <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CoreLibDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
@@ -90,7 +90,7 @@
     <Compile Include="$(CommonPath)\System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <!-- Logging -->
@@ -140,8 +140,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.Errors.cs">
-      <Link>ProductionCode\Common\CoreLib\Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+      <Link>ProductionCode\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>

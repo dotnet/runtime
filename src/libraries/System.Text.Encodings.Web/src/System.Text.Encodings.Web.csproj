@@ -27,10 +27,10 @@
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
+    <Compile Include="$(CoreLibDir)System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeUtility.cs">
+    <Compile Include="$(CoreLibDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
     </ItemGroup>
