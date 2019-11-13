@@ -4661,6 +4661,24 @@ namespace System.Text.Json.Tests
             JsonTestHelper.AssertContents("{" + ValidUtf16Expected + ":" + ValidUtf16Expected + "}", output);
         }
 
+        // Test case from https://github.com/dotnet/corefx/issues/40702
+        [Fact]
+        public void OutputConsistentWithJsonEncodedText()
+        {
+            string jsonEncodedText = $"{{\"{JsonEncodedText.Encode("propertyName+1")}\":\"{JsonEncodedText.Encode("value+1")}\"}}";
+            
+            var output = new ArrayBufferWriter<byte>(1024);
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+                writer.WriteString("propertyName+1", "value+1");
+                writer.WriteEndObject();
+            }
+
+            JsonTestHelper.AssertContents(jsonEncodedText, output);
+        }
+
         public static IEnumerable<object[]> JsonEncodedTextStringsCustomAll
         {
             get
