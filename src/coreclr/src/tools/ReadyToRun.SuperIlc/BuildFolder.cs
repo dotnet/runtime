@@ -59,13 +59,10 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.NoExe)
             {
-                HashSet<string> scriptedExecutables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
                 foreach (string script in _executionScripts ?? Enumerable.Empty<string>())
                 {
                     ProcessInfo[] scriptExecutions = new ProcessInfo[(int)CompilerIndex.Count];
                     _executions.Add(scriptExecutions);
-                    scriptedExecutables.Add(Path.ChangeExtension(script, ".exe"));
 
                     foreach (CompilerRunner runner in compilerRunners)
                     {
@@ -79,35 +76,6 @@ namespace ReadyToRun.SuperIlc
                         folders.UnionWith(runner.ReferenceFolders);
 
                         scriptExecutions[(int)runner.Index] = new ProcessInfo(new ScriptExecutionProcessConstructor(runner, _outputFolder, script, modules, folders));
-                    }
-                }
-
-                if (options.CoreRootDirectory != null)
-                {
-                    foreach (string mainExe in _mainExecutables ?? Enumerable.Empty<string>())
-                    {
-                        if (scriptedExecutables.Contains(mainExe))
-                        {
-                            // Skip direct exe launch assuming it was run by the corresponding cmd script
-                            continue;
-                        }
-
-                        ProcessInfo[] appExecutions = new ProcessInfo[(int)CompilerIndex.Count];
-                        _executions.Add(appExecutions);
-                        foreach (CompilerRunner runner in compilerRunners)
-                        {
-                            HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                            HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                            modules.Add(mainExe);
-                            modules.Add(runner.GetOutputFileName(_outputFolder, mainExe));
-                            modules.UnionWith(_compilationInputFiles);
-                            modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
-                            folders.Add(Path.GetDirectoryName(mainExe));
-                            folders.UnionWith(runner.ReferenceFolders);
-
-                            appExecutions[(int)runner.Index] = new ProcessInfo(new AppExecutionProcessConstructor(runner, _outputFolder, mainExe, modules, folders));
-                        }
                     }
                 }
             }
