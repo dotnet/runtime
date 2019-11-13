@@ -558,7 +558,7 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 
 	gboolean has_search_flags = flags != 0 ? TRUE : FALSE;
 	gpointer args [5];
-	args [0] = &scope_handle;
+	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
 	args [2] = &has_search_flags;
 	args [3] = &flags;
@@ -617,7 +617,7 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 
 	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [3];
-	args [0] = &scope_handle;
+	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
 	args [2] = &lib;
 	mono_runtime_invoke_checked (resolve, NULL, args, error);
@@ -677,7 +677,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 
 	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [4];
-	args [0] = &scope_handle;
+	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
 	args [2] = &gchandle;
 	args [3] = &lib;
