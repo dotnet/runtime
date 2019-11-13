@@ -570,7 +570,7 @@ namespace System.Threading
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException("CountdownEvent");
+                throw new ObjectDisposedException(nameof(CountdownEvent));
             }
         }
     }

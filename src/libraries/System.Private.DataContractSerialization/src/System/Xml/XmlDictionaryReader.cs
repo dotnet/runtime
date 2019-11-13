@@ -1656,11 +1656,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Boolean", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Boolean", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception));
                 }
             }
 
@@ -1677,15 +1677,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Decimal", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Decimal", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Decimal", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
                 }
             }
 
@@ -1697,15 +1697,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Double", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Double", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Double", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
                 }
             }
 
@@ -1717,15 +1717,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int32", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int32", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int32", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
                 }
             }
 
@@ -1737,15 +1737,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int64", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int64", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Int64", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
                 }
             }
 
@@ -1757,15 +1757,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Single", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Single", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("Single", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
                 }
             }
 
@@ -1777,11 +1777,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("String", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(String), exception));
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("String", exception));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(String), exception));
                 }
             }
 

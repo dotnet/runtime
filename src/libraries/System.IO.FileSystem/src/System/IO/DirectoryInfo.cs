@@ -36,8 +36,7 @@ namespace System.IO
 
         private void Init(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
         {
-            // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException("path");
+            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
 
             fullPath = fullPath ?? originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);

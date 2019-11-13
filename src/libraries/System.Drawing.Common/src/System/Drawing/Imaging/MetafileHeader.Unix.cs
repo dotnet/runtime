@@ -211,7 +211,7 @@ namespace System.Drawing.Imaging
             {
                 if (IsWmf())
                     return new MetaHeader(header.wmf_header);
-                throw new ArgumentException("WmfHeader only available on WMF files.");
+                throw new ArgumentException(SR.Format(SR.AvailableOnlyOnWMF, nameof(WmfHeader)));
             }
         }
     }

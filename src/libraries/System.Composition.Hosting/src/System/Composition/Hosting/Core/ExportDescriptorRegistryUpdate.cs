@@ -32,7 +32,7 @@ namespace System.Composition.Hosting.Core
         {
             // Opportunism - we'll miss recursive calls to Execute(), but this will catch some problems
             // and the _updateFinished flag is required for other purposes anyway.
-            if (_updateFinished) throw new InvalidOperationException("The update has already executed.");
+            if (_updateFinished) throw new InvalidOperationException(SR.Update_already_executed);
 
             CompositionDependency initial;
             if (TryResolveOptionalDependency("initial request", contract, true, out initial))

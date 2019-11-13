@@ -353,7 +353,7 @@ namespace System.IO.Packaging
             }
             catch (InvalidDataException)
             {
-                throw new FileFormatException("File contains corrupted data.");
+                throw new FileFormatException(SR.FileContainsCorruptedData);
             }
             catch
             {

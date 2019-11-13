@@ -773,7 +773,7 @@ namespace System.Xml.Xsl.XsltOld
                 Hashtable typeDecls = _typeDeclsByLang[(int)langTmp];
                 if (lang == langTmp)
                 {
-                    throw new PlatformNotSupportedException("Compiling JScript/CSharp scripts is not supported");
+                    throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported);
                 }
                 else if (typeDecls.Contains(ns))
                 {

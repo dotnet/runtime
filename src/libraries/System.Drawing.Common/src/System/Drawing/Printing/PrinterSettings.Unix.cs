@@ -102,7 +102,7 @@ namespace System.Drawing.Printing
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("The value of the Copies property is less than zero.");
+                    throw new ArgumentException(SR.Format(SR.ValueLessThenZero, nameof(Copies)));
 
                 copies = value;
             }
@@ -139,7 +139,7 @@ namespace System.Drawing.Printing
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("The value of the FromPage property is less than zero");
+                    throw new ArgumentException(SR.Format(SR.ValueLessThenZero, nameof(FromPage)));
 
                 from_page = value;
             }
@@ -182,7 +182,7 @@ namespace System.Drawing.Printing
             {
                 // This not documented but behaves like MinimumPage
                 if (value < 0)
-                    throw new ArgumentException("The value of the MaximumPage property is less than zero");
+                    throw new ArgumentException(SR.Format(SR.ValueLessThenZero, nameof(MaximumPage)));
 
                 maximum_page = value;
             }
@@ -194,7 +194,7 @@ namespace System.Drawing.Printing
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("The value of the MaximumPage property is less than zero");
+                    throw new ArgumentException(SR.Format(SR.ValueLessThenZero, nameof(MinimumPage)));
 
                 minimum_page = value;
             }
@@ -264,7 +264,7 @@ namespace System.Drawing.Printing
             {
                 if (value != PrintRange.AllPages && value != PrintRange.Selection &&
                     value != PrintRange.SomePages)
-                    throw new InvalidEnumArgumentException("The value of the PrintRange property is not one of the PrintRange values");
+                    throw new InvalidEnumArgumentException(SR.Format(SR.ValueNotOneOfValues, nameof(PrintRange), nameof(PrintRange)));
 
                 print_range = value;
             }
@@ -287,7 +287,7 @@ namespace System.Drawing.Printing
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("The value of the ToPage property is less than zero");
+                    throw new ArgumentException(SR.Format(SR.ValueLessThenZero, nameof(ToPage)));
 
                 to_page = value;
             }

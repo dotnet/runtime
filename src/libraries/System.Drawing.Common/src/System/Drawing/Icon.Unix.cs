@@ -205,7 +205,7 @@ namespace System.Drawing
                 }
 
                 if (id == ushort.MaxValue)
-                    throw new ArgumentException("Icon", "No valid icon image found");
+                    throw new ArgumentException(SR.NoValidIconImageFound, "Icon");
 
                 iconSize.Height = iconDir.idEntries[id].height;
                 iconSize.Width = iconDir.idEntries[id].width;
@@ -313,9 +313,9 @@ namespace System.Drawing
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
             if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException("Null or empty path.", "path");
+                throw new ArgumentException(SR.NullOrEmptyPath, "path");
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("Couldn't find specified file.", filePath);
+                throw new FileNotFoundException(SR.CouldntFindSpecifiedFile, filePath);
 
             return SystemIcons.WinLogo;
         }
@@ -635,7 +635,7 @@ namespace System.Drawing
         public Bitmap ToBitmap()
         {
             if (disposed)
-                throw new ObjectDisposedException("Icon instance was disposed.");
+                throw new ObjectDisposedException(SR.IconInstanceWasDisposed);
 
             // note: we can't return the original image because
             // (a) we have no control over the bitmap instance we return (i.e. it could be disposed)

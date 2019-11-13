@@ -372,4 +372,7 @@
   <data name="UriShouldBeAbsolute" xml:space="preserve">
     <value>Must have absolute URI.</value>
   </data>
+  <data name="FileContainsCorruptedData" xml:space="preserve">
+    <value>File contains corrupted data.</value>
+  </data>
 </root>

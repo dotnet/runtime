@@ -399,4 +399,13 @@
   <data name="InvalidExceptionRegionBounds" xml:space="preserve">
     <value>Invalid exception region bounds: start offset ({0}) is greater than end offset ({1}).</value>
   </data>
+  <data name="UnexpectedValue" xml:space="preserve">
+    <value>Unexpected value '{0}' of type '{1}'</value>
+  </data>
+  <data name="UnexpectedValueUnknownType" xml:space="preserve">
+    <value>Unexpected value '{0}' of unknown type.</value>
+  </data>
+  <data name="UnreachableLocation" xml:space="preserve">
+    <value>This program location is thought to be unreachable.</value>
+  </data>
 </root>

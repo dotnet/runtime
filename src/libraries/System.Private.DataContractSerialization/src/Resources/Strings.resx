@@ -1110,7 +1110,7 @@
     <value>IExtensibleDataObject property setter '{1}' in type '{0}' must have a single parameter of type '{2}'.</value>
   </data>
   <data name="OnlyDataContractTypesCanHaveExtensionData" xml:space="preserve">
-    <value>Type '{0}' does not have DataContractAttribute attribute and therefore cannot support IExtensibleDataObject. </value>
+    <value>Type '{0}' does not have DataContractAttribute attribute and therefore cannot support IExtensibleDataObject.</value>
   </data>
   <data name="ParseJsonNumberReturnInvalidNumber" xml:space="preserve">
     <value>JsonObjectDataContract.ParseJsonNumber shouldn't return a TypeCode that we're not expecting.</value>
@@ -1156,5 +1156,11 @@
   </data>
   <data name="FailedToCreateMethodDelegate" xml:space="preserve">
     <value>Failed to create Delegate for method '{0}' of type '{1}'.</value>
+  </data>
+  <data name="CannotSetTwice" xml:space="preserve">
+    <value>Cannot set option twice.</value>
+  </data>
+  <data name="MustBeGreaterThanZero" xml:space="preserve">
+    <value>'{0}' must be greater than 0.</value>
   </data>
 </root>

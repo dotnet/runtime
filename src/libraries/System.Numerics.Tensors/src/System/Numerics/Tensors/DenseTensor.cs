@@ -72,7 +72,7 @@ namespace System.Numerics.Tensors
 
             if (Length != memory.Length)
             {
-                throw new ArgumentException($"Length of {nameof(memory)} ({memory.Length}) must match product of {nameof(dimensions)} ({Length}).");
+                throw new ArgumentException(SR.Format(SR.LengthMustMatch, nameof(memory), memory.Length, nameof(dimensions), Length));
             }
         }
 
@@ -109,7 +109,7 @@ namespace System.Numerics.Tensors
             }
             if (array.Length < arrayIndex + Length)
             {
-                throw new ArgumentException("The number of elements in the Tensor is greater than the available space from index to the end of the destination array.", nameof(array));
+                throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));
             }
 
             Buffer.Span.CopyTo(array.AsSpan(arrayIndex));
@@ -162,14 +162,14 @@ namespace System.Numerics.Tensors
         {
             if (dimensions.Length == 0)
             {
-                throw new ArgumentException("Dimensions must contain elements.", nameof(dimensions));
+                throw new ArgumentException(SR.DimensionsMustContainElements, nameof(dimensions));
             }
 
             var newSize = ArrayUtilities.GetProduct(dimensions);
 
             if (newSize != Length)
             {
-                throw new ArgumentException($"Cannot reshape array due to mismatch in lengths, currently {Length} would become {newSize}.", nameof(dimensions));
+                throw new ArgumentException(SR.Format(SR.CannotReshapeArrayDueToMismatchInLengths, Length, newSize), nameof(dimensions));
             }
 
             return new DenseTensor<T>(Buffer, dimensions, IsReversedStride);

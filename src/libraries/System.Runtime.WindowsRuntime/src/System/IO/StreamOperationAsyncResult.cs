@@ -40,7 +40,7 @@ namespace System.IO
                                                       bool processCompletedOperationInCallback)
         {
             if (asyncStreamOperation == null)
-                throw new ArgumentNullException("asyncReadOperation");
+                throw new ArgumentNullException(nameof(asyncStreamOperation));
 
             _userCompletionCallback = userCompletionCallback;
             _userAsyncStateInfo = userAsyncStateInfo;

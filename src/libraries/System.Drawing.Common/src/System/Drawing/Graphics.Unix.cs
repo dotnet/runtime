@@ -142,7 +142,7 @@ namespace System.Drawing
             int AllPlanes = ~0, nitems = 0, pixel;
 
             if (copyPixelOperation != CopyPixelOperation.SourceCopy)
-                throw new NotImplementedException("Operation not implemented under X11");
+                throw new NotImplementedException(SR.NotImplementedUnderX11);
 
             if (Gdip.Display == IntPtr.Zero)
             {
@@ -458,7 +458,7 @@ namespace System.Drawing
                 {
                     Gdip.Display = LibX11Functions.XOpenDisplay(IntPtr.Zero);
                     if (Gdip.Display == IntPtr.Zero)
-                        throw new NotSupportedException("Could not open display (X-Server required. Check your DISPLAY environment variable)");
+                        throw new NotSupportedException(SR.CouldNotOpenDisplay);
                 }
                 if (hwnd == IntPtr.Zero)
                 {
@@ -483,7 +483,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
 
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
-                throw new ArgumentException("Cannot create Graphics from an indexed bitmap.", nameof(image));
+                throw new ArgumentException(SR.CannotCreateGraphics, nameof(image));
 
             int status = Gdip.GdipGetImageGraphicsContext(image.nativeImage, out graphics);
             Gdip.CheckStatus(status);

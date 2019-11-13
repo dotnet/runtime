@@ -122,7 +122,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, ActiveDirectorySiteLink link)
         {
             if (link == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));

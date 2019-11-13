@@ -410,4 +410,49 @@
   <data name="EntryPointNotFoundExceptionMessage" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
   </data>
+  <data name="AvailableOnlyOnWMF" xml:space="preserve">
+    <value>{0} only available on WMF files.</value>
+  </data>
+  <data name="CannotCreateGraphics" xml:space="preserve">
+    <value>Cannot create Graphics from an indexed bitmap.</value>
+  </data>
+  <data name="CouldNotOpenDisplay" xml:space="preserve">
+    <value>Could not open display (X-Server required. Check your DISPLAY environment variable)</value>
+  </data>
+  <data name="CouldntFindSpecifiedFile" xml:space="preserve">
+    <value>Couldn't find specified file.</value>
+  </data>
+  <data name="IconInstanceWasDisposed" xml:space="preserve">
+    <value>Icon instance was disposed.</value>
+  </data>
+  <data name="InvalidGraphicsUnit" xml:space="preserve">
+    <value>Invalid GraphicsUnit</value>
+  </data>
+  <data name="InvalidThumbnailSize" xml:space="preserve">
+    <value>Invalid thumbnail size</value>
+  </data>
+  <data name="NoCodecAvailableForFormat" xml:space="preserve">
+    <value>No codec available for format:{0}</value>
+  </data>
+  <data name="NotImplementedUnderX11" xml:space="preserve">
+    <value>Operation not implemented under X11</value>
+  </data>
+  <data name="NoValidIconImageFound" xml:space="preserve">
+    <value>No valid icon image found</value>
+  </data>
+  <data name="NullOrEmptyPath" xml:space="preserve">
+    <value>Null or empty path.</value>
+  </data>
+  <data name="NumberOfPointsAndTypesMustBeSame" xml:space="preserve">
+    <value>Invalid parameter passed. Number of points and types must be same.</value>
+  </data>
+  <data name="ObjectDisposed" xml:space="preserve">
+    <value>Object has been disposed.</value>
+  </data>
+  <data name="ValueLessThenZero" xml:space="preserve">
+    <value>The value of the {0} property is less than zero.</value>
+  </data>
+  <data name="ValueNotOneOfValues" xml:space="preserve">
+    <value>The value of the {0} property is not one of the {1} values</value>
+  </data>
 </root>

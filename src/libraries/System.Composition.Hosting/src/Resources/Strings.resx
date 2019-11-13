@@ -130,4 +130,7 @@
   <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
     <value>Internal error occurred. Additional information: '{0}'.</value>
   </data>
+  <data name="Update_already_executed" xml:space="preserve">
+    <value>The update has already executed.</value>
+  </data>
 </root>

@@ -938,7 +938,7 @@ namespace System.Threading
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException("Barrier", SR.Barrier_Dispose);
+                throw new ObjectDisposedException(nameof(Barrier), SR.Barrier_Dispose);
             }
         }
     }

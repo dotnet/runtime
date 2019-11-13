@@ -129,7 +129,7 @@ namespace System.Drawing
         public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort callback, IntPtr callbackData)
         {
             if ((thumbWidth <= 0) || (thumbHeight <= 0))
-                throw new OutOfMemoryException("Invalid thumbnail size");
+                throw new OutOfMemoryException(SR.InvalidThumbnailSize);
 
             Image ThumbNail = new Bitmap(thumbWidth, thumbHeight);
 
@@ -224,7 +224,7 @@ namespace System.Drawing
             ImageCodecInfo encoder = FindEncoderForFormat(format);
 
             if (encoder == null)
-                throw new ArgumentException("No codec available for format:" + format.Guid);
+                throw new ArgumentException(SR.Format(SR.NoCodecAvailableForFormat, format.Guid));
 
             Save(stream, encoder, null);
         }

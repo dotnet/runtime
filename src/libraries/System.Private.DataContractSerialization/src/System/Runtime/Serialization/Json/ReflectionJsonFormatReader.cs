@@ -218,7 +218,7 @@ namespace System.Runtime.Serialization.Json
 
                 if (keyTypeNullableDepth > 0)
                 {
-                    throw new NotImplementedException("keyTypeNullableDepth > 0");
+                    throw new NotImplementedException(SR.Format(SR.MustBeGreaterThanZero, keyTypeNullableDepth));
                 }
 
                 object pairValue = ReflectionReadValue(xmlReader, context, valueType, string.Empty, string.Empty);

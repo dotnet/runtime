@@ -854,7 +854,7 @@ namespace System.Diagnostics
             bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
             if (!canSet)
             {
-                NotifyError(new InvalidOperationException("Trying to set an Activity that is not running"));
+                NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
             }
 
             return canSet;

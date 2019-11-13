@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 NotifyCollectionChangedAction.Replace => new NotifyCollectionChangedEventArgs(action, newItems, oldItems, newStartingIndex),
                 NotifyCollectionChangedAction.Move => new NotifyCollectionChangedEventArgs(action, newItems, newStartingIndex, oldStartingIndex),
                 NotifyCollectionChangedAction.Reset => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset),
-                _ => throw new ArgumentException("Invalid action value: " + action),
+                _ => throw new ArgumentException(SR.Format(SR.InvalidAction, action)),
             };
     }
 

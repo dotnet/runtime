@@ -283,7 +283,7 @@ namespace System.IO
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException("Position", SR.ArgumentOutOfRange_IO_CannotSeekToNegativePosition);
+                    throw new ArgumentOutOfRangeException(nameof(Position), SR.ArgumentOutOfRange_IO_CannotSeekToNegativePosition);
 
                 IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 

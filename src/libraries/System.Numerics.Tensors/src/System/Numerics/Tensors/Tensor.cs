@@ -82,7 +82,7 @@ namespace System.Numerics.Tensors
         {
             if (diagonal.Rank < 1)
             {
-                throw new ArgumentException($"Tensor {nameof(diagonal)} must have at least one dimension.", nameof(diagonal));
+                throw new ArgumentException(SR.Format(SR.MustHaveAtLeastOneDimension, nameof(diagonal)), nameof(diagonal));
             }
 
             int diagonalLength = diagonal.dimensions[0];
@@ -283,7 +283,7 @@ namespace System.Numerics.Tensors
         {
             if (dimensions.Length == 0)
             {
-                throw new ArgumentException("Dimensions must contain elements.", nameof(dimensions));
+                throw new ArgumentException(SR.DimensionsMustContainElements, nameof(dimensions));
             }
 
             this.dimensions = new int[dimensions.Length];
@@ -292,7 +292,7 @@ namespace System.Numerics.Tensors
             {
                 if (dimensions[i] < 1)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(dimensions), "Dimensions must be positive and non-zero");
+                    throw new ArgumentOutOfRangeException(nameof(dimensions), SR.DimensionsMustBePositiveAndNonZero);
                 }
                 this.dimensions[i] = dimensions[i];
                 size *= dimensions[i];
@@ -318,7 +318,7 @@ namespace System.Numerics.Tensors
 
             if (fromArray.Rank == 0)
             {
-                throw new ArgumentException("Array must contain elements.", nameof(fromArray));
+                throw new ArgumentException(SR.ArrayMustContainElements, nameof(fromArray));
             }
 
             dimensions = new int[fromArray.Rank];
@@ -443,7 +443,7 @@ namespace System.Numerics.Tensors
 
             if (Rank < 2)
             {
-                throw new InvalidOperationException($"Cannot compute diagonal of {nameof(Tensor<T>)} with Rank less than 2.");
+                throw new InvalidOperationException(SR.Format(SR.CannotComputeDiagonal, nameof(Tensor<T>)));
             }
 
             // TODO: allow specification of axis1 and axis2?
@@ -470,7 +470,7 @@ namespace System.Numerics.Tensors
 
             if (diagonalLength <= 0)
             {
-                throw new ArgumentException($"Cannot compute diagonal with offset {offset}", nameof(offset));
+                throw new ArgumentException(SR.Format(SR.CannotComputeDiagonalWithOffset, offset), nameof(offset));
             }
 
             var newTensorRank = Rank - 1;
@@ -548,7 +548,7 @@ namespace System.Numerics.Tensors
         {
             if (Rank < 2)
             {
-                throw new InvalidOperationException($"Cannot compute triangle of {nameof(Tensor<T>)} with Rank less than 2.");
+                throw new InvalidOperationException(SR.Format(SR.CannotComputeTriangle, nameof(Tensor<T>)));
             }
 
             // Similar to get diagonal except it gets every element below and including the diagonal.
@@ -745,11 +745,11 @@ namespace System.Numerics.Tensors
                 }
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException("Only single dimensional arrays are supported for the requested action.", nameof(array));
+                    throw new ArgumentException(SR.OnlySingleDimensionalArraysSupported, nameof(array));
                 }
                 if (array.Length < index + Length)
                 {
-                    throw new ArgumentException("The number of elements in the Tensor is greater than the available space from index to the end of the destination array.", nameof(array));
+                    throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));
                 }
 
                 for (int i = 0; i < length; i++)
@@ -775,7 +775,7 @@ namespace System.Numerics.Tensors
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException($"The value \"{value}\" is not of type \"{typeof(T)}\" and cannot be used in this generic collection.");
+                    throw new ArgumentException(SR.Format(SR.ValueIsNotOfType, value, typeof(T)));
                 }
             }
         }
@@ -892,7 +892,7 @@ namespace System.Numerics.Tensors
             }
             if (array.Length < arrayIndex + Length)
             {
-                throw new ArgumentException("The number of elements in the Tensor is greater than the available space from index to the end of the destination array.", nameof(array));
+                throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));
             }
 
             for (int i = 0; i < length; i++)
@@ -980,21 +980,21 @@ namespace System.Numerics.Tensors
                 return CompareTo(otherArray, comparer);
             }
 
-            throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} to {other.GetType()}.", nameof(other));
+            throw new ArgumentException(SR.Format(SR.CannotCompare, nameof(Tensor<T>), other.GetType()), nameof(other));
         }
 
         private int CompareTo(Tensor<T> other, IComparer comparer)
         {
             if (Rank != other.Rank)
             {
-                throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} with Rank {Rank} to {nameof(other)} with Rank {other.Rank}.", nameof(other));
+                throw new ArgumentException(SR.Format(SR.CannotCompareWithRank, nameof(Tensor<T>), Rank, nameof(other), other.Rank), nameof(other));
             }
 
             for (int i = 0; i < dimensions.Length; i++)
             {
                 if (dimensions[i] != other.dimensions[i])
                 {
-                    throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)}s with differning dimension {i}, {dimensions[i]} != {other.dimensions[i]}.", nameof(other));
+                    throw new ArgumentException(SR.Format(SR.CannotCompareWithDifferentDimension, nameof(Tensor<T>), i, dimensions[i], other.dimensions[i]), nameof(other));
                 }
             }
 
@@ -1032,7 +1032,7 @@ namespace System.Numerics.Tensors
         {
             if (Rank != other.Rank)
             {
-                throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} with Rank {Rank} to {nameof(Array)} with rank {other.Rank}.", nameof(other));
+                throw new ArgumentException(SR.Format(SR.CannotCompareWithRank, nameof(Tensor<T>), Rank, nameof(Array), other.Rank), nameof(other));
             }
 
             for (int i = 0; i < dimensions.Length; i++)
@@ -1040,7 +1040,7 @@ namespace System.Numerics.Tensors
                 var otherDimension = other.GetLength(i);
                 if (dimensions[i] != otherDimension)
                 {
-                    throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} to {nameof(Array)} with differning dimension {i}, {dimensions[i]} != {otherDimension}.", nameof(other));
+                    throw new ArgumentException(SR.Format(SR.CannotCompareToWithDifferentDimension, nameof(Tensor<T>), nameof(Array), i, dimensions[i], otherDimension), nameof(other));
                 }
             }
 
@@ -1082,21 +1082,21 @@ namespace System.Numerics.Tensors
                 return Equals(otherArray, comparer);
             }
 
-            throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} to {other.GetType()}.", nameof(other));
+            throw new ArgumentException(SR.Format(SR.CannotCompare, nameof(Tensor<T>), other.GetType()), nameof(other));
         }
 
         private bool Equals(Tensor<T> other, IEqualityComparer comparer)
         {
             if (Rank != other.Rank)
             {
-                throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} with Rank {Rank} to {nameof(other)} with Rank {other.Rank}.", nameof(other));
+                throw new ArgumentException(SR.Format(SR.CannotCompareWithRank, nameof(Tensor<T>), Rank, nameof(other), other.Rank), nameof(other));
             }
 
             for (int i = 0; i < dimensions.Length; i++)
             {
                 if (dimensions[i] != other.dimensions[i])
                 {
-                    throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)}s with differning dimension {i}, {dimensions[i]} != {other.dimensions[i]}.", nameof(other));
+                    throw new ArgumentException(SR.Format(SR.CannotCompareWithDifferentDimension, nameof(Tensor<T>), i, dimensions[i], other.dimensions[i]), nameof(other));
                 }
             }
 
@@ -1131,7 +1131,7 @@ namespace System.Numerics.Tensors
         {
             if (Rank != other.Rank)
             {
-                throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} with Rank {Rank} to {nameof(Array)} with rank {other.Rank}.", nameof(other));
+                throw new ArgumentException(SR.Format(SR.CannotCompareWithRank, nameof(Tensor<T>), Rank, nameof(Array), other.Rank), nameof(other));
             }
 
             for (int i = 0; i < dimensions.Length; i++)
@@ -1139,7 +1139,7 @@ namespace System.Numerics.Tensors
                 var otherDimension = other.GetLength(i);
                 if (dimensions[i] != otherDimension)
                 {
-                    throw new ArgumentException($"Cannot compare {nameof(Tensor<T>)} to {nameof(Array)} with differning dimension {i}, {dimensions[i]} != {otherDimension}.", nameof(other));
+                    throw new ArgumentException(SR.Format(SR.CannotCompareToWithDifferentDimension, nameof(Tensor<T>), nameof(Array), i, dimensions[i], otherDimension), nameof(other));
                 }
             }
 
