@@ -56,7 +56,8 @@
   <!-- Fetches all the runtime items from the packages that we want to redist -->
   <Target Name="GetRuntimeFilesFromPackages"
           BeforeTargets="GetRuntimeFilesToPackage"
-          DependsOnTargets="GetCorePackagePaths">
+          DependsOnTargets="GetCorePackagePaths"
+          Condition="'$(CoreCLROverridePath)' == ''">
     <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
       <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
       <FilesToPackage Include="@(_ToolsToPackage)">
