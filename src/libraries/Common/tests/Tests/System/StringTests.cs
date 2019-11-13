@@ -4485,9 +4485,39 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("Hello", 'l', '!', "He!!o")]
-        [InlineData("Hello", 'e', 'e', "Hello")]
-        [InlineData("Hello", 'a', 'b', "Hello")]
+        // -------------------- For Vector<ushort>.Count == 8 (SSE2 / ARM NEON) --------------------
+        [InlineData("Aaaaaaaa", 'A', 'a', "aaaaaaaa")] // Single iteration of vectorised path; no remainders through non-vectorised path
+        // Three leading 'a's before a match (copyLength > 0), Single iteration of vectorised path; no remainders through non-vectorised path
+        [InlineData("aaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaa")]
+        // Single iteration of vectorised path; 3 remainders through non-vectorised path
+        [InlineData("AaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaa")]
+        // ------------------------- For Vector<ushort>.Count == 16 (AVX2) -------------------------
+        [InlineData("AaaaaaaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaaaaaaa")] // Single iteration of vectorised path; no remainders through non-vectorised path
+        // Three leading 'a's before a match (copyLength > 0), Single iteration of vectorised path; no remainders through non-vectorised path
+        [InlineData("aaaAaaaaaaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaaaaaaaaaa")]
+        // Single iteration of vectorised path; 3 remainders through non-vectorised path
+        [InlineData("AaaaaaaaAaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaaaaaaaaaa")]
+        // ----------------------------------- General test data -----------------------------------
+        [InlineData("Hello", 'l', '!', "He!!o")] // 2 match, non-vectorised path
+        [InlineData("Hello", 'e', 'e', "Hello")] // oldChar and newChar are same; nothing to replace
+        [InlineData("Hello", 'a', 'b', "Hello")] // No match
+        [InlineData("This is a very nice sentence", 'z', 'y', "This is a very nice sentence")] // No match
+        // Three matches, vectorised path; 4(128bit)/12(256bit) remainders through non-vectorised path
+        [InlineData("This is a very nice sentence", 'i', 'I', "ThIs Is a very nIce sentence")]
+        // Three leading 'a's before a match (copyLength > 0), no remainders through non-vectorised path
+        [InlineData("aaaAaaaaaaaBAbbbbbbCcccccccDddAdddd", 'A', 'a', "aaaaaaaaaaaBabbbbbbCcccccccDddadddd")]
+        // Three leading 'a's before a match (copyLength > 0), 3 remainders through non-vectorised path
+        [InlineData("aaaAaaaaaaaBAbbbbbbCcccccccDddAdddddAd", 'A', 'a', "aaaaaaaaaaaBabbbbbbCcccccccDddadddddad")]
+        // Match from the beginning (copyLength == 0), no remainders through non-vectorised path
+        [InlineData("AaaaaaaaBAbbbbbbCcccccccDddAdddd", 'A', 'a', "aaaaaaaaBabbbbbbCcccccccDddadddd")]
+        // Match from the beginning (copyLength == 0), 3 remainders through non-vectorised path
+        [InlineData("AaaaaaaaBAbbbbbbCcccccccDddAdddddAd", 'A', 'a', "aaaaaaaaBabbbbbbCcccccccDddadddddad")]
+        // An arbitrary long string (263 chars long, Three matches before a match, 4 remainders through non-vectorisd path)
+        [InlineData("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin maximus convallis luctus. Curabitur porttitor mi blandit tellus maximus varius. " +
+                    "Mauris nulla sapien, convallis et quam quis, accumsan sodales mi. Praesent dapibus urna fermentum, sollicitudin posuere.",
+                    'e', 'E',
+                    "LorEm ipsum dolor sit amEt, consEctEtur adipiscing Elit. Proin maximus convallis luctus. Curabitur porttitor mi blandit tEllus maximus varius. " +
+                    "Mauris nulla sapiEn, convallis Et quam quis, accumsan sodalEs mi. PraEsEnt dapibus urna fErmEntum, sollicitudin posuErE.")] 
         public static void Replace_Char_Char(string s, char oldChar, char newChar, string expected)
         {
             Assert.Equal(expected, s.Replace(oldChar, newChar));
@@ -4496,6 +4526,7 @@ namespace System.Tests
         [Theory]
         [InlineData("XYZ", '1', '2')]
         [InlineData("", '1', '2')]
+        [InlineData("XYZ", 'a', 'a')]
         public static void Replace_Char_Char_DoesntAllocateIfNothingIsReplaced(string s, char oldChar, char newChar)
         {
             Assert.Same(s, s.Replace(oldChar, newChar));
