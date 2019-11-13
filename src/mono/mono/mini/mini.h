@@ -2909,4 +2909,7 @@ mini_safepoints_enabled (void)
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id);
 
+MonoGenericContext
+mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info);
+
 #endif /* __MONO_MINI_H__ */

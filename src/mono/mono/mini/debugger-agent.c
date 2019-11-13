@@ -4526,6 +4526,31 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 	return method;
 }
 
+static MonoClass *
+get_class_to_get_builder_field(DbgEngineStackFrame *frame)
+{
+	ERROR_DECL (error);
+	gpointer this_addr = get_this_addr (frame);
+	MonoClass *original_class = frame->method->klass;
+	MonoClass *ret;
+	if (!m_class_is_valuetype (original_class) && mono_class_is_open_constructed_type (m_class_get_byval_arg (original_class))) {
+		MonoObject *this_obj = *(MonoObject**)this_addr;
+		MonoGenericContext context;
+		MonoType *inflated_type;
+
+		g_assert (this_obj);
+		context = mono_get_generic_context_from_stack_frame (frame->ji, this_obj->vtable);
+		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
+		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+
+		ret = mono_class_from_mono_type_internal (inflated_type);
+		mono_metadata_free_type (inflated_type);
+		return ret;
+	}
+	return original_class;
+}
+
+
 /* Return the address of the AsyncMethodBuilder struct belonging to the state machine method pointed to by FRAME */
 static gpointer
 get_async_method_builder (DbgEngineStackFrame *frame)
@@ -4534,15 +4559,17 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 	MonoClassField *builder_field;
 	gpointer builder;
 	gpointer this_addr;
+	MonoClass* klass = frame->method->klass;
 
-	builder_field = mono_class_get_field_from_name_full (frame->method->klass, "<>t__builder", NULL);
+	klass = get_class_to_get_builder_field(frame);
+	builder_field = mono_class_get_field_from_name_full (klass, "<>t__builder", NULL);
 	g_assert (builder_field);
 
 	this_addr = get_this_addr (frame);
 	if (!this_addr)
 		return NULL;
 
-	if (m_class_is_valuetype (frame->method->klass)) {
+	if (m_class_is_valuetype (klass)) {
 		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
 	} else {
 		this_obj = *(MonoObject**)this_addr;
@@ -4574,7 +4601,7 @@ get_this_async_id (DbgEngineStackFrame *frame)
 	if (!builder)
 		return 0;
 
-	builder_field = mono_class_get_field_from_name_full (frame->method->klass, "<>t__builder", NULL);
+	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
 	g_assert (builder_field);
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -4598,7 +4625,7 @@ get_this_async_id (DbgEngineStackFrame *frame)
 static gboolean
 set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 {
-	MonoClassField *builder_field = mono_class_get_field_from_name_full (frame->method->klass, "<>t__builder", NULL);
+	MonoClassField *builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
 	g_assert (builder_field);
 	gpointer builder = get_async_method_builder (frame);
 	g_assert (builder);
