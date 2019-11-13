@@ -79,10 +79,10 @@ namespace System.Net.Security.Tests
 #pragma warning restore 0618
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(TimeoutException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(TimeoutException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(TimeoutException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(TimeoutException) };
         }
 
         #region Helpers

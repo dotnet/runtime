@@ -25,7 +25,7 @@ namespace System.Net.Security
             Interop.SspiCli.ContextFlags.AllocateMemory;
 
         private const Interop.SspiCli.ContextFlags ServerRequiredFlags =
-            RequiredFlags | Interop.SspiCli.ContextFlags.AcceptStream;
+            RequiredFlags | Interop.SspiCli.ContextFlags.AcceptStream | Interop.SspiCli.ContextFlags.AcceptExtendedError;
 
         public static Exception GetException(SecurityStatusPal status)
         {

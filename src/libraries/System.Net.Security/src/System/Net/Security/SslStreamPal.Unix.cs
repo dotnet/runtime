@@ -104,6 +104,9 @@ namespace System.Net.Security
         {
             Debug.Assert(!credential.IsInvalid);
 
+            byte[] output = null;
+            int outputSize = 0;
+
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -111,8 +114,6 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, sslAuthenticationOptions);
                 }
 
-                byte[] output = null;
-                int outputSize;
                 bool done;
 
                 if (inputBuffer.Array == null)
@@ -143,6 +144,12 @@ namespace System.Net.Security
             }
             catch (Exception exc)
             {
+                // Even if handshake failed we may have Alert to sent.
+                if (outputSize > 0)
+                {
+                    outputBuffer = outputSize == output.Length ? output : new Span<byte>(output, 0, outputSize).ToArray();
+                }
+
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
         }

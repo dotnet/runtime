@@ -257,6 +257,7 @@ internal static partial class Interop
         {
             sendBuf = null;
             sendCount = 0;
+            Exception handshakeException = null;
 
             if ((recvBuf != null) && (recvCount > 0))
             {
@@ -275,7 +276,10 @@ internal static partial class Interop
 
                 if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
-                    throw new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
+                    // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
+                    // To handle that we will fall-through the block below to pull it out, and we will fail after.
+                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
+                    Crypto.ErrClearError();
                 }
             }
 
@@ -288,6 +292,10 @@ internal static partial class Interop
                 {
                     sendCount = BioRead(context.OutputBio, sendBuf, sendCount);
                 }
+                catch (Exception) when (handshakeException != null)
+                {
+                    // If we already have handshake exception, ignore any exception from BioRead().
+                }
                 finally
                 {
                     if (sendCount <= 0)
@@ -298,6 +306,11 @@ internal static partial class Interop
                         sendCount = 0;
                     }
                 }
+            }
+
+            if (handshakeException != null)
+            {
+                throw handshakeException;
             }
 
             bool stateOk = Ssl.IsSslStateOK(context);

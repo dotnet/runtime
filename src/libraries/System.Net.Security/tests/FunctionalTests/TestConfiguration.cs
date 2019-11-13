@@ -30,6 +30,12 @@ namespace System.Net.Security.Tests
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
 
+        public static bool SupportsHandshakeAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
+
+        public static bool SupportsAlpnAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0); } }
+
+        public static bool SupportsVersionAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0; } }
+
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
 

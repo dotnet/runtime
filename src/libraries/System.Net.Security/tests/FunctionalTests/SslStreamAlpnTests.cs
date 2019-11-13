@@ -161,7 +161,10 @@ namespace System.Net.Security.Tests
                         // Test alpn failure only on platforms that supports ALPN.
                         if (BackendSupportsAlpn)
                         {
-                            Task t1 = Assert.ThrowsAsync<IOException>(() => clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                            // schannel sends alert on ALPN failure, openssl does not.
+                            Task t1 = Assert.ThrowsAsync(TestConfiguration.SupportsAlpnAlerts ? typeof(AuthenticationException) : typeof(IOException), () =>
+                                clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+
                             try
                             {
                                 await serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
