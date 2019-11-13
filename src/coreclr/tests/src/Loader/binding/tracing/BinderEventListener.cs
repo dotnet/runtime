@@ -34,6 +34,7 @@ namespace BinderTracingTests
 
         public List<HandlerInvocation> AssemblyLoadContextResolvingHandlers { get; internal set; }
         public List<HandlerInvocation> AppDomainAssemblyResolveHandlers { get; internal set; }
+        public LoadFromHandlerInvocation AssemblyLoadFromHandler { get; internal set; }
 
         public List<BindOperation> NestedBinds { get; internal set; }
 
@@ -74,6 +75,14 @@ namespace BinderTracingTests
             sb.Append($" - Result: Name={ResultAssemblyName?.FullName}, Path={ResultAssemblyPath}");
             return sb.ToString();
         }
+    }
+
+    internal class LoadFromHandlerInvocation
+    {
+        public AssemblyName AssemblyName { get; internal set; }
+        public bool IsTrackedLoad { get; internal set; }
+        public string RequestingAssemblyPath { get; internal set; }
+        public string ComputedRequestedAssemblyPath { get; internal set; }
     }
 
     internal sealed class BinderEventListener : EventListener
@@ -151,7 +160,7 @@ namespace BinderTracingTests
                 {
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadStop should have a matching AssemblyBindStart");
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.Success = (bool)GetData("Success");
                         string resultName = GetDataString("ResultAssemblyName");
@@ -170,7 +179,7 @@ namespace BinderTracingTests
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AssemblyLoadContextResolvingHandlerInvoked should have a matching AssemblyBindStart");
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AssemblyLoadContextResolvingHandlers.Add(handlerInvocation);
                     }
@@ -181,9 +190,20 @@ namespace BinderTracingTests
                     HandlerInvocation handlerInvocation = ParseHandlerInvokedEvent(GetDataString);
                     lock (eventsLock)
                     {
-                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), "AppDomainAssemblyResolveHandlerInvoked should have a matching AssemblyBindStart");
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
                         BindOperation bind = bindOperations[data.ActivityId];
                         bind.AppDomainAssemblyResolveHandlers.Add(handlerInvocation);
+                    }
+                    break;
+                }
+                case "AssemblyLoadFromResolveHandlerInvoked":
+                {
+                    LoadFromHandlerInvocation loadFrom = ParseLoadFromHandlerInvokedEvent(GetData, GetDataString);
+                    lock (eventsLock)
+                    {
+                        Assert.IsTrue(bindOperations.ContainsKey(data.ActivityId), $"{data.EventName} should have a matching AssemblyBindStart");
+                        BindOperation bind = bindOperations[data.ActivityId];
+                        bind.AssemblyLoadFromHandler = loadFrom;
                     }
                     break;
                 }
@@ -226,6 +246,18 @@ namespace BinderTracingTests
             }
 
             return handlerInvocation;
+        }
+
+        private LoadFromHandlerInvocation ParseLoadFromHandlerInvokedEvent(Func<string, object> getData, Func<string, string> getDataString)
+        {
+            var loadFrom = new LoadFromHandlerInvocation()
+            {
+                AssemblyName = new AssemblyName(getDataString("AssemblyName")),
+                IsTrackedLoad = (bool)getData("IsTrackedLoad"),
+                RequestingAssemblyPath = getDataString("RequestingAssemblyPath"),
+                ComputedRequestedAssemblyPath = getDataString("ComputedRequestedAssemblyPath"),
+            };
+            return loadFrom;
         }
     }
 }

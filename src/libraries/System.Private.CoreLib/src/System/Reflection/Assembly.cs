@@ -258,7 +258,15 @@ namespace System.Reflection
             {
                 // If the requestor assembly was not loaded using LoadFrom, exit.
                 if (!s_loadFromAssemblyList.Contains(requestorPath))
+                {
+#if CORECLR
+                    if (AssemblyLoadContext.IsTracingEnabled())
+                    {
+                        AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, false, requestorPath, null);
+                    }
+#endif // CORECLR
                     return null;
+                }
             }
 
             // Requestor assembly was loaded using loadFrom, so look for its dependencies
@@ -266,7 +274,12 @@ namespace System.Reflection
             // Form the name of the assembly using the path of the assembly that requested its load.
             AssemblyName requestedAssemblyName = new AssemblyName(args.Name!);
             string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath)!, requestedAssemblyName.Name + ".dll");
-
+#if CORECLR
+            if (AssemblyLoadContext.IsTracingEnabled())
+            {
+                AssemblyLoadContext.TraceAssemblyLoadFromResolveHandlerInvoked(args.Name, true, requestorPath, requestedAssemblyPath);
+            }
+#endif // CORECLR
             try
             {
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.

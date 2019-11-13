@@ -515,6 +515,7 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     FCFuncElement("IsTracingEnabled", AssemblyNative::IsTracingEnabled)
     QCFuncElement("TraceResolvingHandlerInvoked", AssemblyNative::TraceResolvingHandlerInvoked)
     QCFuncElement("TraceAssemblyResolveHandlerInvoked", AssemblyNative::TraceAssemblyResolveHandlerInvoked)
+    QCFuncElement("TraceAssemblyLoadFromResolveHandlerInvoked", AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyNameFuncs)

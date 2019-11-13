@@ -396,6 +396,7 @@
                         <opcodes>
                             <opcode name="AssemblyLoadContextResolvingHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedOpcodeMessage)" symbol="CLR_ALC_RESOLVING_HANDLER_INVOKED_OPCODE" value="12"/>
                             <opcode name="AppDomainAssemblyResolveHandlerInvoked" message="$(string.RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage)" symbol="CLR_APPDOMAIN_ASSEMBLY_RESOLVE_HANDLER_INVOKED_OPCODE" value="13"/>
+                            <opcode name="AssemblyLoadFromResolveHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage)" symbol="CLR_ASSEMBLY_LOAD_FROM_RESOLVE_HANDLER_INVOKED_OPCODE" value="14"/>
                         </opcodes>
                     </task>
                 <!--Next available ID is 33-->
@@ -1740,6 +1741,23 @@
                                 <ResultAssemblyName> %4 </ResultAssemblyName>
                                 <ResultAssemblyPath> %5 </ResultAssemblyPath>
                             </AppDomainAssemblyResolveHandlerInvoked>
+                        </UserData>
+                    </template>
+
+                    <template tid="AssemblyLoadFromResolveHandlerInvoked">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="AssemblyName" inType="win:UnicodeString" />
+                        <data name="IsTrackedLoad" inType="win:Boolean" />
+                        <data name="RequestingAssemblyPath" inType="win:UnicodeString" />
+                        <data name="ComputedRequestedAssemblyPath" inType="win:UnicodeString" />
+                        <UserData>
+                            <AssemblyLoadFromResolveHandlerInvoked xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <AssemblyName> %2 </AssemblyName>
+                                <IsTrackedAssembly> %3 </IsTrackedAssembly>
+                                <RequestingAssemblyName> %4 </RequestingAssemblyName>
+                                <ComputedRequestedAssemblyPath> %5 </ComputedRequestedAssemblyPath>
+                            </AssemblyLoadFromResolveHandlerInvoked>
                         </UserData>
                     </template>
 
@@ -3549,6 +3567,11 @@
                            keywords ="AssemblyLoaderKeyword" opcode="AppDomainAssemblyResolveHandlerInvoked"
                            task="AssemblyLoader"
                            symbol="AppDomainAssemblyResolveHandlerInvoked" message="$(string.RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedEventMessage)"/>
+
+                    <event value="295" version="0" level="win:Informational"  template="AssemblyLoadFromResolveHandlerInvoked"
+                           keywords ="AssemblyLoaderKeyword" opcode="AssemblyLoadFromResolveHandlerInvoked"
+                           task="AssemblyLoader"
+                           symbol="AssemblyLoadFromResolveHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage)"/>
 
                 </events>
             </provider>
@@ -6749,6 +6772,7 @@
                 <string id="RuntimePublisher.AssemblyLoadStopEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nAssemblyPath=%3;%nRequestingAssembly=%4;%nAssemblyLoadContext=%5;%nRequestingAssemblyLoadContext=%6;%nSuccess=%7;%nResultAssemblyName=%8;%nResultAssemblyPath=%9;%nCached=%10" />
                 <string id="RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nAssemblyLoadContext=%4;%nResultAssemblyName=%5;%nResultAssemblyPath=%6" />
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nResultAssemblyName=%4;%nResultAssemblyPath=%5" />
+                <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nIsTrackedLoad=%3;%nRequestingAssemblyPath=%4;%nComputedRequestedAssemblyPath=%5" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedEventMessage" value="AppDomainID=%1;%nSurvived=%2;%nProcessSurvived=%3;%nClrInstanceID=%4" />
@@ -7379,6 +7403,7 @@
 
                 <string id="RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedOpcodeMessage" value="AssemblyLoadContextResolvingHandlerInvoked" />
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage" value="AppDomainAssemblyResolveHandlerInvoked" />
+                <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage" value="AssemblyLoadFromResolveHandlerInvoked" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />

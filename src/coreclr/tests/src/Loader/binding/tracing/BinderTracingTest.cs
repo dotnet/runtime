@@ -36,6 +36,7 @@ namespace BinderTracingTests
 
         private const string DefaultALC = "Default";
         private const string DependentAssemblyName = "AssemblyToLoad";
+        private const string DependentAssemblyTypeName = "AssemblyToLoad.Program";
         private const string SubdirectoryAssemblyName = "AssemblyToLoad_Subdirectory";
 
         private static readonly AssemblyName CoreLibName = typeof(object).Assembly.GetName();
@@ -400,7 +401,7 @@ namespace BinderTracingTests
 
         private static Type GetDependentAssemblyType()
         {
-            return Type.GetType($"AssemblyToLoad.Program, {DependentAssemblyName}");
+            return Type.GetType($"{DependentAssemblyTypeName}, {DependentAssemblyName}");
         }
 
         private static Type LoadTestClassInALC(AssemblyLoadContext alc)
@@ -488,6 +489,7 @@ namespace BinderTracingTests
 
             ValidateHandlerInvocations(expected.AssemblyLoadContextResolvingHandlers, actual.AssemblyLoadContextResolvingHandlers, "AssemblyLoadContextResolving");
             ValidateHandlerInvocations(expected.AppDomainAssemblyResolveHandlers, actual.AppDomainAssemblyResolveHandlers, "AppDomainAssemblyResolve");
+            ValidateLoadFromHandlerInvocation(expected.AssemblyLoadFromHandler, actual.AssemblyLoadFromHandler);
 
             ValidateNestedBinds(expected.NestedBinds, actual.NestedBinds);
         }
@@ -521,6 +523,21 @@ namespace BinderTracingTests
                         && h.ResultAssemblyPath == match.ResultAssemblyPath;
                 Assert.IsTrue(actual.Exists(pred), $"Handler invocation not found: {match.ToString()}");
             }
+        }
+
+        private static void ValidateLoadFromHandlerInvocation(LoadFromHandlerInvocation expected, LoadFromHandlerInvocation actual)
+        {
+            if (expected == null || actual == null)
+            {
+                Assert.IsNull(expected);
+                Assert.IsNull(actual);
+                return;
+            }
+
+            ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(LoadFromHandlerInvocation.AssemblyName));
+            Assert.AreEqual(expected.IsTrackedLoad, actual.IsTrackedLoad, $"Unexpected value for {nameof(LoadFromHandlerInvocation.IsTrackedLoad)} on event");
+            Assert.AreEqual(expected.RequestingAssemblyPath, actual.RequestingAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.RequestingAssemblyPath)} on event");
+            Assert.AreEqual(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
         }
 
         private static bool BindOperationsMatch(BindOperation bind1, BindOperation bind2)

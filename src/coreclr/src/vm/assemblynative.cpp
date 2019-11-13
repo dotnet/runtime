@@ -1452,3 +1452,15 @@ void QCALLTYPE AssemblyNative::TraceAssemblyResolveHandlerInvoked(LPCWSTR assemb
 
     END_QCALL;
 }
+
+// static
+void QCALLTYPE AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    FireEtwAssemblyLoadFromResolveHandlerInvoked(GetClrInstanceId(), assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath);
+
+    END_QCALL;
+}

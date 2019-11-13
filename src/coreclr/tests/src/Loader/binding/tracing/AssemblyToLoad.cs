@@ -5,5 +5,11 @@
 namespace AssemblyToLoad
 {
     public class Program
-    { }
+    {
+        public static System.Reflection.Assembly UseDependentAssembly()
+        {
+            var p = new AssemblyToLoadDependency.Program();
+            return System.Reflection.Assembly.GetAssembly(p.GetType());
+        }
+    }
 }

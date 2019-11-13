@@ -16,6 +16,8 @@ namespace BinderTracingTests
 {
     partial class BinderTracingTest
     {
+        private const string AssemblyLoadFromHandlerName = "LoadFromResolveHandler";
+
         [BinderTest]
         public static BindOperation AssemblyLoadContextResolving_ReturnNull()
         {
@@ -227,6 +229,126 @@ namespace BinderTracingTests
             }
         }
 
+        [BinderTest(isolate: true)]
+        public static BindOperation AssemblyLoadFromResolveHandler_LoadDependency()
+        {
+            string assemblyPath = GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
+            Assembly asm = Assembly.LoadFrom(assemblyPath);
+            Type t = asm.GetType(DependentAssemblyTypeName);
+            MethodInfo method = t.GetMethod("UseDependentAssembly", BindingFlags.Public | BindingFlags.Static);
+            Assembly asmDependency = (Assembly)method.Invoke(null, new object[0]);
+
+            return new BindOperation()
+            {
+                AssemblyName = asmDependency.GetName(),
+                AssemblyLoadContext = DefaultALC,
+                RequestingAssembly = asm.GetName(),
+                RequestingAssemblyLoadContext = DefaultALC,
+                Success = true,
+                ResultAssemblyName = asmDependency.GetName(),
+                ResultAssemblyPath = asmDependency.Location,
+                Cached = false,
+                AppDomainAssemblyResolveHandlers = new List<HandlerInvocation>()
+                {
+                    new HandlerInvocation()
+                    {
+                        AssemblyName = asmDependency.GetName(),
+                        HandlerName = AssemblyLoadFromHandlerName,
+                        ResultAssemblyName = asmDependency.GetName(),
+                        ResultAssemblyPath = asmDependency.Location
+                    }
+                },
+                AssemblyLoadFromHandler = new LoadFromHandlerInvocation()
+                {
+                    AssemblyName = asmDependency.GetName(),
+                    IsTrackedLoad = true,
+                    RequestingAssemblyPath = asm.Location,
+                    ComputedRequestedAssemblyPath = asmDependency.Location
+                }
+            };
+        }
+
+        [BinderTest(isolate: true)]
+        public static BindOperation AssemblyLoadFromResolveHandler_MissingDependency()
+        {
+            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string assemblyPath = Path.Combine(appPath, $"{DependentAssemblyName}.dll");
+            Assembly asm = Assembly.LoadFrom(assemblyPath);
+            Type t = asm.GetType(DependentAssemblyTypeName);
+            MethodInfo method = t.GetMethod("UseDependentAssembly", BindingFlags.Public | BindingFlags.Static);
+            Assert.Throws<TargetInvocationException, FileNotFoundException>(() => method.Invoke(null, new object[0]));
+
+            var assemblyName = new AssemblyName(asm.FullName);
+            assemblyName.Name = "AssemblyToLoadDependency";
+            var expectedPath = Path.Combine(appPath, $"{assemblyName.Name}.dll");
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = DefaultALC,
+                RequestingAssembly = asm.GetName(),
+                RequestingAssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                AppDomainAssemblyResolveHandlers = new List<HandlerInvocation>()
+                {
+                    new HandlerInvocation()
+                    {
+                        AssemblyName = assemblyName,
+                        HandlerName = AssemblyLoadFromHandlerName,
+                    }
+                },
+                AssemblyLoadFromHandler = new LoadFromHandlerInvocation()
+                {
+                    AssemblyName = assemblyName,
+                    IsTrackedLoad = true,
+                    RequestingAssemblyPath = asm.Location,
+                    ComputedRequestedAssemblyPath = expectedPath
+                }
+            };
+        }
+
+        [BinderTest(isolate: true)]
+        public static BindOperation AssemblyLoadFromResolveHandler_NotTracked()
+        {
+            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string assemblyPath = Path.Combine(appPath, $"{DependentAssemblyName}.dll");
+            Assembly.LoadFrom(assemblyPath);
+
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(SubdirectoryAssemblyName));
+
+            Assembly executingAssembly = Assembly.GetExecutingAssembly();
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = DefaultALC,
+                RequestingAssembly = executingAssembly.GetName(),
+                RequestingAssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                AppDomainAssemblyResolveHandlers = new List<HandlerInvocation>()
+                {
+                    new HandlerInvocation()
+                    {
+                        AssemblyName = assemblyName,
+                        HandlerName = AssemblyLoadFromHandlerName,
+                    }
+                },
+                AssemblyLoadFromHandler = new LoadFromHandlerInvocation()
+                {
+                    AssemblyName = assemblyName,
+                    IsTrackedLoad = false,
+                    RequestingAssemblyPath = executingAssembly.Location
+                }
+            };
+        }
+
+        private static string GetAssemblyInSubdirectoryPath(string assemblyName)
+        {
+            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(appPath, "DependentAssemblies", $"{assemblyName}.dll");
+        }
+
         private enum HandlerReturn
         {
             Null,
@@ -306,9 +428,8 @@ namespace BinderTracingTests
                 if (handlerReturn == HandlerReturn.Null)
                     return null;
 
-                string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string fileName = handlerReturn == HandlerReturn.RequestedAssembly ? $"{assemblyName.Name}.dll" : $"{assemblyName.Name}Mismatch.dll";
-                string assemblyPath = Path.Combine(appPath, "DependentAssemblies", fileName);
+                string name = handlerReturn == HandlerReturn.RequestedAssembly ? assemblyName.Name : $"{assemblyName.Name}Mismatch";
+                string assemblyPath = GetAssemblyInSubdirectoryPath(name);
 
                 if (!File.Exists(assemblyPath))
                     return null;
