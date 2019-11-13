@@ -1125,6 +1125,7 @@ arch_init (MonoAotCompile *acfg)
 	/* NOP */
 	acfg->align_pad_value = 0x90;
 #endif
+	g_string_append (acfg->llc_args, " -enable-implicit-null-checks -disable-fault-maps");
 
 	if (mono_use_fast_math) {
 		// same parameters are passed to opt and LLVM JIT

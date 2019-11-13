@@ -189,6 +189,7 @@ typedef struct MonoDebugOptions {
 	 * Prevent LLVM from inlining any methods
 	 */
 	gboolean llvm_disable_inlining;
+	gboolean llvm_disable_implicit_null_checks;
 	gboolean use_fallback_tls;
 	/*
 	 * Whenever data such as next sequence points and flags is required.

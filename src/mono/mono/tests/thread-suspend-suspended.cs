@@ -13,11 +13,11 @@ class Driver
 		AutoResetEvent finished_gc = new AutoResetEvent (false);
 
 		Thread t1 = new Thread (() => {
-			while (!finished) {}
+			while (!Volatile.Read(ref finished)) {}
 		});
 
 		Thread t2 = new Thread (() => {
-			while (!finished) {
+			while (!Volatile.Read(ref finished)) {
 				if (start_gc.WaitOne (0)) {
 					GC.Collect ();
 					finished_gc.Set ();
@@ -44,7 +44,7 @@ class Driver
 				Console.WriteLine ();
 		}
 
-		finished = true;
+		Volatile.Write(ref finished, true);
 
 		t1.Join ();
 		t2.Join ();

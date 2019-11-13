@@ -1382,6 +1382,7 @@ typedef struct {
 	guint            ret_var_set : 1;
 	guint            unverifiable : 1;
 	guint            skip_visibility : 1;
+	guint            disable_llvm_implicit_null_checks : 1;
 	guint            disable_reuse_registers : 1;
 	guint            disable_reuse_stack_slots : 1;
 	guint            disable_reuse_ref_stack_slots : 1;
