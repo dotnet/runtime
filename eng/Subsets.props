@@ -91,7 +91,7 @@
     <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-readme-table.proj" />
   </ItemGroup>
 
-  <!-- Libraries sets -->
+  <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('all'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)build.proj" />
   </ItemGroup>
