@@ -51,43 +51,43 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
             Vector256<Byte> value;
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<byte> byteResult = value.AsByte();
             ValidateResult(byteResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<double> doubleResult = value.AsDouble();
             ValidateResult(doubleResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<short> shortResult = value.AsInt16();
             ValidateResult(shortResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<int> intResult = value.AsInt32();
             ValidateResult(intResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<long> longResult = value.AsInt64();
             ValidateResult(longResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<sbyte> sbyteResult = value.AsSByte();
             ValidateResult(sbyteResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<float> floatResult = value.AsSingle();
             ValidateResult(floatResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<ushort> ushortResult = value.AsUInt16();
             ValidateResult(ushortResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<uint> uintResult = value.AsUInt32();
             ValidateResult(uintResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<ulong> ulongResult = value.AsUInt64();
             ValidateResult(ulongResult, value);
         }
@@ -97,43 +97,43 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunGenericScenario));
             Vector256<Byte> value;
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<byte> byteResult = value.As<Byte, byte>();
             ValidateResult(byteResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<double> doubleResult = value.As<Byte, double>();
             ValidateResult(doubleResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<short> shortResult = value.As<Byte, short>();
             ValidateResult(shortResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<int> intResult = value.As<Byte, int>();
             ValidateResult(intResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<long> longResult = value.As<Byte, long>();
             ValidateResult(longResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<sbyte> sbyteResult = value.As<Byte, sbyte>();
             ValidateResult(sbyteResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<float> floatResult = value.As<Byte, float>();
             ValidateResult(floatResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<ushort> ushortResult = value.As<Byte, ushort>();
             ValidateResult(ushortResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<uint> uintResult = value.As<Byte, uint>();
             ValidateResult(uintResult, value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             Vector256<ulong> ulongResult = value.As<Byte, ulong>();
             ValidateResult(ulongResult, value);
         }
@@ -143,70 +143,70 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
             Vector256<Byte> value;
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object byteResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsByte))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<byte>)(byteResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object doubleResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsDouble))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<double>)(doubleResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object shortResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsInt16))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<short>)(shortResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object intResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsInt32))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<int>)(intResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object longResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsInt64))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<long>)(longResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object sbyteResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsSByte))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<sbyte>)(sbyteResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object floatResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsSingle))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<float>)(floatResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object ushortResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsUInt16))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<ushort>)(ushortResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object uintResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsUInt32))
                                     .MakeGenericMethod(typeof(Byte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector256<uint>)(uintResult), value);
 
-            value = Vector256.Create(TestLibrary.Generator.GetByte());
+            value = Vector256.Create((byte)TestLibrary.Generator.GetByte());
             object ulongResult = typeof(Vector256)
                                     .GetMethod(nameof(Vector256.AsUInt64))
                                     .MakeGenericMethod(typeof(Byte))

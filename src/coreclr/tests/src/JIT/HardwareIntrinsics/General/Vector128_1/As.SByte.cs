@@ -51,43 +51,43 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
             Vector128<SByte> value;
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<byte> byteResult = value.AsByte();
             ValidateResult(byteResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<double> doubleResult = value.AsDouble();
             ValidateResult(doubleResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<short> shortResult = value.AsInt16();
             ValidateResult(shortResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<int> intResult = value.AsInt32();
             ValidateResult(intResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<long> longResult = value.AsInt64();
             ValidateResult(longResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<sbyte> sbyteResult = value.AsSByte();
             ValidateResult(sbyteResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<float> floatResult = value.AsSingle();
             ValidateResult(floatResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<ushort> ushortResult = value.AsUInt16();
             ValidateResult(ushortResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<uint> uintResult = value.AsUInt32();
             ValidateResult(uintResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<ulong> ulongResult = value.AsUInt64();
             ValidateResult(ulongResult, value);
         }
@@ -97,43 +97,43 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunGenericScenario));
             Vector128<SByte> value;
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<byte> byteResult = value.As<SByte, byte>();
             ValidateResult(byteResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<double> doubleResult = value.As<SByte, double>();
             ValidateResult(doubleResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<short> shortResult = value.As<SByte, short>();
             ValidateResult(shortResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<int> intResult = value.As<SByte, int>();
             ValidateResult(intResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<long> longResult = value.As<SByte, long>();
             ValidateResult(longResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<sbyte> sbyteResult = value.As<SByte, sbyte>();
             ValidateResult(sbyteResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<float> floatResult = value.As<SByte, float>();
             ValidateResult(floatResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<ushort> ushortResult = value.As<SByte, ushort>();
             ValidateResult(ushortResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<uint> uintResult = value.As<SByte, uint>();
             ValidateResult(uintResult, value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             Vector128<ulong> ulongResult = value.As<SByte, ulong>();
             ValidateResult(ulongResult, value);
         }
@@ -143,70 +143,70 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
             Vector128<SByte> value;
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object byteResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsByte))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<byte>)(byteResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object doubleResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsDouble))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<double>)(doubleResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object shortResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsInt16))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<short>)(shortResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object intResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsInt32))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<int>)(intResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object longResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsInt64))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<long>)(longResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object sbyteResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsSByte))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<sbyte>)(sbyteResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object floatResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsSingle))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<float>)(floatResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object ushortResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsUInt16))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<ushort>)(ushortResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object uintResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsUInt32))
                                     .MakeGenericMethod(typeof(SByte))
                                     .Invoke(null, new object[] { value });
             ValidateResult((Vector128<uint>)(uintResult), value);
 
-            value = Vector128.Create(TestLibrary.Generator.GetSByte());
+            value = Vector128.Create((sbyte)TestLibrary.Generator.GetSByte());
             object ulongResult = typeof(Vector128)
                                     .GetMethod(nameof(Vector128.AsUInt64))
                                     .MakeGenericMethod(typeof(SByte))

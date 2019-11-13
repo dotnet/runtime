@@ -223,7 +223,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector3" />.</returns>
         public static Vector3 AsVector3(this Vector128<float> value)
         {
-            throw new PlatformNotSupportedException();
+            return Unsafe.As<Vector128<float>, Vector3>(ref value);
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector4" />.</summary>

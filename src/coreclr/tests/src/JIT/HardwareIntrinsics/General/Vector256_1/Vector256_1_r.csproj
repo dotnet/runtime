@@ -18,6 +18,16 @@
     <Compile Include="As.UInt16.cs" />
     <Compile Include="As.UInt32.cs" />
     <Compile Include="As.UInt64.cs" />
+    <Compile Include="AsVector.Byte.cs" />
+    <Compile Include="AsVector.Double.cs" />
+    <Compile Include="AsVector.Int16.cs" />
+    <Compile Include="AsVector.Int32.cs" />
+    <Compile Include="AsVector.Int64.cs" />
+    <Compile Include="AsVector.SByte.cs" />
+    <Compile Include="AsVector.Single.cs" />
+    <Compile Include="AsVector.UInt16.cs" />
+    <Compile Include="AsVector.UInt32.cs" />
+    <Compile Include="AsVector.UInt64.cs" />
     <Compile Include="GetAndWithElement.Byte.0.cs" />
     <Compile Include="GetAndWithElement.Byte.7.cs" />
     <Compile Include="GetAndWithElement.Byte.15.cs" />
