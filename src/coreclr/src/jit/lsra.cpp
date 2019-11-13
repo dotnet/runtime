@@ -4748,7 +4748,14 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         // This should still be in its initialized empty state.
         for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
         {
-            assert(inVarToRegMap[varIndex] == REG_STK);
+            // In the case where we're extending lifetimes for stress, we are intentionally modeling variables
+            // as live when they really aren't to create extra register pressure & constraints.
+            // However, this means that non-EH-vars will be live into EH regions. We can and should ignore the
+            // locations of these. Note that they aren't reported to codegen anyway.
+            if (!getLsraExtendLifeTimes() || VarSetOps::IsMember(compiler, currentBlock->bbLiveIn, varIndex))
+            {
+                assert(inVarToRegMap[varIndex] == REG_STK);
+            }
         }
 #endif // DEBUG
         predVarToRegMap = inVarToRegMap;
