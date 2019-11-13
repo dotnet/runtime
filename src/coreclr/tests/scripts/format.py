@@ -20,6 +20,18 @@ import zipfile
 import subprocess
 import shutil
 
+class ChangeDir:
+    def __init__(self, dir):
+        self.dir = dir
+        self.cwd = None
+
+    def __enter__(self):
+        self.cwd = os.getcwd()
+        os.chdir(self.dir)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.chdir(self.cwd)
+
 # Version specific imports
 
 if sys.version_info.major < 3:
@@ -88,8 +100,12 @@ def main(argv):
     bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
 
     bootstrapPath = os.path.join(os.path.join(coreclr, "bin", "jitutils"), bootstrapFilename)
-    if not os.path.isdir(os.path.dirname(bootstrapPath)):
-        os.makedirs(os.path.dirname(bootstrapPath))
+
+    if os.path.isdir(os.path.dirname(bootstrapPath)):
+        shutil.rmtree(os.path.dirname(bootstrapPath))
+
+    assert not os.path.isdir(os.path.dirname(bootstrapPath))
+    os.makedirs(os.path.dirname(bootstrapPath))
 
     urlretrieve(bootstrapUrl, bootstrapPath)
 
@@ -105,14 +121,15 @@ def main(argv):
 
     print(bootstrapPath)
 
-    # Run bootstrap
-    if platform == 'Linux' or platform == 'OSX':
-        print("Running bootstrap")
-        proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
-        output,error = proc.communicate()
-    elif platform == 'Windows_NT':
-        proc = subprocess.Popen([bootstrapPath], env=my_env)
-        output,error = proc.communicate()
+    with ChangeDir(os.path.dirname(bootstrapPath)):
+        # Run bootstrap
+        if platform == 'Linux' or platform == 'OSX':
+            print("Running bootstrap")
+            proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
+            output,error = proc.communicate()
+        elif platform == 'Windows_NT':
+            proc = subprocess.Popen([bootstrapPath], env=my_env)
+            output,error = proc.communicate()
 
     # Run jit-format
 
