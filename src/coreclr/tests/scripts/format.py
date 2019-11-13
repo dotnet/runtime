@@ -24,14 +24,10 @@ import shutil
 class ChangeDir:
     def __init__(self, dir):
         self.dir = dir
-        self.cwd = os.getcwd()
+        self.cwd = None
 
     def __enter__(self):
-        try:
-            self.cwd = os.getcwd()
-        except:
-            self.cwd = os.getcwd()
-
+        self.cwd = os.getcwd()
         os.chdir(self.dir)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -50,7 +46,6 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        shutil.rmtree(self.dir)
 
 # Version specific imports
 
