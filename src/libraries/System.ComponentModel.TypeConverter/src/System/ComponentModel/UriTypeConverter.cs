@@ -52,7 +52,7 @@ namespace System
 
             if (value is Uri uri)
             {
-                return new Uri(uri.OriginalString); // return new instance
+                return new Uri(uri.OriginalString, GetUriKind(uri));
             }
 
             throw GetConvertFromException(value);
@@ -75,7 +75,7 @@ namespace System
                 {
                     ConstructorInfo ctor = typeof(Uri).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(string), typeof(UriKind) }, null);
                     Debug.Assert(ctor != null, "Couldn't find constructor");
-                    return new InstanceDescriptor(ctor, new object[] { uri.OriginalString, uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative });
+                    return new InstanceDescriptor(ctor, new object[] { uri.OriginalString, GetUriKind(uri) });
                 }
 
                 if (destinationType == typeof(string))
@@ -85,7 +85,7 @@ namespace System
 
                 if (destinationType == typeof(Uri))
                 {
-                    return new Uri(uri.OriginalString, UriKind.RelativeOrAbsolute);
+                    return new Uri(uri.OriginalString, GetUriKind(uri));
                 }
             }
 
@@ -100,5 +100,7 @@ namespace System
             }
             return value is Uri;
         }
+
+        private static UriKind GetUriKind(Uri uri) => uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative;
     }
 }

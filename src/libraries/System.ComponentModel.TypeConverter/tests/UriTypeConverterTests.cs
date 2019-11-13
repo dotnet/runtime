@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using Xunit;
@@ -39,9 +40,12 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertFrom_WithContext()
         {
-            ConvertFrom_WithContext(new object[2, 3]
+            ConvertFrom_WithContext(new object[5, 3]
                 {
                     {"http://www.Microsoft.com/", new Uri("http://www.Microsoft.com/"),  CultureInfo.InvariantCulture},
+                    {"/relative",  new Uri("/relative", UriKind.Relative),  CultureInfo.InvariantCulture},
+                    {new Uri("http://www.Microsoft.com/"), new Uri("http://www.Microsoft.com/"),  null},
+                    {new Uri("/relative", UriKind.Relative), new Uri("/relative", UriKind.Relative),  null},
                     {"mailto:?to=User2@Host2.com;cc=User3@Host3com", new Uri("mailto:?to=User2@Host2.com;cc=User3@Host3com"),  null}
                 },
                 UriTypeConverterTests.s_converter);
@@ -50,9 +54,10 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            ConvertTo_WithContext(new object[2, 3]
+            ConvertTo_WithContext(new object[3, 3]
                 {
                     {new Uri("http://www.Microsoft.com/"), "http://www.Microsoft.com/", CultureInfo.InvariantCulture},
+                    {new Uri("/relative", UriKind.Relative), "/relative", CultureInfo.InvariantCulture},
                     {new Uri("mailto:?to=User2@Host2.com;cc=User3@Host3com"), "mailto:?to=User2@Host2.com;cc=User3@Host3com",  null}
                 },
                 UriTypeConverterTests.s_converter);
