@@ -10210,7 +10210,7 @@ void Interpreter::CallI()
             }
             else
             {
-                pMD = g_pExecuteBackoutCodeHelperMethod;  // A random static method.
+                pMD = MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);  // A random static method.
             }
             MethodDescCallSite mdcs(pMD, &mSig, ftnPtr);
 #if 0
