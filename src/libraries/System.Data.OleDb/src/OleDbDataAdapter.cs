@@ -262,10 +262,6 @@ namespace System.Data.OleDb
                                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
 
                                 string message = string.Empty;
-                                if (null != errorInfo)
-                                {
-                                    OleDbHResult hresult = ODB.GetErrorDescription(errorInfo, hr, out message);
-                                }
                                 throw new COMException(message, (int)hr);
                             }
                             break;
@@ -436,10 +432,6 @@ namespace System.Data.OleDb
                 UnsafeNativeMethods.IErrorInfo errorInfo = null;
                 UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
                 string message = string.Empty;
-                if (null != errorInfo)
-                {
-                    OleDbHResult hresult = ODB.GetErrorDescription(errorInfo, hr, out message);
-                }
                 throw new COMException(message, (int)hr);
             }
         }

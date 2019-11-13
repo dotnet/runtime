@@ -108,7 +108,7 @@ namespace System.Data.OleDb
             {
                 if (_mustComplete && (IntPtr.Zero != base.handle))
                 {
-                    OleDbHResult hr = (OleDbHResult)NativeOledbWrapper.ITransactionAbort(base.handle);
+                    NativeOledbWrapper.ITransactionAbort(base.handle);
                     _mustComplete = false;
                 }
                 return base.ReleaseHandle();

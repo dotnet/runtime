@@ -160,7 +160,7 @@ namespace System.Data.OleDb
 
             if ((IntPtr.Zero != base.handle) && (IntPtr.Zero != chapter))
             {
-                OleDbHResult hr = (OleDbHResult)NativeOledbWrapper.IChapteredRowsetReleaseChapter(base.handle, chapter);
+                NativeOledbWrapper.IChapteredRowsetReleaseChapter(base.handle, chapter);
             }
             return base.ReleaseHandle();
         }

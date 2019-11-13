@@ -321,7 +321,6 @@ namespace System.Data.OleDb
 
         public override void EnlistTransaction(SysTx.Transaction transaction)
         {
-            OleDbConnection outerConnection = Connection;
             if (null != LocalTransaction)
             {
                 throw ADP.LocalTransactionPresent();
@@ -821,8 +820,6 @@ namespace System.Data.OleDb
 
         internal Dictionary<string, OleDbPropertyInfo> GetPropertyInfo(Guid[] propertySets)
         {
-            bool isopen = HasSession;
-            OleDbConnectionString constr = ConnectionString;
             Dictionary<string, OleDbPropertyInfo> properties = null;
 
             if (null == propertySets)

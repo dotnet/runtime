@@ -515,12 +515,6 @@ namespace System.Data.OleDb
                     ADP.TraceExceptionWithoutRethrow(e);
                 }
             }
-#if DEBUG
-            else
-            {
-                OleDbException exception = OleDbException.CreateException(errorInfo, errorCode, null);
-            }
-#endif
         }
 
         public override void Open()

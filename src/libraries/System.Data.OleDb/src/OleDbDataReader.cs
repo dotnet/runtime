@@ -1166,7 +1166,7 @@ namespace System.Data.OleDb
             {
                 throw ADP.ArgumentNull("values");
             }
-            MetaData info = DoValueCheck(0);
+            DoValueCheck(0);
             int count = Math.Min(values.Length, _visibleFieldCount);
             for (int i = 0; (i < _metadata.Length) && (i < count); ++i)
             {
@@ -2163,7 +2163,6 @@ namespace System.Data.OleDb
                     {
                         bool isPKey = (!dataRow.IsNull(pkeyColumn, DataRowVersion.Default) && (bool)dataRow[pkeyColumn, DataRowVersion.Default]);
                         bool isUniq = (!dataRow.IsNull(uniqCOlumn, DataRowVersion.Default) && (bool)dataRow[uniqCOlumn, DataRowVersion.Default]);
-                        bool nullsVal = (null != nulls) && (dataRow.IsNull(nulls, DataRowVersion.Default) || (ODB.DBPROPVAL_IN_ALLOWNULL == Convert.ToInt32(dataRow[nulls, DataRowVersion.Default], CultureInfo.InvariantCulture)));
 
                         if (isPKey || isUniq)
                         {
