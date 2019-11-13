@@ -5,4 +5,4 @@ add_library_clr(mscorrc SHARED
 )
 
 install_clr(TARGETS mscorrc)
-install_clr(TARGETS mscorrc DESTINATION sharedFramework)
+install_clr(TARGETS mscorrc DESTINATION sharedFramework SKIP_STRIP)

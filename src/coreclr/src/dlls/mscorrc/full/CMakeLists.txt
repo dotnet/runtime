@@ -7,7 +7,7 @@ if(WIN32)
   )
 
   install_clr(TARGETS mscorrc.debug)
-  install_clr(TARGETS mscorrc.debug DESTINATION sharedFramework)
+  install_clr(TARGETS mscorrc.debug DESTINATION sharedFramework SKIP_STRIP)
 
 else()
   build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../include.rc mscorrc_debug TARGET_CPP_FILE)

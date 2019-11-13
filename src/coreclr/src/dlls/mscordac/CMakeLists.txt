@@ -185,7 +185,7 @@ target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # add the install targets
 install_clr(TARGETS mscordaccore)
-install_clr(TARGETS mscordaccore DESTINATION sharedFramework)
+install_clr(TARGETS mscordaccore DESTINATION sharedFramework SKIP_STRIP)
 if(WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
     set(LONG_NAME_TARGET_ARCH ${CLR_CMAKE_TARGET_ARCH})
