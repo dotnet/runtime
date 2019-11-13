@@ -1754,8 +1754,8 @@
                             <AssemblyLoadFromResolveHandlerInvoked xmlns="myNs">
                                 <ClrInstanceID> %1 </ClrInstanceID>
                                 <AssemblyName> %2 </AssemblyName>
-                                <IsTrackedAssembly> %3 </IsTrackedAssembly>
-                                <RequestingAssemblyName> %4 </RequestingAssemblyName>
+                                <IsTrackedLoad> %3 </IsTrackedLoad>
+                                <RequestingAssemblyPath> %4 </RequestingAssemblyPath>
                                 <ComputedRequestedAssemblyPath> %5 </ComputedRequestedAssemblyPath>
                             </AssemblyLoadFromResolveHandlerInvoked>
                         </UserData>
