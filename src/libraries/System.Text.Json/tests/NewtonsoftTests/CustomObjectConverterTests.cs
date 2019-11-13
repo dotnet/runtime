@@ -165,11 +165,8 @@ namespace System.Text.Json.Tests
                         ""Number"": 123
                     }
                 }]";
-            NotSupportedException nse = Assert.Throws<NotSupportedException>(() =>
-            {
-                JsonSerializer.Deserialize<List<MyClass>>(validJson);
-            });
-            Assert.Equal("Deserialization of interface types is not supported. Type 'System.Text.Json.Tests.IThing'", nse.Message);
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<List<MyClass>>(validJson));
 
             const string invalidJson =
                 @"{

@@ -186,17 +186,13 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void DuplicateNameEnumTest()
         {
-            JsonException e = Assert.Throws<JsonException>(() =>
-                JsonSerializer.Deserialize<DuplicateNameEnum>("\"foo_bar\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DuplicateNameEnum>("\"foo_bar\""));
         }
 
         [Fact]
         public static void InvalidValueStringNumber()
         {
-            JsonException ex = Assert.Throws<JsonException>(() =>
-            {
-                StoreColor s = JsonSerializer.Deserialize<StoreColor>("\"1\"");
-            });
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StoreColor>("\"1\""));
         }
 
         [Fact]
@@ -236,10 +232,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InvalidValueDash()
         {
-            JsonException ex = Assert.Throws<JsonException>(() =>
-            {
-                JsonSerializer.Deserialize<StoreColor>("\"-\"");
-            });
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StoreColor>("\"-\""));
         }
 
         [Fact]

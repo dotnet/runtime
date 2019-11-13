@@ -69,22 +69,22 @@ namespace System.Text.Json.Tests
         public void IncompleteContainers()
         {
             JsonException e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<object>>("[1,"));
-            Assert.Equal("Expected start of a property name or value, but instead reached end of data. Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
+            Assert.Contains("Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
 
             e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<int>>("[1,"));
-            Assert.Equal("Expected start of a property name or value, but instead reached end of data. Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
+            Assert.Contains("Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
 
             e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<int>>("[1"));
-            Assert.Equal("'1' is an invalid end of a number. Expected a delimiter. Path: $[0] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
+            Assert.Contains("Path: $[0] | LineNumber: 0 | BytePositionInLine: 2.", e.Message);
 
             e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IDictionary<string, int>>("{\"key\":1,"));
-            Assert.Equal("Expected start of a property name or value, but instead reached end of data. Path: $.key | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
+            Assert.Contains("Path: $.key | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
 
             e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IDictionary<string, int>>("{\"key\":1"));
-            Assert.Equal("'1' is an invalid end of a number. Expected a delimiter. Path: $.key | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
+            Assert.Contains("Path: $.key | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
 
             e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IncompleteTestClass>("{\"key\":1,"));
-            Assert.Equal("Expected start of a property name or value, but instead reached end of data. Path: $ | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
+            Assert.Contains("$ | LineNumber: 0 | BytePositionInLine: 8.", e.Message);
         }
 
         [Fact]

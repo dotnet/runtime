@@ -128,9 +128,8 @@ namespace System.Text.Json.Tests
         [Fact]
         public void SerializeDefaultArray()
         {
-            InvalidOperationException e = Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Serialize(default(ImmutableArray<int>), s_indentedOption));
-            Assert.Equal("This operation cannot be performed on a default instance of ImmutableArray<T>.  Consider initializing the array, or checking the ImmutableArray<T>.IsDefault property.", e.Message);
+            // The call to .GetEnumerator() throws this exception. Json.NET fails in the same way.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(default(ImmutableArray<int>), s_indentedOption));
         }
         #endregion
 
