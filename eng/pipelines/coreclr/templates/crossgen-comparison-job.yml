@@ -40,14 +40,14 @@ jobs:
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: binDirectory
-        value: $(Build.SourcesDirectory)/bin
+        value: $(coreClrRepoRoot)/bin
       - name: productDirectory
-        value: $(Build.SourcesDirectory)/bin/Product
+        value: $(binDirectory)/Product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: binDirectory
-        value: $(Build.SourcesDirectory)\bin
+        value: $(coreClrRepoRoot)\bin
       - name: productDirectory
-        value: $(Build.SourcesDirectory)\bin\Product
+        value: $(binDirectory\Product
 
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -83,12 +83,8 @@ jobs:
 
 
     # Populate Core_Root
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) generatelayoutonly
-        displayName: Populate Core_Root
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd $(buildConfig) $(archType) generateLayoutOnly
-        displayName: Populate Core_Root
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+      displayName: Populate Core_Root
 
 
     # Create baseline output on the host (x64) machine
@@ -96,7 +92,7 @@ jobs:
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/tests/scripts/crossgen_comparison.py
+        scriptPath: $(coreClrRepoRoot)/tests/scripts/crossgen_comparison.py
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
@@ -126,7 +122,7 @@ jobs:
           Creator: $(Creator)
         WorkItemTimeout: 1:00 # 1 hour
         WorkItemDirectory: '$(binDirectory)'
-        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/tests/scripts'
+        CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen;
