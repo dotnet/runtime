@@ -131,8 +131,11 @@ namespace System.Net
 
             const int HostNameBufferLength = 256;
             byte* buffer = stackalloc byte[HostNameBufferLength];
-            if (Interop.Winsock.gethostname(buffer, HostNameBufferLength) != SocketError.Success)
+            SocketError result = Interop.Winsock.gethostname(buffer, HostNameBufferLength);
+
+            if (result != SocketError.Success)
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"GetHostName failed with {result}");
                 throw new SocketException();
             }
 

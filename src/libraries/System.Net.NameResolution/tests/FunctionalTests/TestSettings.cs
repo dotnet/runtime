@@ -4,9 +4,14 @@
 
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
+
     internal static class TestSettings
     {
         public const string LocalHost = "localhost";

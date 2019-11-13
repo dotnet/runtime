@@ -253,7 +253,7 @@ namespace System.Net
             if (IsEnabled) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
         }
 
-        [Event(ErrorEventId, Level = EventLevel.Warning, Keywords = Keywords.Default)]
+        [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
         private void ErrorMessage(string thisOrContextObject, string? memberName, string? message) =>
             WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
