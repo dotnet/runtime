@@ -910,29 +910,21 @@ namespace System.IO
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
-        public static string TrimEndingDirectorySeparator(string path) =>
-            EndsInDirectorySeparator(path) && !PathInternal.IsRoot(path.AsSpan()) ?
-                path.Substring(0, path.Length - 1) :
-                path;
+        public static string TrimEndingDirectorySeparator(string path) => PathInternal.TrimEndingDirectorySeparator(path);
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
-        public static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
-            EndsInDirectorySeparator(path) && !PathInternal.IsRoot(path) ?
-                path.Slice(0, path.Length - 1) :
-                path;
+        public static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) => PathInternal.TrimEndingDirectorySeparator(path);
 
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        public static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
-            => path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
+        public static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) => PathInternal.EndsInDirectorySeparator(path);
 
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        public static bool EndsInDirectorySeparator(string path)
-              => !string.IsNullOrEmpty(path) && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
+        public static bool EndsInDirectorySeparator(string path) => PathInternal.EndsInDirectorySeparator(path);
     }
 }
