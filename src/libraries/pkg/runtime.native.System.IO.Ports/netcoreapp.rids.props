@@ -8,5 +8,6 @@
     </BuildRID>
     <BuildRID Include="linux-x64" />
     <BuildRID Include="osx-x64" />
+    <BuildRID Include="freebsd-x64" />
   </ItemGroup>
 </Project>
