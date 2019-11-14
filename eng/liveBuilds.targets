@@ -1,0 +1,57 @@
+<Project>
+
+  <PropertyGroup>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'bin', 'Product', '$(OSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(HostArch)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
+  </PropertyGroup>
+
+  <Target Name="ResolveCoreCLRFilesFromLocalBuild">
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)')" Text="The CoreCLR subset category must be built before building this project." />
+    <PropertyGroup>
+      <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
+    </PropertyGroup>
+    <PropertyGroup>
+      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
+      <CoreCLRCrossTargetComponentDir
+        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDir)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
+      <CoreCLRFiles>
+        <IsNative>true</IsNative>
+      </CoreCLRFiles>
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <CoreCLRFiles
+        Include="
+          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+      <CoreCLRFiles
+        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb;$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
+        Include="
+          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+
+      <CoreCLRFiles>
+        <TargetPath>runtime/$(RuntimeIdentifier)/native</TargetPath>
+      </CoreCLRFiles>
+
+      <CoreCLRCrossTargetFiles>
+        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+
+      <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+    </ItemGroup>
+
+    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLRArtifactsPath ($(CoreCLRArtifactsPath)) does not contain any files." />
+  </Target>
+</Project>

@@ -90,7 +90,7 @@
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
   <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.props" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
 
-  <PropertyGroup>    
+  <PropertyGroup>
     <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
   </PropertyGroup>
 
@@ -156,6 +156,7 @@
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
+    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
   </PropertyGroup>
 
   <!-- Set some shortcuts for more terse conditions in project files -->
@@ -169,6 +170,7 @@
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='netcoreapp' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='netfx' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
   <!--
@@ -195,14 +197,14 @@
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(OS)' == 'Windows_NT'" />
-    
+
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
 
     <!-- TODO-NULLABLE: Remove once netstandard has annotations for Debug.Assert, string.IsNullOrEmpty, etc. -->
     <NoWarn Condition="'$(TargetsNetFx)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
-    
+
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
     <When Condition="'$(ConfigurationGroup)'=='Debug'">

@@ -1,57 +1,5 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Targets to enable building the NETCoreApp shared framework from a local CoreCLR and CoreFX build. -->
-  
-  <Target Name="OverrideRuntimeFilesFromPackageResolve" Condition="'$(CoreCLROverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
-    <Error Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
-    <PropertyGroup>
-      <CoreCLROverridePath>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLROverridePath>
-    </PropertyGroup>
-    <PropertyGroup>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
-      <CoreCLRCrossTargetComponentDir
-        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','$(CoreCLRCrossTargetComponentDir)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
-      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" />
-      <CoreCLRFiles Include="$(CoreCLROverridePath)Redist/**/*.dll" />
-      <CoreCLRFiles>
-        <IsNative>true</IsNative>
-      </CoreCLRFiles>
-      <CoreCLRFiles Include="$(CoreCLROverridePath)System.Private.CoreLib.dll" />
-      <CoreCLRFiles
-        Include="
-          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
-      <CoreCLRFiles
-        Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.pdb;$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
-      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
-        Include="
-          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
-
-      <CoreCLRFiles>
-        <TargetPath>runtime/$(RuntimeIdentifier)/native</TargetPath>
-      </CoreCLRFiles>
-
-      <CoreCLRCrossTargetFiles>
-        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
-      </CoreCLRCrossTargetFiles>
-
-      <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
-
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'"/>
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('mscordaccore_'))" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
-    </ItemGroup>
-
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
-  </Target>
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve" />
 
   <Target Name="OverrideFrameworkFilesFromPackageResolve" Condition="'$(CoreFXOverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
     <Error Condition="!Exists('$(CoreFXOverridePath)')" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) does not exist." />
@@ -60,7 +8,7 @@
       <CoreFXSharedFrameworkPackageSpec>$(CoreFXOverridePath)/specs/$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkPackageSpec>
       <CoreFXSharedFrameworkImplementationPackageSpec Condition="'$(PackageRID)' != ''">$(CoreFXOverridePath)/specs/runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkImplementationPackageSpec>
     </PropertyGroup>
-    
+
     <Error Condition="!Exists('$(CoreFXSharedFrameworkPackageSpec)')" Text="The nuspec for the reference $(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist." />
     <Message Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And !Exists('$(CoreFXSharedFrameworkImplementationPackageSpec)')"
       Text="The nuspec for the implementation runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist. Falling back to packaged CoreFX." />
@@ -79,7 +27,7 @@
       XmlInputPath="$(CoreFXSharedFrameworkImplementationPackageSpec)">
       <Output TaskParameter="Result" ItemName="CoreFXReferenceCopyLocalItems" />
     </XmlPeek>
-    
+
     <ItemGroup>
       <CoreFXReferenceItems NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
       <CoreFXReferenceCopyLocalItems NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
@@ -121,14 +69,71 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="OverrideCrossgenToolPaths" DependsOnTargets="GetCorePackagePaths" AfterTargets="GetCrossgenToolPaths" BeforeTargets="CreateCrossGenImages">  
-    <PropertyGroup Condition="'$(CoreCLROverridePath)' != ''">
-      <_runtimeDirectory>$(CoreCLROverridePath)</_runtimeDirectory>
-      <_crossgenPath>$(CoreCLROverridePath)/crossgen$(ApplicationFileExtension)</_crossgenPath>
-      <_CoreLibSharedDirectory>$(CoreCLROverridePath)</_CoreLibSharedDirectory>
-      <_jitPath>$(CoreClrOverridePath)/$(_crossHostArch)/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+  <Target Name="GetCrossgenToolPaths"
+          DependsOnTargets="GetCorePackagePaths">
+    <ItemGroup>
+      <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
+      <_runtimeCLR Include="$(_runtimePackageDir)**/$(LibraryFilePrefix)coreclr$(LibraryFileExtension)" />
+      <_runtimeCoreLib Include="$(_runtimePackageDir)**/native/System.Private.CoreLib.dll" />
+      <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
+      <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
+      <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_runtimeDirectory>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</_runtimeDirectory>
+      <_crossGenPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', 'crossgen$(ApplicationFileExtension)'))</_crossGenPath>
     </PropertyGroup>
 
-  </Target>
+    <PropertyGroup Condition="'@(_runtimeCoreLib)' != ''">
+      <_coreLibDirectory>$(CoreCLRArtifactsPath)</_coreLibDirectory>
+    </PropertyGroup>
 
+    <PropertyGroup>
+      <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_fxSystemRuntime)' != ''">
+      <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
+      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
+      <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <!--
+      DiaSymReader can't be built from source, so use an unrelated default directory in that case.
+      This is used as the working directory for crossgen calls.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+
+    <ItemGroup>
+      <!--
+        The following path must be passed to crossgen to locate all dependencies. Include it first
+        so in case of conflicts, DLLs are found in the framework being crossgenned.
+      -->
+      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
+      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
+      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
+      <!-- the following need not be passed to crossgen but we do so to be safe. -->
+      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
+    </PropertyGroup>
+  </Target>
 </Project>

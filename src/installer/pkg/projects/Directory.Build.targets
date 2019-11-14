@@ -336,4 +336,6 @@
     </ItemGroup>
   </Target>
 
+  <!-- Override adding packages to get the crossgen tool to no-op since we will resolve the crossgen tool locally. -->
+  <Target Name="AddCrossgenToolPackageReferences" />
 </Project>
