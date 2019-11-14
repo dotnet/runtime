@@ -30,6 +30,23 @@ stages:
     # Allow symbol publish to emit expected warnings without failing the build. Include single
     # quotes inside the string so that it passes through to MSBuild without script interference.
     symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
+    # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
+    SDLValidationParameters:
+      enable: true
+      artifactNames:
+      - PackageArtifacts
+      - BlobArtifacts
+      params: >-
+        -SourceToolsList @("policheck","credscan")
+        -TsaInstanceURL "$(TsaInstanceURL)"
+        -TsaProjectName "$(TsaProjectName)"
+        -TsaNotificationEmail "$(TsaNotificationEmail)"
+        -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
+        -TsaBugAreaPath "$(TsaBugAreaPath)"
+        -TsaIterationPath "$(TsaIterationPath)"
+        -TsaRepositoryName "$(TsaRepositoryName)"
+        -TsaCodebaseName "$(TsaCodebaseName)"
+        -TsaPublish $True
 
 # Create extra stage per BAR channel that needs extra publish steps. These run after the Arcade
 # stages because they depend on Arcade's NuGet package publish being complete.

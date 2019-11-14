@@ -69,6 +69,8 @@ variables:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    # Values for SDLValidationParameters
+    - group: core-setup-sdl-validation
 
   - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
     - name: pipelinesPath
