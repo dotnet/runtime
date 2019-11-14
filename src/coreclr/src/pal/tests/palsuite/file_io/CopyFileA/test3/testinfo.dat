@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = CopyFileA
+Name = CopyFileA - checking file attributes maintained (test2)
+Type = DEFAULT 
+EXE1 = test3
+Description
+= Test the CopyFileA function's behaviour
+= for copying a file and verifying that 
+= the copied file has the same file attributes
+= as the original.
+

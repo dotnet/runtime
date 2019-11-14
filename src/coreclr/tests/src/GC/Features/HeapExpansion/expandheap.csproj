@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="expandheap.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
+  </ItemGroup>
+</Project>

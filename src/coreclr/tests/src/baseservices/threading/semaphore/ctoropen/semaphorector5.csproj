@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExecutionArguments>/iCount:2147483647 /mCount:2147483647 /iRandom:220</CLRTestExecutionArguments>
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="semaphorector5.cs" />
+    <Compile Include="..\semaphorecommon.cs" />
+  </ItemGroup>
+</Project>

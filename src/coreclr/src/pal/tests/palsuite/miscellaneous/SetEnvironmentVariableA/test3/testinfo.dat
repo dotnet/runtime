@@ -1,0 +1,18 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Miscellaneous
+Function = SetEnvironmentVariableA
+Name = Return value test of SetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Test creating environment variables that differ only
+= by case and check that they are treated as separate
+= variables in the BSD operating system.
+
+
+
+

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ConsoleMandel.cs" />
+    <Compile Include="Abstractions.cs" />
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="ScalarDouble.cs" />
+    <Compile Include="ScalarFloat.cs" />
+    <Compile Include="VectorDouble.cs" />
+    <Compile Include="VectorDoubleStrict.cs" />
+    <Compile Include="VectorFloat.cs" />
+    <Compile Include="VectorFloatStrict.cs" />
+    <Compile Include="VectorHelpers.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

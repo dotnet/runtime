@@ -1,0 +1,16 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Miscellaneous
+Function = InterlockedCompareExchange64
+Name = Positive test of InterlockedCompareExchange64
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to see if both successful and unsuccessful compare exchanges workp
+= roperly -- ie. Exchange and don't exchange.
+
+
+

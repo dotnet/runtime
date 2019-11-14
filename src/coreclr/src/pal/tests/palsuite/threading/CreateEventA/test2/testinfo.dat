@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = CreateEvent
+Name = Positive Test for CreateEvent 
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test for CreateEvent.  Create the event with the
+= initial state being not signaled.  Check to ensure that it
+= times out when the event is triggered.

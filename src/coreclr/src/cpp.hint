@@ -1,0 +1,82 @@
+//
+// cpp.hint: What is this thing?
+//
+// This file is used solely to aid VS Intellisense while editing.  It is not
+// used as part of any build.
+//
+// VS Intellisense does not run the C preprocessor, so it's possible for some macros
+// to confuse it, particularly when those macros expand to control-flow keywords
+// or portions of declarations.  That's where this file comes in.  Any macro
+// that appears to confuse VS Intellisense can have its definition duplicated
+// here.  Macros defined here WILL be respected by VS Intellisense.
+//
+
+// Contracts
+#define CONTRACT(x)
+#define CUSTOM_CONTRACT(x,y)
+#define CUSTOM_CONTRACT_VOID(x)
+#define CONTRACT_VOID
+#define CONTRACTL
+#define LIMITED_METHOD_CONTRACT(x)
+#define STATIC_CONTRACT_NOTHROW
+#define WRAPPER_NO_CONTRACT
+
+
+// Exceptions
+#define PAL_ENDTRY
+#define PAL_EXCEPT_FILTER(x)
+#define PAL_TRY(x, y, z)
+#define _EXCEPTION_HANDLER_DECL(funcname)                                                               \
+    EXCEPTION_DISPOSITION __cdecl funcname(EXCEPTION_RECORD *pExceptionRecord,                          \
+                                           struct _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,    \
+                                           CONTEXT *pContext,                                           \
+                                           DISPATCHER_CONTEXT *pDispatcherContext)
+
+#define EXCEPTION_HANDLER_DECL(funcname) \
+    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
+
+#define EXCEPTION_HANDLER_IMPL(funcname) \
+    _EXCEPTION_HANDLER_DECL(funcname)
+
+#define EXCEPTION_HANDLER_FWD(funcname) \
+    funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
+
+
+// DAC
+#define GVAL_ADDR(g) (&(g))
+#define _SPTR_DECL(acc_type, store_type, var) \
+    static store_type var
+#define _SPTR_IMPL(acc_type, store_type, cls, var) \
+    store_type cls::var
+#define _SPTR_IMPL_INIT(acc_type, store_type, cls, var, init) \
+    store_type cls::var = init
+#define _SPTR_IMPL_NS(acc_type, store_type, ns, cls, var) \
+    store_type cls::var
+#define _SPTR_IMPL_NS_INIT(acc_type, store_type, ns, cls, var, init) \
+    store_type cls::var = init
+#define _GPTR_DECL(acc_type, store_type, var) \
+    extern store_type var
+#define _GPTR_IMPL(acc_type, store_type, var) \
+    store_type var
+#define _GPTR_IMPL_INIT(acc_type, store_type, var, init) \
+    store_type var = init
+#define SVAL_DECL(type, var) \
+    static type var
+#define SVAL_IMPL(type, cls, var) \
+    type cls::var
+#define SVAL_IMPL_INIT(type, cls, var, init) \
+    type cls::var = init
+#define SVAL_IMPL_NS(type, ns, cls, var) \
+    type cls::var
+#define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \
+    type cls::var = init
+#define GVAL_DECL(type, var) \
+    extern type var
+#define GVAL_IMPL(type, var) \
+    type var
+#define GVAL_IMPL_INIT(type, var, init) \
+    type var = init
+#define GARY_DECL(type, var, size) \
+    extern type var[size]
+#define GARY_IMPL(type, var, size) \
+    type var[size]

@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = PAL_TRY, PAL_LEAVE and PAL_FINALLY
+Name = Test for PAL_TRY, PAL_LEAVE and PAL_EXCEPT
+Type = DEFAULT 
+EXE1 = pal_try_leave_finally
+LANG = cpp
+Description
+= Since these three are so closely connected, they are tested together.
+= The PAL_TRY block contains a PAL_LEAVE which kicks execution to
+= the PAL_FINALLY block. Booleans are used to ensure each of the 
+= code blocks are properly hit.
+

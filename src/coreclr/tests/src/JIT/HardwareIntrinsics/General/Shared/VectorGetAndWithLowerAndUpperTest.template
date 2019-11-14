@@ -1,0 +1,210 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}{BaseType}()
+        {
+            var test = new VectorGetAndWithLowerAndUpper__{Method}{BaseType}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorGetAndWithLowerAndUpper__{Method}{BaseType}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                values[i] = {NextValueOp};
+            }
+
+            {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
+
+            {TgtVectorType}<{BaseType}> lowerResult = value.GetLower();
+            {TgtVectorType}<{BaseType}> upperResult = value.GetUpper();
+            ValidateGetResult(lowerResult, upperResult, values);
+
+            {VectorType}<{BaseType}> result = value.WithLower(upperResult);
+            result = result.WithUpper(lowerResult);
+            ValidateWithResult(result, values);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            {BaseType}[] values = new {BaseType}[ElementCount];
+
+            for (int i = 0; i < ElementCount; i++)
+            {
+                values[i] = {NextValueOp};
+            }
+
+            {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
+
+            object lowerResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.GetLower))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            object upperResult = typeof({VectorType})
+                                    .GetMethod(nameof({VectorType}.GetUpper))
+                                    .MakeGenericMethod(typeof({BaseType}))
+                                    .Invoke(null, new object[] { value });
+            ValidateGetResult(({TgtVectorType}<{BaseType}>)(lowerResult), ({TgtVectorType}<{BaseType}>)(upperResult), values);
+
+            object result = typeof({VectorType})
+                                .GetMethod(nameof({VectorType}.WithLower))
+                                .MakeGenericMethod(typeof({BaseType}))
+                                .Invoke(null, new object[] { value, upperResult });
+            result = typeof({VectorType})
+                        .GetMethod(nameof({VectorType}.WithUpper))
+                        .MakeGenericMethod(typeof({BaseType}))
+                        .Invoke(null, new object[] { result, lowerResult });
+            ValidateWithResult(({VectorType}<{BaseType}>)(result), values);
+        }
+
+        private void ValidateGetResult({TgtVectorType}<{BaseType}> lowerResult, {TgtVectorType}<{BaseType}> upperResult, {BaseType}[] values, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] lowerElements = new {BaseType}[ElementCount / 2];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref lowerElements[0]), lowerResult);
+
+            {BaseType}[] upperElements = new {BaseType}[ElementCount / 2];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref upperElements[0]), upperResult);
+
+            ValidateGetResult(lowerElements, upperElements, values, method);
+        }
+
+        private void ValidateGetResult({BaseType}[] lowerResult, {BaseType}[] upperResult, {BaseType}[] values, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < ElementCount / 2; i++)
+            {
+                if (lowerResult[i] != values[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.GetLower(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", lowerResult)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+
+            succeeded = true;
+
+            for (int i = ElementCount / 2; i < ElementCount; i++)
+            {
+                if (upperResult[i - (ElementCount / 2)] != values[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.GetUpper(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", upperResult)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateWithResult({VectorType}<{BaseType}> result, {BaseType}[] values, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[ElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+            ValidateWithResult(resultElements, values, method);
+        }
+
+        private void ValidateWithResult({BaseType}[] result, {BaseType}[] values, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < ElementCount / 2; i++)
+            {
+                if (result[i] != values[i + (ElementCount / 2)])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithLower(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+
+            succeeded = true;
+
+            for (int i = ElementCount / 2; i < ElementCount; i++)
+            {
+                if (result[i] != values[i - (ElementCount / 2)])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithUpper(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

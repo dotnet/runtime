@@ -1,0 +1,44 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 11 * * *"
+  displayName: Mon through Sun at 3:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: templates/checkout-job.yml
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platforms:
+    # disable Linux x64 for now untill OOMs are resolved.
+    # - Linux_x64
+    - Linux_arm64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: gc-simulator
+
+- template: templates/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: release
+    platforms:
+    # disable Linux x64 for now untill OOMs are resolved.
+    # - Linux_x64
+    - Linux_arm64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: gc-simulator

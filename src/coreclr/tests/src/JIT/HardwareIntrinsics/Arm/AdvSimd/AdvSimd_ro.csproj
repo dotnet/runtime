@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Abs.Vector64.Byte.cs" />
+    <Compile Include="Abs.Vector64.UInt16.cs" />
+    <Compile Include="Abs.Vector64.UInt32.cs" />
+    <Compile Include="Abs.Vector64.Single.cs" />
+    <Compile Include="Abs.Vector128.Byte.cs" />
+    <Compile Include="Abs.Vector128.Single.cs" />
+    <Compile Include="Abs.Vector128.UInt16.cs" />
+    <Compile Include="Abs.Vector128.UInt32.cs" />
+    <Compile Include="AbsScalar.Vector64.Single.cs" />
+    <Compile Include="Add.Vector64.Byte.cs" />
+    <Compile Include="Add.Vector64.Int16.cs" />
+    <Compile Include="Add.Vector64.Int32.cs" />
+    <Compile Include="Add.Vector64.SByte.cs" />
+    <Compile Include="Add.Vector64.Single.cs" />
+    <Compile Include="Add.Vector64.UInt16.cs" />
+    <Compile Include="Add.Vector64.UInt32.cs" />
+    <Compile Include="Add.Vector128.Byte.cs" />
+    <Compile Include="Add.Vector128.Int16.cs" />
+    <Compile Include="Add.Vector128.Int32.cs" />
+    <Compile Include="Add.Vector128.Int64.cs" />
+    <Compile Include="Add.Vector128.SByte.cs" />
+    <Compile Include="Add.Vector128.Single.cs" />
+    <Compile Include="Add.Vector128.UInt16.cs" />
+    <Compile Include="Add.Vector128.UInt32.cs" />
+    <Compile Include="Add.Vector128.UInt64.cs" />
+    <Compile Include="AddScalar.Vector64.Single.cs" />
+    <Compile Include="LeadingSignCount.Vector64.Int16.cs" />
+    <Compile Include="LeadingSignCount.Vector64.Int32.cs" />
+    <Compile Include="LeadingSignCount.Vector64.SByte.cs" />
+    <Compile Include="LeadingSignCount.Vector128.Int16.cs" />
+    <Compile Include="LeadingSignCount.Vector128.Int32.cs" />
+    <Compile Include="LeadingSignCount.Vector128.SByte.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.Byte.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.Int16.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.Int32.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.SByte.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.UInt16.cs" />
+    <Compile Include="LeadingZeroCount.Vector64.UInt32.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.Byte.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.Int16.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.Int32.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.SByte.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.UInt16.cs" />
+    <Compile Include="LeadingZeroCount.Vector128.UInt32.cs" />
+    <Compile Include="LoadVector64.Byte.cs" />
+    <Compile Include="LoadVector64.Int16.cs" />
+    <Compile Include="LoadVector64.Int32.cs" />
+    <Compile Include="LoadVector64.SByte.cs" />
+    <Compile Include="LoadVector64.Single.cs" />
+    <Compile Include="LoadVector64.UInt16.cs" />
+    <Compile Include="LoadVector64.UInt32.cs" />
+    <Compile Include="LoadVector128.Byte.cs" />
+    <Compile Include="LoadVector128.Double.cs" />
+    <Compile Include="LoadVector128.Int16.cs" />
+    <Compile Include="LoadVector128.Int32.cs" />
+    <Compile Include="LoadVector128.Int64.cs" />
+    <Compile Include="LoadVector128.SByte.cs" />
+    <Compile Include="LoadVector128.Single.cs" />
+    <Compile Include="LoadVector128.UInt16.cs" />
+    <Compile Include="LoadVector128.UInt32.cs" />
+    <Compile Include="LoadVector128.UInt64.cs" />
+    <Compile Include="PopCount.Vector64.Byte.cs" />
+    <Compile Include="PopCount.Vector64.SByte.cs" />
+    <Compile Include="PopCount.Vector128.Byte.cs" />
+    <Compile Include="PopCount.Vector128.SByte.cs" />
+    <Compile Include="Program.AdvSimd.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,30 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+
+public class Base
+{
+    public virtual int Foo() { return 33; }
+    
+    static BaseSealed s_Default = new BaseSealed();
+
+    public static Base Default => s_Default;
+}
+
+sealed class BaseSealed : Base {}
+
+// The jit can devirtualize the call to Foo when initializing y,
+// but not when initializing x.
+
+public class Test
+{
+    public static int Main()
+    {
+        Base b = Base.Default;
+        int x = b.Foo();
+        int y = Base.Default.Foo();
+        return (x == 33 && y == 33 ? 100 : -1);
+    }
+}

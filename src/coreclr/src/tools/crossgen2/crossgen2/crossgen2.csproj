@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>crossgen2</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTargets Condition="'$(BuildArch)' != ''">$(BuildArch)</PlatformTargets>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
+         the same bits tests expect to see in bin/crossgen2. That way we never need to wonder which
+         binaries are up to date and which are stale. -->
+    <OutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(BinDir)/crossgen2</OutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\CommandLine\CommandLineException.cs" />
+    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine.Experimental">
+      <Version>0.3.0-alpha.19525.2</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

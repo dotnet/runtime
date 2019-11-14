@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "JitBench": {
+      "commandName": "Project",
+      "commandLineArgs": "--perf:outputdir F:\\github\\coreclr\\bin\\sandbox_logs\\Scenarios\\On\\JitBench --perf:runid Perf-On --target-architecture x64 --perf:collect BranchMispredictions+CacheMisses+InstructionRetired"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = threading
+Function = WaitForMultipleObjectsEx
+Name = Test #3 for WaitForMultipleObjectsEx
+TYPE = DEFAULT
+EXE1 = test3
+Description 
+=Tests that waiting on an open mutex will a return 
+=WAIT_OBJECT_0.  Does this by creating a child thread that 
+=acquires the mutex, releases it, and exits.

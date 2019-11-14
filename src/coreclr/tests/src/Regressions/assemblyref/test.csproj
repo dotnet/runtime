@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="assem.csproj">
+      <Project>{946AE2D9-F656-4771-81DB-6D02EEEEFFCB}</Project>
+      <Name>assem</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test leaves threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="thdlist.cs" />
+    <Compile Include="llthread.cs" />
+    <Compile Include="linkedlist.cs" />
+  </ItemGroup>
+</Project>

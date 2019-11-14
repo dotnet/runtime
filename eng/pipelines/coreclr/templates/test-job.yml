@@ -1,0 +1,55 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
+  container: ''
+  testGroup: ''
+  readyToRun: false
+  helixQueues: ''
+  crossrootfsDir: ''
+  # If true, run the corefx tests instead of the coreclr ones
+  corefxTests: false
+  displayNameArgs: ''
+  runInUnloadableContext: false
+  condition: true
+  stagedBuild: false
+
+### Test job
+
+### Each test job depends on a corresponding build job with the same
+### buildConfig and archType.
+
+jobs:
+- ${{ if and(ne(parameters.corefxTests, true), eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), eq(parameters.osGroup, parameters.managedTestBuildOsGroup)) }}:
+  - template: build-test-job.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.managedTestBuildOsGroup }}
+      osSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+      container: ${{ parameters.container }}
+      testGroup: ${{ parameters.testGroup }}
+      displayNameArgs: ${{ parameters.displayNameArgs }}
+      condition: ${{ parameters.condition }}
+      stagedBuild: ${{ parameters.stagedBuild }}
+
+- template: run-test-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    readyToRun: ${{ parameters.readyToRun }}
+    helixQueues: ${{ parameters.helixQueues }}
+    corefxTests: ${{ parameters.coreFxTests }}
+    displayNameArgs: ${{ parameters.displayNameArgs }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    runInUnloadableContext: ${{ parameters.runInUnloadableContext }}

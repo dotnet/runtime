@@ -1,0 +1,14 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Locale Information
+Function = WideCharToMultiByte
+Name = Test #3 for WideCharToMultiByte
+TYPE = DEFAULT
+EXE1 = test3
+Description
+=Tests that WideCharToMultiByte correctly handles the following 
+=error conditions: insufficient buffer space and invalid code pages.
+

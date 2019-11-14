@@ -1,0 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = GetProcessHeap
+Name = Positive test for GetProcessHeap API retrieve the handle of calling process heap
+TYPE = DEFAULT
+EXE1 = getprocessheap
+Description
+=Test the GetProcessHeap to retrieve the handle of the calling process heap

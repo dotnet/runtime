@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InducedGen2GC.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ILatencyTest.csproj" />
+  </ItemGroup>
+</Project>

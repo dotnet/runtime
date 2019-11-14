@@ -1,0 +1,17 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = FlushFileBuffers
+Name = Positive Test for FlushFileBuffers
+TYPE = DEFAULT
+EXE1 = flushfilebuffers
+Description 
+= Test the FlushFileBuffers
+= Test the return values -- ensure that the correct values are
+= returned for success and failure.
+= This test does not prove that flush worked,
+= there is no way of stopping the OS from flushing
+= the file by itself.

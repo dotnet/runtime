@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="vsw529206ModuleCctor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="moduleCctorThrow.ilproj" />
+  </ItemGroup>
+</Project>

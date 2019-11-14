@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+  <Target Name="Build">
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="Build" Projects="@(Project)" Condition="'$(SerializeProjects)'=='true'" Properties="Dummy=%(Identity)"/>
+    <MSBuild Targets="Build" Projects="@(Project)" Condition="'$(SerializeProjects)'!='true'" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="Clean">
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity 
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="Clean" Projects="@(Project)" Condition="'$(SerializeProjects)'=='true'" Properties="Dummy=%(Identity)"/>
+    <MSBuild Targets="Clean" Projects="@(Project)" Condition="'$(SerializeProjects)'!='true'" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+</Project>

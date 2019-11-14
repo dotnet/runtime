@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InterfaceInheritanceTest2.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="VarInterfaceLib2.ilproj" />
+  </ItemGroup>
+</Project>

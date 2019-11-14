@@ -1,0 +1,342 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Runtime.CompilerServices;
+
+// Test case to generate a function with a JMP call and register HFA arguments.
+// Also, make sure the HFA register arguments need to be re-loaded from
+// the stack into registers. Make another call before the final JMP call
+// to clear the argument registers. This was designed to test an NYI in
+// the ARM64 JIT compiler.
+//
+// Note that this is the C# code; to generate the actual test case, you
+// need to "ildasm" the generated EXE from this C# code, then manually convert the 
+// final call in each of the "jmp_test_*" functions to a JMP.
+// The test case code will be an IL file.
+
+namespace Test
+{
+    struct HFA_f2
+    {
+        public float f1;
+        public float f2;
+    }
+    struct HFA_f3
+    {
+        public float f1;
+        public float f2;
+        public float f3;
+    }
+    struct HFA_f4
+    {
+        public float f1;
+        public float f2;
+        public float f3;
+        public float f4;
+    }
+    struct HFA_d2
+    {
+        public double d1;
+        public double d2;
+    }
+    struct HFA_d3
+    {
+        public double d1;
+        public double d2;
+        public double d3;
+    }
+    struct HFA_d4
+    {
+        public double d1;
+        public double d2;
+        public double d3;
+        public double d4;
+    }
+
+    class X
+    {
+        public static float fx1;
+        public static float fx2;
+        public static float fx3;
+        public static float fx4;
+        public static double dx1;
+        public static double dx2;
+        public static double dx3;
+        public static double dx4;
+
+        // arm64 has 8 int and 8 float argument registers. Create a function
+        // call that requires using all of them.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void clear_argument_regs(
+                int i1,
+                int i2,
+                int i3,
+                int i4,
+                int i5,
+                int i6,
+                int i7,
+                int i8,
+                int i9, // make sure something is on the stack
+                double f1,
+                double f2,
+                double f3,
+                double f4,
+                double f5,
+                double f6,
+                double f7,
+                double f8,
+                double f9) // make sure something is on the stack
+        {
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_f2(HFA_f2 a)
+        {
+            if ((a.f1 == fx1) && (a.f2 == fx2))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_f3(HFA_f3 a)
+        {
+            if ((a.f1 == fx1) && (a.f2 == fx2) && (a.f3 == fx3))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_f4(HFA_f4 a)
+        {
+            if ((a.f1 == fx1) && (a.f2 == fx2) && (a.f3 == fx3) && (a.f4 == fx4))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_d2(HFA_d2 a)
+        {
+            if ((a.d1 == dx1) && (a.d2 == dx2))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_d3(HFA_d3 a)
+        {
+            if ((a.d1 == dx1) && (a.d2 == dx2) && (a.d3 == dx3))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int test_d4(HFA_d4 a)
+        {
+            if ((a.d1 == dx1) && (a.d2 == dx2) && (a.d3 == dx3) && (a.d4 == dx4))
+            {
+                // pass
+                return 100;
+            }
+            else
+            {
+                // fail
+                return 1;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_f2(HFA_f2 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_f2(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_f3(HFA_f3 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_f3(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_f4(HFA_f4 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_f4(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_d2(HFA_d2 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_d2(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_d3(HFA_d3 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_d3(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static int jmp_test_d4(HFA_d4 a)
+        {
+            clear_argument_regs(1,2,3,4,5,6,7,8,9,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
+            return test_d4(a); // CONVERT THIS TO JMP CALL!
+        }
+
+        public static int Main()
+        {
+            fx1 = 1.1F;
+            fx2 = 2.2F;
+            fx3 = 3.3F;
+            fx4 = 4.4F;
+
+            dx1 = 1.0;
+            dx2 = 2.0;
+            dx3 = 3.0;
+            dx4 = 4.0;
+
+            HFA_f2 hf2 = new HFA_f2();
+            hf2.f1 = fx1;
+            hf2.f2 = fx2;
+
+            HFA_f3 hf3 = new HFA_f3();
+            hf3.f1 = fx1;
+            hf3.f2 = fx2;
+            hf3.f3 = fx3;
+
+            HFA_f4 hf4 = new HFA_f4();
+            hf4.f1 = fx1;
+            hf4.f2 = fx2;
+            hf4.f3 = fx3;
+            hf4.f4 = fx4;
+
+            HFA_d2 hd2 = new HFA_d2();
+            hd2.d1 = dx1;
+            hd2.d2 = dx2;
+
+            HFA_d3 hd3 = new HFA_d3();
+            hd3.d1 = dx1;
+            hd3.d2 = dx2;
+            hd3.d3 = dx3;
+
+            HFA_d4 hd4 = new HFA_d4();
+            hd4.d1 = dx1;
+            hd4.d2 = dx2;
+            hd4.d3 = dx3;
+            hd4.d4 = dx4;
+
+            int final_result = 100; // assume pass
+            int result;
+
+            result = jmp_test_f2(hf2);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_f2 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_f2 FAIL");
+                final_result = 1;
+            }
+            
+            result = jmp_test_f3(hf3);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_f3 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_f3 FAIL");
+                final_result = 1;
+            }
+            
+            result = jmp_test_f4(hf4);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_f4 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_f4 FAIL");
+                final_result = 1;
+            }
+
+            result = jmp_test_d2(hd2);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_d2 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_d2 FAIL");
+                final_result = 1;
+            }
+            
+            result = jmp_test_d3(hd3);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_d3 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_d3 FAIL");
+                final_result = 1;
+            }
+            
+            result = jmp_test_d4(hd4);
+            if (result == 100)
+            {
+                Console.WriteLine("jmp_test_d4 PASS");
+            }
+            else
+            {
+                Console.WriteLine("jmp_test_d4 FAIL");
+                final_result = 1;
+            }
+
+            return final_result;
+        }
+        
+    }
+
+}

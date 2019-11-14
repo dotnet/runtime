@@ -1,0 +1,296 @@
+parameters:
+  jobTemplate: ''
+  buildConfig: ''
+  platforms: []
+  # platformGroup is a named collection of platforms. Allowed values:
+  # 'all' - all platforms
+  # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
+  platformGroup: ''
+  # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
+  # used, instead of the usual criteria. Allowed values:
+  # 'pr' - the queues used for a pull request for the platform. Typically a small set.
+  # 'ci' - the queues used for a CI (post-merge) test run.
+  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # 'corefx' - the queues used for a corefx test run.
+  helixQueueGroup: 'pr'
+  stagedBuild: false
+  # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
+  managedOsxBuild: true
+  jobParameters: {}
+
+jobs:
+
+# Linux arm
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: arm
+      osGroup: Linux
+      managedTestBuildOsGroup: Linux
+      container:
+        image: ubuntu-16.04-cross-14.04-23cacb0-20191023143847
+        registry: mcr
+      helixQueues:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Ubuntu.1804.Arm32.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-30f6673-20190814153226
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Debian.9.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-74c9941-20190620155841
+        - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-30f6673-20190814153226
+      crossrootfsDir: '/crossrootfs/arm'
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: arm64
+      osGroup: Linux
+      managedTestBuildOsGroup: Linux
+      container:
+        image: ubuntu-16.04-cross-arm64-cfdd435-20191023143847
+        registry: mcr
+      helixQueues:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - (Debian.9.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-74c9941-20190620155840
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Debian.9.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-74c9941-20190620155840
+        - (Ubuntu.1804.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855
+      crossrootfsDir: '/crossrootfs/arm64'
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux musl x64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x64
+      osGroup: Linux
+      osSubgroup: _musl
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: Linux
+        managedTestBuildOsSubgroup: _musl
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: OSX
+      container:
+        image: alpine-3.9-WithNode-0fc54a3-20190918214015
+        registry: mcr
+      helixQueues:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Alpine.310.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Alpine.38.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190508143246
+        - (Alpine.39.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190508143246
+        - (Alpine.310.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux musl arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: arm64
+      osGroup: Linux
+      osSubgroup: _musl
+      managedTestBuildOsGroup: Linux
+      container:
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
+        registry: mcr
+      helixQueues:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Alpine.38.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Alpine.38.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+      crossrootfsDir: '/crossrootfs/arm64'
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux rhel6 x64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_rhel6_x64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x64
+      osGroup: Linux
+      osSubgroup: _rhel6
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: Linux_rhel
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: OSX
+      container:
+        image: centos-6-f39df28-20191023143802
+        registry: mcr
+      helixQueues:
+      # TODO: enable RedHat.6.Amd64.Open once https://github.com/dotnet/coreclr/issues/23580 is resolved
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - RedHat.6.Amd64
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux x64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x64
+      osGroup: Linux
+      ${{ if ne(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: Linux
+      ${{ if eq(parameters.managedOsxBuild, true) }}:
+        managedTestBuildOsGroup: OSX
+      container:
+        image: centos-7-f39df28-20191023143754
+        registry: mcr
+      helixQueues:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - Ubuntu.1804.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - Debian.9.Amd64.Open
+        - Ubuntu.1604.Amd64.Open
+        - Ubuntu.1804.Amd64.Open
+        - Centos.7.Amd64.Open
+        - RedHat.7.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Debian.9.Amd64
+        - Ubuntu.1604.Amd64
+        - Ubuntu.1804.Amd64
+        - Centos.7.Amd64
+        - (Fedora.28.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-09ca40b-20190508143249
+        - RedHat.7.Amd64
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# FreeBSD
+
+# FreeBSD machines are currenrly offline. Re-enable in the official build when
+# the machines are healthy.
+
+# - template: ${{ parameters.jobTemplate }}
+#   parameters:
+#     buildConfig: ${{ parameters.buildConfig }}
+#     archType: x64
+#     osGroup: FreeBSD
+#     # There are no FreeBSD helix queues, so we don't run tests at the moment.
+#     helixQueues:
+#       asString: ''
+#       asArray: []
+#     ${{ insert }}: ${{ parameters.jobParameters }}
+
+# macOS x64
+
+- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x64
+      osGroup: OSX
+      managedTestBuildOsGroup: OSX
+      helixQueues:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - OSX.1013.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - OSX.1013.Amd64.Open
+        - OSX.1014.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.1013.Amd64
+        - OSX.1014.Amd64
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Windows x64
+
+- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x64
+      osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
+      helixQueues:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - Windows.10.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        # TODO: add Windows.10.Nano.Amd64.Open once https://github.com/dotnet/coreclr/issues/21693 has been resolved
+        - Windows.7.Amd64.Open
+        - Windows.81.Amd64.Open
+        - Windows.10.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.7.Amd64
+        - Windows.81.Amd64
+        - Windows.10.Amd64
+        - Windows.10.Amd64.Core
+        - (Windows.Nano.1803.Amd64)windows.10.amd64.serverrs4@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Windows x86
+
+- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: x86
+      osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
+      helixQueues:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - Windows.10.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+        - Windows.7.Amd64.Open
+        - Windows.81.Amd64.Open
+        - Windows.10.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.7.Amd64
+        - Windows.81.Amd64
+        - Windows.10.Amd64
+        - Windows.10.Amd64.Core
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Windows arm
+
+- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: arm
+      osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
+      helixQueues:
+      # NOTE: there are no queues specified for Windows_NT_arm public with helixQueueGroup='pr'. This means that specifying
+      # Windows_NT_arm for a PR job causes a build, but no test run. If the test build and test runs were separate jobs,
+      # this could be more explicit (and less subtle).
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'ci', 'corefx')) }}:
+        - Windows.10.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.10.Arm64
+      ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Windows arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      stagedBuild: ${{ parameters.stagedBuild }}
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: arm64
+      osGroup: Windows_NT
+      managedTestBuildOsGroup: Windows_NT
+      helixQueues:
+      # TODO: Consider adding Windows.10.Arm64.Open here if capacity is enough for handling both Windows_NT/arm and Windows_NT/arm64 testing
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.10.Arm64
+      ${{ insert }}: ${{ parameters.jobParameters }}

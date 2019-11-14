@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Decrypt.Vector128.Byte.cs" />
+    <Compile Include="Encrypt.Vector128.Byte.cs" />
+    <Compile Include="InverseMixColumns.Vector128.Byte.cs" />
+    <Compile Include="MixColumns.Vector128.Byte.cs" />
+    <Compile Include="Program.Aes.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

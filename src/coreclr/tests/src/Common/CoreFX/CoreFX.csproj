@@ -1,0 +1,150 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+      <RestoreOutputPath>$(SourceDir)Common\CoreFX\obj</RestoreOutputPath>
+      <Language>C#</Language>
+      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <CLRTestKind>SharedLibrary</CLRTestKind>
+      <IsTestProject>false</IsTestProject>
+      <MicrosoftDiagnosticsRuntimePackageVersion>1.0.5</MicrosoftDiagnosticsRuntimePackageVersion>
+      <OutputType>Library</OutputType>
+      <SelfContained>true</SelfContained>
+      <ProjectDepsFileName>Microsoft.NETCore.App.deps.json</ProjectDepsFileName>
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+      <IncludeMainProjectInDepsFile>false</IncludeMainProjectInDepsFile>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+      <GenerateDependencyFile>true</GenerateDependencyFile>
+      <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+  <!-- Switch RuntimeIdentifier according to currently targeted OSGroup -->
+  <PropertyGroup>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-$(Platform)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-$(Platform)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-$(Platform)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Private.CoreFx.OOB is a meta-package that contains references to most of what we need -->
+    <PackageReference Include="Microsoft.Private.CoreFx.OOB" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+
+    <!-- dotnet.exe -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreAppVersion)" />
+
+    <!-- hostfxr.dll -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHostResolver" Version="$(MicrosoftNETCoreAppVersion)" />
+
+    <!-- hostpolicy.dll -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreAppVersion)" />
+
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+  </ItemGroup>
+
+  <!-- Target SetupTestingHost needs to run after "AfterResolveReferences" so @(ReferenceCopyLocalPaths) is
+       set up, and before "BeforeCompile" because @(ReferenceCopyLocalPaths) is cleared out during the
+       compile phase.
+  -->
+
+  <Target Name="SetupTestingHost" DependsOnTargets="ResolveAssemblyReferences">
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="Publish"
+             Properties="RuntimeIdentifier=$(RuntimeIdentifier);PublishDir=$(NETCoreAppTestSharedFrameworkPath)" />
+
+    <Error Condition="'$(CORE_ROOT)' == ''"
+           Text="CORE_ROOT variable is not set." />
+
+    <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT'">
+      <HostFxrFileName>hostfxr</HostFxrFileName>
+      <HostFxrFileExtension>dll</HostFxrFileExtension>
+      <DotnetExecutableName>dotnet.exe</DotnetExecutableName>
+      <HostPolicyFileName>hostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>dll</HostPolicyExtension>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(OSGroup)'!='Windows_NT'">
+      <HostFxrFileName>libhostfxr</HostFxrFileName>
+      <HostFxrFileExtension Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'">so</HostFxrFileExtension>
+      <HostFxrFileExtension Condition="$(OSGroup) =='OSX'">dylib</HostFxrFileExtension>
+      <HostPolicyFileName>libhostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>$(HostFxrFileExtension)</HostPolicyExtension>
+      <DotnetExecutableName>dotnet</DotnetExecutableName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency
+           The <PackageToInclude> element doesn't allow a version to be specified and we end up with clashing assembly versions in Core_Root
+      -->
+      <!--
+      <NetCoreAppPackagedAssemblies Include="System.Text.Encoding.CodePages.dll"/>
+      -->
+
+      <!-- Use xunit dependencies defined in CoreFX.depproj instead of conflicting versions from test dependencies. -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\xunit*"/>
+
+      <!-- Exclude subdirectories that contain cross-architecture (possibly cross-bitness) crossgen/JIT -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\x64\*"/>
+
+      <!-- Don't include all the nuget files -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\.nuget\**\*"/>
+
+      <!-- Don't include internal crossgen2 dependencies -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\crossgen2\**\*"/>
+
+      <CoreCLRBinariesToExclude Include="@(NetCoreAppPackagedAssemblies);@(TestDependenciesToExclude -> '%(Identity)')" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- REVIEW: do we need to copy recursively (and flatten the structure into a single destination folder)? Can we just copy
+           the top level? Or, should we preserve the hierarchy?
+      -->
+      <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(CoreCLRBinariesToExclude -> '%(Identity)' )" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+      <HostPolicyFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostPolicyFileName)'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true"  />
+
+    <Copy SourceFiles="@(CoreCLRBinaries)"
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
+          SkipUnchangedFiles="true" />
+
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OSGroup)' != 'Windows_NT'"/>
+  </Target>
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(SourceDir)Common\CoreFX\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <Target Name="CoreCompile">
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

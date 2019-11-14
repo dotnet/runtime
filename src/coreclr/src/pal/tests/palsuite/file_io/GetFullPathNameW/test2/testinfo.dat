@@ -1,0 +1,15 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = file_io
+Function = GetFullPathNameW
+Name = Test for GetFullPathNameW (test 2)
+Type = DEFAULT 
+EXE1 = test2
+Description
+= Get the full path for a file name and verify the results.
+= This test will use a relative path, containing '..\'. To
+= add to this test, we will also call SetCurrentDirectory to
+= ensure this is handled properly.
