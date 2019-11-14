@@ -650,7 +650,7 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
-export __ArtifactsIntermediatesDir="$__ProjectDir/artifacts/obj"
+export __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 
