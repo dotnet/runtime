@@ -38,7 +38,7 @@
     <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationGuard.cs">
       <Link>Common\System\Runtime\Serialization\SerializationGuard.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\PasteArguments.cs">
+    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs">
       <Link>System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
@@ -93,7 +93,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.PERF_INFO.cs">
@@ -111,7 +111,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateProcess.cs">
@@ -201,7 +201,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.AdjustTokenPrivileges.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.AdjustTokenPrivileges.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetComputerName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetComputerName.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
@@ -216,10 +216,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.CreateProcessWithLogon.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.CreateProcessWithLogon.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
       <Link>Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LUID.cs">
@@ -240,7 +240,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadOptions.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ThreadOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
       <Link>Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.ProcessOptions.cs">
@@ -249,13 +249,13 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.HandleOptions.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ProcessOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs">
       <Link>Common\Interop\Interop.UNICODE_STRING.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
@@ -276,7 +276,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
       <Link>Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
@@ -296,7 +296,7 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
@@ -305,16 +305,16 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.SysConf.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs">
@@ -332,7 +332,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetSetPriority.cs">
@@ -350,7 +350,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Kill.cs">
       <Link>Common\Interop\Unix\Interop.Kill.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.ReadLink.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ReadLink.cs">
       <Link>Common\Interop\Unix\Interop.ReadLink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RegisterForSigChld.cs">
@@ -359,7 +359,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ResourceLimits.cs">
       <Link>Common\Interop\Unix\Interop.ResourceLimits.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.POpen.cs">
@@ -371,7 +371,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.WaitPid.cs">
       <Link>Common\Interop\Unix\Interop.WaitPid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Access.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
   </ItemGroup>
@@ -428,7 +428,7 @@
     <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Process.cs">
       <Link>Common\Interop\FreeBSD\Interop.Process.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Unix\System.Native\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>

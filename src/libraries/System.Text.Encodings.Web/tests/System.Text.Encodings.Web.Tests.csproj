@@ -45,10 +45,10 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibDir)System\Text\UnicodeDebug.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\UnicodeUtility.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.12.1.txt">

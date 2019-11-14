@@ -44,7 +44,7 @@
     <Compile Include="$(CommonPath)\System\Marvin.cs">
       <Link>ProductionCode\Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
@@ -137,7 +137,7 @@
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>ProductionCode\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -146,7 +146,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">

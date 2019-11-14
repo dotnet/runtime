@@ -18,7 +18,7 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="@(CompileItem)" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">

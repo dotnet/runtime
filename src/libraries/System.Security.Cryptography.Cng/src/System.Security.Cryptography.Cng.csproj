@@ -76,7 +76,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
@@ -175,7 +175,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.UiPolicy.cs">
       <Link>Internal\Windows\NCrypt\Interop.UiPolicy.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">

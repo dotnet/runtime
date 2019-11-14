@@ -7,7 +7,7 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
-    <CompileItem Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <CompileItem Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
@@ -26,7 +26,7 @@
     <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs" />
     <CompileItem Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
-    <CompileItem Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs" />
+    <CompileItem Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />

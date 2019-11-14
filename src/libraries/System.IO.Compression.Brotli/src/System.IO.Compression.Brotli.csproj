@@ -17,7 +17,7 @@
     <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
     <Compile Include="System\IO\Compression\BrotliStream.cs" />
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs">

@@ -9,7 +9,7 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />

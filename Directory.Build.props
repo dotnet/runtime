@@ -31,6 +31,7 @@
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'installer', 'manpages'))</ManPagesDir>
+    <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
   </PropertyGroup>
 
   <!-- Packaging properties -->

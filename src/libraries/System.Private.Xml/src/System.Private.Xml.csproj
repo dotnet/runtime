@@ -8,7 +8,7 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Marvin.cs">
@@ -796,7 +796,7 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CoreLibDir)System\LocalAppContextSwitches.Common.cs">
+    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs">
       <Link>System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />

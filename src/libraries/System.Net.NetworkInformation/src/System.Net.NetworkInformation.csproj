@@ -176,16 +176,16 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MapTcpState.cs">
       <Link>Interop\Unix\System.Native\Interop.MapTcpState.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\CoreLib\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">

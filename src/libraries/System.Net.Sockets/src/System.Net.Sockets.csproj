@@ -47,7 +47,7 @@
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <!-- Logging -->
@@ -230,7 +230,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\WSABuffer.cs">
       <Link>Interop\Windows\WinSock\WSABuffer.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
       <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
@@ -269,10 +269,10 @@
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -284,7 +284,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Bind.cs">
       <Link>Interop\Unix\System.Native\Interop.Bind.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Connect.cs">
@@ -374,7 +374,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
       <Link>Interop\Unix\System.Native\Interop.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Write.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
   </ItemGroup>

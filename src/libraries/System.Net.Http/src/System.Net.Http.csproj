@@ -87,7 +87,7 @@
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs">
@@ -99,7 +99,7 @@
     <Compile Include="$(CommonPath)\System\IO\ReadOnlyMemoryStream.cs">
       <Link>Common\System\IO\ReadOnlyMemoryStream.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
@@ -360,7 +360,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
@@ -478,22 +478,22 @@
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.IOErrors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
       <Link>Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Open.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Interop\Unix\System.Native\Interop.Open.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
@@ -502,10 +502,10 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
       <Link>Common\Interop\Unix\libc\Interop.Poll.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Read.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Write.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
@@ -538,7 +538,7 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Unix.cs">
       <Link>Common\System\Net\Security\CertificateHelper.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>

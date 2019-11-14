@@ -88,10 +88,10 @@
     <Compile Include="$(CommonPath)\System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
     <!-- Logging -->
@@ -164,7 +164,7 @@
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -173,7 +173,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">

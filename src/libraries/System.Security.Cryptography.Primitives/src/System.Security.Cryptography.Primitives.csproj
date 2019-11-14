@@ -39,7 +39,7 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Oids.cs">
       <Link>Common\System\Security\Cryptography\Oids.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>

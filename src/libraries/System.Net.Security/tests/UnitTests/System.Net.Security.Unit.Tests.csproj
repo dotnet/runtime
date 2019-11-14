@@ -67,7 +67,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <!-- Logging -->

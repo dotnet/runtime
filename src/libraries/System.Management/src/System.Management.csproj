@@ -37,7 +37,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="System\Management\ManagementBaseObject.cs" />
