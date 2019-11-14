@@ -209,6 +209,12 @@ namespace System.Security.Cryptography
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+
+            return CreateHMAC(hashAlgorithm, (ReadOnlySpan<byte>)key);
+        }
+
+        internal static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
+        {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 

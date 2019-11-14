@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -45,6 +45,7 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
@@ -726,6 +727,6 @@
     <Reference Include="System.Runtime.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="@(AsnXml)" /> 
+    <None Include="@(AsnXml)" />
   </ItemGroup>
 </Project>

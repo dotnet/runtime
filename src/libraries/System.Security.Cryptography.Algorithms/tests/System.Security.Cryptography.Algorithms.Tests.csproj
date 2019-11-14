@@ -268,5 +268,6 @@
     <Compile Include="AesAEADTests.cs" />
     <Compile Include="AesCcmTests.cs" />
     <Compile Include="AesGcmTests.cs" />
+    <Compile Include="HKDFTests.cs" />
   </ItemGroup>
 </Project>

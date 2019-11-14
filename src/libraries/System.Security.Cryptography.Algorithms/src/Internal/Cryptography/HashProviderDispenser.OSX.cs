@@ -30,7 +30,7 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        public static HashProvider CreateMacProvider(string hashAlgorithmId, byte[] key)
+        public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             switch (hashAlgorithmId)
             {
@@ -62,9 +62,9 @@ namespace Internal.Cryptography
 
             public override int HashSizeInBytes { get; }
 
-            internal AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm algorithm, byte[] key)
+            internal AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm algorithm, ReadOnlySpan<byte> key)
             {
-                _key = key.CloneByteArray();
+                _key = key.ToArray();
                 int hashSizeInBytes = 0;
                 _ctx = Interop.AppleCrypto.HmacCreate(algorithm, ref hashSizeInBytes);
 

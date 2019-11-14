@@ -330,4 +330,10 @@
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
+  <data name="Cryptography_Prk_TooSmall" xml:space="preserve">
+    <value>The pseudo-random key length must be {0} bytes.</value>
+  </data>
+  <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
+    <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
+  </data>
 </root>

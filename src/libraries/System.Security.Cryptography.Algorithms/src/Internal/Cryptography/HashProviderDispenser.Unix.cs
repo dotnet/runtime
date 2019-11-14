@@ -30,7 +30,7 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, byte[] key)
+        public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             switch (hashAlgorithmId)
             {
@@ -121,10 +121,9 @@ namespace Internal.Cryptography
             private readonly int _hashSize;
             private SafeHmacCtxHandle _hmacCtx;
 
-            public HmacHashProvider(IntPtr algorithmEvp, byte[] key)
+            public HmacHashProvider(IntPtr algorithmEvp, ReadOnlySpan<byte> key)
             {
                 Debug.Assert(algorithmEvp != IntPtr.Zero);
-                Debug.Assert(key != null);
 
                 _hashSize = Interop.Crypto.EvpMdSize(algorithmEvp);
                 if (_hashSize <= 0 || _hashSize > Interop.Crypto.EVP_MAX_MD_SIZE)
@@ -132,7 +131,7 @@ namespace Internal.Cryptography
                     throw new CryptographicException();
                 }
 
-                _hmacCtx = Interop.Crypto.HmacCreate(ref MemoryMarshal.GetReference(new Span<byte>(key)), key.Length, algorithmEvp);
+                _hmacCtx = Interop.Crypto.HmacCreate(ref MemoryMarshal.GetReference(key), key.Length, algorithmEvp);
                 Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
             }
 

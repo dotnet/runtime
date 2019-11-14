@@ -18,9 +18,9 @@ namespace Internal.Cryptography
             return new HashProviderCng(hashAlgorithmId, null);
         }
 
-        public static HashProvider CreateMacProvider(string hashAlgorithmId, byte[] key)
+        public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            return new HashProviderCng(hashAlgorithmId, key);
+            return new HashProviderCng(hashAlgorithmId, key, isHmac: true);
         }
     }
 }

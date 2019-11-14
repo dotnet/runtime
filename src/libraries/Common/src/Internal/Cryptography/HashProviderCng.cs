@@ -21,12 +21,16 @@ namespace Internal.Cryptography
         //
         //   - "key" activates MAC hashing if present. If null, this HashProvider performs a regular old hash.
         //
-        public HashProviderCng(string hashAlgId, byte[] key)
+        public HashProviderCng(string hashAlgId, byte[] key) : this(hashAlgId, key, isHmac: key != null)
+        {
+        }
+
+        internal HashProviderCng(string hashAlgId, ReadOnlySpan<byte> key, bool isHmac)
         {
             BCryptOpenAlgorithmProviderFlags dwFlags = BCryptOpenAlgorithmProviderFlags.None;
-            if (key != null)
+            if (isHmac)
             {
-                _key = key.CloneByteArray();
+                _key = key.ToArray();
                 dwFlags |= BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
             }
 
@@ -63,7 +67,6 @@ namespace Internal.Cryptography
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                 _hashSize = hashSize;
             }
-            return;
         }
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
