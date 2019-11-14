@@ -643,7 +643,7 @@ if [ "${__BuildArch}" != "${__HostArch}" ]; then
 fi
 
 # Set dependent variables
-__LogsDir="$__RootBinDirlogs"
+__LogsDir="$__RootBinDir/logs"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
