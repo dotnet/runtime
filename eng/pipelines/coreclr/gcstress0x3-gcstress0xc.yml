@@ -30,5 +30,6 @@ jobs:
     buildConfig: checked
     platformGroup: gcstress
     helixQueueGroup: ci
+    managedOsxBuild: false
     jobParameters:
       testGroup: gcstress0x3-gcstress0xc
