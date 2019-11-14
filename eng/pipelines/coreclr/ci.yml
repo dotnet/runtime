@@ -3,6 +3,9 @@ trigger:
     include:
     - master
   paths:
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
     exclude:
     - docs/*
     - CODE-OF-CONDUCT.md
