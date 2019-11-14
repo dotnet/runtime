@@ -91,6 +91,7 @@ namespace System.IO
         public override long Position { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         public unsafe byte* PositionPointer { get { throw null; } set { } }
+        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
