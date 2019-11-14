@@ -902,8 +902,6 @@ mono_debugger_set_thread_state (DebuggerTlsData *tls, MonoDebuggerThreadState ex
 	g_assert (tls->thread_state == expected);
 
 	tls->thread_state = set;
-
-	return;
 }
 
 MonoDebuggerThreadState
@@ -1883,7 +1881,7 @@ send_reply_packet (int id, int error, Buffer *data)
 {
 	ReplyPacket packet;
 
-	memset (&packet, 0, sizeof (ReplyPacket));
+	memset (&packet, 0, sizeof (packet));
 	packet.id = id;
 	packet.error = error;
 	packet.data = data;
@@ -4817,7 +4815,7 @@ debugger_agent_user_break (void)
 		GSList *events;
 		UserBreakCbData data;
 
-		memset (&data, 0, sizeof (UserBreakCbData));
+		memset (&data, 0, sizeof (data));
 		data.ctx = &ctx;
 
 		/* Obtain a context */
@@ -5137,7 +5135,7 @@ mono_debugger_agent_send_crash (char *json_dump, MonoStackHash *hashes, int paus
  * Called from metadata by the icall for System.Diagnostics.Debugger:Log ().
  */
 static void
-debugger_agent_debug_log (int level, MonoStringHandle category, MonoStringHandle message)
+debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
 {
 	ERROR_DECL (error);
 	int suspend_policy;
@@ -5147,19 +5145,20 @@ debugger_agent_debug_log (int level, MonoStringHandle category, MonoStringHandle
 	if (!agent_config.enabled)
 		return;
 
+	memset (&ei, 0, sizeof (ei));
+
 	mono_loader_lock ();
 	events = create_event_list (EVENT_KIND_USER_LOG, NULL, NULL, NULL, &suspend_policy);
 	mono_loader_unlock ();
 
 	ei.level = level;
-	ei.category = NULL;
-	if (!MONO_HANDLE_IS_NULL (category)) {
-		ei.category = mono_string_handle_to_utf8 (category, error);
+	if (category) {
+		ei.category = mono_string_to_utf8_checked_internal (category, error);
 		mono_error_cleanup (error);
+		error_init (error);
 	}
-	ei.message = NULL;
-	if (!MONO_HANDLE_IS_NULL (message)) {
-		ei.message = mono_string_handle_to_utf8 (message, error);
+	if (message) {
+		ei.message = mono_string_to_utf8_checked_internal (message, error);
 		mono_error_cleanup  (error);
 	}
 
@@ -5186,7 +5185,7 @@ debugger_agent_unhandled_exception (MonoException *exc)
 	if (!inited)
 		return;
 
-	memset (&ei, 0, sizeof (EventInfo));
+	memset (&ei, 0, sizeof (ei));
 	ei.exc = (MonoObject*)exc;
 
 	mono_loader_lock ();
@@ -5219,7 +5218,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 			return;
 	}
 
-	memset (&ei, 0, sizeof (EventInfo));
+	memset (&ei, 0, sizeof (ei));
 
 	/* Just-In-Time debugging */
 	if (!catch_ctx) {
@@ -10192,7 +10191,7 @@ mono_debugger_agent_init (void)
 {
 	MonoDebuggerCallbacks cbs;
 
-	memset (&cbs, 0, sizeof (MonoDebuggerCallbacks));
+	memset (&cbs, 0, sizeof (cbs));
 	cbs.version = MONO_DBG_CALLBACKS_VERSION;
 	cbs.parse_options = debugger_agent_parse_options;
 	cbs.init = debugger_agent_init;

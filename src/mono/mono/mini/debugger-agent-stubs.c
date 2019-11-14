@@ -63,7 +63,7 @@ stub_debugger_agent_user_break (void)
 }
 
 static void
-stub_debugger_agent_debug_log (int level, MonoStringHandle category, MonoStringHandle message)
+stub_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
 {
 }
 
