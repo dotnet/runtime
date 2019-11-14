@@ -3,6 +3,21 @@ trigger:
   branches:
     include:
     - master
+    paths:
+      exclude:
+      - docs/*
+      - CODE-OF-CONDUCT.md
+      - CONTRIBUTING.md
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - README.md
+      - SECURITY.md
+      - THIRD-PARTY-NOTICES.TXT
+      - src/installer/*
+      - src/libraries/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/libraries/*
+
 
 pr: none
 
