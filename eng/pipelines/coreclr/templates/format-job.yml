@@ -10,7 +10,7 @@ parameters:
 
 ### Format job
 jobs:
-- template: xplat-job.yml
+- template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
