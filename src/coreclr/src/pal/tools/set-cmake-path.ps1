@@ -24,7 +24,7 @@ function GetCMakeInfo($regKey)
   else {
     $cmakeDir = $itemProperty.'(default)'
   }
-  $cmakePath = [System.IO.Path]::Combine($cmakeDir, "bin\cmake.exe")
+  $cmakePath = [System.IO.Path]::Combine($cmakeDir, "artifacts\cmake.exe")
   if (![System.IO.File]::Exists($cmakePath)) {
     return $null
   }

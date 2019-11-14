@@ -31,7 +31,7 @@ Consider that you already have a .NET application DLL called HelloWorld.dll and 
 
 If you execute the following
 ```bat
-    set PATH=%PATH%;%CoreCLR%\bin\Product\Windows_NT.x64.Debug
+    set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug
     set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 
 
@@ -73,8 +73,8 @@ variable CORE_ROOT to this directory
 (running build-test at the repository base) and running 'test\runtest') you can do the following
 
 ```bat
-    set PATH=%PATH%;%CoreCLR%\bin\Product\Windows_NT.x64.Debug
-    set CORE_ROOT=%CoreCLR%\bin\tests\Windows_NT.x64.Debug\Tests\Core_Root
+    set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug
+    set CORE_ROOT=%CoreCLR%\artifacts\tests\Windows_NT.x64.Debug\Tests\Core_Root
 ```
 sets you up so that corerun can run any of the test.   For example
 ```bat

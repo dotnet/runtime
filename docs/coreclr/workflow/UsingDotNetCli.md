@@ -44,7 +44,7 @@ Please run `dotnet new nugetconfig` in the app folder and update the created `Nu
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
 
-    <add key="local CoreCLR" value="C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg" /> <!-- CHANGE THIS PATH to your local output path -->
+    <add key="local CoreCLR" value="C:\coreclr\artifacts\Product\Windows_NT.x64.Debug\.nuget\pkg" /> <!-- CHANGE THIS PATH to your local output path -->
     <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" /> <!-- link to corefx NuGet feed -->
   </packageSources>
 </configuration>
@@ -125,7 +125,7 @@ After you publish you will find all the binaries needed to run your application 
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
-.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 Running the app should tell you the version and which user and machine build the assembly as well as the commit hash of the code
@@ -133,7 +133,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 **Congratulations! You have just run your first app against local CoreCLR build!**

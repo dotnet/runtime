@@ -134,7 +134,7 @@ To build the runtime on Linux, run build.sh from the root of the coreclr reposit
 ./build.sh
 ```
 
-After the build is completed, there should some files placed in `bin/Product/Linux.x64.Debug`.  The ones we are interested in are:
+After the build is completed, there should some files placed in `artifacts/Product/Linux.x64.Debug`.  The ones we are interested in are:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
@@ -149,7 +149,7 @@ The Core_Root folder will have the built binaries, from `build.sh` and it will a
 ./build-test.sh generatelayoutonly
 ```
 
-After the build is complete you will be able to find the output in the `bin/tests/Linux.x64.Debug/Tests/Core_Root` folder.
+After the build is complete you will be able to find the output in the `artifacts/tests/Linux.x64.Debug/Tests/Core_Root` folder.
 
 Running a single test
 ===================
@@ -157,6 +157,6 @@ Running a single test
 After `build-test.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting an environment variable to the Core_Root folder.
 
 ```sh
-export CORE_ROOT=/home/dotnet-bot/coreclr/bin/tests/Linux.x64.Debug/Tests/Core_Root
+export CORE_ROOT=/home/dotnet-bot/coreclr/artifacts/tests/Linux.x64.Debug/Tests/Core_Root
 $CORE_ROOT/corerun hello_world.dll
 ```

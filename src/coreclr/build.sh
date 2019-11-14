@@ -614,7 +614,7 @@ __PgoOptDataPath=""
 __PgoOptimize=1
 __PortableBuild=1
 __ProjectDir="$__ProjectRoot"
-__RootBinDir="$__ProjectDir/bin"
+__RootBinDir="$__ProjectDir/artifacts"
 __SignTypeArg=""
 __SkipConfigure=0
 __SkipCoreCLR=0
@@ -643,7 +643,7 @@ if [ "${__BuildArch}" != "${__HostArch}" ]; then
 fi
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/Logs"
+__LogsDir="$__RootBinDirlogs"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration

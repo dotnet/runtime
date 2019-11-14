@@ -34,9 +34,9 @@ if [ -z "$CORECLR_ROOT" ]; then
 fi
 
 # *** Currently we can build test cases only on Windows, so "Windows_NT" is hard-coded in the variables.
-BENCHMARK_ROOT_DIR="$CORECLR_ROOT/bin/tests/Windows_NT.$ARCH.$BUILD/JIT/Performance/CodeQuality"
+BENCHMARK_ROOT_DIR="$CORECLR_ROOT/artifacts/tests/Windows_NT.$ARCH.$BUILD/JIT/Performance/CodeQuality"
 BENCHMARK_SRC_DIR="$CORECLR_ROOT/tests/src/JIT/Performance/RunBenchmarks"
-BENCHMARK_HOST="$CORERUN $CORECLR_ROOT/bin/tests/Windows_NT.$ARCH.$BUILD/JIT/Performance/RunBenchmarks/RunBenchmarks/RunBenchmarks.exe"
+BENCHMARK_HOST="$CORERUN $CORECLR_ROOT/artifacts/tests/Windows_NT.$ARCH.$BUILD/JIT/Performance/RunBenchmarks/RunBenchmarks/RunBenchmarks.exe"
 BENCHMARK_RUNNER="-runner $CORERUN"
 
 # *** need to copy command files for Bytemark

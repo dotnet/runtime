@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ProductDestination>$(ProjectDir)\..\bin\Product\$(BuildOS).$(BuildArch).$(BuildType)</ProductDestination>
+    <ProductDestination>$(ProjectDir)\..\artifacts\Product\$(BuildOS).$(BuildArch).$(BuildType)</ProductDestination>
     <RefDestination>$(ProductDestination)\ref</RefDestination>
   </PropertyGroup>
 

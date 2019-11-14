@@ -681,7 +681,7 @@ __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
 __RebuildTests=0
-__RootBinDir="$__ProjectDir/bin"
+__RootBinDir="$__ProjectDir/artifacts"
 __RunTests=0
 __SkipConfigure=0
 __SkipGenerateLayout=0
@@ -702,7 +702,7 @@ CORE_ROOT=
 source "$__ProjectRoot"/_build-commons.sh
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/Logs"
+__LogsDir="$__RootBinDirlogs"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration

@@ -76,7 +76,7 @@ Build CoreCLR on the Unix machine.
 
 Run tests:
 
-> `~/coreclr$ src/pal/tests/palsuite/runpaltests.sh ~/coreclr/bin/obj/Linux.x64.Debug`
+> `~/coreclr$ src/pal/tests/palsuite/runpaltests.sh ~/coreclr/artifacts/obj/Linux.x64.Debug`
 
 Test results will go into:
 
