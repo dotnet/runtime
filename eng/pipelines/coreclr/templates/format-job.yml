@@ -10,7 +10,7 @@ parameters:
 
 ### Format job
 jobs:
-- template: xplat-job.yml
+- template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -36,7 +36,7 @@ jobs:
       displayName: Run tests/scripts/format.py
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/tests/scripts/format.py
+        scriptPath: $(coreClrRepoRoot)/tests/scripts/format.py
         arguments: '-c $(Build.SourcesDirectory) -o $(osGroup) -a $(archType)'
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
