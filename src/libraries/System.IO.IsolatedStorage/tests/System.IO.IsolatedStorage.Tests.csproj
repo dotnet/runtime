@@ -24,16 +24,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.cs">
       <Link>Internals\Helper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.cs" />

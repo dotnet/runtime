@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(CommonTestPath)\Tests.props" />
+  <Import Project="$(CommonTestPath)Tests.props" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
-    <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
+    <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XmlDocument navigator -->

@@ -45,10 +45,10 @@
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
     <Compile Include="Task\TaskDisposeTests.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.netcoreapp.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.netcoreapp.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.netcoreapp.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
   </ItemGroup>

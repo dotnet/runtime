@@ -11,13 +11,13 @@
     <DefaultReferenceExclusions Include="System.Net.Mail" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+    <Compile Include="$(CommonPath)System\CharArrayHelpers.cs">
       <Link>ProductionCode\Common\System\CharArrayHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+    <Compile Include="$(CommonPath)System\StringExtensions.cs">
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
@@ -26,64 +26,64 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>ProductionCode\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpDateParser.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs">
       <Link>ProductionCode\Common\System\Net\HttpDateParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
       <Link>ProductionCode\Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
       <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
       <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\SimpleRegex.cs">
+    <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Http\HPackEncoder.cs">
+    <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs">
       <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Http\HuffmanEncoder.cs">
+    <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs">
       <Link>Common\System\Net\Http\HuffmanEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\DomainLiteralReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\DotAtomReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddressParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailBnfHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\QuotedPairReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\QuotedStringFormatReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\WhitespaceReader.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
@@ -101,7 +101,7 @@
     <Compile Include="..\..\src\System\Net\Http\DelegatingHandler.cs">
       <Link>ProductionCode\System\Net\Http\DelegatingHandler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs">
       <Link>ProductionCode\System\IO\DelegatingStream.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs">
@@ -329,7 +329,7 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
     <Compile Include="DigestAuthenticationTests.cs" />
@@ -388,16 +388,16 @@
     <Compile Include="Headers\ViaHeaderValueTest.cs" />
     <Compile Include="Headers\WarningHeaderValueTest.cs" />
     <Compile Include="HPack\HPackRoundtripTests.cs" />
-    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\DynamicTableTest.cs">
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\Http2\DynamicTableTest.cs">
       <Link>HPack\DynamicTableTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HPackDecoderTest.cs">
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\Http2\HPackDecoderTest.cs">
       <Link>HPack\HPackDecoderTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HPackIntegerTest.cs">
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\Http2\HPackIntegerTest.cs">
       <Link>HPack\HPackIntegerTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\..\tests\Tests\System\Net\Http2\HuffmanDecodingTests.cs">
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\Http2\HuffmanDecodingTests.cs">
       <Link>HPack\HuffmanDecodingTests.cs</Link>
     </Compile>
     <Compile Include="HttpContentTest.cs" />
@@ -431,64 +431,64 @@
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpTraceHelper.cs">
       <Link>ProductionCode\System\Net\Http\WinHttpTraceHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
       <Link>ProductionCode\Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>ProductionCode\Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
+    <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
       <Link>ProductionCode\Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs">
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\IHttpHeadersHandler.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\IHttpHeadersHandler.cs">
       <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\DynamicTable.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\DynamicTable.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HeaderField.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HeaderField.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecoder.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncoder.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\Huffman.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\Huffman.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StaticTable.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StatusCodes.cs">
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">

@@ -4,10 +4,10 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
     <Compile Include="src\SampleMetadata\SampleMetadata.cs" />

@@ -3,9 +3,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
       <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
     </Compile>
     <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
@@ -53,10 +53,10 @@
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
       <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
   </ItemGroup>

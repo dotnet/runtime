@@ -13,7 +13,7 @@
     <Compile Include="ThreadTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
     <ProjectReference Include="STAMain\STAMain.csproj" />

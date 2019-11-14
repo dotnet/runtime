@@ -19,7 +19,7 @@
     <TextSources>System\Text</TextSources>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
@@ -130,9 +130,9 @@
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" />
     <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" />
     <Compile Include="System\Runtime\Serialization\DataContractSet.cs" />
     <Compile Include="System\Runtime\Serialization\ExportOptions.cs" />
     <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />

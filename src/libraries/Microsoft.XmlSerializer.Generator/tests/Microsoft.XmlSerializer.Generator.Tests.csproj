@@ -15,7 +15,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Private.Xml\tests\XmlSerializer\XmlSerializerTests.cs" />
   </ItemGroup>

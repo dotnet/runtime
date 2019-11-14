@@ -11,7 +11,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Marvin.cs">
+    <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>System\Marvin.cs</Link>
     </Compile>
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
@@ -800,7 +800,7 @@
       <Link>System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
-    <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
+    <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />

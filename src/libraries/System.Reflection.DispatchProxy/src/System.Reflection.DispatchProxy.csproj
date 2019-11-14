@@ -9,7 +9,7 @@
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
-    <Compile Include="$(CommonPath)\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
+    <Compile Include="$(CommonPath)System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
       <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
     </Compile>
   </ItemGroup>

@@ -9,20 +9,20 @@
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs">
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
   </ItemGroup>

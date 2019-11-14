@@ -3,7 +3,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
     <Compile Include="ProviderAgnostic\ReaderTest\ConcurrentLoadContext.cs" />

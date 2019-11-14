@@ -24,8 +24,8 @@
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
-    <Compile Include="$(CommonPath)\Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerConsumerQueue.cs" Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

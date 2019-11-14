@@ -51,7 +51,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.12.1.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.12.1.txt">
       <LogicalName>UnicodeData.12.1.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
