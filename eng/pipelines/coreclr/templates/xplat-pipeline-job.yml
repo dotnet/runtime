@@ -93,7 +93,7 @@ jobs:
       value: '$(coreClrRepoRoot)$(dir)'
 
     - name: binTestsPath
-      value: '$(coreClrRepoRoot)/bin/tests'
+      value: '$(coreClrRepoRoot)/artifacts/tests'
 
     - name: testRootFolderPath
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
@@ -105,7 +105,7 @@ jobs:
       value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
-      value: '$(coreClrRepoRoot)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: '$(coreClrRepoRoot)/artifacts/Product/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: testArtifactName
       value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
