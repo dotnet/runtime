@@ -1,0 +1,134 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Targets to enable building the NETCoreApp shared framework from a local CoreCLR and CoreFX build. -->
+  
+  <Target Name="OverrideRuntimeFilesFromPackageResolve" Condition="'$(CoreCLROverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
+    <Error Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
+    <PropertyGroup>
+      <CoreCLROverridePath>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLROverridePath>
+    </PropertyGroup>
+    <PropertyGroup>
+      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
+      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
+      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
+      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
+      <CoreCLRCrossTargetComponentDir
+        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','$(CoreCLRCrossTargetComponentDir)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" />
+      <CoreCLRFiles Include="$(CoreCLROverridePath)Redist/**/*.dll" />
+      <CoreCLRFiles>
+        <IsNative>true</IsNative>
+      </CoreCLRFiles>
+      <CoreCLRFiles Include="$(CoreCLROverridePath)System.Private.CoreLib.dll" />
+      <CoreCLRFiles
+        Include="
+          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+      <CoreCLRFiles
+        Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.pdb;$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
+        Include="
+          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+
+      <CoreCLRFiles>
+        <TargetPath>runtime/$(RuntimeIdentifier)/native</TargetPath>
+      </CoreCLRFiles>
+
+      <CoreCLRCrossTargetFiles>
+        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+
+      <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
+
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'"/>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('mscordaccore_'))" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+    </ItemGroup>
+
+    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
+  </Target>
+
+  <Target Name="OverrideFrameworkFilesFromPackageResolve" Condition="'$(CoreFXOverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
+    <Error Condition="!Exists('$(CoreFXOverridePath)')" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) does not exist." />
+
+    <PropertyGroup>
+      <CoreFXSharedFrameworkPackageSpec>$(CoreFXOverridePath)/specs/$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkPackageSpec>
+      <CoreFXSharedFrameworkImplementationPackageSpec Condition="'$(PackageRID)' != ''">$(CoreFXOverridePath)/specs/runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkImplementationPackageSpec>
+    </PropertyGroup>
+    
+    <Error Condition="!Exists('$(CoreFXSharedFrameworkPackageSpec)')" Text="The nuspec for the reference $(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist." />
+    <Message Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And !Exists('$(CoreFXSharedFrameworkImplementationPackageSpec)')"
+      Text="The nuspec for the implementation runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist. Falling back to packaged CoreFX." />
+
+    <XmlPeek
+      Namespaces="&lt;Namespace Prefix='nuget' Uri='http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd' /&gt;"
+      Query="nuget:package/nuget:files/nuget:file/@src"
+      XmlInputPath="$(CoreFXSharedFrameworkPackageSpec)">
+      <Output TaskParameter="Result" ItemName="CoreFXReferenceItems" />
+    </XmlPeek>
+
+    <XmlPeek
+      Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And Exists($(CoreFXSharedFrameworkImplementationPackageSpec))"
+      Namespaces="&lt;Namespace Prefix='nuget' Uri='http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd' /&gt;"
+      Query="nuget:package/nuget:files/nuget:file/@src"
+      XmlInputPath="$(CoreFXSharedFrameworkImplementationPackageSpec)">
+      <Output TaskParameter="Result" ItemName="CoreFXReferenceCopyLocalItems" />
+    </XmlPeek>
+    
+    <ItemGroup>
+      <CoreFXReferenceItems NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
+      <CoreFXReferenceCopyLocalItems NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <OverriddenFrameworkReferenceFiles
+        Include="@(Reference)"
+        Condition="
+          '@(CoreFXReferenceItems->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)' And
+          '@(CoreFXReferenceItems->'%(NuGetPackageId)')' == '%(NuGetPackageId)'">
+        <CoreFXFile>@(CoreFXReferenceItems)</CoreFXFile>
+      </OverriddenFrameworkReferenceFiles>
+
+      <Reference Remove="@(OverriddenFrameworkReferenceFiles)" />
+      <Reference Include="@(OverriddenFrameworkReferenceFiles->Metadata('CoreFXFile'))" />
+
+      <OverriddenFrameworkImplementationFiles
+        Include="@(ReferenceCopyLocalPaths)"
+        Condition="
+          '@(CoreFXReferenceCopyLocalItems->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)' And
+          '@(CoreFXReferenceCopyLocalItems->'%(NuGetPackageId)')' == '%(NuGetPackageId)'">
+        <CoreFXFile>@(CoreFXReferenceCopyLocalItems)</CoreFXFile>
+      </OverriddenFrameworkImplementationFiles>
+
+      <OverriddenFrameworkImplementationFiles>
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </OverriddenFrameworkImplementationFiles>
+
+      <ReferenceCopyLocalPaths Remove="@(OverriddenFrameworkImplementationFiles)" />
+      <ReferenceCopyLocalPaths Include="@(OverriddenFrameworkImplementationFiles->Metadata('CoreFXFile'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+      <_coreFXOverrideDocFiles
+        Condition="'$(CoreFXOverridePath)' != '' And '%(NuGetPackageId)' == '$(MicrosoftPrivateCoreFxNETCoreAppPackage)'"
+        Include="@(OverriddenFrameworkReferenceFiles->'$(CoreFXOverridePath)/../../bin/docs/%(FileName).xml')" />
+      <_docFilesToPackage Include="@(_coreFXOverrideDocFiles)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="OverrideCrossgenToolPaths" DependsOnTargets="GetCorePackagePaths" AfterTargets="GetCrossgenToolPaths" BeforeTargets="CreateCrossGenImages">  
+    <PropertyGroup Condition="'$(CoreCLROverridePath)' != ''">
+      <_runtimeDirectory>$(CoreCLROverridePath)</_runtimeDirectory>
+      <_crossgenPath>$(CoreCLROverridePath)/crossgen$(ApplicationFileExtension)</_crossgenPath>
+      <_coreLibDirectory>$(CoreCLROverridePath)</_coreLibDirectory>
+      <_jitPath>$(CoreClrOverridePath)/$(_crossHostArch)/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+    </PropertyGroup>
+
+  </Target>
+
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <StageProject Include="@(ProjectToBuild -> WithMetadataValue('SignPhase', 'Binaries'))" />
+  </ItemGroup>
+
+</Project>
