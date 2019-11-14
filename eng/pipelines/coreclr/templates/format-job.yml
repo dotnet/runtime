@@ -24,10 +24,14 @@ jobs:
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
     steps:
-    - task: DotNetCoreInstaller@0
+    - task: UseDotNet@2
+      # This should match what jitutils YML uses to build.
+      displayName: 'Install .NET Core SDK'
       inputs:
         packageType: 'sdk'
-        version: '2.1.402'
+        version: '3.x'
+        includePreviewVersions: true
+        installationPath: $(Agent.ToolsDirectory)/dotnet
     - task: PythonScript@0
       displayName: Run tests/scripts/format.py
       inputs:
