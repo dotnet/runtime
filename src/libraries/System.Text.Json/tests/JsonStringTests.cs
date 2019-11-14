@@ -20,7 +20,7 @@ namespace System.Text.Json.Tests
         [InlineData("value")]
         [InlineData("value with some spaces")]
         [InlineData("     leading spaces")]
-        [InlineData("trailing spaces")]
+        [InlineData("trailing spaces     ")]
         [InlineData("new lines\r\n")]
         [InlineData("tabs\ttabs\t")]
         [InlineData("\\u003e\\u003e\\u003e\\u003e\\u003e")]

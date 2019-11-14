@@ -210,7 +210,8 @@
     <Compile Include="System\Text\Json\Node\JsonArray.cs" />
     <Compile Include="System\Text\Json\Node\JsonArrayEnumerator.cs" />
     <Compile Include="System\Text\Json\Node\JsonBoolean.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.cs" /> 
+    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.RecursionStackFrame.cs" />
     <Compile Include="System\Text\Json\Node\JsonNode.Traversal.cs" /> 
     <Compile Include="System\Text\Json\Node\JsonNode.TraversalHelpers.cs" /> 
     <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />

@@ -95,5 +95,23 @@ namespace System.Text.Json
             return dictionary.TryAdd(key, value);
 #endif
         }
+
+        internal static bool IsFinite(double value)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return double.IsFinite(value);
+#else
+            return !(double.IsNaN(value) || double.IsInfinity(value));
+#endif
+        }
+
+        internal static bool IsFinite(float value)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return float.IsFinite(value);
+#else
+            return !(float.IsNaN(value) || float.IsInfinity(value));
+#endif
+        }
     }
 }

@@ -82,7 +82,7 @@ namespace System.Text.Json.Tests
             IEquatable<JsonNull> jsonNullIEquatable = new JsonNull();
             Assert.Equal(jsonNull.GetHashCode(), jsonNullIEquatable.GetHashCode());
 
-            object jsonNullCopy= jsonNull;
+            object jsonNullCopy = jsonNull;
             object jsonNullObject = new JsonNull();
             Assert.Equal(jsonNull.GetHashCode(), jsonNullCopy.GetHashCode());
             Assert.Equal(jsonNull.GetHashCode(), jsonNullObject.GetHashCode());

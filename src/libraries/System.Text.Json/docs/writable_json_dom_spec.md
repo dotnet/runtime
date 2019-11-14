@@ -194,20 +194,20 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * `JsonNull` class instead of `null` reference to node.
 * No additional overloads of Add methods for primary types (bool, string, int, double,  long...) for `JsonObject` and `JsonArray`. Instead - implicit cast operators in JsonNode.
 * `Sort` not implemented for `JsonArray`, beacuse there is no right way to compare `JsonObjects`. If a user wants to sort a `JsonArray` of `JsonNumbers`, `JsonBooleans` or `JsonStrings` they now needs to do the following: convert the `JsonArray` to a regular array (by iterating through all elements), call sort (and convert back to `JsonArray` if needed).
-* Property names duplicates handling method possible to chose during parsing to `JsonNode`. When creating `JsonObject` Add method throws an exception for duplicates and indexer replaces old property value with new one. 
+* Property names duplicates handling method possible to choose during parsing to `JsonNode`. When creating `JsonObject` Add method throws an exception for duplicates and indexer replaces old property value with new one. 
 * No support for escaped characters when creating `JsonNumber` from string.
 * `JsonValueKind` property that a caller can inspect and cast to the right concrete type
 * Transformation API:
     * `DeepCopy` method allowing to change JsonElement into JsonNode recursively transforming all of the elements.
     * `AsJsonElement`method allowing to change JsonNode into JsonElement with IsImmutable property set to false.
     * `IsImmutable` property informing if JsonElement is keeping JsonDocument or JsonNode underneath.
-    * `Parse(string)` method to be able to parse a JSON string right into JsonNode if the user knows they wants mutable version. It allows chosing duplicates handling method.
+    * `Parse(string)` method to be able to parse a JSON string right into JsonNode if the user knows they want a mutable version. It allows choosing duplicates handling method.
     * `Clone` method to make a copy of the whole JsonNode tree.
-    * `GetNode` and TryGetNode methods allowing to retrieve it from JsonElement.
+    * `GetNode` and `TryGetNode` methods allowing to retrieve it from JsonElement.
     * Internal `WriteTo(Utf8JsonWriter)` method for writing a JsonNode to a Utf8JsonWriter without having to go through JsonElement.
     * `ToJsonString` method transforming JsonNode to string representation using WriteTo.
 * No recursive equals for `JsonArray` and `JsonObject`.
-* `JsonNode` derived types does not implement `IComparable`.
+* `JsonNode` derived types do not implement `IComparable`.
 * `JsonObject` does not implement `IDictionary`, but `JsonArray` implements `IList`. 
 * We support order preservation when adding/removing values in `JsonArray`/`JsonObject`.
 * We do not support creating `JsonNumber` from `BigInterger` without changing it to string.
@@ -233,6 +233,13 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
     - Internal types that are specific to each numeric type in .NET with factories to create JsonNumber 
     - Internal struct field which has all the supported numeric types
     - Unsigned long field accompanying string to store types that are <= 8 bytes long
+
+* Should we add overloads for all nullable types as well? For example: 
+    ```csharp 
+    public static implicit operator System.Text.Json.JsonNode (bool? value) { throw null; }
+    ```
+
+* Do we want to have implicit cast operators on `JsonNull`, `JsonBoolean`, `JsonString` and `JsonNumber` while we already have them in `JsonNode`? It would be consistent, but implicit cast from e.g. float.Infinity to `JsonNumber` would throw an exception, because we would not be able return `JsonString` in this case anymore. 
 
 ## Useful links
 

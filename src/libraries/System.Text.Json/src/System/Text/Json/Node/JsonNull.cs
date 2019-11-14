@@ -14,6 +14,8 @@ namespace System.Text.Json
         /// </summary>
         public JsonNull() { }
 
+        internal static JsonNull Instance { get; } = new JsonNull();
+
         /// <summary>
         ///   Converts the null value to the string in JSON format.
         /// </summary>

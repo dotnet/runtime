@@ -26,11 +26,12 @@ namespace System.Text.Json
         /// <summary>
         ///   Gets the <see cref="JsonNode"/> represented by <paramref name="jsonElement"/>.
         ///   Operations performed on the returned <see cref="JsonNode"/> will modify the <paramref name="jsonElement"/>.
+        ///   See also: <seealso cref="JsonElement.IsImmutable"/>.
         /// </summary>
         /// <param name="jsonElement"><see cref="JsonElement"/> to get the <see cref="JsonNode"/> from.</param>
         /// <returns><see cref="JsonNode"/> represented by <paramref name="jsonElement"/>.</returns>
         /// <exception cref="ArgumentException">
-        ///   Provided <see cref="JsonElement"/> was not build from <see cref="JsonNode"/>.
+        ///   Provided <see cref="JsonElement"/> was not built from <see cref="JsonNode"/>.
         /// </exception>
         public static JsonNode GetNode(JsonElement jsonElement) => !jsonElement.IsImmutable ? (JsonNode)jsonElement._parent : throw new ArgumentException(SR.NotNodeJsonElementParent);
 
@@ -67,11 +68,14 @@ namespace System.Text.Json
         ///   Converts a <see cref="string"/> to a <see cref="JsonString"/>.
         /// </summary>
         /// <param name="value">The value to convert.</param>
+        /// <remarks>
+        ///   Null value is accepted and will be interpreted as <see cref="JsonNull"/>.
+        /// </remarks>
         public static implicit operator JsonNode(string value)
         {
             if (value == null)
             {
-                return new JsonNull();
+                return JsonNull.Instance;
             }
 
             return new JsonString(value);
@@ -131,7 +135,7 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         public static implicit operator JsonNode(float value)
         {
-            if (float.IsInfinity(value) || float.IsNaN(value))
+            if (!JsonHelpers.IsFinite(value))
             {
                 return new JsonString(value.ToString());
             }
@@ -145,7 +149,7 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         public static implicit operator JsonNode(double value)
         {
-            if (double.IsInfinity(value) || double.IsNaN(value))
+            if (!JsonHelpers.IsFinite(value))
             {
                 return new JsonString(value.ToString());
             }

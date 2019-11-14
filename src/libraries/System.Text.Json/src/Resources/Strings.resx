@@ -445,6 +445,6 @@
     <value>The JSON array was modified during iteration.</value>
   </data>
   <data name="NotNodeJsonElementParent" xml:space="preserve">
-    <value>This JsonElement instance was not built from JsonNode</value>
+    <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
   </data>
 </root>

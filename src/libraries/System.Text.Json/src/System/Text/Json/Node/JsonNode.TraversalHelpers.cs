@@ -53,25 +53,9 @@ namespace System.Text.Json
             }
             else
             {
+                // We are at the top level, so adding node to parent means setting it as returned one
+
                 toReturn = nodePair.Value;
-            }
-        }
-
-        private struct RecursionStackFrame
-        {
-            public string PropertyName { get; set; }
-            public JsonNode PropertyValue { get; set; }
-            public JsonValueKind ValueKind { get; set; } // to retrieve ValueKind when PropertyValue is null
-
-            public RecursionStackFrame(string propertyName, JsonNode propertyValue, JsonValueKind valueKind)
-            {
-                PropertyName = propertyName;
-                PropertyValue = propertyValue;
-                ValueKind = valueKind;
-            }
-
-            public RecursionStackFrame(string propertyName, JsonNode propertyValue) : this(propertyName, propertyValue, propertyValue.ValueKind)
-            {
             }
         }
     }
