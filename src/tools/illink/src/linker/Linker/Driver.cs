@@ -262,6 +262,10 @@ namespace Mono.Linker {
 							context.DeterministicOutput = true;
 							p.RemoveStep (typeof (RegenerateGuidStep));
 							continue;
+
+						case "--output-assemblylist":
+							context.AssemblyListFile = GetParam ();
+							continue;
 						}
 
 						switch (token [2]) {
