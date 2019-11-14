@@ -2,14 +2,12 @@ trigger:
   branches:
     include:
     - master
-    - release/3.*
+    - release/*.*
   paths:
     include:
     - '*'
     - docs/installer/manpages/*
-    - Documentation/manpages/*
     exclude:
-    - Documentation/*
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
@@ -24,14 +22,12 @@ pr:
   branches:
     include:
     - master
-    - release/3.*
+    - release/*.*
   paths:
     include:
     - '*'
     - docs/installer/manpages/*
-    - Documentation/manpages/*
     exclude:
-    - Documentation/*
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*

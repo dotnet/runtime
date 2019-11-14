@@ -8,7 +8,7 @@ parameters:
   packageDistroList: null
   skipTests: $(SkipTests)
   strategy:
-    matrix: 
+    matrix:
       debug:
         _BuildConfig: Debug
       release:
@@ -45,7 +45,7 @@ jobs:
           $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
-      
+
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
