@@ -94,7 +94,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
  </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
