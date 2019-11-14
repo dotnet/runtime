@@ -14,9 +14,9 @@ REM Everything else in this script is parameterized using the above two variable
 if not exist %_root% echo Error: %_root% not found&goto :eof
 
 REM Where to put the resulting MCH file?
-set _mch=%_root%\bin\tests\alltests_win.mch
+set _mch=%_root%\artifacts\tests\alltests_win.mch
 
-set _testbuild=%_root%\bin\tests\%_flavor%
+set _testbuild=%_root%\artifacts\tests\%_flavor%
 if not exist %_testbuild% echo Error: %_testbuild% not found&goto :eof
 if not exist %_testbuild%\JIT\superpmi\superpmicollect\superpmicollect.exe echo Error: superpmicollect.exe not found&goto :eof
 

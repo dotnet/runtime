@@ -3,7 +3,7 @@
 
   <!-- This file contains common build properties for projects under
        the test tree, and also generated test projects in
-       bin/tests. It currently has only those properties that are
+       artifacts/tests. It currently has only those properties that are
        shared between old-style test projects and SDK-style test
        projects. Eventually every test project should build using the
        SDK. Some test projects still bypass this by importing
@@ -17,10 +17,10 @@
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$(CoreclrDir)/bin/tests/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
 
-    <BaseOutputPath>$(CoreclrDir)/bin/tests/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
+    <BaseOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
 
   </PropertyGroup>

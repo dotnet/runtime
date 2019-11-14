@@ -36,8 +36,8 @@ set "__RepoRootDir=%__ProjectDir%\..\.."
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__RootBinDir=%__ProjectDir%\bin"
-set "__LogsDir=%__RootBinDir%\Logs"
+set "__RootBinDir=%__RepoRootDir%\artifacts"
+set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
@@ -142,8 +142,8 @@ set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__Bui
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
-set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestRootDir=%__RootBinDir%\tests"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__TestRootDir=%__RootBinDir%\tests\coreclr"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 REM We have different managed and native intermediate dirs because the managed bits will include
@@ -151,7 +151,7 @@ REM the configuration information deeper in the intermediates path.
 REM These variables are used by the msbuild project files.
 
 if not defined __TestIntermediateDir (
-    set "__TestIntermediateDir=tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+    set "__TestIntermediateDir=tests\coreclr\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 )
 set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"

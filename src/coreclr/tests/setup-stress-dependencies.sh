@@ -178,7 +178,7 @@ then
     exit_with_error 1 "Failed to restore the package"
 fi
 
-CoreDisToolsPackagePathOutputFile="${scriptDir}/../bin/obj/${__BuildOS}.x64/optdatapath.txt"
+CoreDisToolsPackagePathOutputFile="${scriptDir}/../../../artifacts/obj/coreclr/${__BuildOS}.x64/optdatapath.txt"
 
 bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\" /bl" 
 if [ $? -ne 0 ]

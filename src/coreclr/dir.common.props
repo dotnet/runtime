@@ -38,17 +38,21 @@
   <!-- Common properties -->
   <PropertyGroup>
 
+    <__ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</__ProjectDir>
     <ProjectDir>$(__ProjectDir)\</ProjectDir>
+    <RootRepoDir>$(ProjectDir)\..\..\</RootRepoDir>
     <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</ProjectDir>
+
+    <BaseIntermediateOutputPath>$(RootRepoDir)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
     <SourceDir>$(__SourceDir)\</SourceDir>
     <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
 
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(RootRepoDir)artifacts\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.

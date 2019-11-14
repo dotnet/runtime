@@ -42,7 +42,7 @@ usage()
     echo ""
     echo "BuildArch can be: -x64, -x86, -arm, -armel, -arm64"
     echo "BuildType can be: -debug, -checked, -release"
-    echo "-bindir - output directory (defaults to $__ProjectRoot/bin)"
+    echo "-bindir - output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-clang - optional argument to build using clang in PATH (default)."
     echo "-clangx.y - optional argument to build using clang version x.y."
     echo "-cmakeargs - user-settable additional arguments passed to CMake."

@@ -549,7 +549,7 @@
         <name>TrueTypeBench</name>
             <benchmark>
                 <name>TrueTypeBench</name>
-                <directory>.\TrueTypeBench\bin\release</directory>
+                <directory>.\TrueTypeBench\artifacts\release</directory>
                 <executable>truetypebench.exe</executable>
             </benchmark>
     </benchmark-suite>
@@ -567,14 +567,14 @@
         <name>Json</name>
             <benchmark>
                 <name>Json-Serialize</name>
-                <directory>.\JSON.Net\Src\Newtonsoft.Json.BenchmarkConsole\bin\Release\Net45</directory>
+                <directory>.\JSON.Net\Src\Newtonsoft.Json.BenchmarkConsole\artifacts\Release\Net45</directory>
                 <executable>Newtonsoft.Json.BenchmarkConsole.exe</executable>
                 <args>Serialize-JsonNet-TestClass 1500000 &gt; out</args>
                 <run-in-shell>true</run-in-shell>
             </benchmark>
             <benchmark>
                 <name>Json-Deserialize</name>
-                <directory>.\JSON.Net\Src\Newtonsoft.Json.BenchmarkConsole\bin\Release\Net45</directory>
+                <directory>.\JSON.Net\Src\Newtonsoft.Json.BenchmarkConsole\artifacts\Release\Net45</directory>
                 <executable>Newtonsoft.Json.BenchmarkConsole.exe</executable>
                 <args>Deserialize-JsonNet-String 750000 &gt; out</args>
                 <run-in-shell>true</run-in-shell>

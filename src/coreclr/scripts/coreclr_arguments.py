@@ -205,7 +205,7 @@ class CoreclrArguments:
             return None
 
         def check_and_return_test_location(test_location):
-            default_test_location = os.path.join(self.coreclr_repo_location, "bin", "tests", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
+            default_test_location = os.path.join(self.coreclr_repo_location, "..", "..", "artifacts", "tests", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
 
             if os.path.isdir(default_test_location) or not self.require_built_test_dir:
                 return default_test_location
@@ -237,7 +237,7 @@ class CoreclrArguments:
             return product_location
 
         self.coreclr_repo_location = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.bin_location = os.path.join(self.coreclr_repo_location, "bin")
+        self.bin_location = os.path.join(self.coreclr_repo_location, "artifacts")
 
         self.verify(args,
                     "host_os",

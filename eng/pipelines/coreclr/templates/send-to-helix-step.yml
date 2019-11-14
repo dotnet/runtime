@@ -30,7 +30,7 @@ steps:
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
 
-  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:${{ parameters.coreClrRepoRoot }}/bin/Logs/SendToHelix.binlog
+  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
@@ -69,7 +69,7 @@ steps:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet
 
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:${{ parameters.coreClrRepoRoot }}/bin/Logs/SendToHelix.binlog
+  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}

@@ -85,7 +85,7 @@ collect_parser.add_argument("-core_root", dest="core_root", nargs='?', default=N
 collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built product, this is optional.")
 collect_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))), help="Location of the coreclr repo. Optional.")
 collect_parser.add_argument("-test_env", dest="test_env", default=None, help="Test env to pass to the coreclr tests if collecting over the tests.")
-collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to bin/mch/$(buildType).$(arch).$(config)/$(buildType).$(arch).$(config).mch")
+collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to artifacts/mch/$(buildType).$(arch).$(config)/$(buildType).$(arch).$(config).mch")
 
 collect_parser.add_argument("--pmi", dest="pmi", default=False, action="store_true", help="Use pmi on a set of directories or assemblies")
 collect_parser.add_argument("-mch_files", dest="mch_files", nargs='+', default=None, help="Pass a sequence of mch files which will be merged.")
@@ -810,11 +810,11 @@ class SuperPMIReplay:
                 with open(self.fail_mcl_file) as file_handle:
                     self.fail_mcl_contents = file_handle.read()
 
-                # If there are any .mc files, drop them into bin/repro/<host_os>.<arch>.<build_type>/*.mc
+                # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "bin", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
                     # Delete existing repro location
                     if os.path.isdir(repro_location):
@@ -840,7 +840,7 @@ class SuperPMIReplay:
 
                     print("To run an specific failure:")
                     print("")
-                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<coreclr_path>/bin/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
                     print("")
 
                 else:
@@ -1011,11 +1011,11 @@ class SuperPMIReplayAsmDiffs:
                     mcl_lines = [item.strip() for item in mcl_lines]
                     self.fail_mcl_contents = os.linesep.join(mcl_lines)
 
-                # If there are any .mc files, drop them into bin/repro/<host_os>.<arch>.<build_type>/*.mc
+                # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "bin", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
                     # Delete existing repro location
                     if os.path.isdir(repro_location):
@@ -1041,7 +1041,7 @@ class SuperPMIReplayAsmDiffs:
 
                     print("To run an specific failure:")
                     print("")
-                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<coreclr_path>/bin/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
                     print("")
 
                 print(self.fail_mcl_contents)
@@ -1411,7 +1411,7 @@ class SuperPMIReplayAsmDiffs:
                     current_jit_dump_diff = None
 
                 if current_jit_dump_diff is not None:
-                    print("Diffs found in the JitDump generated. These files are located under <coreclr_dir>/bin/jit_dump/base and <coreclr_dir>/bin/jit_dump/diff")
+                    print("Diffs found in the JitDump generated. These files are located under <repo_root>/artifacts/jit_dump/base and <repo_root>/artifacts/jit_dump/diff")
                     print("")
                     print("Method numbers with textual differences:")
 

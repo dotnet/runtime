@@ -29,7 +29,7 @@
 #
 # If you are running tests on a different target than the host that built, the
 # native tests components must be copied from:
-# bin/obj/<Host>.<Arch>.<BuildType/tests to the target. If the location is not
+# artifacts/obj/<Host>.<Arch>.<BuildType/tests to the target. If the location is not
 # standard please pass the -test_native_bin_location flag to the script.
 #
 # Use the instructions here:
@@ -93,7 +93,7 @@ naming conflicts.
 
 If you are running tests on a different target than the host that built, the
 native tests components must be copied from:
-bin/obj/<Host>.<Arch>.<BuildType/tests to the target. If the location is not
+artifacts/obj/<Host>.<Arch>.<BuildType/tests to the target. If the location is not
 standard please pass the -test_native_bin_location flag to the script.""")
 
 parser = argparse.ArgumentParser(description=description)
@@ -420,7 +420,7 @@ fi
 
         Notes:
             This will check if the wrapper repros or not. If it does not repro
-            it will be put into an "unstable" folder under bin/repro.
+            it will be put into an "unstable" folder under artifacts/repro.
             Else it will just be written out.
 
         """
@@ -1100,8 +1100,8 @@ def setup_args(args):
                                       "Unsupported configuration: %s.\nSupported configurations: %s" % (corrected_build_type, ", ".join(coreclr_setup_args.valid_build_types)))
 
     if args.test_location is not None and coreclr_setup_args.test_location != normal_location:
-        print ("Error, msbuild currently expects tests in bin/tests/...")
-        raise Exception("Error, msbuild currently expects tests in bin/tests/...")
+        print ("Error, msbuild currently expects tests in artifacts/tests/...")
+        raise Exception("Error, msbuild currently expects tests in artifacts/tests/...")
 
     coreclr_setup_args.verify(args,
                               "test_env",
@@ -1762,7 +1762,7 @@ def create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_locatio
     os.makedirs(repro_location)
     assert os.path.isdir(repro_location)
 
-    # Now that the repro_location exists under <coreclr_location>/bin/repro
+    # Now that the repro_location exists under <runtime>/artifacts/repro
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
         debug_env = DebugEnv(host_os, arch, build_type, env, core_root, coreclr_repo_location, test)

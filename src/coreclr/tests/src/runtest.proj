@@ -354,7 +354,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in bin/obj -->
+  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in artifacts/obj -->
   <Import Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'" Project="$(BuildVersionFile)" />
 
   <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">

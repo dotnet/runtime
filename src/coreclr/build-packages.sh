@@ -127,7 +127,7 @@ if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
     export OutputRID=${__DistroRid}
 fi
 
-logFile=$__ProjectRoot/bin/Logs/build-packages.binlog
+logFile=$__ProjectRoot/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
                                    /p:__BuildOS=$__BuildOS \

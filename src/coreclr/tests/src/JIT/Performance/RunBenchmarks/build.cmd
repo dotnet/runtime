@@ -12,15 +12,15 @@ goto done
 
 :build_debug
 
-mkdir bin\Debug\desktop >NUL 2>&1
-csc /define:DESKTOP /nologo /debug /target:exe /out:bin\Debug\desktop\RunBenchmarks.exe RunBenchmarks.cs 
+mkdir artifacts\Debug\desktop >NUL 2>&1
+csc /define:DESKTOP /nologo /debug /target:exe /out:artifacts\Debug\desktop\RunBenchmarks.exe RunBenchmarks.cs 
 
 goto done
 
 :build_release
 
-mkdir bin\Release\desktop >NUL 2>&1
-csc /define:DESKTOP /nologo /debug:pdbonly /target:exe /out:bin\Release\desktop\RunBenchmarks.exe RunBenchmarks.cs 
+mkdir artifacts\Release\desktop >NUL 2>&1
+csc /define:DESKTOP /nologo /debug:pdbonly /target:exe /out:artifacts\Release\desktop\RunBenchmarks.exe RunBenchmarks.cs 
 
 goto done
 
