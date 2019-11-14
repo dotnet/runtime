@@ -119,11 +119,26 @@ def main(argv):
 
         assert len(os.listdir(os.path.dirname(bootstrapPath))) == 0
 
+        print('Downloading', bootstrapUrl, 'to', bootstrapPath)
         urlretrieve(bootstrapUrl, bootstrapPath)
 
         if not os.path.isfile(bootstrapPath):
             print("Did not download bootstrap!")
             return -1
+
+        if platform == 'Windows_NT':
+            # Need to ensure we have Windows line endings on the downloaded script file,
+            # which is downloaded with Unix line endings.
+            print('Convert', bootstrapPath, 'to Windows line endings')
+
+            content = None
+            with open(bootstrapPath, 'rb') as open_file:
+                content = open_file.read()
+
+            content = content.replace(b'\n', b'\r\n')
+
+            with open(bootstrapPath, 'wb') as open_file:
+                open_file.write(content)
 
         # On *nix platforms, we need to make the bootstrap file executable
 
@@ -131,14 +146,13 @@ def main(argv):
             print("Making bootstrap executable")
             os.chmod(bootstrapPath, 0o751)
 
-        print(bootstrapPath)
-
         # Run bootstrap
         if platform == 'Linux' or platform == 'OSX':
-            print("Running bootstrap")
+            print('Running:', 'bash', bootstrapPath)
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
         elif platform == 'Windows_NT':
+            print('Running:', bootstrapPath)
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
 
@@ -166,6 +180,8 @@ def main(argv):
 
         for build in builds:
             for project in projects:
+                command = jitformat + " -a " + arch + " -b " + build + " -o " + platform + " -c " + coreclr + " --verbose --projects " + project
+                print('Running:', command)
                 proc = subprocess.Popen([jitformat, "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
                 output,error = proc.communicate()
                 errorcode = proc.returncode
