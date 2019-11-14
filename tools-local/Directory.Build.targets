@@ -1,7 +1,0 @@
-<Project>
-  
-  <!-- TODO: (Consolidation) Remove when consolidated. -->
-  <Import Project="..\Directory.Build.targets" Condition="'$(IsRuntimeRepository)' == 'true'" />
-  <Import Project="..\src\Directory.Build.targets" Condition="'$(IsRuntimeRepository)' != 'true'" />
-
-</Project>

@@ -581,12 +581,6 @@ __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Some paths are relative to the main repo root
 __RepoRootDir="${__ProjectRoot}/../.."
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectRoot}
-fi
-# END SECTION to remove after repo consolidation
-
 __BuildArch=
 __BuildType=Debug
 __CodeCoverage=

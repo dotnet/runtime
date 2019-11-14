@@ -407,12 +407,6 @@ function run_tests_using_docker {
 
 __RepoRootDir=./../..
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=.
-fi
-# END SECTION to remove after repo consolidation
-
 #Define script variables
 __ciMode="emulator"
 __ARMEmulRootfs=/mnt/arm-emulator-rootfs

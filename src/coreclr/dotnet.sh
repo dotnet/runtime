@@ -4,12 +4,6 @@ working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __ProjectDir=${working_tree_root}
 __RepoRootDir=${working_tree_root}/../..
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectDir}
-fi
-# END SECTION to remove after repo consolidation
-
 # Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
 export DOTNET_MULTILEVEL_LOOKUP=0
 

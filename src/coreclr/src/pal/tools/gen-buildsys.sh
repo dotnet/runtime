@@ -33,12 +33,6 @@ fi
 __CoreClrDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../../.."
 __RepoRootDir=${__CoreClrDir}/../..
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__CoreClrDir}
-fi
-# END SECTION to remove after repo consolidation
-
 build_arch="$3"
 buildtype=DEBUG
 code_coverage=OFF

@@ -8,12 +8,10 @@
     <RepositoryUrl>git://github.com/dotnet/corefx</RepositoryUrl>
   </PropertyGroup>
 
-  <!-- TODO: Consolidate when moved to runtime repository: dotnet/corefx#42170 -->
   <PropertyGroup>
-    <IsRuntimeRepository Condition="Exists('$(MSBuildThisFileDirectory)..\..\.dotnet-runtime-placeholder')">true</IsRuntimeRepository>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
-  <Import Project="..\..\Directory.Build.props" Condition="'$(IsRuntimeRepository)' == 'true'" />
+  <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
     <!--

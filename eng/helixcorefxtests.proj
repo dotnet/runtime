@@ -85,7 +85,7 @@
       TODO: ProjectDir, RootBinDir, TestWorkingDir, and TargetsWindows are global properties set in dir.props, remove the property assignment here when we port to arcade.
      -->
     <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)..\</ProjectDir>
-    <ProjectDir Condition="Exists('$(ProjectDir).dotnet-runtime-placeholder')">$(ProjectDir)\src\coreclr\</ProjectDir>
+    <ProjectDir>$(ProjectDir)\src\coreclr\</ProjectDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(__BuildOS).$(__BuildArch).$(__BuildType)\</TestWorkingDir>
     <TargetsWindows Condition="'$(__BuildOS)' == 'Windows_NT'">true</TargetsWindows>

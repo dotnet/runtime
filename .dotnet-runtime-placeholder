@@ -1,5 +1,0 @@
-Placeholder file to detect being part of the runtime repository.
-
-MSBuild: Condition="Exists('..\..\.dotnet-runtime-placeholder')"
-Powershell: if (Test-Path "..\..\.dotnet-runtime-placeholder")
-Bash: if [ -d "..\..\.dotnet-runtime-placeholder" ]; then

@@ -2,9 +2,7 @@
   <PropertyGroup>
     <!-- Set helix source -->
     <HelixSourcePrefix>pr/</HelixSourcePrefix>
-    <!-- TODO: Consolidate when moved to runtime repository: dotnet/corefx#42170 -->
-    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
-    <HelixSource Condition="'$(HelixSource)' == '' and '$(IsRuntimeRepository)' == 'true'">$(HelixSourcePrefix)dotnet/runtime</HelixSource>
+    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/runtime</HelixSource>
     <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
     
     <!-- Set helix build to build number if available -->

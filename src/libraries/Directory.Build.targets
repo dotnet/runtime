@@ -1,5 +1,5 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
-  <Import Project="..\..\Directory.Build.targets" Condition="'$(IsRuntimeRepository)' == 'true'" />
+  <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
