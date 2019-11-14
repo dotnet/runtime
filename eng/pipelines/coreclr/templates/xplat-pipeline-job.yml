@@ -84,11 +84,6 @@ jobs:
     - name: coreClrRepoRoot
       value: '$(Build.SourcesDirectory)/src/coreclr'
 
-    - ${{ if not(startsWith(variables['Build.DefinitionName'], 'runtime')) }}:
-
-      - name: coreClrRepoRoot
-        value: '$(Build.SourcesDirectory)'
-
     - name: coreClrRepoRootDir
       value: '$(coreClrRepoRoot)$(dir)'
 

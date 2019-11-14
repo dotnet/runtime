@@ -72,16 +72,10 @@ variables:
     # Values for SDLValidationParameters
     - group: core-setup-sdl-validation
 
-  - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
-    - name: pipelinesPath
-      value: /eng/pipelines/installer
-    - name: buildScriptFileName
-      value: installer
-  - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-    - name: pipelinesPath
-      value: /eng/pipelines
-    - name: buildScriptFileName
-      value: build
+  - name: pipelinesPath
+    value: /eng/pipelines/installer
+  - name: buildScriptFileName
+    value: installer
 
 stages:
 - stage: Build
