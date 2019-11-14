@@ -173,16 +173,16 @@
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionProperty.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionType.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionWritableMember.cs" />
-    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceId.cs">
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs">
       <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceSource.cs">
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs">
       <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\DebuggerTraceWriter.cs">
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs">
       <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\TraceWriter.cs">
+    <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs">
       <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
     </Compile>
   </ItemGroup>

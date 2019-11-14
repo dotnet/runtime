@@ -18,7 +18,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs" Link="System\IO\PathInternal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs" Link="System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.cs" />
@@ -77,41 +77,41 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs" Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs" Link="Common\Interop\Windows\Interop.EncryptDecrypt.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.LongFileTime.cs" Link="Common\Interop\Windows\Interop.LongFileTime.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs" Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CompareStringOrdinal.cs" Link="Common\Interop\Windows\Interop.CompareStringOrdinal.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CopyFile.cs" Link="Common\Interop\Windows\Interop.CopyFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CopyFileEx.cs" Link="Common\Interop\Windows\Interop.CopyFileEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DeleteFile.cs" Link="Common\Interop\Windows\Interop.DeleteFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DeleteVolumeMountPoint.cs" Link="Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Interop.FileOperations.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FindNextFile.cs" Link="Common\Interop\Windows\Interop.FindNextFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs" Link="Common\Interop\Windows\Interop.GetVolumeInformation.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MoveFileEx.cs" Link="Common\Interop\Windows\Interop.MoveFileEx.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RemoveDirectory.cs" Link="Common\Interop\Windows\Interop.RemoveDirectory.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ReplaceFile.cs" Link="Common\Interop\Windows\Interop.ReplaceFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileAttributes.cs" Link="Common\Interop\Windows\Interop.SetFileAttributes.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileInformationByHandle.cs" Link="Common\Interop\Windows\Interop.SetFileInformationByHandle.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.FILE_FULL_DIR_INFORMATION.cs" Link="Common\Interop\Windows\Interop.FILE_FULL_DIR_INFORMATION.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.FILE_INFORMATION_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFORMATION_CLASS.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs" Link="Common\Interop\Windows\Interop.IO_STATUS_BLOCK.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtCreateFile.cs" Link="Common\Interop\Windows\Interop.NtCreateFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryDirectoryFile.cs" Link="Common\Interop\Windows\Interop.NtQueryDirectoryFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs" Link="Common\Interop\Windows\Interop.NtStatus.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs" Link="Common\Interop\Windows\Interop.RtlNtStatusToDosError.cs" />
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\HResults.cs" Link="Common\System\HResults.cs" />
-    <Compile Include="$(CommonPath)\System\IO\FileSystem.Attributes.Windows.cs" Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\IO\FileSystem.DirectoryCreation.Windows.cs" Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Memory\FixedBufferExtensions.cs" Link="Common\System\Memory\FixedBufferExtensions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs" Link="Common\Interop\Windows\Interop.EncryptDecrypt.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.LongFileTime.cs" Link="Common\Interop\Windows\Interop.LongFileTime.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs" Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompareStringOrdinal.cs" Link="Common\Interop\Windows\Interop.CompareStringOrdinal.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFile.cs" Link="Common\Interop\Windows\Interop.CopyFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFileEx.cs" Link="Common\Interop\Windows\Interop.CopyFileEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteFile.cs" Link="Common\Interop\Windows\Interop.DeleteFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteVolumeMountPoint.cs" Link="Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Interop.FileOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindNextFile.cs" Link="Common\Interop\Windows\Interop.FindNextFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs" Link="Common\Interop\Windows\Interop.GetVolumeInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MoveFileEx.cs" Link="Common\Interop\Windows\Interop.MoveFileEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.RemoveDirectory.cs" Link="Common\Interop\Windows\Interop.RemoveDirectory.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReplaceFile.cs" Link="Common\Interop\Windows\Interop.ReplaceFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFileAttributes.cs" Link="Common\Interop\Windows\Interop.SetFileAttributes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFileInformationByHandle.cs" Link="Common\Interop\Windows\Interop.SetFileInformationByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.FILE_FULL_DIR_INFORMATION.cs" Link="Common\Interop\Windows\Interop.FILE_FULL_DIR_INFORMATION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.FILE_INFORMATION_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFORMATION_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs" Link="Common\Interop\Windows\Interop.IO_STATUS_BLOCK.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtCreateFile.cs" Link="Common\Interop\Windows\Interop.NtCreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryDirectoryFile.cs" Link="Common\Interop\Windows\Interop.NtQueryDirectoryFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs" Link="Common\Interop\Windows\Interop.NtStatus.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs" Link="Common\Interop\Windows\Interop.RtlNtStatusToDosError.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="$(CommonPath)System\HResults.cs" Link="Common\System\HResults.cs" />
+    <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs" Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs" Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs" Link="Common\System\Memory\FixedBufferExtensions.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Windows.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
@@ -132,18 +132,18 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Unlink.cs" Link="Common\Interop\Unix\Interop.Unlink.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Unix.cs" Link="Common\System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs" Link="System\IO\PathInternal.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChMod.cs" Link="Common\Interop\Unix\Interop.ChMod.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.CopyFile.cs" Link="Common\Interop\Unix\Interop.CopyFile.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEGid.cs" Link="Common\Interop\Unix\Interop.GetEGid.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LChflags.cs" Link="Common\Interop\Unix\Interop.LChflags.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\Interop.Link.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MkDir.cs" Link="Common\Interop\Unix\Interop.MkDir.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Rename.cs" Link="Common\Interop\Unix\Interop.Rename.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RmDir.cs" Link="Common\Interop\Unix\Interop.RmDir.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.Span.cs" Link="Common\Interop\Unix\Interop.Stat.Span.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.UTimensat.cs" Link="Common\Interop\Unix\Interop.UTimensat.cs" />
-    <Compile Include="$(CommonPath)\System\Text\ValueUtf8Converter.cs" Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs" Link="Common\Interop\Unix\Interop.ChMod.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs" Link="Common\Interop\Unix\Interop.CopyFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs" Link="Common\Interop\Unix\Interop.GetEGid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs" Link="Common\Interop\Unix\Interop.LChflags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\Interop.Link.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs" Link="Common\Interop\Unix\Interop.MkDir.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Rename.cs" Link="Common\Interop\Unix\Interop.Rename.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RmDir.cs" Link="Common\Interop\Unix\Interop.RmDir.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs" Link="Common\Interop\Unix\Interop.Stat.Span.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UTimensat.cs" Link="Common\Interop\Unix\Interop.UTimensat.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs" Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="System\IO\FileStatus.Unix.cs" />

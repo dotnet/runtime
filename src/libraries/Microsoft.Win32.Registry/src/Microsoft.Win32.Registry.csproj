@@ -27,10 +27,10 @@
     <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
@@ -39,7 +39,7 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
       <Link>Interop\Windows\Interop.RegCloseKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegConnectRegistry.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegConnectRegistry.cs">
       <Link>Common\Interop\Windows\Interop.RegConnectRegistry.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">

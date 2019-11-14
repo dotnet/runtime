@@ -11,7 +11,7 @@
     <Compile Include="WellKnownSidTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
       <Link>Common\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
   </ItemGroup>

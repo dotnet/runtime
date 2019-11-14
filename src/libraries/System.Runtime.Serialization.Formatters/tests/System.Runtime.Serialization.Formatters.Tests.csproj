@@ -22,10 +22,10 @@
     <Compile Include="SurrogateSelectorTests.cs" />
     <Compile Include="TargetFrameworkMoniker.cs" />
     <Compile Include="TypeSerializableValue.cs" />
-    <Compile Include="$(CommonTestPath)\System\NonRuntimeType.cs">
+    <Compile Include="$(CommonTestPath)System\NonRuntimeType.cs">
       <Link>Common\System\NonRuntimeType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>

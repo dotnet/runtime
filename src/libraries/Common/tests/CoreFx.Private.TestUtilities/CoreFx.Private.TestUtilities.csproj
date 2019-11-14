@@ -35,28 +35,28 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
@@ -65,7 +65,7 @@
   </ItemGroup>
   <!-- Unix imports -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs">

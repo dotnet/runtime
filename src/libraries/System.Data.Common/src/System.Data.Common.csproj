@@ -162,7 +162,7 @@
     <Compile Include="System\Data\UpdateRowSource.cs" />
     <Compile Include="System\Data\Common\UInt64Storage.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.Common.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs">
       <Link>System\Data\Common\AdapterUtil.cs</Link>
     </Compile>
     <Compile Include="System\Data\Common\BigIntegerStorage.cs" />
@@ -192,10 +192,10 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionOptions.Common.cs">
       <Link>System\Data\Common\DbConnectionOptions.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
     </Compile>
     <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
@@ -229,10 +229,10 @@
     <Compile Include="System\Data\Common\Int16Storage.cs" />
     <Compile Include="System\Data\Common\Int32Storage.cs" />
     <Compile Include="System\Data\Common\Int64Storage.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs">
       <Link>System\Data\Common\MultipartIdentifier.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Data\Common\NameValuePair.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs">
       <Link>System\Data\Common\NameValuePair.cs</Link>
     </Compile>
     <Compile Include="System\Data\Common\ObjectStorage.cs" />
@@ -287,7 +287,7 @@
     <Compile Include="System\Data\SQLTypes\SQLInt32.cs" />
     <Compile Include="System\Data\SQLTypes\SQLInt64.cs" />
     <Compile Include="System\Data\SQLTypes\SQLMoney.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Common\SQLResource.cs">
+    <Compile Include="$(CommonPath)System\Data\Common\SQLResource.cs">
       <Link>System\Data\SQLTypes\SQLResource.cs</Link>
     </Compile>
     <Compile Include="System\Data\SQLTypes\SQLSingle.cs" />

@@ -108,20 +108,20 @@
     <Compile Include="System\Globalization\TextElementEnumeratorTests.cs" />
     <Compile Include="System\Globalization\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.11.0.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.11.0.txt">
       <Link>CharUnicodeInfo\UnicodeData.11.0.txt</Link>
       <LogicalName>UnicodeData.11.0.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.8.0.txt">
       <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
       <LogicalName>UnicodeData.8.0.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData63.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData63.txt">
       <Link>CharUnicodeInfo\UnicodeData6.3.txt</Link>
       <LogicalName>UnicodeData6.3.txt</LogicalName>
     </EmbeddedResource>

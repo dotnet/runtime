@@ -17,31 +17,31 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs">
       <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MapViewOfFile.cs">
       <Link>Common\Interop\Windows\Interop.MapViewOfFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.OpenFileMapping.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenFileMapping.cs">
       <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VirtualAlloc.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc.cs">
       <Link>Common\Interop\Windows\Interop.VirtualAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
       <Link>Common\Interop\Windows\Interop.GlobalMemoryStatusEx.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
@@ -50,13 +50,13 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileAttributes.cs">
       <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs">
       <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FlushViewOfFile.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FlushViewOfFile.cs">
       <Link>Common\Interop\Windows\Interop.FlushViewOfFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs">
       <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
@@ -65,16 +65,16 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Windows\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.HandleOptions.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs">
       <Link>Common\Interop\Windows\Interop.HandleOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
       <Link>Common\Interop\Windows\Interop.MEMORY_BASIC_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MemOptions.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs">
       <Link>Common\Interop\Windows\Interop.MemOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.PipeOptions.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PipeOptions.cs">
       <Link>Common\Interop\Windows\Interop.PipeOptions.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
@@ -83,10 +83,10 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.UnmapViewOfFile.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.UnmapViewOfFile.cs">
       <Link>Common\Interop\Windows\Interop.UnmapViewOfFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VirtualQuery.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery.cs">
       <Link>Common\Interop\Windows\Interop.VirtualQuery.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
@@ -98,25 +98,25 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Common\Interop\Unix\Interop.Fcntl.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
       <Link>Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MMap.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
       <Link>Common\Interop\Unix\Interop.MMap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MUnmap.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
       <Link>Common\Interop\Unix\Interop.MUnmap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MSync.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MSync.cs">
       <Link>Common\Interop\Unix\Interop.MSync.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs">
@@ -138,10 +138,10 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\Interop.FTruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MAdvise.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MAdvise.cs">
       <Link>Common\Interop\Unix\Interop.MAdvise.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ShmOpen.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ShmOpen.cs">
       <Link>Common\Interop\Unix\Interop.ShmOpen.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Unlink.cs">

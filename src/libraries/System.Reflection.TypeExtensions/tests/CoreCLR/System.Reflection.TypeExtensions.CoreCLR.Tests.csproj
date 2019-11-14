@@ -3,7 +3,7 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="..\..\..\Common\tests\Data\TinyAssembly.dll">
+    <None Include="$(CommonTestPath)Data\TinyAssembly.dll">
       <Link>TinyAssembly.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

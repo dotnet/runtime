@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(CommonTestPath)\Tests.props" />
+  <Import Project="$(CommonTestPath)Tests.props" />
   <PropertyGroup>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\IO\PositionValueStream.cs">
+    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs">
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />

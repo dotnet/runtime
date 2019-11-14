@@ -43,7 +43,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs">

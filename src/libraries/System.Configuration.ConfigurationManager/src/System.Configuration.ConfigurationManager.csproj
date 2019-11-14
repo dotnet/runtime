@@ -236,7 +236,7 @@
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
-    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
     <Compile Include="System\Configuration\SettingsProperty.cs" />
@@ -244,7 +244,7 @@
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
     <Compile Include="System\UriIdnScope.cs" />
-    <Compile Include="$(CommonPath)\System\IO\TempFileCollection.cs">
+    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs">
       <Link>Common\System\IO\TempFileCollection.cs</Link>
     </Compile>
   </ItemGroup>

@@ -68,7 +68,7 @@
     <Compile Include="System\CodeDom\CodeNamespaceCollection.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImport.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImportCollection.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" />
     <Compile Include="System\CodeDom\CodeObjectCreateExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
@@ -96,8 +96,8 @@
     <Compile Include="System\CodeDom\CodeTypeOfExpression.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameter.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameterCollection.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
     <Compile Include="System\CodeDom\CodeTypeReferenceExpression.cs" />
     <Compile Include="System\CodeDom\CodeVariableDeclarationStatement.cs" />
     <Compile Include="System\CodeDom\CodeVariableReferenceExpression.cs" />
@@ -119,11 +119,11 @@
     <Compile Include="System\CodeDom\Compiler\ICodeParser.cs" />
     <Compile Include="System\CodeDom\Compiler\ExposedTabStringIndentedTextWriter.cs" />
     <Compile Include="System\CodeDom\Compiler\LanguageOptions.cs" />
-    <Compile Include="$(CommonPath)\System\IO\TempFileCollection.cs" />
+    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs" />
     <Compile Include="System\CodeDom\FieldDirection.cs" />
     <Compile Include="System\CodeDom\MemberAttributes.cs" />
     <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
-    <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
+    <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

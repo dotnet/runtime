@@ -258,8 +258,9 @@
 
   <!-- Set up some common paths -->
   <PropertyGroup>
-    <CommonPath>$(LibrariesProjectRoot)Common\src</CommonPath>
-    <CommonTestPath>$(LibrariesProjectRoot)Common\tests</CommonTestPath>
+    <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
+    <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->

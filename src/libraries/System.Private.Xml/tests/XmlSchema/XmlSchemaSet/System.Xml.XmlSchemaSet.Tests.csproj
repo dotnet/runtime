@@ -34,7 +34,7 @@
     <Compile Include="TC_SchemaSet_ValidationEventHandler.cs" />
     <Compile Include="TC_SchemaSet_XmlNameTable.cs" />
     <Compile Include="TC_SchemaSet_XmlResolver.cs" />
-    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
   </ItemGroup>

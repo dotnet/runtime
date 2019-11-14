@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
       <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">

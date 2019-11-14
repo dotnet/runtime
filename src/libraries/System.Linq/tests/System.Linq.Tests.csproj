@@ -68,10 +68,10 @@
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
     <Compile Include="ZipTests.netcoreapp.cs" />
-    <Compile Include="$(CommonTestPath)\System\Linq\SkipTakeData.cs">
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs">
       <Link>Common\System\Linq\SkipTakeData.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
     <Compile Include="GroupByTests.DebuggerAttributes.cs" />

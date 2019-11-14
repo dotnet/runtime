@@ -28,10 +28,10 @@
     <Compile Include="System\Net\IPAddress.cs" />
     <Compile Include="System\Net\IPAddressParser.cs" />
     <Compile Include="System\Net\IPEndPoint.cs" />
-    <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs">
       <Link>System\Net\IPv4AddressHelper.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs">
       <Link>System\Net\IPv6AddressHelper.Common.cs</Link>
     </Compile>
     <Compile Include="System\Net\IWebProxy.cs" />
@@ -49,43 +49,43 @@
     <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBinding.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+    <Compile Include="$(CommonPath)System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
+    <Compile Include="$(CommonPath)System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\CookieComparer.cs">
+    <Compile Include="$(CommonPath)System\Net\CookieComparer.cs">
       <Link>ProductionCode\System\Net\CookieComparer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
+    <Compile Include="$(CommonPath)System\Net\CookieFields.cs">
       <Link>Common\System\Net\CookieFields.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\CookieParser.cs">
+    <Compile Include="$(CommonPath)System\Net\CookieParser.cs">
       <Link>Common\System\Net\CookieParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs">
       <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs">
+    <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs">
       <Link>Common\System\Net\TcpValidationHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
+    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs">
       <Link>Common\System\Net\SocketAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NegotiationInfoClass.cs">
+    <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs">
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformation.cs">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Marvin.cs">
+    <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
@@ -95,103 +95,103 @@
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
     <!-- Logging -->
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.Alg.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.Alg.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.Alg.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SchProtocols.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SchProtocols.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.ErrorCodes.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.ErrorCodes.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\SocketException.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalFree.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\SocketException.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs">
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntry.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.HostEntry.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPAddress.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs">
       <Link>Common\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>

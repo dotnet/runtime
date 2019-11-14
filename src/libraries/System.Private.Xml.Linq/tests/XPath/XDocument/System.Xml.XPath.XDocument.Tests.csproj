@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(CommonTestPath)\Tests.props" />
+  <Import Project="$(CommonTestPath)Tests.props" />
   <PropertyGroup>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
-    <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
+    <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

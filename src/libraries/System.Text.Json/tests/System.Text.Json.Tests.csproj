@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs">
       <Link>CommonTest\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
     <Compile Include="BitStackTests.cs" />
@@ -115,7 +115,7 @@
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Compile Include="$(CommonPath)\System\Buffers\ArrayBufferWriter.cs">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
       <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
     </Compile>
   </ItemGroup>
