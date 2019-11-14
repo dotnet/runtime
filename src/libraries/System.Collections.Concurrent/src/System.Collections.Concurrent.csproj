@@ -15,7 +15,7 @@
     <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
     <Compile Include="System\Collections\Concurrent\Partitioner.cs" />
     <Compile Include="System\Collections\Concurrent\PartitionerStatic.cs" />
-    <Compile Include="$(CoreLibDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
       <Link>System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs</Link>
     </Compile>
   </ItemGroup>

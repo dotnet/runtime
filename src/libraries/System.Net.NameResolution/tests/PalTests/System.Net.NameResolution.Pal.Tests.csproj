@@ -101,7 +101,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
       <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLi\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
@@ -136,16 +136,16 @@
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>System\Net\SocketProtocolSupportPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\CoreLib\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">

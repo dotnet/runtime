@@ -125,7 +125,7 @@
     <PropertyGroup Condition="'$(CoreCLROverridePath)' != ''">
       <_runtimeDirectory>$(CoreCLROverridePath)</_runtimeDirectory>
       <_crossgenPath>$(CoreCLROverridePath)/crossgen$(ApplicationFileExtension)</_crossgenPath>
-      <_coreLibDirectory>$(CoreCLROverridePath)</_coreLibDirectory>
+      <_CoreLibSharedDirectory>$(CoreCLROverridePath)</_CoreLibSharedDirectory>
       <_jitPath>$(CoreClrOverridePath)/$(_crossHostArch)/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
     </PropertyGroup>
 

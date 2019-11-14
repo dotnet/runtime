@@ -26,7 +26,7 @@
     <Compile Include="System\Composition\TypedParts\ImportInfo.cs" />
     <Compile Include="System\Composition\TypedParts\TypedPartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\Util\DirectAttributeContext.cs" />
-    <Compile Include="$(CoreLibDir)System\Numerics\Hashing\HashHelpers.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>

@@ -18,10 +18,10 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
     <Compile Include="System\IO\Pipes\PipeTransmissionMode.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
@@ -29,28 +29,28 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
       <Link>Interop\Windows\Interop.FreeLibrary.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Microsoft\Win32\SafeLibraryHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
       <Link>Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
@@ -65,16 +65,16 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
       <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FileTypes.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs">
       <Link>Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.GetCurrentProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
       <Link>Interop\Windows\Interop.GetFileType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreatePipe_SafePipeHandle.cs">
@@ -95,22 +95,22 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetNamedPipeHandleState.cs">
       <Link>Common\Interop\Windows\Interop.SetNamedPipeHandleState.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
       <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
       <Link>Common\Interop\Windows\Interop.FlushFileBuffers.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DisconnectNamedPipe.cs">
@@ -128,7 +128,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.ImpersonateNamedPipeClient.cs">
       <Link>Common\Interop\Windows\Interop.ImpersonateNamedPipeClient.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
@@ -150,7 +150,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.cs">
       <Link>Common\Interop\Windows\Interop.CreateNamedPipeClient.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
       <Link>Interop\Windows\Interop.LoadLibraryEx.cs</Link>
     </Compile>
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
@@ -167,13 +167,13 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.IOErrors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
       <Link>Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.Pipe.cs">
@@ -182,10 +182,10 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Common\Interop\Unix\Interop.Fcntl.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.FLock.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPeerUserName.cs">
@@ -194,13 +194,13 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MkDir.cs">
       <Link>Common\Interop\Unix\Interop.MkDir.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Open.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Permissions.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
@@ -212,13 +212,13 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Read.Pipe.cs">
       <Link>Common\Interop\Unix\Interop.Read.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Unlink.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\Interop.Unlink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.Pipe.cs">
       <Link>Common\Interop\Unix\Interop.Write.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.Pipe.cs">
@@ -227,7 +227,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPeerID.cs">
       <Link>Common\Interop\Unix\Interop.GetPeerID.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetEUid.cs">

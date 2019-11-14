@@ -19,7 +19,7 @@
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
-    <Compile Include="$(CoreLibDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
     <None Include="DiagnosticSourceUsersGuide.md" />

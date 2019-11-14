@@ -15,9 +15,9 @@
   </ItemGroup>
   <!-- All targets files -->
   <ItemGroup>
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.cs" Link="System\IO\PathInternal.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs" Link="System\IO\StreamHelpers.CopyValidation.cs" />
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs" Link="System\IO\PathInternal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs" Link="System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -57,26 +57,26 @@
   </ItemGroup>
   <!-- Windows files -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOLEAN.cs" Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Interop\Windows\Interop.FILE_TIME.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Interop\Windows\Interop.FindClose.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs" Link="Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs" Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Interop.MAX_PATH.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" Link="Interop\Windows\Interop.SetThreadErrorMode.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" Link="Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs" Link="Interop\Windows\Interop.WIN32_FIND_DATA.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\DisableMediaInsertionPrompt.cs" Link="Common\System\IO\DisableMediaInsertionPrompt.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\DriveInfoInternal.Windows.cs" Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Windows.cs" Link="System\IO\PathInternal.Windows.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOLEAN.cs" Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Interop\Windows\Interop.FILE_TIME.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Interop\Windows\Interop.FindClose.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs" Link="Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs" Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" Link="Interop\Windows\Interop.SetThreadErrorMode.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" Link="Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs" Link="Interop\Windows\Interop.WIN32_FIND_DATA.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs" Link="Common\System\IO\DisableMediaInsertionPrompt.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs" Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs" Link="Common\Interop\Windows\Interop.EncryptDecrypt.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -121,17 +121,17 @@
   </ItemGroup>
   <!-- Unix files -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs" Link="Interop\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.IOErrors.cs" Link="Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\Interop.GetEUid.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.MountPoints.cs" Link="Common\Interop\Unix\Interop.MountPoints.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Read.cs" Link="Common\Interop\Unix\Interop.Read.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.ReadDir.cs" Link="Common\Interop\Unix\Interop.ReadDir.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Unlink.cs" Link="Common\Interop\Unix\Interop.Unlink.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\DriveInfoInternal.Unix.cs" Link="Common\System\IO\DriveInfoInternal.Unix.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Unix.cs" Link="System\IO\PathInternal.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs" Link="Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs" Link="Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.MountPoints.cs" Link="Common\Interop\Unix\Interop.MountPoints.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Read.cs" Link="Common\Interop\Unix\Interop.Read.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ReadDir.cs" Link="Common\Interop\Unix\Interop.ReadDir.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Unlink.cs" Link="Common\Interop\Unix\Interop.Unlink.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Unix.cs" Link="Common\System\IO\DriveInfoInternal.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs" Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChMod.cs" Link="Common\Interop\Unix\Interop.ChMod.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.CopyFile.cs" Link="Common\Interop\Unix\Interop.CopyFile.cs" />

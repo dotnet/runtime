@@ -16,7 +16,7 @@
     <Compile Include="System\Collections\SortedList.cs" />
     <Compile Include="System\Collections\Stack.cs" />
     <Compile Include="System\Collections\Specialized\CollectionsUtil.cs" />
-    <Compile Include="$(CoreLibDir)System\Collections\KeyValuePairs.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\KeyValuePairs.cs">
       <Link>Common\System\Collections\KeyValuePairs.cs</Link>
     </Compile>
   </ItemGroup>

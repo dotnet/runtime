@@ -39,7 +39,7 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
@@ -81,7 +81,7 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">

@@ -59,7 +59,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2UI.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SafeX509Handles.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Utils.cs" />
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="System\Drawing\FontConverter.cs" />

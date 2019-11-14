@@ -307,10 +307,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
@@ -424,7 +424,7 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\ErrorCodeHelper.cs">
       <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\CngPkcs8.cs">

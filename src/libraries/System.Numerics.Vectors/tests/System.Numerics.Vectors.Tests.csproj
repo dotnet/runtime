@@ -5,7 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibDir)System\Numerics\ConstantHelper.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ConstantHelper.tt</DependentUpon>
@@ -33,12 +33,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(CoreLibDir)System\Numerics\ConstantHelper.tt">
+    <None Include="$(CoreLibSharedDir)System\Numerics\ConstantHelper.tt">
       <Link>ConstantHelper.tt</Link>
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ConstantHelper.cs</LastGenOutput>
     </None>
-    <None Include="$(CoreLibDir)System\Numerics\GenerationConfig.ttinclude">
+    <None Include="$(CoreLibSharedDir)System\Numerics\GenerationConfig.ttinclude">
       <Link>GenerationConfig.ttinclude</Link>
     </None>
     <None Include="GenericVectorTests.tt">

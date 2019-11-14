@@ -260,9 +260,6 @@
   <PropertyGroup>
     <CommonPath>$(LibrariesProjectRoot)Common\src</CommonPath>
     <CommonTestPath>$(LibrariesProjectRoot)Common\tests</CommonTestPath>
-
-    <CoreLibDir Condition="'$(IsRuntimeRepository)' != 'true'">$([MSBuild]::NormalizeDirectory('$(CommonPath)', 'CoreLib'))</CoreLibDir>
-    <CoreLibDir Condition="'$(IsRuntimeRepository)' == 'true'">$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibDir>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
@@ -368,7 +365,7 @@
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
-    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)Common\src\CoreLib\CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <CodeAnalysisRuleset>$(CoreLibSharedDir)CodeAnalysis.ruleset</CodeAnalysisRuleset>
     <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
   </PropertyGroup>
 

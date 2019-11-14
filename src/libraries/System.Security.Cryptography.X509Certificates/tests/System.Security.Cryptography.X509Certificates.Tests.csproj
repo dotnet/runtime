@@ -68,28 +68,28 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FChMod.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Permissions.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Interop\Unix\System.Native\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Interop\Unix\System.Native\Interop.Stat.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\PersistedFiles.Unix.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\PersistedFiles.Names.Unix.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
     <Compile Include="HostnameMatchTests.Unix.cs" />

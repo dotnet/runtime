@@ -5,7 +5,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
       <Link>System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs</Link>
     </Compile>
     <!-- Common Collections tests -->

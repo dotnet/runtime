@@ -78,7 +78,7 @@
         <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
           <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
         </Compile>
-        <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+        <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
           <Link>ProductionCode\System\Threading\Tasks\TaskToApm.cs</Link>
         </Compile>
       </ItemGroup>

@@ -55,7 +55,7 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
-    <Compile Include="$(CoreLibDir)System\Collections\HashHelpers.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>

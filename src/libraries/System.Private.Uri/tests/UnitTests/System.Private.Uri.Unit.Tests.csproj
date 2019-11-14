@@ -16,7 +16,7 @@
     <Compile Include="..\..\src\System\UriHelper.cs" />
     <Compile Include="..\..\src\System\IriHelper.cs" />
     <Compile Include="..\..\src\System\UriEnumTypes.cs" />
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>

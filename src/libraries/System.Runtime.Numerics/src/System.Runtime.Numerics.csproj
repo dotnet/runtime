@@ -23,7 +23,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\FormatProvider.Number.cs">
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>

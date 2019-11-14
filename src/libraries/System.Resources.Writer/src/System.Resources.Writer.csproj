@@ -11,7 +11,7 @@
     <Compile Include="System\Resources\IResourceWriter.cs" />
     <Compile Include="System\Resources\ResourceWriter.core.cs" />
     <Compile Include="$(CommonPath)\System\Resources\ResourceWriter.cs" Link="System\Resources\ResourceWriter.cs" />
-    <Compile Include="$(CoreLibDir)System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../System.Resources.ResourceManager/ref/System.Resources.ResourceManager.csproj" />

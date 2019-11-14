@@ -99,13 +99,13 @@
     <Compile Include="$(CommonPath)\System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\PasteArguments.cs">
+    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs">
       <Link>System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="Tests\Interop\cgroupsTests.cs" />
@@ -139,47 +139,47 @@
     </Compile>
     <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
     <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
-    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs">
       <Link>System\IO\PathInternal.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Windows.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
-    <Compile Include="$(CoreLibDir)System\PasteArguments.Windows.cs">
+    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs">
       <Link>System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
-    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Unix.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs">
       <Link>System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\PasteArguments.Unix.cs">
+    <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs">
       <Link>System\PasteArguments.Unix.cs</Link>
     </Compile>
   </ItemGroup>

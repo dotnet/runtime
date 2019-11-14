@@ -89,13 +89,13 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\WinRTFolderPaths.cs">
+    <Compile Include="$(CoreLibSharedDir)System\WinRTFolderPaths.cs">
       <Link>Common\System\WinRTFolderPaths.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
@@ -107,7 +107,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs">
+    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
   </ItemGroup>
