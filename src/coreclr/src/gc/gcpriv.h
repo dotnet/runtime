@@ -2959,7 +2959,7 @@ protected:
     /*------------ Multiple non isolated heaps ----------------*/
 #ifdef MULTIPLE_HEAPS
     PER_HEAP_ISOLATED
-    BOOL   create_thread_support (unsigned number_of_heaps);
+    BOOL   create_thread_support (int number_of_heaps);
     PER_HEAP_ISOLATED
     void destroy_thread_support ();
     PER_HEAP
