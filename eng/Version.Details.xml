@@ -1,60 +1,60 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Targets" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="Microsoft.NETCore.Targets" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19531.9">
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>12fcf91ea6493c2d970188ca6884b2bc6e804986</Sha>
+      <Sha>8743c312a9d1ce4035140046d44bb959c44f194f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19531.9">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>12fcf91ea6493c2d970188ca6884b2bc6e804986</Sha>
+      <Sha>8743c312a9d1ce4035140046d44bb959c44f194f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.19531.9">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>12fcf91ea6493c2d970188ca6884b2bc6e804986</Sha>
+      <Sha>8743c312a9d1ce4035140046d44bb959c44f194f</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19525.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19563.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>cea2bba3c295c5280d01900f7ae5492951ad8995</Sha>
+      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19525.1">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19563.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>cea2bba3c295c5280d01900f7ae5492951ad8995</Sha>
+      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha1.19525.1">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha1.19563.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>cea2bba3c295c5280d01900f7ae5492951ad8995</Sha>
+      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="5.0.0-alpha.1.19531.5">
+    <Dependency Name="System.Text.Json" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>898d47b4df506e30e54605a3a5c9fdec44f74916</Sha>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19531.1">
+    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19563.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>a2bca7f4f89c899c2c0325c2790faf6f7d29870c</Sha>
+      <Sha>90b5f3b33752884a93e0f01b1a5d901aace2bc18</Sha>
     </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19523.1">
+    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19557.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>e092fdbde46b6f904663d1a407fd1de29f5e7902</Sha>
+      <Sha>742b71402b3f6c88fc22956a819d7ea00408f42c</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
