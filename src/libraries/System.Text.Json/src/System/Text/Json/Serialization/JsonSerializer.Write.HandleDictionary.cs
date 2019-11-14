@@ -81,8 +81,14 @@ namespace System.Text.Json
                         jsonPropertyInfo.GetDictionaryKeyAndValue(ref state.Current, out key, out value);
                     }
 
+                    if (options.DictionaryKeyPolicy != null && state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                    {
+                        key = options.DictionaryKeyPolicy.ConvertName(key);
+                    }
+
                     // An object or another enumerator requires a new stack frame.
                     state.Push(elementClassInfo, value);
+
                     state.Current.KeyName = key;
                 }
 
