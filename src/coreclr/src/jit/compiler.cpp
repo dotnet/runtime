@@ -6139,7 +6139,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #ifdef DEBUG
     if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x\n", Compiler::jitTotalMethodCompiled, info.compClassName,
+        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x %s\n", Compiler::jitTotalMethodCompiled, info.compClassName,
                info.compMethodName, info.compILCodeSize, info.compMethodHash(), compGetTieringName());
     }
     if (compIsForInlining())
