@@ -292,11 +292,11 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
-    <Compile Include="shared\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
-    <Compile Include="shared\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
-    <Compile Include="shared\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
-    <Compile Include="shared\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
-    <Compile Include="shared\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs" />
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Char8.cs" />
@@ -449,7 +449,7 @@
 
   <!-- Analyzers -->
   <PropertyGroup>
-    <CodeAnalysisRuleset>shared\CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <CodeAnalysisRuleset>$(SharedBclSourcesRoot)\CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
