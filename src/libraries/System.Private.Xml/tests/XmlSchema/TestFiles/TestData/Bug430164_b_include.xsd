@@ -1,0 +1,27 @@
+<xsd:schema xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="ns-b" xmlns="ns-b">	 
+  
+  	<xsd:include schemaLocation="Bug430164.xsd">
+     		<xsd:annotation id="a2">
+			<xsd:appinfo/>
+			<xsd:documentation source="foo"/>
+     		</xsd:annotation>
+  	</xsd:include>
+
+	<xsd:complexType name="ct-A">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="a1" type="xsd:int"/>
+			<xsd:element name="a2" type="xsd:boolean"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e1" type="ct-A" />
+	
+	<xsd:element name="root">
+		<xsd:complexType>
+			<xsd:choice maxOccurs="unbounded">
+				<xsd:any namespace="##any" processContents="strict"/>
+			</xsd:choice>
+		</xsd:complexType>
+	</xsd:element>
+	
+</xsd:schema>

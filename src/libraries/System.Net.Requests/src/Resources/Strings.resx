@@ -1,0 +1,270 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_unknown_prefix" xml:space="preserve">
+    <value>The URI prefix is not recognized.</value>
+  </data>
+  <data name="net_reqsubmitted" xml:space="preserve">
+    <value>This operation cannot be performed after the request has been submitted.</value>
+  </data>
+  <data name="net_io_timeout_use_ge_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value &gt;= 0.</value>
+  </data>
+  <data name="net_writestarted" xml:space="preserve">
+    <value>This property cannot be set after writing has started.</value>
+  </data>
+  <data name="net_badmethod" xml:space="preserve">
+    <value>Cannot set null or blank methods on request.</value>
+  </data>
+  <data name="net_io_invalidasyncresult" xml:space="preserve">
+    <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_servererror" xml:space="preserve">
+    <value>The remote server returned an error: ({0}) {1}.</value>
+  </data>
+  <data name="net_reqaborted" xml:space="preserve">
+    <value>The request was aborted: The request was canceled.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="net_OperationNotSupportedException" xml:space="preserve">
+    <value>This operation is not supported.</value>
+  </data>
+  <data name="net_PropertyNotImplementedException" xml:space="preserve">
+    <value>This property is not implemented by this class.</value>
+  </data>
+  <data name="net_nouploadonget" xml:space="preserve">
+    <value>Cannot send a content-body with this verb-type.</value>
+  </data>
+  <data name="net_repcall" xml:space="preserve">
+    <value>Cannot re-call BeginGetRequestStream/BeginGetResponse while a previous call is still in progress.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="net_requestaborted" xml:space="preserve">
+    <value>The request was aborted: {0}.</value>
+  </data>
+  <data name="net_clsmall" xml:space="preserve">
+    <value>The Content-Length value must be greater than or equal to zero.</value>
+  </data>
+  <data name="net_webstatus_Timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
+  <data name="net_baddate" xml:space="preserve">
+    <value>The value of the date string in the header is invalid.</value>
+  </data>
+  <data name="net_connarg" xml:space="preserve">
+    <value>Keep-Alive and Close may not be set using this property.</value>
+  </data>
+  <data name="net_fromto" xml:space="preserve">
+    <value>The From parameter cannot be greater than To.</value>
+  </data>
+  <data name="net_needchunked" xml:space="preserve">
+    <value>TransferEncoding requires the SendChunked property to be set to true.</value>
+  </data>
+  <data name="net_no100" xml:space="preserve">
+    <value>100-Continue may not be set using this property.</value>
+  </data>
+  <data name="net_nochunked" xml:space="preserve">
+    <value>Chunked encoding must be set via the SendChunked property.</value>
+  </data>
+  <data name="net_nottoken" xml:space="preserve">
+    <value>The supplied string is not a valid HTTP token.</value>
+  </data>
+  <data name="net_rangetoosmall" xml:space="preserve">
+    <value>The From or To parameter cannot be less than 0.</value>
+  </data>
+  <data name="net_rangetype" xml:space="preserve">
+    <value>A different range specifier has already been added to this request.</value>
+  </data>
+  <data name="net_toosmall" xml:space="preserve">
+    <value>The specified value must be greater than 0.</value>
+  </data>
+  <data name="net_wrongversion" xml:space="preserve">
+    <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
+  </data>
+  <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
+    <value>Specified value has invalid Control characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidCRLFChars" xml:space="preserve">
+    <value>Specified value has invalid CRLF characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidHeaderChars" xml:space="preserve">
+    <value>Specified value has invalid HTTP Header characters.</value>
+  </data>
+  <data name="net_timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_PropertyNotSupportedException" xml:space="preserve">
+    <value>This property is not supported by this class.</value>
+  </data>
+  <data name="net_InvalidStatusCode" xml:space="preserve">
+    <value>The server returned a status code outside the valid range of 100-599.</value>
+  </data>
+  <data name="net_io_timeout_use_gt_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
+  </data>
+  <data name="net_ftp_servererror" xml:space="preserve">
+    <value>The remote server returned an error: {0}.</value>
+  </data>
+  <data name="net_ftp_active_address_different" xml:space="preserve">
+    <value>The data connection was made from an address that is different than the address to which the FTP connection was made.</value>
+  </data>
+  <data name="net_ftp_invalid_method_name" xml:space="preserve">
+    <value>FTP Method names cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_invalid_renameto" xml:space="preserve">
+    <value>The RenameTo filename cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_invalid_response_filename" xml:space="preserve">
+    <value>The server returned the filename ({0}) which is not valid.</value>
+  </data>
+  <data name="net_ftp_invalid_status_response" xml:space="preserve">
+    <value>The status response ({0}) is not expected in response to '{1}' command.</value>
+  </data>
+  <data name="net_ftp_invalid_uri" xml:space="preserve">
+    <value>The requested URI is invalid for this FTP command.</value>
+  </data>
+  <data name="net_ftp_no_defaultcreds" xml:space="preserve">
+    <value>Default credentials are not supported on an FTP request.</value>
+  </data>
+  <data name="net_ftp_response_invalid_format" xml:space="preserve">
+    <value>The response string '{0}' has invalid format.</value>
+  </data>
+  <data name="net_ftp_server_failed_passive" xml:space="preserve">
+    <value>The server failed the passive mode request with status response ({0}).</value>
+  </data>
+  <data name="net_ftp_unsupported_method" xml:space="preserve">
+    <value>This method is not supported.</value>
+  </data>
+  <data name="net_ftp_protocolerror" xml:space="preserve">
+    <value>The underlying connection was closed: The server committed a protocol violation</value>
+  </data>
+  <data name="net_ftp_receivefailure" xml:space="preserve">
+    <value>The underlying connection was closed: An unexpected error occurred on a receive</value>
+  </data>
+  <data name="net_webstatus_NameResolutionFailure" xml:space="preserve">
+    <value>The remote name could not be resolved</value>
+  </data>
+  <data name="net_webstatus_ConnectFailure" xml:space="preserve">
+    <value>Unable to connect to the remote server</value>
+  </data>
+  <data name="net_ftpstatuscode_ServiceNotAvailable" xml:space="preserve">
+    <value>Service not available, closing control connection.</value>
+  </data>
+  <data name="net_ftpstatuscode_CantOpenData" xml:space="preserve">
+    <value>Can't open data connection</value>
+  </data>
+  <data name="net_ftpstatuscode_ConnectionClosed" xml:space="preserve">
+    <value>Connection closed; transfer aborted</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailableOrBusy" xml:space="preserve">
+    <value>File unavailable (e.g., file busy)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedLocalProcessingError" xml:space="preserve">
+    <value>Local error in processing</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenInsufficientSpace" xml:space="preserve">
+    <value>Insufficient storage space in system</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandSyntaxError" xml:space="preserve">
+    <value>Syntax error, command unrecognized</value>
+  </data>
+  <data name="net_ftpstatuscode_ArgumentSyntaxError" xml:space="preserve">
+    <value>Syntax error in parameters or arguments</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandNotImplemented" xml:space="preserve">
+    <value>Command not implemented</value>
+  </data>
+  <data name="net_ftpstatuscode_BadCommandSequence" xml:space="preserve">
+    <value>Bad sequence of commands</value>
+  </data>
+  <data name="net_ftpstatuscode_NotLoggedIn" xml:space="preserve">
+    <value>Not logged in</value>
+  </data>
+  <data name="net_ftpstatuscode_AccountNeeded" xml:space="preserve">
+    <value>Need account for storing files</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailable" xml:space="preserve">
+    <value>File unavailable (e.g., file not found, no access)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedUnknownPageType" xml:space="preserve">
+    <value>Page type unknown</value>
+  </data>
+  <data name="net_ftpstatuscode_FileActionAborted" xml:space="preserve">
+    <value>Exceeded storage allocation (for current directory or data set)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFilenameNotAllowed" xml:space="preserve">
+    <value>File name not allowed</value>
+  </data>
+  <data name="net_invalid_host" xml:space="preserve">
+    <value>The specified value is not a valid Host header string.</value>
+  </data>
+</root>

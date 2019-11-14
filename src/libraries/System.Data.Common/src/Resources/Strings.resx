@@ -1,0 +1,529 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ADP_CollectionIndexString" xml:space="preserve"><value>An {0} with {1} '{2}' is not contained by this {3}.</value></data>
+  <data name="ADP_CollectionInvalidType" xml:space="preserve"><value>The {0} only accepts non-null {1} type objects, not {2} objects.</value></data>
+  <data name="ADP_CollectionIsNotParent" xml:space="preserve"><value>The {0} is already contained by another {1}.</value></data>
+  <data name="ADP_CollectionNullValue" xml:space="preserve"><value>The {0} only accepts non-null {1} type objects.</value></data>
+  <data name="ADP_CollectionRemoveInvalidObject" xml:space="preserve"><value>Attempted to remove an {0} that is not contained by this {1}.</value></data>
+  <data name="ADP_CollectionUniqueValue" xml:space="preserve"><value>The {0}.{1} is required to be unique, '{2}' already exists in the collection.</value></data>
+  <data name="ADP_ConnectionStateMsg_Closed" xml:space="preserve"><value>The connection's current state is closed.</value></data>
+  <data name="ADP_ConnectionStateMsg_Connecting" xml:space="preserve"><value>The connection's current state is connecting.</value></data>
+  <data name="ADP_ConnectionStateMsg_Open" xml:space="preserve"><value>The connection's current state is open.</value></data>
+  <data name="ADP_ConnectionStateMsg_OpenExecuting" xml:space="preserve"><value>The connection's current state is executing.</value></data>
+  <data name="ADP_ConnectionStateMsg_OpenFetching" xml:space="preserve"><value>The connection's current state is fetching.</value></data>
+  <data name="ADP_ConnectionStateMsg" xml:space="preserve"><value>The connection's current state: {0}.</value></data>
+  <data name="ADP_ConnectionStringSyntax" xml:space="preserve"><value>Format of the initialization string does not conform to specification starting at index {0}.</value></data>
+  <data name="ADP_DataReaderClosed" xml:space="preserve"><value>Invalid attempt to call {0} when reader is closed.</value></data>
+  <data name="ADP_EmptyString" xml:space="preserve"><value>Expecting non-empty string for '{0}' parameter.</value></data>
+  <data name="ADP_InvalidEnumerationValue" xml:space="preserve"><value>The {0} enumeration value, {1}, is invalid.</value></data>
+  <data name="ADP_InvalidKey" xml:space="preserve"><value>Invalid keyword, contain one or more of 'no characters', 'control characters', 'leading or trailing whitespace' or 'leading semicolons'.</value></data>
+  <data name="ADP_InvalidValue" xml:space="preserve"><value>The value contains embedded nulls (\\u0000).</value></data>
+  <data name="Xml_SimpleTypeNotSupported" xml:space="preserve"><value>DataSet doesn't support 'union' or 'list' as simpleType.</value></data>
+  <data name="Xml_MissingAttribute" xml:space="preserve"><value>Invalid {0} syntax: missing required '{1}' attribute.</value></data>
+  <data name="Xml_ValueOutOfRange" xml:space="preserve"><value>Value '{1}' is invalid for attribute '{0}'.</value></data>
+  <data name="Xml_AttributeValues" xml:space="preserve"><value>The value of attribute '{0}' should be '{1}' or '{2}'.</value></data>
+  <data name="Xml_RelationParentNameMissing" xml:space="preserve"><value>Parent table name is missing in relation '{0}'.</value></data>
+  <data name="Xml_RelationChildNameMissing" xml:space="preserve"><value>Child table name is missing in relation '{0}'.</value></data>
+  <data name="Xml_RelationTableKeyMissing" xml:space="preserve"><value>Parent table key is missing in relation '{0}'.</value></data>
+  <data name="Xml_RelationChildKeyMissing" xml:space="preserve"><value>Child table key is missing in relation '{0}'.</value></data>
+  <data name="Xml_UndefinedDatatype" xml:space="preserve"><value>Undefined data type: '{0}'.</value></data>
+  <data name="Xml_DatatypeNotDefined" xml:space="preserve"><value>Data type not defined.</value></data>
+  <data name="Xml_InvalidField" xml:space="preserve"><value>Invalid XPath selection inside field node. Cannot find: {0}.</value></data>
+  <data name="Xml_InvalidSelector" xml:space="preserve"><value>Invalid XPath selection inside selector node: {0}.</value></data>
+  <data name="Xml_InvalidKey" xml:space="preserve"><value>Invalid 'Key' node inside constraint named: {0}.</value></data>
+  <data name="Xml_DuplicateConstraint" xml:space="preserve"><value>The constraint name {0} is already used in the schema.</value></data>
+  <data name="Xml_CannotConvert" xml:space="preserve"><value> Cannot convert '{0}' to type '{1}'.</value></data>
+  <data name="Xml_MissingRefer" xml:space="preserve"><value>Missing '{0}' part in '{1}' constraint named '{2}'.</value></data>
+  <data name="Xml_MismatchKeyLength" xml:space="preserve"><value>Invalid Relation definition: different length keys.</value></data>
+  <data name="Xml_CircularComplexType" xml:space="preserve"><value>DataSet doesn't allow the circular reference in the ComplexType named '{0}'.</value></data>
+  <data name="Xml_CannotInstantiateAbstract" xml:space="preserve"><value>DataSet cannot instantiate an abstract ComplexType for the node {0}.</value></data>
+  <data name="Xml_MultipleTargetConverterError" xml:space="preserve"><value>An error occurred with the multiple target converter while writing an Xml Schema.  See the inner exception for details.</value></data>
+  <data name="Xml_MultipleTargetConverterEmpty" xml:space="preserve"><value>An error occurred with the multiple target converter while writing an Xml Schema.  A null or empty string was returned.</value></data>
+  <data name="Xml_MergeDuplicateDeclaration" xml:space="preserve"><value>Duplicated declaration '{0}'.</value></data>
+  <data name="Xml_MissingTable" xml:space="preserve"><value>Cannot load diffGram. Table '{0}' is missing in the destination dataset.</value></data>
+  <data name="Xml_MissingSQL" xml:space="preserve"><value>Cannot load diffGram. The 'sql' node is missing.</value></data>
+  <data name="Xml_ColumnConflict" xml:space="preserve"><value>Column name '{0}' is defined for different mapping types.</value></data>
+  <data name="Xml_InvalidPrefix_SpecialCharacters" xml:space="preserve"><value>Prefix '{0}' is not valid, because it contains special characters.</value></data>
+  <data name="Xml_NestedCircular" xml:space="preserve"><value>Circular reference in self-nested table '{0}'.</value></data>
+  <data name="Xml_FoundEntity" xml:space="preserve"><value>DataSet cannot expand entities. Use XmlValidatingReader and set the EntityHandling property accordingly.</value></data>
+  <data name="Xml_PolymorphismNotSupported" xml:space="preserve"><value>Type '{0}' does not implement IXmlSerializable interface therefore can not proceed with serialization.</value></data>
+  <data name="Xml_CanNotDeserializeObjectType" xml:space="preserve"><value>Unable to proceed with deserialization. Data does not implement IXMLSerializable, therefore polymorphism is not supported.</value></data>
+  <data name="Xml_DataTableInferenceNotSupported" xml:space="preserve"><value>DataTable does not support schema inference from Xml.</value></data>
+  <data name="Xml_MultipleParentRows" xml:space="preserve"><value>Cannot proceed with serializing DataTable '{0}'. It contains a DataRow which has multiple parent rows on the same Foreign Key.</value></data>
+  <data name="Xml_IsDataSetAttributeMissingInSchema" xml:space="preserve"><value>IsDataSet attribute is missing in input Schema.</value></data>
+  <data name="Xml_TooManyIsDataSetAttributesInSchema" xml:space="preserve"><value>Cannot determine the DataSet element. More than one IsDataSet attribute exists.</value></data>
+  <data name="Xml_DynamicWithoutXmlSerializable" xml:space="preserve"><value>DataSet will not serialize types that implement IDynamicMetaObjectProvider but do not also implement IXmlSerializable.</value></data>
+  <data name="Expr_NYI" xml:space="preserve"><value>The feature not implemented. {0}.</value></data>
+  <data name="Expr_MissingOperand" xml:space="preserve"><value>Syntax error: Missing operand after '{0}' operator.</value></data>
+  <data name="Expr_TypeMismatch" xml:space="preserve"><value>Type mismatch in expression '{0}'.</value></data>
+  <data name="Expr_ExpressionTooComplex" xml:space="preserve"><value>Expression is too complex.</value></data>
+  <data name="Expr_UnboundName" xml:space="preserve"><value>Cannot find column [{0}].</value></data>
+  <data name="Expr_InvalidString" xml:space="preserve"><value>The expression contains an invalid string constant: {0}.</value></data>
+  <data name="Expr_UndefinedFunction" xml:space="preserve"><value>The expression contains undefined function call {0}().</value></data>
+  <data name="Expr_Syntax" xml:space="preserve"><value>Syntax error in the expression.</value></data>
+  <data name="Expr_FunctionArgumentCount" xml:space="preserve"><value>Invalid number of arguments: function {0}().</value></data>
+  <data name="Expr_MissingRightParen" xml:space="preserve"><value>The expression is missing the closing parenthesis.</value></data>
+  <data name="Expr_UnknownToken" xml:space="preserve"><value>Cannot interpret token '{0}' at position {1}.</value></data>
+  <data name="Expr_UnknownToken1" xml:space="preserve"><value>Expected {0}, but actual token at the position {2} is {1}.</value></data>
+  <data name="Expr_DatatypeConvertion" xml:space="preserve"><value>Cannot convert from {0} to {1}.</value></data>
+  <data name="Expr_DatavalueConvertion" xml:space="preserve"><value>Cannot convert value '{0}' to Type: {1}.</value></data>
+  <data name="Expr_InvalidName" xml:space="preserve"><value>Invalid column name [{0}].</value></data>
+  <data name="Expr_InvalidDate" xml:space="preserve"><value>The expression contains invalid date constant '{0}'.</value></data>
+  <data name="Expr_NonConstantArgument" xml:space="preserve"><value>Only constant expressions are allowed in the expression list for the IN operator.</value></data>
+  <data name="Expr_InvalidPattern" xml:space="preserve"><value>Error in Like operator: the string pattern '{0}' is invalid.</value></data>
+  <data name="Expr_InWithoutParentheses" xml:space="preserve"><value>Syntax error: The items following the IN keyword must be separated by commas and be enclosed in parentheses.</value></data>
+  <data name="Expr_ArgumentType" xml:space="preserve"><value>Type mismatch in function argument: {0}(), argument {1}, expected {2}.</value></data>
+  <data name="Expr_ArgumentTypeInteger" xml:space="preserve"><value>Type mismatch in function argument: {0}(), argument {1}, expected one of the Integer types.</value></data>
+  <data name="Expr_TypeMismatchInBinop" xml:space="preserve"><value>Cannot perform '{0}' operation on {1} and {2}.</value></data>
+  <data name="Expr_AmbiguousBinop" xml:space="preserve"><value>Operator '{0}' is ambiguous on operands of type '{1}' and '{2}'. Cannot mix signed and unsigned types. Please use explicit Convert() function.</value></data>
+  <data name="Expr_InWithoutList" xml:space="preserve"><value>Syntax error: The IN keyword must be followed by a non-empty list of expressions separated by commas, and also must be enclosed in parentheses.</value></data>
+  <data name="Expr_UnsupportedOperator" xml:space="preserve"><value>The expression contains unsupported operator '{0}'.</value></data>
+  <data name="Expr_InvalidNameBracketing" xml:space="preserve"><value>The expression contains invalid name: '{0}'.</value></data>
+  <data name="Expr_MissingOperandBefore" xml:space="preserve"><value>Syntax error: Missing operand before '{0}' operator.</value></data>
+  <data name="Expr_TooManyRightParentheses" xml:space="preserve"><value>The expression has too many closing parentheses.</value></data>
+  <data name="Expr_UnresolvedRelation" xml:space="preserve"><value>The table [{0}] involved in more than one relation. You must explicitly mention a relation name in the expression '{1}'.</value></data>
+  <data name="Expr_AggregateArgument" xml:space="preserve"><value>Syntax error in aggregate argument: Expecting a single column argument with possible 'Child' qualifier.</value></data>
+  <data name="Expr_AggregateUnbound" xml:space="preserve"><value>Unbound reference in the aggregate expression '{0}'.</value></data>
+  <data name="Expr_EvalNoContext" xml:space="preserve"><value>Cannot evaluate non-constant expression without current row.</value></data>
+  <data name="Expr_ExpressionUnbound" xml:space="preserve"><value>Unbound reference in the expression '{0}'.</value></data>
+  <data name="Expr_ComputeNotAggregate" xml:space="preserve"><value>Cannot evaluate. Expression '{0}' is not an aggregate.</value></data>
+  <data name="Expr_FilterConvertion" xml:space="preserve"><value>Filter expression '{0}' does not evaluate to a Boolean term.</value></data>
+  <data name="Expr_InvalidType" xml:space="preserve"><value>Invalid type name '{0}'.</value></data>
+  <data name="Expr_LookupArgument" xml:space="preserve"><value>Syntax error in Lookup expression: Expecting keyword 'Parent' followed by a single column argument with possible relation qualifier: Parent[(&lt;relation_name&gt;)].&lt;column_name&gt;.</value></data>
+  <data name="Expr_InvokeArgument" xml:space="preserve"><value>Need a row or a table to Invoke DataFilter.</value></data>
+  <data name="Expr_ArgumentOutofRange" xml:space="preserve"><value>{0}() argument is out of range.</value></data>
+  <data name="Expr_IsSyntax" xml:space="preserve"><value>Syntax error: Invalid usage of 'Is' operator. Correct syntax: &lt;expression&gt; Is [Not] Null.</value></data>
+  <data name="Expr_Overflow" xml:space="preserve"><value>Value is either too large or too small for Type '{0}'.</value></data>
+  <data name="Expr_BindFailure" xml:space="preserve"><value>Cannot find the parent relation '{0}'.</value></data>
+  <data name="Expr_InvalidHoursArgument" xml:space="preserve"><value>'hours' argument is out of range. Value must be between -14 and +14.</value></data>
+  <data name="Expr_InvalidMinutesArgument" xml:space="preserve"><value>'minutes' argument is out of range. Value must be between -59 and +59.</value></data>
+  <data name="Expr_InvalidTimeZoneRange" xml:space="preserve"><value>Provided range for time one exceeds total of 14 hours.</value></data>
+  <data name="Expr_MismatchKindandTimeSpan" xml:space="preserve"><value>Kind property of provided DateTime argument, does not match 'hours' and 'minutes' arguments.</value></data>
+  <data name="Expr_UnsupportedType" xml:space="preserve"><value>A DataColumn of type '{0}' does not support expression.</value></data>
+  <data name="Data_EnforceConstraints" xml:space="preserve"><value>Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.</value></data>
+  <data name="Data_CannotModifyCollection" xml:space="preserve"><value>Collection itself is not modifiable.</value></data>
+  <data name="Data_CaseInsensitiveNameConflict" xml:space="preserve"><value>The given name '{0}' matches at least two names in the collection object with different cases, but does not match either of them with the same case.</value></data>
+  <data name="Data_NamespaceNameConflict" xml:space="preserve"><value>The given name '{0}' matches at least two names in the collection object with different namespaces.</value></data>
+  <data name="Data_InvalidOffsetLength" xml:space="preserve"><value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value></data>
+  <data name="Data_ArgumentOutOfRange" xml:space="preserve"><value>'{0}' argument is out of range.</value></data>
+  <data name="Data_ArgumentNull" xml:space="preserve"><value>'{0}' argument cannot be null.</value></data>
+  <data name="Data_ArgumentContainsNull" xml:space="preserve"><value>'{0}' argument contains null value.</value></data>
+  <data name="DataColumns_OutOfRange" xml:space="preserve"><value>Cannot find column {0}.</value></data>
+  <data name="DataColumns_Add1" xml:space="preserve"><value>Column '{0}' already belongs to this DataTable.</value></data>
+  <data name="DataColumns_Add2" xml:space="preserve"><value>Column '{0}' already belongs to another DataTable.</value></data>
+  <data name="DataColumns_Add3" xml:space="preserve"><value>Cannot have more than one SimpleContent columns in a DataTable.</value></data>
+  <data name="DataColumns_Add4" xml:space="preserve"><value>Cannot add a SimpleContent column to a table containing element columns or nested relations.</value></data>
+  <data name="DataColumns_AddDuplicate" xml:space="preserve"><value>A column named '{0}' already belongs to this DataTable.</value></data>
+  <data name="DataColumns_AddDuplicate2" xml:space="preserve"><value>Cannot add a column named '{0}': a nested table with the same name already belongs to this DataTable.</value></data>
+  <data name="DataColumns_AddDuplicate3" xml:space="preserve"><value>A column named '{0}' already belongs to this DataTable: cannot set a nested table name to the same name.</value></data>
+  <data name="DataColumns_Remove" xml:space="preserve"><value>Cannot remove a column that doesn't belong to this table.</value></data>
+  <data name="DataColumns_RemovePrimaryKey" xml:space="preserve"><value>Cannot remove this column, because it's part of the primary key.</value></data>
+  <data name="DataColumns_RemoveChildKey" xml:space="preserve"><value>Cannot remove this column, because it is part of the parent key for relationship {0}.</value></data>
+  <data name="DataColumns_RemoveConstraint" xml:space="preserve"><value>Cannot remove this column, because it is a part of the constraint {0} on the table {1}.</value></data>
+  <data name="DataColumn_AutoIncrementAndExpression" xml:space="preserve"><value>Cannot set AutoIncrement property for a computed column.</value></data>
+  <data name="DataColumn_AutoIncrementAndDefaultValue" xml:space="preserve"><value>Cannot set AutoIncrement property for a column with DefaultValue set.</value></data>
+  <data name="DataColumn_DefaultValueAndAutoIncrement" xml:space="preserve"><value>Cannot set a DefaultValue on an AutoIncrement column.</value></data>
+  <data name="DataColumn_AutoIncrementSeed" xml:space="preserve"><value>AutoIncrementStep must be a non-zero value.</value></data>
+  <data name="DataColumn_NameRequired" xml:space="preserve"><value>ColumnName is required when it is part of a DataTable.</value></data>
+  <data name="DataColumn_ChangeDataType" xml:space="preserve"><value>Cannot change DataType of a column once it has data.</value></data>
+  <data name="DataColumn_NullDataType" xml:space="preserve"><value>Column requires a valid DataType.</value></data>
+  <data name="DataColumn_DefaultValueDataType" xml:space="preserve"><value>The DefaultValue for column {0} is of type {1} and cannot be converted to {2}.</value></data>
+  <data name="DataColumn_DefaultValueDataType1" xml:space="preserve"><value>The DefaultValue for the column is of type {0} and cannot be converted to {1}.</value></data>
+  <data name="DataColumn_DefaultValueColumnDataType" xml:space="preserve"><value>The DefaultValue for column {0} is of type {1}, but the column is of type {2}.</value></data>
+  <data name="DataColumn_ReadOnlyAndExpression" xml:space="preserve"><value>Cannot change ReadOnly property for the expression column.</value></data>
+  <data name="DataColumn_UniqueAndExpression" xml:space="preserve"><value>Cannot change Unique property for the expression column.</value></data>
+  <data name="DataColumn_ExpressionAndUnique" xml:space="preserve"><value>Cannot create an expression on a column that has AutoIncrement or Unique.</value></data>
+  <data name="DataColumn_ExpressionAndReadOnly" xml:space="preserve"><value>Cannot set expression because column cannot be made ReadOnly.</value></data>
+  <data name="DataColumn_ExpressionAndConstraint" xml:space="preserve"><value>Cannot set Expression property on column {0}, because it is a part of a constraint.</value></data>
+  <data name="DataColumn_ExpressionInConstraint" xml:space="preserve"><value>Cannot create a constraint based on Expression column {0}.</value></data>
+  <data name="DataColumn_ExpressionCircular" xml:space="preserve"><value>Cannot set Expression property due to circular reference in the expression.</value></data>
+  <data name="DataColumn_NullKeyValues" xml:space="preserve"><value>Column '{0}' has null values in it.</value></data>
+  <data name="DataColumn_NullValues" xml:space="preserve"><value>Column '{0}' does not allow nulls.</value></data>
+  <data name="DataColumn_ReadOnly" xml:space="preserve"><value>Column '{0}' is read only.</value></data>
+  <data name="DataColumn_NonUniqueValues" xml:space="preserve"><value>Column '{0}' contains non-unique values.</value></data>
+  <data name="DataColumn_NotInTheTable" xml:space="preserve"><value>Column '{0}' does not belong to table {1}.</value></data>
+  <data name="DataColumn_NotInAnyTable" xml:space="preserve"><value>Column must belong to a table.</value></data>
+  <data name="DataColumn_SetFailed" xml:space="preserve"><value>Couldn't store &lt;{0}&gt; in {1} Column.  Expected type is {2}.</value></data>
+  <data name="DataColumn_CannotSetToNull" xml:space="preserve"><value>Cannot set Column '{0}' to be null. Please use DBNull instead.</value></data>
+  <data name="DataColumn_LongerThanMaxLength" xml:space="preserve"><value>Cannot set column '{0}'. The value violates the MaxLength limit of this column.</value></data>
+  <data name="DataColumn_HasToBeStringType" xml:space="preserve"><value>MaxLength applies to string data type only. You cannot set Column '{0}' property MaxLength to be non-negative number.</value></data>
+  <data name="DataColumn_CannotSetMaxLength" xml:space="preserve"><value>Cannot set Column '{0}' property MaxLength to '{1}'. There is at least one string in the table longer than the new limit.</value></data>
+  <data name="DataColumn_CannotSetMaxLength2" xml:space="preserve"><value>Cannot set Column '{0}' property MaxLength. The Column is SimpleContent.</value></data>
+  <data name="DataColumn_CannotSimpleContentType" xml:space="preserve"><value>Cannot set Column '{0}' property DataType to {1}. The Column is SimpleContent.</value></data>
+  <data name="DataColumn_CannotSimpleContent" xml:space="preserve"><value>Cannot set Column '{0}' property MappingType to SimpleContent. The Column DataType is {1}.</value></data>
+  <data name="DataColumn_ExceedMaxLength" xml:space="preserve"><value>Column '{0}' exceeds the MaxLength limit.</value></data>
+  <data name="DataColumn_NotAllowDBNull" xml:space="preserve"><value>Column '{0}' does not allow DBNull.Value.</value></data>
+  <data name="DataColumn_CannotChangeNamespace" xml:space="preserve"><value>Cannot change the Column '{0}' property Namespace. The Column is SimpleContent.</value></data>
+  <data name="DataColumn_AutoIncrementCannotSetIfHasData" xml:space="preserve"><value>Cannot change AutoIncrement of a DataColumn with type '{0}' once it has data.</value></data>
+  <data name="DataColumn_NotInTheUnderlyingTable" xml:space="preserve"><value>Column '{0}' does not belong to underlying table '{1}'.</value></data>
+  <data name="DataColumn_InvalidDataColumnMapping" xml:space="preserve"><value>DataColumn with type '{0}' is a complexType. Can not serialize value of a complex type as Attribute</value></data>
+  <data name="DataColumn_CannotSetDateTimeModeForNonDateTimeColumns" xml:space="preserve"><value>The DateTimeMode can be set only on DataColumns of type DateTime.</value></data>
+  <data name="DataColumn_DateTimeMode" xml:space="preserve"><value>Cannot change DateTimeMode from '{0}' to '{1}' once the table has data.</value></data>
+  <data name="DataColumn_INullableUDTwithoutStaticNull" xml:space="preserve"><value>Type '{0}' does not contain static Null property or field.</value></data>
+  <data name="DataColumn_UDTImplementsIChangeTrackingButnotIRevertible" xml:space="preserve"><value>Type '{0}' does not implement IRevertibleChangeTracking; therefore can not proceed with RejectChanges().</value></data>
+  <data name="DataColumn_SetAddedAndModifiedCalledOnNonUnchanged" xml:space="preserve"><value>SetAdded and SetModified can only be called on DataRows with Unchanged DataRowState.</value></data>
+  <data name="DataColumn_OrdinalExceedMaximun" xml:space="preserve"><value>Ordinal '{0}' exceeds the maximum number.</value></data>
+  <data name="DataColumn_NullableTypesNotSupported" xml:space="preserve"><value>DataSet does not support System.Nullable&lt;&gt;.</value></data>
+  <data name="DataConstraint_NoName" xml:space="preserve"><value>Cannot change the name of a constraint to empty string when it is in the ConstraintCollection.</value></data>
+  <data name="DataConstraint_Violation" xml:space="preserve"><value>Cannot enforce constraints on constraint {0}.</value></data>
+  <data name="DataConstraint_ViolationValue" xml:space="preserve"><value>Column '{0}' is constrained to be unique.  Value '{1}' is already present.</value></data>
+  <data name="DataConstraint_NotInTheTable" xml:space="preserve"><value>Constraint '{0}' does not belong to this DataTable.</value></data>
+  <data name="DataConstraint_OutOfRange" xml:space="preserve"><value>Cannot find constraint {0}.</value></data>
+  <data name="DataConstraint_Duplicate" xml:space="preserve"><value>Constraint matches constraint named {0} already in collection.</value></data>
+  <data name="DataConstraint_DuplicateName" xml:space="preserve"><value>A Constraint named '{0}' already belongs to this DataTable.</value></data>
+  <data name="DataConstraint_UniqueViolation" xml:space="preserve"><value>These columns don't currently have unique values.</value></data>
+  <data name="DataConstraint_ForeignTable" xml:space="preserve"><value>These columns don't point to this table.</value></data>
+  <data name="DataConstraint_ParentValues" xml:space="preserve"><value>This constraint cannot be enabled as not all values have corresponding parent values.</value></data>
+  <data name="DataConstraint_AddFailed" xml:space="preserve"><value>This constraint cannot be added since ForeignKey doesn't belong to table {0}.</value></data>
+  <data name="DataConstraint_RemoveFailed" xml:space="preserve"><value>Cannot remove a constraint that doesn't belong to this table.</value></data>
+  <data name="DataConstraint_NeededForForeignKeyConstraint" xml:space="preserve"><value>Cannot remove unique constraint '{0}'. Remove foreign key constraint '{1}' first.</value></data>
+  <data name="DataConstraint_CascadeDelete" xml:space="preserve"><value>Cannot delete this row because constraints are enforced on relation {0}, and deleting this row will strand child rows.</value></data>
+  <data name="DataConstraint_CascadeUpdate" xml:space="preserve"><value>Cannot make this change because constraints are enforced on relation {0}, and changing this value will strand child rows.</value></data>
+  <data name="DataConstraint_ClearParentTable" xml:space="preserve"><value>Cannot clear table {0} because ForeignKeyConstraint {1} enforces constraints and there are child rows in {2}.</value></data>
+  <data name="DataConstraint_ForeignKeyViolation" xml:space="preserve"><value>ForeignKeyConstraint {0} requires the child key values ({1}) to exist in the parent table.</value></data>
+  <data name="DataConstraint_BadObjectPropertyAccess" xml:space="preserve"><value>Property not accessible because '{0}'.</value></data>
+  <data name="DataConstraint_RemoveParentRow" xml:space="preserve"><value>Cannot remove this row because it has child rows, and constraints on relation {0} are enforced.</value></data>
+  <data name="DataConstraint_AddPrimaryKeyConstraint" xml:space="preserve"><value>Cannot add primary key constraint since primary key is already set for the table.</value></data>
+  <data name="DataConstraint_CantAddConstraintToMultipleNestedTable" xml:space="preserve"><value>Cannot add constraint to DataTable '{0}' which is a child table in two nested relations.</value></data>
+  <data name="DataKey_TableMismatch" xml:space="preserve"><value>Cannot create a Key from Columns that belong to different tables.</value></data>
+  <data name="DataKey_NoColumns" xml:space="preserve"><value>Cannot have 0 columns.</value></data>
+  <data name="DataKey_TooManyColumns" xml:space="preserve"><value>Cannot have more than {0} columns.</value></data>
+  <data name="DataKey_DuplicateColumns" xml:space="preserve"><value>Cannot create a Key when the same column is listed more than once: '{0}'</value></data>
+  <data name="DataKey_RemovePrimaryKey" xml:space="preserve"><value>Cannot remove unique constraint since it's the primary key of a table.</value></data>
+  <data name="DataKey_RemovePrimaryKey1" xml:space="preserve"><value>Cannot remove unique constraint since it's the primary key of table {0}.</value></data>
+  <data name="DataRelation_ColumnsTypeMismatch" xml:space="preserve"><value>Parent Columns and Child Columns don't have type-matching columns.</value></data>
+  <data name="DataRelation_KeyColumnsIdentical" xml:space="preserve"><value>ParentKey and ChildKey are identical.</value></data>
+  <data name="DataRelation_KeyLengthMismatch" xml:space="preserve"><value>ParentColumns and ChildColumns should be the same length.</value></data>
+  <data name="DataRelation_KeyZeroLength" xml:space="preserve"><value>ParentColumns and ChildColumns must not be zero length.</value></data>
+  <data name="DataRelation_ForeignRow" xml:space="preserve"><value>The row doesn't belong to the same DataSet as this relation.</value></data>
+  <data name="DataRelation_NoName" xml:space="preserve"><value>RelationName is required when it is part of a DataSet.</value></data>
+  <data name="DataRelation_ForeignTable" xml:space="preserve"><value>GetChildRows requires a row whose Table is {0}, but the specified row's Table is {1}.</value></data>
+  <data name="DataRelation_ForeignDataSet" xml:space="preserve"><value>This relation should connect two tables in this DataSet to be added to this DataSet.</value></data>
+  <data name="DataRelation_GetParentRowTableMismatch" xml:space="preserve"><value>GetParentRow requires a row whose Table is {0}, but the specified row's Table is {1}.</value></data>
+  <data name="DataRelation_SetParentRowTableMismatch" xml:space="preserve"><value>SetParentRow requires a child row whose Table is {0}, but the specified row's Table is {1}.</value></data>
+  <data name="DataRelation_DataSetMismatch" xml:space="preserve"><value>Cannot have a relationship between tables in different DataSets.</value></data>
+  <data name="DataRelation_TablesInDifferentSets" xml:space="preserve"><value>Cannot create a relation between tables in different DataSets.</value></data>
+  <data name="DataRelation_AlreadyExists" xml:space="preserve"><value>A relation already exists for these child columns.</value></data>
+  <data name="DataRelation_DoesNotExist" xml:space="preserve"><value>This relation doesn't belong to this relation collection.</value></data>
+  <data name="DataRelation_AlreadyInOtherDataSet" xml:space="preserve"><value>This relation already belongs to another DataSet.</value></data>
+  <data name="DataRelation_AlreadyInTheDataSet" xml:space="preserve"><value>This relation already belongs to this DataSet.</value></data>
+  <data name="DataRelation_DuplicateName" xml:space="preserve"><value>A Relation named '{0}' already belongs to this DataSet.</value></data>
+  <data name="DataRelation_NotInTheDataSet" xml:space="preserve"><value>Relation {0} does not belong to this DataSet.</value></data>
+  <data name="DataRelation_OutOfRange" xml:space="preserve"><value>Cannot find relation {0}.</value></data>
+  <data name="DataRelation_TableNull" xml:space="preserve"><value>Cannot create a collection on a null table.</value></data>
+  <data name="DataRelation_TableWasRemoved" xml:space="preserve"><value>The table this collection displays relations for has been removed from its DataSet.</value></data>
+  <data name="DataRelation_ChildTableMismatch" xml:space="preserve"><value>Cannot add a relation to this table's ParentRelation collection where this table isn't the child table.</value></data>
+  <data name="DataRelation_ParentTableMismatch" xml:space="preserve"><value>Cannot add a relation to this table's ChildRelation collection where this table isn't the parent table.</value></data>
+  <data name="DataRelation_RelationNestedReadOnly" xml:space="preserve"><value>Cannot set the 'Nested' property to false for this relation.</value></data>
+  <data name="DataRelation_TableCantBeNestedInTwoTables" xml:space="preserve"><value>The same table '{0}' cannot be the child table in two nested relations.</value></data>
+  <data name="DataRelation_LoopInNestedRelations" xml:space="preserve"><value>The table ({0}) cannot be the child table to itself in nested relations.</value></data>
+  <data name="DataRelation_CaseLocaleMismatch" xml:space="preserve"><value>Cannot add a DataRelation or Constraint that has different Locale or CaseSensitive settings between its parent and child tables.</value></data>
+  <data name="DataRelation_ParentOrChildColumnsDoNotHaveDataSet" xml:space="preserve"><value>Cannot create a DataRelation if Parent or Child Columns are not in a DataSet.</value></data>
+  <data name="DataRelation_InValidNestedRelation" xml:space="preserve"><value>Nested table '{0}' which inherits its namespace cannot have multiple parent tables in different namespaces.</value></data>
+  <data name="DataRelation_InValidNamespaceInNestedRelation" xml:space="preserve"><value>Nested table '{0}' with empty namespace cannot have multiple parent tables in different namespaces.</value></data>
+  <data name="DataRow_NotInTheDataSet" xml:space="preserve"><value>The row doesn't belong to the same DataSet as this relation.</value></data>
+  <data name="DataRow_NotInTheTable" xml:space="preserve"><value>Cannot perform this operation on a row not in the table.</value></data>
+  <data name="DataRow_ParentRowNotInTheDataSet" xml:space="preserve"><value>This relation and child row don't belong to same DataSet.</value></data>
+  <data name="DataRow_EditInRowChanging" xml:space="preserve"><value>Cannot change a proposed value in the RowChanging event.</value></data>
+  <data name="DataRow_EndEditInRowChanging" xml:space="preserve"><value>Cannot call EndEdit() inside an OnRowChanging event.</value></data>
+  <data name="DataRow_BeginEditInRowChanging" xml:space="preserve"><value>Cannot call BeginEdit() inside the RowChanging event.</value></data>
+  <data name="DataRow_CancelEditInRowChanging" xml:space="preserve"><value>Cannot call CancelEdit() inside an OnRowChanging event.  Throw an exception to cancel this update.</value></data>
+  <data name="DataRow_DeleteInRowDeleting" xml:space="preserve"><value>Cannot call Delete inside an OnRowDeleting event.  Throw an exception to cancel this delete.</value></data>
+  <data name="DataRow_ValuesArrayLength" xml:space="preserve"><value>Input array is longer than the number of columns in this table.</value></data>
+  <data name="DataRow_NoCurrentData" xml:space="preserve"><value>There is no Current data to access.</value></data>
+  <data name="DataRow_NoOriginalData" xml:space="preserve"><value>There is no Original data to access.</value></data>
+  <data name="DataRow_NoProposedData" xml:space="preserve"><value>There is no Proposed data to access.</value></data>
+  <data name="DataRow_RemovedFromTheTable" xml:space="preserve"><value>This row has been removed from a table and does not have any data.  BeginEdit() will allow creation of new data in this row.</value></data>
+  <data name="DataRow_DeletedRowInaccessible" xml:space="preserve"><value>Deleted row information cannot be accessed through the row.</value></data>
+  <data name="DataRow_InvalidVersion" xml:space="preserve"><value>Version must be Original, Current, or Proposed.</value></data>
+  <data name="DataRow_OutOfRange" xml:space="preserve"><value>There is no row at position {0}.</value></data>
+  <data name="DataRow_RowInsertOutOfRange" xml:space="preserve"><value>The row insert position {0} is invalid.</value></data>
+  <data name="DataRow_RowInsertMissing" xml:space="preserve"><value>Values are missing in the rowOrder sequence for table '{0}'.</value></data>
+  <data name="DataRow_RowOutOfRange" xml:space="preserve"><value>The given DataRow is not in the current DataRowCollection.</value></data>
+  <data name="DataRow_AlreadyInOtherCollection" xml:space="preserve"><value>This row already belongs to another table.</value></data>
+  <data name="DataRow_AlreadyInTheCollection" xml:space="preserve"><value>This row already belongs to this table.</value></data>
+  <data name="DataRow_AlreadyDeleted" xml:space="preserve"><value>Cannot delete this row since it's already deleted.</value></data>
+  <data name="DataRow_Empty" xml:space="preserve"><value>This row is empty.</value></data>
+  <data name="DataRow_AlreadyRemoved" xml:space="preserve"><value>Cannot remove a row that's already been removed.</value></data>
+  <data name="DataRow_MultipleParents" xml:space="preserve"><value>A child row has multiple parents.</value></data>
+  <data name="DataRow_InvalidRowBitPattern" xml:space="preserve"><value>Unrecognized row state bit pattern.</value></data>
+  <data name="DataSet_SetNameToEmpty" xml:space="preserve"><value>Cannot change the name of the DataSet to an empty string.</value></data>
+  <data name="DataSet_SetDataSetNameConflicting" xml:space="preserve"><value>The name '{0}' is invalid. A DataSet cannot have the same name of the DataTable.</value></data>
+  <data name="DataSet_UnsupportedSchema" xml:space="preserve"><value>The schema namespace is invalid. Please use this one instead: {0}.</value></data>
+  <data name="DataSet_CannotChangeCaseLocale" xml:space="preserve"><value>Cannot change CaseSensitive or Locale property. This change would lead to at least one DataRelation or Constraint to have different Locale or CaseSensitive settings between its related tables.</value></data>
+  <data name="DataSet_CannotChangeSchemaSerializationMode" xml:space="preserve"><value>SchemaSerializationMode property can be set only if it is overridden by derived DataSet.</value></data>
+  <data name="DataTable_ForeignPrimaryKey" xml:space="preserve"><value>PrimaryKey columns do not belong to this table.</value></data>
+  <data name="DataTable_CannotAddToSimpleContent" xml:space="preserve"><value>Cannot add a nested relation or an element column to a table containing a SimpleContent column.</value></data>
+  <data name="DataTable_NoName" xml:space="preserve"><value>TableName is required when it is part of a DataSet.</value></data>
+  <data name="DataTable_MultipleSimpleContentColumns" xml:space="preserve"><value>DataTable already has a simple content column.</value></data>
+  <data name="DataTable_MissingPrimaryKey" xml:space="preserve"><value>Table doesn't have a primary key.</value></data>
+  <data name="DataTable_InvalidSortString" xml:space="preserve"><value> {0} isn't a valid Sort string entry.</value></data>
+  <data name="DataTable_CanNotSerializeDataTableHierarchy" xml:space="preserve"><value>Cannot serialize the DataTable. A DataTable being used in one or more DataColumn expressions is not a descendant of current DataTable.</value></data>
+  <data name="DataTable_CanNotRemoteDataTable" xml:space="preserve"><value>This DataTable can only be remoted as part of DataSet. One or more Expression Columns has reference to other DataTable(s).</value></data>
+  <data name="DataTable_CanNotSetRemotingFormat" xml:space="preserve"><value>Cannot have different remoting format property value for DataSet and DataTable.</value></data>
+  <data name="DataTable_CanNotSerializeDataTableWithEmptyName" xml:space="preserve"><value>Cannot serialize the DataTable. DataTable name is not set.</value></data>
+  <data name="DataTable_DuplicateName" xml:space="preserve"><value>A DataTable named '{0}' already belongs to this DataSet.</value></data>
+  <data name="DataTable_DuplicateName2" xml:space="preserve"><value>A DataTable named '{0}' with the same Namespace '{1}' already belongs to this DataSet.</value></data>
+  <data name="DataTable_SelfnestedDatasetConflictingName" xml:space="preserve"><value>The table ({0}) cannot be the child table to itself in a nested relation: the DataSet name conflicts with the table name.</value></data>
+  <data name="DataTable_DatasetConflictingName" xml:space="preserve"><value>The name '{0}' is invalid. A DataTable cannot have the same name of the DataSet.</value></data>
+  <data name="DataTable_AlreadyInOtherDataSet" xml:space="preserve"><value>DataTable already belongs to another DataSet.</value></data>
+  <data name="DataTable_AlreadyInTheDataSet" xml:space="preserve"><value>DataTable already belongs to this DataSet.</value></data>
+  <data name="DataTable_NotInTheDataSet" xml:space="preserve"><value>Table {0} does not belong to this DataSet.</value></data>
+  <data name="DataTable_OutOfRange" xml:space="preserve"><value>Cannot find table {0}.</value></data>
+  <data name="DataTable_InRelation" xml:space="preserve"><value>Cannot remove a table that has existing relations.  Remove relations first.</value></data>
+  <data name="DataTable_InConstraint" xml:space="preserve"><value>Cannot remove table {0}, because it referenced in ForeignKeyConstraint {1}.  Remove the constraint first.</value></data>
+  <data name="DataTable_TableNotFound" xml:space="preserve"><value>DataTable '{0}' does not match to any DataTable in source.</value></data>
+  <data name="DataMerge_MissingDefinition" xml:space="preserve"><value>Target DataSet missing definition for {0}.</value></data>
+  <data name="DataMerge_MissingConstraint" xml:space="preserve"><value>Target DataSet missing {0} {1}.</value></data>
+  <data name="DataMerge_DataTypeMismatch" xml:space="preserve"><value>&lt;target&gt;.{0} and &lt;source&gt;.{0} have conflicting properties: DataType property mismatch.</value></data>
+  <data name="DataMerge_PrimaryKeyMismatch" xml:space="preserve"><value>&lt;target&gt;.PrimaryKey and &lt;source&gt;.PrimaryKey have different Length.</value></data>
+  <data name="DataMerge_PrimaryKeyColumnsMismatch" xml:space="preserve"><value>Mismatch columns in the PrimaryKey : &lt;target&gt;.{0} versus &lt;source&gt;.{1}.</value></data>
+  <data name="DataMerge_ReltionKeyColumnsMismatch" xml:space="preserve"><value>Relation {0} cannot be merged, because keys have mismatch columns.</value></data>
+  <data name="DataMerge_MissingColumnDefinition" xml:space="preserve"><value>Target table {0} missing definition for column {1}.</value></data>
+  <data name="DataIndex_RecordStateRange" xml:space="preserve"><value>The RowStates parameter must be set to a valid combination of values from the DataViewRowState enumeration.</value></data>
+  <data name="DataIndex_FindWithoutSortOrder" xml:space="preserve"><value>Find finds a row based on a Sort order, and no Sort order is specified.</value></data>
+  <data name="DataIndex_KeyLength" xml:space="preserve"><value>Expecting {0} value(s) for the key being indexed, but received {1} value(s).</value></data>
+  <data name="DataStorage_AggregateException" xml:space="preserve"><value>Invalid usage of aggregate function {0}() and Type: {1}.</value></data>
+  <data name="DataStorage_InvalidStorageType" xml:space="preserve"><value>Invalid storage type: {0}.</value></data>
+  <data name="DataStorage_ProblematicChars" xml:space="preserve"><value>The DataSet Xml persistency does not support the value '{0}' as Char value, please use Byte storage instead.</value></data>
+  <data name="DataStorage_SetInvalidDataType" xml:space="preserve"><value>Type of value has a mismatch with column type</value></data>
+  <data name="DataStorage_IComparableNotDefined" xml:space="preserve"><value> Type '{0}' does not implement IComparable interface. Comparison cannot be done.</value></data>
+  <data name="DataView_SetFailed" xml:space="preserve"><value>Cannot set {0}.</value></data>
+  <data name="DataView_SetDataSetFailed" xml:space="preserve"><value>Cannot change DataSet on a DataViewManager that's already the default view for a DataSet.</value></data>
+  <data name="DataView_SetRowStateFilter" xml:space="preserve"><value>RowStateFilter cannot show ModifiedOriginals and ModifiedCurrents at the same time.</value></data>
+  <data name="DataView_SetTable" xml:space="preserve"><value>Cannot change Table property on a DefaultView or a DataView coming from a DataViewManager.</value></data>
+  <data name="DataView_CanNotSetDataSet" xml:space="preserve"><value>Cannot change DataSet property once it is set.</value></data>
+  <data name="DataView_CanNotUseDataViewManager" xml:space="preserve"><value>DataSet must be set prior to using DataViewManager.</value></data>
+  <data name="DataView_CanNotSetTable" xml:space="preserve"><value>Cannot change Table property once it is set.</value></data>
+  <data name="DataView_CanNotUse" xml:space="preserve"><value>DataTable must be set prior to using DataView.</value></data>
+  <data name="DataView_CanNotBindTable" xml:space="preserve"><value>Cannot bind to DataTable with no name.</value></data>
+  <data name="DataView_SetIListObject" xml:space="preserve"><value>Cannot set an object into this list.</value></data>
+  <data name="DataView_AddNewNotAllowNull" xml:space="preserve"><value>Cannot call AddNew on a DataView where AllowNew is false.</value></data>
+  <data name="DataView_NotOpen" xml:space="preserve"><value>DataView is not open.</value></data>
+  <data name="DataView_CreateChildView" xml:space="preserve"><value>The relation is not parented to the table to which this DataView points.</value></data>
+  <data name="DataView_CanNotDelete" xml:space="preserve"><value>Cannot delete on a DataSource where AllowDelete is false.</value></data>
+  <data name="DataView_CanNotEdit" xml:space="preserve"><value>Cannot edit on a DataSource where AllowEdit is false.</value></data>
+  <data name="DataView_GetElementIndex" xml:space="preserve"><value>Index {0} is either negative or above rows count.</value></data>
+  <data name="DataView_AddExternalObject" xml:space="preserve"><value>Cannot add external objects to this list.</value></data>
+  <data name="DataView_CanNotClear" xml:space="preserve"><value>Cannot clear this list.</value></data>
+  <data name="DataView_InsertExternalObject" xml:space="preserve"><value>Cannot insert external objects to this list.</value></data>
+  <data name="DataView_RemoveExternalObject" xml:space="preserve"><value>Cannot remove objects not in the list.</value></data>
+  <data name="DataROWView_PropertyNotFound" xml:space="preserve"><value>{0} is neither a DataColumn nor a DataRelation for table {1}.</value></data>
+  <data name="Range_Argument" xml:space="preserve"><value>Min ({0}) must be less than or equal to max ({1}) in a Range object.</value></data>
+  <data name="Range_NullRange" xml:space="preserve"><value>This is a null range.</value></data>
+  <data name="RecordManager_MinimumCapacity" xml:space="preserve"><value>MinimumCapacity must be non-negative.</value></data>
+  <data name="SqlConvert_ConvertFailed" xml:space="preserve"><value>Cannot convert object of type '{0}' to object of type '{1}'.</value></data>
+  <data name="DataSet_DefaultDataException" xml:space="preserve"><value>Data Exception.</value></data>
+  <data name="DataSet_DefaultConstraintException" xml:space="preserve"><value>Constraint Exception.</value></data>
+  <data name="DataSet_DefaultDeletedRowInaccessibleException" xml:space="preserve"><value>Deleted rows inaccessible.</value></data>
+  <data name="DataSet_DefaultDuplicateNameException" xml:space="preserve"><value>Duplicate name not allowed.</value></data>
+  <data name="DataSet_DefaultInRowChangingEventException" xml:space="preserve"><value>Operation not supported in the RowChanging event.</value></data>
+  <data name="DataSet_DefaultInvalidConstraintException" xml:space="preserve"><value>Invalid constraint.</value></data>
+  <data name="DataSet_DefaultMissingPrimaryKeyException" xml:space="preserve"><value>Missing primary key.</value></data>
+  <data name="DataSet_DefaultNoNullAllowedException" xml:space="preserve"><value>Null not allowed.</value></data>
+  <data name="DataSet_DefaultReadOnlyException" xml:space="preserve"><value>Column is marked read only.</value></data>
+  <data name="DataSet_DefaultRowNotInTableException" xml:space="preserve"><value>Row not found in table.</value></data>
+  <data name="DataSet_DefaultVersionNotFoundException" xml:space="preserve"><value>Version not found.</value></data>
+  <data name="Load_ReadOnlyDataModified" xml:space="preserve"><value>ReadOnly Data is Modified.</value></data>
+  <data name="DataTableReader_InvalidDataTableReader" xml:space="preserve"><value>DataTableReader is invalid for current DataTable '{0}'.</value></data>
+  <data name="DataTableReader_SchemaInvalidDataTableReader" xml:space="preserve"><value>Schema of current DataTable '{0}' in DataTableReader has changed, DataTableReader is invalid.</value></data>
+  <data name="DataTableReader_CannotCreateDataReaderOnEmptyDataSet" xml:space="preserve"><value>DataTableReader Cannot be created. There is no DataTable in DataSet.</value></data>
+  <data name="DataTableReader_DataTableReaderArgumentIsEmpty" xml:space="preserve"><value>Cannot create DataTableReader. Argument is Empty.</value></data>
+  <data name="DataTableReader_ArgumentContainsNullValue" xml:space="preserve"><value>Cannot create DataTableReader. Arguments contain null value.</value></data>
+  <data name="DataTableReader_InvalidRowInDataTableReader" xml:space="preserve"><value>Current DataRow is either in Deleted or Detached state.</value></data>
+  <data name="DataTableReader_DataTableCleared" xml:space="preserve"><value>Current DataTable '{0}' is empty. There is no DataRow in DataTable.</value></data>
+  <data name="RbTree_InvalidState" xml:space="preserve"><value>DataTable internal index is corrupted: '{0}'.</value></data>
+  <data name="RbTree_EnumerationBroken" xml:space="preserve"><value>Collection was modified; enumeration operation might not execute.</value></data>
+  <data name="NamedSimpleType_InvalidDuplicateNamedSimpleTypeDelaration" xml:space="preserve"><value>Simple type '{0}' has already be declared with different '{1}'.</value></data>
+  <data name="DataDom_Foliation" xml:space="preserve"><value>Invalid foliation.</value></data>
+  <data name="DataDom_TableNameChange" xml:space="preserve"><value>Cannot change the table name once the associated DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_TableNamespaceChange" xml:space="preserve"><value>Cannot change the table namespace once the associated DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_ColumnNameChange" xml:space="preserve"><value>Cannot change the column name once the associated DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_ColumnNamespaceChange" xml:space="preserve"><value>Cannot change the column namespace once the associated DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_ColumnMappingChange" xml:space="preserve"><value>Cannot change the ColumnMapping property once the associated DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_TableColumnsChange" xml:space="preserve"><value>Cannot add or remove columns from the table once the DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_DataSetTablesChange" xml:space="preserve"><value>Cannot add or remove tables from the DataSet once the DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_DataSetNestedRelationsChange" xml:space="preserve"><value>Cannot add, remove, or change Nested relations from the DataSet once the DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_DataSetNull" xml:space="preserve"><value>The DataSet parameter is invalid. It cannot be null.</value></data>
+  <data name="DataDom_DataSetNameChange" xml:space="preserve"><value>Cannot change the DataSet name once the DataSet is mapped to a loaded XML document.</value></data>
+  <data name="DataDom_CloneNode" xml:space="preserve"><value>This type of node cannot be cloned: {0}.</value></data>
+  <data name="DataDom_MultipleLoad" xml:space="preserve"><value>Cannot load XmlDataDocument if it already contains data. Please use a new XmlDataDocument.</value></data>
+  <data name="DataDom_MultipleDataSet" xml:space="preserve"><value>DataSet can be associated with at most one XmlDataDocument. Cannot associate the DataSet with the current XmlDataDocument because the DataSet is already associated with another XmlDataDocument.</value></data>
+  <data name="DataDom_NotSupport_GetElementById" xml:space="preserve"><value>GetElementById() is not supported on DataDocument.</value></data>
+  <data name="DataDom_NotSupport_EntRef" xml:space="preserve"><value>Cannot create entity references on DataDocument.</value></data>
+  <data name="DataDom_NotSupport_Clear" xml:space="preserve"><value>Clear function on DateSet and DataTable is not supported on XmlDataDocument.</value></data>
+  <data name="ADP_EmptyArray" xml:space="preserve"><value>Expecting non-empty array for '{0}' parameter.</value></data>
+  <data name="SQL_WrongType" xml:space="preserve"><value>Expecting argument of type {1}, but received type {0}.</value></data>
+  <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve"><value>Invalid value for key '{0}'.</value></data>
+  <data name="ADP_KeywordNotSupported" xml:space="preserve"><value>Keyword not supported: '{0}'.</value></data>
+  <data name="ADP_InternalProviderError" xml:space="preserve"><value>Internal .NET Framework Data Provider error {0}.</value></data>
+  <data name="ADP_NoQuoteChange" xml:space="preserve"><value>The QuotePrefix and QuoteSuffix properties cannot be changed once an Insert, Update, or Delete command has been generated.</value></data>
+  <data name="ADP_MissingSourceCommand" xml:space="preserve"><value>The DataAdapter.SelectCommand property needs to be initialized.</value></data>
+  <data name="ADP_MissingSourceCommandConnection" xml:space="preserve"><value>The DataAdapter.SelectCommand.Connection property needs to be initialized;</value></data>
+  <data name="ADP_InvalidMultipartName" xml:space="preserve"><value>{0} '{1}'.</value></data>
+  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve"><value>{0} '{1}', incorrect usage of quotes.</value></data>
+  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve"><value>{0} '{1}', the current limit of '{2}' is insufficient.</value></data>
+  <data name="ADP_ColumnSchemaExpression" xml:space="preserve"><value>The column mapping from SourceColumn '{0}' failed because the DataColumn '{1}' is a computed column.</value></data>
+  <data name="ADP_ColumnSchemaMismatch" xml:space="preserve"><value>Inconvertible type mismatch between SourceColumn '{0}' of {1} and the DataColumn '{2}' of {3}.</value></data>
+  <data name="ADP_ColumnSchemaMissing1" xml:space="preserve"><value>Missing the DataColumn '{0}' for the SourceColumn '{2}'.</value></data>
+  <data name="ADP_ColumnSchemaMissing2" xml:space="preserve"><value>Missing the DataColumn '{0}' in the DataTable '{1}' for the SourceColumn '{2}'.</value></data>
+  <data name="ADP_InvalidSourceColumn" xml:space="preserve"><value>SourceColumn is required to be a non-empty string.</value></data>
+  <data name="ADP_MissingColumnMapping" xml:space="preserve"><value>Missing SourceColumn mapping for '{0}'.</value></data>
+  <data name="ADP_NotSupportedEnumerationValue" xml:space="preserve"><value>The {0} enumeration value, {1}, is not supported by the {2} method.</value></data>
+  <data name="ADP_MissingTableSchema" xml:space="preserve"><value>Missing the '{0}' DataTable for the '{1}' SourceTable.</value></data>
+  <data name="ADP_InvalidSourceTable" xml:space="preserve"><value>SourceTable is required to be a non-empty string</value></data>
+  <data name="ADP_MissingTableMapping" xml:space="preserve"><value>Missing SourceTable mapping: '{0}'</value></data>
+  <data name="ADP_ConnectionRequired_Insert" xml:space="preserve"><value>Update requires the InsertCommand to have a connection object. The Connection property of the InsertCommand has not been initialized.</value></data>
+  <data name="ADP_ConnectionRequired_Update" xml:space="preserve"><value>Update requires the UpdateCommand to have a connection object. The Connection property of the UpdateCommand has not been initialized.</value></data>
+  <data name="ADP_ConnectionRequired_Delete" xml:space="preserve"><value>Update requires the DeleteCommand to have a connection object. The Connection property of the DeleteCommand has not been initialized.</value></data>
+  <data name="ADP_ConnectionRequired_Batch" xml:space="preserve"><value>Update requires a connection object.  The Connection property has not been initialized.</value></data>
+  <data name="ADP_ConnectionRequired_Clone" xml:space="preserve"><value>Update requires the command clone to have a connection object. The Connection property of the command clone has not been initialized.</value></data>
+  <data name="ADP_OpenConnectionRequired_Insert" xml:space="preserve"><value>Update requires the {0}Command to have an open connection object. {1}</value></data>
+  <data name="ADP_OpenConnectionRequired_Update" xml:space="preserve"><value>Update requires the {0}Command to have an open connection object. {1}</value></data>
+  <data name="ADP_OpenConnectionRequired_Delete" xml:space="preserve"><value>Update requires the {0}Command to have an open connection object. {1}</value></data>
+  <data name="ADP_OpenConnectionRequired_Clone" xml:space="preserve"><value>Update requires the updating command to have an open connection object. {1}</value></data>
+  <data name="ADP_MissingSelectCommand" xml:space="preserve"><value>The SelectCommand property has not been initialized before calling '{0}'.</value></data>
+  <data name="ADP_UnwantedStatementType" xml:space="preserve"><value>The StatementType {0} is not expected here.</value></data>
+  <data name="ADP_FillSchemaRequiresSourceTableName" xml:space="preserve"><value>FillSchema: expected a non-empty string for the SourceTable name.</value></data>
+  <data name="ADP_FillRequiresSourceTableName" xml:space="preserve"><value>Fill: expected a non-empty string for the SourceTable name.</value></data>
+  <data name="ADP_FillChapterAutoIncrement" xml:space="preserve"><value>Hierarchical chapter columns must map to an AutoIncrement DataColumn.</value></data>
+  <data name="ADP_MissingDataReaderFieldType" xml:space="preserve"><value>DataReader.GetFieldType({0}) returned null.</value></data>
+  <data name="ADP_OnlyOneTableForStartRecordOrMaxRecords" xml:space="preserve"><value>Only specify one item in the dataTables array when using non-zero values for startRecords or maxRecords.</value></data>
+  <data name="ADP_UpdateRequiresSourceTable" xml:space="preserve"><value>Update unable to find TableMapping['{0}'] or DataTable '{0}'.</value></data>
+  <data name="ADP_UpdateRequiresSourceTableName" xml:space="preserve"><value>Update: expected a non-empty SourceTable name.</value></data>
+  <data name="ADP_UpdateRequiresCommandClone" xml:space="preserve"><value>Update requires the command clone to be valid.</value></data>
+  <data name="ADP_UpdateRequiresCommandSelect" xml:space="preserve"><value>Auto SQL generation during Update requires a valid SelectCommand.</value></data>
+  <data name="ADP_UpdateRequiresCommandInsert" xml:space="preserve"><value>Update requires a valid InsertCommand when passed DataRow collection with new rows.</value></data>
+  <data name="ADP_UpdateRequiresCommandUpdate" xml:space="preserve"><value>Update requires a valid UpdateCommand when passed DataRow collection with modified rows.</value></data>
+  <data name="ADP_UpdateRequiresCommandDelete" xml:space="preserve"><value>Update requires a valid DeleteCommand when passed DataRow collection with deleted rows.</value></data>
+  <data name="ADP_UpdateMismatchRowTable" xml:space="preserve"><value>DataRow[{0}] is from a different DataTable than DataRow[0].</value></data>
+  <data name="ADP_RowUpdatedErrors" xml:space="preserve"><value>RowUpdatedEvent: Errors occurred; no additional is information available.</value></data>
+  <data name="ADP_RowUpdatingErrors" xml:space="preserve"><value>RowUpdatingEvent: Errors occurred; no additional is information available.</value></data>
+  <data name="ADP_ResultsNotAllowedDuringBatch" xml:space="preserve"><value>When batching, the command's UpdatedRowSource property value of UpdateRowSource.FirstReturnedRecord or UpdateRowSource.Both is invalid.</value></data>
+  <data name="ADP_UpdateConcurrencyViolation_Update" xml:space="preserve"><value>Concurrency violation: the UpdateCommand affected {0} of the expected {1} records.</value></data>
+  <data name="ADP_UpdateConcurrencyViolation_Delete" xml:space="preserve"><value>Concurrency violation: the DeleteCommand affected {0} of the expected {1} records.</value></data>
+  <data name="ADP_UpdateConcurrencyViolation_Batch" xml:space="preserve"><value>Concurrency violation: the batched command affected {0} of the expected {1} records.</value></data>
+  <data name="ADP_InvalidSourceBufferIndex" xml:space="preserve"><value>Invalid source buffer (size of {0}) offset: {1}</value></data>
+  <data name="ADP_InvalidDestinationBufferIndex" xml:space="preserve"><value>Invalid destination buffer (size of {0}) offset: {1}</value></data>
+  <data name="ADP_StreamClosed" xml:space="preserve"><value>Invalid attempt to {0} when stream is closed.</value></data>
+  <data name="ADP_InvalidSeekOrigin" xml:space="preserve"><value>Specified SeekOrigin value is invalid.</value></data>
+  <data name="ADP_DynamicSQLJoinUnsupported" xml:space="preserve"><value>Dynamic SQL generation is not supported against multiple base tables.</value></data>
+  <data name="ADP_DynamicSQLNoTableInfo" xml:space="preserve"><value>Dynamic SQL generation is not supported against a SelectCommand that does not return any base table information.</value></data>
+  <data name="ADP_DynamicSQLNoKeyInfoDelete" xml:space="preserve"><value>Dynamic SQL generation for the DeleteCommand is not supported against a SelectCommand that does not return any key column information.</value></data>
+  <data name="ADP_DynamicSQLNoKeyInfoUpdate" xml:space="preserve"><value>Dynamic SQL generation for the UpdateCommand is not supported against a SelectCommand that does not return any key column information.</value></data>
+  <data name="ADP_DynamicSQLNoKeyInfoRowVersionDelete" xml:space="preserve"><value>Dynamic SQL generation for the DeleteCommand is not supported against a SelectCommand that does not contain a row version column.</value></data>
+  <data name="ADP_DynamicSQLNoKeyInfoRowVersionUpdate" xml:space="preserve"><value>Dynamic SQL generation for the UpdateCommand is not supported against a SelectCommand that does not contain a row version column.</value></data>
+  <data name="ADP_DynamicSQLNestedQuote" xml:space="preserve"><value>Dynamic SQL generation not supported against table names '{0}' that contain the QuotePrefix or QuoteSuffix character '{1}'.</value></data>
+  <data name="SQL_InvalidBufferSizeOrIndex" xml:space="preserve"><value>Buffer offset '{1}' plus the bytes available '{0}' is greater than the length of the passed in buffer.</value></data>
+  <data name="SQL_InvalidDataLength" xml:space="preserve"><value>Data length '{0}' is less than 0.</value></data>
+  <data name="SqlMisc_NullString" xml:space="preserve"><value>Null</value></data>
+  <data name="SqlMisc_MessageString" xml:space="preserve"><value>Message</value></data>
+  <data name="SqlMisc_ArithOverflowMessage" xml:space="preserve"><value>Arithmetic Overflow.</value></data>
+  <data name="SqlMisc_DivideByZeroMessage" xml:space="preserve"><value>Divide by zero error encountered.</value></data>
+  <data name="SqlMisc_NullValueMessage" xml:space="preserve"><value>Data is Null. This method or property cannot be called on Null values.</value></data>
+  <data name="SqlMisc_TruncationMessage" xml:space="preserve"><value>Numeric arithmetic causes truncation.</value></data>
+  <data name="SqlMisc_DateTimeOverflowMessage" xml:space="preserve"><value>SqlDateTime overflow. Must be between 1/1/1753 12:00:00 AM and 12/31/9999 11:59:59 PM.</value></data>
+  <data name="SqlMisc_ConcatDiffCollationMessage" xml:space="preserve"><value>Two strings to be concatenated have different collation.</value></data>
+  <data name="SqlMisc_CompareDiffCollationMessage" xml:space="preserve"><value>Two strings to be compared have different collation.</value></data>
+  <data name="SqlMisc_InvalidFlagMessage" xml:space="preserve"><value>Invalid flag value.</value></data>
+  <data name="SqlMisc_NumeToDecOverflowMessage" xml:space="preserve"><value>Conversion from SqlDecimal to Decimal overflows.</value></data>
+  <data name="SqlMisc_ConversionOverflowMessage" xml:space="preserve"><value>Conversion overflows.</value></data>
+  <data name="SqlMisc_InvalidDateTimeMessage" xml:space="preserve"><value>Invalid SqlDateTime.</value></data>
+  <data name="SqlMisc_TimeZoneSpecifiedMessage" xml:space="preserve"><value>A time zone was specified. SqlDateTime does not support time zones.</value></data>
+  <data name="SqlMisc_InvalidArraySizeMessage" xml:space="preserve"><value>Invalid array size.</value></data>
+  <data name="SqlMisc_InvalidPrecScaleMessage" xml:space="preserve"><value>Invalid numeric precision/scale.</value></data>
+  <data name="SqlMisc_FormatMessage" xml:space="preserve"><value>The input wasn't in a correct format.</value></data>
+  <data name="SqlMisc_SqlTypeMessage" xml:space="preserve"><value>SqlType error.</value></data>
+  <data name="SqlMisc_NoBufferMessage" xml:space="preserve"><value>There is no buffer. Read or write operation failed.</value></data>
+  <data name="SqlMisc_BufferInsufficientMessage" xml:space="preserve"><value>The buffer is insufficient. Read or write operation failed.</value></data>
+  <data name="SqlMisc_WriteNonZeroOffsetOnNullMessage" xml:space="preserve"><value>Cannot write to non-zero offset, because current value is Null.</value></data>
+  <data name="SqlMisc_WriteOffsetLargerThanLenMessage" xml:space="preserve"><value>Cannot write from an offset that is larger than current length. It would leave uninitialized data in the buffer.</value></data>
+  <data name="SqlMisc_NotFilledMessage" xml:space="preserve"><value>SQL Type has not been loaded with data.</value></data>
+  <data name="SqlMisc_AlreadyFilledMessage" xml:space="preserve"><value>SQL Type has already been loaded with data.</value></data>
+  <data name="SqlMisc_ClosedXmlReaderMessage" xml:space="preserve"><value>Invalid attempt to access a closed XmlReader.</value></data>
+  <data name="SqlMisc_InvalidOpStreamClosed" xml:space="preserve"><value>Invalid attempt to call {0} when the stream is closed.</value></data>
+  <data name="SqlMisc_InvalidOpStreamNonWritable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream non-writable.</value></data>
+  <data name="SqlMisc_InvalidOpStreamNonReadable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream non-readable.</value></data>
+  <data name="SqlMisc_InvalidOpStreamNonSeekable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream is non-seekable.</value></data>
+  <data name="ADP_DBConcurrencyExceptionMessage" xml:space="preserve"><value>DB concurrency violation.</value></data>
+  <data name="ADP_InvalidMaxRecords" xml:space="preserve"><value>The MaxRecords value of {0} is invalid; the value must be &gt;= 0.</value></data>
+  <data name="ADP_CollectionIndexInt32" xml:space="preserve"><value>Invalid index {0} for this {1} with Count={2}.</value></data>
+  <data name="ADP_MissingTableMappingDestination" xml:space="preserve"><value>Missing TableMapping when TableMapping.DataSetTable='{0}'.</value></data>
+  <data name="ADP_InvalidStartRecord" xml:space="preserve"><value>The StartRecord value of {0} is invalid; the value must be &gt;= 0.</value></data>
+  <data name="DataDom_EnforceConstraintsShouldBeOff" xml:space="preserve"><value>Please set DataSet.EnforceConstraints == false before trying to edit XmlDataDocument using XML operations.</value></data>
+  <data name="DataColumns_RemoveExpression" xml:space="preserve"><value>Cannot remove this column, because it is part of an expression: {0} = {1}.</value></data>
+  <data name="DataRow_RowInsertTwice" xml:space="preserve"><value>The rowOrder value={0} has been found twice for table named '{1}'.</value></data>
+  <data name="Xml_ElementTypeNotFound" xml:space="preserve"><value>Cannot find ElementType name='{0}'.</value></data>
+  <data name="ADP_DbProviderFactories_InvariantNameNotFound" xml:space="preserve"><value>The specified invariant name '{0}' wasn't found in the list of registered .NET Data Providers.</value></data>
+  <data name="ADP_DbProviderFactories_NoInstance" xml:space="preserve"><value>The requested .NET Data Provider's implementation does not have an Instance field of a System.Data.Common.DbProviderFactory derived type.</value></data>
+  <data name="ADP_DbProviderFactories_FactoryNotLoadable" xml:space="preserve"><value>The registered .NET Data Provider's DbProviderFactory implementation type '{0}' couldn't be loaded.</value></data>
+  <data name="ADP_DbProviderFactories_NoAssemblyQualifiedName" xml:space="preserve"><value>The missing .NET Data Provider's assembly qualified name is required.</value></data>
+  <data name="ADP_DbProviderFactories_NotAFactoryType" xml:space="preserve"><value>The type '{0}' doesn't inherit from DbProviderFactory.</value></data>
+  <data name="DataSetLinq_InvalidEnumerationValue" xml:space="preserve"><value>The {0} enumeration value, {1}, is not valid.</value></data>
+  <data name="LDV_InvalidNumOfKeys" xml:space="preserve"><value>Must provide '{0}' keys to find.</value></data>
+  <data name="LDVRowStateError" xml:space="preserve"><value>DataViewRowState must be DataViewRowState.CurrentRows.</value></data>
+  <data name="ToLDVUnsupported" xml:space="preserve"><value>Can not create DataView after using projection.</value></data>
+  <data name="DataSetLinq_EmptyDataRowSource" xml:space="preserve"><value>The source contains no DataRows.</value></data>
+  <data name="DataSetLinq_NullDataRow" xml:space="preserve"><value>The source contains a DataRow reference that is null.</value></data>
+  <data name="DataSetLinq_CannotLoadDetachedRow" xml:space="preserve"><value>The source contains a detached DataRow that cannot be copied to the DataTable.</value></data>
+  <data name="DataSetLinq_CannotCompareDeletedRow" xml:space="preserve"><value>The DataRowComparer does not work with DataRows that have been deleted since it only compares current values.</value></data>
+  <data name="DataSetLinq_CannotLoadDeletedRow" xml:space="preserve"><value>The source contains a deleted DataRow that cannot be copied to the DataTable.</value></data>
+  <data name="DataSetLinq_NonNullableCast" xml:space="preserve"><value>Cannot cast DBNull. Value to type '{0}'. Please use a nullable type.</value></data>
+</root>

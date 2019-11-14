@@ -1,0 +1,136 @@
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CompositionOperation_SharingLockRequired" xml:space="preserve">
+    <value>Sharing lock is required</value>
+  </data>
+  <data name="Dependency_ExportNotFound" xml:space="preserve">
+    <value>No export was found for the contract '{0}'</value>
+  </data>
+  <data name="Dependency_QuoteParameter" xml:space="preserve">
+    <value>'{0}'</value>
+  </data>
+  <data name="Dependency_TooManyExports" xml:space="preserve">
+    <value>Only one export for the contract '{0}' is allowed, but the following parts: {1} export it.</value>
+    <comment>Parameter {1} is a list of items</comment>
+  </data>
+  <data name="Dependency_ToStringFormat" xml:space="preserve">
+    <value>'{0}' on contract '{1}' supplied by {2}</value>
+  </data>
+  <data name="ExportDescriptorNull" xml:space="preserve">
+    <value>Export descriptor fulfillment function returned null.</value>
+  </data>
+  <data name="ExportDescriptor_ToStringFormat" xml:space="preserve">
+    <value>{0} supplied by {1}</value>
+  </data>
+  <data name="Formatter_None" xml:space="preserve">
+    <value>&lt;none&gt;</value>
+  </data>
+  <data name="NotImplemented_MetadataCycles" xml:space="preserve">
+    <value>Metadata value circularity not possible, use lazy initialization.</value>
+  </data>
+  <data name="CardinalityMismatch_TooManyExports" xml:space="preserve">
+    <value>"Only one export for the contract '{0}' is allowed, multiple implementations were found."</value>
+  </data>
+  <data name="Diagnostic_ThrowingException" xml:space="preserve">
+    <value>Exception Thrown: {0}\r\n</value>
+  </data>
+  <data name="ExportDescriptor_DependencyErrorContract" xml:space="preserve">
+    <value> -&gt; required by initial request for contract '{0}'</value>
+  </data>
+  <data name="ExportDescriptor_DependencyErrorLine" xml:space="preserve">
+    <value> -&gt; required by import '{0}' of part '{1}'</value>
+  </data>
+  <data name="ExportDescriptor_UnsupportedCycle" xml:space="preserve">
+    <value>Detected an unsupported cycle for part '{0}'. To construct a valid cycle, at least one part in the cycle must be shared, and at least one import in the cycle must be non-prerequisite (e.g. a property).</value>
+  </data>
+  <data name="Component_NotCreatableOutsideSharingBoundary" xml:space="preserve">
+    <value>The component (unknown) cannot be created outside the {0} sharing boundary.</value>
+  </data>
+  <data name="Keyword_MetadataViewProvider" xml:space="preserve">
+    <value>Metadata View Provider</value>
+  </data>
+  <data name="MetadataViewProvider_InvalidViewImplementation" xml:space="preserve">
+    <value>The type '{0}' cannot be used as a metadata view. A metadata view must be a concrete class with a parameterless or dictionary constructor.</value>
+  </data>
+  <data name="MetadataViewProvider_MissingMetadata" xml:space="preserve">
+    <value>Export metadata for '{0}' is missing and no default value was supplied.</value>
+  </data>
+  <data name="Formatter_ListSeparatorWithSpace" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Sharing_Lock_Taken" xml:space="preserve">
+    <value>Sharing lock already taken in this operation.</value>
+  </data>
+  <data name="Dependencies_Should_Be_Requested_Earlier" xml:space="preserve">
+    <value>Update is finished - dependencies should have been requested earlier.</value>
+  </data>
+  <data name="Key_Already_Exist" xml:space="preserve">
+    <value>An item with the key '{0}' has already been added.</value>
+  </data>
+  <data name="Providers_Remain_To_Be_Queried" xml:space="preserve">
+    <value>Providers remain to be queried.</value>
+  </data>
+  <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred. Additional information: '{0}'.</value>
+  </data>
+  <data name="Update_already_executed" xml:space="preserve">
+    <value>The update has already executed.</value>
+  </data>
+</root>

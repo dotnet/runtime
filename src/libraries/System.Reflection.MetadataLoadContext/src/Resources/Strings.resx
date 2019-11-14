@@ -1,0 +1,272 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_GenericArgsCount" xml:space="preserve">
+    <value>The number of generic arguments provided does not match the number of generic parameters.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="Argument_InvalidEnum" xml:space="preserve">
+    <value>The enum type should contain one and only one instance field.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+    <value>Ambiguous match found.</value>
+  </data>
+  <data name="Arg_EmptyArray" xml:space="preserve">
+    <value>Array may not be empty.</value>
+  </data>
+  <data name="Arg_EnumLitValueNotFound" xml:space="preserve">
+    <value>Literal value was not found.</value>
+  </data>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="Arg_MustBeEnum" xml:space="preserve">
+    <value>Type provided must be an enum.</value>
+  </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the MetadataLoadContext.</value>
+  </data>
+  <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
+  <data name="Arg_NotGenericParameter" xml:space="preserve">
+    <value>Method may only be called on a type for which Type.IsGenericParameter is true.</value>
+  </data>
+  <data name="Arg_NotGenericTypeDefinition" xml:space="preserve">
+    <value>{0} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.</value>
+  </data>
+  <data name="Arg_ReflectionOnlyCA" xml:space="preserve">
+    <value>The requested operation cannot be used on objects loaded by a MetadataLoadContext. Use CustomAttributeData instead.</value>
+  </data>
+  <data name="Arg_InvalidOperation_Reflection" xml:space="preserve">
+    <value>The requested operation cannot be used on objects loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="Arg_ReflectionOnlyInvoke" xml:space="preserve">
+    <value>Cannot invoke a method on objects loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="Arg_ReflectionOnlyParameterDefaultValue" xml:space="preserve">
+    <value>It is illegal to request the default value on a ParameterInfo loaded by a MetadataLoadContext. Use RawDefaultValue instead.</value>
+  </data>
+  <data name="BadImageFormat_TypeRefBadScopeType" xml:space="preserve">
+    <value>Assembly '{0}' contains a type reference '{1}' that contains an invalid scope token.</value>
+  </data>
+  <data name="BadImageFormat_TypeRefModuleNotInManifest" xml:space="preserve">
+    <value>Assembly '{0}' contains a type reference '{1}' that references a module not in the manifest.</value>
+  </data>
+  <data name="CoreTypeNotFound" xml:space="preserve">
+    <value>Could not find core type '{0}'</value>
+  </data>
+  <data name="ExternalAssemblyReturnedByMetadataAssemblyResolver" xml:space="preserve">
+    <value>An assembly that was not created by this MetadataLoadContext object was returned from its MetadataAssemblyResolver.</value>
+  </data>
+  <data name="FileLoadDuplicateAssemblies" xml:space="preserve">
+    <value>The assembly '{0}' has already loaded been loaded into this MetadataLoadContext.</value>
+  </data>
+  <data name="FileNotFoundAssembly" xml:space="preserve">
+    <value>Could not find assembly '{0}'. Either explicitly load this assembly using a method such as LoadFromAssemblyPath() or use a MetadataAssemblyResolver that returns a valid assembly.</value>
+  </data>
+  <data name="FileNotFoundModule" xml:space="preserve">
+    <value>Could not find the module file for '{0}'.</value>
+  </data>
+  <data name="GenericMethodParamIndexOutOfRange" xml:space="preserve">
+    <value>A type specification contained an out of range index for a generic method parameter '{0}'.</value>
+  </data>
+  <data name="GenericTypeParamIndexOutOfRange" xml:space="preserve">
+    <value>A type specification contained an out of range index for a generic type parameter '{0}'.</value>
+  </data>
+  <data name="InvalidOperation_IsSecurity" xml:space="preserve">
+    <value>This property is not supported on assemblies loaded by a MetadataLoadContext as there is no trust level to evaluate these against.</value>
+  </data>
+  <data name="InvalidOperation_NotGenericType" xml:space="preserve">
+    <value>This operation is only valid on generic types.</value>
+  </data>
+  <data name="MakeGenericType_NotLoadedByMetadataLoadContext" xml:space="preserve">
+    <value>This type '{0}' was not loaded by the MetadataLoadContext that loaded the generic type or method.</value>
+  </data>
+  <data name="ManifestResourceInfoReferencedBadModule" xml:space="preserve">
+    <value>A manifest resource entry specified a filename that does not appear in the assembly manifest: '{0}'.</value>
+  </data>
+  <data name="MetadataLoadContextDisposed" xml:space="preserve">
+    <value>This object is no longer valid because the MetadataLoadContext that created it has been disposed.</value>
+  </data>
+  <data name="MissingCustomAttributeConstructor" xml:space="preserve">
+    <value>The constructor invoked by a custom attribute cannot be found on type '{0}'.</value>
+  </data>
+  <data name="ModuleResolveEventReturnedExternalModule" xml:space="preserve">
+    <value>ModuleResolve handlers may only return Modules loaded by the MetadataLoadContext that loaded the parent assembly.</value>
+  </data>
+  <data name="NoInvokeMember" xml:space="preserve">
+    <value>Types loaded by a MetadataLoadContext cannot pass any of these BindingFlags: InvokeMethod, CreateInstance, GetProperty, SetProperty.</value>
+  </data>
+  <data name="NoMetadataInPeImage" xml:space="preserve">
+    <value>This PE image is not a managed executable.</value>
+  </data>
+  <data name="NotAClause" xml:space="preserve">
+    <value>This ExceptionHandlingClause is not a clause.</value>
+  </data>
+  <data name="NotAFilter" xml:space="preserve">
+    <value>This ExceptionHandlingClause is not a filter.</value>
+  </data>
+  <data name="NotSupported_AssemblyCodeBase" xml:space="preserve">
+    <value>The CodeBase property is not supported on assemblies loaded by a MetadataLoadContext. Use Assembly.Location to find the origin of an Assembly.</value>
+  </data>
+  <data name="NotSupported_CaseInsensitive" xml:space="preserve">
+    <value>Passing true for ignoreCase is not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="NotSupported_FunctionPointers" xml:space="preserve">
+    <value>Parsing function pointer types in signatures is not supported.</value>
+  </data>
+  <data name="NotSupported_GetBaseDefinition" xml:space="preserve">
+    <value>GetBaseDefinition() is not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="NotSupported_InterfaceMapping" xml:space="preserve">
+    <value>InterfaceMapping is not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="NotSupported_MakeGenericType_SignatureTypes" xml:space="preserve">
+    <value>Passing signature types to this implementation of MakeGenericType() is not supported.</value>
+  </data>
+  <data name="NotSupported_MDStreamVersion" xml:space="preserve">
+    <value>MDStreamVersion is not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="NotSupported_ResolvingTokens" xml:space="preserve">
+    <value>Resolving tokens is not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="ResourceOnlyModule" xml:space="preserve">
+    <value>The requested operation cannot be used on a module that returns true for IsResource().</value>
+  </data>
+  <data name="SpecifiedFileNameInvalid" xml:space="preserve">
+    <value>The module or file name '{0}' is not specified in the assembly's manifest.</value>
+  </data>
+  <data name="NotSupported_SatelliteAssembly" xml:space="preserve">
+    <value>Satellite assemblies are not supported on assemblies loaded by a MetadataLoadContext.</value>
+  </data>
+  <data name="TypeNotFound" xml:space="preserve">
+    <value>Could not find type '{0}' in assembly '{1}'.</value>
+  </data>
+  <data name="UnexpectedUnderlyingEnumType" xml:space="preserve">
+    <value>Enum '{0}' has invalid underlying type '{1}'.</value>
+  </data>
+  <data name="UnableToDetermineCoreAssembly" xml:space="preserve">
+    <value>Could not find core assembly. Either specify a valid core assembly name in the MetadataLoadContext constructor or provide a MetadataAssemblyResolver that can load the core assembly.</value>
+  </data>
+  <data name="Arg_InvalidPath" xml:space="preserve">
+    <value>The path '{0}' is not valid.</value>
+  </data>
+</root>

@@ -1,0 +1,33 @@
+Compat issues with assembly System.Reflection.Emit:
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String, System.Boolean)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetModule()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetToken()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.Signature.get()' does not exist in the reference but it does exist in the implementation.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.TypeToken.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.EventBuilder.GetEventToken()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.GetToken()' does not exist in the reference but it does exist in the implementation.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.GenericTypeParameterBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetToken()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.Signature.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineDocument(System.String, System.Guid, System.Guid, System.Guid)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetArrayMethodToken(System.Type, System.String, System.Reflection.CallingConventions, System.Type, System.Type[])' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetFieldToken(System.Reflection.FieldInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetMethodToken(System.Reflection.MethodInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Byte[], System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Reflection.Emit.SignatureHelper)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetStringConstant(System.String)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.String)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.Type)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.IsTransient()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.PropertyBuilder.PropertyToken.get()' does not exist in the reference but it does exist in the implementation.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the reference but it does exist in the implementation.
+Total Issues: 31

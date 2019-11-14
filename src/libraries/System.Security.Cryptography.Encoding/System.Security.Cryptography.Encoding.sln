@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Encoding.Tests", "tests\System.Security.Cryptography.Encoding.Tests.csproj", "{0581E9FA-D639-4B88-96D8-D092760F90B0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AA81E343-5E54-40B0-9381-C459419BE780} = {AA81E343-5E54-40B0-9381-C459419BE780}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Encoding", "src\System.Security.Cryptography.Encoding.csproj", "{AA81E343-5E54-40B0-9381-C459419BE780}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD} = {81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Encoding", "ref\System.Security.Cryptography.Encoding.csproj", "{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0581E9FA-D639-4B88-96D8-D092760F90B0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{AA81E343-5E54-40B0-9381-C459419BE780} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0D18BF7-C6E6-42ED-B445-A20A40375EA0}
+	EndGlobalSection
+EndGlobal

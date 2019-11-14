@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+    <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Reflection\MockParameterInfo.cs">
+      <Link>Common\System\Reflection\MockParameterInfo.cs</Link>
+    </Compile>    
+    <Compile Include="..\..\Common\tests\System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>    
+    <Compile Include="AssemblyNameTests.cs" />
+    <Compile Include="AssemblyTests.cs" />
+    <Compile Include="ConstructorInfoTests.cs" />
+    <Compile Include="EventInfoTests.cs" />
+    <Compile Include="FieldInfoTests.cs" />
+    <Compile Include="GetTypeTests.cs" />
+    <Compile Include="ManifestResourceInfoTests.cs" />
+    <Compile Include="MemberInfoTests.cs" />
+    <Compile Include="MethodInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
+    <Compile Include="Common.cs" />
+    <Compile Include="ParameterInfoTests.cs" />
+    <Compile Include="PropertyInfoTests.cs" />
+    <Compile Include="TypeDerivedTests.cs" />
+    <Compile Include="TypeInfoTests.cs" />
+    <Compile Include="ExceptionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\EmbeddedImage.png">
+      <LogicalName>EmbeddedImage.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedImage.png">
+      <LogicalName>System.Reflection.Tests.EmbeddedImage1.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedTextFile.txt">
+      <LogicalName>EmbeddedTextFile.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedTextFile.txt">
+      <LogicalName>System.Reflection.Tests.EmbeddedTextFile1.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\ResourceTextFile.txt">
+      <LogicalName>ResourceTextFile.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyTests.netcoreapp.cs" />
+    <Compile Include="MemberInfoTests.netcoreapp.cs" />
+    <Compile Include="TypeInfoTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_2.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_3.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_2_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_3_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_2_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_3_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_3_0_0_0.csproj" />
+    <ProjectReference Include="ForwardedTypesAssembly\ForwardedTypesAssembly.csproj" />
+    <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj" />
+    <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
+    <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
+  </ItemGroup>
+</Project>

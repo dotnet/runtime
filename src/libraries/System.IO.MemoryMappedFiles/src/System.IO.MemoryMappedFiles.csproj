@@ -1,0 +1,163 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.IO.MemoryMappedFiles</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <!-- Compiled Source Files -->
+  <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewAccessor.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewStream.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileRights.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.MapViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.OpenFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VirtualAlloc.cs">
+      <Link>Common\Interop\Windows\Interop.VirtualAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FlushViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.FlushViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\Interop.GetSystemInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
+      <Link>Common\Interop\Windows\Interop.SYSTEM_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.HandleOptions.cs">
+      <Link>Common\Interop\Windows\Interop.HandleOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
+      <Link>Common\Interop\Windows\Interop.MEMORY_BASIC_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MemOptions.cs">
+      <Link>Common\Interop\Windows\Interop.MemOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.PipeOptions.cs">
+      <Link>Common\Interop\Windows\Interop.PipeOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Interop.BOOL.cs">
+      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
+      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.UnmapViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.UnmapViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VirtualQuery.cs">
+      <Link>Common\Interop\Windows\Interop.VirtualQuery.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs">
+      <Link>System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Windows.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Common\Interop\Unix\Interop.Fcntl.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.IOErrors.cs">
+      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Common\Interop\Unix\Interop.MMap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Common\Interop\Unix\Interop.MUnmap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MSync.cs">
+      <Link>Common\Interop\Unix\Interop.MSync.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Open.cs">
+      <Link>Common\Interop\Unix\Interop.Open.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Permissions.cs">
+      <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.cs" />
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.FTruncate.cs">
+      <Link>Common\Interop\Unix\Interop.FTruncate.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MAdvise.cs">
+      <Link>Common\Interop\Unix\Interop.MAdvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ShmOpen.cs">
+      <Link>Common\Interop\Unix\Interop.ShmOpen.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Unlink.cs">
+      <Link>Common\Interop\Unix\Interop.Unlink.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+</Project>

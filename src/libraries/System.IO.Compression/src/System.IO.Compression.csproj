@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.IO.Compression</AssemblyName>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Interop.zlib.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipCustomStreams.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipVersion.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\BlockType.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\DeflateManagedStream.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\FileFormats.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\HuffmanTree.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\InflaterManaged.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\InflaterState.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\InputBuffer.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\MatchState.cs" />
+    <Compile Include="System\IO\Compression\DeflateManaged\OutputWindow.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\Deflater.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\DeflateStream.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\Inflater.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\ZLibException.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.cs" />
+    <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.ZStream.cs" />
+    <Compile Include="System\IO\Compression\CompressionLevel.cs" />
+    <Compile Include="System\IO\Compression\CompressionMode.cs" />
+    <Compile Include="System\IO\Compression\Crc32Helper.ZLib.cs" />
+    <Compile Include="System\IO\Compression\GZipStream.cs" />
+    <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
+    <Compile Include="$(CoreLibDir)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows specific files -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
+      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\IO\Compression\ZipArchiveEntry.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+</Project>

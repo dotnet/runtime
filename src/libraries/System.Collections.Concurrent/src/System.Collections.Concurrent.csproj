@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Collections.Concurrent</AssemblyName>
+    <RootNamespace>System.Collections.Concurrent</RootNamespace>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Nullable>enable</Nullable>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Collections\Concurrent\BlockingCollection.cs" />
+    <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentBag.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentStack.cs" />
+    <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
+    <Compile Include="System\Collections\Concurrent\Partitioner.cs" />
+    <Compile Include="System\Collections\Concurrent\PartitionerStatic.cs" />
+    <Compile Include="$(CoreLibDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
+      <Link>System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="..\..\System.Threading.Tasks\src\System.Threading.Tasks.csproj" />
+  </ItemGroup>
+</Project>

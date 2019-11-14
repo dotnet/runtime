@@ -1,0 +1,316 @@
+<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Xml.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Runtime.InteropServices" #>
+<#@ include file="..\..\Common\src\CoreLib\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using Xunit;
+using Xunit.Sdk;
+
+namespace System.Numerics.Tests
+{
+    /// <summary>
+    ///  Vector{T} tests that use random number generation and a unified generic test structure
+    /// </summary>
+    public partial class GenericVectorTests
+    {
+        #region Constructor Tests
+
+        #region Tests for Span based constructor
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorWithSpan<#=type.Name#>() => TestConstructorWithSpan<<#=typeAliases[type]#>>();
+<#
+    }
+#>
+
+        private void TestConstructorWithSpan<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>().ToArray();
+            Vector<T> vector;
+
+            // Span<T> ctor
+            vector = new Vector<T>(new Span<T>(values));
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+
+            // ReadOnlySpan<T> ctor
+            vector = new Vector<T>(new ReadOnlySpan<T>(values));
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+
+            // ReadOnlySpan<byte> ctor
+            vector = new Vector<T>(MemoryMarshal.AsBytes(new ReadOnlySpan<T>(values)));
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ReadOnlySpanBasedConstructorWithLessElements_<#=type.Name#>() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<<#=typeAliases[type]#>>());
+<#
+    }
+#>
+
+        private void TestReadOnlySpanBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            var vector = new Vector<T>(new ReadOnlySpan<T>(values));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_<#=type.Name#>() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<<#=typeAliases[type]#>>());
+<#
+    }
+#>
+
+        private void TestReadOnlySpanByteBasedConstructorWithLessElements<T>() where T : struct
+        {
+            byte[] values = GenerateRandomValuesForVector<byte>(Vector<byte>.Count - 1).ToArray();
+            var vector = new Vector<T>(new ReadOnlySpan<byte>(values));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void SpanBasedConstructorWithLessElements_<#=type.Name#>() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<<#=typeAliases[type]#>>());
+<#
+    }
+#>
+
+        private void TestSpanBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            var vector = new Vector<T>(new Span<T>(values));
+        }
+
+        #endregion Tests for Span based constructor
+
+        #region Tests for Array based constructor
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayBasedConstructor_<#=type.Name#>() => TestArrayBasedConstructor<<#=typeAliases[type]#>>();
+<#
+    }
+#>
+
+        private void TestArrayBasedConstructor<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count).ToArray();
+            var vector = new Vector<T>(values);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayIndexBasedConstructor_<#=type.Name#>() => TestArrayIndexBasedConstructor<<#=typeAliases[type]#>>();
+<#
+    }
+#>
+
+        private void TestArrayIndexBasedConstructor<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
+            int offset = Vector<T>.Count - 1;
+            var vector = new Vector<T>(values, offset);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[offset + index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayBasedConstructorWithLessElements_<#=type.Name#>() => TestArrayBasedConstructorWithLessElements<<#=typeAliases[type]#>>();
+<#
+    }
+#>
+
+        private void TestArrayBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayIndexBasedConstructorLessElements_<#=type.Name#>() => TestArrayIndexBasedConstructorLessElements<<#=typeAliases[type]#>>();
+<#
+    }
+#>
+
+        private void TestArrayIndexBasedConstructorLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
+        }
+
+        #endregion Tests for Array based constructor
+
+        #region Tests for constructors using unsupported types
+
+<#
+    Type[] unsupportedTypes = new[]
+    {
+        typeof(Guid), typeof(DateTime), typeof(char)
+    };
+
+
+    foreach (var type in unsupportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorWithUnsupportedTypes_<#=type.Name#>() => TestConstructorWithUnsupportedTypes<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestConstructorWithUnsupportedTypes<T>() where T : struct
+        {
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new ReadOnlySpan<byte>(new byte[4])));
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new ReadOnlySpan<T>(new T[4])));
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new Span<T>(new T[4])));
+        }
+
+        #endregion Tests for constructors using unsupported types
+
+        #endregion Constructor Tests
+
+        #region CopyTo (span) Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CopyToSpan<#=type.Name#>() { TestCopyToSpan<<#=typeAliases[type]#>>(); }
+<#
+    }
+#>
+        private void TestCopyToSpan<T>() where T : struct
+        {
+            T[] initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            Span<T> destination = new T[Vector<T>.Count];
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<T>(new T[Vector<T>.Count - 1])));
+
+            // CopyTo(Span<T>) method
+            vector.CopyTo(destination);
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+            destination.Clear();
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<byte>(new byte[Vector<byte>.Count - 1])));
+
+            // CopyTo(Span<byte>) method
+            vector.CopyTo(MemoryMarshal.AsBytes(destination));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+        }
+        #endregion
+
+        #region TryCopyTo (span) Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void TryCopyToSpan<#=type.Name#>() { TestTryCopyToSpan<<#=typeAliases[type]#>>(); }
+<#
+    }
+#>
+        private void TestTryCopyToSpan<T>() where T : struct
+        {
+            T[] initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            Span<T> destination = new T[Vector<T>.Count];
+
+            // Fill the destination vector with random data; this allows
+            // us to check that we didn't overwrite any part of the destination
+            // if it was too small to contain the entire output.
+
+            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            T[] destinationCopy = destination.ToArray();
+
+            Assert.False(vector.TryCopyTo(destination.Slice(1)));
+            Assert.Equal<T>(destination.ToArray(), destinationCopy.ToArray());
+
+            // TryCopyTo(Span<T>) method
+            Assert.True(vector.TryCopyTo(destination));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+            destination.Clear();
+
+            Assert.False(vector.TryCopyTo(new byte[Vector<byte>.Count - 1]));
+
+            // CopyTo(Span<byte>) method
+            Assert.True(vector.TryCopyTo(MemoryMarshal.AsBytes(destination)));
+            for (int g = 0; g < destination.Length; g++)
+            {
+                Assert.Equal(initialValues[g], destination[g]);
+                Assert.Equal(vector[g], destination[g]);
+            }
+
+        }
+        #endregion
+    }
+}

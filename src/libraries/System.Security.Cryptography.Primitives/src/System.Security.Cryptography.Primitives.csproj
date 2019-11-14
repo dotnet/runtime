@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Security.Cryptography.Primitives</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\CipherMode.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
+    <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
+    <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
+    <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
+    <Compile Include="System\Security\Cryptography\HMAC.cs" />
+    <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
+    <Compile Include="System\Security\Cryptography\KeyedHashAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\KeySizes.cs" />
+    <Compile Include="System\Security\Cryptography\PaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
+    <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\ForceAsyncAwaiter.cs">
+      <Link>Common\System\Threading\Tasks\ForceAsyncAwaiter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
+      <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeySizeHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeySizeHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Oids.cs">
+      <Link>Common\System\Security\Cryptography\Oids.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+</Project>

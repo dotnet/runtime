@@ -1,0 +1,34 @@
+# FreeBSD leg
+parameters:
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+  # Required: value to specify if the full test matrix should be tested
+  #   Default: false
+  fullMatrix: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
+
+jobs:
+- template: corefx-base.yml
+  parameters:
+    isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    testScope: ${{ parameters.testScope }}
+    targetOS: FreeBSD
+    jobs:
+
+    - job: FreeBSD
+      strategy:
+        matrix:
+          x64_Release:
+            _BuildConfig: Release
+            _architecture: x64
+            _framework: netcoreapp
+            _buildScriptPrefix: 'DotNetCoreSdkDir=/usr/local/dotnet/ DotNetRoot=/usr/local/dotnet/ '
+            
+      pool:
+        name: dnceng-freebsd-internal
+
+      buildScriptPrefix: $(_buildScriptPrefix)
+      submitToHelix: false

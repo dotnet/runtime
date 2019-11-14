@@ -1,0 +1,90 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_inasync" xml:space="preserve">
+    <value>An asynchronous call is already in progress. It must be completed or canceled before you can call this method.</value>
+  </data>
+  <data name="net_InvalidAddressFamily" xml:space="preserve">
+    <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
+  </data>
+  <data name="net_InvalidSocketAddressSize" xml:space="preserve">
+    <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
+  <data name="net_invalidPingBufferSize" xml:space="preserve">
+    <value>The buffer length must not exceed 65500 bytes.</value>
+  </data>
+  <data name="net_invalid_ip_addr" xml:space="preserve">
+    <value>IPv4 address 0.0.0.0 and IPv6 address ::0 are unspecified addresses that cannot be used as a target address.</value>
+  </data>
+  <data name="net_ping" xml:space="preserve">
+    <value>An exception occurred during a Ping request.</value>
+  </data>
+  <data name="net_ping_utility_not_found" xml:space="preserve">
+    <value>The system's ping utility could not be found.</value>
+  </data>
+  <data name="net_ipv4_not_installed" xml:space="preserve">
+    <value>IPv4 is not installed.</value>
+  </data>
+  <data name="net_ipv6_not_installed" xml:space="preserve">
+    <value>IPv6 is not installed.</value>
+  </data>
+  <data name="net_ping_not_supported_uwp" xml:space="preserve">
+    <value>Ping functionality is not currently supported in UWP.</value>
+  </data>
+</root>

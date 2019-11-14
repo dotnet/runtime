@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Diagnostics\FileVersionInfo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Diagnostics\FileVersionInfo.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.FileVersionInfo.cs">
+      <Link>Common\Interop\Windows\Interop.FileVersionInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.FileVersionInfoType.cs">
+      <Link>Common\Interop\Windows\Interop.FileVersionInfoType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.GetFileVersionInfoEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileVersionInfoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.GetFileVersionInfoSizeEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileVersionInfoSizeEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.VerLanguageName.cs">
+      <Link>Common\Interop\Windows\Interop.VerLanguageName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.VerQueryValue.cs">
+      <Link>Common\Interop\Windows\Interop.VerQueryValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Version\Interop.VSFixedFileInfo.cs">
+      <Link>Common\Interop\Windows\Interop.VSFixedFileInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Diagnostics\FileVersionInfo.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\Interop.Errors.cs">
+      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <ProjectReference Include="../../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
+    <Reference Include="System.Collections.Immutable" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+</Project>

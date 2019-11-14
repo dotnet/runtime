@@ -1,0 +1,11 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	
+	<xsd:group name="c-g2">
+			<xsd:choice>
+				<xsd:element name="c21" type="xsd:int" maxOccurs="3"/>
+				<xsd:element name="c22" type="xsd:int" maxOccurs="3"/>
+			</xsd:choice>
+	</xsd:group>
+</xsd:schema>
+
+

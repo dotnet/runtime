@@ -1,0 +1,5 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+  </PropertyGroup>
+</Project>

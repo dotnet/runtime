@@ -1,0 +1,525 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="net_http_httpmethod_format_error" xml:space="preserve">
+    <value>The format of the HTTP method is invalid.</value>
+  </data>
+  <data name="net_http_httpmethod_notsupported_error" xml:space="preserve">
+    <value>The HTTP method '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="net_http_reasonphrase_format_error" xml:space="preserve">
+    <value>The reason phrase must not contain new-line characters.</value>
+  </data>
+  <data name="net_http_copyto_array_too_small" xml:space="preserve">
+    <value>The number of elements is greater than the available space from arrayIndex to the end of the destination array.</value>
+  </data>
+  <data name="net_http_headers_not_found" xml:space="preserve">
+    <value>The given header was not found.</value>
+  </data>
+  <data name="net_http_headers_single_value_header" xml:space="preserve">
+    <value>Cannot add value because header '{0}' does not support multiple values.</value>
+  </data>
+  <data name="net_http_headers_invalid_header_name" xml:space="preserve">
+    <value>The header name format is invalid.</value>
+  </data>
+  <data name="net_http_headers_invalid_value" xml:space="preserve">
+    <value>The format of value '{0}' is invalid.</value>
+  </data>
+  <data name="net_http_headers_not_allowed_header_name" xml:space="preserve">
+    <value>Misused header name, '{0}'. Make sure request headers are used with HttpRequestMessage, response headers with HttpResponseMessage, and content headers with HttpContent objects.</value>
+  </data>
+  <data name="net_http_headers_invalid_host_header" xml:space="preserve">
+    <value>The specified value is not a valid 'Host' header string.</value>
+  </data>
+  <data name="net_http_headers_invalid_from_header" xml:space="preserve">
+    <value>The specified value is not a valid 'From' header string.</value>
+  </data>
+  <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
+    <value>The specified value is not a valid quoted string.</value>
+  </data>
+  <data name="net_http_headers_invalid_range" xml:space="preserve">
+    <value>Invalid range. At least one of the two parameters must not be null.</value>
+  </data>
+  <data name="net_http_headers_no_newlines" xml:space="preserve">
+    <value>New-line characters in header values must be followed by a white-space character.</value>
+  </data>
+  <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
+    <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
+  </data>
+  <data name="net_http_content_no_task_returned" xml:space="preserve">
+    <value>The async operation did not return a System.Threading.Tasks.Task object.</value>
+  </data>
+  <data name="net_http_content_stream_already_read" xml:space="preserve">
+    <value>The stream was already consumed. It cannot be read again.</value>
+  </data>
+  <data name="net_http_content_readonly_stream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="net_http_content_invalid_charset" xml:space="preserve">
+    <value>The character set provided in ContentType is invalid. Cannot read content as string using an invalid character set.</value>
+  </data>
+  <data name="net_http_content_stream_copy_error" xml:space="preserve">
+    <value>Error while copying content to a stream.</value>
+  </data>
+  <data name="net_http_argument_empty_string" xml:space="preserve">
+    <value>The value cannot be null or empty.</value>
+  </data>
+  <data name="net_http_client_request_already_sent" xml:space="preserve">
+    <value>The request message was already sent. Cannot send the same request message multiple times.</value>
+  </data>
+  <data name="net_http_operation_started" xml:space="preserve">
+    <value>This instance has already started one or more requests. Properties can only be modified before sending the first request.</value>
+  </data>
+  <data name="net_http_client_execution_error" xml:space="preserve">
+    <value>An error occurred while sending the request.</value>
+  </data>
+  <data name="net_http_client_absolute_baseaddress_required" xml:space="preserve">
+    <value>The base address must be an absolute URI.</value>
+  </data>
+  <data name="net_http_client_invalid_requesturi" xml:space="preserve">
+    <value>An invalid request URI was provided. The request URI must either be an absolute URI or BaseAddress must be set.</value>
+  </data>
+  <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
+    <value>Only 'http' and 'https' schemes are allowed.</value>
+  </data>
+  <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
+    <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
+  </data>
+  <data name="net_http_handler_noresponse" xml:space="preserve">
+    <value>Handler did not return a response message.</value>
+  </data>
+  <data name="net_http_handler_norequest" xml:space="preserve">
+    <value>A request message must be provided. It cannot be null.</value>
+  </data>
+  <data name="net_http_message_not_success_statuscode" xml:space="preserve">
+    <value>Response status code does not indicate success: {0} ({1}).</value>
+  </data>
+  <data name="net_http_content_field_too_long" xml:space="preserve">
+    <value>The field cannot be longer than {0} characters.</value>
+  </data>
+  <data name="net_http_log_headers_no_newlines" xml:space="preserve">
+    <value>Value for header '{0}' contains invalid new-line characters. Value: '{1}'.</value>
+  </data>
+  <data name="net_http_log_headers_invalid_quality" xml:space="preserve">
+    <value>The 'q' value is invalid: '{0}'.</value>
+  </data>
+  <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
+    <value>Value '{0}' is not a valid email address. Error: {1}</value>
+  </data>
+  <data name="net_http_handler_not_assigned" xml:space="preserve">
+    <value>The inner handler has not been assigned.</value>
+  </data>
+  <data name="net_http_invalid_enable_first" xml:space="preserve">
+    <value>The {0} property must be set to '{1}' to use this property.</value>
+  </data>
+  <data name="net_http_content_buffersize_limit" xml:space="preserve">
+    <value>Buffering more than {0} bytes is not supported.</value>
+  </data>
+  <data name="net_http_value_not_supported" xml:space="preserve">
+    <value>The value '{0}' is not supported for property '{1}'.</value>
+  </data>
+  <data name="net_http_io_read" xml:space="preserve">
+    <value>The read operation failed, see inner exception.</value>
+  </data>
+  <data name="net_http_io_read_incomplete" xml:space="preserve">
+    <value>Unable to read data from the transport connection. The connection was closed before all data could be read. Expected {0} bytes, read {1} bytes.</value>
+  </data>
+  <data name="net_http_io_write" xml:space="preserve">
+    <value>The write operation failed, see inner exception.</value>
+  </data>
+  <data name="net_http_chunked_not_allowed_with_empty_content" xml:space="preserve">
+    <value>'Transfer-Encoding: chunked' header can not be used when content object is not specified.</value>
+  </data>
+  <data name="net_http_invalid_cookiecontainer" xml:space="preserve">
+    <value>When using CookieUsePolicy.UseSpecifiedCookieContainer, the CookieContainer property must not be null.</value>
+  </data>
+  <data name="net_http_invalid_proxyusepolicy" xml:space="preserve">
+    <value>When using a non-null Proxy, the WindowsProxyUsePolicy property must be set to WindowsProxyUsePolicy.UseCustomProxy.</value>
+  </data>
+  <data name="net_http_invalid_proxy" xml:space="preserve">
+    <value>When using WindowsProxyUsePolicy.UseCustomProxy, the Proxy property must not be null.</value>
+  </data>
+  <data name="net_http_value_must_be_greater_than" xml:space="preserve">
+    <value>The specified value must be greater than {0}.</value>
+  </data>
+  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the mail header: '{0}'.</value>
+  </data>
+  <data name="MailAddressInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for an e-mail address.</value>
+  </data>
+  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
+    <value>The mail header is malformed.</value>
+  </data>
+  <data name="InvalidHeaderName" xml:space="preserve">
+    <value>An invalid character was found in header name.</value>
+  </data>
+  <data name="net_cookie_attribute" xml:space="preserve">
+    <value>The '{0}'='{1}' part of the cookie is invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="net_http_content_no_concurrent_reads" xml:space="preserve">
+    <value>The stream does not support concurrent read operations.</value>
+  </data>
+  <data name="net_http_username_empty_string" xml:space="preserve">
+    <value>The username for a credential object cannot be null or empty.</value>
+  </data>
+  <data name="net_http_no_concurrent_io_allowed" xml:space="preserve">
+    <value>The stream does not support concurrent I/O read or write operations.</value>
+  </data>
+  <data name="net_http_invalid_response" xml:space="preserve">
+    <value>The server returned an invalid or unrecognized response.</value>
+  </data>
+  <data name="net_http_invalid_response_premature_eof" xml:space="preserve">
+    <value>The response ended prematurely.</value>
+  </data>
+  <data name="net_http_invalid_response_premature_eof_bytecount" xml:space="preserve">
+    <value>The response ended prematurely, with at least {0} additional bytes expected.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_header_invalid" xml:space="preserve">
+    <value>Received chunk header length could not be parsed: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_extension_invalid" xml:space="preserve">
+    <value>Received an invalid chunk extension: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_terminator_invalid" xml:space="preserve">
+    <value>Received an invalid chunk terminator: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_line" xml:space="preserve">
+    <value>Received an invalid status line: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_code" xml:space="preserve">
+    <value>Received an invalid status code: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_reason" xml:space="preserve">
+    <value>Received status phrase could not be decoded with iso-8859-1: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_header_folder" xml:space="preserve">
+    <value>Received an invalid folded header.</value>
+  </data>
+  <data name="net_http_invalid_response_header_line" xml:space="preserve">
+    <value>Received an invalid header line: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_header_name" xml:space="preserve">
+    <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_request_aborted" xml:space="preserve">
+    <value>The request was aborted.</value>
+  </data>
+  <data name="net_http_invalid_response_pseudo_header_in_trailer" xml:space="preserve">
+    <value>Received an HTTP/2 pseudo-header as a trailing header.</value>
+  </data>
+  <data name="net_http_unix_handler_disposed" xml:space="preserve">
+    <value>The handler was disposed of while active operations were in progress.</value>
+  </data>
+  <data name="net_http_buffer_insufficient_length" xml:space="preserve">
+    <value>The buffer was not long enough.</value>
+  </data>
+  <data name="net_http_response_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP response headers length exceeded the set limit of {0} bytes.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegativeNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="net_http_feature_requires_Windows10Version1607" xml:space="preserve">
+    <value>Using this feature requires Windows 10 Version 1607.</value>
+  </data>
+  <data name="net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
+    <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
+  </data>
+  <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
+    <value>Only the 'http' scheme is allowed for proxies.</value>
+  </data>
+  <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
+    <value>Request headers must contain only ASCII characters.</value>
+  </data>
+  <data name="net_http_ssl_connection_failed" xml:space="preserve">
+    <value>The SSL connection could not be established, see inner exception.</value>
+  </data>
+  <data name="net_http_unsupported_chunking" xml:space="preserve">
+    <value>HTTP 1.0 does not support chunking.</value>
+  </data>
+  <data name="net_http_unsupported_version" xml:space="preserve">
+    <value>Request HttpVersion 0.X is not supported.  Use 1.0 or above.</value>
+  </data>
+  <data name="IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
+    <value>The application protocol list is invalid.</value>
+  </data>
+  <data name="net_ssl_http2_requires_tls12" xml:space="preserve">
+    <value>HTTP/2 requires TLS 1.2 or newer, but '{0}' was negotiated.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="net_http_request_no_host" xml:space="preserve">
+    <value>CONNECT request must contain Host header.</value>
+  </data>
+  <data name="net_http_winhttp_error" xml:space="preserve">
+    <value>Error {0} calling {1}, '{2}'.</value>
+  </data>
+  <data name="net_http_http2_connection_error" xml:space="preserve">
+    <value>The HTTP/2 server sent invalid data on the connection. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http2_stream_error" xml:space="preserve">
+    <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="net_http_authconnectionfailure" xml:space="preserve">
+    <value>Authentication failed because the connection could not be reused.</value>
+  </data>
+  <data name="net_nego_server_not_supported" xml:space="preserve">
+    <value>Server implementation is not supported</value>
+  </data>
+  <data name="net_nego_protection_level_not_supported" xml:space="preserve">
+    <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
+  </data>
+  <data name="net_context_buffer_too_small" xml:space="preserve">
+    <value>Insufficient buffer space. Required: {0} Actual: {1}.</value>
+  </data>
+  <data name="net_gssapi_operation_failed_detailed" xml:space="preserve">
+    <value>GSSAPI operation failed with error - {0} ({1}).</value>
+  </data>
+  <data name="net_gssapi_operation_failed" xml:space="preserve">
+    <value>GSSAPI operation failed with status: {0} (Minor status: {1}).</value>
+  </data>
+  <data name="net_gssapi_operation_failed_detailed_majoronly" xml:space="preserve">
+    <value>GSSAPI operation failed with error - {0}.</value>
+  </data>
+  <data name="net_gssapi_operation_failed_majoronly" xml:space="preserve">
+    <value>GSSAPI operation failed with status: {0}.</value>
+  </data>
+  <data name="net_gssapi_ntlm_missing_plugin" xml:space="preserve">
+    <value>NTLM authentication requires the GSSAPI plugin 'gss-ntlmssp'.</value>
+  </data>
+  <data name="net_ntlm_not_possible_default_cred" xml:space="preserve">
+    <value>NTLM authentication is not possible with default credentials on this platform.</value>
+  </data>
+  <data name="net_nego_not_supported_empty_target_with_defaultcreds" xml:space="preserve">
+    <value>Target name should be non empty if default credentials are passed.</value>
+  </data>
+  <data name="net_http_hpack_huffman_decode_failed" xml:space="preserve">
+    <value>Huffman-coded literal string failed to decode.</value>
+  </data>
+  <data name="net_http_hpack_incomplete_header_block" xml:space="preserve">
+    <value>Incomplete header block received.</value>
+  </data>
+  <data name="net_http_hpack_late_dynamic_table_size_update" xml:space="preserve">
+    <value>Dynamic table size update received after beginning of header block.</value>
+  </data>
+  <data name="net_http_hpack_bad_integer" xml:space="preserve">
+    <value>HPACK integer exceeds limits or has an overlong encoding.</value>
+  </data>
+  <data name="net_http_disposed_while_in_use" xml:space="preserve">
+    <value>The object was disposed while operations were in progress.</value>
+  </data>
+  <data name="net_http_hpack_large_table_size_update" xml:space="preserve">
+    <value>Dynamic table size update to {0} bytes exceeds limit of {1} bytes.</value>
+  </data>
+  <data name="net_http_server_shutdown" xml:space="preserve">
+    <value>The server shut down the connection.</value>
+  </data>
+  <data name="net_http_hpack_invalid_index" xml:space="preserve">
+    <value>Invalid header index: {0} is outside of static table and no dynamic table entry found.</value>
+  </data>
+  <data name="net_http_hpack_unexpected_end" xml:space="preserve">
+    <value>End of headers reached with incomplete token.</value>
+  </data>
+  <data name="net_http_hpack_encode_failure" xml:space="preserve">
+    <value>Failed to HPACK encode the headers.</value>
+  </data>
+  <data name="net_http_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP headers length exceeded the set limit of {0} bytes.</value>
+  </data>
+  <data name="net_http_invalid_header_name" xml:space="preserve">
+    <value>Received an invalid header name: '{0}'.</value>
+  </data>
+</root>

@@ -1,0 +1,21 @@
+<!--
+  Description:  skipDays contains 7 valid days
+  Expect:       !EightDaysAWeek
+-->
+
+<rss version="2.0">
+<channel>
+<title>RSS 2.0 test case</title>
+<link>http://www.contoso.com/testcases/rss20/</link>
+<description>skipDays contains 7 valid days</description>
+<skipDays>
+<day>Friday</day>
+<day>Monday</day>
+<day>Wednesday</day>
+<day>Thursday</day>
+<day>Sunday</day>
+<day>Saturday</day>
+<day>Tuesday</day>
+</skipDays>
+</channel>
+</rss>

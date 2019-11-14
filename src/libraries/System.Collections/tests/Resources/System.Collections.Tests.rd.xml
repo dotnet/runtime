@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Collections.Tests">
+    <Assembly Name="System.Collections" BinaryFormatter="All" />
+
+    <!-- Needed because test code calls IsSerializable on these types  -->
+    <Type Name="System.Collections.Generic.SortedList`2" BinaryFormatter="All" Browse="Required Public" />
+    <Type Name="System.Collections.Generic.SortedDictionary`2" BinaryFormatter="All" Browse="Required Public" />
+    
+    <Type Name="System.Collections.Generic.SortedList`2" BinaryFormatter="All" />
+    <Type Name="System.Collections.ObjectModel.ReadOnlyCollection`1" BinaryFormatter="All" />
+  </Library>
+</Directives>

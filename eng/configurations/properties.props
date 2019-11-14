@@ -1,0 +1,49 @@
+<Project>
+  <Import Project="osgroups.props"/>
+  <Import Project="targetgroups.props"/>
+  <Import Project="configurationgroups.props"/>
+  <Import Project="archgroups.props"/>
+
+  <ItemGroup>
+    <Property Include="OSGroup">
+      <DefaultValue>AnyOS</DefaultValue>
+      <!-- OSGroup has higest precedence -->
+      <Precedence>1</Precedence>
+      <!-- OSGroup appears second in configuration string -->
+      <Order>2</Order>
+    </Property>
+    <Property Include="TargetGroup">
+      <!-- No default value -->
+      <DefaultValue></DefaultValue>
+      <!-- TargetGroup has lower precedence -->
+      <Precedence>2</Precedence>
+      <!-- TargetGroup appears first in configuration string -->
+      <Order>1</Order>
+    </Property>
+    <Property Include="ConfigurationGroup">
+      <DefaultValue>Debug</DefaultValue>
+      <!-- Property is insignificant to compatibility decisions, but persisted in configuration strings -->
+      <Precedence>Insignificant</Precedence>
+      <Order>3</Order>
+    </Property>
+    <Property Include="ArchGroup">
+      <DefaultValue>x64</DefaultValue>
+      <!-- Property is insignificant to compatibility decisions, and independent from the configuration strings -->
+      <Precedence>Independent</Precedence>
+      <Order>4</Order>
+    </Property>
+
+    <PropertyValue Include="@(OSGroups)">
+      <Property>OSGroup</Property>
+    </PropertyValue>
+    <PropertyValue Include="@(TargetGroups)">
+      <Property>TargetGroup</Property>
+    </PropertyValue>
+    <PropertyValue Include="@(ConfigurationGroups)">
+      <Property>ConfigurationGroup</Property>
+    </PropertyValue>
+    <PropertyValue Include="@(ArchGroups)">
+      <Property>ArchGroup</Property>
+    </PropertyValue>
+  </ItemGroup>
+</Project>

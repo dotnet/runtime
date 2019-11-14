@@ -1,0 +1,73 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml.Tests", "tests\System.Runtime.Serialization.Xml.Tests.csproj", "{30CAB353-089E-4294-B23B-F2DD1D945654}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml.Canonicalization", "tests\Canonicalization\System.Runtime.Serialization.Xml.Canonicalization.csproj", "{D3AD82FC-051D-4121-8E48-B13CE8024776}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml.ReflectionOnly.Tests", "tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj", "{38889701-0af4-48b3-999c-e99d639c61b6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml", "src\System.Runtime.Serialization.Xml.csproj", "{9D747A18-C8FD-4D7A-8913-4ED7911683B4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE} = {025743B4-6E1E-4602-BE7F-1E479CC8EEBE}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml", "ref\System.Runtime.Serialization.Xml.csproj", "{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{30CAB353-089E-4294-B23B-F2DD1D945654}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{30CAB353-089E-4294-B23B-F2DD1D945654}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{38889701-0af4-48b3-999c-e99d639c61b6}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{38889701-0af4-48b3-999c-e99d639c61b6}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{38889701-0af4-48b3-999c-e99d639c61b6}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{38889701-0af4-48b3-999c-e99d639c61b6}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{30CAB353-089E-4294-B23B-F2DD1D945654} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{D3AD82FC-051D-4121-8E48-B13CE8024776} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{38889701-0af4-48b3-999c-e99d639c61b6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{025743B4-6E1E-4602-BE7F-1E479CC8EEBE} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E4F1AE1F-1634-4F13-B1A6-A6C5CAAA5A89}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,5 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="a" xmlns="a">
+
+          <xsd:include schemaLocation="Misc103_a.xsd"/>
+	  <xsd:element name="m3" substitutionGroup="head" />
+</xsd:schema>

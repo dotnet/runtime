@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CoreLibDir)System\Numerics\ConstantHelper.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ConstantHelper.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenericVectorTests.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericVectorTests.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Util.cs" />
+    <Compile Include="Vector2Tests.cs" />
+    <Compile Include="Vector3Tests.cs" />
+    <Compile Include="Vector4Tests.cs" />
+    <Compile Include="MathHelper.cs" />
+    <Compile Include="Matrix3x2Tests.cs" />
+    <Compile Include="Matrix4x4Tests.cs" />
+    <Compile Include="PlaneTests.cs" />
+    <Compile Include="QuaternionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GenericVectorTests.netcoreapp.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericVectorTests.netcoreapp.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(CoreLibDir)System\Numerics\ConstantHelper.tt">
+      <Link>ConstantHelper.tt</Link>
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ConstantHelper.cs</LastGenOutput>
+    </None>
+    <None Include="$(CoreLibDir)System\Numerics\GenerationConfig.ttinclude">
+      <Link>GenerationConfig.ttinclude</Link>
+    </None>
+    <None Include="GenericVectorTests.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="GenericVectorTests.netcoreapp.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GenericVectorTests.netcoreapp.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+</Project>

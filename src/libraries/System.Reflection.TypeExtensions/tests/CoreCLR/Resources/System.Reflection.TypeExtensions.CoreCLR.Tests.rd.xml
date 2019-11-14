@@ -1,0 +1,7 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Test loads TinyAssembly.dll dynamically - rooting a (useless) type just keeps ILC from throwing it out of the image. -->
+    <Type Name="TinyAssembly.TinyInterface" Dynamic="Required Public" />
+  </Library>
+</Directives>
+

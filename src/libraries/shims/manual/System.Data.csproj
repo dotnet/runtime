@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="System.Data.forwards.cs" />
+  </ItemGroup>
+</Project>

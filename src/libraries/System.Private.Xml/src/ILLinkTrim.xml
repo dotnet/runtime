@@ -1,0 +1,13 @@
+<linker>
+  <assembly fullname="System.Private.Xml">
+    <type fullname="System.Xml.XmlReader">
+      <!-- called via reflection from System.Data.Common.dll -->
+      <method name="CreateSqlReader" />
+    </type>
+    <type fullname="System.Xml.Serialization.XmlSerializer">
+      <!-- called via reflection from SGen tool -->
+      <method name="set_Mode" />
+      <method name="GenerateSerializer" />
+    </type>
+  </assembly>
+</linker>

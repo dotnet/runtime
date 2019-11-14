@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Pbkdf2SaltChoice"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc2898#appendix-A.2
+
+    PBKDF2-params ::= SEQUENCE {
+        salt CHOICE {
+            specified OCTET STRING,
+            otherSource AlgorithmIdentifier {{PBKDF2-SaltSources}}
+        },
+        iterationCount INTEGER (1..MAX),
+        keyLength INTEGER (1..MAX) OPTIONAL,
+        prf AlgorithmIdentifier {{PBKDF2-PRFs}} DEFAULT algid-hmacWithSHA1
+    }
+  -->
+  <asn:OctetString name="Specified" />
+  <asn:AsnType name="OtherSource" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+</asn:Choice>

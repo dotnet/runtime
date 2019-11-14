@@ -1,0 +1,337 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="net_io_invalidasyncresult" xml:space="preserve">
+    <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_emptystringset" xml:space="preserve">
+    <value>This property cannot be set to an empty string.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_context_buffer_too_small" xml:space="preserve">
+    <value>Insufficient buffer space. Required: {0} Actual: {1}.</value>
+  </data>
+  <data name="net_gssapi_operation_failed_detailed" xml:space="preserve">
+    <value>GSSAPI operation failed with error - {0} ({1}).</value>
+  </data>
+  <data name="net_gssapi_operation_failed" xml:space="preserve">
+    <value>GSSAPI operation failed with status: {0} (Minor status: {1}).</value>
+  </data>
+  <data name="net_gssapi_operation_failed_detailed_majoronly" xml:space="preserve">
+    <value>GSSAPI operation failed with error - {0}.</value>
+  </data>
+  <data name="net_gssapi_operation_failed_majoronly" xml:space="preserve">
+    <value>GSSAPI operation failed with status: {0}.</value>
+  </data>
+  <data name="net_gssapi_ntlm_missing_plugin" xml:space="preserve">
+    <value>NTLM authentication requires the GSSAPI plugin 'gss-ntlmssp'.</value>
+  </data>
+  <data name="net_ntlm_not_possible_default_cred" xml:space="preserve">
+    <value>NTLM authentication is not possible with default credentials on this platform.</value>
+  </data>
+  <data name="net_nego_not_supported_empty_target_with_defaultcreds" xml:space="preserve">
+    <value>Target name should be non empty if default credentials are passed.</value>
+  </data>
+  <data name="net_nego_server_not_supported" xml:space="preserve">
+    <value>Server implementation is not supported</value>
+  </data>
+  <data name="net_nego_protection_level_not_supported" xml:space="preserve">
+    <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="MailBase64InvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the Base-64 stream.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="MailCollectionIsReadOnly" xml:space="preserve">
+    <value>The collection is read-only.</value>
+  </data>
+  <data name="MailDateInvalidFormat" xml:space="preserve">
+    <value>The date is in an invalid format.</value>
+  </data>
+  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
+    <value>The mail header is malformed.</value>
+  </data>
+  <data name="MailWriterIsInContent" xml:space="preserve">
+    <value>This operation cannot be performed while in content.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="MimeTransferEncodingNotSupported" xml:space="preserve">
+    <value>The MIME transfer encoding '{0}' is not supported.</value>
+  </data>
+  <data name="InvalidHexDigit" xml:space="preserve">
+    <value>Invalid hex digit '{0}'.</value>
+  </data>
+  <data name="InvalidHeaderName" xml:space="preserve">
+    <value>An invalid character was found in header name.</value>
+  </data>
+  <data name="ContentTypeInvalid" xml:space="preserve">
+    <value>The specified content type is invalid.</value>
+  </data>
+  <data name="ContentDispositionInvalid" xml:space="preserve">
+    <value>The specified content disposition is invalid.</value>
+  </data>
+  <data name="MimePartCantResetStream" xml:space="preserve">
+    <value>One of the streams has already been used and can't be reset to the origin.</value>
+  </data>
+  <data name="MediaTypeInvalid" xml:space="preserve">
+    <value>The specified media type is invalid.</value>
+  </data>
+  <data name="InvalidPort" xml:space="preserve">
+    <value>The specified port is invalid. The port must be greater than 0.</value>
+  </data>
+  <data name="MailHeaderInvalidCID" xml:space="preserve">
+    <value>The ContentID cannot contain a '&lt;' or '&gt;' character.</value>
+  </data>
+  <data name="MailServerResponse" xml:space="preserve">
+    <value>The server response was: {0}</value>
+  </data>
+  <data name="net_inasync" xml:space="preserve">
+    <value>An asynchronous call is already in progress. It must be completed or canceled before you can call this method.</value>
+  </data>
+  <data name="net_timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
+  <data name="SmtpAllRecipientsFailed" xml:space="preserve">
+    <value>Unable to send to all recipients.</value>
+  </data>
+  <data name="SmtpBadCommandSequence" xml:space="preserve">
+    <value>Bad sequence of commands.</value>
+  </data>
+  <data name="SmtpClientNotPermitted" xml:space="preserve">
+    <value>Client does not have permission to submit mail to this server.</value>
+  </data>
+  <data name="SmtpCommandNotImplemented" xml:space="preserve">
+    <value>Command not implemented.</value>
+  </data>
+  <data name="SmtpCommandParameterNotImplemented" xml:space="preserve">
+    <value>Command parameter not implemented.</value>
+  </data>
+  <data name="SmtpCommandUnrecognized" xml:space="preserve">
+    <value>Syntax error, command unrecognized.</value>
+  </data>
+  <data name="SmtpExceededStorageAllocation" xml:space="preserve">
+    <value>Exceeded storage allocation.</value>
+  </data>
+  <data name="SmtpFromRequired" xml:space="preserve">
+    <value>A from address must be specified.</value>
+  </data>
+  <data name="SmtpHelpMessage" xml:space="preserve">
+    <value>Help message.</value>
+  </data>
+  <data name="SmtpInsufficientStorage" xml:space="preserve">
+    <value>Insufficient system storage.</value>
+  </data>
+  <data name="SmtpInvalidHostName" xml:space="preserve">
+    <value>The address has an invalid host name: {0}.</value>
+  </data>
+  <data name="SmtpInvalidOperationDuringSend" xml:space="preserve">
+    <value>This operation cannot be performed while a message is being sent.</value>
+  </data>
+  <data name="SmtpLocalErrorInProcessing" xml:space="preserve">
+    <value>Error in processing.</value>
+  </data>
+  <data name="SmtpMailboxBusy" xml:space="preserve">
+    <value>Mailbox unavailable.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="SmtpMailboxNameNotAllowed" xml:space="preserve">
+    <value>Mailbox name not allowed.</value>
+  </data>
+  <data name="SmtpMailboxUnavailable" xml:space="preserve">
+    <value>Mailbox unavailable.</value>
+  </data>
+  <data name="SmtpMustIssueStartTlsFirst" xml:space="preserve">
+    <value>The SMTP server requires a secure connection or the client was not authenticated.</value>
+  </data>
+  <data name="SmtpNeedAbsolutePickupDirectory" xml:space="preserve">
+    <value>Only absolute directories are allowed for pickup directory.</value>
+  </data>
+  <data name="SmtpNonAsciiUserNotSupported" xml:space="preserve">
+    <value>The client or server is only configured for E-mail addresses with ASCII local-parts: {0}.</value>
+  </data>
+  <data name="SmtpOK" xml:space="preserve">
+    <value>Completed.</value>
+  </data>
+  <data name="SmtpPickupDirectoryDoesnotSupportSsl" xml:space="preserve">
+    <value>SSL must not be enabled for pickup-directory delivery methods.</value>
+  </data>
+  <data name="SmtpRecipientFailed" xml:space="preserve">
+    <value>Unable to send to a recipient.</value>
+  </data>
+  <data name="SmtpRecipientRequired" xml:space="preserve">
+    <value>A recipient must be specified.</value>
+  </data>
+  <data name="SmtpSendMailFailure" xml:space="preserve">
+    <value>Failure sending mail.</value>
+  </data>
+  <data name="SmtpServiceClosingTransmissionChannel" xml:space="preserve">
+    <value>Service closing transmission channel.</value>
+  </data>
+  <data name="SmtpServiceReady" xml:space="preserve">
+    <value>Service ready.</value>
+  </data>
+  <data name="SmtpStartMailInput" xml:space="preserve">
+    <value>Start mail input; end with &lt;CRLF&gt;.&lt;CRLF&gt;.</value>
+  </data>
+  <data name="SmtpSyntaxError" xml:space="preserve">
+    <value>Syntax error in parameters or arguments.</value>
+  </data>
+  <data name="SmtpSystemStatus" xml:space="preserve">
+    <value>System status, or system help reply.</value>
+  </data>
+  <data name="SmtpTransactionFailed" xml:space="preserve">
+    <value>Transaction failed.</value>
+  </data>
+  <data name="SmtpUserNotLocalTryAlternatePath" xml:space="preserve">
+    <value>User not local; please try a different path.</value>
+  </data>
+  <data name="SmtpUserNotLocalWillForward" xml:space="preserve">
+    <value>User not local; will forward to specified path.</value>
+  </data>
+  <data name="UnspecifiedHost" xml:space="preserve">
+    <value>The SMTP host was not specified.</value>
+  </data>
+  <data name="SmtpAlreadyConnected" xml:space="preserve">
+    <value>Already connected.</value>
+  </data>
+  <data name="SmtpAuthenticationFailed" xml:space="preserve">
+    <value>Authentication failed.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the mail header: '{0}'.</value>
+  </data>
+  <data name="SeekNotSupported" xml:space="preserve">
+    <value>Seeking is not supported on this stream.</value>
+  </data>
+  <data name="ReadNotSupported" xml:space="preserve">
+    <value>Reading is not supported on this stream.</value>
+  </data>
+  <data name="WriteNotSupported" xml:space="preserve">
+    <value>Writing is not supported on this stream.</value>
+  </data>
+  <data name="MailAddressInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for an e-mail address.</value>
+  </data>
+  <data name="SmtpAuthResponseInvalid" xml:space="preserve">
+    <value>The server returned an invalid response in the authentication handshake.</value>
+  </data>
+  <data name="net_webstatus_ServerProtocolViolation" xml:space="preserve">
+    <value>The server committed a protocol violation.</value>
+  </data>
+  <data name="SmtpDataStreamOpen" xml:space="preserve">
+    <value>Data stream is still open.</value>
+  </data>
+  <data name="SmtpEhloResponseInvalid" xml:space="preserve">
+    <value>The server returned an invalid response to the EHLO command.</value>
+  </data>
+  <data name="net_io_readfailure" xml:space="preserve">
+    <value>Unable to read data from the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_connectionclosed" xml:space="preserve">
+    <value>The connection was closed</value>
+  </data>
+  <data name="SmtpInvalidResponse" xml:space="preserve">
+    <value>Smtp server returned an invalid response.</value>
+  </data>
+  <data name="SmtpServiceNotAvailable" xml:space="preserve">
+    <value>Service not available, closing transmission channel.</value>
+  </data>
+  <data name="MailSubjectInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for a subject.</value>
+  </data>
+  <data name="MailServerDoesNotSupportStartTls" xml:space="preserve">
+    <value>Server does not support secure connections.</value>
+  </data>
+  <data name="MailHostNotFound" xml:space="preserve">
+    <value>The SMTP host was not found.</value>
+  </data>
+  <data name="SmtpGetIisPickupDirectoryNotSupported" xml:space="preserve">
+    <value>IIS delivery is not supported.</value>
+  </data>
+</root>

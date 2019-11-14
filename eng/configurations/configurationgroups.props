@@ -1,0 +1,6 @@
+﻿<Project>
+  <ItemGroup>
+    <ConfigurationGroups Include="Debug" />
+    <ConfigurationGroups Include="Release" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		   xmlns:t="uri:tempuri">
+		   
+	<xs:import namespace="uri:tempuri" schemaLocation="TargetNamespaceCollection.xsd" />
+
+	<xs:attribute name="BasicAttribute" />
+	
+	<xs:element name="NoAttributesElement">
+		<xs:complexType />
+	</xs:element>
+	
+	<xs:element name="OneAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="attr" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="RequiredAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="RequiredAttribute" use="required" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="OptionalAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="OptionalAttribute" use="optional" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="DefaultAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="DefaultAttribute" default="foo" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="FixedAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="FixedAttribute" fixed="foo" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="FixedRequiredAttributeElement">
+		<xs:complexType>
+			<xs:attribute name="FixedRequiredAttribute" fixed="foo" use="required" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="AnyAttributeElement">
+		<xs:complexType>
+			<xs:anyAttribute namespace="##any" processContents="skip" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="NamespaceAttributeElement">
+		<xs:complexType>
+			<xs:attribute ref="t:attr1" />
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:element name="MixedAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="req1" use="required" />
+			<xs:attribute name="req2" use="required" />
+			<xs:attribute name="def1" default="foo" />
+			<xs:attribute name="def2" default="foo" />
+		</xs:complexType>
+	</xs:element>
+	
+</xs:schema>

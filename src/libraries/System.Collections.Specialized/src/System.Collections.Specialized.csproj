@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Collections.Specialized</RootNamespace>
+    <AssemblyName>System.Collections.Specialized</AssemblyName>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Collections\Specialized\BitVector32.cs" />
+    <Compile Include="System\Collections\Specialized\HybridDictionary.cs" />
+    <Compile Include="System\Collections\Specialized\IOrderedDictionary.cs" />
+    <Compile Include="System\Collections\Specialized\ListDictionary.cs" />
+    <Compile Include="System\Collections\Specialized\NameObjectCollectionBase.cs" />
+    <Compile Include="System\Collections\Specialized\NameValueCollection.cs" />
+    <Compile Include="System\Collections\Specialized\OrderedDictionary.cs" />
+    <Compile Include="System\Collections\Specialized\StringCollection.cs" />
+    <Compile Include="System\Collections\Specialized\StringDictionary.cs" />
+    <Compile Include="$(CoreLibDir)System\Collections\CompatibleComparer.cs">
+      <Link>Common\System\Collections\CompatibleComparer.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Globalization.Extensions" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

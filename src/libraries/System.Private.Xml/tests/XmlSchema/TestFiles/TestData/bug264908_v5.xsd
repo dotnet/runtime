@@ -1,0 +1,6 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">			
+
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="bug264908_v1.xsd"/>
+
+</xs:schema>

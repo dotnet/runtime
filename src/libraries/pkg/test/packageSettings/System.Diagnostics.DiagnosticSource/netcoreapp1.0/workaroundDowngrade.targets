@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- issue https://github.com/dotnet/corefx/issues/28551 -->
+    <PackageReference Include="NETStandard.Library" Version="1.6.1" />
+  </ItemGroup>
+</Project>

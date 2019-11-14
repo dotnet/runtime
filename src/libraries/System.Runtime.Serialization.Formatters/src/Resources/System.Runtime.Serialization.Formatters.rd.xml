@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Runtime.Serialization.Formatters">
+    <Assembly Name="System.Runtime.Serialization.Formatters">
+      <Type Name="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter">
+        <Method Name="Serialize">
+          <Parameter Name="graph" BinaryFormatter="Required All" />
+        </Method>
+      </Type>
+      <Type Name="System.Runtime.Serialization.TypeLoadExceptionHolder" Dynamic="Required All" />
+    </Assembly>
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Runtime.Serialization.SerializationInfo">
+        <Method Name="AddValue" Signature="System.String, System.Object">
+          <Parameter Name="value" BinaryFormatter="Required All" />
+        </Method>
+        <Method Name="AddValue" Signature="System.String, System.Object, System.Type">
+          <Parameter Name="value" BinaryFormatter="Required All" />
+          <TypeParameter Name="type" BinaryFormatter="Required All" />
+        </Method>
+        <!-- This is dynamically called by SerializationInfoExtensions.UpdateValue -->
+        <Method Name="UpdateValue" Dynamic="Required" />
+      </Type>
+      <!-- Comparers are usually only referred to by interface, so analysis is unlikely to find them -->
+      <Type Name="System.Collections.IEqualityComparer">
+        <Subtypes BinaryFormatter="All" />
+      </Type>
+      <Type Name="System.Collections.IComparer">
+        <Subtypes BinaryFormatter="All" />
+      </Type>
+    </Assembly>
+  </Library>
+</Directives>

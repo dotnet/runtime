@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding ="utf-8"  ?>
+<RootElement xmlns="http://newschema_part4">
+  <e1>
+    <includedType>
+      <e1_inc xmlns="">string</e1_inc>
+    </includedType>
+    <includedType>
+      <e1_inc xmlns="">string</e1_inc>
+    </includedType>
+    <includedType>
+      <e1_inc xmlns="">string</e1_inc>
+    </includedType>
+    <includedType>
+      <e1_inc xmlns="">string</e1_inc>
+    </includedType>
+  </e1>
+</RootElement>
+

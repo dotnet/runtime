@@ -1,0 +1,378 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BadPackageFormat" xml:space="preserve">
+    <value>Format error in package.</value>
+  </data>
+  <data name="CannotModifyReadOnlyContainer" xml:space="preserve">
+    <value>Cannot modify readonly container</value>
+  </data>
+  <data name="CannotRetrievePartsOfWriteOnlyContainer" xml:space="preserve">
+    <value>Cannot retrieve parts of writeonly container</value>
+  </data>
+  <data name="ContainerAndPartModeIncompatible" xml:space="preserve">
+    <value>FileMode/FileAccess for Part.GetStream is not compatible with FileMode/FileAccess used to open the Package.</value>
+  </data>
+  <data name="ContentTypeCannotHaveLeadingTrailingLWS" xml:space="preserve">
+    <value>ContentType string cannot have leading/trailing Linear White Spaces [LWS - RFC 2616].</value>
+  </data>
+  <data name="CorePropertiesElementExpected" xml:space="preserve">
+    <value>Unrecognized root element in Core Properties part.</value>
+  </data>
+  <data name="CreateNewNotSupported" xml:space="preserve">
+    <value>CreateNew not supported</value>
+  </data>
+  <data name="DanglingMetadataRelationship" xml:space="preserve">
+    <value>The target of the Core Properties relationship does not reference an existing part.</value>
+  </data>
+  <data name="DefaultTagDoesNotMatchSchema" xml:space="preserve">
+    <value>Default tag is not valid per the schema. Verify that attributes are correct.</value>
+  </data>
+  <data name="DuplicateCorePropertyName" xml:space="preserve">
+    <value>More than one '{0}' property found.</value>
+  </data>
+  <data name="ElementIsNotEmptyElement" xml:space="preserve">
+    <value>'{0}' element must be empty.</value>
+  </data>
+  <data name="EncodingNotSupported" xml:space="preserve">
+    <value>Encoding format is not supported. Only UTF-8 and UTF-16 are supported.</value>
+  </data>
+  <data name="ExpectedRelationshipsElementTag" xml:space="preserve">
+    <value>Relationships tag expected at root level.</value>
+  </data>
+  <data name="ExpectingParameterValuePairs" xml:space="preserve">
+    <value>';' must be followed by parameter=value pair.</value>
+  </data>
+  <data name="ExpectingSemicolon" xml:space="preserve">
+    <value>Semicolon separator is required between two valid parameter=value pairs.</value>
+  </data>
+  <data name="FileFormatException" xml:space="preserve">
+    <value>Invalid file format.</value>
+  </data>
+  <data name="FileFormatExceptionWithFileName" xml:space="preserve">
+    <value>Invalid file format.</value>
+  </data>
+  <data name="GetContentTypeCoreNotImplemented" xml:space="preserve">
+    <value>PackagePart subclass must implement GetContentTypeCore method if passing a null value for the content type when PackagePart object is constructed.</value>
+  </data>
+  <data name="InvalidLinearWhiteSpaceCharacter" xml:space="preserve">
+    <value>A Linear White Space character is not valid.</value>
+  </data>
+  <data name="InvalidParameterValue" xml:space="preserve">
+    <value>Parameter value must be a valid token or a quoted string as per RFC 2616.</value>
+  </data>
+  <data name="InvalidParameterValuePair" xml:space="preserve">
+    <value>Parameter and value pair is not valid. Expected form is parameter=value.</value>
+  </data>
+  <data name="InvalidPartUri" xml:space="preserve">
+    <value>Part URI is not valid per rules defined in the Open Packaging Conventions specification.</value>
+  </data>
+  <data name="InvalidPropertyNameInCorePropertiesPart" xml:space="preserve">
+    <value>'{0}' property name is not valid in Core Properties part.</value>
+  </data>
+  <data name="InvalidRelationshipType" xml:space="preserve">
+    <value>Relationship Type cannot contain only spaces or be empty.</value>
+  </data>
+  <data name="InvalidToken_ContentType" xml:space="preserve">
+    <value>A token is not valid. Refer to RFC 2616 for correct grammar of content types.</value>
+  </data>
+  <data name="InvalidTypeSubType" xml:space="preserve">
+    <value>ContentType string is not valid. Expected format is type/subtype.</value>
+  </data>
+  <data name="InvalidValueForTheAttribute" xml:space="preserve">
+    <value>'{0}' attribute value is not valid.</value>
+  </data>
+  <data name="InvalidXmlBaseAttributePresent" xml:space="preserve">
+    <value>Relationships XML elements cannot specify attribute '{0}'.</value>
+  </data>
+  <data name="MoreThanOneMetadataRelationships" xml:space="preserve">
+    <value>Package has more than one Core Properties relationship.</value>
+  </data>
+  <data name="NoExternalTargetForMetadataRelationship" xml:space="preserve">
+    <value>TargetMode for a Core Properties relationship must be 'Internal'.</value>
+  </data>
+  <data name="NoStructuredContentInsideProperties" xml:space="preserve">
+    <value>Core Properties part: core property elements can contain only text data.</value>
+  </data>
+  <data name="NotAUniqueRelationshipId" xml:space="preserve">
+    <value>'{0}' ID conflicts with the ID of an existing relationship for the specified source.</value>
+  </data>
+  <data name="NotAValidRelationshipPartUri" xml:space="preserve">
+    <value>PackageRelationship part URI syntax is not valid.</value>
+  </data>
+  <data name="NotAValidXmlIdString" xml:space="preserve">
+    <value>'{0}' ID is not a valid XSD ID.</value>
+  </data>
+  <data name="NullContentTypeProvided" xml:space="preserve">
+    <value>GetContentTypeCore method cannot return null for the content type stream.</value>
+  </data>
+  <data name="NullStreamReturned" xml:space="preserve">
+    <value>Returned stream for the part is null.</value>
+  </data>
+  <data name="ObjectDisposed" xml:space="preserve">
+    <value>Package object was closed and disposed, so cannot carry out operations on this object or any stream opened on a part of this package.</value>
+  </data>
+  <data name="OverrideTagDoesNotMatchSchema" xml:space="preserve">
+    <value>Override tag is not valid per the schema. Verify that attributes are correct.</value>
+  </data>
+  <data name="PackagePartDeleted" xml:space="preserve">
+    <value>Part was deleted.</value>
+  </data>
+  <data name="PackagePartRelationshipDoesNotExist" xml:space="preserve">
+    <value>PackageRelationship with specified ID does not exist for the source part.</value>
+  </data>
+  <data name="PackageRelationshipDoesNotExist" xml:space="preserve">
+    <value>PackageRelationship with specified ID does not exist at the Package level.</value>
+  </data>
+  <data name="ParentContainerClosed" xml:space="preserve">
+    <value>Cannot access part because parent package was closed.</value>
+  </data>
+  <data name="PartAlreadyExists" xml:space="preserve">
+    <value>Cannot add part for the specified URI because it is already in the package.</value>
+  </data>
+  <data name="PartDoesNotExist" xml:space="preserve">
+    <value>Specified part does not exist in the package.</value>
+  </data>
+  <data name="PartNamePrefixExists" xml:space="preserve">
+    <value>Cannot add part to the package. Part names cannot be derived from another part name by appending segments to it.</value>
+  </data>
+  <data name="PartUriCannotHaveAFragment" xml:space="preserve">
+    <value>Part URI cannot contain a Fragment component.</value>
+  </data>
+  <data name="PartUriIsEmpty" xml:space="preserve">
+    <value>Part URI is empty.</value>
+  </data>
+  <data name="PartUriShouldNotEndWithForwardSlash" xml:space="preserve">
+    <value>Part URI cannot end with a forward slash.</value>
+  </data>
+  <data name="PartUriShouldNotStartWithTwoForwardSlashes" xml:space="preserve">
+    <value>Part URI cannot start with two forward slashes.</value>
+  </data>
+  <data name="PartUriShouldStartWithForwardSlash" xml:space="preserve">
+    <value>Part URI must start with a forward slash.</value>
+  </data>
+  <data name="PropertyStartTagExpected" xml:space="preserve">
+    <value>Core Properties part: A property start-tag was expected.</value>
+  </data>
+  <data name="PropertyWrongNumbOfAttribsDefinedOn" xml:space="preserve">
+    <value>Unexpected number of attributes is found on '{0}'.</value>
+  </data>
+  <data name="RelationshipPartIncorrectContentType" xml:space="preserve">
+    <value>Incorrect content type for PackageRelationship part.</value>
+  </data>
+  <data name="RelationshipPartsCannotHaveRelationships" xml:space="preserve">
+    <value>PackageRelationship parts cannot have relationships to other parts.</value>
+  </data>
+  <data name="RelationshipPartUriExpected" xml:space="preserve">
+    <value>PackageRelationship part URI is expected.</value>
+  </data>
+  <data name="RelationshipPartUriNotExpected" xml:space="preserve">
+    <value>PackageRelationship part URI is not expected.</value>
+  </data>
+  <data name="RelationshipsTagHasExtraAttributes" xml:space="preserve">
+    <value>Relationships tag has extra attributes.</value>
+  </data>
+  <data name="RelationshipTagDoesntMatchSchema" xml:space="preserve">
+    <value>Relationship tag contains incorrect attribute.</value>
+  </data>
+  <data name="RelationshipTargetMustBeRelative" xml:space="preserve">
+    <value>PackageRelationship target must be relative URI if TargetMode is Internal.</value>
+  </data>
+  <data name="RelationshipToRelationshipIllegal" xml:space="preserve">
+    <value>PackageRelationship cannot target another PackageRelationship.</value>
+  </data>
+  <data name="RequiredAttributeEmpty" xml:space="preserve">
+    <value>'{0}' tag requires a nonempty '{1}' attribute.</value>
+  </data>
+  <data name="RequiredAttributeMissing" xml:space="preserve">
+    <value>'{0}' tag requires attribute '{1}'.</value>
+  </data>
+  <data name="RequiredRelationshipAttributeMissing" xml:space="preserve">
+    <value>Relationship tag requires attribute '{0}'.</value>
+  </data>
+  <data name="StreamObjectDisposed" xml:space="preserve">
+    <value>Cannot access Stream object because it was closed or disposed.</value>
+  </data>
+  <data name="TruncateNotSupported" xml:space="preserve">
+    <value>Truncate not supported</value>
+  </data>
+  <data name="TypesElementExpected" xml:space="preserve">
+    <value>Required Types tag not found.</value>
+  </data>
+  <data name="TypesTagHasExtraAttributes" xml:space="preserve">
+    <value>Types tag has attributes not valid per the schema.</value>
+  </data>
+  <data name="TypesXmlDoesNotMatchSchema" xml:space="preserve">
+    <value>Content Types XML does not match schema.</value>
+  </data>
+  <data name="UnknownDCDateTimeXsiType" xml:space="preserve">
+    <value>Unknown xsi:type for DateTime on '{0}'.</value>
+  </data>
+  <data name="UnknownNamespaceInCorePropertiesPart" xml:space="preserve">
+    <value>Unrecognized namespace in Core Properties part.</value>
+  </data>
+  <data name="UnknownTagEncountered" xml:space="preserve">
+    <value>Unrecognized tag found in Relationships XML.</value>
+  </data>
+  <data name="UnsupportedCombinationOfModeAccess" xml:space="preserve">
+    <value>Cannot get stream with FileMode.Create, FileMode.CreateNew, FileMode.Truncate, FileMode.Append when access is FileAccess.Read.</value>
+  </data>
+  <data name="URIShouldNotBeAbsolute" xml:space="preserve">
+    <value>Cannot be an absolute URI.</value>
+  </data>
+  <data name="WrongContentTypeForPropertyPart" xml:space="preserve">
+    <value>The Core Properties relationship references a part that has an incorrect content type.</value>
+  </data>
+  <data name="XCRChoiceAfterFallback" xml:space="preserve">
+    <value>Choice cannot follow a Fallback.</value>
+  </data>
+  <data name="XCRChoiceNotFound" xml:space="preserve">
+    <value>AlternateContent must contain one or more Choice elements.</value>
+  </data>
+  <data name="XCRChoiceOnlyInAC" xml:space="preserve">
+    <value>Choice is valid only in AlternateContent.</value>
+  </data>
+  <data name="XCRCompatCycle" xml:space="preserve">
+    <value>There is a cycle of XML compatibility definitions, such that namespace '{0}' overrides itself. This could be due to inconsistent XmlnsCompatibilityAttributes in different assemblies. Please change the definitions to eliminate this cycle.</value>
+  </data>
+  <data name="XCRDuplicatePreserve" xml:space="preserve">
+    <value>Duplicate Preserve declaration for element {1} in namespace '{0}'.</value>
+  </data>
+  <data name="XCRDuplicateProcessContent" xml:space="preserve">
+    <value>Duplicate ProcessContent declaration for element '{1}' in namespace '{0}'.</value>
+  </data>
+  <data name="XCRDuplicateWildcardPreserve" xml:space="preserve">
+    <value>Duplicate wildcard Preserve declaration for namespace '{0}'.</value>
+  </data>
+  <data name="XCRDuplicateWildcardProcessContent" xml:space="preserve">
+    <value>Duplicate wildcard ProcessContent declaration for namespace '{0}'.</value>
+  </data>
+  <data name="XCRFallbackOnlyInAC" xml:space="preserve">
+    <value>Fallback is valid only in AlternateContent.</value>
+  </data>
+  <data name="XCRInvalidACChild" xml:space="preserve">
+    <value>'{0}' element is not a valid child of AlternateContent. Only Choice and Fallback elements are valid children of an AlternateContent element.</value>
+  </data>
+  <data name="XCRInvalidAttribInElement" xml:space="preserve">
+    <value>'{0}' attribute is not valid for '{1}' element.</value>
+  </data>
+  <data name="XCRInvalidFormat" xml:space="preserve">
+    <value>'{0}' format is not valid.</value>
+  </data>
+  <data name="XCRInvalidPreserve" xml:space="preserve">
+    <value>Cannot have both a specific and a wildcard Preserve declaration for namespace '{0}'.</value>
+  </data>
+  <data name="XCRInvalidProcessContent" xml:space="preserve">
+    <value>Cannot have both a specific and a wildcard ProcessContent declaration for namespace '{0}'.</value>
+  </data>
+  <data name="XCRInvalidRequiresAttribute" xml:space="preserve">
+    <value>Requires attribute must contain a valid namespace prefix.</value>
+  </data>
+  <data name="XCRInvalidXMLName" xml:space="preserve">
+    <value>'{0}' attribute value is not a valid XML name.</value>
+  </data>
+  <data name="XCRMultipleFallbackFound" xml:space="preserve">
+    <value>AlternateContent must contain only one Fallback element.</value>
+  </data>
+  <data name="XCRMustUnderstandFailed" xml:space="preserve">
+    <value>MustUnderstand condition failed on namespace '{0}'</value>
+  </data>
+  <data name="XCRNSPreserveNotIgnorable" xml:space="preserve">
+    <value>'{0}' namespace cannot preserve items; it must be declared Ignorable first.</value>
+  </data>
+  <data name="XCRNSProcessContentNotIgnorable" xml:space="preserve">
+    <value>'{0}' namespace cannot process content; it must be declared Ignorable first.</value>
+  </data>
+  <data name="XCRRequiresAttribNotFound" xml:space="preserve">
+    <value>Choice must contain Requires attribute.</value>
+  </data>
+  <data name="XCRUndefinedPrefix" xml:space="preserve">
+    <value>'{0}' prefix is not defined.</value>
+  </data>
+  <data name="XCRUnknownCompatAttrib" xml:space="preserve">
+    <value>Unrecognized compatibility attribute '{0}'.</value>
+  </data>
+  <data name="XCRUnknownCompatElement" xml:space="preserve">
+    <value>Unrecognized Compatibility element '{0}'.</value>
+  </data>
+  <data name="XsdDateTimeExpected" xml:space="preserve">
+    <value>Core Properties part: Text data of XSD type 'DateTime' was expected.</value>
+  </data>
+  <data name="CreateNewOnNonEmptyStream" xml:space="preserve">
+    <value>CreateNew is not a valid FileMode for a non-empty stream.</value>
+  </data>
+  <data name="ZipZeroSizeFileIsNotValidArchive" xml:space="preserve">
+    <value>Archive file cannot be size 0.</value>
+  </data>
+  <data name="InnerPackageUriHasFragment" xml:space="preserve">
+    <value>Package URI obtained from the pack URI cannot contain a Fragment.</value>
+  </data>
+  <data name="FragmentMustStartWithHash" xml:space="preserve">
+    <value>The '{0}' parameter must start with '#'.</value>
+  </data>
+  <data name="UriShouldBePackScheme" xml:space="preserve">
+    <value>URI must contain pack:// scheme.</value>
+  </data>
+  <data name="UriShouldBeAbsolute" xml:space="preserve">
+    <value>Must have absolute URI.</value>
+  </data>
+  <data name="FileContainsCorruptedData" xml:space="preserve">
+    <value>File contains corrupted data.</value>
+  </data>
+</root>

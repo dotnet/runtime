@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AttributedModelConventionExtensions.cs" />
+    <Compile Include="ConventionBuilderTests.cs" />
+    <Compile Include="ExportBuilderTests.cs" />
+    <Compile Include="ExportBuilderUnitTests.cs" />
+    <Compile Include="ExportInterfacesContractExclusionTests.cs" />
+    <Compile Include="ImportBuilderTests.cs" />
+    <Compile Include="PartBuilderInheritanceTests.cs" />
+    <Compile Include="PartBuilderInterfaceTests.cs" />
+    <Compile Include="PartBuilderOfTInheritanceTests.cs" />
+    <Compile Include="PartBuilderOfTTests.cs" />
+    <Compile Include="PartBuilderTests.cs" />
+  </ItemGroup>
+</Project>

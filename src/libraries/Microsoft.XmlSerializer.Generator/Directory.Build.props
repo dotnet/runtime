@@ -1,0 +1,8 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <AssemblyFileVersion>$(AssemblyVersion)</AssemblyFileVersion>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+  </PropertyGroup>
+</Project>

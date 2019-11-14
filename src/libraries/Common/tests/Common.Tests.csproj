@@ -1,0 +1,192 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CoverageSupported>false</CoverageSupported>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>Common\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\cgroups\Interop.cgroups.cs">
+      <Link>Common\Interop\Linux\cgroups\Interop.cgroups.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+      <Link>Common\Interop\Linux\procfs\Interop.ProcFsStat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+      <Link>Common\System\CharArrayHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Marvin.cs">
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs">
+      <Link>Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
+      <Link>Common\System\IO\RowConfigReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpDateParser.cs">
+      <Link>Common\System\Net\HttpDateParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
+      <Link>Common\System\Text\ReusableTextReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\SimpleRegex.cs">
+      <Link>Common\System\Text\SimpleRegex.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\Text\ValueStringBuilder.cs">
+      <Link>System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\PasteArguments.cs">
+      <Link>System\PasteArguments.cs</Link>
+    </Compile>
+    <Compile Include="Tests\Interop\cgroupsTests.cs" />
+    <Compile Include="Tests\Interop\procfsTests.cs" />
+    <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
+    <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
+    <Compile Include="Tests\System\IO\StringParserTests.cs" />
+    <Compile Include="Tests\System\MarvinTests.cs" />
+    <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
+    <Compile Include="Tests\System\PasteArgumentsTests.cs" />
+    <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
+    <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
+    <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
+    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
+    <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
+    <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
+    <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
+    <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
+    <Compile Include="Tests\System\Net\Http2\DynamicTableTest.cs" />
+    <Compile Include="Tests\System\Net\Http2\HPackDecoderTest.cs" />
+    <Compile Include="Tests\System\Net\Http2\HPackIntegerTest.cs" />
+    <Compile Include="Tests\System\Net\Http2\HuffmanDecodingTests.cs" />
+    <Compile Include="System\Net\Sockets\Fletcher32.cs">
+      <Link>System\Net\Sockets\Fletcher32.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\VirtualNetwork\VirtualNetwork.cs">
+      <Link>System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\VirtualNetwork\VirtualNetworkStream.cs">
+      <Link>System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
+    </Compile>
+    <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
+    <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
+    <Compile Include="$(CoreLibDir)System\Threading\Tasks\TaskToApm.cs">
+      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\IO\PathInternal.cs">
+      <Link>System\IO\PathInternal.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Windows.cs">
+      <Link>System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
+    <Compile Include="$(CoreLibDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\IO\Win32Marshal.cs">
+      <Link>System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
+    <Compile Include="$(CoreLibDir)System\PasteArguments.Windows.cs">
+      <Link>System\PasteArguments.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
+    <Compile Include="$(CoreLibDir)System\IO\PathInternal.Unix.cs">
+      <Link>System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibDir)System\PasteArguments.Unix.cs">
+      <Link>System\PasteArguments.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="CommonTest\System\" />
+    <Folder Include="Common\System\Security\Cryptography\" />
+    <Folder Include="System\Net\Sockets\" />
+    <Folder Include="System\Net\VirtualNetwork\" />
+  </ItemGroup>
+</Project>

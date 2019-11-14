@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(TestSourceFolder)CanonicalizationTestHelper.cs" />
+    <Compile Include="$(TestSourceFolder)TestConfigHelper.cs" />
+    <Compile Include="$(TestSourceFolder)XmlCanonicalizationTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="CryptoCanonicalization\AncestralNamespaceContextProviderProxy.cs" />
+    <Compile Include="CryptoCanonicalization\CanonicalEncoder.cs" />
+    <Compile Include="CryptoCanonicalization\CanonicalWriter.cs" />
+    <Compile Include="CryptoCanonicalization\Engine.cs" />
+    <Compile Include="CryptoCanonicalization\ExclusiveCanonicalNamespaceManager.cs" />
+    <Compile Include="CryptoCanonicalization\Pool.cs" />
+    <Compile Include="CryptoCanonicalization\SimpleXmlNodeList.cs" />
+    <Compile Include="CryptoCanonicalization\XmlBuffer.cs" />
+    <Compile Include="CryptoCanonicalization\XPathHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML_Binary.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML_NoCRLF.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML_OnlyLF.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML_UTF8.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(TestSourceFolder)TestsConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\AttrNorm.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\AttrSort.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\Boundary.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\CharEntities.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\ExcC14nSpecExample1.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\ExcC14nSpecExample2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\InclusiveImport.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\LineFeedNorm.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\SoapMessage1.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

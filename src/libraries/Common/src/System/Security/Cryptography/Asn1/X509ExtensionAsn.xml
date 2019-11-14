@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="X509ExtensionAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.1
+
+    Extension ::= SEQUENCE {
+        extnID      OBJECT IDENTIFIER,
+        critical    BOOLEAN DEFAULT FALSE,
+        extnValue   OCTET STRING
+                    - contains the DER encoding of an ASN.1 value
+                    - corresponding to the extension type identified
+                    - by extnID
+    }
+  -->
+  <asn:ObjectIdentifier name="ExtnId" />
+  <asn:Boolean name="Critical" defaultDerInit="0x01, 0x01, 0x00" />
+  <asn:OctetString name="ExtnValue" />
+</asn:Sequence>

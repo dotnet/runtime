@@ -1,0 +1,261 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
+  <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
+    <value>The method cannot be called with an invalid or closed SafeHandle.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidOidValue" xml:space="preserve">
+    <value>The OID value was invalid.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
+    <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
+  </data>
+  <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
+    <value>The keys from both parties must be the same size to generate a secret agreement.</value>
+  </data>
+  <data name="Cryptography_ArgECDHRequiresECDHKey" xml:space="preserve">
+    <value>Keys used with the ECDiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman.</value>
+  </data>
+  <data name="Cryptography_ArgExpectedECDiffieHellmanCngPublicKey" xml:space="preserve">
+    <value>DeriveKeyMaterial requires an ECDiffieHellmanCngPublicKey.</value>
+  </data>
+  <data name="Cryptography_Asn_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
+    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListRequiresFlagsEnum" xml:space="preserve">
+    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListValueTooBig" xml:space="preserve">
+    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
+  </data>
+  <data name="Cryptography_Asn_UniversalValueIsFixed" xml:space="preserve">
+    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
+  </data>
+  <data name="Cryptography_Asn_UnusedBitCountRange" xml:space="preserve">
+    <value>Unused bit count must be between 0 and 7, inclusive.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
+    <value>Encode cannot be called while a Sequence or SetOf is still open.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
+    <value>Cannot pop the requested tag as it is not currently in progress.</value>
+  </data>
+  <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
+  </data>
+  <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
+    <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
+  </data>
+  <data name="Cryptography_ArgECDsaRequiresECDsaKey" xml:space="preserve">
+    <value>Keys used with the ECDsaCng algorithm must have an algorithm group of ECDsa.</value>
+  </data>
+  <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
+    <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
+  </data>
+  <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
+    <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
+    <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_InvalidAlgorithmGroup" xml:space="preserve">
+    <value>The algorithm group '{0}' is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidAlgorithmName" xml:space="preserve">
+    <value>The algorithm name '{0}' is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidCipherMode" xml:space="preserve">
+    <value>Specified cipher mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedQX" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q and X (if present) must be the same length.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPJ" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; J (if present) must be shorter than P.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
+  </data>
+  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
+    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
+    <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
+  </data>
+  <data name="Cryptography_InvalidIVSize" xml:space="preserve">
+    <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidKeyBlobFormat" xml:space="preserve">
+    <value>The key blob format '{0}' is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidKeySize" xml:space="preserve">
+    <value>Specified key is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidPadding" xml:space="preserve">
+    <value>Padding is invalid and cannot be removed.</value>
+  </data>
+  <data name="Cryptography_InvalidProviderName" xml:space="preserve">
+    <value>The provider name '{0}' is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+  </data>
+  <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
+    <value>Key Blob not in expected format.</value>
+  </data>
+  <data name="Cryptography_KeyTooSmall" xml:space="preserve">
+    <value>The key is too small for the requested operation.</value>
+  </data>
+  <data name="Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag" xml:space="preserve">
+    <value>The CNG key handle being opened was detected to be ephemeral, but the EphemeralKey open option was not specified.</value>
+  </data>
+  <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
+    <value>Cannot open an invalid handle.</value>
+  </data>
+  <data name="Cryptography_MissingIV" xml:space="preserve">
+    <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
+  </data>
+  <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
+    <value>TransformBlock may only process bytes in block sized increments.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
+    <value>Error occurred while decoding OAEP padding.</value>
+  </data>
+  <data name="Cryptography_PartialBlock" xml:space="preserve">
+    <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
+    <value>The length of the data to decrypt is not valid for the size of this key.</value>
+  </data>
+  <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
+    <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
+    <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
+    <value>The specified PaddingMode is not supported.</value>
+  </data>
+  <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
+    <value>Attempt to transform beyond end of buffer.</value>
+  </data>
+  <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
+    <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
+  </data>
+  <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
+    <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
+  </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
+    <value>Unknown padding mode used.</value>
+  </data>
+  <data name="Cryptography_WeakKey" xml:space="preserve">
+    <value>Specified key is a known weak key for this algorithm and cannot be used.</value>
+  </data>
+  <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
+    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
+    <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
+  </data>
+</root>

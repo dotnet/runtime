@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryEntryTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectorySynchronizationTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryVirtualListViewContextTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryVirtualListViewTests.cs" />
+    <Compile Include="System\DirectoryServices\PropertyCollectionTests.cs" />
+    <Compile Include="System\DirectoryServices\SortOptionTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryInterSiteTransportTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\DirectoryContextTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\DirectoryServices\LdapConfiguration.cs">
+      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LDAP.Configuration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
+  </ItemGroup>
+</Project>
