@@ -471,6 +471,12 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (sgen_split_nursery);
+
 #endif //#ifndef DISABLE_SGEN_SPLIT_NURSERY
 
 #endif

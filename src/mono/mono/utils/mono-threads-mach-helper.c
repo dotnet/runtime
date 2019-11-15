@@ -138,4 +138,11 @@ mono_threads_init_dead_letter (void)
 	id_objc_msgSend (mono_dead_letter_key, retain);
 	id_objc_msgSend (pool, release);
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_mach_helper);
+
 #endif

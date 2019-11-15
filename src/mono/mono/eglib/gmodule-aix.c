@@ -229,5 +229,13 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 		*sym_addr = dli.dli_saddr;
 	return TRUE;
 }
+
+#else
+
+#define MONO_EMPTY_SOURCE_FILE(x) extern const char mono_quash_linker_empty_file_warning_ ## x; \
+				  const char mono_quash_linker_empty_file_warning_ ## x = 0;
+
+MONO_EMPTY_SOURCE_FILE (gmodule_aix);
+
 #endif
 

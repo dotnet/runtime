@@ -294,4 +294,10 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_mmap_windows);
+
 #endif // HOST_WIN32

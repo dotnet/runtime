@@ -196,4 +196,11 @@ mono_dl_get_system_dir (void)
 {
 	return NULL;
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_dl_windows);
+
 #endif

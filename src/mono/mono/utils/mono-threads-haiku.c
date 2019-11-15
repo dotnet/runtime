@@ -22,4 +22,10 @@ mono_native_thread_os_id_get (void)
 	return (guint64)get_pthread_thread_id (pthread_self ());
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_haiku);
+
 #endif

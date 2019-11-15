@@ -34,4 +34,8 @@ mono_networking_shutdown (void)
 	WSACleanup ();
 }
 
+#else
+
+MONO_EMPTY_SOURCE_FILE (networking_windows);
+
 #endif /* defined(HOST_WIN32) */

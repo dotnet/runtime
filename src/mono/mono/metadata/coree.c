@@ -960,4 +960,10 @@ mono_fixup_exe_image (MonoImage* image)
 		MonoFixupExe ((HMODULE) image->raw_data);
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (coree);
+
 #endif /* HOST_WIN32 */

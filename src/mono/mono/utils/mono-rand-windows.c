@@ -91,4 +91,11 @@ mono_rand_close (gpointer handle)
 {
 	g_assert (handle == 0 || handle == mono_rand_provider);
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_rand_windows);
+
 #endif /* HOST_WIN32 */

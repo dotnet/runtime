@@ -31,4 +31,8 @@ mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc)
 	return alc->loaded_images;
 }
 
+#else
+
+MONO_EMPTY_SOURCE_FILE (loaded_images_netcore);
+
 #endif /* ENABLE_NETCORE */

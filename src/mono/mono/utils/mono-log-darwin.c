@@ -107,4 +107,11 @@ void
 mono_log_close_asl ()
 {
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_darwin);
+
 #endif

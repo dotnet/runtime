@@ -43,4 +43,10 @@ mono_native_thread_os_id_get (void)
 	return (guint64)syscall (SYS_gettid);
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_linux);
+
 #endif

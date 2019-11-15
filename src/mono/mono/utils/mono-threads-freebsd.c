@@ -35,4 +35,10 @@ mono_native_thread_os_id_get (void)
 	return (guint64)tid;
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_freebsd);
+
 #endif

@@ -60,5 +60,12 @@ mono_mkstemp (char *templ)
 
 	return ret;
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_stdlib);
+
 #endif
 

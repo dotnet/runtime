@@ -286,4 +286,11 @@ mono_native_thread_os_id_get (void)
 	pthread_threadid_np (pthread_self (), &tid);
 	return tid;
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_mach);
+
 #endif

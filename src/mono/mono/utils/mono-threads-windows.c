@@ -570,4 +570,10 @@ mono_memory_barrier_process_wide (void)
 	FlushProcessWriteBuffers ();
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_windows);
+
 #endif

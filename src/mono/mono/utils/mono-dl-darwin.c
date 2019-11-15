@@ -63,4 +63,10 @@ mono_dl_get_system_dir (void)
 #endif
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_dl_darwin);
+
 #endif

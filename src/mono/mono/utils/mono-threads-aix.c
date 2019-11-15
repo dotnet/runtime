@@ -55,4 +55,10 @@ mono_native_thread_os_id_get (void)
 	return (guint64)ti.__pi_tid;
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_aix);
+
 #endif

@@ -16,4 +16,10 @@ mono_init_jemalloc (void)
 	g_mem_set_vtable (&g_mem_vtable);
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_jemalloc);
+
 #endif

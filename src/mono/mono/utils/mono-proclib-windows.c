@@ -71,4 +71,11 @@ mono_cpu_usage (MonoCpuUsageState *prev)
 	return cpu_usage;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_proclib_windows);
+
 #endif /* HOST_WIN32*/

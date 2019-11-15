@@ -86,4 +86,11 @@ mono_log_close_logcat ()
 {
 	/* No-op on Android */
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_android);
+
 #endif

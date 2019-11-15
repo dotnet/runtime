@@ -120,4 +120,11 @@ mono_log_close_syslog()
 		logFile = NULL;
 	}
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_windows);
+
 #endif

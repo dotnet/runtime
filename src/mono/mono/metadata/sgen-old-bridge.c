@@ -930,4 +930,10 @@ sgen_old_bridge_init (SgenBridgeProcessor *collector)
 	bridge_processor = collector;
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (sgen_old_bridge);
+
 #endif

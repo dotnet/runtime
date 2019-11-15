@@ -295,4 +295,10 @@ mono_threads_suspend_get_abort_signal (void)
 	return abort_signal_num;
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_posix_signals);
+
 #endif /* defined(USE_POSIX_BACKEND) */

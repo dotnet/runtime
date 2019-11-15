@@ -147,4 +147,10 @@ mono_dl_current_error_string (void)
 	return g_strdup (dlerror ());
 }
 
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_dl_posix);
+
 #endif
