@@ -702,7 +702,7 @@ CORE_ROOT=
 source "$__ProjectRoot"/_build-commons.sh
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/logs"
+__LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration

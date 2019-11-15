@@ -481,7 +481,7 @@ function create_testhost
     esac
 
     local coreFXTestExecutable=xunit.console.netcore.exe
-    local coreFXLogDir=${coreClrBinDir}/logs/CoreFX/
+    local coreFXLogDir=${coreClrBinDir}/log/CoreFX/
     local coreFXTestExecutableArgs="--notrait category=nonnetcoreapptests --notrait category=${coreFXTestExclusionDef} --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true"
 
     chmod +x ${dotnetExe}

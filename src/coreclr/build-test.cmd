@@ -40,7 +40,7 @@ set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__ProjectDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\logs"
+set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets

@@ -59,7 +59,7 @@ if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__ProjectDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\logs"
+set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __BuildAll=
