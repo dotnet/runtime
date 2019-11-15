@@ -364,7 +364,7 @@
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
-    <CodeAnalysisRuleset>$(CoreLibSharedDir)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
     <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
   </PropertyGroup>
 

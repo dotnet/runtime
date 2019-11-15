@@ -446,7 +446,7 @@
 
   <!-- Analyzers -->
   <PropertyGroup>
-    <CodeAnalysisRuleset>$(CoreLibSharedDir)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
