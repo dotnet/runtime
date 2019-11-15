@@ -466,7 +466,7 @@ namespace System.Runtime.Loader
         ///
         /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
         ///
-        /// For more details see https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/AssemblyLoadContext.ContextualReflection.md
+        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/coreclr/design-docs/AssemblyLoadContext.ContextualReflection.md
         /// </remarks>
         public static AssemblyLoadContext? CurrentContextualReflectionContext => s_asyncLocalCurrent?.Value;
 

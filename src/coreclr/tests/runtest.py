@@ -33,8 +33,8 @@
 # standard please pass the -test_native_bin_location flag to the script.
 #
 # Use the instructions here:
-#    https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-test-instructions.md 
-#    https://github.com/dotnet/coreclr/blob/master/Documentation/building/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/windows-test-instructions.md 
+#    https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/unix-test-instructions.md
 #
 ################################################################################
 ################################################################################
