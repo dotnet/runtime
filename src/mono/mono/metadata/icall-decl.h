@@ -227,5 +227,8 @@ ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_Debugger_IsAttached_intern
 ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_Debugger_IsLogging (void);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *volatile* category, MonoString *volatile* message);
 ICALL_EXPORT void ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array);
+ICALL_EXPORT void ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct);
+ICALL_EXPORT void ves_icall_Mono_SafeStringMarshal_GFree (void *c_str);
+ICALL_EXPORT char* ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *volatile* s);
 
 #endif // __MONO_METADATA_ICALL_H__
