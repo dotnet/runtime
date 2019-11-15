@@ -70,7 +70,7 @@ if "%VisualStudioVersion%"=="16.0" (
 :MissingVersion
 :: Can't find VS 2017, 2019
 echo Error: Visual Studio 2017 or 2019 required
-echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
+echo        Please see https://github.com/dotnet/runtime/tree/master/docs/libraries/building for build instructions.
 exit /b 1
 
 :VS2019
@@ -124,7 +124,7 @@ Make sure you selected the correct dependencies when installing Visual Studio.
 :: DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md#required-software
+echo See: https://github.com/dotnet/runtime/blob/master/docs/libraries/building/windows-instructions.md#required-software
 exit /b 1
 
 :GenVSSolution

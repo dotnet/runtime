@@ -1,7 +1,7 @@
 ### An overview of using superpmi.py
 -------------------------
 
-General information on [SuperPMI](https://github.com/dotnet/coreclr/blob/master/src/ToolBox/superpmi/readme.txt)
+General information on [SuperPMI](https://github.com/dotnet/runtime/blob/master/src/coreclr/ToolBox/superpmi/readme.txt)
 
 ------------------------
 
@@ -30,11 +30,11 @@ Although SuperPMI has many uses, setup and use of SuperPMI is not always trivial
 
 See the table above for locations of default collections that exist. If there is an mch file that exists, then SuperPMI will automatically download and setup the mch using that location. Please note that, it is possible that the collection is out of date, or there is a jitinterface change which makes the collection invalid. If this is the case, then in order to use the tool a collection will have to be done manually. In order to reproduce the default collections, please see below for what command the default collections are done with.
 
-`/Users/jashoo/coreclr/build.sh x64 checked`
+`/Users/jashoo/runtime/src/coreclr/build.sh x64 checked`
 
-`/Users/jashoo/coreclr/build-test.sh x64 checked -priority1`
+`/Users/jashoo/runtime/src/coreclr/build-test.sh x64 checked -priority1`
 
-`/Users/jashoo/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/coreclr/tests/runtest.sh x64 checked" --skip-cleanup`
+`/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/coreclr/tests/runtest.sh x64 checked" --skip-cleanup`
 
 **Collect**
 

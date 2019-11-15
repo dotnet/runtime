@@ -66,7 +66,7 @@ if "%VisualStudioVersion%"=="16.0" (
 :MissingVersion
 :: Can't find VS 2017, 2019
 echo Error: Visual Studio 2017 or 2019 required
-echo        Please see https://github.com/dotnet/core-setup/tree/master/Documentation/building/windows-instructions.md for build instructions.
+echo        Please see https://github.com/dotnet/runtime/tree/master/docs/installer/building/windows-instructions.md for build instructions.
 exit /b 1
 
 :VS2019
@@ -124,7 +124,7 @@ of previous version to "%VSINSTALLDIR%" and then resume build.
 :: DIA SDK not included in Express editions
 echo Visual Studio 2013 Express does not include the DIA SDK. ^
 You need Visual Studio 2013+ (Community is free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :GenVSSolution
