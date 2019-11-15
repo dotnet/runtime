@@ -8,9 +8,9 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
+using Internal.CorConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {

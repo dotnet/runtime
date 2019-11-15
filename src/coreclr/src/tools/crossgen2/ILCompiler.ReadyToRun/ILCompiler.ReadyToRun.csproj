@@ -30,6 +30,8 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\..\Common\R2RConstants.cs" Link="Common\R2RConstants.cs" />
     <Compile Include="..\Common\Internal\NativeFormat\NativeFormat.cs" Link="Common\NativeFormat.cs" />
     <Compile Include="..\Common\Internal\NativeFormat\NativeFormatWriter.cs" Link="Common\NativeFormatWriter.cs" />
     <Compile Include="..\Common\Internal\NativeFormat\NativeFormatWriter.Primitives.cs" Link="Common\NativeFormatWriter.Primitives.cs" />
@@ -92,7 +94,6 @@
     <Compile Include="..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
-    <Compile Include="..\Common\Compiler\ReadyToRun.cs" Link="Compiler\ReadyToRun.cs" />
     <Compile Include="..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
@@ -127,7 +128,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExternalMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FieldFixupSignature.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FixupConstants.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />

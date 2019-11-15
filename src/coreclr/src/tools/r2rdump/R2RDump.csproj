@@ -15,6 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\Common\R2RConstants.cs" Link="Common\R2RConstants.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.CoreDisTools">
       <Version>1.0.1-prerelease-00005</Version>
     </PackageReference>

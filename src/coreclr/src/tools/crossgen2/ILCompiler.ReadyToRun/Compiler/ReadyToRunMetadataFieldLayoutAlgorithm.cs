@@ -10,11 +10,10 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-using ILCompiler.DependencyAnalysis.ReadyToRun;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
+using Internal.CorConstants;
 
 namespace ILCompiler
 {
