@@ -441,6 +441,18 @@
     <Compile Include="..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Diagnostic.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\Common\TypeSystem\Serialization\FieldDesc.Serialization.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.Serialization.cs</Link>
     </Compile>

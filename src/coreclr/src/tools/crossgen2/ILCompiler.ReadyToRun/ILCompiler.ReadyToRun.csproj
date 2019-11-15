@@ -44,6 +44,7 @@
     <Compile Include="..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
     <Compile Include="..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
     <Compile Include="..\Common\TypeSystem\Interop\IL\MarshalUtils.cs" Link="Interop\IL\MarshalUtils.cs" />
+    <Compile Include="..\Common\TypeSystem\Interop\IL\MarshallersCache.cs" Link="Interop\IL\MarshallersCache.cs" />
     <Compile Include="..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
@@ -169,6 +170,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
+    <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
     <Compile Include="IBC\ReaderExtensions.cs" />

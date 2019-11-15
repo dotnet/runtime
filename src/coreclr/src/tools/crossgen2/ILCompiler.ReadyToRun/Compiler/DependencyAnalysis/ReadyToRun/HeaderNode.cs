@@ -119,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
 
             // ReadyToRunHeader.Flags
-            builder.EmitInt(0);
+            builder.EmitInt((int)ReadyToRunFlag.Crossgen2Image);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();

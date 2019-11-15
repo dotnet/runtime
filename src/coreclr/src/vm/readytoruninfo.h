@@ -74,6 +74,12 @@ public:
         return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    BOOL IsCrossgen2Image()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->Flags & READYTORUN_FLAG_CROSSGEN2_IMAGE;
+    }
+
     PTR_PEImageLayout GetImage()
     {
         LIMITED_METHOD_CONTRACT;

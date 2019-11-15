@@ -36,6 +36,14 @@ namespace Internal.Runtime
     };
 #pragma warning restore 0169
 
+    enum ReadyToRunFlag
+    {
+        PlatformNeutralSource = 1,  // Set if the original IL assembly was platform-neutral
+        SkipTypeValidation = 2,
+        Partial = 4,                // Set of methods with native code was determined using profile data
+        Crossgen2Image = 8          // Set if image was compiled using crossgen2
+    };
+
     //
     // ReadyToRunSectionType IDs are used by the runtime to look up specific global data sections
     // from each module linked into the final binary. New sections should be added at the bottom

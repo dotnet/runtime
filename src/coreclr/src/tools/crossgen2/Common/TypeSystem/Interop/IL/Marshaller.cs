@@ -70,6 +70,8 @@ namespace Internal.TypeSystem.Interop
     // and also argument specific marshalling informaiton
     abstract partial class Marshaller
     {
+        static MethodMarshallersCache s_marshallersCache = new MethodMarshallersCache();
+
         #region Instance state information
         public TypeSystemContext Context;
 #if !READYTORUN
@@ -155,7 +157,7 @@ namespace Internal.TypeSystem.Interop
         protected PInvokeILCodeStreams _ilCodeStreams;
         protected Home _managedHome;
         protected Home _nativeHome;
-#endregion
+        #endregion
 
         enum HomeType
         {
@@ -255,7 +257,7 @@ namespace Internal.TypeSystem.Interop
             int _argIndex;
         }
 
-#region Creation of marshallers
+        #region Creation of marshallers
 
         /// <summary>
         /// Protected ctor
@@ -365,12 +367,18 @@ namespace Internal.TypeSystem.Interop
             return marshaller;
         }
 
-        public bool IsMarshallingRequired()
+        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
         {
-            if (Out)
-                return true;
+            Debug.Assert(targetMethod.IsPInvoke);
+            return s_marshallersCache.GetOrCreateValue(targetMethod).Marshallers;
+        }
+        #endregion
 
-            switch (MarshallerKind)
+
+        #region Marshalling Requirement Checking
+        private static bool UsesCustomMarshaller(MarshallerKind kind)
+        {
+            switch (kind)
             {
                 case MarshallerKind.Enum:
                 case MarshallerKind.BlittableValue:
@@ -381,7 +389,54 @@ namespace Internal.TypeSystem.Interop
             }
             return true;
         }
-#endregion
+
+        private bool UsesCustomMarshaller()
+        {
+            return Out || UsesCustomMarshaller(MarshallerKind);
+        }
+
+        public static bool IsCustomMarshallingRequired(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+
+            if (targetMethod.GetPInvokeMethodMetadata().Flags.SetLastError)
+                return true;
+
+            var marshallers = s_marshallersCache.GetOrCreateValue(targetMethod).Marshallers;
+
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].UsesCustomMarshaller())
+                    return true;
+            }
+            return false;
+        }
+
+        public static bool IsCustomMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
+        {
+            for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
+            {
+                ParameterMetadata parameterMetadata = (paramIndex == paramMetadata.Length || i < paramMetadata[paramIndex].Index) ?
+                    new ParameterMetadata(i, ParameterMetadataAttributes.None, null) :
+                    paramMetadata[paramIndex++];
+
+                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
+
+                MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
+                    parameterType,
+                    parameterMetadata.MarshalAsDescriptor,
+                    parameterMetadata.Return,
+                    isAnsi: true,
+                    MarshallerType.Argument,
+                    out MarshallerKind elementMarshallerKind);
+
+                if (UsesCustomMarshaller(marshallerKind))
+                    return true;
+            }
+
+            return false;
+        }
+        #endregion
 
         public virtual void EmitMarshallingIL(PInvokeILCodeStreams pInvokeILCodeStreams)
         {
@@ -1095,17 +1150,17 @@ namespace Internal.TypeSystem.Interop
 
             var lRangeCheck = emitter.NewCodeLabel();
             var lLoopHeader = emitter.NewCodeLabel();
-            var  lNullArray = emitter.NewCodeLabel();
+            var lNullArray = emitter.NewCodeLabel();
 
             var vNativeTemp = emitter.NewLocal(NativeType);
             var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             var vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
             var vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            
+
             // Check for null array
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
-            
+
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
             codeStream.EmitStLoc(vLength);
@@ -1405,7 +1460,7 @@ namespace Internal.TypeSystem.Interop
         {
             get
             {
-                return MarshalDirection == MarshalDirection.Forward 
+                return MarshalDirection == MarshalDirection.Forward
                     && MarshallerType != MarshallerType.Field
                     && !IsManagedByRef
                     && In
@@ -1529,7 +1584,7 @@ namespace Internal.TypeSystem.Interop
             //
             // ANSI marshalling. Allocate a byte array, copy characters
             //
-            
+
 #if READYTORUN
             var stringToAnsi =
                 Context.SystemModule.GetKnownType("System.StubHelpers", "AnsiBSTRMarshaler")
@@ -1671,7 +1726,7 @@ namespace Internal.TypeSystem.Interop
 #endif
                 codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
                 codeStream.Emit(ILOpcode.throw_);
-                
+
                 // This is unreachable, but it maintains invariants about stack height prescribed by ECMA-335
                 codeStream.Emit(ILOpcode.ldnull);
                 return;

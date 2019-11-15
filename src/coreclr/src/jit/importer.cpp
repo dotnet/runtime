@@ -6483,9 +6483,8 @@ void Compiler::impCheckForPInvokeCall(
             return;
         }
 
-        // Legal PInvoke CALL in PInvoke IL stubs must be inlined to avoid infinite recursive
-        // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
-        if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
+        // Skip the ambient conditions checks and profitability checks if forced inlining was requested.
+        if ((mflags & CORINFO_FLG_FORCEINLINE) == 0)
         {
             if (!impCanPInvokeInline())
             {
