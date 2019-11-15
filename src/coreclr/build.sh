@@ -614,7 +614,7 @@ __PgoOptDataPath=""
 __PgoOptimize=1
 __PortableBuild=1
 __ProjectDir="$__ProjectRoot"
-__RootBinDir="$__ProjectDir/artifacts"
+__RootBinDir="$__RepoRootDir/artifacts"
 __SignTypeArg=""
 __SkipConfigure=0
 __SkipCoreCLR=0
@@ -647,10 +647,10 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
-export __ArtifactsIntermediatesDir="$__ProjectDir/artifacts/obj"
+export __IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+export __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 

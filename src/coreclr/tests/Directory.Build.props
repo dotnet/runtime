@@ -21,12 +21,12 @@
   <!-- Common properties -->
   <PropertyGroup>
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\artifacts\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\artifacts\bin\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
-    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>

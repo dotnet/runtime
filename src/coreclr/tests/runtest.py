@@ -1762,7 +1762,7 @@ def create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_locatio
     os.makedirs(repro_location)
     assert os.path.isdir(repro_location)
 
-    # Now that the repro_location exists under <coreclr_location>/artifacts/repro
+    # Now that the repro_location exists under <runtime>/artifacts/repro
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
         debug_env = DebugEnv(host_os, arch, build_type, env, core_root, coreclr_repo_location, test)

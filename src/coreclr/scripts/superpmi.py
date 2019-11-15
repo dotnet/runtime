@@ -840,7 +840,7 @@ class SuperPMIReplay:
 
                     print("To run an specific failure:")
                     print("")
-                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<coreclr_path>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
                     print("")
 
                 else:
@@ -1041,7 +1041,7 @@ class SuperPMIReplayAsmDiffs:
 
                     print("To run an specific failure:")
                     print("")
-                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<coreclr_path>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("<SuperPMI_path>/SuperPMI <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <<repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
                     print("")
 
                 print(self.fail_mcl_contents)
@@ -1411,7 +1411,7 @@ class SuperPMIReplayAsmDiffs:
                     current_jit_dump_diff = None
 
                 if current_jit_dump_diff is not None:
-                    print("Diffs found in the JitDump generated. These files are located under <coreclr_dir>/artifacts/jit_dump/base and <coreclr_dir>/artifacts/jit_dump/diff")
+                    print("Diffs found in the JitDump generated. These files are located under <repo_root>/artifacts/jit_dump/base and <repo_root>/artifacts/jit_dump/diff")
                     print("")
                     print("Method numbers with textual differences:")
 
