@@ -1,0 +1,78 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  framework: netcoreapp
+  isOfficialBuild: false
+  timeoutInMinutes: 150
+  preBuildSteps: []
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+      variables:
+      - _msbuildCommonParameters: ''
+      - _archiveTestsParameter: ''
+      - _finalFrameworkArg: -framework ${{ parameters.framework }}
+
+      - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+        - _finalFrameworkArg: -allConfigurations
+
+      - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+        - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+      - _args: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg)
+      - _commonArguments: $(_args)
+
+      # Windows variables
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - _buildScript: $(buildScriptFileName).cmd
+        - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+      # Non-Windows variables
+      - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
+        - _buildScript: ./$(buildScriptFileName).sh
+        - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _commonArguments: $(_args) -stripSymbols
+      
+      enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
+      helixRepo: dotnet/runtime
+
+      $ {{ if eq(parameters.framework, 'netcoreapp') }}:
+        name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if ne(parameters.framework, 'netcoreapp') }}:
+        name: ${{ format('{0} {1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+      workspace:
+        clean: all
+      
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+      steps:
+        - ${{ if ne(parameters.preBuildSteps[0], '') }}:
+          - ${{ parameters.preBuildSteps }}
+        
+        - script: $(_buildScript) -restore $(_commonArguments)
+          displayName: Restore
+        
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - task: DotNetCoreCLI@2
+            displayName: Restore internal tools
+            condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+            inputs:
+              command: restore
+              feedsToUse: config
+              projects: 'eng/common/internal/Tools.csproj'
+              nugetConfigPath: 'eng/internal/NuGet.config'
+              restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+              verbosityRestore: 'normal'
+              externalFeedCredentials: 'dotnet-core-internal-tooling'
+          
+        - script: $(_buildScript)
+                -build
+                $(_commonArguments)
+                $(_msbuildCommonParameters)
+          displayName: Build Sources
