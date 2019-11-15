@@ -14,7 +14,6 @@
   <ItemGroup>
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
-    <!-- TODO: (Consolidation) Update version when consolidated. -->
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
   </ItemGroup>
 

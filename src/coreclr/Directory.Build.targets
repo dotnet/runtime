@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <!-- TODO: Consolidate when moved to runtime repository: dotnet/corefx#42170 -->
-  <Import Project="..\..\Directory.Build.targets" Condition="'$(IsRuntimeRepository)' == 'true'" />
+  <Import Project="..\..\Directory.Build.targets" />
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 

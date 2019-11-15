@@ -53,9 +53,6 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
-rem Remove after repo consolidation
-if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
-
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__ProjectDir%\bin"
