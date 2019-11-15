@@ -3,7 +3,13 @@
   <PropertyGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'bin', 'Product', '$(OSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <LibrariesRefArtifactsPath Condition="'$(LibrariesRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesRefArtifactsPath>
+    <LibrariesBinArtifactsPath Condition="'$(LibrariesBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesConfiguration)'))</LibrariesBinArtifactsPath>
+    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">
+      $([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'native', 'netcoreapp-$(OSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))
+    </LibrariesNativeArtifactsPath>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(HostArch)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
@@ -40,18 +46,35 @@
           $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
 
-      <CoreCLRFiles>
-        <TargetPath>runtime/$(RuntimeIdentifier)/native</TargetPath>
-      </CoreCLRFiles>
-
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
       </CoreCLRCrossTargetFiles>
-
-      <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
     </ItemGroup>
 
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLRArtifactsPath ($(CoreCLRArtifactsPath)) does not contain any files." />
+    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveLibrariesFromLocalBuild">
+    <Error Condition="!Exists('$(LibrariesRefArtifactsPath)')" Text="The libraries subset category must be built before building this project." />
+    <Error Condition="!Exists('$(LibrariesBinArtifactsPath)')" Text="The libraries subset category must be built before building this project." />
+    <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project." />
+    <ItemGroup>
+      <LibrariesRefAssemblies Include="$(LibrariesRefArtifactsPath)*.dll;$(LibrariesRefArtifactsPath)*.pdb" />
+      <LibrariesRuntimeFiles Include="
+        $(LibrariesBinArtifactsPath)*.dll;
+        $(LibrariesBinArtifactsPath)*.pdb"
+        IsNative="" />
+      <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)*.dll;
+        $(LibrariesNativeArtifactsPath)*.dylib;
+        $(LibrariesNativeArtifactsPath)*.so;
+        $(LibrariesNativeArtifactsPath)*.dbg;
+        $(LibrariesNativeArtifactsPath)*.dwarf;
+        $(LibrariesNativeArtifactsPath)*.pdb"
+        IsNative="true" />
+    </ItemGroup>
+
+    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The libraries subset category must be built before building this project." />
+    <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The libraries subset category must be built before building this project." />
   </Target>
 </Project>

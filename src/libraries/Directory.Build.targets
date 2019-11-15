@@ -7,7 +7,7 @@
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
   </PropertyGroup>
-  
+
   <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
   <Choose>
     <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
@@ -74,8 +74,8 @@
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime</RuntimePath>
-      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app</RefPath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(ArtifactsBinDir)pkg\netcoreapp\runtime\$(ConfigurationGroup)</RuntimePath>
+      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(ConfigurationGroup)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>

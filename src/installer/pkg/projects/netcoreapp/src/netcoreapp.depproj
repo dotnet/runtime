@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="$(MicrosoftNETCorePlatformsPackage)" Version="$(MicrosoftNETCorePlatformsVersion)" />
     <PackageReference Include="$(MicrosoftNETCoreTargetsPackage)" Version="$(MicrosoftNETCoreTargetsVersion)" />
     <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryVersion)" />
@@ -33,6 +32,29 @@
           DependsOnTargets="GetCorePackagePaths" />
 
   <Target Name="GetDependencyVersionFiles" />
+
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <CoreCLRFiles>
+        <TargetPath>runtime/$(PackageRID)/native</TargetPath>
+      </CoreCLRFiles>
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+    <ItemGroup Condition="'$(PackageRID)' == ''">
+      <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
+      <Reference Include="@(LibrariesRefAssemblies)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageRID)' != ''">
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NETCoreAppFramework)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="localnetcoreapp.override.targets" />
