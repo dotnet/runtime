@@ -1371,7 +1371,7 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 #endif //FEATURE_CODE_VERSIONING
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 
 // CreateInstantiatingILStubTargetSig:
 // This method is used to create the signature of the target of the ILStub
@@ -1633,17 +1633,57 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
     _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
-#ifdef FEATURE_STUBS_AS_IL
-    if (pUnboxedMD->RequiresInstMethodTableArg())
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+    StackSArray<ShuffleEntry> portableShuffle;
+    BOOL usePortableShuffle = FALSE;
+    if (!pUnboxedMD->RequiresInstMethodTableArg())
     {
-        pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
+        ShuffleEntry entry;
+        entry.srcofs = ShuffleEntry::SENTINEL;
+        entry.dstofs = 0;
+        portableShuffle.Append(entry);
+        usePortableShuffle = TRUE;
+    }
+    else
+    {
+        usePortableShuffle = GenerateShuffleArrayPortable(pMD, pUnboxedMD, &portableShuffle, ShuffleComputationType::InstantiatingStub);
+    }
+
+    if (usePortableShuffle)
+    {
+        CPUSTUBLINKER sl;
+        _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
+
+        // The shuffle for an unboxing stub of a method that doesn't capture the 
+        // type of the this pointer must be a no-op
+        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1)); 
+
+        sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
+
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
     }
     else
 #endif
     {
-        CPUSTUBLINKER sl;
-        sl.EmitUnboxMethodStub(pUnboxedMD);
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        if (pUnboxedMD->RequiresInstMethodTableArg())
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+        {
+            _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg());
+            pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
+        }
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        else
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        {
+            CPUSTUBLINKER sl;
+            sl.EmitUnboxMethodStub(pUnboxedMD);
+            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        }
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
     }
     RETURN pstub;
 }
@@ -1685,15 +1725,29 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
     }
     Stub *pstub = NULL;
 
-#ifdef FEATURE_STUBS_AS_IL
-    pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
-#else
-    CPUSTUBLINKER sl;
-    _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
-    sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+    StackSArray<ShuffleEntry> portableShuffle;
+    if (GenerateShuffleArrayPortable(pMD, pSharedMD, &portableShuffle, ShuffleComputationType::InstantiatingStub))
+    {
+        CPUSTUBLINKER sl;
+        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
+        sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-    pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+    }
+    else
 #endif
+    {
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+        pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
+#else
+        CPUSTUBLINKER sl;
+        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
+        sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
+
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+#endif
+    }
 
     RETURN pstub;
 }
@@ -3210,7 +3264,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     if (ctorData.pArg4 != NULL || ctorData.pArg5 != NULL)
                     {
-                        // This should never happen - we should never get collectible or secure delegates here
+                        // This should never happen - we should never get collectible or wrapper delegates here
                         _ASSERTE(false);
                         pDelegateCtor = NULL;
                     }

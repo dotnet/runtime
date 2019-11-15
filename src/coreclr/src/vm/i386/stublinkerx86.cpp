@@ -2930,7 +2930,7 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
 //========================================================================
 #endif // defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
 
-#ifndef FEATURE_STUBS_AS_IL
+#if !defined(FEATURE_STUBS_AS_IL) && defined(_TARGET_X86_)
 /*==============================================================================
     Pushes a TransitionFrame on the stack
     If you make any changes to the prolog instruction sequence, be sure
@@ -2949,44 +2949,6 @@ VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOf
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
-    X86EmitPushReg(kR15);   // CalleeSavedRegisters
-    X86EmitPushReg(kR14);
-    X86EmitPushReg(kR13);
-    X86EmitPushReg(kR12);
-    X86EmitPushReg(kRBP);
-    X86EmitPushReg(kRBX);
-    X86EmitPushReg(kRSI);
-    X86EmitPushReg(kRDI);
-
-    // Push m_datum
-    X86EmitPushReg(SCRATCH_REGISTER_X86REG);
-
-    // push edx ;leave room for m_next (edx is an arbitrary choice)
-    X86EmitPushReg(kEDX);
-
-    // push Frame vptr
-    X86EmitPushImmPtr((LPVOID) pFrameVptr);
-
-    // mov rsi, rsp
-    X86EmitR2ROp(0x8b, kRSI, (X86Reg)4 /*kESP*/);
-    UnwindSetFramePointer(kRSI);
-
-    // Save ArgumentRegisters
-    #define ARGUMENT_REGISTER(regname) X86EmitRegSave(k##regname, SecureDelegateFrame::GetOffsetOfTransitionBlock() + \
-        sizeof(TransitionBlock) + offsetof(ArgumentRegisters, regname));
-    ENUM_ARGUMENT_REGISTERS();
-    #undef ARGUMENT_REGISTER
-
-    _ASSERTE(((Frame*)&pFrameVptr)->GetGSCookiePtr() == PTR_GSCookie(PBYTE(&pFrameVptr) - sizeof(GSCookie)));
-    X86EmitPushImmPtr((LPVOID)GetProcessGSCookie());
-
-    // sub rsp, 4*sizeof(void*)           ;; allocate callee scratch area and ensure rsp is 16-byte-aligned
-    const INT32 padding = sizeof(ArgumentRegisters) + ((sizeof(FramedMethodFrame) % (2 * sizeof(LPVOID))) ? 0 : sizeof(LPVOID));
-    X86EmitSubEsp(padding);
-#endif // _TARGET_AMD64_
-
-#ifdef _TARGET_X86_
     // push ebp     ;; save callee-saved register
     // mov ebp,esp
     // push ebx     ;; save callee-saved register
@@ -3016,7 +2978,6 @@ VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOf
     X86EmitMovRegSP(kESI);
 
     X86EmitPushImmPtr((LPVOID)GetProcessGSCookie());
-#endif // _TARGET_X86_
 
     // ebx <-- GetThread()
     X86EmitCurrentThreadFetch(kEBX, 0);
@@ -3024,14 +2985,7 @@ VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOf
 #if _DEBUG
 
     // call ObjectRefFlush
-#ifdef _TARGET_AMD64_
-
-    // mov rcx, rbx
-    X86EmitR2ROp(0x8b, kECX, kEBX);         // arg in reg
-
-#else // !_TARGET_AMD64_
     X86EmitPushReg(kEBX);                   // arg on stack
-#endif // _TARGET_AMD64_
 
     // Make the call
     X86EmitCall(NewExternalCodeLabel((LPVOID) Thread::ObjectRefFlush), sizeof(void*));
@@ -3052,40 +3006,16 @@ VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOf
     if (Frame::ShouldLogTransitions())
     {
         // call LogTransition
-#ifdef _TARGET_AMD64_
-
-        // mov rcx, rsi
-        X86EmitR2ROp(0x8b, kECX, kESI);         // arg in reg
-
-#else // !_TARGET_AMD64_
         X86EmitPushReg(kESI);                   // arg on stack
-#endif // _TARGET_AMD64_
 
         X86EmitCall(NewExternalCodeLabel((LPVOID) Frame::LogTransition), sizeof(void*));
-
-#ifdef _TARGET_AMD64_
-    // Reload parameter registers
-    // mov r, [esp+offs]
-    #define ARGUMENT_REGISTER(regname) X86EmitEspOffset(0x8b, k##regname, sizeof(ArgumentRegisters) + \
-        sizeof(TransitionFrame) + offsetof(ArgumentRegisters, regname));
-    ENUM_ARGUMENT_REGISTERS();
-    #undef ARGUMENT_REGISTER
-
-#endif // _TARGET_AMD64_
     }
 
 #endif // _DEBUG
 
 
-#ifdef _TARGET_AMD64_
-    // OK for the debugger to examine the new frame now
-    // (Note that if it's not OK yet for some stub, another patch label
-    // can be emitted later which will override this one.)
-    EmitPatchLabel();
-#else
     // For x86, the patch label can be specified only after the GSCookie is pushed
     // Otherwise the debugger will see a Frame without a valid GSCookie
-#endif
 }
 
 /*==============================================================================
@@ -3109,14 +3039,8 @@ VOID StubLinkerCPU::EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOf
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
-#ifdef _TARGET_X86_
     // deallocate Frame
     X86EmitAddEsp(sizeof(GSCookie) + transitionBlockOffset + TransitionBlock::GetOffsetOfCalleeSavedRegisters());
-
-#elif defined(_TARGET_AMD64_)
-    // lea rsp, [rsi + <offset of preserved registers>]
-    X86EmitOffsetModRM(0x8d, (X86Reg)4 /*kRSP*/, kRSI, transitionBlockOffset + TransitionBlock::GetOffsetOfCalleeSavedRegisters());
-#endif // _TARGET_AMD64_
 
     // pop edi        ; restore callee-saved registers
     // pop esi
@@ -3127,14 +3051,7 @@ VOID StubLinkerCPU::EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOf
     X86EmitPopReg(kEBX);
     X86EmitPopReg(kEBP);
 
-#ifdef _TARGET_AMD64_
-    X86EmitPopReg(kR12);
-    X86EmitPopReg(kR13);
-    X86EmitPopReg(kR14);
-    X86EmitPopReg(kR15);
-#endif
-
-#if defined(_TARGET_AMD64_) || defined(UNIX_X86_ABI)
+#if defined(UNIX_X86_ABI)
     // Caller deallocates argument space.  (Bypasses ASSERT in
     // X86EmitReturn.)
     numArgBytes = 0;
@@ -3152,12 +3069,8 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
 
 #ifdef _DEBUG
     // cmp dword ptr[frameReg-gsCookieOffset], gsCookie
-#ifdef _TARGET_X86_
     X86EmitCmpRegIndexImm32(frameReg, gsCookieOffset, GetProcessGSCookie());
-#else
-    X64EmitCmp32RegIndexImm32(frameReg, gsCookieOffset, (INT32)GetProcessGSCookie());
-#endif
-
+    
     CodeLabel * pLabel = NewCodeLabel();
     X86EmitCondJump(pLabel, X86CondCode::kJE);
 
@@ -3166,9 +3079,9 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
     EmitLabel(pLabel);
 #endif
 }
-#endif // !FEATURE_STUBS_AS_IL
+#endif // !defined(FEATURE_STUBS_AS_IL) && defined(_TARGET_X86_)
 
-
+#ifdef _TARGET_X86_
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -3183,7 +3096,7 @@ VOID StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     _ASSERTE(!pUnboxMD->RequiresInstMethodTableArg());
 #else
     if (pUnboxMD->RequiresInstMethodTableArg())
@@ -3196,41 +3109,109 @@ VOID StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     //
     // unboxing a value class simply means adding sizeof(void*) to the THIS pointer
     //
-#ifdef _TARGET_AMD64_
     X86EmitAddReg(THIS_kREG, sizeof(void*));
+    EmitTailJumpToMethod(pUnboxMD);
+}
+#endif //_TARGET_X86_
 
-    // Use direct call if possible
-    if (pUnboxMD->HasStableEntryPoint())
+#if defined(FEATURE_SHARE_GENERIC_CODE) && defined(_TARGET_AMD64_)
+VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
+{
+    STANDARD_VM_CONTRACT;
+
+    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
-        X86EmitRegLoad(kRAX, pUnboxMD->GetStableEntryPoint());// MOV RAX, DWORD
+        _ASSERTE((pEntry->srcofs & ShuffleEntry::REGMASK) && (pEntry->dstofs & ShuffleEntry::REGMASK));
+        // Source in a general purpose or float register, destination in the same kind of a register or on stack
+        int srcRegIndex = pEntry->srcofs & ShuffleEntry::OFSREGMASK;
+
+        // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
+        _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
+        int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+
+        if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+        {
+            // movdqa dstReg, srcReg
+            X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
+        }
+        else
+        {
+            // mov dstReg, srcReg
+            X86EmitMovRegReg(c_argRegs[dstRegIndex], c_argRegs[srcRegIndex]);
+        }
+    }
+
+    MetaSig msig(pSharedMD);
+    ArgIterator argit(&msig);
+
+    if (argit.HasParamType())
+    {
+        int paramTypeArgOffset = argit.GetParamTypeArgOffset();
+        int paramTypeArgIndex = TransitionBlock::GetArgumentIndexFromOffset(paramTypeArgOffset);
+
+        if (extraArg == NULL)
+        {
+            if (pSharedMD->RequiresInstMethodTableArg())
+            {
+                // Unboxing stub case
+                // Extract MethodTable pointer (the hidden arg) from the object instance.
+                X86EmitIndexRegLoad(c_argRegs[paramTypeArgIndex], THIS_kREG);
+            }
+        }
+        else
+        {
+            X86EmitRegLoad(c_argRegs[paramTypeArgIndex], (UINT_PTR)extraArg);
+        }
+    }
+
+    if (extraArg == NULL)
+    {
+        // Unboxing stub case
+        // Skip over the MethodTable* to find the address of the unboxed value type.
+        X86EmitAddReg(THIS_kREG, sizeof(void*));
+    }
+
+    EmitTailJumpToMethod(pSharedMD);
+}
+#endif // defined(FEATURE_SHARE_GENERIC_CODE) && defined(_TARGET_AMD64_)
+
+#ifdef _TARGET_AMD64_
+VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
+{
+    if (pMD->HasStableEntryPoint())
+    {
+        X86EmitRegLoad(kRAX, pMD->GetStableEntryPoint());// MOV RAX, DWORD
     }
     else
     {
-        X86EmitRegLoad(kRAX, (UINT_PTR)pUnboxMD->GetAddrOfSlot()); // MOV RAX, DWORD
+        X86EmitRegLoad(kRAX, (UINT_PTR)pMD->GetAddrOfSlot()); // MOV RAX, DWORD
 
         X86EmitIndexRegLoad(kRAX, kRAX);                // MOV RAX, [RAX]
     }
+}
+#endif
 
-    Emit16(X86_INSTR_JMP_EAX);                          // JMP EAX
-#else // _TARGET_AMD64_
-    X86EmitAddReg(THIS_kREG, sizeof(void*));
-
+VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
+{
+#ifdef _TARGET_AMD64_
+    EmitLoadMethodAddressIntoAX(pMD);
+    Emit16(X86_INSTR_JMP_EAX);
+#else
     // Use direct call if possible
-    if (pUnboxMD->HasStableEntryPoint())
+    if (pMD->HasStableEntryPoint())
     {
-        X86EmitNearJump(NewExternalCodeLabel((LPVOID) pUnboxMD->GetStableEntryPoint()));
+        X86EmitNearJump(NewExternalCodeLabel((LPVOID) pMD->GetStableEntryPoint()));
     }
     else
     {
         // jmp [slot]
         Emit16(0x25ff);
-        Emit32((DWORD)(size_t)pUnboxMD->GetAddrOfSlot());
+        Emit32((DWORD)(size_t)pMD->GetAddrOfSlot());
     }
-#endif //_TARGET_AMD64_
+#endif
 }
 
-
-#if defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(_TARGET_X86_)
 // The stub generated by this method passes an extra dictionary argument before jumping to
 // shared-instantiation generic code.
 //
@@ -3252,126 +3233,6 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     MetaSig msig(pMD);
     ArgIterator argit(&msig);
 
-#ifdef _TARGET_AMD64_
-    int paramTypeArgOffset = argit.GetParamTypeArgOffset();
-    int paramTypeArgIndex = TransitionBlock::GetArgumentIndexFromOffset(paramTypeArgOffset);
-
-    CorElementType argTypes[5];
-
-    int firstRealArg = paramTypeArgIndex + 1;
-    int argNum = firstRealArg;
-
-    //
-    // Compute types of the 4 register args and first stack arg
-    //
-
-    CorElementType sigType;
-    while ((sigType = msig.NextArgNormalized()) != ELEMENT_TYPE_END)
-    {
-        argTypes[argNum++] = sigType;
-        if (argNum > 4)
-            break;
-    }
-    msig.Reset();
-
-    BOOL fUseInstantiatingMethodStubWorker = FALSE;
-
-    if (argNum > 4)
-    {
-        //
-        // We will need to go through assembly helper.
-        //
-        fUseInstantiatingMethodStubWorker = TRUE;
-
-        // Allocate space for frame before pushing the arguments for the assembly helper
-        X86EmitSubEsp((INT32)(AlignUp(sizeof(void *) /* extra stack param */ + sizeof(GSCookie) + sizeof(StubHelperFrame), 16) - sizeof(void *) /* return address */));
-
-        //
-        // Store extra arg stack arg param for the helper.
-        //
-        CorElementType argType = argTypes[--argNum];
-        switch (argType)
-        {
-        case ELEMENT_TYPE_R4:
-            // movss dword ptr [rsp], xmm?
-            X64EmitMovSSToMem(kXMM3, (X86Reg)4 /*kRSP*/);
-            break;
-        case ELEMENT_TYPE_R8:
-            // movsd qword ptr [rsp], xmm?
-            X64EmitMovSDToMem(kXMM3, (X86Reg)4 /*kRSP*/);
-            break;
-        default:
-            X86EmitIndexRegStoreRSP(0, kR9);
-            break;
-        }
-    }
-
-    //
-    // Shuffle the register arguments
-    //
-    while (argNum > firstRealArg)
-    {
-        CorElementType argType = argTypes[--argNum];
-
-        switch (argType)
-        {
-            case ELEMENT_TYPE_R4:
-            case ELEMENT_TYPE_R8:
-                // mov xmm#, xmm#-1
-                X64EmitMovXmmXmm((X86Reg)argNum, (X86Reg)(argNum - 1));
-                break;
-            default:
-                //mov reg#, reg#-1
-                X86EmitMovRegReg(c_argRegs[argNum], c_argRegs[argNum-1]);
-                break;
-        }
-    }
-
-    //
-    // Setup the hidden instantiation argument
-    //
-    if (extra != NULL)
-    {
-        X86EmitRegLoad(c_argRegs[paramTypeArgIndex], (UINT_PTR)extra);
-    }
-    else
-    {
-        X86EmitIndexRegLoad(c_argRegs[paramTypeArgIndex], THIS_kREG);
-
-        X86EmitAddReg(THIS_kREG, sizeof(void*));
-    }
-
-    // Use direct call if possible
-    if (pMD->HasStableEntryPoint())
-    {
-        X86EmitRegLoad(kRAX, pMD->GetStableEntryPoint());// MOV RAX, DWORD
-    }
-    else
-    {
-        X86EmitRegLoad(kRAX, (UINT_PTR)pMD->GetAddrOfSlot()); // MOV RAX, DWORD
-
-        X86EmitIndexRegLoad(kRAX, kRAX);                // MOV RAX, [RAX]
-    }
-
-    if (fUseInstantiatingMethodStubWorker)
-    {
-        X86EmitPushReg(kRAX);
-
-        UINT cbStack = argit.SizeOfArgStack();
-        _ASSERTE(cbStack > 0);
-
-        X86EmitPushImm32((AlignUp(cbStack, 16) / sizeof(void*)) - 1);           // -1 for extra stack arg
-
-        X86EmitRegLoad(kRAX, GetEEFuncEntryPoint(InstantiatingMethodStubWorker));// MOV RAX, DWORD
-    }
-    else
-    {
-        _ASSERTE(argit.SizeOfArgStack() == 0);
-    }
-
-    Emit16(X86_INSTR_JMP_EAX);
-
-#else
     int paramTypeArgOffset = argit.GetParamTypeArgOffset();
 
     // It's on the stack
@@ -3416,20 +3277,9 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
         X86EmitAddReg(THIS_kREG, sizeof(void*));
     }
 
-    // Use direct call if possible
-    if (pMD->HasStableEntryPoint())
-    {
-        X86EmitNearJump(NewExternalCodeLabel((LPVOID) pMD->GetStableEntryPoint()));
-    }
-    else
-    {
-        // jmp [slot]
-        Emit16(0x25ff);
-        Emit32((DWORD)(size_t)pMD->GetAddrOfSlot());
-    }
-#endif //
+    EmitTailJumpToMethod(pMD);
 }
-#endif // FEATURE_SHARE_GENERIC_CODE && FEATURE_STUBS_AS_IL
+#endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(_TARGET_X86_)
 
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
@@ -3834,7 +3684,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // Unix: mov r11, rdi
     X86EmitMovRegReg(kR11, THIS_kREG);
 
-#ifdef UNIX_AMD64_ABI
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
         if (pEntry->srcofs == ShuffleEntry::HELPERREG)
@@ -3956,80 +3805,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             X86EmitIndexRegStore (SCRATCH_REGISTER_X86REG, (pEntry->dstofs + 1) * sizeof(void*), kR10);
         }
     }
-#else // UNIX_AMD64_ABI
-    UINT step = 1;
-
-    if (pShuffleEntryArray->argtype == ELEMENT_TYPE_END)
-    {
-        // Special handling of open instance methods with return buffer. Move "this"
-        // by two slots, and leave the "retbufptr" between the two slots intact.
-
-        // mov rcx, r8
-        X86EmitMovRegReg(kRCX, kR8);
-
-        // Skip this entry
-        pShuffleEntryArray++;
-
-        // Skip this entry and leave retbufptr intact
-        step += 2;
-    }
-
-    // Now shuffle the args by one position:
-    //   steps 1-3 : reg args (rcx, rdx, r8)
-    //   step  4   : stack->reg arg (r9)
-    //   step >4   : stack args
-
-    for(;
-        pShuffleEntryArray->srcofs != ShuffleEntry::SENTINEL;
-        step++, pShuffleEntryArray++)
-    {
-        switch (step)
-        {
-        case 1:
-        case 2:
-        case 3:
-            switch (pShuffleEntryArray->argtype)
-            {
-            case ELEMENT_TYPE_R4:
-            case ELEMENT_TYPE_R8:
-                // mov xmm-1#, xmm#
-                X64EmitMovXmmXmm((X86Reg)(step - 1), (X86Reg)(step));
-                break;
-            default:
-                // mov argRegs[step-1], argRegs[step]
-                X86EmitMovRegReg(c_argRegs[step-1], c_argRegs[step]);
-                break;
-            }
-            break;
-
-        case 4:
-        {
-            switch (pShuffleEntryArray->argtype)
-            {
-            case ELEMENT_TYPE_R4:
-                X64EmitMovSSFromMem(kXMM3, kRAX, 0x28);
-                break;
-
-            case ELEMENT_TYPE_R8:
-                X64EmitMovSDFromMem(kXMM3, kRAX, 0x28);
-                break;
-
-            default:
-                // mov r9, [rax + 28h]
-                X86EmitIndexRegLoad (kR9, SCRATCH_REGISTER_X86REG, 5*sizeof(void*));
-            }
-            break;
-        }
-        default:
-
-            // mov r10, [rax + (step+1)*sizeof(void*)]
-            X86EmitIndexRegLoad (kR10, SCRATCH_REGISTER_X86REG, (step+1)*sizeof(void*));
-
-            // mov [rax + step*sizeof(void*)], r10
-            X86EmitIndexRegStore (SCRATCH_REGISTER_X86REG, step*sizeof(void*), kR10);
-        }
-    }
-#endif // UNIX_AMD64_ABI
 
     // mov r10, [r11 + Delegate._methodptraux]
     X86EmitIndexRegLoad(kR10, kR11, DelegateObject::GetOffsetOfMethodPtrAux());
@@ -4134,6 +3909,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 #if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
 
+#if defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 //===========================================================================
 // Computes hash code for MulticastDelegate.Invoke()
 UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
@@ -4152,55 +3928,6 @@ UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
     if (numStackBytes > 0x7FFF)
         COMPlusThrow(kNotSupportedException, W("NotSupported_TooManyArgs"));
 
-#ifdef _TARGET_AMD64_
-    // Generate a hash key as follows:
-    //      UINT Arg0Type:2; // R4 (1), R8 (2), other (3)
-    //      UINT Arg1Type:2; // R4 (1), R8 (2), other (3)
-    //      UINT Arg2Type:2; // R4 (1), R8 (2), other (3)
-    //      UINT Arg3Type:2; // R4 (1), R8 (2), other (3)
-    //      UINT NumArgs:24; // number of arguments
-    // (This should cover all the prestub variations)
-
-    _ASSERTE(!(numStackBytes & 7));
-    UINT hash = (numStackBytes / sizeof(void*)) << 8;
-
-    UINT argNum = 0;
-
-    // NextArg() doesn't take into account the "this" pointer.
-    // That's why we have to special case it here.
-    if (argit.HasThis())
-    {
-        hash |= 3 << (2*argNum);
-        argNum++;
-    }
-
-    if (argit.HasRetBuffArg())
-    {
-        hash |= 3 << (2*argNum);
-        argNum++;
-    }
-
-    for (; argNum < 4; argNum++)
-    {
-        switch (pSig->NextArgNormalized())
-        {
-        case ELEMENT_TYPE_END:
-            argNum = 4;
-            break;
-        case ELEMENT_TYPE_R4:
-            hash |= 1 << (2*argNum);
-            break;
-        case ELEMENT_TYPE_R8:
-            hash |= 2 << (2*argNum);
-            break;
-        default:
-            hash |= 3 << (2*argNum);
-            break;
-        }
-    }
-
-#else // _TARGET_AMD64_
-
     // check if the function is returning a float, in which case the stub has to take
     // care of popping the floating point stack except for the last invocation
 
@@ -4212,10 +3939,10 @@ UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
     {
         hash |= 2;
     }
-#endif // _TARGET_AMD64_
 
     return hash;
 }
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
 #ifdef _TARGET_X86_
 //===========================================================================
@@ -4254,6 +3981,7 @@ VOID StubLinkerCPU::EmitDelegateInvoke()
 }
 #endif // _TARGET_X86_
 
+#if defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 {
     STANDARD_VM_CONTRACT;
@@ -4268,60 +3996,8 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     // Push a MulticastFrame on the stack.
     EmitMethodStubProlog(MulticastFrame::GetMethodFrameVPtr(), MulticastFrame::GetOffsetOfTransitionBlock());
 
-#ifdef _TARGET_X86_
     // Frame is ready to be inspected by debugger for patch location
     EmitPatchLabel();
-#else // _TARGET_AMD64_
-
-    // Save register arguments in their home locations.
-    // Non-FP registers are already saved by EmitMethodStubProlog.
-    // (Assumes Sig.NextArg() does not enum RetBuffArg or "this".)
-
-    int            argNum      = 0;
-    __int32        argOfs      = MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-    CorElementType argTypes[4];
-    CorElementType argType;
-
-    // 'this'
-    argOfs += sizeof(void*);
-    argTypes[argNum] = ELEMENT_TYPE_I8;
-    argNum++;
-
-    do
-    {
-        argType = ELEMENT_TYPE_END;
-
-        switch ((hash >> (2 * argNum)) & 3)
-        {
-        case 0:
-            argType = ELEMENT_TYPE_END;
-            break;
-        case 1:
-            argType = ELEMENT_TYPE_R4;
-
-            // movss dword ptr [rsp + argOfs], xmm?
-            X64EmitMovSSToMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        case 2:
-            argType = ELEMENT_TYPE_R8;
-
-            // movsd qword ptr [rsp + argOfs], xmm?
-            X64EmitMovSDToMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        default:
-            argType = ELEMENT_TYPE_I;
-            break;
-        }
-
-        argOfs += sizeof(void*);
-        argTypes[argNum] = argType;
-        argNum++;
-    }
-    while (argNum < 4 && ELEMENT_TYPE_END != argType);
-
-    _ASSERTE(4 == argNum || ELEMENT_TYPE_END == argTypes[argNum-1]);
-
-#endif // _TARGET_AMD64_
 
     // TODO: on AMD64, pick different regs for locals so don't need the pushes
 
@@ -4347,102 +4023,6 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 
     // je ENDLOOP
     X86EmitCondJump(pEndLoopLabel, X86CondCode::kJZ);
-
-#ifdef _TARGET_AMD64_
-
-    INT32 numStackBytes = (INT32)((hash >> 8) * sizeof(void *));
-
-    INT32 stackUsed, numStackArgs, ofs;
-
-    // Push any stack args, plus an extra location
-    // for rsp alignment if needed
-
-    numStackArgs = numStackBytes / sizeof(void*);
-
-    // 1 push above, so stack is currently misaligned
-    const unsigned STACK_ALIGN_ADJUST = 8;
-
-    if (!numStackArgs)
-    {
-        // sub rsp, 28h             ;; 4 reg arg home locs + rsp alignment
-        stackUsed = 0x20 + STACK_ALIGN_ADJUST;
-        X86EmitSubEsp(stackUsed);
-    }
-    else
-    {
-        stackUsed = numStackArgs * sizeof(void*);
-
-        // If the stack is misaligned, then an odd number of arguments
-        // will naturally align the stack.
-        if (   ((numStackArgs & 1) == 0)
-            != (STACK_ALIGN_ADJUST == 0))
-        {
-            X86EmitPushReg(kRAX);
-            stackUsed += sizeof(void*);
-        }
-
-        ofs = MulticastFrame::GetOffsetOfTransitionBlock() +
-            TransitionBlock::GetOffsetOfArgs() + sizeof(ArgumentRegisters) + numStackBytes;
-
-        while (numStackArgs--)
-        {
-            ofs -= sizeof(void*);
-
-            // push [rsi + ofs]     ;; Push stack args
-            X86EmitIndexPush(kESI, ofs);
-        }
-
-        // sub rsp, 20h             ;; Create 4 reg arg home locations
-        X86EmitSubEsp(0x20);
-
-        stackUsed += 0x20;
-    }
-
-    for(
-        argNum = 0, argOfs = MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-        argNum < 4 && argTypes[argNum] != ELEMENT_TYPE_END;
-        argNum++, argOfs += sizeof(void*)
-        )
-    {
-        switch (argTypes[argNum])
-        {
-        case ELEMENT_TYPE_R4:
-            // movss xmm?, dword ptr [rsi + argOfs]
-            X64EmitMovSSFromMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        case ELEMENT_TYPE_R8:
-            // movsd xmm?, qword ptr [rsi + argOfs]
-            X64EmitMovSDFromMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        default:
-            if (c_argRegs[argNum] != THIS_kREG)
-            {
-                // mov r*, [rsi + dstOfs]
-                X86EmitIndexRegLoad(c_argRegs[argNum], kESI,argOfs);
-            }
-            break;
-        } // switch
-    }
-
-    //    mov SCRATCHREG, [rcx+Delegate._invocationList]  ;;fetch invocation list
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfInvocationList());
-
-    //    mov SCRATCHREG, [SCRATCHREG+m_Array+rdi*8]    ;; index into invocation list
-    X86EmitOp(0x8b, kEAX, SCRATCH_REGISTER_X86REG, static_cast<int>(PtrArray::GetDataOffset()), kEDI, sizeof(void*), k64BitOp);
-
-    //    mov THISREG, [SCRATCHREG+Delegate.object]  ;;replace "this" pointer
-    X86EmitIndexRegLoad(THIS_kREG, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfTarget());
-
-    // call [SCRATCHREG+Delegate.target] ;; call current subscriber
-    X86EmitOffsetModRM(0xff, (X86Reg)2, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfMethodPtr());
-
-    // add rsp, stackUsed           ;; Clean up stack
-    X86EmitAddEsp(stackUsed);
-
-    //    inc edi
-    Emit16(0xC7FF);
-
-#else // _TARGET_AMD64_
 
     UINT16 numStackBytes = static_cast<UINT16>(hash & ~3);
 
@@ -4502,8 +4082,6 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
         EmitLabel(pNoFloatStackPopLabel);
     }
 
-#endif // _TARGET_AMD64_
-
     // The debugger may need to stop here, so grab the offset of this code.
     EmitPatchLabel();
 
@@ -4521,210 +4099,8 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     // Epilog
     EmitMethodStubEpilog(numStackBytes, MulticastFrame::GetOffsetOfTransitionBlock());
 }
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
-VOID StubLinkerCPU::EmitSecureDelegateInvoke(UINT_PTR hash)
-{
-    STANDARD_VM_CONTRACT;
-
-    int thisRegOffset = SecureDelegateFrame::GetOffsetOfTransitionBlock() +
-        TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, THIS_REG);
-
-    // push the methoddesc on the stack
-    // mov eax, [ecx + offsetof(_invocationCount)]
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfInvocationCount());
-
-    // Push a SecureDelegateFrame on the stack.
-    EmitMethodStubProlog(SecureDelegateFrame::GetMethodFrameVPtr(), SecureDelegateFrame::GetOffsetOfTransitionBlock());
-
-#ifdef _TARGET_X86_
-    // Frame is ready to be inspected by debugger for patch location
-    EmitPatchLabel();
-#else // _TARGET_AMD64_
-
-    // Save register arguments in their home locations.
-    // Non-FP registers are already saved by EmitMethodStubProlog.
-    // (Assumes Sig.NextArg() does not enum RetBuffArg or "this".)
-
-    int            argNum      = 0;
-    __int32        argOfs      = SecureDelegateFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-    CorElementType argTypes[4];
-    CorElementType argType;
-
-    // 'this'
-    argOfs += sizeof(void*);
-    argTypes[argNum] = ELEMENT_TYPE_I8;
-    argNum++;
-
-    do
-    {
-        argType = ELEMENT_TYPE_END;
-
-        switch ((hash >> (2 * argNum)) & 3)
-        {
-        case 0:
-            argType = ELEMENT_TYPE_END;
-            break;
-        case 1:
-            argType = ELEMENT_TYPE_R4;
-
-            // movss dword ptr [rsp + argOfs], xmm?
-            X64EmitMovSSToMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        case 2:
-            argType = ELEMENT_TYPE_R8;
-
-            // movsd qword ptr [rsp + argOfs], xmm?
-            X64EmitMovSSToMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        default:
-            argType = ELEMENT_TYPE_I;
-            break;
-        }
-
-        argOfs += sizeof(void*);
-        argTypes[argNum] = argType;
-        argNum++;
-    }
-    while (argNum < 4 && ELEMENT_TYPE_END != argType);
-
-    _ASSERTE(4 == argNum || ELEMENT_TYPE_END == argTypes[argNum-1]);
-
-#endif // _TARGET_AMD64_
-
-    // mov ecx, [esi + this]     ;; get delegate
-    X86EmitIndexRegLoad(THIS_kREG, kESI, thisRegOffset);
-
-#ifdef _TARGET_AMD64_
-
-    INT32 numStackBytes = (INT32)((hash >> 8) * sizeof(void *));
-
-    INT32 stackUsed, numStackArgs, ofs;
-
-    // Push any stack args, plus an extra location
-    // for rsp alignment if needed
-
-    numStackArgs = numStackBytes / sizeof(void*);
-
-    // 1 push above, so stack is currently misaligned
-    const unsigned STACK_ALIGN_ADJUST = 0;
-
-    if (!numStackArgs)
-    {
-        // sub rsp, 28h             ;; 4 reg arg home locs + rsp alignment
-        stackUsed = 0x20 + STACK_ALIGN_ADJUST;
-        X86EmitSubEsp(stackUsed);
-    }
-    else
-    {
-        stackUsed = numStackArgs * sizeof(void*);
-
-        // If the stack is misaligned, then an odd number of arguments
-        // will naturally align the stack.
-        if (   ((numStackArgs & 1) == 0)
-            != (STACK_ALIGN_ADJUST == 0))
-        {
-            X86EmitPushReg(kRAX);
-            stackUsed += sizeof(void*);
-        }
-
-        ofs = SecureDelegateFrame::GetOffsetOfTransitionBlock() +
-            TransitionBlock::GetOffsetOfArgs() + sizeof(ArgumentRegisters) + numStackBytes;
-
-        while (numStackArgs--)
-        {
-            ofs -= sizeof(void*);
-
-            // push [rsi + ofs]     ;; Push stack args
-            X86EmitIndexPush(kESI, ofs);
-        }
-
-        // sub rsp, 20h             ;; Create 4 reg arg home locations
-        X86EmitSubEsp(0x20);
-
-        stackUsed += 0x20;
-    }
-
-    int thisArgNum = 0;
-
-    for(
-        argNum = 0, argOfs = SecureDelegateFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-        argNum < 4 && argTypes[argNum] != ELEMENT_TYPE_END;
-        argNum++, argOfs += sizeof(void*)
-        )
-    {
-        switch (argTypes[argNum])
-        {
-        case ELEMENT_TYPE_R4:
-            // movss xmm?, dword ptr [rsi + argOfs]
-            X64EmitMovSSFromMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        case ELEMENT_TYPE_R8:
-            // movsd xmm?, qword ptr [rsi + argOfs]
-            X64EmitMovSDFromMem((X86Reg)argNum, kRSI, argOfs);
-            break;
-        default:
-            if (c_argRegs[argNum] != THIS_kREG)
-            {
-                // mov r*, [rsi + dstOfs]
-                X86EmitIndexRegLoad(c_argRegs[argNum], kESI,argOfs);
-            }
-            break;
-        } // switch
-    }
-
-    //    mov SCRATCHREG, [rcx+Delegate._invocationList]  ;;fetch the inner delegate
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfInvocationList());
-
-    //    mov THISREG, [SCRATCHREG+Delegate.object]  ;;replace "this" pointer
-    X86EmitIndexRegLoad(c_argRegs[thisArgNum], SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfTarget());
-
-    // call [SCRATCHREG+Delegate.target] ;; call current subscriber
-    X86EmitOffsetModRM(0xff, (X86Reg)2, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfMethodPtr());
-
-    // add rsp, stackUsed           ;; Clean up stack
-    X86EmitAddEsp(stackUsed);
-
-#else // _TARGET_AMD64_
-
-    UINT16 numStackBytes = static_cast<UINT16>(hash & ~3);
-
-    //    ..repush & reenregister args..
-    INT32 ofs = numStackBytes + SecureDelegateFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-    while (ofs != SecureDelegateFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs())
-    {
-        ofs -= sizeof(void*);
-        X86EmitIndexPush(kESI, ofs);
-    }
-
-    #define ARGUMENT_REGISTER(regname) if (k##regname != THIS_kREG) { X86EmitIndexRegLoad(k##regname, kESI, \
-        offsetof(ArgumentRegisters, regname) + SecureDelegateFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters()); }
-
-    ENUM_ARGUMENT_REGISTERS_BACKWARD();
-
-    #undef ARGUMENT_REGISTER
-
-    //    mov SCRATCHREG, [ecx+Delegate._invocationList]  ;;fetch the inner delegate
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfInvocationList());
-
-    //    mov THISREG, [SCRATCHREG+Delegate.object]  ;;replace "this" pointer
-    X86EmitIndexRegLoad(THIS_kREG, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfTarget());
-
-    //    call [SCRATCHREG+Delegate.target] ;; call current subscriber
-    X86EmitOffsetModRM(0xff, (X86Reg)2, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfMethodPtr());
-    INDEBUG(Emit8(0x90));       // Emit a nop after the call in debug so that
-                                // we know that this is a call that can directly call
-                                // managed code
-
-#endif // _TARGET_AMD64_
-
-    // The debugger may need to stop here, so grab the offset of this code.
-    EmitPatchLabel();
-
-    EmitCheckGSCookie(kESI, SecureDelegateFrame::GetOffsetOfGSCookie());
-
-    // Epilog
-    EmitMethodStubEpilog(numStackBytes, SecureDelegateFrame::GetOffsetOfTransitionBlock());
-}
 #endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
 
 #if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_ARRAYSTUB_AS_IL)

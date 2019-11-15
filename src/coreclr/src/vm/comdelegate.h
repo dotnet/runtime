@@ -18,10 +18,18 @@ class ShuffleThunkCache;
 #include "dllimportcallback.h"
 #include "stubcache.h"
 
+#ifndef FEATURE_MULTICASTSTUB_AS_IL
 typedef ArgBasedStubCache MulticastStubCache;
+#endif
 
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, struct ShuffleEntry * pShuffleEntryArray, size_t nEntries);
 
+enum class ShuffleComputationType
+{
+    InstantiatingStub,
+    DelegateShuffleThunk
+};
+BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType);
 
 // This class represents the native methods for the Delegate class
 class COMDelegate
@@ -31,12 +39,12 @@ private:
     // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
     friend class CPUSTUBLINKER;
     friend class DelegateInvokeStubManager;
-    friend class SecureDelegateFrame;
     friend BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                                 TraceDestination *trace, REGDISPLAY *regs);
 
-    static MulticastStubCache* m_pSecureDelegateStubCache;
+#ifndef FEATURE_MULTICASTSTUB_AS_IL
     static MulticastStubCache* m_pMulticastStubCache;
+#endif
 
     static CrstStatic   s_DelegateToFPtrHashCrst;   // Lock for the following hash.
     static PtrHashMap*  s_pDelegateToFPtrHash;      // Hash table containing the Delegate->FPtr pairs
@@ -68,11 +76,11 @@ public:
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
     static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
-    static PCODE GetSecureInvoke(MethodDesc* pMD);
+    static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
     // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateSecureDelegate(DELEGATEREF delegate, MethodDesc* pCreatorMethod, MethodDesc* pTargetMD);
+    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
@@ -104,8 +112,8 @@ public:
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
 
-    // Decides if this is a secure delegate
-    static BOOL IsSecureDelegate(DELEGATEREF dRef);
+    // Decides if this is a wrapper delegate
+    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
 
     // Get the cpu stub for a delegate invoke.
     static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
@@ -197,20 +205,12 @@ struct ShuffleEntry
         HELPERREG    = 0xcfff, // Use a helper register as source or destination (used to handle cycles in the shuffling)
     };
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-    union {
-        UINT16          srcofs;
-        CorElementType  argtype;    // AMD64: shuffle array is just types
-    };
-#else
-
     UINT16    srcofs;
 
     union {
         UINT16    dstofs;           //if srcofs != SENTINEL
         UINT16    stacksizedelta;   //if dstofs == SENTINEL, difference in stack size between virtual and static sigs
     };
-#endif // _TARGET_AMD64_
 };
 
 
