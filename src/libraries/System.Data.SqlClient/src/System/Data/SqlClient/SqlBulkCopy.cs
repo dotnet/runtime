@@ -2561,7 +2561,7 @@ namespace System.Data.SqlClient
 
                 if (_stateObj != null)
                 {
-                    CleanUpStateObjectOnError();
+                    CleanUpStateObject();
                 }
             }
             catch (OutOfMemoryException)
@@ -2584,7 +2584,7 @@ namespace System.Data.SqlClient
         }
 
         // Cleans the stateobj. Used in a number of places, specially in  exceptions.
-        private void CleanUpStateObjectOnError()
+        private void CleanUpStateObject(bool isCancelRequested = true)
         {
             if (_stateObj != null)
             {
@@ -2594,7 +2594,7 @@ namespace System.Data.SqlClient
                     _stateObj.ResetBuffer();
                     _stateObj.ResetPacketCounters();
                     // If _parser is closed, sending attention will raise debug assertion, so we avoid it (but not calling CancelRequest).
-                    if (_parser.State == TdsParserState.OpenNotLoggedIn || _parser.State == TdsParserState.OpenLoggedIn)
+                    if (isCancelRequested && (_parser.State == TdsParserState.OpenNotLoggedIn || _parser.State == TdsParserState.OpenLoggedIn))
                     {
                         _stateObj.CancelRequest();
                     }
@@ -2655,7 +2655,7 @@ namespace System.Data.SqlClient
                                 _localColumnMappings = null;
                                 try
                                 {
-                                    CleanUpStateObjectOnError();
+                                    CleanUpStateObject();
                                 }
                                 finally
                                 {
@@ -2671,7 +2671,7 @@ namespace System.Data.SqlClient
                                 _localColumnMappings = null;
                                 try
                                 {
-                                    CleanUpStateObjectOnError();
+                                    CleanUpStateObject(isCancelRequested: false);
                                 }
                                 finally
                                 {
@@ -2698,11 +2698,11 @@ namespace System.Data.SqlClient
 
                     try
                     {
-                        CleanUpStateObjectOnError();
+                        CleanUpStateObject(isCancelRequested: false);
                     }
                     catch (Exception cleanupEx)
                     {
-                        Debug.Fail("Unexpected exception during CleanUpstateObjectOnError (ignored)", cleanupEx.ToString());
+                        Debug.Fail($"Unexpected exception during {nameof(CleanUpStateObject)} (ignored)", cleanupEx.ToString());
                     }
 
                     if (source != null)
@@ -2717,11 +2717,11 @@ namespace System.Data.SqlClient
 
                 try
                 {
-                    CleanUpStateObjectOnError();
+                    CleanUpStateObject();
                 }
                 catch (Exception cleanupEx)
                 {
-                    Debug.Fail("Unexpected exception during CleanUpstateObjectOnError (ignored)", cleanupEx.ToString());
+                    Debug.Fail($"Unexpected exception during {nameof(CleanUpStateObject)} (ignored)", cleanupEx.ToString());
                 }
 
                 if (source != null)
