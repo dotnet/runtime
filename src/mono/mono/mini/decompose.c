@@ -1345,6 +1345,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 					if (call->vret_in_reg) {
 						MonoCallInst *call2;
+						int align;
 
 						/* Replace the vcall with a scalar call */
 						MONO_INST_NEW_CALL (cfg, call2, OP_NOP);
@@ -1373,7 +1374,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						if (dest_var->backend.is_pinvoke)
 							size = mono_class_native_size (mono_class_from_mono_type_internal (dest_var->inst_vtype), NULL);
 						else
-							size = mono_type_size (dest_var->inst_vtype, NULL);
+							size = mono_type_size (dest_var->inst_vtype, &align);
 						switch (size) {
 						case 1:
 							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
