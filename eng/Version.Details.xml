@@ -24,9 +24,9 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>8743c312a9d1ce4035140046d44bb959c44f194f</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.6">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.3">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
+      <Sha>cf64918877d98577363bb40d5eafac52beb80a79</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="5.0.0-alpha1.19563.3">
       <Uri>https://github.com/dotnet/coreclr</Uri>
