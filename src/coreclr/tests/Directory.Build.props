@@ -26,6 +26,7 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
+    <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
