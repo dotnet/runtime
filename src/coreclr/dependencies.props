@@ -8,7 +8,6 @@
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6.19280.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <XunitPackageVersion>2.4.1-pre.build.4059</XunitPackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.43</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
@@ -42,49 +41,6 @@
       <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
-    <UpdateStep Include="ILAsm">
-      <UpdaterType>File</UpdaterType>
-      <Path>$(MSBuildThisFileDirectory)ILAsmVersion.txt</Path>
-      <PackageId>Microsoft.NETCore.ILAsm</PackageId>
-    </UpdateStep>
-  </ItemGroup>
-
-  <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
-  <ItemGroup>
-    <XUnitDependency Include="xunit"/>
-    <XUnitDependency Include="xunit.assert"/>
-    <XUnitDependency Include="xunit.core"/>
-    <XUnitDependency Include="xunit.extensibility.core" />
-    <XUnitDependency Include="xunit.runner.console"/>
-    <XUnitDependency Include="xunit.runner.msbuild"/>
-    <XUnitDependency Include="xunit.runner.utility"/>
-    <StaticDependency Include="@(XUnitDependency)">
-      <Version>$(XunitPackageVersion)</Version>
-    </StaticDependency>
-
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.metrics" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.run.core" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
-    <XunitPerformanceDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
-    <StaticDependency Include="@(XunitPerformanceDependency)">
-      <Version>1.0.0-alpha-build0040</Version>
-    </StaticDependency>
-
-    <XUnitPerformanceApiDependency Include="xunit.performance.api" />
-    <XUnitPerformanceApiDependency Include="xunit.performance.core" />
-    <XUnitPerformanceApiDependency Include="xunit.performance.execution" />
-    <XUnitPerformanceApiDependency Include="xunit.performance.metrics" />
-    <StaticDependency Include="@(XUnitPerformanceApiDependency)">
-      <Version>$(XunitPerformanceApiPackageVersion)</Version>
-    </StaticDependency>
-
-    <DependencyBuildInfo Include="@(StaticDependency)">
-      <PackageId>%(Identity)</PackageId>
-      <UpdateStableVersions>true</UpdateStableVersions>
-    </DependencyBuildInfo>
   </ItemGroup>
 
   <!-- Override isolated build dependency versions with versions from Repo API. -->
