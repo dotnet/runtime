@@ -37,7 +37,7 @@
          that BuildVersionFile gets the correct value. -->
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(RootBinDir)obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
   </PropertyGroup>
 
     <!-- Targeting Package paths -->
