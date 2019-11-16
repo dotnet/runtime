@@ -39,15 +39,19 @@ jobs:
     - name: crossFlavor
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: artifactsDirectory
+        value: $(coreClrRepoRoot)/artifacts
       - name: binDirectory
-        value: $(coreClrRepoRoot)/artifacts/bin
+        value: $(artifactsDirectory)/bin
       - name: productDirectory
-        value: $(binDirectory)/Product
+        value: $(binDirectory)/coreclr
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: artifactsDirectory
+        value: $(coreClrRepoRoot)\artifacts
       - name: binDirectory
-        value: $(coreClrRepoRoot)\artifacts\bin
+        value: $(artifactsDirectory)\bin
       - name: productDirectory
-        value: $(binDirectory\Product
+        value: $(binDirectory\coreclr
 
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -74,11 +78,11 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: |
           chmod +x $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
-          mkdir -p $(binDirectory)/log/$(crossFlavor)
+          mkdir -p $(artifactsDirectory)/log/$(crossFlavor)
         displayName: Create directories and ensure crossgen is executable
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: |
-          mkdir $(binDirectory)\log\$(crossFlavor)
+          mkdir $(artifactsDirectory)\log\$(crossFlavor)
         displayName: Create directories
 
 
@@ -98,15 +102,15 @@ jobs:
             crossgen_framework
             --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
             --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $(binDirectory)/tests/$(targetFlavor)/Tests/Core_Root
-            --result_dir $(binDirectory)/log/$(crossFlavor)
+            --core_root  $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
+            --result_dir $(artifactsDirectory)/log/$(crossFlavor)
         ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
             --il_corelib $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  $(binDirectory)\tests\$(targetFlavor)\Tests\Core_Root
-            --result_dir $(binDirectory)\log\$(crossFlavor)
+            --core_root  $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
+            --result_dir $(artifactsDirectory)\log\$(crossFlavor)
 
 
     # Send payload to Helix where the native output is generated and compared to the baseline
@@ -151,7 +155,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: Publish log
       inputs:
-        pathtoPublish: $(binDirectory)/log
+        pathtoPublish: $(artifactsDirectory)/log
         artifactName: ${{ format('Testlog_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()
