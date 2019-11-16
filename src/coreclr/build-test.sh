@@ -681,7 +681,7 @@ __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
 __RebuildTests=0
-__RootBinDir="$__RepoRootDir/artifacts/bin"
+__RootBinDir="$__RepoRootDir/artifacts"
 __RunTests=0
 __SkipConfigure=0
 __SkipGenerateLayout=0
@@ -706,12 +706,12 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__ProjectDir/tests"
-__TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__TestIntermediatesDir="$__RootBinDir/tests/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
