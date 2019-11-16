@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
                 byte[] signature = new byte[signatureLength];
-                if (!Interop.Crypto.EcDsaSign(hash, signature, ref signatureLength, key))
+                if (!Interop.Crypto.EcDsaSign(hash, signature, out signatureLength, key))
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                 byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
@@ -89,38 +89,53 @@ namespace System.Security.Cryptography
                 return converted;
             }
 
-            public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+            protected override bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
             {
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
 
-                byte[] converted;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
-                byte[] signature = CryptoPool.Rent(signatureLength);
-                try
+
+                if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    if (!Interop.Crypto.EcDsaSign(hash, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
+                    byte[] converted;
+                    byte[] signature = CryptoPool.Rent(signatureLength);
+                    try
+                    {
+                        if (!Interop.Crypto.EcDsaSign(hash, new Span<byte>(signature, 0, signatureLength), out signatureLength, key))
+                        {
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        }
+
+                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(signature, signatureLength);
+                    }
+
+                    return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
+                }
+                else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    if (destination.Length < signatureLength)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    bool success = Interop.Crypto.EcDsaSign(hash, destination, out bytesWritten, key);
+
+                    if (!success)
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
-                    converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
-                }
-                finally
-                {
-                    CryptoPool.Return(signature, signatureLength);
-                }
-
-                if (converted.Length <= destination.Length)
-                {
-                    new ReadOnlySpan<byte>(converted).CopyTo(destination);
-                    bytesWritten = converted.Length;
                     return true;
                 }
                 else
                 {
-                    bytesWritten = 0;
-                    return false;
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
             }
 
@@ -134,24 +149,31 @@ namespace System.Security.Cryptography
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
-            public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+            protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
             {
                 ThrowIfDisposed();
 
-                // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
-                // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
-                // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
-                int expectedBytes = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
-                if (signature.Length != expectedBytes)
+                if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    // The input isn't of the right length, so we can't sensibly re-encode it.
-                    return false;
+                    // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
+                    // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
+                    // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
+                    int expectedBytes = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
+                    if (signature.Length != expectedBytes)
+                    {
+                        // The input isn't of the right length, so we can't sensibly re-encode it.
+                        return false;
+                    }
+
+                    signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+                }
+                else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
 
-                byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
-
                 SafeEcKeyHandle key = _key.Value;
-                int verifyResult = Interop.Crypto.EcDsaVerify(hash, openSslFormat, key);
+                int verifyResult = Interop.Crypto.EcDsaVerify(hash, signature, key);
                 return verifyResult == 1;
             }
 

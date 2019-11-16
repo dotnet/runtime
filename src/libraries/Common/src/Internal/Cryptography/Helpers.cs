@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography
@@ -18,6 +19,21 @@ namespace Internal.Cryptography
             }
 
             return (byte[])(src.Clone());
+        }
+
+        internal static bool TryCopyToDestination(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (source.Length <= destination.Length)
+            {
+                source.CopyTo(destination);
+                bytesWritten = source.Length;
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
         }
     }
 }

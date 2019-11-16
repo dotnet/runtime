@@ -48,12 +48,29 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        protected override unsafe bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
         {
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                return keyHandle.TrySignHash(source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
+                if (!keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
             }
+
+            if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+            {
+                return true;
+            }
+
+            if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+            {
+                throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+            }
+
+            byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
+            return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -66,11 +83,20 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
 
-            return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+            return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        public override unsafe bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+        protected override unsafe bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
         {
+            if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+            {
+                signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+            }
+            else if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+            {
+                throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+            }
+
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);

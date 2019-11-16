@@ -59,6 +59,38 @@ namespace Internal.Cryptography
             return response;
         }
 
+        /// <summary>
+        /// Converts IeeeP1363 format to the specified signature format
+        /// </summary>
+        public static byte[] ConvertIeeeP1363Signature(byte[] signature, DSASignatureFormat signatureFormat)
+        {
+            switch (signatureFormat)
+            {
+                case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
+                    return signature;
+                case DSASignatureFormat.Rfc3279DerSequence:
+                    return ConvertIeee1363ToDer(signature);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+            }
+        }
+
+        /// <summary>
+        /// Converts signature in the specified signature format to IeeeP1363
+        /// </summary>
+        public static byte[] ConvertSignatureToIeeeP1363(DSASignatureFormat signatureFormat, byte[] signature, int offset, int count, int fieldSizeBits)
+        {
+            switch (signatureFormat)
+            {
+                case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
+                    return signature;
+                case DSASignatureFormat.Rfc3279DerSequence:
+                    return ConvertDerToIeee1363(signature, offset, count, fieldSizeBits);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+            }
+        }
+
         public static int BitsToBytes(int bitLength)
         {
             int byteLength = (bitLength + 7) / 8;
@@ -69,10 +101,14 @@ namespace Internal.Cryptography
         {
             if (signatureField.Length > response.Length)
             {
-                // The only way this should be true is if the value required a zero-byte-pad.
-                Debug.Assert(signatureField.Length == response.Length + 1, "signatureField.Length == fieldLength + 1");
-                Debug.Assert(signatureField[0] == 0, "signatureField[0] == 0");
-                Debug.Assert(signatureField[1] > 0x7F, "signatureField[1] > 0x7F");
+                if (signatureField.Length != response.Length + 1 ||
+                    signatureField[0] != 0 ||
+                    signatureField[1] <= 0x7F)
+                {
+                    // The only way this should be true is if the value required a zero-byte-pad.
+                    throw new CryptographicException();
+                }
+
                 signatureField = signatureField.Slice(1);
             }
 
@@ -81,6 +117,35 @@ namespace Internal.Cryptography
             // zeroed out, just figure out where we need to start copying.
             int writeOffset = response.Length - signatureField.Length;
             signatureField.CopyTo(response.Slice(writeOffset));
+        }
+
+        internal static byte[] ConvertSignatureToIeeeP1363(this DSA dsa, DSASignatureFormat signatureFormat, ReadOnlySpan<byte> signature)
+        {
+            try
+            {
+                DSAParameters pars = dsa.ExportParameters(false);
+                return AsymmetricAlgorithmHelpers.ConvertSignatureToIeeeP1363(signatureFormat, signature.ToArray(), 0, signature.Length, pars.Q.Length * 8);
+            }
+            catch (CryptographicException)
+            {
+                // This method is used only for verification where we want to return false when signature is incorrectly formatted
+                // We do not want to bubble up the exception anywhere.
+                return null;
+            }
+        }
+
+        internal static byte[] ConvertSignatureToIeeeP1363(this ECDsa ecdsa, DSASignatureFormat signatureFormat, ReadOnlySpan<byte> signature)
+        {
+            try
+            {
+                return AsymmetricAlgorithmHelpers.ConvertSignatureToIeeeP1363(signatureFormat, signature.ToArray(), 0, signature.Length, ecdsa.KeySize);
+            }
+            catch (CryptographicException)
+            {
+                // This method is used only for verification where we want to return false when signature is incorrectly formatted
+                // We do not want to bubble up the exception anywhere.
+                return null;
+            }
         }
     }
 }

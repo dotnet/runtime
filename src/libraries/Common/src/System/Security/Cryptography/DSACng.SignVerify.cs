@@ -41,15 +41,32 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override unsafe bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+            protected override unsafe bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
             {
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
                 ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
 
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    return CngCommon.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
+                    if (!CngCommon.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
                 }
+
+                if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+                {
+                    return true;
+                }
+
+                if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                }
+
+                byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
+                return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
             }
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
@@ -63,11 +80,20 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(rgbSignature));
                 }
 
-                return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
+                return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
             }
 
-            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+            protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
             {
+                if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+                }
+                else if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                }
+
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
                 ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
 
