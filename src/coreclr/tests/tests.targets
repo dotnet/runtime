@@ -43,7 +43,8 @@
     <PropertyGroup>
       <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
 
-      <XunitArgs>-parallel $(ParallelRun)</XunitArgs>
+      <!-- Xunit has a concurrency bug manifesting as COR_E_INVALIDOPERATION on random Xunit wrapper assemblies -->
+      <XunitArgs>-parallel none</XunitArgs>
       <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
