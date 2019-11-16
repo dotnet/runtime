@@ -88,13 +88,13 @@ jobs:
       value: '$(coreClrRepoRoot)$(dir)'
 
     - name: binTestsPath
-      value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
+      value: '$(Build.SourcesDirectory)/artifacts/tests/'
 
     - name: testRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: '$(binTestsPath)/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: nativeRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: '$(binTestsPath)/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: buildProductArtifactName
       value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
@@ -109,10 +109,10 @@ jobs:
       value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: testNativeRootFolderPath
-      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: '$(binTestsPath)/obj/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: testBuildRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+      value: '$(binTestsPath)/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: testBuildArtifactName
       value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
