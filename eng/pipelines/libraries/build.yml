@@ -7,14 +7,24 @@ parameters:
   isOfficialBuild: false
   timeoutInMinutes: 150
   preBuildSteps: []
+  testScope: ''
+  runTests: true
+  publishTestArtifacts: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
       variables:
       - _msbuildCommonParameters: ''
-      - _archiveTestsParameter: ''
       - _finalFrameworkArg: -framework ${{ parameters.framework }}
+      - _skipTestRestoreArg: ''
+      - _testScopeArg: ''
+      - _actionParameters: -build
+
+      - ${{ if ne(parameters.testScope, '') }}:
+        - _testScopeArg: -testscope ${{ parameters.testScope }}
+        - _skipTestRestoreArg: /p:SkipTestRestore=true
+        - _actionParameters: -buildtests
 
       - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
         - _finalFrameworkArg: -allConfigurations
@@ -22,7 +32,7 @@ jobs:
       - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
         - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
-      - _args: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg)
+      - _args: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_skipTestRestoreArg)
       - _commonArguments: $(_args)
 
       # Windows variables
@@ -36,18 +46,37 @@ jobs:
         - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _commonArguments: $(_args) -stripSymbols
-      
+
+      - ${{ if or(eq(parameters.runTests, 'true'), eq(parameters.publishTestArtifacts, 'true')) }}:
+        - ${{ if ne(parameters.framework, 'allConfigurations') }}:
+          - _commonArguments: $(_args) /p:ArchiveTests=Tests
+        - ${{ if eq(parameters.framework, 'allConfigurations') }}:
+          - _commonArguments: $(_args) /p:ArchiveTests=Packages
+
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       helixRepo: dotnet/runtime
 
-      $ {{ if eq(parameters.framework, 'netcoreapp') }}:
-        name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if ne(parameters.framework, 'netcoreapp') }}:
-        name: ${{ format('{0} {1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if eq(parameters.testScope, '') }}:
+        name: ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        $ {{ if eq(parameters.framework, 'netcoreapp') }}:
+          displayName: ${{ format('{0}{1} Build {2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        ${{ if ne(parameters.framework, 'netcoreapp') }}:
+          displayName: ${{ format('{0} Build {1} {2}_{3}', parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+
+      ${{ if ne(parameters.testScope, '') }}:
+        name: ${{ format('libraries_test_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        $ {{ if eq(parameters.framework, 'netcoreapp') }}:
+          displayName: ${{ format('{0}{1} Test {2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        ${{ if ne(parameters.framework, 'netcoreapp') }}:
+          displayName: ${{ format('{0} Test {1} {2}_{3}', parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+
+      ${{ if ne(parameters.testScope, '') }}:
+        dependencies:
+        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       workspace:
         clean: all
-      
+
       enablePublishBuildArtifacts: true
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
@@ -57,7 +86,7 @@ jobs:
         
         - script: $(_buildScript) -restore $(_commonArguments)
           displayName: Restore
-        
+
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - task: DotNetCoreCLI@2
             displayName: Restore internal tools
@@ -70,9 +99,24 @@ jobs:
               restoreDirectory: '$(Build.SourcesDirectory)\.packages'
               verbosityRestore: 'normal'
               externalFeedCredentials: 'dotnet-core-internal-tooling'
-          
+
         - script: $(_buildScript)
-                -build
+                $(_actionParameters)
                 $(_commonArguments)
                 $(_msbuildCommonParameters)
-          displayName: Build Sources
+          displayName: Build
+
+        - ${{ if and(eq(parameters.runTests, 'true'), ne(parameters.isOfficialBuild, 'false')) }}:
+          - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  targetOS: ${{ parameters.targetOS }}
+                  archGroup: ${{ parameters.archType }}
+                  configuration: ${{ parameters.buildConfig }}
+                  helixQueues: $(_helixQueues)
+                  msbuildScript: $(_msbuildCommand)
+                  framework: ${{ parameters.framework }}
+                  testScope: ${{ parameters.testScope }}
+                  creator: dotnet-bot
+                  helixToken: ''
+
+          # TODO: publish test artifacts when publishTestArtifacts == true.
