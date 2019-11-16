@@ -58,7 +58,7 @@ if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=
 
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__RootBinDir=%__ProjectDir%\artifacts"
+set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
@@ -306,9 +306,9 @@ if %__PgoOptimize%==0 (
     )
 )
 
-set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
@@ -374,7 +374,7 @@ REM ============================================================================
 @if defined _echo @echo on
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
+    %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 if not !errorlevel! == 0 (
