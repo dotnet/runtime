@@ -8,7 +8,7 @@
       <_CoreClrBuildArg Include="-$(Platform)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
-      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(Platform)' == 'x86' or '$(Platform)' = 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(Platform)' == 'x86' or '$(Platform)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="'$(Configuration)' == 'Release'" Include="-stripsymbols" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' == ''" Include="-officialbuildid=$(OfficialBuildId)" />
     </ItemGroup>

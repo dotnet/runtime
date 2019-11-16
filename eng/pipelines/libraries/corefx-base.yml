@@ -186,50 +186,26 @@ jobs:
                   artifactType: container
                 condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
 
-            - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}: # TODO: (Consolidation) remove.
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  # send tests to helix only on public builds, official scheduled builds or manual official builds.
-                  condition: eq(${{ parameters.isOfficialBuild }}, False)
-                  targetOS: ${{ parameters.targetOS }}
-                  archGroup: $(_architecture)
-                  configuration: $(_BuildConfig)
-                  helixQueues: $(_helixQueues)
-                  msbuildScript: $(_msbuildCommand)
-                  framework: $(_framework)
-                  testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
+            - template: /eng/pipelines/libraries/helix.yml
+              parameters:
+                # send tests to helix only on public builds, official scheduled builds or manual official builds.
+                condition: eq(${{ parameters.isOfficialBuild }}, False)
+                targetOS: ${{ parameters.targetOS }}
+                archGroup: $(_architecture)
+                configuration: $(_BuildConfig)
+                helixQueues: $(_helixQueues)
+                msbuildScript: $(_msbuildCommand)
+                framework: $(_framework)
+                testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
 
-                  ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-                    officialBuildId: $(Build.BuildNumber)
-                    helixToken: $(HelixApiAccessToken)
+                ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+                  officialBuildId: $(Build.BuildNumber)
+                  helixToken: $(HelixApiAccessToken)
 
-                  ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-                    # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
-                    creator: dotnet-bot
-                    helixToken: ''
-
-            # TODO: (Consolidation) remove this if block when consolidated
-            - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-              - template: /eng/pipelines/helix.yml
-                parameters:
-                  # send tests to helix only on public builds, official scheduled builds or manual official builds.
-                  condition: eq(${{ parameters.isOfficialBuild }}, False)
-                  targetOS: ${{ parameters.targetOS }}
-                  archGroup: $(_architecture)
-                  configuration: $(_BuildConfig)
-                  helixQueues: $(_helixQueues)
-                  msbuildScript: $(_msbuildCommand)
-                  framework: $(_framework)
-                  testScope: ${{ coalesce(parameters.testScope, 'innerloop') }} # if parameters.testScope is empty use 'innerloop'
-
-                  ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-                    officialBuildId: $(Build.BuildNumber)
-                    helixToken: $(HelixApiAccessToken)
-
-                  ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-                    # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
-                    creator: dotnet-bot
-                    helixToken: ''
+                ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+                  # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
+                  creator: dotnet-bot
+                  helixToken: ''
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - task: PublishBuildArtifacts@1

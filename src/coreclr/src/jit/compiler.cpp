@@ -4456,7 +4456,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 // code:CILJit::compileMethod function.
 //
 // For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/coreclr/botr/ryujit-overview.md
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
@@ -6139,8 +6139,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #ifdef DEBUG
     if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x %s\n", Compiler::jitTotalMethodCompiled, info.compClassName,
-               info.compMethodName, info.compILCodeSize, info.compMethodHash(), compGetTieringName());
+        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x %s\n", Compiler::jitTotalMethodCompiled,
+               info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
+               compGetTieringName());
     }
     if (compIsForInlining())
     {

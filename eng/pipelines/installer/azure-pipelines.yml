@@ -2,14 +2,12 @@ trigger:
   branches:
     include:
     - master
-    - release/3.*
+    - release/*.*
   paths:
     include:
     - '*'
     - docs/installer/manpages/*
-    - Documentation/manpages/*
     exclude:
-    - Documentation/*
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
@@ -24,14 +22,12 @@ pr:
   branches:
     include:
     - master
-    - release/3.*
+    - release/*.*
   paths:
     include:
     - '*'
     - docs/installer/manpages/*
-    - Documentation/manpages/*
     exclude:
-    - Documentation/*
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
@@ -72,16 +68,10 @@ variables:
     # Values for SDLValidationParameters
     - group: core-setup-sdl-validation
 
-  - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
-    - name: pipelinesPath
-      value: /eng/pipelines/installer
-    - name: buildScriptFileName
-      value: installer
-  - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-    - name: pipelinesPath
-      value: /eng/pipelines
-    - name: buildScriptFileName
-      value: build
+  - name: pipelinesPath
+    value: /eng/pipelines/installer
+  - name: buildScriptFileName
+    value: installer
 
 stages:
 - stage: Build

@@ -16,32 +16,32 @@ To get the full list of available parameters:
 $ dotnet run -- -help
 ```
 
-### Running with local corefx builds
+### Running with local runtime builds
 
 Note that the stress suite will test the sdk build available in the available,
-that is to say it will not necessarily test the implementation of the local corefx repo.
-To achieve this, you will need to point your environment to the [`testhost` build of corefx](https://github.com/dotnet/coreclr/blob/master/Documentation/building/testing-with-corefx.md).
+that is to say it will not necessarily test the implementation of the local runtime repo.
+To achieve this, you will need to point your environment to the [`testhost` build](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/testing-with-corefx.md).
 
 Using powershell on windows:
 
 ```powershell
-# Build corefx from source
-PS> .\build.sh -c Release
+# Build runtime libraries from source
+PS> .\libraries.sh -c Release
 # Load the testhost sdk in the current environment, must match build configuration
-PS> . .\src\System.Net.Http\tests\StressTests\HttpStress\load-corefx-testhost.ps1 -c Release
+PS> . .\src\libraries\System.Net.Http\tests\StressTests\HttpStress\load-corefx-testhost.ps1 -c Release
 # run the stress suite with the new bits
-PS> cd .\src\System.Net.Http\tests\StressTests\HttpStress ; dotnet run -c Release -- <stress args>
+PS> cd .\src\libraries\System.Net.Http\tests\StressTests\HttpStress ; dotnet run -c Release -- <stress args>
 ```
 
 Equivalently using bash on linux:
 
 ```bash
-# Build corefx from source
-$ ./build.sh -c Release
+# Build runtime libraries from source
+$ ./libraries.sh -c Release
 # Load the testhost sdk in the current environment, must match build configuration
-$ source src/System.Net.Http/tests/StressTests/HttpStress/load-corefx-testhost.sh -c Release
+$ source src/libraries/System.Net.Http/tests/StressTests/HttpStress/load-corefx-testhost.sh -c Release
 # run the stress suite with the new bits
-$ cd src/System.Net.Http/tests/StressTests/HttpStress && dotnet run -- <stress args>
+$ cd src/libraries/System.Net.Http/tests/StressTests/HttpStress && dotnet run -- <stress args>
 ```
 
 ### Running with docker
@@ -49,7 +49,7 @@ $ cd src/System.Net.Http/tests/StressTests/HttpStress && dotnet run -- <stress a
 To run the stress suite in docker:
 
 ```bash
-$ cd src/System.Net.Http/tests/StressTests/HttpStress
+$ cd src/libraries/System.Net.Http/tests/StressTests/HttpStress
 $ docker build -t httpstress .
 $ docker run --rm httpstress
 ```
@@ -65,18 +65,18 @@ $ docker build -t httpstress \
 
 This should work with any base image with a dotnet sdk supporting `netcoreapp3.0`.
 
-#### Using corefx bits
+#### Using runtime bits
 
-To containerize httpstress using current corefx source code, from the root of the corefx repo do:
+To containerize httpstress using current runtime source code, from the root of the runtime repo do:
 ```bash
 $ docker build -t sdk-corefx-current \
     --build-arg BUILD_CONFIGURATION=Debug \
-    -f src/System.Net.Http/tests/StressTests/HttpStress/corefx.Dockerfile \
+    -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.Dockerfile \
     .
 ```
 Then as before build the stress suite using the image we just built as our base image:
 ```bash
-$ cd src/System.Net.Http/tests/StressTests/HttpStress/
+$ cd src/libraries/System.Net.Http/tests/StressTests/HttpStress/
 $ docker build -t httpstress \
     --build-arg SDK_BASE_IMAGE=sdk-corefx-current \
     .

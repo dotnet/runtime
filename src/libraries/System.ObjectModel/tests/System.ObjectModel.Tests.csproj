@@ -3,22 +3,22 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerableTest.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerableTest.cs">
       <Link>Common\System\CollectionsIEnumerableTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollectionTest.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\ICollectionTest.cs">
       <Link>Common\System\CollectionsICollectionTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IListTest.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IListTest.cs">
       <Link>Common\System\CollectionsIListTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\Utils.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\Utils.cs">
       <Link>Common\System\CollectionsUtils.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionaryTest.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionaryTest.cs">
       <Link>Common\System\CollectionsIDictionaryTest.cs</Link>
     </Compile>
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
@@ -38,7 +38,7 @@
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
@@ -51,7 +51,7 @@
     <Compile Include="KeyedCollection\Serialization.cs" />
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>

@@ -10,7 +10,7 @@
     <!-- Need to compile it here since the NET46 target here is building against System.Runtime whereas the
          the list of other files in System.Net.Http.WinHttpHandler.msbuild is also used by System.Net.Http
          library and the NET46 target there uses framework assembly references instead. -->
-    <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
+    <CompileItem Include="$(CommonPath)System\Net\HttpStatusDescription.cs" />
   </ItemGroup>
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
@@ -21,7 +21,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>

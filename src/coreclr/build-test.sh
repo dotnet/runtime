@@ -584,12 +584,6 @@ usage_list+=("-skiprestorepackages - skip package restore.")
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __RepoRootDir=${__ProjectRoot}/../..
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectRoot}
-fi
-# END SECTION to remove after repo consolidation
-
 handle_arguments() {
     case $1 in
         buildtestwrappersonly|-buildtestwrappersonly)

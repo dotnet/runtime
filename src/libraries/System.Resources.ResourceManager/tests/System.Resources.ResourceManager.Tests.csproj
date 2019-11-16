@@ -18,7 +18,7 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
       <Link>Common\System\Drawing\Helpers.cs</Link>
     </Compile>
   </ItemGroup>

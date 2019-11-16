@@ -53,9 +53,6 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
-rem Remove after repo consolidation
-if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
-
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
@@ -1081,5 +1078,5 @@ of the previous version to "%VSINSTALLDIR%" and then build.
 REM DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
 exit /b 1

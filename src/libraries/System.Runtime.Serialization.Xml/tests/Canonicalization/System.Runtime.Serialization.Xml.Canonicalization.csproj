@@ -7,7 +7,7 @@
     <Compile Include="$(TestSourceFolder)CanonicalizationTestHelper.cs" />
     <Compile Include="$(TestSourceFolder)TestConfigHelper.cs" />
     <Compile Include="$(TestSourceFolder)XmlCanonicalizationTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
     <Compile Include="CryptoCanonicalization\AncestralNamespaceContextProviderProxy.cs" />

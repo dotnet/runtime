@@ -25,7 +25,7 @@
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
     <Compile Include="Fakes\FakeLazyAsyncResult.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)\System\Net\SslProtocolSupport.cs">
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
       <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
     </Compile>
   </ItemGroup>
@@ -55,7 +55,7 @@
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
       <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
       <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs">
@@ -64,17 +64,17 @@
     <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs">
       <Link>ProductionCode\Common\System\Net\TlsAlertMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <!-- Logging -->
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
   </ItemGroup>

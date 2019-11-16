@@ -7,43 +7,43 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\MockType.cs">
+    <Compile Include="$(CommonTestPath)System\MockType.cs">
       <Link>Common\System\MockType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs">
       <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs">
       <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs">
       <Link>Common\System\Collections\TestBase.Generic.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
       <Link>System\StringTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
     </Compile>
     <Compile Include="Helpers.cs" />
@@ -234,7 +234,7 @@
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />
     <Compile Include="System\Type\TypeTests.Get.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
@@ -256,16 +256,16 @@
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)\..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="System\RealFormatterTestsBase.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="System\RealFormatterTestsBase.netcoreapp.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)\..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
     <Compile Include="System\RealParserTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
@@ -274,20 +274,20 @@
     <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt">
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.11.0.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.11.0.txt">
       <Link>System\Text\Unicode\UnicodeData.11.0.txt</Link>
       <LogicalName>UnicodeData.11.0.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\CaseFolding-12.1.0.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\CaseFolding-12.1.0.txt">
       <Link>System\Text\Unicode\CaseFolding-12.1.0.txt</Link>
       <LogicalName>CaseFolding-12.1.0.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\PropList-12.1.0.txt">
+    <EmbeddedResource Include="$(CommonTestPath)Data\PropList-12.1.0.txt">
       <Link>System\Text\Unicode\PropList-12.1.0.txt</Link>
       <LogicalName>PropList-12.1.0.txt</LogicalName>
     </EmbeddedResource>

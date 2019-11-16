@@ -672,6 +672,40 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+License notice for Xorshift RNGs
+--------------------------------
+
+George Marsaglia
+2003-07-04
+Journal of Statistical Software
+License: http://creativecommons.org/licenses/by/3.0/
+
+https://www.jstatsoft.org/article/view/v008i14
+https://www.jstatsoft.org/index.php/jss/article/view/v008i14/xorshift.pdf
+
+License notice for Xorshift (Wikipedia)
+---------------------------------------
+
+https://en.wikipedia.org/wiki/Xorshift
+License: https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License
+
+License for fastmod (https://github.com/lemire/fastmod)
+--------------------------------------
+
+   Copyright 2018 Daniel Lemire
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
 License notice for The C++ REST SDK
 -----------------------------------
 

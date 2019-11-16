@@ -8,7 +8,7 @@ parameters:
   packageDistroList: null
   skipTests: $(SkipTests)
   strategy:
-    matrix: 
+    matrix:
       debug:
         _BuildConfig: Debug
       release:
@@ -45,15 +45,12 @@ jobs:
           $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
-      
+
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-        ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-          BuildScript: ./eng/install-nuget-credprovider-then-build.sh
-        ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
-          BuildScript: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
+        BuildScript: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
         MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
@@ -97,10 +94,7 @@ jobs:
         -w=/root/runtime
         $(PreserveNuGetAuthDockerArgs)
 
-      ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}:
-        installersSubsetArg: --subset Installers
-      ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-        installersSubsetArg: /p:Subset=Installer
+      installersSubsetArg: --subset Installers
 
     steps:
 

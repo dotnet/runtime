@@ -6,7 +6,7 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
   </ItemGroup>
@@ -17,11 +17,11 @@
     <Compile Include="System\DomainNameHelper.cs" />
     <Compile Include="System\GenericUriParser.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs">
       <Link>System\IPv4AddressHelper.Common.cs</Link>
     </Compile>
     <Compile Include="System\IPv6AddressHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs">
       <Link>System\IPv6AddressHelper.Common.cs</Link>
     </Compile>
     <Compile Include="System\IriHelper.cs" />

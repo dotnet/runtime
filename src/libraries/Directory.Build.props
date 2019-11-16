@@ -8,12 +8,10 @@
     <RepositoryUrl>git://github.com/dotnet/corefx</RepositoryUrl>
   </PropertyGroup>
 
-  <!-- TODO: Consolidate when moved to runtime repository: dotnet/corefx#42170 -->
   <PropertyGroup>
-    <IsRuntimeRepository Condition="Exists('$(MSBuildThisFileDirectory)..\..\.dotnet-runtime-placeholder')">true</IsRuntimeRepository>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
-  <Import Project="..\..\Directory.Build.props" Condition="'$(IsRuntimeRepository)' == 'true'" />
+  <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
     <!--
@@ -258,8 +256,9 @@
 
   <!-- Set up some common paths -->
   <PropertyGroup>
-    <CommonPath>$(LibrariesProjectRoot)Common\src</CommonPath>
-    <CommonTestPath>$(LibrariesProjectRoot)Common\tests</CommonTestPath>
+    <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
+    <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
@@ -365,7 +364,7 @@
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
-    <CodeAnalysisRuleset>$(CoreLibSharedDir)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
     <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
   </PropertyGroup>
 

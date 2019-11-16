@@ -161,14 +161,14 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
-    <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
       <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
       <Link>Common\System\IO\PathFeatures.cs</Link>
     </Compile>
   </ItemGroup>

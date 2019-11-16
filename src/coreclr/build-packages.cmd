@@ -4,9 +4,6 @@ setlocal EnableDelayedExpansion
 set "__ProjectDir=%~dp0"
 set "__RepoRootDir=%~dp0..\..\"
 
-rem Remove after repo consolidation
-if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
-
 set "__args=%*"
 set processedArgs=
 set unprocessedArgs=

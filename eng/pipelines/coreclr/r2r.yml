@@ -32,6 +32,7 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_x86
     helixQueueGroup: ci
+    managedOsxBuild: false
     jobParameters:
       testGroup: outerloop
       readyToRun: true

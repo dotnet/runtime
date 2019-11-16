@@ -20,7 +20,7 @@ This can occur if the NuGet client attempts to install a newer version of the pa
 install-package System.Utf8String.Experimental -prerelease -source https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -version 3.0.0-preview6.19223.2
 ```
 
-Not all of the APIs are hooked up yet, but we have some preliminary APIs that allow experimentation with the feature, including basic creation and inspection of `Utf8String` instances, wrapping a `ReadOnlySpan<byte>` or a `ReadOnlyMemory<byte>` around a `Utf8String` instance, and passing a `Utf8String` instance through `HttpClient`. Full list of APIs available at https://github.com/dotnet/corefx/blob/master/src/System.Utf8String.Experimental/ref/System.Utf8String.cs.
+Not all of the APIs are hooked up yet, but we have some preliminary APIs that allow experimentation with the feature, including basic creation and inspection of `Utf8String` instances, wrapping a `ReadOnlySpan<byte>` or a `ReadOnlyMemory<byte>` around a `Utf8String` instance, and passing a `Utf8String` instance through `HttpClient`. Full list of APIs available at https://github.com/dotnet/runtime/blob/master/src/libraries/System.Utf8String.Experimental/ref/System.Utf8String.cs.
 
 Certain language features also work as expected.
 

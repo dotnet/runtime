@@ -33,9 +33,6 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
-rem Remove after repo consolidation
-if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
-
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
@@ -323,7 +320,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -650,7 +647,7 @@ of the previous version to "%VSINSTALLDIR%" and then build.
 REM DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :PrecompileFX

@@ -6,6 +6,6 @@
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>
 </Project>

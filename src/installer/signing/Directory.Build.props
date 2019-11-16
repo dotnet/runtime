@@ -4,9 +4,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
-    <IsRuntimeRepository Condition="Exists('$(MSBuildThisFileDirectory)..\..\..\.dotnet-runtime-placeholder')">true</IsRuntimeRepository>
 
     <!-- Skip signing steps by default for non-official builds. Skip signing in the runtime repository until we onboard unified signing scripts. -->
-    <SkipSigning Condition="('$(SkipSigning)' == '' and '$(OfficialBuild)' != 'true') or '$(IsRuntimeRepository)' == 'true'">true</SkipSigning>
+    <SkipSigning>true</SkipSigning>
   </PropertyGroup>
 </Project>

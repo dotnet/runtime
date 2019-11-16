@@ -83,10 +83,10 @@
     <Compile Include="System\VoidTypeParameter.cs" />
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
       <Link>Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\WinRTFolderPaths.cs">
@@ -98,13 +98,13 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
       <Link>Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">

@@ -7,10 +7,9 @@ trigger:
   branches:
     include:
     - master
-    - release/3.* # TODO: (Consolidation) Remove when consolidated
+    - release/*.*
   paths:
     exclude:
-    - Documentation/* # TODO: (Consolidation) Remove when consolidated
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -28,10 +27,9 @@ pr:
   branches:
     include:
     - master
-    - release/3.* # TODO: (Consolidation) Remove when consolidated
+    - release/*.*
   paths:
     exclude:
-    - Documentation/* # TODO: (Consolidation) Remove when consolidated
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -69,12 +67,7 @@ resources:
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191023143845
 
 variables:
-  - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}: # TODO: (Consolidation) remove this condition
-    - template: variables.yml
-
-  # TODO: (Consolidation) remove this conditional block
-  - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-    - template: /eng/pipelines/variables.yml
+  - template: variables.yml
 
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - group: DotNet-Blob-Feed

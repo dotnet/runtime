@@ -1,20 +1,6 @@
 <Project>
 
-  <!-- TODO: (Consolidation) Remove when consolidated. -->
-  <PropertyGroup>
-    <IsRuntimeRepository Condition="Exists('$(MSBuildThisFileDirectory)..\..\.dotnet-runtime-placeholder')">true</IsRuntimeRepository>
-  </PropertyGroup>
-  <Import Project="..\..\Directory.Build.props" Condition="'$(IsRuntimeRepository)' == 'true'" />
-
-  <!--
-    Import the arcade sdk with these requirements.
-    After:
-      Configuration setup
-    Before:
-      DebugType needs to be not be set to embedded at least for facades
-      OutputPath setup
-  -->
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(IsRuntimeRepository)' != 'true'" />
+  <Import Project="..\..\Directory.Build.props" />
 
   <!--
     Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
@@ -46,20 +32,6 @@
     <InstallerProjectRoot>$(MSBuildThisFileDirectory)</InstallerProjectRoot>
     <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
-  </PropertyGroup>
-
-  <!-- TODO: (Consolidation) Remove when consolidated. -->
-  <PropertyGroup Condition="'$(IsRuntimeRepository)' != 'true'">
-    <InstallerTasksOutputPath>$(ArtifactsBinDir)installer.tasks\$(Configuration)\</InstallerTasksOutputPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(InstallerTasksOutputPath)netstandard2.0\installer.tasks.dll</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(InstallerTasksOutputPath)net46\installer.tasks.dll</InstallerTasksAssemblyPath>
-  </PropertyGroup>
-
-  <!-- TODO: Remove after https://github.com/dotnet/arcade/pull/4254 is in. -->
-  <PropertyGroup>
-    <BinDir Condition="'$(BinDir)'==''">$(ArtifactsBinDir)</BinDir>
-    <ObjDir Condition="'$(ObjDir)'==''">$(ArtifactsObjDir)</ObjDir>
-    <PackagesDir Condition="'$(PackagesDir)' == ''">$(NuGetPackageRoot)</PackagesDir>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(CommonTestPath)\Tests.props" />
+  <Import Project="$(CommonTestPath)Tests.props" />
   <PropertyGroup>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>

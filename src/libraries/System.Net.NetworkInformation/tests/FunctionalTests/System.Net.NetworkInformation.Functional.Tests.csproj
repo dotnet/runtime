@@ -47,22 +47,22 @@
     <Compile Include="ConnectionsParsingTests.cs" />
     <Compile Include="StatisticsParsingTests.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
+    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs">
       <Link>Common\System\Net\VerboseTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+    <Compile Include="$(CommonPath)System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
+    <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
   </ItemGroup>

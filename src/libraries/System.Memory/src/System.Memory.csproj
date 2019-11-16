@@ -34,7 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)\System\Buffers\ArrayBufferWriter.cs">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
       <Link>Common\System\Buffers\ArrayBufferWriter.cs</Link>
     </Compile>
   </ItemGroup>

@@ -119,11 +119,26 @@ def main(argv):
 
         assert len(os.listdir(os.path.dirname(bootstrapPath))) == 0
 
+        print('Downloading', bootstrapUrl, 'to', bootstrapPath)
         urlretrieve(bootstrapUrl, bootstrapPath)
 
         if not os.path.isfile(bootstrapPath):
             print("Did not download bootstrap!")
             return -1
+
+        if platform == 'Windows_NT':
+            # Need to ensure we have Windows line endings on the downloaded script file,
+            # which is downloaded with Unix line endings.
+            print('Convert', bootstrapPath, 'to Windows line endings')
+
+            content = None
+            with open(bootstrapPath, 'rb') as open_file:
+                content = open_file.read()
+
+            content = content.replace(b'\n', b'\r\n')
+
+            with open(bootstrapPath, 'wb') as open_file:
+                open_file.write(content)
 
         # On *nix platforms, we need to make the bootstrap file executable
 
@@ -131,14 +146,13 @@ def main(argv):
             print("Making bootstrap executable")
             os.chmod(bootstrapPath, 0o751)
 
-        print(bootstrapPath)
-
         # Run bootstrap
         if platform == 'Linux' or platform == 'OSX':
-            print("Running bootstrap")
+            print('Running:', 'bash', bootstrapPath)
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
         elif platform == 'Windows_NT':
+            print('Running:', bootstrapPath)
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
 
@@ -147,7 +161,6 @@ def main(argv):
         returncode = 0
         jitutilsBin = os.path.join(os.path.dirname(bootstrapPath), "jitutils", "bin")
         my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
-        current_dir = os.getcwd()
 
         if not os.path.isdir(jitutilsBin):
             print("Jitutils not built!")
@@ -166,6 +179,8 @@ def main(argv):
 
         for build in builds:
             for project in projects:
+                command = jitformat + " -a " + arch + " -b " + build + " -o " + platform + " -c " + coreclr + " --verbose --projects " + project
+                print('Running:', command)
                 proc = subprocess.Popen([jitformat, "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
                 output,error = proc.communicate()
                 errorcode = proc.returncode
@@ -187,43 +202,41 @@ def main(argv):
                         proc = subprocess.Popen([jitformat, "--fix", "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
                         output,error = proc.communicate()
 
-        os.chdir(current_dir)
+    patchFilePath = os.path.join(coreclr, "format.patch")
 
-        patchFilePath = os.path.join(coreclr, "format.patch")
+    if returncode != 0:
+        # Create a patch file
+        print("Creating patch file " + patchFilePath)
+        patchFile = open(patchFilePath, "w")
+        proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
+        output,error = proc.communicate()
 
-        if returncode != 0:
-            # Create a patch file
-            print("Creating patch file " + patchFilePath)
-            patchFile = open(patchFilePath, "w")
-            proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
-            output,error = proc.communicate()
+    if os.path.isdir(jitUtilsPath):
+        print("Deleting " + jitUtilsPath)
+        shutil.rmtree(jitUtilsPath, onerror=del_rw)
 
-        if os.path.isdir(jitUtilsPath):
-            print("Deleting " + jitUtilsPath)
-            shutil.rmtree(jitUtilsPath, onerror=del_rw)
+    if os.path.isfile(bootstrapPath):
+        print("Deleting " + bootstrapPath)
+        os.remove(bootstrapPath)
 
-        if os.path.isfile(bootstrapPath):
-            print("Deleting " + bootstrapPath)
-            os.remove(bootstrapPath)
+    if returncode != 0:
+        print("There were errors in formatting. Please run jit-format locally with: \n")
+        print(errorMessage)
+        print("\nOr download and apply generated patch:")
+        print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
+        print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
+        print("   Azure Pipelines' link.")
+        print("3. Select the 'Summary' tab.")
+        print("4. Open the 'Build artifacts published' entry.")
+        print("5. Find the link to the OS/architecture appropriate format patch file.")
+        print("6. Click on the link to download it.")
+        print("7. Unzip the patch file.")
+        print("8. git apply format.patch")
 
-        if returncode != 0:
-            print("There were errors in formatting. Please run jit-format locally with: \n")
-            print(errorMessage)
-            print("\nOr download and apply generated patch:")
-            print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
-            print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
-            print("   Azure Pipelines' link.")
-            print("3. Select the 'Summary' tab.")
-            print("4. Open the 'Build artifacts published' entry.")
-            print("5. Find the link to the OS/architecture appropriate format patch file.")
-            print("6. Click on the link to download it.")
-            print("7. Unzip the patch file.")
-            print("8. git apply format.patch")
+    if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
+        print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")
 
-        if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
-            print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")
-
-        return returncode
+    return returncode
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
