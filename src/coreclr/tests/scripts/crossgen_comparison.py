@@ -23,8 +23,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_corelib
-#  --crossgen artifacts/Product/Linux.arm.Checked/crossgen
-#  --il_corelib artifacts/Product/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/crossgen
+#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --result_dir Linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
@@ -60,8 +60,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
-#  --crossgen artifacts/Product/Linux.arm.Checked/x64/crossgen
-#  --il_corelib artifacts/Product/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/x64/crossgen
+#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
 #  --result_dir Linux.x64_arm.Checked
 #

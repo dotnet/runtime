@@ -17,7 +17,7 @@ function usage {
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
     echo '    --testRootDir=~/Downloads/Windows_NT.x64.Release'
-    echo '    --mscorlibDir=~/clr/bin/Product/Linux.armel.Release'
+    echo '    --mscorlibDir=~/clr/bin/bin/coreclr/Linux.armel.Release'
     echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.armel.Release'
     echo '    --coreFxBinDir="~/cfx/bin/Linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
     echo '    --testDirFile=~/clr/tests/testsRunningInsideARM.txt'
@@ -554,7 +554,7 @@ __coreFxNativeBinDirBase=
 __coreFxBinDirBase=
 __testDirFileBase=
 __testNativeBinDirBase="bin/obj/$__buildDirName/tests"
-__coreClrBinDirBase="bin/Product/$__buildDirName"
+__coreClrBinDirBase="bin/bin/coreclr/$__buildDirName"
 
 set -x
 set -e
