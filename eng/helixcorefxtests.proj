@@ -149,7 +149,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="$(ProjectDir)tests\testenvironment.proj">
+      <_ProjectsToBuild Include="$(ProjectDir)src\coreclr\tests\testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
