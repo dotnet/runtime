@@ -7,7 +7,7 @@
                 "../../src/vm/dac",
                 "../../src/vm",
                 "../../src/pal/prebuilt/inc",
-                "../../artifacts/obj",
+                "../../../../artifacts/obj",
                 "../../src/inc",
                 "../../src/strongname/inc",
                 "../../src/inc/winrt",

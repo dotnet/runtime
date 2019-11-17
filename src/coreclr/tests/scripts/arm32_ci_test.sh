@@ -106,9 +106,9 @@ rm -f -v ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}/bin/CoreFxBinDir/libcoreclrtracep
 chroot ${__ROOTFS_DIR} /bin/bash -x <<EOF
     cd ${ARM_CHROOT_HOME_DIR}
     ./tests/bringup_runtest.sh --sequential\
-                       --coreClrBinDir=${ARM_CHROOT_HOME_DIR}/bin/bin/coreclr/${__buildDirName} \
-                       --mscorlibDir=${ARM_CHROOT_HOME_DIR}/bin/bin/coreclr/${__buildDirName} \
-                       --testNativeBinDir=${ARM_CHROOT_HOME_DIR}/bin/obj/${__buildDirName}/tests \
+                       --coreClrBinDir=${ARM_CHROOT_HOME_DIR}/artifacts/bin/coreclr/${__buildDirName} \
+                       --mscorlibDir=${ARM_CHROOT_HOME_DIR}/artifacts/bin/coreclr/${__buildDirName} \
+                       --testNativeBinDir=${ARM_CHROOT_HOME_DIR}/artifacts/obj/coreclr/${__buildDirName}/tests \
                        --coreFxBinDir=${ARM_CHROOT_HOME_DIR}/bin/CoreFxBinDir \
                        --testRootDir=${ARM_CHROOT_HOME_DIR}/bin/tests/Windows_NT.x64.${__buildConfig} \
                        --testDirFile=${ARM_CHROOT_HOME_DIR}/tests/testsRunningInsideARM.txt
