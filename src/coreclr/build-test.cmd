@@ -151,7 +151,7 @@ REM the configuration information deeper in the intermediates path.
 REM These variables are used by the msbuild project files.
 
 if not defined __TestIntermediateDir (
-    set "__TestIntermediateDir=tests\obj\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+    set "__TestIntermediateDir=tests\coreclr\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 )
 set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"

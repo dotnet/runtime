@@ -63,7 +63,7 @@ function create_testhost
     local coreClrSrcTestDir=$coreClrSrc/tests
     
     if [ -z $coreClrBinDir ]; then
-        local coreClrBinDir=${coreClrSrc}/bin
+        local coreClrBinDir=${coreClrSrc}/../../artifacts/bin/coreclr
         export __CoreFXTestDir=${coreClrSrc}/artifacts/tests/CoreFX
     else
         export __CoreFXTestDir=${coreClrBinDir}/tests/CoreFX    

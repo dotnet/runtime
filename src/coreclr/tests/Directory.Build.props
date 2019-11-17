@@ -21,7 +21,7 @@
   <!-- Common properties -->
   <PropertyGroup>
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\artifacts\bin\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\..\..\artifacts\bin\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>

@@ -28,7 +28,7 @@
     <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-    <BaseIntermediateOutputPath>$(RootRepoDir)\artifacts\tests\obj\coreclr\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RootRepoDir)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
     <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\obj\coreclr\$(BuildOS).$(Platform).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>

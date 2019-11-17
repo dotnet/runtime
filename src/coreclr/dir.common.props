@@ -49,7 +49,7 @@
     <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
 
     <RootBinDir>$(__RootBinDir)\bin\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(RootRepoDir)artifacts\bin</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(RootRepoDir)artifacts\bin\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)coreclr\$(PlatformConfigPathPart)\</BinDir>
