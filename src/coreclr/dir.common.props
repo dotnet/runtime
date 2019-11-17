@@ -51,7 +51,7 @@
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(RootRepoDir)artifacts\</RootBinDir>
 
-    <BinDir>$(__BinDir)\bin\</BinDir>
+    <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
