@@ -23,10 +23,10 @@
 #endif
 
 /* These can't go into mini-<ARCH>.h since thats not included into llvm-jit.cpp */
-#if defined(TARGET_AMD64) && (defined(TARGET_OSX)||defined(__linux__))
+#if defined(TARGET_OSX) || defined(__linux__)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86)
 #define MONO_ARCH_LLVM_JIT_SUPPORTED 1
-#elif defined(TARGET_X86) && (defined(TARGET_OSX)||defined(__linux__))
-#define MONO_ARCH_LLVM_JIT_SUPPORTED 1
+#endif
 #endif
 
 G_BEGIN_DECLS

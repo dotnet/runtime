@@ -18,8 +18,10 @@
 
 #if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 600
 
+#include <llvm/ADT/SmallVector.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Host.h>
+#include <llvm/Support/Memory.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/IR/Mangler.h>
 #include "llvm/IR/LegacyPassNameParser.h"
@@ -82,6 +84,8 @@ public:
 								 StringRef SectionName) override;
 
 	bool finalizeMemory(std::string *ErrMsg = nullptr) override;
+private:
+	SmallVector<sys::MemoryBlock, 16> PendingCodeMem;
 };
 
 MonoJitMemoryManager::~MonoJitMemoryManager()
@@ -117,12 +121,22 @@ MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned SectionID,
 										  StringRef SectionName)
 {
-	return alloc_code_mem_cb (NULL, Size);
+	uint8_t *mem = alloc_code_mem_cb (NULL, Size);
+	PendingCodeMem.push_back (sys::MemoryBlock ((void *)mem, Size));
+	return mem;
 }
 
 bool
 MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
 {
+	for (sys::MemoryBlock &Block : PendingCodeMem) {
+#if LLVM_API_VERSION >= 900
+		sys::Memory::InvalidateInstructionCache (Block.base (), Block.allocatedSize ());
+#else
+		sys::Memory::InvalidateInstructionCache (Block.base (), Block.size ());
+#endif
+	}
+	PendingCodeMem.clear ();
 	return false;
 }
 
