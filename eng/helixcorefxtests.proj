@@ -96,7 +96,7 @@
          any particular job. However, this mechanism is super simple; we don't need to manage fine-
          grained exclusions; and there really shouldn't be any (or many) exclusions anyway.
     -->
-    <CoreFXTestExclusionFile>$(ProjectDir)src\corelcr\tests\CoreFX\CoreFX.issues.rsp</CoreFXTestExclusionFile>
+    <CoreFXTestExclusionFile>$(ProjectDir)src\coreclr\tests\CoreFX\CoreFX.issues.rsp</CoreFXTestExclusionFile>
 
     <TestHostRootPath>$(TestWorkingDir)testhost\</TestHostRootPath>
     <TestArchiveRuntimeRoot>$(TestWorkingDir)helix\</TestArchiveRuntimeRoot>
