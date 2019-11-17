@@ -30,7 +30,7 @@ steps:
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
 
-  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:${{ Build.SourcesDirectory }}/artifacts/log/SendToHelix.binlog
+  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
