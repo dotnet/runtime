@@ -4,18 +4,34 @@
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'bin', 'Product', '$(OSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
-    <LibrariesRefArtifactsPath Condition="'$(LibrariesRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesRefArtifactsPath>
-    <LibrariesBinArtifactsPath Condition="'$(LibrariesBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesConfiguration)'))</LibrariesBinArtifactsPath>
-    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">
-      $([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'native', 'netcoreapp-$(OSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesNativeArtifactsPath>
+    <CoreCLRArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'bin', 'Product', '$(OSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPathInTree>
+    <LibrariesRefArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesRefArtifactsPathInTree>
+    <LibrariesBinArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesConfiguration)'))</LibrariesBinArtifactsPathInTree>
+    <LibrariesNativeArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'native', 'netcoreapp-$(OSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesNativeArtifactsPathInTree>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(CoreCLRArtifactsPathInTree)</CoreCLRArtifactsPath>
+    <LibrariesRefArtifactsPath Condition="'$(LibrariesRefArtifactsPath)' == ''">$(LibrariesRefArtifactsPathInTree)</LibrariesRefArtifactsPath>
+    <LibrariesBinArtifactsPath Condition="'$(LibrariesBinArtifactsPath)' == ''">$(LibrariesBinArtifactsPathInTree)</LibrariesBinArtifactsPath>
+    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$(LibrariesNativeArtifactsPathInTree)</LibrariesNativeArtifactsPath>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(HostArch)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(HostArch)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
   <Target Name="ResolveCoreCLRFilesFromLocalBuild">
+    <PropertyGroup>
+      <BuildCoreCLRDependency Condition="'$(BuildCoreCLRDependency)' == '' and '$(CoreCLRArtifactsPath)' == '$(CoreCLRArtifactsPathInTree)'">true</BuildCoreCLRDependency>
+    </PropertyGroup>
+
+    <MSBuild
+      Condition="'$(BuildCoreCLRDependency)' == 'true'"
+      Projects="@(CoreClrProjectToBuild)"
+      Targets="Build"
+      BuildInParallel="true"
+      Properties="Configuration=$(CoreCLRConfiguration);
+        TargetArchitecture=$(TargetArchitecture)" />
+
     <Error Condition="!Exists('$(CoreCLRArtifactsPath)')" Text="The CoreCLR subset category must be built before building this project." />
+
     <PropertyGroup>
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
     </PropertyGroup>
@@ -54,6 +70,23 @@
   </Target>
 
   <Target Name="ResolveLibrariesFromLocalBuild">
+    <PropertyGroup Condition="'$(BuildLibrariesDependency)' == ''">
+      <BuildLibrariesDependency Condition="'$(LibrariesRefArtifactsPath)' == '$(LibrariesRefArtifactsPathInTree)'">true</BuildLibrariesDependency>
+      <BuildLibrariesDependency Condition="'$(LibrariesBinArtifactsPath)' == '$(LibrariesBinArtifactsPathInTree)'">true</BuildLibrariesDependency>
+      <BuildLibrariesDependency Condition="'$(LibrariesNativeArtifactsPath)' == '$(LibrariesNativeArtifactsPathInTree)'">true</BuildLibrariesDependency>
+    </PropertyGroup>
+
+    <MSBuild
+      Condition="'$(BuildLibrariesDependency)' == 'true'"
+      Projects="@(LibrariesProjectToBuild)"
+      Targets="Build"
+      BuildInParallel="true"
+      Properties="
+        ConfigurationGroup=$(LibrariesConfiguration);
+        ArchGroup=$(TargetArchitecture);
+        OSGroup=$(OSGroup)" />
+
+
     <Error Condition="!Exists('$(LibrariesRefArtifactsPath)')" Text="The libraries subset category must be built before building this project." />
     <Error Condition="!Exists('$(LibrariesBinArtifactsPath)')" Text="The libraries subset category must be built before building this project." />
     <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project." />

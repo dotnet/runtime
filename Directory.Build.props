@@ -10,6 +10,10 @@
   -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
+  <PropertyGroup>
+    <RootDirectoryBuildPropsImported>true</RootDirectoryBuildPropsImported>
+  </PropertyGroup>
+
   <!-- Common paths -->
   <PropertyGroup>
     <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
@@ -33,6 +37,12 @@
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'installer', 'manpages'))</ManPagesDir>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
   </PropertyGroup>
+
+  <!--
+    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    $(Subset) automatically when creating project-to-project dependencies.
+  -->
+  <Import Condition="'$(SubsetsPropsImported)' != 'true'" Project="$(RepositoryEngineeringDir)Subsets.props" />
 
   <!-- Packaging properties -->
   <PropertyGroup>

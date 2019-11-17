@@ -47,8 +47,12 @@
       artifacts to the test layout, then running the test subset.
   -->
 
+  <PropertyGroup>
+    <SubsetsPropsImported>true</SubsetsPropsImported>
+  </PropertyGroup>
+
   <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
-  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'" />
+  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true' and '$(RootDirectoryBuildPropsImported)' != 'true'" />
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
@@ -71,7 +75,7 @@
 
     <!-- Libraries -->
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
-    
+
     <!-- CoreClr -->
     <SubsetName Include="All" Category="CoreClr" Description="The .NET runtime." />
 
@@ -93,12 +97,14 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('all'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)build.proj" />
+    <LibrariesProjectToBuild Include="$(LibrariesProjectRoot)build.proj" />
+    <ProjectToBuild Include="@(LibrariesProjectToBuild)" />
   </ItemGroup>
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" />
+    <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" />
+    <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
   </ItemGroup>
 
   <!-- Installer sets -->
