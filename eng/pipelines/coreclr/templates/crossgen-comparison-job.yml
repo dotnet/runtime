@@ -40,18 +40,18 @@ jobs:
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: artifactsDirectory
-        value: $(coreClrRepoRoot)/artifacts
+        value: $(Build.SourcesDirectory)/artifacts
       - name: binDirectory
         value: $(artifactsDirectory)/bin
       - name: productDirectory
         value: $(binDirectory)/coreclr
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: artifactsDirectory
-        value: $(coreClrRepoRoot)\artifacts
+        value: $(Build.SourcesDirectory)\artifacts
       - name: binDirectory
         value: $(artifactsDirectory)\bin
       - name: productDirectory
-        value: $(binDirectory\coreclr
+        value: $(binDirectory)\coreclr
 
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

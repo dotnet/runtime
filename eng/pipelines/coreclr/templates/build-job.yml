@@ -227,7 +227,7 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(coreClrRepoRoot)/artifacts/log
+        pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
         artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
