@@ -45,7 +45,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: download-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
