@@ -299,10 +299,30 @@ namespace System.Text.RegularExpressions
          */
         private void Ldc(int i)
         {
-            if (i <= 127 && i >= -128)
-                _ilg!.Emit(OpCodes.Ldc_I4_S, (byte)i);
+            Debug.Assert(_ilg != null);
+
+            if ((uint)i < 8)
+            {
+                _ilg.Emit(i switch
+                {
+                    0 => OpCodes.Ldc_I4_0,
+                    1 => OpCodes.Ldc_I4_1,
+                    2 => OpCodes.Ldc_I4_2,
+                    3 => OpCodes.Ldc_I4_3,
+                    4 => OpCodes.Ldc_I4_4,
+                    5 => OpCodes.Ldc_I4_5,
+                    6 => OpCodes.Ldc_I4_6,
+                    _ => OpCodes.Ldc_I4_7,
+                });
+            }
+            else if (i <= 127 && i >= -128)
+            {
+                _ilg.Emit(OpCodes.Ldc_I4_S, (byte)i);
+            }
             else
-                _ilg!.Emit(OpCodes.Ldc_I4, i);
+            {
+                _ilg.Emit(OpCodes.Ldc_I4, i);
+            }
         }
 
         private void LdcI8(long i)
