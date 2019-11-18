@@ -14,6 +14,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 #endif
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -115,8 +116,8 @@ namespace System.Text.RegularExpressions
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ?
                 CultureInfo.InvariantCulture :
                 CultureInfo.CurrentCulture;
-            var key = new CachedCodeEntryKey(options, culture.ToString(), pattern);
-            CachedCodeEntry? cached = GetCachedCode(key, false);
+            var key = new CachedCodeEntryKey(pattern, culture.ToString(), options, matchTimeout != InfiniteMatchTimeout);
+            CachedCodeEntry? cached = GetCachedCode(key, isToAdd: false);
 
             if (cached == null)
             {
@@ -165,7 +166,7 @@ namespace System.Text.RegularExpressions
             // if the compile option is set, then compile the code if it's not already
             if (UseOptionC() && factory == null)
             {
-                factory = Compile(_code!, roptions);
+                factory = Compile(_code!, roptions, matchTimeout != InfiniteMatchTimeout);
 
                 if (addToCache && cached != null)
                 {
@@ -222,9 +223,9 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions)
+        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions, bool hasTimeout)
         {
-            return RegexCompiler.Compile(code!, roptions);
+            return RegexCompiler.Compile(code!, roptions, hasTimeout);
         }
 #endif
 
