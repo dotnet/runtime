@@ -29,8 +29,8 @@ We welcome contributions! Many people all over the world have helped make this p
 * If you want to contribute a fix or improvement, you'll want to check out these links
 
     * Requirements to build this repo ([Linux](docs/building/linux-requirements.md), [macOS](docs/building/macos-requirements.md), [Windows](docs/building/windows-requirements.md))
-    * What kind of contributions you might want to make [in the runtime](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) and [in the libraries](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md)
-	* [How you can make a change happen!](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md) (some of this is yet to be updated for this new repo)
+    * What kind of contributions you might want to make [in the runtime](docs/coreclr/project-docs/contributing.md) and [in the libraries](docs/libraries/project-docs/contributing.md)
+	* [How you can make a change happen!](docs/coreclr/project-docs/contributing-workflow.md)
 	* How to build and test your change (coming soon)
 
 ## Reporting security issues and security bugs
