@@ -26,7 +26,9 @@
 
 using namespace clr;
 
+#ifdef FEATURE_PREJIT
 #define DEFAULT_ZAP_SET W("")
+#endif
 
 #define DEFAULT_APP_DOMAIN_LEAKS 0
 
@@ -184,7 +186,9 @@ HRESULT EEConfig::Init()
     iGCTrimCommit = 0;
 #endif
 
+#ifdef FEATURE_PREJIT
     m_fFreepZapSet = false;
+#endif
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
@@ -277,9 +281,16 @@ HRESULT EEConfig::Init()
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
-    iRequireZaps = REQUIRE_ZAPS_NONE;
-
+#ifdef FEATURE_PREJIT
     pZapSet = DEFAULT_ZAP_SET;
+#endif
+
+    iRequireZaps = REQUIRE_ZAPS_NONE;
+    pRequireZapsList = pRequireZapsExcludeList = NULL;
+#ifdef _DEBUG
+    iForbidZaps = 0;
+    pForbidZapsList = pForbidZapsExcludeList = NULL;
+#endif
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     dwDisableStackwalkCache = 0;
@@ -411,8 +422,11 @@ HRESULT EEConfig::Cleanup()
     }
 #endif
 
+#ifdef FEATURE_PREJIT
     if (m_fFreepZapSet)
         delete[] pZapSet;
+#endif
+
     delete[] szZapBBInstr;
 
     if (pRequireZapsList)
@@ -420,9 +434,6 @@ HRESULT EEConfig::Cleanup()
 
     if (pRequireZapsExcludeList)
         delete pRequireZapsExcludeList;
-
-    if (pReadyToRunExcludeList)
-        delete pReadyToRunExcludeList;
 
 #ifdef _DEBUG
     if (pForbidZapsList)
@@ -907,31 +918,20 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         }
     }
 
-    pReadyToRunExcludeList = NULL;
-#if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
-    {
-        NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
-        if (wszReadyToRunExcludeList)
-            pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
-    }
-#endif // defined(FEATURE_READYTORUN)
-
 #ifdef _DEBUG
-    iForbidZaps     = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbid) != 0;
+    iForbidZaps     = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapForbid) != 0;
     if (iForbidZaps != 0)
     {
         {
             NewArrayHolder<WCHAR> wszZapForbidList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidList, &wszZapForbidList));
+            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapForbidList, &wszZapForbidList));
             if (wszZapForbidList)
                 pForbidZapsList = new AssemblyNamesList(wszZapForbidList);
         }
 
         {
             NewArrayHolder<WCHAR> wszZapForbidExcludeList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidExcludeList, &wszZapForbidExcludeList));
+            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapForbidExcludeList, &wszZapForbidExcludeList));
             if (wszZapForbidExcludeList)
                 pForbidZapsExcludeList = new AssemblyNamesList(wszZapForbidExcludeList);
         }
@@ -1393,16 +1393,6 @@ bool EEConfig::ForbidZap(LPCUTF8 assemblyName) const
     return false;
 }
 #endif
-
-bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pReadyToRunExcludeList != NULL && pReadyToRunExcludeList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
 
 /**************************************************************/
 #ifdef _DEBUG

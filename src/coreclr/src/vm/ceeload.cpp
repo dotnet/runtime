@@ -591,6 +591,24 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
                 GetNativeAssemblyImport(TRUE /* loadAllowed */);
             }
         }
+
+        StackSString ss;
+        if (m_pReadyToRunInfo != NULL && g_pConfig->ForbidZap(GetSimpleName()))
+            ss.Printf("ZapForbid: ReadyToRun should be forbidden for %s.\n", GetSimpleName());
+        else if(m_pReadyToRunInfo == NULL && g_pConfig->RequireZap(GetSimpleName()))
+            ss.Printf("ZapRequire: Failed to load ReadyToRun for %s.\n", GetSimpleName());
+
+        if (!ss.IsEmpty())
+        {
+#if defined(_DEBUG)
+            // Assert as some test may not check their error codes well. So throwing an
+            // exception may not cause a test failure (as it should).
+            StackScratchBuffer scratch;
+            DbgAssertDialog(__FILE__, __LINE__, (char*)ss.GetUTF8(scratch));
+#endif // defined(_DEBUG)
+
+            COMPlusThrowNonLocalized(kFileLoadException, ss.GetUnicode());
+        }
     }
 #endif
 

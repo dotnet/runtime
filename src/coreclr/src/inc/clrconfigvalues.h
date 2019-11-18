@@ -497,14 +497,6 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinLimitConstant, W("SpinLimitConstant"), 
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinRetryCount, W("SpinRetryCount"), 0xA, "Hex value specifying the number of times the entire spin process is repeated (when applicable)", EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Monitor_SpinCount, W("Monitor_SpinCount"), 0x1e, "Hex value specifying the maximum number of spin iterations Monitor may perform upon contention on acquiring the lock before waiting.", EEConfig_default)
 
-///
-/// Native Binder
-///
-
-CONFIG_DWORD_INFO(INTERNAL_NgenBind_ZapForbid,             W("NgenBind_ZapForbid"), 0, "Assert if an assembly succeeds in binding to a native image")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidExcludeList, W("NgenBind_ZapForbidExcludeList"), "")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbidList"), "")
-
 CONFIG_DWORD_INFO_EX(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer", CLRConfig::REGUTIL_default)
 
 ///
@@ -673,17 +665,25 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_DisableWatsonForManagedExceptions, W("DisableW
 ///
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_ZapBBInstr, W("ZapBBInstr"), "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapBBInstrDir, W("ZapBBInstrDir"), "")
+
+#ifdef FEATURE_PREJIT
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapDisable, W("ZapDisable"), 0, "")
 CONFIG_STRING_INFO_EX(INTERNAL_ZapExclude, W("ZapExclude"), "", CLRConfig::REGUTIL_default)
 CONFIG_STRING_INFO_EX(INTERNAL_ZapOnly, W("ZapOnly"), "", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_ZapRequire, W("ZapRequire"), "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireExcludeList, W("ZapRequireExcludeList"), "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireList, W("ZapRequireList"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ZapSet, W("ZapSet"), "", CLRConfig::REGUTIL_default)
+#endif
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
+
+RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_ZapRequire, W("ZapRequire"), "Assert if an assembly fails in loading a ReadyToRun image")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireList, W("ZapRequireList"), "")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireExcludeList, W("ZapRequireExcludeList"), "")
+
+CONFIG_DWORD_INFO(INTERNAL_ZapForbid, W("ZapForbid"), 0, "Assert if an assembly succeeds in loading a ReadyToRun image")
+CONFIG_STRING_INFO(INTERNAL_ZapForbidList, W("ZapForbidList"), "")
+CONFIG_STRING_INFO(INTERNAL_ZapForbidExcludeList, W("ZapForbidExcludeList"), "")
 
 #if defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableEventLog, W("EnableEventLog"), 0, "Enable/disable use of EnableEventLogging mechanism ") // Off by default

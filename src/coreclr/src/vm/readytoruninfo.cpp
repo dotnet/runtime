@@ -482,12 +482,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
-    {
-        DoLog("Ready to Run disabled - module on exclusion list");
-        return NULL;
-    }
-
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Ignore ReadyToRun during NGen
     if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())

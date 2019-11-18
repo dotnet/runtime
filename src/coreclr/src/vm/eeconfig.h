@@ -671,13 +671,15 @@ public:
         REQUIRE_ZAPS_COUNT
     };
     RequireZapsType RequireZaps()           const {LIMITED_METHOD_CONTRACT;  return iRequireZaps; }
+
     bool    RequireZap(LPCUTF8 assemblyName) const;
 #ifdef _DEBUG
     bool    ForbidZap(LPCUTF8 assemblyName) const;
 #endif
-    bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
+#ifdef FEATURE_PREJIT
     LPCWSTR ZapSet()                        const { LIMITED_METHOD_CONTRACT; return pZapSet; }
+#endif
 
     bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
 
@@ -957,9 +959,6 @@ private: //----------------------------------------------------------------
     // This overrides pRequireZapsList.
     AssemblyNamesList * pRequireZapsExcludeList;
 
-    // Assemblies which cannot use Ready to Run images.
-    AssemblyNamesList * pReadyToRunExcludeList;
-
 #ifdef _DEBUG
     // Exact opposite of require zaps
     BOOL iForbidZaps;
@@ -967,7 +966,9 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pForbidZapsExcludeList;
 #endif
 
+#ifdef FEATURE_PREJIT
     LPCWSTR pZapSet;
+#endif  // FEATURE_PREJIT
 
     bool fNgenBindOptimizeNonGac;
 
@@ -987,8 +988,10 @@ private: //----------------------------------------------------------------
     int       m_TraceWrapper;
 #endif
 
+#ifdef FEATURE_PREJIT
     // Flag to keep track of memory
     int     m_fFreepZapSet;
+#endif
 
 #ifdef _DEBUG
     // GC Alloc perf flags
