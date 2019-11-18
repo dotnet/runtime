@@ -83,39 +83,35 @@ variables:
       value: .NETCore
 
 stages:
-  # Windows legs
-  - template: ${{ variables['pipelinesPath'] }}/windows.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-  # Linux legs
-  - template: ${{ variables['pipelinesPath'] }}/linux.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+  - stage: Build
+    jobs:
+      - template: /eng/pipelines/coreclr/templates/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build.yml
+          buildConfig: Release
+          platforms:
+          - Windows_NT_x64
+          jobParameters:
+            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
 
-  # MacOS legs
-  - template: ${{ variables['pipelinesPath'] }}/macos.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
-    # FreeBSD leg is only for official builds
-    # - template: ${{ variables['pipelinesPath'] }}/freebsd.yml
-    #   parameters:
-    #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-    #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+      - template: /eng/pipelines/coreclr/templates/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build.yml
+          buildConfig: Release
+          platforms:
+          - Windows_NT_x64
+          jobParameters:
+            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+            runTests: true
+            testScope: innerloop
 
   # Publish and validation steps. Only run in official builds
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: ${{ variables['pipelinesPath'] }}/pre-publish.yml
+  - ${{ if eq(variables['isOfficialBuild'], 'true') }}:
+    - template: /eng/pipelines/libraries/pre-publish.yml
       parameters:
         dependsOn:
-          - WindowsStage
-          - LinuxStage
-          - MacOSStage
-          # - FreeBSD
+          - Build
 
     - template: eng\common\templates\post-build\post-build.yml
       parameters:
