@@ -48,9 +48,9 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19563.1">
+    <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19564.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>90b5f3b33752884a93e0f01b1a5d901aace2bc18</Sha>
+      <Sha>cfe95a23647c7de1fe1a349343115bd7720d6949</Sha>
     </Dependency>
     <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19567.1">
       <Uri>https://github.com/mono/linker</Uri>
