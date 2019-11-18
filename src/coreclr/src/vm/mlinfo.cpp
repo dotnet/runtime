@@ -2796,9 +2796,18 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
 #endif // FEATURE_COMINTEROP
 
-                if (m_pMT->HasInstantiation())
+                if (m_pMT->HasInstantiation() && (!m_pMT->IsBlittable()
+                    || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                    || m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+#ifndef CROSSGEN_COMPILE
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+#endif // !CROSSGEN_COMPILE
+                    ))
                 {
-                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                    m_resID = IDS_EE_BADMARSHAL_BLITTABLE_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
                 }
 
@@ -2916,9 +2925,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (m_ms != MARSHAL_SCENARIO_WINRT)
 #endif // FEATURE_COMINTEROP
             {
-                if (thElement.HasInstantiation())
+                if (thElement.HasInstantiation() && !thElement.IsBlittable())
                 {
-                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                    m_resID = IDS_EE_BADMARSHAL_BLITTABLE_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
                 }
             }
