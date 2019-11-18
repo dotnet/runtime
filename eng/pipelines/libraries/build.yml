@@ -8,8 +8,11 @@ parameters:
   timeoutInMinutes: 150
   preBuildSteps: []
   testScope: ''
-  runTests: true
+  runTests: false
   publishTestArtifacts: false
+  helixQueues: []
+  container: ''
+  crossrootfsDir: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -17,13 +20,16 @@ jobs:
       variables:
       - _msbuildCommonParameters: ''
       - _finalFrameworkArg: -framework ${{ parameters.framework }}
-      - _skipTestRestoreArg: ''
+      - _skipTestRestoreArg: /p:SkipTestRestore=true
       - _testScopeArg: ''
       - _actionParameters: -build
 
+      - ${{ if ne(parameters.crossrootfsDir, '') }}:
+        - ROOTFS_DIR: ${{ parameters.crossrootfsDir}}
+
       - ${{ if ne(parameters.testScope, '') }}:
         - _testScopeArg: -testscope ${{ parameters.testScope }}
-        - _skipTestRestoreArg: /p:SkipTestRestore=true
+        - _skipTestRestoreArg: ''
         - _actionParameters: -buildtests
 
       - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
@@ -55,6 +61,12 @@ jobs:
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       helixRepo: dotnet/runtime
+
+      ${{ if ne(parameters.container, '') }}:
+        ${{ if eq(parameters.container.registry, 'mcr') }}:
+          container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
+        ${{ if ne(parameters.container.registry, 'mcr') }}:
+          container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
 
       ${{ if eq(parameters.testScope, '') }}:
         name: ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -106,17 +118,17 @@ jobs:
                 $(_msbuildCommonParameters)
           displayName: Build
 
-        - ${{ if and(eq(parameters.runTests, 'true'), ne(parameters.isOfficialBuild, 'false')) }}:
+        - ${{ if eq(parameters.runTests, 'true') }}:
           - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  targetOS: ${{ parameters.targetOS }}
-                  archGroup: ${{ parameters.archType }}
-                  configuration: ${{ parameters.buildConfig }}
-                  helixQueues: $(_helixQueues)
-                  msbuildScript: $(_msbuildCommand)
-                  framework: ${{ parameters.framework }}
-                  testScope: ${{ parameters.testScope }}
-                  creator: dotnet-bot
-                  helixToken: ''
+            parameters:
+              targetOS: ${{ parameters.targetOS }}
+              archGroup: ${{ parameters.archType }}
+              configuration: ${{ parameters.buildConfig }}
+              helixQueues: ${{ join(';', parameters.helixQueues) }}
+              msbuildScript: $(_msbuildCommand)
+              framework: ${{ parameters.framework }}
+              testScope: ${{ parameters.testScope }}
+              creator: dotnet-bot
+              helixToken: ''
 
           # TODO: publish test artifacts when publishTestArtifacts == true.
