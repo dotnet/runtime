@@ -1964,17 +1964,17 @@ namespace Internal.JitInterface
                 MethodIL stubIL = _compilation.GetMethodIL(method);
                 if (stubIL == null)
                 {
-                    // This is the case of a PInvoke method that requires custom marshallers that we can't use.
+                    // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
                     Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
                     return true;
                 }
 
-                return ((PInvokeILStubMethodIL)stubIL).IsCustomMarshallingRequired;
+                return ((PInvokeILStubMethodIL)stubIL).IsMarshallingRequired;
             }
             else
             {
                 var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
-                return Marshaller.IsCustomMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
             }
         }
 

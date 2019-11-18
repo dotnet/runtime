@@ -193,7 +193,7 @@ namespace ILCompiler
         {
             // PInvokes depend on details of the core library, so for now only compile them if:
             //    1) We're compiling the core library module, or
-            //    2) We're compiling any module, and no complex marshalling is needed
+            //    2) We're compiling any module, and no marshalling is needed
             //
             // TODO Future: consider compiling PInvokes with complex marshalling in version bubble
             // mode when the core library is included in the bubble.
@@ -203,7 +203,7 @@ namespace ILCompiler
             if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
                 return true;
 
-            return !Marshaller.IsCustomMarshallingRequired(method);
+            return !Marshaller.IsMarshallingRequired(method);
         }
     }
 }

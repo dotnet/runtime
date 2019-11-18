@@ -74,10 +74,10 @@ public:
         return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
     }
 
-    BOOL IsCrossgen2Image()
+    BOOL HasNonShareablePInvokeStubs()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_CROSSGEN2_IMAGE;
+        return m_pHeader->Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
     }
 
     PTR_PEImageLayout GetImage()

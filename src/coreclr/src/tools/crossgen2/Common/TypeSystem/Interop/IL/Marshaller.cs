@@ -376,7 +376,7 @@ namespace Internal.TypeSystem.Interop
 
 
         #region Marshalling Requirement Checking
-        private static bool UsesCustomMarshaller(MarshallerKind kind)
+        private static bool IsMarshallingRequired(MarshallerKind kind)
         {
             switch (kind)
             {
@@ -390,12 +390,12 @@ namespace Internal.TypeSystem.Interop
             return true;
         }
 
-        private bool UsesCustomMarshaller()
+        private bool IsMarshallingRequired()
         {
-            return Out || UsesCustomMarshaller(MarshallerKind);
+            return Out || IsMarshallingRequired(MarshallerKind);
         }
 
-        public static bool IsCustomMarshallingRequired(MethodDesc targetMethod)
+        public static bool IsMarshallingRequired(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
@@ -406,13 +406,13 @@ namespace Internal.TypeSystem.Interop
 
             for (int i = 0; i < marshallers.Length; i++)
             {
-                if (marshallers[i].UsesCustomMarshaller())
+                if (marshallers[i].IsMarshallingRequired())
                     return true;
             }
             return false;
         }
 
-        public static bool IsCustomMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
         {
             for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
             {
@@ -430,7 +430,7 @@ namespace Internal.TypeSystem.Interop
                     MarshallerType.Argument,
                     out MarshallerKind elementMarshallerKind);
 
-                if (UsesCustomMarshaller(marshallerKind))
+                if (IsMarshallingRequired(marshallerKind))
                     return true;
             }
 

@@ -364,7 +364,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         {
             // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
             // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
-            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->IsCrossgen2Image())
+            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
             {
                 DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
@@ -2024,7 +2024,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {
-        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->IsCrossgen2Image() && MayUsePrecompiledILStub())
+        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
             // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
             // a stub, we'll use it directly instead and avoid emitting an IL stub.

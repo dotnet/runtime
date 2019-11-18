@@ -21,8 +21,6 @@ namespace Internal.IL.Stubs
     /// </summary>
     public struct PInvokeILEmitter
     {
-        private static ConcurrentDictionary<MethodDesc, MethodIL> s_emittedPinvokeILStubs = new ConcurrentDictionary<MethodDesc, MethodIL>();
-
         private readonly MethodDesc _targetMethod;
         private readonly Marshaller[] _marshallers;
         private readonly PInvokeMetadata _importMetadata;
@@ -100,14 +98,7 @@ namespace Internal.IL.Stubs
         {
             try
             {
-                MethodIL methodIL;
-                if (!s_emittedPinvokeILStubs.TryGetValue(method, out methodIL))
-                {
-                    methodIL = new PInvokeILEmitter(method).EmitIL();
-                    s_emittedPinvokeILStubs.TryAdd(method, methodIL);
-                }
-
-                return methodIL;
+                return new PInvokeILEmitter(method).EmitIL();
             }
             catch (NotSupportedException)
             {
@@ -122,11 +113,11 @@ namespace Internal.IL.Stubs
 
     public sealed class PInvokeILStubMethodIL : ILStubMethodIL
     {
-        public bool IsCustomMarshallingRequired { get; }
+        public bool IsMarshallingRequired { get; }
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            IsCustomMarshallingRequired = Marshaller.IsCustomMarshallingRequired(methodIL.OwningMethod);
+            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
         }
     }
 }
