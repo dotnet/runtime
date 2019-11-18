@@ -237,7 +237,7 @@ if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
-  
+
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
     exit /b 1
@@ -473,37 +473,6 @@ if errorlevel 1 (
 )
 
 xcopy /s /y /i "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
-
-REM =========================================================================================
-REM ===
-REM === Create the test host necessary for running CoreFX tests.
-REM === The test host includes a dotnet executable, system libraries and CoreCLR assemblies found in CORE_ROOT.
-REM ===
-REM =========================================================================================
-
-echo %__MsgPrefix%Building CoreFX test host
-
-set __BuildLogRootName=Tests_CoreFX_Testhost
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\src\runtest.proj /t:CreateTestHost /nodeReuse:false^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Host failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
 
 REM =========================================================================================
 REM ===

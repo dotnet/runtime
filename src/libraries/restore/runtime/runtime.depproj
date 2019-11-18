@@ -13,11 +13,6 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <!-- Non-shipping packages do not produce stable versions. -->
-    <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-rc2.19462.14</MicrosoftPrivateCorefxNETCoreAppVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" />
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniVersion)" />
@@ -30,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="$(MicrosoftPrivateCorefxNETCoreAppVersion)" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
