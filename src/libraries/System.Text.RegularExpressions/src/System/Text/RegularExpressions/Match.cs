@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static Match Empty { get; } = new Match(null, 1, string.Empty, 0, 0, 0);
 
-        internal virtual void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
+        internal void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
         {
             _regex = regex;
             Text = text;
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions
             return vsb.ToString();
         }
 
-        internal virtual ReadOnlySpan<char> GroupToStringImpl(int groupnum)
+        internal ReadOnlySpan<char> GroupToStringImpl(int groupnum)
         {
             int c = _matchcount[groupnum];
             if (c == 0)
@@ -180,7 +180,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a capture to the group specified by "cap"
         /// </summary>
-        internal virtual void AddMatch(int cap, int start, int len)
+        internal void AddMatch(int cap, int start, int len)
         {
             int capcount;
 
@@ -210,7 +210,7 @@ namespace System.Text.RegularExpressions
            If there were no such thing as backtracking, this would be as simple as calling RemoveMatch(cap).
            However, since we have backtracking, we need to keep track of everything.
          */
-        internal virtual void BalanceMatch(int cap)
+        internal void BalanceMatch(int cap)
         {
             _balancing = true;
 
@@ -236,7 +236,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes a group match by capnum
         /// </summary>
-        internal virtual void RemoveMatch(int cap)
+        internal void RemoveMatch(int cap)
         {
             _matchcount[cap]--;
         }
@@ -244,7 +244,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Tells if a group was matched by capnum
         /// </summary>
-        internal virtual bool IsMatched(int cap)
+        internal bool IsMatched(int cap)
         {
             return cap < _matchcount.Length && _matchcount[cap] > 0 && _matches[cap][_matchcount[cap] * 2 - 1] != (-3 + 1);
         }
@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the index of the last specified matched group by capnum
         /// </summary>
-        internal virtual int MatchIndex(int cap)
+        internal int MatchIndex(int cap)
         {
             int i = _matches[cap][_matchcount[cap] * 2 - 2];
             if (i >= 0)
@@ -264,7 +264,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the length of the last specified matched group by capnum
         /// </summary>
-        internal virtual int MatchLength(int cap)
+        internal int MatchLength(int cap)
         {
             int i = _matches[cap][_matchcount[cap] * 2 - 1];
             if (i >= 0)
@@ -276,7 +276,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Tidy the match so that it can be used as an immutable result
         /// </summary>
-        internal virtual void Tidy(int textpos)
+        internal void Tidy(int textpos)
         {
             int[] interval = _matches[0];
             Index = interval[0];
