@@ -48,6 +48,13 @@ For other issues, please use the following repos:
 - For overall .NET Core SDK issues, file in the [dotnet/toolset](https://github.com/dotnet/toolset) repo
 - For ASP.NET issues, file in the [aspnet/aspnetcore](http://github.com/aspnet/aspnetcore) repo.
 
+## Useful Links
+
+* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
+* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
+* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
+* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
+
 ## Daily Builds
 
 <!--
@@ -883,13 +890,6 @@ There are many .NET related projects on GitHub.
 This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
 General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoundation.org)
-
-## Useful Links
-
-* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
-* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
-* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 
 ## License
 
