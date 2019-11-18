@@ -10,7 +10,7 @@
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="'$(Configuration)' == 'Release'" Include="-stripsymbols" />
-      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' == ''" Include="-officialbuildid=$(OfficialBuildId)" />
+      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="-officialbuildid=$(OfficialBuildId)" />
     </ItemGroup>
 
     <PropertyGroup>
