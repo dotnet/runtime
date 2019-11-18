@@ -6,7 +6,7 @@
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <CoreCLRArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(OSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPathInTree>
     <LibrariesRefArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesRefArtifactsPathInTree>
-    <LibrariesBinArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesConfiguration)'))</LibrariesBinArtifactsPathInTree>
+    <LibrariesBinArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(OSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesBinArtifactsPathInTree>
     <LibrariesNativeArtifactsPathInTree>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'native', 'netcoreapp-$(OSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesNativeArtifactsPathInTree>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(CoreCLRArtifactsPathInTree)</CoreCLRArtifactsPath>
     <LibrariesRefArtifactsPath Condition="'$(LibrariesRefArtifactsPath)' == ''">$(LibrariesRefArtifactsPathInTree)</LibrariesRefArtifactsPath>
