@@ -13,9 +13,7 @@ namespace System.Text.RegularExpressions
         private static int s_regexCount = 0;
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
-        /*
-         * The top-level driver. Initializes everything then calls the Generate* methods.
-         */
+        /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
         {
             _code = code;
@@ -43,9 +41,7 @@ namespace System.Text.RegularExpressions
             return new CompiledRegexRunnerFactory(goMethod, firstCharMethod, trackCountMethod);
         }
 
-        /*
-         * Begins the definition of a new method (no args) with a specified return value
-         */
+        /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
         public DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType)
         {
             // We're claiming that these are static methods, but really they are instance methods.
