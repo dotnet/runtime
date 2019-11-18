@@ -31,7 +31,7 @@ Consider that you already have a .NET application DLL called HelloWorld.dll and 
 
 If you execute the following
 ```bat
-    set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug
+    set PATH=%PATH%;%CoreCLR%\artifacts\tests\coreclr\Windows_NT.x64.Debug\Tests\Core_Root\
     set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 
 
@@ -61,11 +61,11 @@ your new runtime.
 
 ## How CoreCLR Tests use corerun.exe
 
-When you execute 'tests\runTest.cmd' one of the things that it does is set up a directory where it
+When you execute 'runtime/src/coreclr/build-test.cmd' one of the things that it does is set up a directory where it
 gathers the CoreCLR that has just been built with the pieces of the class library that tests need.
 It places this runtime in the directory
 ```bat
-    bin\Product\<OS>.<Arch>.<BuildType>\test
+    runtime\artifacts\tests\coreclr\<OS>.<Arch>.<BuildType>\Tests\Core_Root
 ```
 off the CoreCLR Repository.    The way the tests are expected to work is that you set the environment
 variable CORE_ROOT to this directory
@@ -74,10 +74,10 @@ variable CORE_ROOT to this directory
 
 ```bat
     set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug
-    set CORE_ROOT=%CoreCLR%\artifacts\tests\Windows_NT.x64.Debug\Tests\Core_Root
+    set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\Windows_NT.x64.Debug\Tests\Core_Root
 ```
 sets you up so that corerun can run any of the test.   For example
 ```bat
-    corerun bin\tests\Windows_NT.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
+    corerun artifacts\tests\coreclr\Windows_NT.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
 ```
 runs the finalizerio test.

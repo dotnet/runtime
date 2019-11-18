@@ -14,7 +14,7 @@ For other walkthroughs see:
 1. Successfully built CoreCLR repository and thus have files of the form shown below. From now on we call this folder NuGet package folder.
 
 ```
-    bin\Product\<OS>.<arch>.<flavor>\.nuget\pkg\runtime.<OS>-<arch>.Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
+    artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\runtime.<OS>-<arch>.Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
 ```
 
 2. Acquired the latest nightly .NET Core SDK from [here](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries) and added it's root folder to your [path](../building/windows-instructions.md#adding-to-the-default-path-variable)
@@ -29,7 +29,7 @@ From now on all instructions relate to this folder as "app folder".
 
 ### 2. Create NuGet.Config file
 
-The build script creates NuGet packages and puts them to `bin\Product\<OS>.<arch>.<flavor>\.nuget\pkg\`. dotnet cli has no idea about its existence and we need to tell it where to search for the packages.
+The build script creates NuGet packages and puts them to `artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\`. dotnet cli has no idea about its existence and we need to tell it where to search for the packages.
 
 Please run `dotnet new nugetconfig` in the app folder and update the created `NuGet.Config` file:
 
@@ -44,7 +44,7 @@ Please run `dotnet new nugetconfig` in the app folder and update the created `Nu
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
 
-    <add key="local CoreCLR" value="C:\coreclr\artifacts\Product\Windows_NT.x64.Debug\.nuget\pkg" /> <!-- CHANGE THIS PATH to your local output path -->
+    <add key="local CoreCLR" value="C:\runtime\artifacts\bin\coreclr\Windows_NT.x64.Debug\.nuget\pkg" /> <!-- CHANGE THIS PATH to your local output path -->
     <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" /> <!-- link to corefx NuGet feed -->
   </packageSources>
 </configuration>
@@ -125,7 +125,7 @@ After you publish you will find all the binaries needed to run your application 
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
-.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 Running the app should tell you the version and which user and machine build the assembly as well as the commit hash of the code
@@ -133,7 +133,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 **Congratulations! You have just run your first app against local CoreCLR build!**
@@ -169,7 +169,7 @@ which should make things work (but is fragile, confirm file timestamps that you 
 Get this by simply listing the name of the `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR` you built.
 
 ```bat
-    dir bin\Product\Windows_NT.x64.Release\.nuget\pkg
+    dir artifacts\bin\coreclr\Product\Windows_NT.x64.Release\.nuget\pkg
 ```
 
 and you will get name of the which looks something like this

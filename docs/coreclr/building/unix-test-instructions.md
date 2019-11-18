@@ -14,42 +14,36 @@ DotNet is required to build the tests, this can be done on any platform then cop
 
 To build the tests on Unix:
 
-> `./build-test.sh`
+> `./src/coreclr/build-test.sh`
 
 Please note that this builds the Priority 0 tests. To build priority 1:
 
-> `build-test.sh -priority 1`
+> `src/coreclr/build-test.sh -priority 1`
 
 ## Building Individual Tests
 
-During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `coreclr/.dotnet/dotnet msbuild` as you would normally use MSBuild with a few caveats.
+During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `runtime/.dotnet/dotnet msbuild` as you would normally use MSBuild with a few caveats.
 
 **!! Note !! -- Passing /p:__BuildOs=[OSX|Linux] is required.**
 
 ## Building an Individual Test
 
->`/path/to/coreclr/.dotnet/dotnet msbuild tests/src/path-to-proj-file /p:__BuildOS=<BuildOS> /p:__BuildType=<BuildType>`
+>`/path/to/runtime/.dotnet/dotnet msbuild src/coreclr/tests/src/path-to-proj-file /p:__BuildOS=<BuildOS> /p:__BuildType=<BuildType>`
 
 ## Running Tests
 
 The following instructions assume that on the Unix machine:
 - The CoreCLR repo is cloned at `/mnt/coreclr`
 
-build-test.sh will have setup the Core_Root directory correctly after the test build.
+`src/coreclr/build-test.sh` will have setup the Core_Root directory correctly after the test build.
 
 ```bash
-~/coreclr$ tests/runtest.sh x64 checked
+~/runtime$ src/coreclr/tests/runtest.sh x64 checked
 ```
 
 Please use the following command for help.
 
->./tests/runtest.sh -h
-
-### Results
-
-Test results will go into:
-
-> `~/test/Windows_NT.x64.Debug/coreclrtests.xml`
+>./src/coreclr/tests/runtest.sh -h
 
 ### Unsupported and temporarily disabled tests
 
@@ -76,7 +70,7 @@ Build CoreCLR on the Unix machine.
 
 Run tests:
 
-> `~/coreclr$ src/pal/tests/palsuite/runpaltests.sh ~/coreclr/artifacts/obj/Linux.x64.Debug`
+> `~/runtime$ src/coreclr/src/pal/tests/palsuite/runpaltests.sh ~/runtime/artifacts/obj/coreclr/Linux.x64.Debug`
 
 Test results will go into:
 
