@@ -6,6 +6,8 @@
 This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
 all supported platforms, as wel as the sources to .NET Core runtime and libraries.
 
+## What is .NET Core?
+
 Official Starting Page: https://dotnet.microsoft.com/
 
 * [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
@@ -16,13 +18,21 @@ Official Starting Page: https://dotnet.microsoft.com/
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 
-## How to Engage, Contribute and Provide Feedback
+## How can I contribute?
 
-Some of the best ways to contribute are to try things out, file bugs, join in design conversations, and fix issues.
+We welcome contributions! Many people all over the world have helped make this project better.
 
-* If you have a question or idea, [file a new issue](https://github.com/dotnet/corefx/issues/new).
+* If you have a question or idea, [file a new issue](https://github.com/dotnet/runtime/issues/new).
 
-If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+	* Is your feedback for .NET Framework? This repo is for .NET Core. If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+
+* If you want to contribute a fix or improvement, you'll want to check out these links (some of these point to our original repos while work continues to consolidate here)
+
+    * Requirements to build this repo ([Linux](docs/building/linux-requirements.md), [macOS](docs/building/macos-requirements.md), [Windows](docs/building/windows-requirements.md))
+    * [What kind of contributions you might want to make](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) and [repo guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md)
+	* [How you can make a change happen!](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md)
+	* [How to build and test your change](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md)
+	* More information in the [detailed readme here](https://github.com/dotnet/corefx/blob/master/Documentation/README.md)
 
 ## Reporting security issues and security bugs
 
@@ -31,11 +41,13 @@ Security issues and bugs should be reported privately, via email, to the Microso
 Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Program](https://www.microsoft.com/msrc/bounty-dot-net-core).
 
 ## Filing issues
-This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the "muxer" (the `dotnet` binary) and installation of the .NET Core runtime and libraries.
+
+This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET Core runtime and libraries.
 
 For other issues, please use the following repos:
 
-- For overall .NET Core SDK issues, file on [dotnet/toolset](https://github.com/dotnet/toolset) repo
+- For overall .NET Core SDK issues, file in the [dotnet/toolset](https://github.com/dotnet/toolset) repo
+- For ASP.NET issues, file in the [aspnet/aspnetcore](http://github.com/aspnet/aspnetcore) repo.
 
 ## Daily Builds
 
