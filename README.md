@@ -26,13 +26,12 @@ We welcome contributions! Many people all over the world have helped make this p
 
 	* Is your feedback for .NET Framework? This repo is for .NET Core. If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
 
-* If you want to contribute a fix or improvement, you'll want to check out these links (some of these point to our original repos while work continues to consolidate here)
+* If you want to contribute a fix or improvement, you'll want to check out these links
 
     * Requirements to build this repo ([Linux](docs/building/linux-requirements.md), [macOS](docs/building/macos-requirements.md), [Windows](docs/building/windows-requirements.md))
-    * [What kind of contributions you might want to make](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) and [repo guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md)
-	* [How you can make a change happen!](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md)
-	* [How to build and test your change](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md)
-	* More information in the [detailed readme here](https://github.com/dotnet/corefx/blob/master/Documentation/README.md)
+    * What kind of contributions you might want to make [in the runtime](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) and [in the libraries](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md)
+	* [How you can make a change happen!](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md) (some of this is yet to be updated for this new repo)
+	* How to build and test your change (coming soon)
 
 ## Reporting security issues and security bugs
 
