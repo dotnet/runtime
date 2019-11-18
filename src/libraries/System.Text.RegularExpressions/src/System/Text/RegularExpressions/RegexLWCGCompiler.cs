@@ -5,7 +5,6 @@
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -30,8 +29,7 @@ namespace System.Text.RegularExpressions
             _hasTimeout = hasTimeout;
 
             // pick a unique number for the methods we generate
-            int regexnum = Interlocked.Increment(ref s_regexCount);
-            string regexnumString = regexnum.ToString(CultureInfo.InvariantCulture);
+            string regexnumString = ((uint)Interlocked.Increment(ref s_regexCount)).ToString();
 
             DynamicMethod goMethod = DefineDynamicMethod("Go" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateGo();
