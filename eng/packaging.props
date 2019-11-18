@@ -29,7 +29,6 @@
     <PlatformPackageVersion>$(ProductVersion)</PlatformPackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
-    <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
