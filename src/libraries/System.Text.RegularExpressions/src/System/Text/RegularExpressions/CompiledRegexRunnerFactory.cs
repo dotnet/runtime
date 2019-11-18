@@ -15,21 +15,17 @@ namespace System.Text.RegularExpressions
         private readonly DynamicMethod _findFirstCharMethod;
         private readonly DynamicMethod _initTrackCountMethod;
 
-        public CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod firstChar, DynamicMethod trackCount)
+        public CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod findFirstChar, DynamicMethod initTrackCount)
         {
             _goMethod = go;
-            _findFirstCharMethod = firstChar;
-            _initTrackCountMethod = trackCount;
+            _findFirstCharMethod = findFirstChar;
+            _initTrackCountMethod = initTrackCount;
         }
 
-        protected internal override RegexRunner CreateInstance()
-        {
-            CompiledRegexRunner runner = new CompiledRegexRunner();
-            runner.SetDelegates((Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
-                                (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
-                                (Action<RegexRunner>)_initTrackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
-
-            return runner;
-        }
+        protected internal override RegexRunner CreateInstance() =>
+            new CompiledRegexRunner(
+                (Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
+                (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
+                (Action<RegexRunner>)_initTrackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
     }
 }
