@@ -18,6 +18,7 @@ Param(
 function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                 Build a subset, print availabe subsets with -subset help"
+  Write-Host "  -subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
   Write-Host "  -os                     Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
   Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
@@ -54,6 +55,8 @@ function Get-Help() {
 if ($MyInvocation.InvocationName -eq ".") {
   exit 0
 }
+
+$subsetCategory = $subsetCategory.ToLowerInvariant()
 
 # VS Test Explorer support for libraries
 if ($vs -and $subsetCategory -eq "libraries") {

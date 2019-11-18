@@ -16,6 +16,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print availabe subsets with -subset help"
+  echo "  --subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
@@ -64,8 +65,8 @@ while [[ $# > 0 ]]; do
       exit 0
       ;;
      -subsetcategory)
-      subsetCategory=$2
-      arguments="$arguments /p:SubsetCategory=$2"
+      subsetCategory="$(echo "$2" | awk '{print tolower($0)}')"
+      arguments="$arguments /p:SubsetCategory=$subsetCategory"
       shift 2
       ;;
      -subset)
