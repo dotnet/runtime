@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -48,9 +49,11 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isECMABoundaryM = RegexRunnerMethod("IsECMABoundary");
         private static readonly MethodInfo s_chartolowerM = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
         private static readonly MethodInfo s_chartolowerinvariantM = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsDigitM = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsWhiteSpaceM = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_getcharM = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_crawlposM = RegexRunnerMethod("Crawlpos");
-        private static readonly MethodInfo s_charInSetM = RegexRunnerMethod("CharInClass");
+        private static readonly MethodInfo s_charInClassM = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_getCurrentCulture = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
         private static readonly MethodInfo s_checkTimeoutM = RegexRunnerMethod("CheckTimeout");
 #if DEBUG
@@ -371,6 +374,22 @@ namespace System.Text.RegularExpressions
         }
 
         /*
+         * A macro for _ilg.Emit(OpCodes.Clt_Un)
+         */
+        private void CgtUn()
+        {
+            _ilg!.Emit(OpCodes.Cgt_Un);
+        }
+
+        /*
+         * A macro for _ilg.Emit(OpCodes.Clt_Un)
+         */
+        private void CltUn()
+        {
+            _ilg!.Emit(OpCodes.Clt_Un);
+        }
+
+        /*
          * A macro for _ilg.Emit(OpCodes.Pop)
          */
         private void Pop()
@@ -417,12 +436,34 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * A macro for _ilg.Emit(OpCodes.Ldloc);
+         * A macro for _ilg.Emit(OpCodes.Div)
          */
-        private void Ldloc(LocalBuilder lt)
+        private void Div()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, lt);
+            _ilg!.Emit(OpCodes.Div);
         }
+
+        /*
+         * A macro for _ilg.Emit(OpCodes.And)
+         */
+        private void And()
+        {
+            _ilg!.Emit(OpCodes.And);
+        }
+
+        /*
+         * A macro for _ilg.Emit(OpCodes.Shl)
+         */
+        private void Shl()
+        {
+            _ilg!.Emit(OpCodes.Shl);
+        }
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Shr).</summary>
+        private void Shr() => _ilg!.Emit(OpCodes.Shr);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldloc_S).</summary>
+        private void Ldloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Ldloc_S, lt);
 
         /*
          * A macro for _ilg.Emit(OpCodes.Stloc);
@@ -1430,6 +1471,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
+                LocalBuilder charInClassV = _tempV;
                 LocalBuilder cV = _temp2V;
                 Label l1 = DefineLabel();
                 Label l2 = DefineLabel();
@@ -1474,8 +1516,7 @@ namespace System.Text.RegularExpressions
 
                 if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
                 {
-                    Ldstr(_fcPrefix.GetValueOrDefault().Prefix);
-                    Call(s_charInSetM);
+                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
 
                     BrtrueFar(l2);
                 }
@@ -1718,6 +1759,7 @@ namespace System.Text.RegularExpressions
                 Message(sb.ToString());
             }
 #endif
+            LocalBuilder charInClassV;
 
             // Before executing any RegEx code in the unrolled loop,
             // we try checking for the match timeout:
@@ -2520,6 +2562,9 @@ namespace System.Text.RegularExpressions
 
                     //: if (Rightchars() < 1 || Rightcharnext() != (char)Operand(0))
                     //:    break Backward;
+
+                    charInClassV = _tempV!;
+
                     Ldloc(_textposV!);
 
                     if (!IsRtl())
@@ -2540,9 +2585,7 @@ namespace System.Text.RegularExpressions
 
                     if (Code() == RegexCode.Set)
                     {
-
-                        Ldstr(_strings![Operand(0)]);
-                        Call(s_charInSetM);
+                        EmitCallCharInClass(_strings![Operand(0)], charInClassV);
 
                         BrfalseFar(_backtrack);
                     }
@@ -2774,6 +2817,7 @@ namespace System.Text.RegularExpressions
                     //:         break Backward;
                     {
                         LocalBuilder lenV = _tempV!;
+                        charInClassV = _temp2V!;
                         Label l1 = DefineLabel();
 
                         int c = Operand(1);
@@ -2833,8 +2877,7 @@ namespace System.Text.RegularExpressions
                             {
                                 EmitTimeoutCheck();
                             }
-                            Ldstr(_strings![Operand(0)]);
-                            Call(s_charInSetM);
+                            EmitCallCharInClass(_strings![Operand(0)], charInClassV);
 
                             BrfalseFar(_backtrack);
                         }
@@ -2887,6 +2930,7 @@ namespace System.Text.RegularExpressions
                     {
                         LocalBuilder cV = _tempV!;
                         LocalBuilder lenV = _temp2V!;
+                        charInClassV = _temp3V!;
                         Label l1 = DefineLabel();
                         Label l2 = DefineLabel();
 
@@ -2946,8 +2990,7 @@ namespace System.Text.RegularExpressions
                             {
                                 EmitTimeoutCheck();
                             }
-                            Ldstr(_strings![Operand(0)]);
-                            Call(s_charInSetM);
+                            EmitCallCharInClass(_strings![Operand(0)], charInClassV);
 
                             BrtrueFar(l1);
                         }
@@ -3109,6 +3152,8 @@ namespace System.Text.RegularExpressions
                     //: if (i > 0)
                     //:     Track(i - 1, pos + 1);
 
+                    charInClassV = _tempV!;
+
                     PopTrack();
                     Stloc(_textposV!);
                     PopTrack();
@@ -3124,8 +3169,7 @@ namespace System.Text.RegularExpressions
 
                     if (Code() == RegexCode.Setlazy)
                     {
-                        Ldstr(_strings![Operand(0)]);
-                        Call(s_charInSetM);
+                        EmitCallCharInClass(_strings![Operand(0)], charInClassV);
 
                         BrfalseFar(_backtrack);
                     }
@@ -3154,6 +3198,169 @@ namespace System.Text.RegularExpressions
                 default:
                     throw new NotImplementedException(SR.UnimplementedState);
             }
+        }
+
+        private void EmitCallCharInClass(string charClass, LocalBuilder tempLocal)
+        {
+            // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
+            // but that call is relatively expensive.  Before we fall back to it, we try to optimize
+            // some common cases for which we can do much better, such as known character classes
+            // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
+
+            // First, see if the char class is a built-in one for which there's a better function
+            // we can just call directly.
+            switch (charClass)
+            {
+                case RegexCharClass.AnyClass:
+                    // true
+                    Pop();
+                    Ldc(1);
+                    return;
+
+                case RegexCharClass.DigitClass:
+                    // char.IsDigit(ch)
+                    Call(s_charIsDigitM);
+                    return;
+
+                case RegexCharClass.NotDigitClass:
+                    // !char.IsDigit(ch)
+                    Call(s_charIsDigitM);
+                    Ldc(0);
+                    Ceq();
+                    return;
+
+                case RegexCharClass.SpaceClass:
+                    // char.IsWhiteSpace(ch)
+                    Call(s_charIsWhiteSpaceM);
+                    return;
+
+                case RegexCharClass.NotSpaceClass:
+                    // !char.IsWhiteSpace(ch)
+                    Call(s_charIsWhiteSpaceM);
+                    Ldc(0);
+                    Ceq();
+                    return;
+            }
+
+            // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
+            if (charClass.Length == RegexCharClass.SETSTART + 2 && // one set of two values
+                charClass[RegexCharClass.SETLENGTH] == 2 && // validate we have the right number of ranges
+                charClass[RegexCharClass.CATEGORYLENGTH] == 0 && // must not have any categories
+                charClass[RegexCharClass.SETSTART] < charClass[RegexCharClass.SETSTART + 1]) // valid range
+            {
+                // (uint)ch - charClass[3] < charClass[4] - charClass[3]
+                Ldc(charClass[RegexCharClass.SETSTART]);
+                Sub();
+                Ldc(charClass[RegexCharClass.SETSTART + 1] - charClass[RegexCharClass.SETSTART]);
+                CltUn();
+
+                // Negate the answer if the negation flag was set
+                if (RegexCharClass.IsNegated(charClass))
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                return;
+            }
+
+            // Next, special-case ASCII inputs.  If the character class contains only ASCII inputs, then we
+            // can satisfy the entire operation via a small lookup table, e.g.
+            //     ch < 128 && lookup(ch)
+            // If the character class contains values outside of the ASCII range, we can still optimize for
+            // ASCII inputs, using the table for values < 128, and falling back to calling CharInClass
+            // for anything outside of the ASCII range, e.g.
+            //     if (ch < 128) lookup(ch)
+            //     else ...
+            // Either way, we need to generate the lookup table for the ASCII range.
+            // We use a const string instead of a byte[] / static data property because
+            // it lets IL emit handle all the gory details for us.  It also is ok from an
+            // endianness perspective because the compilation happens on the same machine
+            // that runs the compiled code.  If that were to ever change, this would need
+            // to be revisited. String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, charClass, (dest, charClass) =>
+            {
+                for (int i = 0; i < 128; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass))
+                    {
+                        dest[i >> 4] |= (char)(1 << (i & 0xF));
+                    }
+                }
+            });
+
+            // In order to determine whether we need the non-ASCII fallback, we have a few options:
+            // 1. Interpret the char class.  This would require fully understanding all of the ins and outs of the design,
+            //    and is a lot of code (in the future it's possible the parser could pass this information along).
+            // 2. Employ a heuristic to approximate (1), allowing for false positives (saying we need the fallback when
+            //    we don't) but no false negatives (saying we don't need the fallback when we do).
+            // 3. Evaluate CharInClass on all ~65K inputs.  This is relatively expensive, impacting startup costs.
+            // We currently go with (2).  We may sometimes generate a fallback when we don't need one, but the cost of
+            // doing so once in a while is minimal.
+            bool asciiOnly =
+                charClass.Length > RegexCharClass.SETSTART &&
+                charClass[RegexCharClass.CATEGORYLENGTH] == 0 && // if there are any categories, assume there's unicode
+                charClass[RegexCharClass.SETLENGTH] % 2 == 0 && // range limits must come in pairs
+                !RegexCharClass.IsNegated(charClass) && // if there's negation, assume there's unicode
+                !RegexCharClass.IsSubtraction(charClass); // if it's subtraction, assume there's unicode
+            if (asciiOnly)
+            {
+                for (int i = RegexCharClass.SETSTART; i < charClass.Length; i++)
+                {
+                    if (charClass[i] >= 128) // validate all characters in the set are ASCII
+                    {
+                        asciiOnly = false;
+                        break;
+                    }
+                }
+            }
+
+            Label nonAsciiLabel = DefineLabel(); // jumped to when input is >= 128
+            Label doneLabel = DefineLabel(); // jumped to when answer has been computed
+
+            // Store the input character so we can read it multiple times.
+            Stloc(tempLocal);
+
+            // ch < 128
+            Ldloc(tempLocal);
+            Ldc(128);
+            Bge(nonAsciiLabel);
+
+            // (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0
+            Ldstr(bitVectorString);
+            Ldloc(tempLocal);
+            Ldc(4);
+            Shr();
+            Call(s_getcharM);
+            Ldc(1);
+            Ldloc(tempLocal);
+            Ldc(15);
+            And();
+            Ldc(31);
+            And();
+            Shl();
+            And();
+            Ldc(0);
+            CgtUn();
+            Br(doneLabel);
+
+            MarkLabel(nonAsciiLabel);
+            if (asciiOnly)
+            {
+                // The whole class was ASCII, so if the character is >= 128, it's not in the class:
+                // false
+                Ldc(0);
+            }
+            else
+            {
+                // The whole class wasn't ASCII, so if the character is >= 128, we need to fall back to calling:
+                // CharInClass(ch, charClass)
+                Ldloc(tempLocal);
+                Ldstr(charClass);
+                Call(s_charInClassM);
+            }
+
+            MarkLabel(doneLabel);
         }
 
         private void EmitTimeoutCheck()

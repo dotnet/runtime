@@ -29,10 +29,10 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexCharClass
     {
         // Constants
-        private const int FLAGS = 0;
-        private const int SETLENGTH = 1;
-        private const int CATEGORYLENGTH = 2;
-        private const int SETSTART = 3;
+        internal const int FLAGS = 0;
+        internal const int SETLENGTH = 1;
+        internal const int CATEGORYLENGTH = 2;
+        internal const int SETSTART = 3;
 
         private const string NullCharString = "\0";
         private const char NullChar = '\0';
@@ -72,7 +72,6 @@ namespace System.Text.RegularExpressions
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitSet;
 
         internal const string AnyClass = "\x00\x01\x00\x00";
-        internal const string EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
         private const int DefinedCategoriesCapacity = 38;
@@ -756,12 +755,12 @@ namespace System.Text.RegularExpressions
                 return false;
         }
 
-        private static bool IsSubtraction(string charClass)
+        internal static bool IsSubtraction(string charClass)
         {
             return (charClass.Length > SETSTART + charClass[SETLENGTH] + charClass[CATEGORYLENGTH]);
         }
 
-        private static bool IsNegated(string set)
+        internal static bool IsNegated(string set)
         {
             return (set != null && set[FLAGS] == 1);
         }
