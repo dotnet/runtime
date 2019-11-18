@@ -77,8 +77,8 @@
           DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages">
     <ItemGroup>
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/CoreRun*" />
-      <CoreCLRFiles Condition="'$(CoreCLRPDBOverridePath)' != ''" Include="$(CoreCLRPDBOverridePath)/CoreRun.pdb;$(CoreCLRPDBOverridePath)/corerun.dbg" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
     </ItemGroup>
 
