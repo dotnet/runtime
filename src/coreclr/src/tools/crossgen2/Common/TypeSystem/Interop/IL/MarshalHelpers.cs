@@ -334,13 +334,29 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (type.HasInstantiation)
+                bool isBlittable = MarshalUtils.IsBlittableType(type);
+
+                // Blittable generics are allowed to be marshalled with the following exceptions:
+                // * ByReference<T>: This represents an interior pointer and is not actually blittable
+                // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+                // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+                // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+                // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
+
+                if (type.HasInstantiation && (!isBlittable
+                    || InteropTypes.IsSystemByReference(context, type)
+                    || InteropTypes.IsSystemNullable(context, type)
+                    || InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
+                    || InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
+                    || InteropTypes.IsSystemRuntimeIntrinsicsVector256T(context, type)
+                    || InteropTypes.IsSystemNumericsVectorT(context, type)))
                 {
                     // Generic types cannot be marshaled.
                     return MarshallerKind.Invalid;
                 }
 
-                if (MarshalUtils.IsBlittableType(type))
+                if (isBlittable)
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
                         return MarshallerKind.Invalid;
