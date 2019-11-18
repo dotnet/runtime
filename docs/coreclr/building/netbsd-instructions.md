@@ -103,13 +103,13 @@ Build CoreFX native x64 Debug and the work (build) dir is in /usr/pkgsrc/wip/cor
 cd /usr/pkgsrc/wip/corefx-git && make
 ```
 
-Build CoreCLR Debug x64 on Linux and copy System.Private.CoreLib.dll from ./bin/Product/Linux.x64.Debug/System.Private.CoreLib.dll to NetBSD machine under /usr/pkg/CoreCLR:
+Build CoreCLR Debug x64 on Linux and copy System.Private.CoreLib.dll from ./artifacts/Product/Linux.x64.Debug/System.Private.CoreLib.dll to NetBSD machine under /usr/pkg/CoreCLR:
 
 ```
 ./build.sh mscorlib Debug
 ```
 
-Build CoreFX Debug x64 on Linux and copy bin/ to NetBSD machine under /public/bin:
+Build CoreFX Debug x64 on Linux and copy artifacts/ to NetBSD machine under /public/bin:
 
 ```
 ./build-native.sh -os=NetBSD
@@ -124,6 +124,6 @@ $ pwd
 $ ./run-test.sh \
 --coreclr-bins /usr/pkg/CoreCLR/ \
 --mscorlib-bins /usr/pkg/CoreCLR/ \
---corefx-tests /public/bin/tests/NetBSD.AnyCPU.Debug/ \
---corefx-native-bins ./bin/NetBSD.x64.Debug/Native/
+--corefx-tests /public/artifacts/tests/NetBSD.AnyCPU.Debug/ \
+--corefx-native-bins ./artifacts/NetBSD.x64.Debug/Native/
 ```

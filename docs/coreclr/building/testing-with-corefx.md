@@ -45,7 +45,7 @@ To build CoreFX tests against a current, "live", version of CoreCLR, including w
 
 For example:
 ```
-f:\git\corefx> build.cmd -configuration Release -arch x64 -restore -build -buildtests -test /p:CoreCLROverridePath=f:\git\coreclr\bin\Product\Windows_NT.x64.Checked
+f:\git\corefx> build.cmd -configuration Release -arch x64 -restore -build -buildtests -test /p:CoreCLROverridePath=f:\git\coreclr\artifacts\Product\Windows_NT.x64.Checked
 ```
 
 Note that this will replace the coreclr used in the build, and because `-test` is passed, will also run the tests.
@@ -66,7 +66,7 @@ This creates a "testhost" directory with a subdirectory that includes the corecl
 folder created in step #1.
 
 ```
-f:\git\corefx> copy f:\git\coreclr\bin\Product\Windows_NT.x64.Checked\* f:\git\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0
+f:\git\corefx> copy f:\git\coreclr\artifacts\Product\Windows_NT.x64.Checked\* f:\git\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0
 ```
 
 3. Optionally, create a script that contains any environment variables you want to set when running each CoreFX test. Disabling TieredCompilation or setting a JIT stress mode is a common case. E.g.,

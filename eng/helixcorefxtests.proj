@@ -85,9 +85,8 @@
       TODO: ProjectDir, RootBinDir, TestWorkingDir, and TargetsWindows are global properties set in dir.props, remove the property assignment here when we port to arcade.
      -->
     <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)..\</ProjectDir>
-    <ProjectDir>$(ProjectDir)\src\coreclr\</ProjectDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
-    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(__BuildOS).$(__BuildArch).$(__BuildType)\</TestWorkingDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)artifacts\bin\coreclr</RootBinDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(ProjectDir)artifacts\tests\coreclr\$(__BuildOS).$(__BuildArch).$(__BuildType)\</TestWorkingDir>
     <TargetsWindows Condition="'$(__BuildOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <!-- We have a single, universal exclusion file for all CoreFX test exclusions, for CoreFX tests run
@@ -97,7 +96,7 @@
          any particular job. However, this mechanism is super simple; we don't need to manage fine-
          grained exclusions; and there really shouldn't be any (or many) exclusions anyway.
     -->
-    <CoreFXTestExclusionFile>$(ProjectDir)tests\CoreFX\CoreFX.issues.rsp</CoreFXTestExclusionFile>
+    <CoreFXTestExclusionFile>$(ProjectDir)src\coreclr\tests\CoreFX\CoreFX.issues.rsp</CoreFXTestExclusionFile>
 
     <TestHostRootPath>$(TestWorkingDir)testhost\</TestHostRootPath>
     <TestArchiveRuntimeRoot>$(TestWorkingDir)helix\</TestArchiveRuntimeRoot>
@@ -150,7 +149,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="$(ProjectDir)tests\testenvironment.proj">
+      <_ProjectsToBuild Include="$(ProjectDir)src\coreclr\tests\testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>

@@ -108,8 +108,8 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
-    <PackageReference Include="xunit.runner.console" Version="$(XunitPackageVersion)" />
+    <PackageReference Include="xunit" Version="$(XUnitVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -354,7 +354,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in bin/obj -->
+  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in artifacts/obj -->
   <Import Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'" Project="$(BuildVersionFile)" />
 
   <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">

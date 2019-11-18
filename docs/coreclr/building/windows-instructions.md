@@ -84,8 +84,8 @@ the base of the repository.
 
     [Lots of build spew]
 
-    Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
-    Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
+    Product binaries are available at C:\git\coreclr\artifacts\Product\Windows_NT.x64.debug
+    Test binaries are available at C:\git\coreclr\artifacts\tests\Windows_NT.x64.debug
 ```
 
 As shown above, the product will be placed in

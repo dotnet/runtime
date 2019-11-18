@@ -9,7 +9,7 @@ Debugging CoreCLR on Windows
 ============================
 
 1. Perform a build of the repo.
-2. Open solution \<reporoot\>\bin\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
+2. Open solution \<reporoot\>\artifacts\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
     on type of build you did. By default they are 'x64' and 'Debug'.
 3. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
@@ -39,7 +39,7 @@ Only lldb is supported by SOS. Gdb can be used to debug the coreclr code but wit
 
 1. Perform a build of the coreclr repo.
 2. Install the corefx managed assemblies to the binaries directory.
-3. cd to build's binaries: `cd ~/coreclr/bin/Product/Linux.x64.Debug`
+3. cd to build's binaries: `cd ~/coreclr/artifacts/Product/Linux.x64.Debug`
 4. Start lldb: `lldb-3.9 corerun HelloWorld.exe linux`
 6. Launch program: `process launch -s`
 7. To stop annoying breaks on SIGUSR1/SIGUSR2 signals used by the runtime run: `process handle -s false SIGUSR1 SIGUSR2`

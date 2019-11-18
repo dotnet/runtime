@@ -11,8 +11,8 @@
 # 4. On Windows, build Linux mscorlib: build.cmd linuxmscorlib
 # 5. Mount Windows shares on Linux
 # 6. Copy tests to Linux/Mac:
-#       Linux: cp --recursive ~/brucefo1/ManagedCodeGen/bin/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
-#       Mac  : cp -R          ~/brucefo1/ManagedCodeGen/bin/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
+#       Linux: cp --recursive ~/brucefo1/ManagedCodeGen/artifacts/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
+#       Mac  : cp -R          ~/brucefo1/ManagedCodeGen/artifacts/tests/Windows_NT.x64.Debug ~/test/Windows_NT.x64.Debug
 # 7. Run this script
 #
 # If you pass "--testDir=NONE" to runtest.sh, it will create the "test overlay" (i.e., core_root directory)
@@ -28,11 +28,11 @@ UNIXARCHFLAVOR=OSX.x64.Debug
 
 ARGS="\
 --testRootDir=${TESTROOT}/${WINDOWSFLAVOR} \
---testNativeBinDir=${CORECLRROOT}/bin/obj/${UNIXARCHFLAVOR}/tests \
---coreClrBinDir=${CORECLRROOT}/bin/Product/${UNIXARCHFLAVOR} \
---mscorlibDir=${WINDOWSCORECLRROOT}/bin/Product/${UNIXARCHFLAVOR} \
---coreFxBinDir=${COREFXROOT}/bin/${UNIXANYFLAVOR};${COREFXROOT}/bin/Unix.AnyCPU.Debug;${COREFXROOT}/bin/AnyOS.AnyCPU.Debug \
---coreFxNativeBinDir=${COREFXROOT}/bin/${UNIXARCHFLAVOR}"
+--testNativeBinDir=${CORECLRROOT}/artifacts/obj/${UNIXARCHFLAVOR}/tests \
+--coreClrBinDir=${CORECLRROOT}/artifacts/bin/coreclr/${UNIXARCHFLAVOR} \
+--mscorlibDir=${WINDOWSCORECLRROOT}/artifacts/bin/coreclr/${UNIXARCHFLAVOR} \
+--coreFxBinDir=${COREFXROOT}/artifacts/${UNIXANYFLAVOR};${COREFXROOT}/artifacts/Unix.AnyCPU.Debug;${COREFXROOT}/artifacts/AnyOS.AnyCPU.Debug \
+--coreFxNativeBinDir=${COREFXROOT}/artifacts/${UNIXARCHFLAVOR}"
 
 pushd ${CORECLRROOT}
 echo ${CORECLRROOT}/tests/runtest.sh ${ARGS}

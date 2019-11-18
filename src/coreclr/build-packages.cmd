@@ -34,7 +34,7 @@ if [!processedArgs!]==[] (
 
 :ArgsDone
 
-set logFile=%__RepoRootDir%bin\Logs\build-packages.binlog
+set logFile=%__RepoRootDir%artifacts\log\build-packages.binlog
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%eng\common\build.ps1"^
   -r -b -projects %__ProjectDir%src\.nuget\packages.builds^
   -verbosity minimal /bl:%logFile% /nodeReuse:false^

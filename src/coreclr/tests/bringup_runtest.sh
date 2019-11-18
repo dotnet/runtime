@@ -8,24 +8,24 @@ function print_usage {
     echo ''
     echo 'coreclr/tests/runtest.sh'
     echo '    --testRootDir="temp/Windows_NT.x64.Debug"'
-    echo '    --testNativeBinDir="coreclr/bin/obj/Linux.x64.Debug/tests"'
-    echo '    --coreOverlayDir="coreclr/bin/tests/Linux.x64.Debug/Tests/Core_Root"'
+    echo '    --testNativeBinDir="runtime/artifacts/obj/Linux.x64.Debug/tests"'
+    echo '    --coreOverlayDir="runtime/artifacts/tests/Linux.x64.Debug/Tests/Core_Root"'
     echo '    --copyNativeTestBin'
     echo ''
     echo 'Required arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. coreclr/bin/tests/Windows_NT.x64.Debug).'
-    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. coreclr/bin/obj/Linux.x64.Debug/tests).'
+    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
+    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. runtime/artifacts/obj/Linux.x64.Debug/tests).'
     echo '  (Also required: Either --coreOverlayDir, or all of the switches --coreOverlayDir overrides)'
     echo ''
     echo 'Optional arguments:'
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies. If not specified, the'
     echo '                                     default is testRootDir/Tests/coreoverlay. This switch overrides --coreClrBinDir,'
     echo '                                     --mscorlibDir, and --coreFxBinDir.'
-    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
+    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. runtime/artifacts/bin/coreclr/Linux.x64.Debug).'
     echo '  --mscorlibDir=<path>             : Directory containing the built mscorlib.dll. If not specified, it is expected to be'
     echo '                                       in the directory specified by --coreClrBinDir.'
     echo '  --coreFxBinDir="<path>"          : Directory with CoreFX build outputs'
-    echo '                                     (e.g. "corefx/bin/runtime/netcoreapp-Linux-Debug-x64")'
+    echo '                                     (e.g. "corefx/artifacts/runtime/netcoreapp-Linux-Debug-x64")'
     echo '                                     If files with the same name are present in multiple directories, the first one wins.'
     echo '  --testDir=<path>                 : Run tests only in the specified directory. The path is relative to the directory'
     echo '                                     specified by --testRootDir. Multiple of this switch may be specified.'
@@ -426,7 +426,7 @@ function create_core_overlay {
     cp -f -v "$coreFxBinDir/"* "$coreOverlayDir/" 2>/dev/null
     cp -f -p -v "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
     if [ -d "$mscorlibDir/bin" ]; then
-        cp -f -v "$mscorlibDir/bin/"* "$coreOverlayDir/" 2>/dev/null
+        cp -f -v "$mscorlibDir/artifacts/"* "$coreOverlayDir/" 2>/dev/null
     fi
     cp -f -v "$testDependenciesDir/"xunit* "$coreOverlayDir/" 2>/dev/null
     cp -n -v "$testDependenciesDir/"* "$coreOverlayDir/" 2>/dev/null
@@ -453,7 +453,7 @@ function create_testhost
     
     if [ -z $coreClrBinDir ]; then
         local coreClrBinDir=${coreClrSrc}/bin
-        export __CoreFXTestDir=${coreClrSrc}/bin/tests/CoreFX
+        export __CoreFXTestDir=${coreClrSrc}/artifacts/tests/CoreFX
     else
         export __CoreFXTestDir=${coreClrBinDir}/tests/CoreFX    
     fi
@@ -481,7 +481,7 @@ function create_testhost
     esac
 
     local coreFXTestExecutable=xunit.console.netcore.exe
-    local coreFXLogDir=${coreClrBinDir}/Logs/CoreFX/
+    local coreFXLogDir=${coreClrBinDir}/log/CoreFX/
     local coreFXTestExecutableArgs="--notrait category=nonnetcoreapptests --notrait category=${coreFXTestExclusionDef} --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true"
 
     chmod +x ${dotnetExe}
