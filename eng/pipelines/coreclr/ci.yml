@@ -25,11 +25,6 @@ pr: none
 
 jobs:
 #
-# Checkout repository
-#
-- template: templates/checkout-job.yml
-
-#
 # Debug builds
 #
 - template: templates/platform-matrix.yml

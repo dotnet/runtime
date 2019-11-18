@@ -27,14 +27,6 @@ variables:
   value: CORECLR
 
 stages:
-  - stage: checkout
-    displayName: GIT Checkout
-    jobs:
-    #
-    # Checkout repository
-    #
-    - template: templates/checkout-job.yml
-
   - stage: build
     displayName: Build
     jobs:

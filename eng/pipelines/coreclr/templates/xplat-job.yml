@@ -27,17 +27,8 @@ jobs:
 
     name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
-
     condition: ${{ parameters.condition }}
-    dependsOn:
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_windows'
-        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_unix'
-      - ${{ if ne(parameters.dependsOn, '') }}:
-        - ${{ parameters.dependsOn }}
-
+    dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     continueOnError: ${{ parameters.continueOnError }}
 
@@ -164,20 +155,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - checkout: none
+    - checkout: self
       clean: true
-
-    # Download the GIT repository
-    - template: download-artifact-step.yml
-      parameters:
-        displayName: 'GIT repository'
-        cleanUnpackFolder: false
-        unpackFolder: $(Build.SourcesDirectory)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_windows.zip
-          artifactName: repo_windows
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_unix.tar.gz
-          artifactName: repo_unix
+      fetchDepth: 5
 
     - ${{ parameters.steps }}

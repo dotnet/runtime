@@ -3,11 +3,6 @@ trigger: none
 pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: templates/checkout-job.yml
-
 - template: templates/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
