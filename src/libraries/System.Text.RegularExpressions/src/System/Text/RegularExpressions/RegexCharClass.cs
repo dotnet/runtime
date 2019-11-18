@@ -773,7 +773,11 @@ namespace System.Text.RegularExpressions
             // interpretations of digit, word character, and word boundary.  In other words,
             // no special treatment of Unicode ZERO WIDTH NON-JOINER (ZWNJ U+200C) and
             // ZERO WIDTH JOINER (ZWJ U+200D) is required for ECMA word boundaries.
-            return CharInClass(ch, ECMAWordClass);
+            return
+                ((((uint)ch - 'A') & ~0x20) < 26) || // ASCII letter
+                (((uint)ch - '0') < 10) || // digit
+                ch == '_' || // underscore
+                ch == '\u0130'; // latin capital letter I with dot above
         }
 
         public static bool IsWordChar(char ch)
@@ -782,7 +786,39 @@ namespace System.Text.RegularExpressions
             // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
             // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
             // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
-            return CharInClass(ch, WordClass) || ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
+
+            // 16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char
+            static ReadOnlySpan<byte> AsciiLookup() => new byte[]
+            {
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+            };
+
+            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
+            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
+            ReadOnlySpan<byte> asciiLookup = AsciiLookup();
+            int chDiv8 = ch >> 3;
+            if ((uint)chDiv8 < asciiLookup.Length)
+            {
+                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
+            }
+
+            // For non-ASCII, fall back to checking the Unicode category.
+            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                    return true;
+
+                default:
+                    return ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
+            }
         }
 
         public static bool CharInClass(char ch, string set)
