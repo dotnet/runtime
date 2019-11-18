@@ -8,6 +8,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -218,13 +219,15 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Used as a key for CacheCodeEntry
         /// </summary>
+        [StructLayout(LayoutKind.Auto)]
         internal readonly struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
         {
             private readonly RegexOptions _options;
             private readonly string _cultureKey;
             private readonly string _pattern;
+            private readonly bool _hasTimeout;
 
-            public CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
+            public CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern, bool hasTimeout)
             {
                 SysDebug.Assert(cultureKey != null, "Culture must be provided");
                 SysDebug.Assert(pattern != null, "Pattern must be provided");
@@ -232,32 +235,29 @@ namespace System.Text.RegularExpressions
                 _options = options;
                 _cultureKey = cultureKey;
                 _pattern = pattern;
+                _hasTimeout = hasTimeout;
             }
 
-            public override bool Equals(object? obj)
-            {
-                return obj is CachedCodeEntryKey && Equals((CachedCodeEntryKey)obj);
-            }
+            public override bool Equals(object? obj) =>
+                obj is CachedCodeEntryKey other && Equals(other);
 
-            public bool Equals(CachedCodeEntryKey other)
-            {
-                return _pattern.Equals(other._pattern) && _options == other._options && _cultureKey.Equals(other._cultureKey);
-            }
+            public bool Equals(CachedCodeEntryKey other) =>
+                _pattern.Equals(other._pattern) &&
+                _options == other._options &&
+                _cultureKey.Equals(other._cultureKey) &&
+                _hasTimeout == other._hasTimeout;
 
-            public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right)
-            {
-                return left.Equals(right);
-            }
+            public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+                left.Equals(right);
 
-            public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right)
-            {
-                return !left.Equals(right);
-            }
+            public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+                !left.Equals(right);
 
-            public override int GetHashCode()
-            {
-                return ((int)_options) ^ _cultureKey.GetHashCode() ^ _pattern.GetHashCode();
-            }
+            public override int GetHashCode() =>
+                ((int)_options) ^
+                _cultureKey.GetHashCode() ^
+                _pattern.GetHashCode() ^
+                Convert.ToInt32(_hasTimeout);
         }
 
         /// <summary>

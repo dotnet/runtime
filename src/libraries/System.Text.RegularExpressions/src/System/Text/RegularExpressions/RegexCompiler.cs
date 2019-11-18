@@ -81,6 +81,7 @@ namespace System.Text.RegularExpressions
         protected RegexPrefix? _fcPrefix;          // the possible first chars computed by RegexFCD
         protected RegexBoyerMoore? _bmPrefix;          // a prefix as a boyer-moore machine
         protected int _anchors;           // the set of anchors
+        protected bool _hasTimeout; // whether the regex has a non-infinite timeout
 
         private Label[]? _labels;            // a label for every operation in _codes
         private BacktrackNote[]? _notes;             // a list of the backtracking states to be generated
@@ -127,9 +128,9 @@ namespace System.Text.RegularExpressions
          * Entry point to dynamically compile a regular expression.  The expression is compiled to
          * an in-memory assembly.
          */
-        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options)
+        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout)
         {
-            return new RegexLWCGCompiler().FactoryInstanceFromCode(code, options);
+            return new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
         }
 
         /*
@@ -1580,7 +1581,10 @@ namespace System.Text.RegularExpressions
             _tempV = DeclareInt();
             _temp2V = DeclareInt();
             _temp3V = DeclareInt();
-            _loopV = DeclareInt();
+            if (_hasTimeout)
+            {
+                _loopV = DeclareInt();
+            }
             _textbegV = DeclareInt();
             _textendV = DeclareInt();
             _textstartV = DeclareInt();
@@ -1662,8 +1666,11 @@ namespace System.Text.RegularExpressions
             // Before executing any RegEx code in the unrolled loop,
             // we try checking for the match timeout:
 
-            Ldthis();
-            Callvirt(s_checkTimeoutM);
+            if (_hasTimeout)
+            {
+                Ldthis();
+                Callvirt(s_checkTimeoutM);
+            }
 
             // Now generate the IL for the RegEx code saved in _regexopcode.
             // We unroll the loop done by the RegexCompiler creating as very long method
@@ -2766,7 +2773,10 @@ namespace System.Text.RegularExpressions
 
                         if (Code() == RegexCode.Setrep)
                         {
-                            EmitTimeoutCheck();
+                            if (_hasTimeout)
+                            {
+                                EmitTimeoutCheck();
+                            }
                             Ldstr(_strings![Operand(0)]);
                             Call(s_charInSetM);
 
@@ -2876,7 +2886,10 @@ namespace System.Text.RegularExpressions
 
                         if (Code() == RegexCode.Setloop)
                         {
-                            EmitTimeoutCheck();
+                            if (_hasTimeout)
+                            {
+                                EmitTimeoutCheck();
+                            }
                             Ldstr(_strings![Operand(0)]);
                             Call(s_charInSetM);
 
@@ -3089,16 +3102,18 @@ namespace System.Text.RegularExpressions
 
         private void EmitTimeoutCheck()
         {
+            Debug.Assert(_hasTimeout && _loopV != null);
+
             Label label = DefineLabel();
 
             // Increment counter for each loop iteration.
-            Ldloc(_loopV!);
+            Ldloc(_loopV);
             Ldc(1);
             Add();
-            Stloc(_loopV!);
+            Stloc(_loopV);
 
             // Emit code to check the timeout every 2000th-iteration.
-            Ldloc(_loopV!);
+            Ldloc(_loopV);
             Ldc(LoopTimeoutCheckCount);
             Rem();
             Ldc(0);

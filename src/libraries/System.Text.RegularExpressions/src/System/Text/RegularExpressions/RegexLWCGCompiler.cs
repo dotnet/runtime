@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions
         /*
          * The top-level driver. Initializes everything then calls the Generate* methods.
          */
-        public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options)
+        public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
         {
             _code = code;
             _codes = code.Codes;
@@ -27,6 +27,7 @@ namespace System.Text.RegularExpressions
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
             _options = options;
+            _hasTimeout = hasTimeout;
 
             // pick a unique number for the methods we generate
             int regexnum = Interlocked.Increment(ref s_regexCount);
@@ -53,10 +54,10 @@ namespace System.Text.RegularExpressions
             // By giving them a parameter which represents "this", we're tricking them into
             // being instance methods.
 
-            MethodAttributes attribs = MethodAttributes.Public | MethodAttributes.Static;
-            CallingConventions conventions = CallingConventions.Standard;
+            const MethodAttributes Attribs = MethodAttributes.Public | MethodAttributes.Static;
+            const CallingConventions Conventions = CallingConventions.Standard;
 
-            DynamicMethod dm = new DynamicMethod(methname, attribs, conventions, returntype, s_paramTypes, hostType, false /*skipVisibility*/);
+            DynamicMethod dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, false /*skipVisibility*/);
             _ilg = dm.GetILGenerator();
             return dm;
         }
