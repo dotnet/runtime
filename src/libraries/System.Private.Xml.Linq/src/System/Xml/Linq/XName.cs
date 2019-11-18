@@ -13,7 +13,7 @@ namespace System.Xml.Linq
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Serialization", "CA2229", Justification = "Serialized with custom proxy")]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
-        private readonly XNamespace _ns;
+        private readonly string _namespaceName;
         private readonly string _localName;
         private readonly int _hashCode;
 
@@ -22,7 +22,7 @@ namespace System.Xml.Linq
         /// </summary>
         internal XName(XNamespace ns, string localName)
         {
-            _ns = ns;
+            _namespaceName = ns.NamespaceName;
             _localName = XmlConvert.VerifyNCName(localName);
             _hashCode = ns.GetHashCode() ^ localName.GetHashCode();
         }
@@ -41,7 +41,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XNamespace Namespace
         {
-            get { return _ns; }
+            get { return XNamespace.Get(_namespaceName); }
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace System.Xml.Linq
         /// </summary>
         public string NamespaceName
         {
-            get { return _ns.NamespaceName; }
+            get { return _namespaceName; }
         }
 
         /// <summary>
@@ -57,8 +57,8 @@ namespace System.Xml.Linq
         /// </summary>
         public override string ToString()
         {
-            if (_ns.NamespaceName.Length == 0) return _localName;
-            return "{" + _ns.NamespaceName + "}" + _localName;
+            if (_namespaceName.Length == 0) return _localName;
+            return $"{{{_namespaceName}}}{_localName}";
         }
 
         /// <summary>

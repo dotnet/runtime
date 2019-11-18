@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Threading;
 using Xunit;
 
 namespace System.Xml.Linq.Tests
@@ -169,6 +170,37 @@ namespace System.Xml.Linq.Tests
             XElement a = new XElement("{A2WVL}A2WVK"), b = new XElement("{A2WVK}A2WVL");
             Assert.NotSame(a.Name.Namespace, b.Name.Namespace);
             Assert.NotSame(a.Name, b.Name);
+        }
+
+        [Fact]
+        public void DifferentNamespaceAndSameNameeProduceDifferentInstance()
+        {
+            XName a = "{A2WVL}A2WVK", b = "{A2WVK}A2WVK";
+            Assert.NotSame(a.Namespace, b.Namespace);
+            Assert.NotSame(a, b);
+            Assert.NotSame(a.ToString(), b.ToString());
+            Assert.Equal(a.LocalName, b.LocalName);
+        }
+
+        [Fact]
+        public void DefaultNamespaceSameNameProduceSameInstance()
+        {
+            XName a = "A2WVK";
+            var b = new XElement("A2WVK");
+            Assert.Same(a.Namespace, b.Name.Namespace);
+            Assert.Same(a, b.Name);
+            Assert.Same(XNamespace.None, a.Namespace);
+            Assert.Same(a.ToString(), b.Name.ToString());
+        }
+
+        [Fact]
+        public void SameNamespaceDifferentNameProduceDifferentInstance()
+        {
+            XName a = "{A2WVL}A2WVK";
+            var b = new XElement("{A2WVL}A2WVL");
+            Assert.Same(a.Namespace, b.Name.Namespace);
+            Assert.NotSame(a, b.Name);
+            Assert.Same(a.Namespace.ToString(), b.Name.Namespace.ToString());
         }
     }
 }
