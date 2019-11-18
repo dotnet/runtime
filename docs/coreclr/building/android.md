@@ -32,7 +32,7 @@ To compile for arm64, run:
 CONFIG_DIR=`realpath cross/android/arm64` ROOTFS_DIR=`realpath cross/android-rootfs/toolchain/arm64/sysroot` ./build.sh cross arm64 skipgenerateversion skipmscorlib cmakeargs -DENABLE_LLDBPLUGIN=0
 ```
 
-The resulting binaries will be found in `runtime/artifacts/bin/coreclr/Linux.BuildArch.BuildType/`
+The resulting binaries will be found in `artifacts/bin/coreclr/Linux.BuildArch.BuildType/`
 
 Running the PAL tests on Android
 --------------------------------
