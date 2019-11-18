@@ -1,11 +1,9 @@
 # Issue and Pull Request Management
-The dotnet/runtime consolidated repository is a consolidation of the code, infrastructure, and community/team norms and practices.  This document represents the collective decision making of a working group of engineers from each of the repositories that are being consolidated.
-
 The purpose of this document is to help establish norms and best practices for dotnet/runtime.  The outcomes from this document should be translated into the respective documentation within dotnet/runtime, though initially it will be a standalone document.
 
 This document covers the norms and best practices for issues and pull requests management.  There is a particular focus on areas that overlap across various communities/teams and areas where individual communities/teams can have their own mechanisms for doing business.
 # Principles
-Here are a guiding set of principles of how to successfully combine the communities and teams which will work together in dotnet/runtime.
+Here are a guiding set of principles of how to successfully combine the communities and teams which work together in dotnet/runtime.
 - Retain a 'one community/team' feel for dotnet/runtime
 - Leverage automation to label incoming/inflight to enable accountability
 - area-* labels should align with a specific community/team for accountability
@@ -27,8 +25,8 @@ Here are a few of the most salient components of working well together, and the 
 - ProjectBoards/ZenHub – some aspects of these project boards are shared across all users.
 - Wikis/GitActions – these resources are global and are disabled
 ## Scenarios where area owners will be asked to manage their issues and pull requests:
-- All issues with the `untriaged` label are considered untriaged and at times the team will be asked to triage them.
-- During a release endgame and for servicing, issues and pull requests targeting a particular release will be asked have a milestone set.
+- All issues with the `untriaged` label are considered untriaged and close to release team will be asked to triage them.
+- During a release endgame and for servicing, issues and pull requests targeting a particular release will be asked to have a milestone set.
 - All pull requests should be 'squash on merge', except for merges across branches and other extraneous circumstances
 # FAQ
 ## What designates a 'triaged' issue?
@@ -43,6 +41,8 @@ Marking issues with milestones is necessary during release endgame and servicing
 Pull requests for servicing should add the appropriate `major.minor.x` milestone (eg. `3.0.x`).  Once a specific servicing version is determined, the specific milestone will be added to the pull request (eg. `3.0.2`).
 
 It is generally acceptable to have issues without milestones, though this is left to the area owners to decide.  Said another way, not having a milestone does not mean that it is not triaged, see comment above.
+## How do you request a review for an issue/pull request if only 1 `area-*` label is applied?
+Labeling issues with more than 1 `area-*` label has been used to bring attention to the issue or pull request from multiple teams.  In order to ensure accountability we strive to only have 1 `area-*` label per issue and pull request.  In the event you need to bring the issue or pull request to multiple teams attention, please add them for review as opposed to adding their `area-*` label.
 ## How will notifications work in dotnet/runtime?
 The default github notification system will be used for watching and tracking issue changes.  We will also be using GitHubIssues (https://github.com/karelz/GitHubIssues) to provide notifications as issues enter and exit areas that you subscribe to.
 ## How are pull requests marked with labels and milestones?
@@ -60,9 +60,9 @@ Yes, except for merges across branches and other extraneous circumstances.  Init
 ## How will labels be managed?
 There are few access controls, so in general everyone will have access - be a good global citizen.  When in doubt ask the team manager that is responsible.
 ## What will be dotnet/runtime's branch policy?
-General guidance is to rarely create a direct branch within the repository and instead fork and create a branch.
+General guidance is to rarely create a direct branch within the repository and instead fork and create a branch.  If any branch is created temporarily, it should be deleted as soon as the associated pull request is merged or closed.  Any non-release branch is subject to deletion at any time.
 
-Branches are made for servicing releases and are managed centrally.  Merging into these branches is monitored and managed centerally.
+Branches are made for servicing releases and are managed centrally.  Merging into these branches is monitored and managed centrally.
 
 The repositories in dotnet/runtime represent the bottom of the stack for .NET Core.  As such, these repositories often lock down before the rest of .NET Core at the end of a release.  The general policy will be that all code within dotnet/runtime will align in their lockdown dates and policies.
 ## What is dotnet/runtime's mirror policy?
