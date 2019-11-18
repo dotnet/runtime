@@ -12,11 +12,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" NoWarn="NU1701" />
-    <PackageReference Include="Microsoft.DotNet.CoreCLR.TestDependencies" Version="1.0.0-prerelease" NoWarn="NU1701" />
     <PackageReference Include="jit-dasm" Version="0.0.1.4"  NoWarn="NU1701" />
     <PackageReference Include="cijobs" Version="0.0.1.2" NoWarn="NU1701"  />
     <PackageReference Include="jit-analyze" Version="0.0.1.1" NoWarn="NU1701"  />
   </ItemGroup>
+
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot">
+    <ItemGroup>
+      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
