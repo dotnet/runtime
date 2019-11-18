@@ -569,7 +569,7 @@ def do_pmi_diffs():
         # Generate the diffs
         #
         # Invoke command like:
-        #   dotnet c:\gh\jitutils\bin\jit-diff.dll diff --pmi --base --base_root f:\gh\coreclr12 --diff --diff_root f:\gh\coreclr10 --arch x64 --build Checked --tag 1 --noanalyze --output f:\output --corelib
+        #   dotnet c:\gh\jitutils\artifacts\jit-diff.dll diff --pmi --base --base_root f:\gh\coreclr12 --diff --diff_root f:\gh\coreclr10 --arch x64 --build Checked --tag 1 --noanalyze --output f:\output --corelib
         #
         # We pass --noanalyze and call jit-analyze manually. This isn't really necessary, but it does give us better output
         # due to https://github.com/dotnet/jitutils/issues/175.
@@ -601,7 +601,7 @@ def do_pmi_diffs():
             return 1
 
         # Do the jit-analyze comparison:
-        #   dotnet c:\gh\jitutils\bin\jit-analyze.dll --base f:\output\diffs\1\base --recursive --diff f:\output\diffs\1\diff
+        #   dotnet c:\gh\jitutils\artifacts\jit-analyze.dll --base f:\output\diffs\1\base --recursive --diff f:\output\diffs\1\diff
 
         command = ["dotnet", jitAnalyzePath, "--recursive", "--base", baseOutputDir, "--diff", diffOutputDir]
         returncode = run_command(command, my_env)

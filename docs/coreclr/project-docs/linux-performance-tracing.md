@@ -190,7 +190,7 @@ Perfcollect can be used to collect data for an application running inside a Dock
 In order to use the instructions in this document to collect a trace, spawn a new shell inside the container that is privileged.
 
 >```bash
->docker exec -it --privileged <container_name> /bin/bash
+>docker exec -it --privileged <container_name> /artifacts/bash
 >```
 
 Even though the application hosted in the container isn't privileged, this new shell is, and it will have all the privileges it needs to collect trace data.  Now, simply follow the instructions in [Collecting a Trace](#collecting-a-trace) using the privileged shell.

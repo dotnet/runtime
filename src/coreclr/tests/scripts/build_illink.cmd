@@ -25,7 +25,7 @@ cd ..\linker
 ..\corebuild\dotnet.cmd publish -r %rid% -c netcore_Release
 popd
 
-echo Built %cd%\linker\linker\bin\netcore_Release\netcoreapp2.0\%rid%\publish\illink.exe
+echo Built %cd%\linker\linker\artifacts\netcore_Release\netcoreapp2.0\%rid%\publish\illink.exe
 
 :Done
 exit /b 0

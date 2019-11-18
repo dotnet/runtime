@@ -85,7 +85,7 @@ dotnet publish
 After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp3.0\win-x64\publish\`.
 
 ```
-.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 **But we are not done yet, you need to replace the published runtime files with the files from your local build!**
@@ -104,7 +104,7 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
-directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish`) to quickly
+directory to your publication directory (e.g. `helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish`) to quickly
 deploy your new bits. In a lot of cases it is easiest to just copy everything from here to your publication directory.
 
 You can build just the .NET Library part of the build by doing (debug, for release add 'release' qualifier)
@@ -138,7 +138,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 ### If it's not using your copied binary
@@ -146,7 +146,7 @@ The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\Sy
 Make sure you are running the exe directly. If you use `dotnet run` it will overwrite your custom binaries before executing the app:
 
 ```
-.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 ### If you get a consistency check assertion failure

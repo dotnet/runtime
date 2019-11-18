@@ -33,14 +33,11 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
-rem Remove after repo consolidation
-if not exist "%__RepoRootDir%\.dotnet-runtime-placeholder" ( set "__RepoRootDir=!__ProjectDir!" )
-
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__RootBinDir=%__ProjectDir%\bin"
-set "__LogsDir=%__RootBinDir%\Logs"
+set "__RootBinDir=%__RepoRootDir%\artifacts"
+set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
@@ -145,8 +142,8 @@ set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__Bui
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
-set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestRootDir=%__RootBinDir%\tests"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__TestRootDir=%__RootBinDir%\tests\coreclr"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 REM We have different managed and native intermediate dirs because the managed bits will include
@@ -154,7 +151,7 @@ REM the configuration information deeper in the intermediates path.
 REM These variables are used by the msbuild project files.
 
 if not defined __TestIntermediateDir (
-    set "__TestIntermediateDir=tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+    set "__TestIntermediateDir=tests\coreclr\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 )
 set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"
@@ -323,7 +320,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -650,7 +647,7 @@ of the previous version to "%VSINSTALLDIR%" and then build.
 REM DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :PrecompileFX

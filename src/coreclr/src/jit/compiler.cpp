@@ -4456,7 +4456,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 // code:CILJit::compileMethod function.
 //
 // For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/coreclr/botr/ryujit-overview.md
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {

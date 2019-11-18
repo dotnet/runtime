@@ -27,12 +27,6 @@ initDistroRid()
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __RepoRootDir=${__ProjectRoot}/../..
 
-# BEGIN SECTION to remove after repo consolidation
-if [ ! -f "${__RepoRootDir}/.dotnet-runtime-placeholder" ]; then
-  __RepoRootDir=${__ProjectRoot}
-fi
-# END SECTION to remove after repo consolidation
-
 __IsPortableBuild=1
 __CrossBuild=0
 
@@ -133,7 +127,7 @@ if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
     export OutputRID=${__DistroRid}
 fi
 
-logFile=$__ProjectRoot/bin/Logs/build-packages.binlog
+logFile=$__ProjectRoot/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
                                    /p:__BuildOS=$__BuildOS \

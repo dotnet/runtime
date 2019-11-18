@@ -116,7 +116,7 @@ namespace ReadyToRun.SuperIlc
         private static string[] LocateSubtree(string folder, string coreRootFolder)
         {
             ConcurrentBag<string> directories = new ConcurrentBag<string>();
-            // TODO: this is somewhat hacky - should we introduce a new option -bt (bin/tests/OS.arch.config) we'd use
+            // TODO: this is somewhat hacky - should we introduce a new option -bt (artifacts/tests/OS.arch.config) we'd use
             // to derive the location of Core_Root and testhost?
             string testHostFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(coreRootFolder)), "testhost");
             LocateSubtreeAsync(folder, coreRootFolder, testHostFolder, directories).Wait();

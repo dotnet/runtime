@@ -34,9 +34,9 @@ jobs:
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\bin\tests\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
+      extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
     ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/bin/tests/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
+      extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
 
     frameworks:
       - ${{ parameters.framework }}

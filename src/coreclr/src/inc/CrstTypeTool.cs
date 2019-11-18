@@ -143,7 +143,7 @@ class CrstTypeTool
         writer.WriteLine();
         writer.WriteLine("// This file describes the range of Crst types available and their mapping to a numeric level (used by the");
         writer.WriteLine("// runtime in debug mode to validate we're deadlock free). To modify these settings edit the");
-        writer.WriteLine("// file:CrstTypes.def file and run the clr\\bin\\CrstTypeTool utility to generate a new version of this file.");
+        writer.WriteLine("// file:CrstTypes.def file and run the clr\\artifacts\\CrstTypeTool utility to generate a new version of this file.");
         writer.WriteLine();
 
         // Emit the CrstType enum to define a value for each crst type (along with the kNumberOfCrstTypes

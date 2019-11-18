@@ -39,15 +39,19 @@ jobs:
     - name: crossFlavor
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: artifactsDirectory
+        value: $(Build.SourcesDirectory)/artifacts
       - name: binDirectory
-        value: $(coreClrRepoRoot)/bin
+        value: $(artifactsDirectory)/bin
       - name: productDirectory
-        value: $(binDirectory)/Product
+        value: $(binDirectory)/coreclr
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: artifactsDirectory
+        value: $(Build.SourcesDirectory)\artifacts
       - name: binDirectory
-        value: $(coreClrRepoRoot)\bin
+        value: $(artifactsDirectory)\bin
       - name: productDirectory
-        value: $(binDirectory\Product
+        value: $(binDirectory)\coreclr
 
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -74,11 +78,11 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: |
           chmod +x $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
-          mkdir -p $(binDirectory)/Logs/$(crossFlavor)
+          mkdir -p $(artifactsDirectory)/log/$(crossFlavor)
         displayName: Create directories and ensure crossgen is executable
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: |
-          mkdir $(binDirectory)\Logs\$(crossFlavor)
+          mkdir $(artifactsDirectory)\log\$(crossFlavor)
         displayName: Create directories
 
 
@@ -98,15 +102,15 @@ jobs:
             crossgen_framework
             --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
             --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $(binDirectory)/tests/$(targetFlavor)/Tests/Core_Root
-            --result_dir $(binDirectory)/Logs/$(crossFlavor)
+            --core_root  $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
+            --result_dir $(artifactsDirectory)/log/$(crossFlavor)
         ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
             --il_corelib $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  $(binDirectory)\tests\$(targetFlavor)\Tests\Core_Root
-            --result_dir $(binDirectory)\Logs\$(crossFlavor)
+            --core_root  $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
+            --result_dir $(artifactsDirectory)\log\$(crossFlavor)
 
 
     # Send payload to Helix where the native output is generated and compared to the baseline
@@ -125,33 +129,33 @@ jobs:
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
-            chmod +x     $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen;
-            mkdir -p     $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor);
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen;
+            mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
-            --crossgen   $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/crossgen
-            --il_corelib $HELIX_WORKITEM_PAYLOAD/Product/$(targetFlavor)/IL/System.Private.CoreLib.dll
+            --crossgen   $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
             --core_root  $HELIX_WORKITEM_PAYLOAD/tests/$(targetFlavor)/Tests/Core_Root
-            --result_dir $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor);
+            --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
-            --base_dir   $HELIX_WORKITEM_PAYLOAD/Logs/$(crossFlavor)
-            --diff_dir   $HELIX_WORKITEM_PAYLOAD/Logs/$(targetFlavor)
+            --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
+            --diff_dir   $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor)
         ${{ if eq(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
-            mkdir        %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor);
+            mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
             --crossgen   %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\crossgen
             --il_corelib %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\IL\System.Private.CoreLib.dll
             --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\$(targetFlavor)\Tests\Core_Root
-            --result_dir %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor);
+            --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
-            --base_dir   %HELIX_WORKITEM_PAYLOAD%\Logs\$(crossFlavor)
-            --diff_dir   %HELIX_WORKITEM_PAYLOAD%\Logs\$(targetFlavor)
+            --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)
+            --diff_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor)
 
-    # Publish Logs
+    # Publish log
     - task: PublishBuildArtifacts@1
-      displayName: Publish Logs
+      displayName: Publish log
       inputs:
-        pathtoPublish: $(binDirectory)/Logs
-        artifactName: ${{ format('TestLogs_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        pathtoPublish: $(artifactsDirectory)/log
+        artifactName: ${{ format('Testlog_crossgen_comparison_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       continueOnError: true
       condition: always()

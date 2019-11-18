@@ -9,10 +9,10 @@ function print_usage {
     echo 'coreclr/tests/runtest.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. coreclr/bin/tests/Windows_NT.x64.Debug).'
-    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. coreclr/bin/obj/Linux.x64.Debug/tests).'
+    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
+    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. runtime/artifacts/obj/Linux.x64.Debug/tests).'
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies.'
-    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
+    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. runtime/artifacts/bin/coreclr/Linux.x64.Debug).'
     echo '  --build-overlay-only             : Build coreoverlay only, and skip running tests.'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
@@ -63,8 +63,8 @@ function create_testhost
     local coreClrSrcTestDir=$coreClrSrc/tests
     
     if [ -z $coreClrBinDir ]; then
-        local coreClrBinDir=${coreClrSrc}/bin
-        export __CoreFXTestDir=${coreClrSrc}/bin/tests/CoreFX
+        local coreClrBinDir=${coreClrSrc}/../../artifacts/bin/coreclr
+        export __CoreFXTestDir=${coreClrSrc}/../../artifacts/tests/CoreFX
     else
         export __CoreFXTestDir=${coreClrBinDir}/tests/CoreFX    
     fi
@@ -92,7 +92,7 @@ function create_testhost
     esac
 
     local coreFXTestExecutable=xunit.console.netcore.exe
-    local coreFXLogDir=${coreClrBinDir}/Logs/CoreFX/
+    local coreFXLogDir=${coreClrBinDir}/log/CoreFX/
     local coreFXTestExecutableArgs="--notrait category=nonnetcoreapptests --notrait category=${coreFXTestExclusionDef} --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true"
 
     chmod +x ${dotnetExe}

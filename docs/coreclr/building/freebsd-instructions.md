@@ -51,7 +51,7 @@ LLDB_LIB_DIR=/usr/local/llvm37/lib LLDB_INCLUDE_DIR=/usr/local/llvm37/include ./
 Run tests:
 
 ```sh
-./src/pal/tests/palsuite/runpaltests.sh $PWD/bin/obj/FreeBSD.x64.Debug $PWD/bin/paltestout
+./src/pal/tests/palsuite/runpaltests.sh $PWD/artifacts/obj/FreeBSD.x64.Debug $PWD/artifacts/paltestout
 ```
 
 Git Setup
@@ -78,7 +78,7 @@ janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh clang3.6
 ```
 
 
-After the build is completed, there should some files placed in `bin/Product/FreeBSD.x64.Debug`.  The ones we are interested in are:
+After the build is completed, there should some files placed in `artifacts/Product/FreeBSD.x64.Debug`.  The ones we are interested in are:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
@@ -88,8 +88,8 @@ In order to keep everything tidy, let's create a new directory for the runtime a
 
 ```sh
 janhenke@freebsd-frankfurt:~/git/coreclr % mkdir -p ~/coreclr-demo/runtime
-janhenke@freebsd-frankfurt:~/git/coreclr % cp bin/Product/FreeBSD.x64.Debug/corerun ~/coreclr-demo/runtime
-janhenke@freebsd-frankfurt:~/git/coreclr % cp bin/Product/FreeBSD.x64.Debug/libcoreclr*.so ~/coreclr-demo/runtime
+janhenke@freebsd-frankfurt:~/git/coreclr % cp artifacts/Product/FreeBSD.x64.Debug/corerun ~/coreclr-demo/runtime
+janhenke@freebsd-frankfurt:~/git/coreclr % cp artifacts/Product/FreeBSD.x64.Debug/libcoreclr*.so ~/coreclr-demo/runtime
 ```
 
 Build the Framework Native Components
@@ -97,7 +97,7 @@ Build the Framework Native Components
 
 ```sh
 janhenke@freebsd-frankfurt:~/git/corefx$ ./build-native.sh
-janhenke@freebsd-frankfurt:~/git/corefx$ cp bin/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
+janhenke@freebsd-frankfurt:~/git/corefx$ cp artifacts/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
 ```
 
 Build the Framework Managed Components
@@ -251,7 +251,7 @@ This can be done after a clean build, without any other dependencies.
 From the coreclr project directory:
 
 ```sh
-janhenke@freebsd-frankfurt:~/coreclr % ./src/pal/tests/palsuite/runpaltests.sh  ~/coreclr/bin/obj/FreeBSD.x64.Debug ~/coreclr/bin/paltestout
+janhenke@freebsd-frankfurt:~/coreclr % ./src/pal/tests/palsuite/runpaltests.sh  ~/coreclr/artifacts/obj/FreeBSD.x64.Debug ~/coreclr/artifacts/paltestout
 ```
 
 This should run all the tests associated with the PAL.

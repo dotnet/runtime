@@ -34,9 +34,9 @@ internal class ScanProjectFiles
             s_tryAndFix = false;
 
             // CORE_ROOT should be something like
-            //  c:\repos\coreclr\bin\tests\Windows_NT.x64.Checked\Tests\Core_Root
+            //  c:\repos\coreclr\artifacts\tests\coreclr\Windows_NT.x64.Checked\Tests\Core_Root
             // or
-            //  D:\j\workspace\x64_release_w---0575cb46\bin\tests\Windows_NT.x64.Release\Tests\Core_Root
+            //  D:\j\workspace\x64_release_w---0575cb46\artifacts\tests\Windows_NT.x64.Release\Tests\Core_Root
             // We want
             //  c:\repos\coreclr\tests\src\JIT
             string coreRoot = System.Environment.GetEnvironmentVariable("CORE_ROOT");

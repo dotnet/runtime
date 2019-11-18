@@ -59,7 +59,7 @@ cd ../linker
 popd
 
 dir=$(pwd)
-output="$dir/linker/linker/bin/netcore_Release/netcoreapp2.0/$rid/publish/illink"
+output="$dir/linker/linker/artifacts/netcore_Release/netcoreapp2.0/$rid/publish/illink"
 echo Built $output
 
 exit $EXIT_CODE_SUCCESS

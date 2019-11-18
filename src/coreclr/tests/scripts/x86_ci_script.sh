@@ -50,9 +50,9 @@ $__dockerCmd $__buildCmd
 # Begin PAL test
 __dockerImage="hseok82/dotnet-buildtools-prereqs:ubuntu1604_x86_test"
 __dockerCmd="docker run -i --rm -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
-__palTestCmd="./src/pal/tests/palsuite/runpaltests.sh /opt/code/bin/obj/Linux.x86.${__buildConfig} /opt/code/bin/paltestout"
+__palTestCmd="./src/pal/tests/palsuite/runpaltests.sh /opt/code/artifacts/obj/Linux.x86.${__buildConfig} /opt/code/artifacts/paltestout"
 $__dockerCmd $__palTestCmd
 
-sudo chown -R $(id -u -n) bin/
+sudo chown -R $(id -u -n) artifacts/
 
 (set +x; echo 'Build complete')

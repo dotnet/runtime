@@ -1,11 +1,27 @@
 trigger: none
 
 pr:
-- master
-- release/2.1
-- release/2.2
-- release/3.0
-- release/3.1
+  branches:
+    include:
+    - master
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/libraries/*
+    - eng/pipelines/installer/*
+    - eng/pipelines/libraries/*
 
 jobs:
 #

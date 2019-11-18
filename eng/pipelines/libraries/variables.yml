@@ -1,17 +1,7 @@
 variables:
-  - ${{ if contains(variables['Build.DefinitionName'], 'runtime') }}: # TODO: (Consolidation) Remove condition when consolidated
-    - name: buildScriptFileName
-      value: libraries
-    - name: sourcesRoot
-      value: $(Build.SourcesDirectory)/src/libraries
-    - name: pipelinesPath
-      value: /eng/pipelines/libraries
-
-  # TODO: (Consolidation) Remove when consolidated
-  - ${{ if not(contains(variables['Build.DefinitionName'], 'runtime')) }}:
-    - name: buildScriptFileName
-      value: build
-    - name: sourcesRoot
-      value: $(Build.SourcesDirectory)/src
-    - name: pipelinesPath
-      value: /eng/pipelines
+  - name: buildScriptFileName
+    value: libraries
+  - name: sourcesRoot
+    value: $(Build.SourcesDirectory)/src/libraries
+  - name: pipelinesPath
+    value: /eng/pipelines/libraries

@@ -71,7 +71,7 @@ REM ============================================================================
 
 REM Download the package
 echo Downloading CoreDisTools package
-set CoreDisToolsPackagePathOutputFile="%__ThisScriptPath%\..\bin\obj\Windows_NT.%__Arch%\coredistoolspath.txt"
+set CoreDisToolsPackagePathOutputFile="%__ThisScriptPath%\..\..\..\artifacts\obj\coreclr\Windows_NT.%__Arch%\coredistoolspath.txt"
 set DOTNETCMD="%__DotNetCmd%" restore "%__CsprojPath%"
 echo %DOTNETCMD%
 call %DOTNETCMD%

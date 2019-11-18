@@ -1,6 +1,6 @@
 # Overview
 
-This is a .NET Core utility that reflects over a corefx xunit test assembly and generates
+This is a .NET Core utility that reflects over a runtime xunit test assembly and generates
 a simple console app that invokes tests with minimal ceremony and without any reflection.
 Each test invocation is emitted as a call into the public test method, with one invocation
 generated per theory input.
@@ -9,29 +9,29 @@ generated per theory input.
 
 ## Prereqs
 
-- Build corefx from root to ensure that the testhost directory of assemblies is published, e.g. `cd d:\repos\corefx & build.cmd`.
-- Build the test assembly desired, e.g `cd src\System.Runtime\tests & dotnet msbuild`.
+- Build runtime from root to ensure that the testhost directory of assemblies is published, e.g. `cd d:\repos\runtime & .\libraries.cmd`.
+- Build the test assembly desired, e.g `cd src\libraries\System.Runtime\tests & dotnet msbuild`.
 
 ## Running the StaticTestGenerator utility
 
 From within the utility directory, run the utility with the arguments:
 - The path to the output directory into which the resulting .cs and .csproj files are written.
-- The path to a directory containing all of the corefx test host assemblies.
+- The path to a directory containing all of the runtime test host assemblies.
 - The path to the test assembly to be analyzed.
 - Any additional xunit options to be provided.  If none are provided, it defaults to the same inputs that are passed when testing inner loop on Windows.
 
 For example:
 ```
-dotnet run d:\output "d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\3.0.0" "d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll"
+dotnet run d:\output "d:\repos\runtime\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\5.0.0" "d:\repos\runtime\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll"
 ```
 This will run the tool and result in output written to the console like:
 ```
-3/27/2019 10:55:37 PM | Test assembly path    : d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll
-3/27/2019 10:55:37 PM | Helper assemblies path: d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\3.0.0\
+3/27/2019 10:55:37 PM | Test assembly path    : d:\repos\runtime\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll
+3/27/2019 10:55:37 PM | Helper assemblies path: d:\repos\runtime\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\3.0.0\
 3/27/2019 10:55:37 PM | Output path           : d:\output\System.Runtime.Tests\
-3/27/2019 10:55:37 PM | Xunit arguments       : d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll -notrait category=nonnetcoreapptests -notrait category=nonwindowstests -notrait category=IgnoreForCI -notrait category=failing -notrait category=OuterLoop
+3/27/2019 10:55:37 PM | Xunit arguments       : d:\repos\runtime\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll -notrait category=nonnetcoreapptests -notrait category=nonwindowstests -notrait category=IgnoreForCI -notrait category=failing -notrait category=OuterLoop
 3/27/2019 10:55:37 PM |
-3/27/2019 10:55:37 PM | Loaded System.Runtime.Tests from d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll
+3/27/2019 10:55:37 PM | Loaded System.Runtime.Tests from d:\repos\runtime\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll
 3/27/2019 10:55:37 PM | Found 5322 test methods.
 3/27/2019 10:55:38 PM | Found 3469 InlineDatas / 949 MethodDatas across 5322 test methods.
 3/27/2019 10:55:38 PM |

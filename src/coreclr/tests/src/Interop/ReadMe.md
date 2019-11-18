@@ -10,7 +10,7 @@ There should be no more than **1** project type per folder (i.e. a folder can co
 
 Ancillary source assets for all tests should be located in `Interop/common` and can be easily added to all managed tests via the `Interop.settings.targets` file or native tests via `Interop.cmake`.
 
-A common pattern for testing is using the `Assert` utilities found in the `CoreFX` repo. This class is part of the `CoreCLRTestLibrary` which is included in all test projects by the `Interop.settings.targets` import. In order to use, add the following `using TestLibrary;` in the relevant test file.
+A common pattern for testing is using the `Assert` utilities. This class is part of the `CoreCLRTestLibrary` which is included in all test projects by the `Interop.settings.targets` import. In order to use, add the following `using TestLibrary;` in the relevant test file.
 
 ### Managed
 
@@ -55,7 +55,7 @@ Testing P/Invoke has two aspects:
 
 ### Marshal API
 
-The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [CoreFX](https://github.com/dotnet/corefx/tree/master/src/System.Runtime.InteropServices/tests) repo. Cases where testing the API surface area requires native tests assets will be performed in the [CoreCLR](https://github.com/dotnet/coreclr/tree/master/tests/src/Interop) repo.
+The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [library test folder](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.InteropServices/tests). Cases where testing the API surface area requires native tests assets will be performed in the [coreclr test folder](https://github.com/dotnet/runtime/tree/master/src/coreclr/tests/src/Interop) repo.
 
 ### NativeLibrary 
 
