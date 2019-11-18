@@ -66,4 +66,9 @@ namespace System.IO.Pipes
         public void SetAccessRule(System.IO.Pipes.PipeAccessRule rule) { }
         public void SetAuditRule(System.IO.Pipes.PipeAuditRule rule) { }
     }
+
+    public static class AnonymousPipeServerStreamAcl
+    {
+        public static System.IO.Pipes.AnonymousPipeServerStream Create(System.IO.Pipes.PipeDirection direction, System.IO.HandleInheritability inheritability, int bufferSize, System.IO.Pipes.PipeSecurity pipeSecurity) { throw null; }
+    }
 }
