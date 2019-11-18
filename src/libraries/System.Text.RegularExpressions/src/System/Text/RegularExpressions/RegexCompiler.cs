@@ -47,11 +47,11 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isboundaryM = RegexRunnerMethod("IsBoundary");
         private static readonly MethodInfo s_isECMABoundaryM = RegexRunnerMethod("IsECMABoundary");
         private static readonly MethodInfo s_chartolowerM = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
+        private static readonly MethodInfo s_chartolowerinvariantM = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_getcharM = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_crawlposM = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInSetM = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_getCurrentCulture = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
-        private static readonly MethodInfo s_getInvariantCulture = typeof(CultureInfo).GetMethod("get_InvariantCulture")!;
         private static readonly MethodInfo s_checkTimeoutM = RegexRunnerMethod("CheckTimeout");
 #if DEBUG
         private static readonly MethodInfo s_dumpstateM = RegexRunnerMethod("DumpState");
@@ -966,18 +966,22 @@ namespace System.Text.RegularExpressions
 
         private void InitLocalCultureInfo()
         {
-            if ((_options & RegexOptions.CultureInvariant) != 0)
-                Call(s_getInvariantCulture);
-            else
-                Call(s_getCurrentCulture);
-
-            Stloc(_cultureV!);
+            Debug.Assert(_cultureV != null);
+            Call(s_getCurrentCulture);
+            Stloc(_cultureV);
         }
 
         private void CallToLower()
         {
-            Ldloc(_cultureV!);
-            Call(s_chartolowerM);
+            if (_cultureV == null || _options.HasFlag(RegexOptions.CultureInvariant))
+            {
+                Call(s_chartolowerinvariantM);
+            }
+            else
+            {
+                Ldloc(_cultureV!);
+                Call(s_chartolowerM);
+            }
         }
 
         /*
@@ -1097,9 +1101,17 @@ namespace System.Text.RegularExpressions
             _textV = DeclareString();
             _tempV = DeclareInt();
             _temp2V = DeclareInt();
-            _cultureV = DeclareCultureInfo();
-
-            InitLocalCultureInfo();
+            _cultureV = null;
+            if (!_options.HasFlag(RegexOptions.CultureInvariant))
+            {
+                if (_options.HasFlag(RegexOptions.IgnoreCase) ||
+                    _bmPrefix?.CaseInsensitive == true ||
+                    _fcPrefix.GetValueOrDefault().CaseInsensitive)
+                {
+                    _cultureV = DeclareCultureInfo();
+                    InitLocalCultureInfo();
+                }
+            }
 
             if (0 != (_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
@@ -1564,9 +1576,9 @@ namespace System.Text.RegularExpressions
         /*
          * Declares a local CultureInfo
          */
-        private LocalBuilder DeclareCultureInfo()
+        private LocalBuilder? DeclareCultureInfo()
         {
-            return _ilg!.DeclareLocal(typeof(CultureInfo));
+            return _ilg!.DeclareLocal(typeof(CultureInfo)); // cache local variable to avoid unnecessary TLS
         }
 
         /*
@@ -1608,7 +1620,28 @@ namespace System.Text.RegularExpressions
             _textbegV = DeclareInt();
             _textendV = DeclareInt();
             _textstartV = DeclareInt();
-            _cultureV = DeclareCultureInfo();
+
+            _cultureV = null;
+            if (!_options.HasFlag(RegexOptions.CultureInvariant))
+            {
+                bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase);
+                if (!needsCulture)
+                {
+                    for (int codepos = 0; codepos < _codes!.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
+                    {
+                        if ((_codes[codepos] & RegexCode.Ci) == RegexCode.Ci)
+                        {
+                            needsCulture = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (needsCulture)
+                {
+                    _cultureV = DeclareCultureInfo();
+                }
+            }
 
             // clear some tables
 
@@ -1623,7 +1656,10 @@ namespace System.Text.RegularExpressions
             // emit the code!
 
             // cache CultureInfo in local variable which saves excessive thread local storage accesses
-            InitLocalCultureInfo();
+            if (_cultureV != null)
+            {
+                InitLocalCultureInfo();
+            }
 
             GenerateForwardSection();
             GenerateMiddleSection();
