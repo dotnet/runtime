@@ -259,7 +259,7 @@ jobs:
         ${{ if eq(parameters.corefxTests, true) }}:
           helixProjectArguments: '$(Build.SourcesDirectory)/eng/helixcorefxtests.proj'
         ${{ if ne(parameters.corefxTests, true) }}:
-          helixProjectArguments: '$(coreClrRepoRoot)/tests/src/helixpublishwitharcade.proj'
+          helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
