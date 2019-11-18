@@ -17,7 +17,7 @@
     <PackageReference Include="jit-analyze" Version="0.0.1.1" NoWarn="NU1701"  />
   </ItemGroup>
 
-  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot">
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(BuildOS)' == 'Windows_NT'">
     <ItemGroup>
       <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
     </ItemGroup>
