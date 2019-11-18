@@ -17,9 +17,9 @@ namespace System.Text.Json
         ///   The value of this property.
         /// </summary>
         public JsonElement Value { get; }
-        private string _name { get; }
+        private string? _name { get; }
 
-        internal JsonProperty(JsonElement value, string name = null)
+        internal JsonProperty(JsonElement value, string? name = null)
         {
             Value = value;
             _name = name;

@@ -14,11 +14,11 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
         // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly string s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
+        private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
 
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
-        private readonly ConcurrentDictionary<string, string> _nameCache;
+        private readonly ConcurrentDictionary<string, string>? _nameCache;
 
         public override bool CanConvert(Type type)
         {
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
         {
         }
 
-        public JsonConverterEnum(EnumConverterOptions options, JsonNamingPolicy namingPolicy)
+        public JsonConverterEnum(EnumConverterOptions options, JsonNamingPolicy? namingPolicy)
         {
             _converterOptions = options;
             if (namingPolicy != null)
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
         }
 
-        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
         {
             JsonTokenType token = reader.TokenType;
 
@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Try parsing case sensitive first
-                string enumString = reader.GetString();
+                string? enumString = reader.GetString();
                 if (!Enum.TryParse(enumString, out T value)
                     && !Enum.TryParse(enumString, ignoreCase: true, out value))
                 {
@@ -152,13 +152,13 @@ namespace System.Text.Json.Serialization.Converters
                 (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
         }
 
-        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions? options)
         {
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
                 string original = value.ToString();
-                if (_nameCache != null && _nameCache.TryGetValue(original, out string transformed))
+                if (_nameCache != null && _nameCache.TryGetValue(original, out string? transformed))
                 {
                     writer.WriteStringValue(transformed);
                     return;

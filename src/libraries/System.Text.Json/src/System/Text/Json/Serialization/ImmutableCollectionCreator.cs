@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json
@@ -12,14 +13,14 @@ namespace System.Text.Json
     internal abstract class ImmutableCollectionCreator
     {
         public abstract void RegisterCreatorDelegateFromMethod(MethodInfo creator);
-        public abstract bool CreateImmutableEnumerable(IList items, out IEnumerable collection);
-        public abstract bool CreateImmutableDictionary(IDictionary items, out IDictionary collection);
+        public abstract bool CreateImmutableEnumerable(IList items, [NotNullWhen(true)] out IEnumerable? collection);
+        public abstract bool CreateImmutableDictionary(IDictionary items, [NotNullWhen(true)] out IDictionary? collection);
     }
 
     internal sealed class ImmutableEnumerableCreator<TElement, TCollection> : ImmutableCollectionCreator
         where TCollection : IEnumerable<TElement>
     {
-        private Func<IEnumerable<TElement>, TCollection> _creatorDelegate;
+        private Func<IEnumerable<TElement>, TCollection>? _creatorDelegate;
 
         public override void RegisterCreatorDelegateFromMethod(MethodInfo creator)
         {
@@ -34,7 +35,7 @@ namespace System.Text.Json
             return true;
         }
 
-        public override bool CreateImmutableDictionary(IDictionary items, out IDictionary collection)
+        public override bool CreateImmutableDictionary(IDictionary items, out IDictionary? collection)
         {
             // Shouldn't be calling this method for immutable dictionaries.
             collection = default;
@@ -43,9 +44,9 @@ namespace System.Text.Json
 
         private IEnumerable<TElement> CreateGenericTElementIEnumerable(IList sourceList)
         {
-            foreach (object item in sourceList)
+            foreach (object? item in sourceList)
             {
-                yield return (TElement)item;
+                yield return (TElement)item!;
             }
         }
     }
@@ -53,7 +54,7 @@ namespace System.Text.Json
     internal sealed class ImmutableDictionaryCreator<TElement, TCollection> : ImmutableCollectionCreator
         where TCollection : IReadOnlyDictionary<string, TElement>
     {
-        private Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> _creatorDelegate;
+        private Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>? _creatorDelegate;
 
         public override void RegisterCreatorDelegateFromMethod(MethodInfo creator)
         {
@@ -62,7 +63,7 @@ namespace System.Text.Json
                 typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
         }
 
-        public override bool CreateImmutableEnumerable(IList items, out IEnumerable collection)
+        public override bool CreateImmutableEnumerable(IList items, out IEnumerable? collection)
         {
             // Shouldn't be calling this method for immutable non-dictionaries.
             collection = default;
@@ -78,9 +79,11 @@ namespace System.Text.Json
 
         private IEnumerable<KeyValuePair<string, TElement>> CreateGenericTElementIDictionary(IDictionary sourceDictionary)
         {
+#pragma warning disable 8605
             foreach (DictionaryEntry item in sourceDictionary)
+#pragma warning restore 8605
             {
-                yield return new KeyValuePair<string, TElement>((string)item.Key, (TElement)item.Value);
+                yield return new KeyValuePair<string, TElement>((string)item.Key, (TElement)item.Value!);
             }
         }
     }

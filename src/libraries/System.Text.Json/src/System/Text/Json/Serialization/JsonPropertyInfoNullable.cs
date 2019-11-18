@@ -33,7 +33,7 @@ namespace System.Text.Json
             }
             else
             {
-                Set(state.Current.ReturnValue, value);
+                Set!(state.Current.ReturnValue, value);
             }
         }
 
@@ -58,7 +58,7 @@ namespace System.Text.Json
             }
             else
             {
-                value = Get(current.CurrentValue);
+                value = Get!(current.CurrentValue);
             }
 
             if (value == null)
@@ -85,7 +85,7 @@ namespace System.Text.Json
         {
             Debug.Assert(Converter != null && current.CollectionEnumerator != null);
 
-            string key = null;
+            string? key = null;
             TProperty? value = null;
             if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty?>> enumerator)
             {
@@ -94,7 +94,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (((DictionaryEntry)current.CollectionEnumerator.Current).Key is string keyAsString)
+                if (((DictionaryEntry)current.CollectionEnumerator.Current!).Key is string keyAsString)
                 {
                     key = keyAsString;
                     value = (TProperty?)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
@@ -102,7 +102,7 @@ namespace System.Text.Json
                 else
                 {
                     throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                        current.JsonPropertyInfo.DeclaredPropertyType,
+                        current.JsonPropertyInfo!.DeclaredPropertyType,
                         current.JsonPropertyInfo.ParentClassType,
                         current.JsonPropertyInfo.PropertyInfo);
                 }
@@ -126,11 +126,11 @@ namespace System.Text.Json
 
             if (value == null)
             {
-                writer.WriteNull(key);
+                writer.WriteNull(key!);
             }
             else
             {
-                writer.WritePropertyName(key);
+                writer.WritePropertyName(key!);
                 Converter.Write(writer, value.GetValueOrDefault(), Options);
             }
         }
@@ -168,7 +168,7 @@ namespace System.Text.Json
             return typeof(Dictionary<string, TProperty?>);
         }
 
-        public override void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object value)
+        public override void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object? value)
         {
             if (writeStackFrame.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty?>> genericEnumerator)
             {
@@ -178,7 +178,7 @@ namespace System.Text.Json
             else
             {
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    writeStackFrame.JsonPropertyInfo.DeclaredPropertyType,
+                    writeStackFrame.JsonPropertyInfo!.DeclaredPropertyType,
                     writeStackFrame.JsonPropertyInfo.ParentClassType,
                     writeStackFrame.JsonPropertyInfo.PropertyInfo);
             }

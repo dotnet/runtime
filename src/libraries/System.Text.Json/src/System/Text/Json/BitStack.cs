@@ -135,6 +135,7 @@ namespace System.Text.Json
 
         private void DoubleArray(int minSize)
         {
+            Debug.Assert(_array != null);
             Debug.Assert(_array.Length < int.MaxValue / 2, $"Array too large - arrayLength: {_array.Length}");
             Debug.Assert(minSize >= 0 && minSize >= _array.Length);
 

@@ -20,12 +20,12 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.JsonKeyValuePairConverter`2")]
-        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
+        public override JsonConverter? CreateConverter(Type type, JsonSerializerOptions? options)
         {
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
 
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+            JsonConverter? converter = (JsonConverter?)Activator.CreateInstance(
                 typeof(JsonKeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,

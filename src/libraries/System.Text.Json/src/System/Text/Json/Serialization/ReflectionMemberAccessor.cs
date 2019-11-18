@@ -16,18 +16,18 @@ namespace System.Text.Json
         private delegate void SetProperty<TClass, TProperty>(TClass obj, TProperty value);
         private delegate void SetPropertyByRef<TClass, TProperty>(ref TClass obj, TProperty value);
 
-        private delegate Func<object, TProperty> GetPropertyByRefFactory<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> set);
-        private delegate Action<object, TProperty> SetPropertyByRefFactory<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set);
+        private delegate Func<object?, TProperty> GetPropertyByRefFactory<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> set);
+        private delegate Action<object?, TProperty> SetPropertyByRefFactory<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set);
 
-        private static readonly MethodInfo s_createStructPropertyGetterMethod = new GetPropertyByRefFactory<int, int>(CreateStructPropertyGetter)
+        private static readonly MethodInfo s_createStructPropertyGetterMethod = new GetPropertyByRefFactory<int, int>(CreateStructPropertyGetter!)
             .Method.GetGenericMethodDefinition();
 
-        private static readonly MethodInfo s_createStructPropertySetterMethod = new SetPropertyByRefFactory<int, int>(CreateStructPropertySetter)
+        private static readonly MethodInfo s_createStructPropertySetterMethod = new SetPropertyByRefFactory<int, int>(CreateStructPropertySetter!)
             .Method.GetGenericMethodDefinition();
-        public override JsonClassInfo.ConstructorDelegate CreateConstructor(Type type)
+        public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
-            ConstructorInfo realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+            ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
 
             if (type.IsAbstract)
             {
@@ -49,9 +49,9 @@ namespace System.Text.Json
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
-        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
+        public override ImmutableCollectionCreator? ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
-            MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
+            MethodInfo? createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
 
             if (createRange == null)
             {
@@ -64,7 +64,7 @@ namespace System.Text.Json
                 BindingFlags.NonPublic |
                 BindingFlags.Instance, binder: null,
                 Type.EmptyTypes,
-                modifiers: null);
+                modifiers: null)!;
 
             ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
             creator.RegisterCreatorDelegateFromMethod(createRange);
@@ -72,7 +72,7 @@ namespace System.Text.Json
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
-        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
+        public override ImmutableCollectionCreator? ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             Debug.Assert(collectionType.IsGenericType);
 
@@ -82,7 +82,7 @@ namespace System.Text.Json
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(collectionType, parentType: null, memberInfo: null);
             }
 
-            MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
+            MethodInfo? createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
 
             if (createRange == null)
             {
@@ -95,16 +95,16 @@ namespace System.Text.Json
                 BindingFlags.NonPublic |
                 BindingFlags.Instance, binder: null,
                 Type.EmptyTypes,
-                modifiers: null);
+                modifiers: null)!;
 
             ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }
 
-        public override Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo)
+        public override Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo)
         {
-            MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
+            MethodInfo getMethodInfo = propertyInfo.GetGetMethod()!;
 
             if (typeof(TClass).IsValueType)
             {
@@ -116,16 +116,16 @@ namespace System.Text.Json
             else
             {
                 var propertyGetter = CreateDelegate<GetProperty<TClass, TProperty>>(getMethodInfo);
-                return delegate (object obj)
+                return delegate (object? obj)
                 {
-                    return propertyGetter((TClass)obj);
+                    return propertyGetter((TClass)obj!);
                 };
             }
         }
 
-        public override Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo)
+        public override Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo)
         {
-            MethodInfo setMethodInfo = propertyInfo.GetSetMethod();
+            MethodInfo setMethodInfo = propertyInfo.GetSetMethod()!;
 
             if (typeof(TClass).IsValueType)
             {
@@ -137,9 +137,9 @@ namespace System.Text.Json
             else
             {
                 var propertySetter = CreateDelegate<SetProperty<TClass, TProperty>>(setMethodInfo);
-                return delegate (object obj, TProperty value)
+                return delegate (object? obj, TProperty value)
                 {
-                    propertySetter((TClass)obj, value);
+                    propertySetter((TClass)obj!, value);
                 };
             }
         }

@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
                 array = Array.CreateInstance(probe.GetType(), sourceList.Count);
 
                 int i = 0;
-                foreach (IList child in sourceList)
+                foreach (IList? child in sourceList)
                 {
                     if (child is Array childArray)
                     {

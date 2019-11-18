@@ -17,7 +17,7 @@ namespace System.Text.Json
                 return;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);

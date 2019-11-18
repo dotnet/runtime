@@ -22,7 +22,7 @@ namespace System.Text.Json
                 if (!state.Current.CollectionPropertyInitialized)
                 {
                     // We have bad JSON: enumerable element appeared without preceding StartArray token.
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
                 }
 
                 Type objType = state.Current.GetElementType();
@@ -43,7 +43,7 @@ namespace System.Text.Json
 
             if (state.Current.IsProcessingObject(ClassType.Dictionary))
             {
-                object value = ReadStackFrame.CreateDictionaryValue(ref state);
+                object? value = ReadStackFrame.CreateDictionaryValue(ref state);
 
                 // If value is not null, then we don't have a converter so apply the value.
                 if (value != null)
@@ -81,7 +81,7 @@ namespace System.Text.Json
                 state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
             }
 
-            object value = state.Current.ReturnValue;
+            object? value = state.Current.ReturnValue;
 
             if (state.IsLastFrame)
             {

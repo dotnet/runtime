@@ -9,17 +9,17 @@ namespace System.Text.Json
 {
     internal abstract class MemberAccessor
     {
-        public abstract JsonClassInfo.ConstructorDelegate CreateConstructor(Type classType);
+        public abstract JsonClassInfo.ConstructorDelegate? CreateConstructor(Type classType);
 
         public abstract Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target);
 
-        public abstract ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract ImmutableCollectionCreator? ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
 
-        public abstract ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract ImmutableCollectionCreator? ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
 
-        protected MethodInfo ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
+        protected MethodInfo? ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
         {
-            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
+            MethodInfo? createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
             if (createRangeMethod == null)
             {
@@ -29,9 +29,9 @@ namespace System.Text.Json
             return createRangeMethod.MakeGenericMethod(elementType);
         }
 
-        protected MethodInfo ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
+        protected MethodInfo? ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
         {
-            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
+            MethodInfo? createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
             if (createRangeMethod == null)
             {
@@ -41,7 +41,7 @@ namespace System.Text.Json
             return createRangeMethod.MakeGenericMethod(typeof(string), elementType);
         }
 
-        private MethodInfo FindImmutableCreateRangeMethod(Type constructingType)
+        private MethodInfo? FindImmutableCreateRangeMethod(Type constructingType)
         {
             MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
 
@@ -60,8 +60,8 @@ namespace System.Text.Json
             return null;
         }
 
-        public abstract Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
 
-        public abstract Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
     }
 }

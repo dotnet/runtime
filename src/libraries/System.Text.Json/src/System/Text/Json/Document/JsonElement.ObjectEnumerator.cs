@@ -19,7 +19,7 @@ namespace System.Text.Json
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdxOrVersion;
-            private JsonObjectProperty _current;
+            private JsonObjectProperty? _current;
 
             internal ObjectEnumerator(JsonElement target)
             {
@@ -34,6 +34,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    Debug.Assert(target._parent != null);
                     var jsonObject = (JsonObject)target._parent;
                    _endIdxOrVersion = jsonObject._version;
                 }
@@ -59,7 +60,7 @@ namespace System.Text.Json
                         return default;
                     }
 
-                    var document = (JsonDocument)_target._parent;
+                    var document = (JsonDocument?)_target._parent;
                     return new JsonProperty(new JsonElement(document, _curIdx));
                 }
             }
@@ -143,6 +144,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    Debug.Assert(_target._parent != null);
                     var document = (JsonDocument)_target._parent;
                     _curIdx = document.GetEndIndex(_curIdx, includeEndElement: true);
                 }

@@ -511,7 +511,7 @@ namespace System.Text.Json
                 return false;
             }
 
-            byte[] otherUtf8TextArray = null;
+            byte[]? otherUtf8TextArray = null;
 
             Span<byte> otherUtf8Text;
 

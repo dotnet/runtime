@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -13,10 +14,10 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly partial struct JsonElement
     {
-        internal readonly object _parent;
+        internal readonly object? _parent;
         private readonly int _idx;
 
-        internal JsonElement(JsonDocument parent, int idx)
+        internal JsonElement(JsonDocument? parent, int idx)
         {
             // parent is usually not null, but the Current property
             // on the enumerators (when initialized as `default`) can
@@ -43,7 +44,7 @@ namespace System.Text.Json
         {
             get
             {
-                JsonDocument document = (JsonDocument)_parent;
+                JsonDocument? document = (JsonDocument?)_parent;
                 return document?.GetJsonTokenType(_idx) ?? JsonTokenType.None;
             }
         }
@@ -62,6 +63,7 @@ namespace System.Text.Json
                     return TokenType.ToValueKind();
                 }
 
+                Debug.Assert(_parent != null);
                 var jsonNode = (JsonNode)_parent;
 
                 return jsonNode.ValueKind;
@@ -92,7 +94,7 @@ namespace System.Text.Json
                     return document.GetArrayIndexElement(_idx, index);
                 }
 
-                var jsonNode = (JsonNode)_parent;
+                var jsonNode = (JsonNode)_parent!;
 
                 if (jsonNode is JsonArray jsonArray)
                 {
@@ -122,7 +124,7 @@ namespace System.Text.Json
                 return document.GetArrayLength(_idx);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonArray jsonArray)
             {
@@ -324,11 +326,11 @@ namespace System.Text.Json
                 return document.TryGetNamedPropertyValue(_idx, propertyName, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonObject jsonObject)
             {
-                if (jsonObject.TryGetPropertyValue(propertyName.ToString(), out JsonNode nodeValue))
+                if (jsonObject.TryGetPropertyValue(propertyName.ToString(), out JsonNode? nodeValue))
                 {
                     value = nodeValue.AsJsonElement();
                     return true;
@@ -379,11 +381,11 @@ namespace System.Text.Json
                 return document.TryGetNamedPropertyValue(_idx, utf8PropertyName, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonObject jsonObject)
             {
-                if (jsonObject.TryGetPropertyValue(JsonHelpers.Utf8GetString(utf8PropertyName), out JsonNode nodeValue))
+                if (jsonObject.TryGetPropertyValue(JsonHelpers.Utf8GetString(utf8PropertyName), out JsonNode? nodeValue))
                 {
                     value = nodeValue.AsJsonElement();
                     return true;
@@ -424,7 +426,7 @@ namespace System.Text.Json
                     throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), type);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (_parent is JsonBoolean jsonBoolean)
             {
@@ -454,10 +456,10 @@ namespace System.Text.Json
 
             if (_parent is JsonDocument document)
             {
-                return document.GetString(_idx, JsonTokenType.String);
+                return document.GetString(_idx, JsonTokenType.String)!;
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonString jsonString)
             {
@@ -484,7 +486,7 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public bool TryGetBytesFromBase64(out byte[] value)
+        public bool TryGetBytesFromBase64([NotNullWhen(true)] out byte[]? value)
         {
             CheckValidInstance();
 
@@ -493,7 +495,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonString jsonString)
             {
@@ -522,7 +524,7 @@ namespace System.Text.Json
         /// <seealso cref="ToString"/>
         public byte[] GetBytesFromBase64()
         {
-            if (TryGetBytesFromBase64(out byte[] value))
+            if (TryGetBytesFromBase64(out byte[]? value))
             {
                 return value;
             }
@@ -557,7 +559,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -617,7 +619,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -679,7 +681,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (_parent is JsonNumber jsonNumber)
             {
@@ -739,7 +741,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (_parent is JsonNumber jsonNumber)
             {
@@ -802,7 +804,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -862,7 +864,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -925,7 +927,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -988,7 +990,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -1060,7 +1062,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (_parent is JsonNumber jsonNumber)
             {
@@ -1139,7 +1141,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -1210,7 +1212,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonNumber jsonNumber)
             {
@@ -1273,7 +1275,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonString jsonString)
             {
@@ -1336,7 +1338,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonString jsonString)
             {
@@ -1399,7 +1401,7 @@ namespace System.Text.Json
                 return document.TryGetValue(_idx, out value);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
 
             if (jsonNode is JsonString jsonString)
             {
@@ -1440,7 +1442,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
+            var document = (JsonDocument)_parent!;
             return document.GetNameOfPropertyValue(_idx);
         }
 
@@ -1465,7 +1467,7 @@ namespace System.Text.Json
                 return document.GetRawValueAsString(_idx);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
             return jsonNode.ToJsonString();
         }
 
@@ -1473,7 +1475,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
+            var document = (JsonDocument)_parent!;
             return document.GetPropertyRawValueAsString(_idx);
         }
 
@@ -1492,7 +1494,7 @@ namespace System.Text.Json
         ///   This method is functionally equal to doing an ordinal comparison of <paramref name="text" /> and
         ///   the result of calling <see cref="GetString" />, but avoids creating the string instance.
         /// </remarks>
-        public bool ValueEquals(string text)
+        public bool ValueEquals(string? text)
         {
             // CheckValidInstance is done in the helper
 
@@ -1565,7 +1567,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
+            var document = (JsonDocument)_parent!;
             return document.TextEquals(_idx, utf8Text, isPropertyName);
         }
 
@@ -1573,7 +1575,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
+            var document = (JsonDocument)_parent!;
             return document.TextEquals(_idx, text, isPropertyName);
         }
 
@@ -1605,7 +1607,7 @@ namespace System.Text.Json
             }
             else
             {
-                var jsonNode = (JsonNode)_parent;
+                var jsonNode = (JsonNode)_parent!;
                 jsonNode.WriteTo(writer);
             }
         }
@@ -1787,7 +1789,7 @@ namespace System.Text.Json
                 return document.CloneElement(_idx);
             }
 
-            var jsonNode = (JsonNode)_parent;
+            var jsonNode = (JsonNode)_parent!;
             return jsonNode.Clone().AsJsonElement();
         }
 

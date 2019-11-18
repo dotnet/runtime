@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonConverterUri : JsonConverter<Uri>
     {
-        public override Uri Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Uri Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
         {
-            string uriString = reader.GetString();
-            if (Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out Uri value))
+            string? uriString = reader.GetString();
+            if (Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out Uri? value))
             {
                 return value;
             }
@@ -18,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
             return null;
         }
 
-        public override void Write(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, Uri value, JsonSerializerOptions? options)
         {
             writer.WriteStringValue(value.OriginalString);
         }

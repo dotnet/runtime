@@ -29,7 +29,7 @@ namespace System.Text.Json
         /// </exception>
         public static ValueTask<TValue> DeserializeAsync<TValue>(
             Stream utf8Json,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -60,7 +60,7 @@ namespace System.Text.Json
         public static ValueTask<object> DeserializeAsync(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -75,7 +75,7 @@ namespace System.Text.Json
         private static async ValueTask<TValue> ReadAsync<TValue>(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (options == null)
@@ -197,7 +197,7 @@ namespace System.Text.Json
             // The reader should have thrown if we have remaining bytes.
             Debug.Assert(bytesInBuffer == 0);
 
-            return (TValue)readStack.Current.ReturnValue;
+            return (TValue)readStack.Current.ReturnValue!;
         }
 
         private static void ReadCore(
