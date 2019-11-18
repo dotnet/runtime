@@ -5,6 +5,7 @@ Param(
   [switch]$buildtests,
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
+  [string]$vs,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -56,7 +57,7 @@ if ($MyInvocation.InvocationName -eq ".") {
 }
 
 # VS Test Explorer support for libraries
-if ($vs -and $subsetCategory -eq "libraries") {
+if ($vs) {
   if (-Not (Test-Path $vs)) {
     $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
   }
