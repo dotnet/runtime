@@ -137,6 +137,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnCoreClr("System.Net.Tests are inestable")]
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {
             await WithVirtualConnection(async (server, client) =>

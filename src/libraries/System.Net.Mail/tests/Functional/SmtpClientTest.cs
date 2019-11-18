@@ -347,6 +347,7 @@ namespace System.Net.Mail.Tests
         [InlineData("howdydoo")]
         [InlineData("")]
         [InlineData(null)]
+        [SkipOnCoreClr("System.Net.Tests are inestable")]
         public async Task TestMailDeliveryAsync(string body)
         {
             SmtpServer server = new SmtpServer();
