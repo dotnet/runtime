@@ -13,28 +13,28 @@ Cross compiling CoreCLR
 
 Build using "-arm" as the architecture. For example:
 
-    C:\coreclr> build.cmd -arm -debug
+    C:\runtime> build.cmd -arm -debug
 
 
 Cross Compilation for ARM, ARM64 or x86 on Linux
 ================================================
 
-Through cross compilation, on Linux it is possible to build CoreCLR for arm or arm64.
+Through cross compilation, on Linux it is possible to build CoreCLR for arm or arm64. Note that this documentation exists to explain using `runtime/eng/common/build-rootfs.sh`. This will build a rootfs and then use it to cross build. Newer documentation [linux-instructions.md](linux-instructions.md) exists which leverages docker to use a prebuilt environment to cross build.
 
 Requirements for targetting Debian based distros
 ------------------------------------------------
 
 You need a Debian based host and the following packages need to be installed:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
+    ~/runtime/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
 
 In addition, to cross compile CoreCLR the binutils for the target are required. So for arm you need:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo apt-get install binutils-arm-linux-gnueabihf
+    ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabihf
 
 and conversely for arm64:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo apt-get install binutils-aarch64-linux-gnu
+    ~/runtime/ $ sudo apt-get install binutils-aarch64-linux-gnu
 
 
 Requirements for targetting ARM or ARM64 Alpine Linux
@@ -66,62 +66,36 @@ The `build-rootfs.sh` script must be run as root as it has to make some symlinks
 
 For example, to generate an arm rootfs:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh arm
+    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh arm
 
 You can choose Linux code name to match your target, give `vivid` for `Ubuntu 15.04`, `wily` for `Ubuntu 15.10`. The default is `trusty`, version `Ubuntu 14.04`.
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh arm wily
+    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh arm wily
 
 and if you wanted to generate the rootfs elsewhere:
 
-    ben@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/arm ./eng/common/cross/build-rootfs.sh arm
+    ~/runtime/ $ sudo ROOTFS_DIR=/home/cross/arm ./eng/common/cross/build-rootfs.sh arm
 
 For example, to generate an armel rootfs:
 
-    hqu@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh armel
+    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh armel
 
 You can choose code name to match your target, give `jessie` for `Debian`, `tizen` for `Tizen`. The default is `jessie`.
 
-    hque@ubuntu ~/git/coreclr/ $ sudo ./eng/common/cross/build-rootfs.sh armel tizen
+    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh armel tizen
 
 and if you wanted to generate the rootfs elsewhere:
 
-    hque@ubuntu ~/git/coreclr/ $ sudo ROOTFS_DIR=/home/ben/coreclr-cross/armel ./eng/common/cross/build-rootfs.sh armel tizen
+    ~/runtime/ $ sudo ROOTFS_DIR=/home/armel ./eng/common/cross/build-rootfs.sh armel tizen
 
 
 Cross compiling CoreCLR
 -----------------------
-Once the rootfs has been generated, it will be possible to cross compile CoreCLR. If `ROOTFS_DIR` was set when generating the rootfs, then it must also be set when running `build.sh`.
+`ROOTFS_DIR` must be set when running `build.sh`.
 
-So, without `ROOTFS_DIR`:
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh arm debug verbose cross
 
-    ben@ubuntu ~/git/coreclr/ $ ./build.sh arm debug verbose cross
-
-And with:
-
-    ben@ubuntu ~/git/coreclr/ $ ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose cross
-
-As usual, the resulting binaries will be found in `artifacts/Product/BuildOS.BuildArch.BuildType/`
-
-
-Compiling System.Private.CoreLib for ARM Linux
-==============================================
-
-It is also possible to use a Windows and a Linux machine to build the managed components of CoreCLR for ARM Linux.  This can be useful when the build on the target platform fails, for example due to Mono issues.
-
-Build System.Private.CoreLib on Windows
----------------------------------------
-The following instructions assume you are on a Windows machine with a clone of the CoreCLR repo that has a correctly configured [environment](https://github.com/dotnet/coreclr/wiki/Windows-instructions#environment).
-
-To build System.Private.CoreLib for Linux, run the following command:
-
-```
-D:\git\coreclr> build.cmd linuxmscorlib arm
-```
-
-The arguments `freebsdmscorlib` and `osxmscorlib` can be used instead to build System.Private.CoreLib for FreeBSD or OS X.
-
-The output is at bin\Product\<BuildOS>.arm.Debug\System.Private.CoreLib.dll.
+As usual, the resulting binaries will be found in `artifacts/bin/coreclr/BuildOS.BuildArch.BuildType/`
 
 
 Build System.Private.CoreLib on Ubuntu
@@ -140,45 +114,4 @@ The output is at artifacts/Product/<BuildOS>.arm.Debug/System.Private.CoreLib.dl
     lgs@ubuntu ~/git/coreclr/ $ file ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll
     ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll: PE32 executable (DLL)
     (console) ARMv7 Thumb Mono/.NET assembly, for MS Windows
-```
-
-Building coreclr for Linux ARM Emulator
-=======================================
-
-It is possible to build coreclr binaries (native and System.Private.CoreLib.dll) and run coreclr unit tests on the Linux ARM Emulator (latest version provided here: [#3805](https://github.com/dotnet/coreclr/issues/3805)).
-The `tests/scripts/arm32_ci_script.sh` script does this.
-
-The following instructions assume that:
-* You have set up the extracted emulator at `/opt/linux-arm-emulator` (such that `/opt/linux-arm-emulator/platform/rootfs-t30.ext4` exists)
-The emulator rootfs is of 4GB size by default. But to enable testing of coreclr binaries on the emulator, you need to resize the rootfs (to atleast 7GB) using the instructions given in the `doc/RESIZE-IMAGE.txt` file of the extracted emulator.
-* The mount path for the emulator rootfs is `/opt/linux-arm-emulator-root` (change this path if you have a working directory at this path).
-
-All the following instructions are for the Release mode. Change the commands and files accordingly for the Debug mode.
-
-To just build libcoreclr and System.Private.CoreLib for the Linux ARM Emulator, run the following command:
-```
-prajwal@ubuntu ~/coreclr $ ./tests/scripts/arm32_ci_script.sh \
-    --emulatorPath=/opt/linux-arm-emulator \
-    --mountPath=/opt/linux-arm-emulator-root \
-    --buildConfig=Release \
-    --skipTests
-```
-
-The Linux ARM Emulator is based on soft floating point and thus the native binaries in coreclr are built for the armel architecture. The coreclr binaries generated by the above command (native and System.Private.CoreLib) can be found at `~/coreclr/artifacts/Product/Linux.armel.Release`.
-
-To build libcoreclr and System.Private.CoreLib, and run selected coreclr unit tests on the emulator, do the following:
-* Download the latest Coreclr unit test binaries (or build on Windows) from here: [Debug](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_windows_nt_bld/lastSuccessfulBuild/artifact/artifacts/tests/tests.zip) and [Release](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_windows_nt_bld/lastSuccessfulBuild/artifact/artifacts/tests/tests.zip).
-Setup the binaries at `~/coreclr/artifacts/tests/Windows_NT.x64.Release`.
-* Build corefx binaries for the Emulator as given [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-building.md#building-corefx-for-linux-arm-emulator).
-Setup these binaries at `~/corefx/artifacts/Linux.arm-softfp.Release`, `~/corefx/artifacts/Linux.AnyCPU.Release`, `~/corefx/artifacts/Unix.AnyCPU.Release`, and `~/corefx/artifacts/AnyOS.AnyCPU.Release`.
-* Run the following command (change value of `--testDirFile` argument to the file containing your selection of tests):
-```
-prajwal@ubuntu ~/coreclr $ ./tests/scripts/arm32_ci_script.sh \
-    --emulatorPath=/opt/linux-arm-emulator \
-    --mountPath=/opt/linux-arm-emulator-root \
-    --buildConfig=Release \
-    --testRootDir=~/coreclr/artifacts/tests/Windows_NT.x64.Release \
-    --coreFxNativeBinDir=~/corefx/artifacts/Linux.arm-softfp.Release \
-    --coreFxBinDir="~/corefx/artifacts/Linux.AnyCPU.Release;~/corefx/artifacts/Unix.AnyCPU.Release;~/corefx/artifacts/AnyOS.AnyCPU.Release" \
-    --testDirFile=~/coreclr/tests/testsRunningInsideARM.txt
 ```

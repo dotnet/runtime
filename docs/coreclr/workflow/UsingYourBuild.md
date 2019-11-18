@@ -3,11 +3,8 @@
 
 We assume that you have successfully built CoreCLR repository and thus have files of the form
 ```
-    bin\Product\<OS>.<arch>.<flavor>\
+    ~/runtime/artifacts/bin/coreclr/<OS>.<arch>.<flavor>/
 ```
-And now you wish to try it out.  We will be using Windows OS as an example and thus will use \ rather
-than / for directory separators and things like Windows_NT instead of Linux but it should be
-pretty obvious how to adapt these instructions for other operating systems.
 
 To run your newly built .NET Core Runtime in addition to the application itself, you will need
 a 'host' program that will load the Runtime as well as all the other .NET Core Framework
@@ -85,7 +82,7 @@ dotnet publish
 After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp3.0\win-x64\publish\`.
 
 ```
-.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 **But we are not done yet, you need to replace the published runtime files with the files from your local build!**
@@ -103,8 +100,8 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
   this DLL.
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
 
-Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
-directory to your publication directory (e.g. `helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish`) to quickly
+Thus after making a change and building, you can simply copy the updated binary from the `artifacts\bin\coreclr\<OS>.<arch>.<flavor>`
+directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish`) to quickly
 deploy your new bits. In a lot of cases it is easiest to just copy everything from here to your publication directory.
 
 You can build just the .NET Library part of the build by doing (debug, for release add 'release' qualifier)
@@ -138,7 +135,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 ### If it's not using your copied binary
@@ -146,7 +143,7 @@ The location is C:\coreclr\helloWorld\artifacts\Debug\netcoreapp3.0\win-x64\publ
 Make sure you are running the exe directly. If you use `dotnet run` it will overwrite your custom binaries before executing the app:
 
 ```
-.\artifacts\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 ### If you get a consistency check assertion failure

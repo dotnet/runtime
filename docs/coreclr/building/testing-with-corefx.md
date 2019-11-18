@@ -16,17 +16,12 @@ as it is optimized for our distributed Helix test running system.
 
 # Building CoreFX against CoreCLR
 
-In all cases, first build the version of CoreCLR that you wish to test. You do not need to build the coreclr tests. Typically, this will be a Checked build (faster than Debug, but with asserts that Release builds do not have). In the examples here, coreclr is assumed to be cloned to `f:\git\coreclr`.
+In all cases, first build the version of CoreCLR that you wish to test. You do not need to build the coreclr tests. Typically, this will be a Checked build (faster than Debug, but with asserts that Release builds do not have). In the examples here, coreclr is assumed to be cloned to `f:\git\runtime`.
 
 For example:
 ```
-f:\git\coreclr> build.cmd x64 checked skiptests
+f:\git\runtime> src\coreclr\build.cmd x64 checked skiptests
 ```
-
-Next, build CoreFX from a clone of the [CoreFX repo](https://github.com/dotnet/corefx).
-For these examples, CoreFX is assumed to be cloned to `f:\git\corefx`. For general
-information about how to build CoreFX, refer to the
-[CoreFX Developer Guide](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md).
 
 Normally when you build CoreFX it is built against a "last known good" Release version of CoreCLR.
 
@@ -40,12 +35,8 @@ Option #2 is generally recommended.
 
 ## Building CoreFX against just-built CoreCLR
 
-To build CoreFX tests against a current, "live", version of CoreCLR, including with an updated System.Private.CoreLib.dll,
-[use these instructions](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).
-
-For example:
 ```
-f:\git\corefx> build.cmd -configuration Release -arch x64 -restore -build -buildtests -test /p:CoreCLROverridePath=f:\git\coreclr\artifacts\Product\Windows_NT.x64.Checked
+f:\git\runtime> src\libraries\build.cmd -configuration Release -arch x64 -restore -build -buildtests -test /p:CoreCLROverridePath=f:\git\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked
 ```
 
 Note that this will replace the coreclr used in the build, and because `-test` is passed, will also run the tests.
@@ -57,39 +48,28 @@ Do the following:
 1. Build the CoreFX repo, but don't build tests yet.
 
 ```
-f:\git\corefx> build.cmd -configuration Release -arch x64 -restore -build
+f:\git\runtime> src\libraries\build.cmd -configuration Release -arch x64 -restore -build
 ```
 
-This creates a "testhost" directory with a subdirectory that includes the coreclr bits, e.g., `f:\git\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0`.
+This creates a "testhost" directory with a subdirectory that includes the coreclr bits, e.g., `f:\git\runtime\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0`.
 
 2. Copy the contents of the CoreCLR build you wish to test into the CoreFX runtime
 folder created in step #1.
 
 ```
-f:\git\corefx> copy f:\git\coreclr\artifacts\Product\Windows_NT.x64.Checked\* f:\git\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0
+f:\git\runtime> copy f:\git\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\* f:\git\runtime\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\3.0.0
 ```
 
 3. Optionally, create a script that contains any environment variables you want to set when running each CoreFX test. Disabling TieredCompilation or setting a JIT stress mode is a common case. E.g.,
 
 ```
-f:\git\corefx> echo set COMPlus_TieredCompilation=0>f:\git\corefx\SetStressModes.bat
+f:\git\runtime> echo set COMPlus_TieredCompilation=0>f:\git\runtime\SetStressModes.bat
 ```
 
 4. Build and run the CoreFX tests. Optionally, pass in a file that will be passed to xunit to provide extra xunit arguments. Typically, this is used to exclude known failing tests.
 
 ```
-f:\git\corefx> build.cmd -configuration Release -arch x64 -buildtests -test /p:WithoutCategories=IgnoreForCI /p:PreExecutionTestScript=f:\git\corefx\SetStressModes.bat /p:TestRspFile=f:\git\coreclr\tests\CoreFX\CoreFX.issues.rsp
-```
-
-## Automating the CoreFX build and test run process
-
-The script [tests\scripts\run-corefx-tests.py](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.py) clones the corefx repo, and then implements Option 2, described above. This simplifies the whole process to a single script invocation.
-
-First, build CoreCLR as usual. Then, invoke the script. Specify the build architecture, the build type, where you want corefx to be put, optionally a script of environment variables to set before running the tests, and optionally a test exclusion file (as above). For example:
-
-```
-f:\git\coreclr> echo set COMPlus_TieredCompilation=0>f:\git\coreclr\SetStressModes.bat
-f:\git\coreclr> python -u f:\git\coreclr\tests\scripts\run-corefx-tests.py -arch x64 -build_type Checked -fx_root f:\git\coreclr\_fx -env_script f:\git\coreclr\SetStressModes.bat -exclusion_rsp_file f:\git\coreclr\tests\CoreFX\CoreFX.issues.rsp
+f:\git\runtime> src\libraries\build.cmd -configuration Release -arch x64 -buildtests -test /p:WithoutCategories=IgnoreForCI /p:PreExecutionTestScript=f:\git\runtime\SetStressModes.bat /p:TestRspFile=f:\git\runtime\src\coreclr\tests\CoreFX\CoreFX.issues.rsp
 ```
 
 ## Handling cross-compilation testing
@@ -107,8 +87,8 @@ the tests will be built but not run.
 If using `run-corefx-tests.py`, pass the argument `-no_run_tests`.
 
 After the tests are copied to the remote machine, you want to run them. Use one of the scripts
-[tests\scripts\run-corefx-tests.bat](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.bat) or
-[tests\scripts\run-corefx-tests.sh](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.sh)
+[tests\scripts\run-corefx-tests.bat](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/scripts/run-corefx-tests.bat) or
+[tests\scripts\run-corefx-tests.sh](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/scripts/run-corefx-tests.sh)
 to run all the tests (consult the scripts for proper usage). Or, run a single test as described below.
 
 ## Running a single CoreFX test assembly
@@ -116,15 +96,15 @@ to run all the tests (consult the scripts for proper usage). Or, run a single te
 Once you've built the CoreFX tests (possibly with replaced CoreCLR bits), you can also run just a single test. E.g.,
 
 ```
-f:\git\corefx> cd f:\git\corefx\artifacts\bin\System.Buffers.Tests\netcoreapp-Release
-f:\git\corefx\artifacts\bin\System.Buffers.Tests\netcoreapp-Release> RunTests.cmd -r f:\git\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64
+f:\git\runtime> cd f:\git\runtime\artifacts\bin\System.Buffers.Tests\netcoreapp-Release
+f:\git\runtime\artifacts\bin\System.Buffers.Tests\netcoreapp-Release> RunTests.cmd -r f:\git\runtime\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64
 ```
 
 Alternatively, you can run the tests from from the test source directory, as follows:
 
 ```
-f:\git\corefx> cd f:\git\corefx\src\System.Buffers\tests
-f:\git\corefx\src\System.Buffers\tests> dotnet msbuild /t:Test /p:ForceRunTests=true;ConfigurationGroup=Release
+f:\git\runtime> cd f:\git\runtime\src\System.Buffers\tests
+f:\git\runtime\src\System.Buffers\tests> dotnet msbuild /t:Test /p:ForceRunTests=true;ConfigurationGroup=Release
 ```
 
 # Using a published snapshot of CoreFX tests
@@ -139,13 +119,13 @@ are restored, and the CoreCLR to test is copied in.
 
 For Windows:
 
-1. `.\build.cmd <arch> <build_type> skiptests` -- build the CoreCLR you want to test
-2. `.\build-test.cmd <arch> <build_type> buildtesthostonly` -- this generates the test host
+1. `.\src\coreclr\build.cmd <arch> <build_type> skiptests` -- build the CoreCLR you want to test
+2. `.\src\coreclr\build-test.cmd <arch> <build_type> buildtesthostonly` -- this generates the test host
 
 For Linux and macOS:
 
-1. `./build.sh <arch> <build_type> skiptests`
-2. `./build-test.sh <arch> <build_type> generatetesthostonly`
+1. `./src/coreclr/build.sh <arch> <build_type> skiptests`
+2. `./src/coreclr/build-test.sh <arch> <build_type> generatetesthostonly`
 
 The published tests are summarized in a `corefx-test-assets.xml` file that lives here:
 
@@ -174,4 +154,4 @@ section should be used instead, if possible.
 
 The CoreCLR CI system runs CoreFX tests against a just-built CoreCLR. If tests need to be
 disabled due to transitory breaking change, for instance, update the
-[test exclusion file](https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp).
+[test exclusion file](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/CoreFX/CoreFX.issues.rsp).
