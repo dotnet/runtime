@@ -398,7 +398,7 @@ namespace System.Text.RegularExpressions
         };
 
         private readonly List<SingleRange> _rangelist;
-        private readonly StringBuilder _categories;
+        private StringBuilder? _categories;
         private bool _canonical;
         private bool _negate;
         private RegexCharClass? _subtractor;
@@ -428,7 +428,6 @@ namespace System.Text.RegularExpressions
         {
             _rangelist = new List<SingleRange>(6);
             _canonical = true;
-            _categories = new StringBuilder();
         }
 
         private RegexCharClass(bool negate, List<SingleRange> ranges, StringBuilder categories, RegexCharClass? subtraction)
@@ -480,8 +479,14 @@ namespace System.Text.RegularExpressions
                 _rangelist.Add(cc.GetRangeAt(i));
             }
 
-            _categories.Append(cc._categories.ToString());
+            if (cc._categories != null)
+            {
+                EnsureCategories().Append(cc._categories);
+            }
         }
+
+        private StringBuilder EnsureCategories() =>
+            _categories ??= new StringBuilder();
 
         /// <summary>
         /// Adds a set (specified by its string representation) to the class.
@@ -537,7 +542,7 @@ namespace System.Text.RegularExpressions
                 if (invert)
                     category = NegateCategory(category); // negate the category
 
-                _categories.Append(category);
+                EnsureCategories().Append(category);
             }
             else
                 AddSet(SetFromProperty(categoryName, invert, pattern, currentPos));
@@ -545,7 +550,7 @@ namespace System.Text.RegularExpressions
 
         private void AddCategory(string category)
         {
-            _categories.Append(category);
+            EnsureCategories().Append(category);
         }
 
         /// <summary>
@@ -1026,8 +1031,9 @@ namespace System.Text.RegularExpressions
             // make a guess about the length of the ranges.  We'll update this at the end.
             // This is important because if the last range ends in LastChar, we won't append
             // LastChar to the list.
+            int categoriesLength = _categories?.Length ?? 0;
             int rangeLen = _rangelist.Count * 2;
-            int strGuessCount = rangeLen + _categories.Length + 3;
+            int strGuessCount = rangeLen + categoriesLength + 3;
 
             Span<char> buffer = strGuessCount <= 256 ? stackalloc char[256] : null;
             ValueStringBuilder vsb = buffer != null ?
@@ -1038,7 +1044,7 @@ namespace System.Text.RegularExpressions
 
             vsb.Append((char)flags);
             vsb.Append((char)rangeLen);
-            vsb.Append((char)_categories.Length);
+            vsb.Append((char)categoriesLength);
 
             for (int i = 0; i < _rangelist.Count; i++)
             {
@@ -1052,9 +1058,12 @@ namespace System.Text.RegularExpressions
             vsb[SETLENGTH] = (char)(vsb.Length - SETSTART);
 
             // Append the categories string
-            foreach (ReadOnlyMemory<char> chunk in _categories.GetChunks())
+            if (_categories != null)
             {
-                vsb.Append(chunk.Span);
+                foreach (ReadOnlyMemory<char> chunk in _categories.GetChunks())
+                {
+                    vsb.Append(chunk.Span);
+                }
             }
 
             if (_subtractor != null)
