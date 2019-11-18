@@ -11,13 +11,8 @@
     <OSGroup>$(BuildOS)</OSGroup>
     <BuildCoreCLRDependency>false</BuildCoreCLRDependency>
     <BuildLibrariesDependency>false</BuildLibrariesDependency>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
   </PropertyGroup>
-  <ItemGroup Condition="'$(__SkipFXRestore)' != 'true'" >
-    <PackageReference Include="System.Security.Permissions" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Drawing.Common" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
   </ItemGroup>

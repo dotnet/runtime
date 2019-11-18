@@ -70,7 +70,7 @@
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
-    <!-- binplace to directories for packages -->
+    <!-- binplace the shared framework -->
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
@@ -78,6 +78,11 @@
       <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(ConfigurationGroup)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
+    </BinPlaceConfiguration>
+
+    <!-- Binplace the OOB libraries built in the netcoreapp build. -->
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' != 'true' and '$(IsSourceProject)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(ArtifactsBinDir)pkg\oob\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
