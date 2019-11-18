@@ -1,7 +1,5 @@
 # Issue and Pull Request Management
 The purpose of this document is to help establish norms and best practices for dotnet/runtime.  The outcomes from this document should be translated into the respective documentation within dotnet/runtime, though initially it will be a standalone document.
-
-This document covers the norms and best practices for issues and pull requests management.  There is a particular focus on areas that overlap across various communities/teams and areas where individual communities/teams can have their own mechanisms for doing business.
 # Principles
 Here are a guiding set of principles of how to successfully combine the communities and teams which work together in dotnet/runtime.
 - Retain a 'one community/team' feel for dotnet/runtime
