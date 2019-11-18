@@ -23,6 +23,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/20246", RuntimeStressTestModes.CheckedRuntime)]
         [InlineData(2 * 6_584_983 - 2)] // previous limit
         [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
         public void SerializeHugeObjectGraphs(int limit)

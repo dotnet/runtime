@@ -12,6 +12,7 @@
     <IncludeUtf8StringAsmRef>true</IncludeUtf8StringAsmRef>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="System\Char8Tests.cs" />
     <Compile Include="System\MemoryTests.cs" />
     <Compile Include="System\Net\Http\Utf8StringContentTests.cs" />

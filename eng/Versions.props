@@ -37,7 +37,7 @@
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.19567.2</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>5.0.0-beta.19567.2</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.19567.2</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.19567.2</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-dev</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19567.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.19567.2</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.19567.2</MicrosoftDotNetRemoteExecutorVersion>
