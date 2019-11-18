@@ -72,7 +72,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: download-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
@@ -90,7 +90,7 @@ jobs:
 
 
     # Zip and publish managed test components
-    - template: upload-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
       parameters:
         rootFolder: $(testRootFolderPath)
         includeRootFolder: false
@@ -103,7 +103,7 @@ jobs:
 
     # Publish .packages/microsoft.net.sdk.il needed for traversing
     # test projects during the copynativeonly command in run test job.
-    - template: upload-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
       parameters:
         rootFolder: $(microsoftNetSdkIlFolderPath)
         includeRootFolder: false

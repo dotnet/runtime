@@ -102,7 +102,7 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: download-artifact-step.yml
+      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testRootFolderPath)'
           artifactFileName: '$(testArtifactName)$(archiveExtension)'
@@ -112,7 +112,7 @@ jobs:
 
     # Download and unzip test build tree
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: download-artifact-step.yml
+      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testBuildRootFolderPath)'
           cleanUnpackFolder: false
@@ -122,7 +122,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: download-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
@@ -133,7 +133,7 @@ jobs:
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: download-artifact-step.yml
+      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
         parameters:
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
           artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
@@ -143,7 +143,7 @@ jobs:
 
     # Download and unzip native test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: download-artifact-step.yml
+      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testNativeRootFolderPath)'
           artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
@@ -182,7 +182,7 @@ jobs:
 
 
     # Send tests to Helix
-    - template: send-to-helix-step.yml
+    - template: /eng/pipelines/coreclr/templates/send-to-helix-step.yml
       parameters:
         displayName: Send tests to Helix
         buildConfig: $(buildConfigUpper)

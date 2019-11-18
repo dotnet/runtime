@@ -24,7 +24,7 @@ jobs:
     fetchDepth: 5
 
   ### Zip up downloaded repo and publish to Helix
-  - template: upload-artifact-step.yml
+  - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
     parameters:
       displayName: 'GIT repository (Windows)'
       rootFolder: $(Build.SourcesDirectory)
@@ -53,7 +53,7 @@ jobs:
     fetchDepth: 5
 
   ### Zip up downloaded repo and publish to Helix
-  - template: upload-artifact-step.yml
+  - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
     parameters:
       displayName: 'GIT repository (Unix)'
       rootFolder: $(Build.SourcesDirectory)

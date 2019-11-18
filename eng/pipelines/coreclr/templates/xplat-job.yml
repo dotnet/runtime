@@ -22,7 +22,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: job.yml
+- template: /eng/common/templates/job/job.yml
   parameters:
 
     name: ${{ parameters.name }}
@@ -168,7 +168,7 @@ jobs:
       clean: true
 
     # Download the GIT repository
-    - template: download-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
       parameters:
         displayName: 'GIT repository'
         cleanUnpackFolder: false
