@@ -1934,7 +1934,6 @@ namespace System.Text.RegularExpressions
                     Back();
                     break;
 
-
                 case RegexCode.Setjump:
                     //: Stack(Trackpos(), Crawlpos());
                     //: Track();
@@ -2247,7 +2246,6 @@ namespace System.Text.RegularExpressions
                         Stloc(_textposV!);
                         break;
                     }
-
 
                 case RegexCode.Multi | RegexCode.Rtl:
                 case RegexCode.Multi | RegexCode.Ci | RegexCode.Rtl:

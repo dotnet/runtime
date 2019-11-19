@@ -84,8 +84,7 @@ namespace System.Text.RegularExpressions
 
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
-            Span<RegexOptions> optionSpan = stackalloc RegexOptions[OptionStackDefaultSize];
-            var parser = new RegexParser(pattern, options, culture, optionSpan);
+            var parser = new RegexParser(pattern, options, culture, stackalloc RegexOptions[OptionStackDefaultSize]);
 
             parser.CountCaptures();
             parser.Reset(options);
@@ -103,8 +102,7 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            Span<RegexOptions> optionSpan = stackalloc RegexOptions[OptionStackDefaultSize];
-            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, optionSpan);
+            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc RegexOptions[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
             var regexReplacement = new RegexReplacement(pattern, root, caps);
@@ -136,9 +134,8 @@ namespace System.Text.RegularExpressions
             // characters need to be encoded.
             // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
-            Span<char> buffer = input.Length <= (EscapeMaxBufferSize / 3) ? stackalloc char[EscapeMaxBufferSize] : default;
-            ValueStringBuilder vsb = !buffer.IsEmpty ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder vsb = input.Length <= (EscapeMaxBufferSize / 3) ?
+                new ValueStringBuilder(stackalloc char[EscapeMaxBufferSize]) :
                 new ValueStringBuilder(input.Length + 200);
 
             char ch = input[i];
@@ -199,14 +196,12 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            Span<RegexOptions> optionSpan = stackalloc RegexOptions[OptionStackDefaultSize];
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, optionSpan);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc RegexOptions[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.
-            Span<char> buffer = input.Length <= EscapeMaxBufferSize ? stackalloc char[EscapeMaxBufferSize] : default;
-            ValueStringBuilder vsb = !buffer.IsEmpty ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder vsb = input.Length <= EscapeMaxBufferSize ?
+                new ValueStringBuilder(stackalloc char[EscapeMaxBufferSize]) :
                 new ValueStringBuilder(input.Length);
 
             vsb.Append(input.AsSpan(0, i));

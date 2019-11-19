@@ -129,8 +129,7 @@ namespace System.Text.RegularExpressions
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
             RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize,
                 _regex.capnames!, _regex.roptions);
-            Span<char> charInitSpan = stackalloc char[ReplaceBufferSize];
-            var vsb = new ValueStringBuilder(charInitSpan);
+            var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
 
             repl.ReplacementImpl(ref vsb, this);
 

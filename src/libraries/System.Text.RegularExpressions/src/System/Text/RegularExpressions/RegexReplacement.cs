@@ -33,8 +33,7 @@ namespace System.Text.RegularExpressions
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
-            Span<char> buffer = stackalloc char[256];
-            ValueStringBuilder vsb = new ValueStringBuilder(buffer);
+            ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[256]);
             List<string> strings = new List<string>();
             List<int> rules = new List<int>();
 
@@ -203,8 +202,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                Span<char> charInitSpan = stackalloc char[256];
-                var vsb = new ValueStringBuilder(charInitSpan);
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
 
                 if (!regex.RightToLeft)
                 {

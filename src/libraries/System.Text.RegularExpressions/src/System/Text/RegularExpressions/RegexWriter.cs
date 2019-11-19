@@ -49,10 +49,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static RegexCode Write(RegexTree tree)
         {
-            Span<int> emittedSpan = stackalloc int[EmittedSize];
-            Span<int> intStackSpan = stackalloc int[IntStackSize];
-
-            var writer = new RegexWriter(emittedSpan, intStackSpan);
+            var writer = new RegexWriter(stackalloc int[EmittedSize], stackalloc int[IntStackSize]);
             RegexCode code = writer.RegexCodeFromRegexTree(tree);
             writer.Dispose();
 
