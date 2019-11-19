@@ -1,4 +1,36 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Get paths from packages that are needed for crossgen. Only relevant for runtime-specific builds.
+  -->
+  <Target Name="GetCorePackagePaths"
+          DependsOnTargets="ResolveReferences">
+    <PropertyGroup>
+      <_winmdPackageDir>$(NuGetPackageRoot)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTVersion)/</_winmdPackageDir>
+      <_diaSymReaderPackageDir>$(NuGetPackageRoot)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativeVersion)/</_diaSymReaderPackageDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">
+      <_crossHostArch>x86</_crossHostArch>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup>
+    <PropertyGroup>
+      <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_requiredProperty Include="_winmdPackageDir" />
+    </ItemGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+  </Target>
+
   <Target Name="GetCrossgenToolPaths"
           DependsOnTargets="GetCorePackagePaths">
     <ItemGroup>
