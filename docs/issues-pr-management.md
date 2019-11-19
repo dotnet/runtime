@@ -23,7 +23,7 @@ Here are a few of the most salient components of working well together, and the 
 - ProjectBoards/ZenHub – some aspects of these project boards are shared across all users.
 - Wikis/GitActions – these resources are global and are disabled
 ## Scenarios where area owners will be asked to manage their issues and pull requests:
-- All issues with the `untriaged` label are considered untriaged and close to release team will be asked to triage them.
+- All issues with the `untriaged` label are considered untriaged and close to product release, teams will be asked to triage them.
 - During a release endgame and for servicing, issues and pull requests targeting a particular release will be asked to have a milestone set.
 - All pull requests should be 'squash on merge', except for merges across branches and other extraneous circumstances
 # FAQ
