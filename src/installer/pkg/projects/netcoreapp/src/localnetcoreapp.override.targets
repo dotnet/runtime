@@ -35,9 +35,6 @@
           DependsOnTargets="GetCorePackagePaths">
     <ItemGroup>
       <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
-      <_runtimeCLR Include="$(_runtimePackageDir)**/$(LibraryFilePrefix)coreclr$(LibraryFileExtension)" />
-      <_runtimeCoreLib Include="$(_runtimePackageDir)**/native/System.Private.CoreLib.dll" />
-      <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
       <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
@@ -47,16 +44,13 @@
       <_crossGenPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', 'crossgen$(ApplicationFileExtension)'))</_crossGenPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'@(_runtimeCoreLib)' != ''">
+    <PropertyGroup>
       <_coreLibDirectory>$(CoreCLRArtifactsPath)</_coreLibDirectory>
+      <_fxLibDirectory>$(LibrariesSharedFrameworkBinArtifactsPath)</_fxLibDirectory>
     </PropertyGroup>
 
     <PropertyGroup>
       <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'@(_fxSystemRuntime)' != ''">
-      <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
     </PropertyGroup>
 
     <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
@@ -89,6 +83,7 @@
       <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
       <!-- the following need not be passed to crossgen but we do so to be safe. -->
       <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+      <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
     </ItemGroup>
 
     <PropertyGroup>
