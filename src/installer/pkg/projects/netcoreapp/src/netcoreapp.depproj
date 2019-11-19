@@ -7,8 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(MicrosoftNETCorePlatformsPackage)" Version="$(MicrosoftNETCorePlatformsVersion)" />
-    <PackageReference Include="$(MicrosoftNETCoreTargetsPackage)" Version="$(MicrosoftNETCoreTargetsVersion)" />
     <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryVersion)" />
   </ItemGroup>
 
@@ -18,11 +16,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
-         Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
+    <!-- Bring in NETStandard.Library for build-tools. -->
     <DependenciesToPackage Include="NETStandard.Library" />
-    <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
-    <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
   </ItemGroup>
 
   <!-- get paths from packages that are needed for cross-gen and other includes,

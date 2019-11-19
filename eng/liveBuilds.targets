@@ -122,4 +122,9 @@
     <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The libraries subset category must be built before building this project." />
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The libraries subset category must be built before building this project." />
   </Target>
+
+  <PropertyGroup>
+    <LiveRuntimeIdentifierGraphPath>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</LiveRuntimeIdentifierGraphPath>
+    <RuntimeIdentifierGraphPath Condition="'$(UseLiveRuntimeIdentifierGraph)' == 'true'">$(LiveRuntimeIdentifierGraphPath)</RuntimeIdentifierGraphPath>
+  </PropertyGroup>
 </Project>
