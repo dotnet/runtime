@@ -1948,7 +1948,7 @@ namespace System.Text.RegularExpressions
         /*
          * For categorizing ASCII characters.
         */
-        private static readonly byte[] s_category = new byte[] {
+        private static ReadOnlySpan<byte> Category => new byte[] {
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
                0, 0, 0, 0, 0, 0, 0, 0, 0, X, X, 0, X, X, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             //    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
@@ -1963,7 +1963,7 @@ namespace System.Text.RegularExpressions
          */
         private static bool IsSpecial(char ch)
         {
-            return (ch <= '|' && s_category[ch] >= S);
+            return (ch <= '|' && Category[ch] >= S);
         }
 
         /*
@@ -1971,7 +1971,7 @@ namespace System.Text.RegularExpressions
          */
         private static bool IsStopperX(char ch)
         {
-            return (ch <= '|' && s_category[ch] >= X);
+            return (ch <= '|' && Category[ch] >= X);
         }
 
         /*
@@ -1979,7 +1979,7 @@ namespace System.Text.RegularExpressions
          */
         private static bool IsQuantifier(char ch)
         {
-            return (ch <= '{' && s_category[ch] >= Q);
+            return (ch <= '{' && Category[ch] >= Q);
         }
 
         private bool IsTrueQuantifier()
@@ -1989,7 +1989,7 @@ namespace System.Text.RegularExpressions
             int startpos = Textpos();
             char ch = CharAt(startpos);
             if (ch != '{')
-                return ch <= '{' && s_category[ch] >= Q;
+                return ch <= '{' && Category[ch] >= Q;
 
             int pos = startpos;
             int nChars = CharsRight();
@@ -2014,7 +2014,7 @@ namespace System.Text.RegularExpressions
          */
         private static bool IsSpace(char ch)
         {
-            return (ch <= ' ' && s_category[ch] == X);
+            return (ch <= ' ' && Category[ch] == X);
         }
 
         /*
@@ -2022,7 +2022,7 @@ namespace System.Text.RegularExpressions
          */
         private static bool IsMetachar(char ch)
         {
-            return (ch <= '|' && s_category[ch] >= E);
+            return (ch <= '|' && Category[ch] >= E);
         }
 
 
