@@ -172,9 +172,9 @@ namespace System.Xml.Linq.Tests
         }
 
         [Fact]
-        public void DifferentNamespaceAndSameNameeProduceDifferentInstance()
+        public void DifferentNamespaceAndSameNameProduceDifferentInstance()
         {
-            XName a = "{A2WVL}A2WVK", b = "{A2WVK}A2WVK";
+            XName a = "{A2WVLA}A2WVKA", b = "{A2WVKA}A2WVKA";
             Assert.NotSame(a.Namespace, b.Namespace);
             Assert.NotSame(a, b);
             Assert.NotSame(a.ToString(), b.ToString());
@@ -184,8 +184,8 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void DefaultNamespaceSameNameProduceSameInstance()
         {
-            XName a = "A2WVK";
-            var b = new XElement("A2WVK");
+            XName a = "A2WVKB";
+            var b = new XElement("A2WVKB");
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.Same(a, b.Name);
             Assert.Same(XNamespace.None, a.Namespace);
@@ -195,8 +195,8 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void SameNamespaceDifferentNameProduceDifferentInstance()
         {
-            XName a = "{A2WVL}A2WVK";
-            var b = new XElement("{A2WVL}A2WVL");
+            XName a = "{A2WVLC}A2WVKC";
+            var b = new XElement("{A2WVLC}A2WVLC");
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.NotSame(a, b.Name);
             Assert.Same(a.Namespace.ToString(), b.Name.Namespace.ToString());

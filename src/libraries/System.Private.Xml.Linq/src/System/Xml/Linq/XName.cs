@@ -58,7 +58,7 @@ namespace System.Xml.Linq
         public override string ToString()
         {
             if (_namespaceName.Length == 0) return _localName;
-            return $"{{{_namespaceName}}}{_localName}";
+            return "{" + _namespaceName + "}" + _localName;
         }
 
         /// <summary>
