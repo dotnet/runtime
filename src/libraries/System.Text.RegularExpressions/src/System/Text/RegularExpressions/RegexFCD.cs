@@ -54,10 +54,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static RegexPrefix? FirstChars(RegexTree t)
         {
-            // Create/rent buffers
-            Span<int> intSpan = stackalloc int[StackBufferSize];
-
-            RegexFCD s = new RegexFCD(intSpan);
+            RegexFCD s = new RegexFCD(stackalloc int[StackBufferSize]);
             RegexFC? fc = s.RegexFCFromRegexTree(t);
             s.Dispose();
 

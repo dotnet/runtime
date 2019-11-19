@@ -1070,9 +1070,8 @@ namespace System.Text.RegularExpressions
             int rangeLen = _rangelist.Count * 2;
             int strGuessCount = rangeLen + categoriesLength + 3;
 
-            Span<char> buffer = strGuessCount <= 256 ? stackalloc char[256] : null;
-            ValueStringBuilder vsb = buffer != null ?
-                new ValueStringBuilder(buffer) :
+            ValueStringBuilder vsb = strGuessCount <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(strGuessCount);
 
             int flags = _negate ? 1 : 0;
