@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -37,7 +38,6 @@ using Mono.Cecil.PE;
 namespace Mono.Linker.Steps {
 
 	public class OutputStep : BaseStep {
-
 		private static Dictionary<UInt16, TargetArchitecture> architectureMap;
 
 		private enum NativeOSOverride {
@@ -46,6 +46,12 @@ namespace Mono.Linker.Steps {
 			Linux = 0x7b79,
 			NetBSD = 0x1993,
 			Default = 0
+		}
+
+		List<string> assembliesWritten;
+
+		public OutputStep () {
+			assembliesWritten = new List<string> ();
 		}
 
 		static TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
@@ -72,6 +78,15 @@ namespace Mono.Linker.Steps {
 		{
 			CheckOutputDirectory ();
 			Tracer.Finish ();
+		}
+
+		protected override void EndProcess ()
+		{
+			if (Context.AssemblyListFile != null) {
+				using (var w = File.CreateText (Context.AssemblyListFile)) {
+					w.WriteLine ("[" + String.Join (", ", assembliesWritten.Select (a => "\"" + a + "\"").ToArray ()) + "]");
+				}
+			}
 		}
 
 		void CheckOutputDirectory ()
@@ -127,12 +142,14 @@ namespace Mono.Linker.Steps {
 				Context.Tracer.AddDependency (assembly);
 				WriteAssembly (assembly, directory);
 				CopySatelliteAssembliesIfNeeded (assembly, directory);
+				assembliesWritten.Add (GetOriginalAssemblyFileInfo (assembly).Name);
 				break;
 			case AssemblyAction.Copy:
 				Context.Tracer.AddDependency (assembly);
 				CloseSymbols (assembly);
 				CopyAssembly (assembly, directory);
 				CopySatelliteAssembliesIfNeeded (assembly, directory);
+				assembliesWritten.Add (GetOriginalAssemblyFileInfo (assembly).Name);
 				break;
 			case AssemblyAction.Delete:
 				CloseSymbols (assembly);
