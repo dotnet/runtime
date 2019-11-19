@@ -4,6 +4,9 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net46</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Duplicating the assembly path here as CoreClr current overrides the Configuration property. -->
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(IntermediateOutputPath)netstandard2.0\installer.tasks.dll</InstallerTasksAssemblyPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(IntermediateOutputPath)net46\installer.tasks.dll</InstallerTasksAssemblyPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,8 +40,10 @@
     <Reference Include="System.IO.Compression" />
   </ItemGroup>
 
-  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <Target Name="CreateHostMachineInfoFile">
+  <UsingTask TaskName="GetTargetMachineInfo"
+             AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <Target Name="CreateHostMachineInfoFile"
+          AfterTargets="DispatchToInnerBuilds">
     <GetTargetMachineInfo>
       <Output PropertyName="HostMachineRid" TaskParameter="RuntimeIdentifier" />
     </GetTargetMachineInfo>
