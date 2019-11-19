@@ -79,8 +79,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="RepoRoot=$(RepoRoot)"
-             Targets="Restore;Build;CreateHostMachineInfoFile"/>
+             Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"
                       Lines="$(RepoTasksOutputFile)"
@@ -94,7 +93,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs" />
+      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs*" />
     </ItemGroup>
   </Target>
 
