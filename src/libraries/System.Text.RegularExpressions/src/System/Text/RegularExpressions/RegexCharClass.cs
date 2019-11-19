@@ -889,7 +889,7 @@ namespace System.Text.RegularExpressions
 
         private static bool CharInCategory(char ch, string set, int start, int mySetLength, int myCategoryLength)
         {
-            UnicodeCategory chcategory = CharUnicodeInfo.GetUnicodeCategory(ch);
+            UnicodeCategory chcategory = char.GetUnicodeCategory(ch);
 
             int i = start + SETSTART + mySetLength;
             int end = i + myCategoryLength;
