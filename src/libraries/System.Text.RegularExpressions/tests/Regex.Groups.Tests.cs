@@ -672,6 +672,7 @@ namespace System.Text.RegularExpressions.Tests
         private void GroupsTest(object[] testCase)
         {
             Groups((string)testCase[0], (string)testCase[1], (RegexOptions)testCase[2], (string[])testCase[3]);
+            Groups((string)testCase[0], (string)testCase[1], RegexOptions.Compiled | (RegexOptions)testCase[2], (string[])testCase[3]);
         }
 
 
