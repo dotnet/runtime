@@ -797,7 +797,6 @@ namespace BINDER_SPACE
         {
             const StringArrayList *pBindingPaths = GetBindingPaths(pApplicationContext, paths);
             bool useNativeImages = paths == ProbingPaths::AppNiPaths;
-            BOOL fExplicitBindToNativeImage = useNativeImages ? TRUE : FALSE;
 
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
 
@@ -809,24 +808,23 @@ namespace BINDER_SPACE
                 LPCWSTR wszBindingPath = (*pBindingPaths)[i];
 
                 // Look for a matching dll first
-                {
-                    SString fileName(wszBindingPath);
-                    CombinePath(fileName, simpleName, fileName);
-                    fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
-                    hr = AssemblyBinder::GetAssembly(fileName,
-                                        FALSE, // fIsInGAC
-                                        fExplicitBindToNativeImage,
-                                        &pAssembly);
-                }
+                SString fileNameWithoutExtension(wszBindingPath);
+                CombinePath(fileNameWithoutExtension, simpleName, fileNameWithoutExtension);
+
+                SString fileName(fileNameWithoutExtension);
+                fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
+                hr = AssemblyBinder::GetAssembly(fileName,
+                                    FALSE, // fIsInGAC
+                                    useNativeImages, // fExplicitBindToNativeImage
+                                    &pAssembly);
 
                 if (FAILED(hr))
                 {
-                    SString fileName(wszBindingPath);
-                    CombinePath(fileName, simpleName, fileName);
+                    fileName.Set(fileNameWithoutExtension);
                     fileName.Append(useNativeImages ? W(".ni.exe") : W(".exe"));
                     hr = AssemblyBinder::GetAssembly(fileName,
                                         FALSE, // fIsInGAC
-                                        fExplicitBindToNativeImage,
+                                        useNativeImages, // fExplicitBindToNativeImage
                                         &pAssembly);
                 }
 
