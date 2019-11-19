@@ -92,7 +92,8 @@ namespace System.Text.Json
 
         protected override void OnWriteDictionary(ref WriteStackFrame current, Utf8JsonWriter writer)
         {
-            JsonSerializer.WriteDictionary(Converter!, Options, ref current, writer);
+            Debug.Assert(Converter != null);
+            JsonSerializer.WriteDictionary(Converter, Options, ref current, writer);
         }
 
         protected override void OnWriteEnumerable(ref WriteStackFrame current, Utf8JsonWriter writer)

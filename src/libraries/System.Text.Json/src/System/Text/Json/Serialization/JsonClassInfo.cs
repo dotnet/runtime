@@ -158,7 +158,7 @@ namespace System.Text.Json
                                 Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString!, jsonPropertyInfo))
                                 {
                                     JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
 
