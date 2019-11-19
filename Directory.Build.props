@@ -54,6 +54,7 @@
     <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
+    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
   </PropertyGroup>
 
 </Project>

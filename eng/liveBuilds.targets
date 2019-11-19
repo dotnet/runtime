@@ -124,7 +124,7 @@
   </Target>
 
   <PropertyGroup>
-    <LiveRuntimeIdentifierGraphPath>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</LiveRuntimeIdentifierGraphPath>
+    <LiveRuntimeIdentifierGraphPath>$(RuntimeIdGraphDefinitionFile)</LiveRuntimeIdentifierGraphPath>
     <RuntimeIdentifierGraphPath Condition="'$(UseLiveRuntimeIdentifierGraph)' == 'true'">$(LiveRuntimeIdentifierGraphPath)</RuntimeIdentifierGraphPath>
   </PropertyGroup>
 </Project>
