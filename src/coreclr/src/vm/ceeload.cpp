@@ -593,10 +593,12 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         }
 
         StackSString ss;
-        if (m_pReadyToRunInfo != NULL && g_pConfig->ForbidZap(GetSimpleName()))
-            ss.Printf("ZapForbid: ReadyToRun should be forbidden for %s.\n", GetSimpleName());
-        else if(m_pReadyToRunInfo == NULL && g_pConfig->RequireZap(GetSimpleName()))
+        if (m_pReadyToRunInfo == NULL && g_pConfig->RequireZap(GetSimpleName()))
             ss.Printf("ZapRequire: Failed to load ReadyToRun for %s.\n", GetSimpleName());
+#ifdef _DEBUG
+        else if (m_pReadyToRunInfo != NULL && g_pConfig->ForbidZap(GetSimpleName()))
+            ss.Printf("ZapForbid: ReadyToRun should be forbidden for %s.\n", GetSimpleName());
+#endif
 
         if (!ss.IsEmpty())
         {
