@@ -149,6 +149,7 @@ FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR
     if (pMT->HasInstantiation())
         COMPlusThrowArgumentException(W("structure"), W("Argument_NeedNonGenericObject"));
 
+    AVInRuntimeImplOkayHolder AVOkay;
     if (pMT->IsBlittable())
     {
         memcpyNoGCRefs(ptr, pObj->GetData(), pMT->GetNativeSize());
@@ -204,7 +205,9 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     {
         COMPlusThrowArgumentException(W("structure"), W("Argument_StructMustNotBeValueClass"));
     }
-    else if (pMT->IsBlittable())
+
+    AVInRuntimeImplOkayHolder AVOkay;
+    if (pMT->IsBlittable())
     {
         memcpyNoGCRefs(pObj->GetData(), ptr, pMT->GetNativeSize());
     }
