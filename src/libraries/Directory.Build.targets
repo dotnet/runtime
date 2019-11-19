@@ -81,6 +81,9 @@
     </BinPlaceConfiguration>
 
     <!-- Binplace the OOB libraries built in the netcoreapp build. -->
+    <BinPlaceConfiguration Condition="'$(IsNETCoreAppRef)' != 'true' and '$(IsReferenceAssembly)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(RefRootPath)oob\$(ConfigurationGroup)</RefPath>
+    </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' != 'true' and '$(IsSourceProject)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(ArtifactsBinDir)pkg\oob\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>
