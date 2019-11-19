@@ -364,6 +364,11 @@
 # https://github.com/mono/mono/issues/15069
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
+# relies on specific exception message
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFile_PartiallyQualifiedPath_ThrowsArgumentException
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFile_NoSuchPath_ThrowsFileNotFoundException
+
 ####################################################################
 ##  System.Runtime.InteropServices.Tests
 ####################################################################
@@ -827,6 +832,11 @@
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Finalizer_CollectibleWithNoAssemblyLoaded
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.PublicConstructor_Theory
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unsupported_FixedAddressValueType
+
+# relies on specific exception message
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyPath_PartiallyQualifiedPath_ThrowsArgumentException
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2
 
 ####################################################################
 ##  System.Reflection.MetadataLoadContext.Tests

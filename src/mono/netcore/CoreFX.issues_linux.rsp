@@ -23,3 +23,12 @@
 
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
+
+# fails wit some OpenSSL error
+-nomethod System.Net.Security.Tests.ServerRequireEncryptionTest.ServerRequireEncryption_ClientNoEncryption_NoConnect
+-nomethod System.Net.Security.Tests.SslStreamAlpnTests.SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail
+-nomethod System.Net.Security.Tests.ClientDefaultEncryptionTest.ClientDefaultEncryption_ServerNoEncryption_NoConnect
+-nomethod System.Net.Security.Tests.ServerNoEncryptionTest.ServerNoEncryption_ClientRequireEncryption_NoConnect
+-nomethod System.Net.Security.Tests.ClientAsyncAuthenticateTest.ClientAsyncAuthenticate_ServerNoEncryption_NoConnect
+-nomethod System.Net.Security.Tests.ServerAsyncAuthenticateTest.ServerAsyncAuthenticate_MismatchProtocols_Fails
+-nomethod System.Net.Security.Tests.ClientAsyncAuthenticateTest.ClientAsyncAuthenticate_MismatchProtocols_Fails
