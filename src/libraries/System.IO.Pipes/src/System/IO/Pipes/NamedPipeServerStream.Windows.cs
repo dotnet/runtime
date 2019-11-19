@@ -19,6 +19,29 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
+        internal NamedPipeServerStream(
+            string pipeName,
+            PipeDirection direction,
+            int maxNumberOfServerInstances,
+            PipeTransmissionMode transmissionMode,
+            PipeOptions options,
+            int inBufferSize,
+            int outBufferSize,
+            PipeSecurity pipeSecurity,
+            HandleInheritability inheritability = HandleInheritability.None,
+            PipeAccessRights additionalAccessRights = default)
+            : base(direction, transmissionMode, outBufferSize)
+        {
+            ValidateParameters(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
+
+            if (pipeSecurity != null && IsCurrentUserOnly == true)
+            {
+                throw new ArgumentException(SR.NotSupported_PipeSecurityIsCurrentUserOnly, nameof(pipeSecurity));
+            }
+
+            Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, pipeSecurity, inheritability, additionalAccessRights);
+        }
+
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)

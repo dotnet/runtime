@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -80,6 +82,17 @@ namespace System.IO.Pipes.Tests
                 pair.readablePipe.SetAccessControl(security);
                 pair.writeablePipe.SetAccessControl(security);
             }
+        }
+
+        // This test matches NetFX behavior
+        [Fact]
+        public void PipeSecurity_InvalidMask()
+        {
+            Assert.Throws<ArgumentException>("accessMask", () =>
+            {
+                var si = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+                var pir = new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Deny);
+            });
         }
     }
 }

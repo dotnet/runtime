@@ -55,5 +55,10 @@ namespace System.IO.Pipes.Tests
                 expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
                 expectedRule.PropagationFlags  == actualRule.PropagationFlags;
         }
+
+        protected string GetRandomName()
+        {
+            return Guid.NewGuid().ToString("N");
+        }
     }
 }
