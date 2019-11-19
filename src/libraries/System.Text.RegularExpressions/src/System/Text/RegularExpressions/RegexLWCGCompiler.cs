@@ -38,7 +38,10 @@ namespace System.Text.RegularExpressions
             DynamicMethod trackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateInitTrackCount();
 
-            return new CompiledRegexRunnerFactory(goMethod, firstCharMethod, trackCountMethod);
+            return new CompiledRegexRunnerFactory(
+                (Action<RegexRunner>)goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
+                (Func<RegexRunner, bool>)firstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
+                (Action<RegexRunner>)trackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
@@ -51,7 +54,7 @@ namespace System.Text.RegularExpressions
             const MethodAttributes Attribs = MethodAttributes.Public | MethodAttributes.Static;
             const CallingConventions Conventions = CallingConventions.Standard;
 
-            DynamicMethod dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, false /*skipVisibility*/);
+            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, skipVisibility: false);
             _ilg = dm.GetILGenerator();
             return dm;
         }
