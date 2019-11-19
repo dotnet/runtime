@@ -156,7 +156,7 @@ jobs:
         condition: always()
 
     # Publish product output directory for consumption by tests.
-    - template: upload-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
       parameters:
         rootFolder: $(buildProductRootFolderPath)
         includeRootFolder: false
@@ -167,7 +167,7 @@ jobs:
         displayName: 'product build'
 
     # Publish test native components for consumption by test execution.
-    - template: upload-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
       parameters:
         rootFolder: $(testNativeRootFolderPath)
         includeRootFolder: false
@@ -178,7 +178,7 @@ jobs:
         displayName: 'native test components'
 
     # Publish test build root for consumption by test execution.
-    - template: upload-artifact-step.yml
+    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
       parameters:
         rootFolder: $(testBuildRootFolderPath)
         includeRootFolder: false

@@ -32,7 +32,7 @@ To compile for arm64, run:
 CONFIG_DIR=`realpath cross/android/arm64` ROOTFS_DIR=`realpath cross/android-rootfs/toolchain/arm64/sysroot` ./build.sh cross arm64 skipgenerateversion skipmscorlib cmakeargs -DENABLE_LLDBPLUGIN=0
 ```
 
-The resulting binaries will be found in `artifacts/Product/Linux.BuildArch.BuildType/`
+The resulting binaries will be found in `artifacts/bin/coreclr/Linux.BuildArch.BuildType/`
 
 Running the PAL tests on Android
 --------------------------------
@@ -42,7 +42,7 @@ You can run the PAL tests on an Android device. To run the tests, you first copy
 
 To copy the PAL tests over to an Android phone:
 ```
-adb push artifacts/obj/Linux.arm64.Debug/src/pal/tests/palsuite/ /data/local/tmp/coreclr/src/pal/tests/palsuite
+adb push artifacts/obj/coreclr/Linux.arm64.Debug/src/pal/tests/palsuite/ /data/local/tmp/coreclr/src/pal/tests/palsuite
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libintl.so /data/local/tmp/coreclr/lib
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libandroid-support.so /data/local/tmp/coreclr/lib/
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libandroid-glob.so /data/local/tmp/coreclr/lib/

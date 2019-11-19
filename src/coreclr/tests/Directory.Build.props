@@ -26,6 +26,7 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
+    <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>

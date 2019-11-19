@@ -52,7 +52,6 @@ if ($os -eq "")
 # fix up by copying from the bootstrap sdk 
 function Copy-Aspnetcore-Bits([string] $testhost_path)
 {
-
     function find-bootstrap-sdk()
     {
         if (test-path -PathType container "$COREFX_ROOT_DIR/.dotnet")
@@ -61,15 +60,19 @@ function Copy-Aspnetcore-Bits([string] $testhost_path)
         }
         else
         {
-            $dotnet_path = $(which dotnet)
+            $dotnet_path = $(get-command dotnet).Source
 
-            # follow any symlinks if unix
-            if (which readlink)
+            try
             {
+                # follow any symlinks if unix
                 $dotnet_path = $(readlink -f $dotnet_path)
             }
+            catch [System.Management.Automation.CommandNotFoundException]
+            {
 
-            $(dirname $dotnet_path)
+            }
+
+            split-path -Path $dotnet_path
         }
     }
 

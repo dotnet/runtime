@@ -19,7 +19,7 @@ Please note that when choosing an image choosing the same image as the host os y
 Once you have chosen an image the build is one command run from the root of the coreclr repository:
 
 ```sh
-docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544 ./build.sh
+docker run --rm -v ~/runtime:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544 ./src/coreclr/build.sh
 ```
 
 Dissecting the command:
@@ -32,15 +32,15 @@ Dissecting the command:
 
 `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544: image name`
 
-`./build.sh: command to be run in the container`
+`./src/coreclr/build.sh: command to be run in the container`
 
 If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `cross`.
 
 ```sh
-docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./build.sh arm64 cross
+docker run --rm -v ~/runtime:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./src/coreclr/build.sh arm64 cross
 ```
 
-Note that instructions on building the crossrootfs location can be found at https://github.com/dotnet/coreclr/blob/master/Documentation/building/cross-building.md. These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.
+Note that instructions on building the crossrootfs location can be found at [cross-building.md](cross-building.md). These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.
 
 Docker Images
 =============
@@ -131,10 +131,10 @@ Build the Runtime and Microsoft Core Library
 To build the runtime on Linux, run build.sh from the root of the coreclr repository:
 
 ```
-./build.sh
+./src/coreclr/build.sh
 ```
 
-After the build is completed, there should some files placed in `artifacts/Product/Linux.x64.Debug`.  The ones we are interested in are:
+After the build is completed, there should some files placed in `runtime/artifacts/bin/coreclr/Linux.x64.Debug`.  The ones we are interested in are:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
@@ -146,17 +146,17 @@ Create the Core_Root
 The Core_Root folder will have the built binaries, from `build.sh` and it will also include the CoreFX packages required to run tests.
 
 ```
-./build-test.sh generatelayoutonly
+./src/coreclr/build-test.sh generatelayoutonly
 ```
 
-After the build is complete you will be able to find the output in the `artifacts/tests/Linux.x64.Debug/Tests/Core_Root` folder.
+After the build is complete you will be able to find the output in the `artifacts/tests/coreclr/Linux.x64.Debug/Tests/Core_Root` folder.
 
 Running a single test
 ===================
 
-After `build-test.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting an environment variable to the Core_Root folder.
+After `src/coreclr/build-test.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting an environment variable to the Core_Root folder.
 
 ```sh
-export CORE_ROOT=/home/dotnet-bot/coreclr/artifacts/tests/Linux.x64.Debug/Tests/Core_Root
+export CORE_ROOT=~/runtime/artifacts/tests/coreclr/Linux.x64.Debug/Tests/Core_Root
 $CORE_ROOT/corerun hello_world.dll
 ```

@@ -139,9 +139,7 @@ namespace System.Security.AccessControl
                     }
                     else if (error == Interop.Errors.ERROR_INVALID_NAME)
                     {
-                        exception = new ArgumentException(
-                             SR.Argument_InvalidName,
-nameof(name));
+                        exception = new ArgumentException(SR.Argument_InvalidName, nameof(name));
                     }
                     else if (error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {

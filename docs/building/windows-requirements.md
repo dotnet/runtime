@@ -8,6 +8,15 @@ These instructions will lead you through the requirements to build dotnet/runtim
 
 You must install several components to build the dotnet/runtime repository. These instructions were tested on Windows 10 Pro, version 1903.
 
+## Enable Long Paths
+
+The runtime repository requires long paths to be enabled. Follow the instructions provided here to modify the registry to opt into that feature: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later. 
+
+If using msysgit (aka Git for Windows) you might need to also configure long paths there. Using an admin terminal simply type:
+```powershell
+PS> git config --system core.longpaths true
+```
+
 ## Visual Studio
 
 - Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
