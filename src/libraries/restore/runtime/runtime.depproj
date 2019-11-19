@@ -53,7 +53,6 @@
     <ItemGroup>
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
-      <HostSdkFile Include="$(DotNetRoot)sdk\$(DotNetVersion)\**\*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
@@ -67,11 +66,6 @@
           UseHardlinksIfPossible="$(UseHardlink)" />
 
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
-
-    <Copy SourceFiles="@(HostSdkFile)"
-          DestinationFolder="$(TestHostRootPath)sdk\$(DotNetVersion)\%(RecursiveDir)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="$(UseHardlink)" />
   </Target>
 
   <Target Name="OverrideRuntime"
