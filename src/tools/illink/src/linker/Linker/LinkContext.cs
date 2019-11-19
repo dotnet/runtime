@@ -155,6 +155,8 @@ namespace Mono.Linker {
 
 		public bool AddReflectionAnnotations { get; set; }
 
+		public string AssemblyListFile { get; set; }
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
