@@ -5,27 +5,21 @@
 // This is the only concrete implementation of RegexRunnerFactory,
 // but we cannot combine them due to RegexRunnerFactory having shipped public.
 
-using System.Reflection.Emit;
-
 namespace System.Text.RegularExpressions
 {
     internal sealed class CompiledRegexRunnerFactory : RegexRunnerFactory
     {
-        private readonly DynamicMethod _goMethod;
-        private readonly DynamicMethod _findFirstCharMethod;
-        private readonly DynamicMethod _initTrackCountMethod;
+        private readonly Action<RegexRunner> _go;
+        private readonly Func<RegexRunner, bool> _findFirstChar;
+        private readonly Action<RegexRunner> _initTrackCount;
 
-        public CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod findFirstChar, DynamicMethod initTrackCount)
+        public CompiledRegexRunnerFactory(Action<RegexRunner> go, Func<RegexRunner, bool> findFirstChar, Action<RegexRunner> initTrackCount)
         {
-            _goMethod = go;
-            _findFirstCharMethod = findFirstChar;
-            _initTrackCountMethod = initTrackCount;
+            _go = go;
+            _findFirstChar = findFirstChar;
+            _initTrackCount = initTrackCount;
         }
 
-        protected internal override RegexRunner CreateInstance() =>
-            new CompiledRegexRunner(
-                (Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
-                (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
-                (Action<RegexRunner>)_initTrackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
+        protected internal override RegexRunner CreateInstance() => new CompiledRegexRunner(_go, _findFirstChar, _initTrackCount);
     }
 }
