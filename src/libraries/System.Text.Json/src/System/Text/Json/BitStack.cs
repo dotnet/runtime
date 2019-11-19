@@ -15,7 +15,7 @@ namespace System.Text.Json
 
         private const int DefaultInitialArraySize = 2;
 
-        private int[] _array;
+        private int[]? _array;
 
         // This ulong container represents a tiny stack to track the state during nested transitions.
         // The first bit represents the state of the current depth (1 == object, 0 == array).

@@ -30,7 +30,8 @@ namespace System.Text.Json
             }
             else
             {
-                Set!(state.Current.ReturnValue, value);
+                Debug.Assert(Set != null);
+                Set(state.Current.ReturnValue, value);
             }
         }
 
@@ -67,7 +68,8 @@ namespace System.Text.Json
             }
             else
             {
-                value = (TConverter)Get!(current.CurrentValue)!;
+                Debug.Assert(Get != null);
+                value = (TConverter)Get(current.CurrentValue)!;
             }
 
             if (value == null)

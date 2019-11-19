@@ -121,7 +121,7 @@ namespace System.Text.Json
         public override bool TryCreateEnumerableAddMethod(object target, [NotNullWhen(true)] out object? addMethodDelegate)
         {
             SetPropertyInfoForObjectElement();
-            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo?.PolicyProperty) != null);
+            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty) != null);
 
             addMethodDelegate = (_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty!).CreateEnumerableAddMethod(RuntimeClassInfo.AddItemToObject!, target);
             return addMethodDelegate != null;
@@ -170,7 +170,7 @@ namespace System.Text.Json
         public override bool CanPopulateDictionary(object target)
         {
             SetPropertyInfoForObjectElement();
-            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo?.PolicyProperty) != null);
+            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty) != null);
             return (_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty!).ParentDictionaryCanBePopulated(target);
         }
 

@@ -30,7 +30,8 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                Set!(state.Current.ReturnValue, (TDeclaredProperty)value!);
+                Debug.Assert(Set != null);
+                Set(state.Current.ReturnValue, (TDeclaredProperty)value!);
             }
 
             return;
@@ -69,7 +70,8 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                value = (TConverter)Get!(current.CurrentValue);
+                Debug.Assert(Get != null);
+                value = (TConverter)Get(current.CurrentValue);
             }
 
             if (value == null)

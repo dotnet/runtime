@@ -170,7 +170,8 @@ namespace System.Text.Json
                         }
                         else
                         {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(value?.GetType());
+                            Debug.Assert(value != null);
+                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(value.GetType());
                             return;
                         }
                     }
