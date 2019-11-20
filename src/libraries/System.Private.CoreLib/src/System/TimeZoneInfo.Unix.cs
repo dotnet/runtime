@@ -981,9 +981,9 @@ namespace System
                 // NOTE: index == dts.Length
                 DateTime startTransitionDate = dts[index - 1];
 
-                AdjustmentRule? r = !string.IsNullOrEmpty(futureTransitionsPosixFormat)
-                    ? TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset)
-                    : null;
+                AdjustmentRule? r = !string.IsNullOrEmpty(futureTransitionsPosixFormat) ?
+                    TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset) :
+                    null;
 
                 if (r == null)
                 {
