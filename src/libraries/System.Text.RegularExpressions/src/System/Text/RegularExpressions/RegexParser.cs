@@ -1746,11 +1746,12 @@ namespace System.Text.RegularExpressions
          */
         private void NoteCaptureSlot(int i, int pos)
         {
-            if (!_caps.ContainsKey(i))
+            object boxedI = i; // workaround to remove a boxed int when adding to the hashtable
+            if (!_caps.ContainsKey(boxedI))
             {
                 // the rhs of the hashtable isn't used in the parser
 
-                _caps.Add(i, pos);
+                _caps.Add(boxedI, pos);
                 _capcount++;
 
                 if (_captop <= i)
@@ -1812,7 +1813,7 @@ namespace System.Text.RegularExpressions
                     _capnumlist[i++] = (int)de.Key;
                 }
 
-                Array.Sort(_capnumlist, Comparer<int>.Default);
+                Array.Sort(_capnumlist);
             }
 
             // merge capsnumlist into capnamelist
