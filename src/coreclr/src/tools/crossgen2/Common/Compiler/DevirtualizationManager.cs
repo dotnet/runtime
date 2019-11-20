@@ -82,11 +82,16 @@ namespace ILCompiler
             else
             {
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-                if ((impl != null) && (impl != declMethod ) && impl.IsNewSlot)
+                if (impl != null && (impl != declMethod))
                 {
-                    // We cannot resolve virtual method in case the impl is a new slot since in such case,
-                    // the real target may be on a type derived from the implType.
-                    impl = null;
+                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
+                    MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
+
+                    if (slotDefiningMethodImpl != slotDefiningMethodDecl)
+                    {
+                        // We cannot resolve virtual method in case the impl is a different slot from the declMethod
+                        impl = null;
+                    }
                 }
             }
 
