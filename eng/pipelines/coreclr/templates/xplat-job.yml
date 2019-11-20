@@ -31,10 +31,7 @@ jobs:
     condition: ${{ parameters.condition }}
     dependsOn:
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_windows'
-        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_unix'
+        - checkout
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -158,17 +155,13 @@ jobs:
     - checkout: none
       clean: true
 
-    # Download the GIT repository
-    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
-      parameters:
-        displayName: 'GIT repository'
-        cleanUnpackFolder: false
-        unpackFolder: $(Build.SourcesDirectory)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_windows.zip
-          artifactName: repo_windows
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_unix.tar.gz
-          artifactName: repo_unix
+    - download: current
+      artifact: Checkout_bundle
+      displayName: Download Checkout.bundle
+
+    - script: |
+        git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
+        git remote set-url origin $(Build.Repository.Uri)
+      displayName: Clone the repository from Checkout.bundle
 
     - ${{ parameters.steps }}
