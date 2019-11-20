@@ -86,12 +86,16 @@ namespace System.IO.Pipes.Tests
 
         // This test matches NetFX behavior
         [Fact]
-        public void PipeSecurity_InvalidMask()
+        public void PipeSecurity_VerifySynchronizeMasks()
         {
+            var si = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+
+            // This is a valid mask that should not throw
+            new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Allow);
+
             Assert.Throws<ArgumentException>("accessMask", () =>
             {
-                var si = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
-                var pir = new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Deny);
+                new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Deny);
             });
         }
     }

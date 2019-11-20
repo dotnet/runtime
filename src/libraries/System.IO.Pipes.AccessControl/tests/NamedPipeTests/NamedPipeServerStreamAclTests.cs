@@ -9,14 +9,9 @@ namespace System.IO.Pipes.Tests
 {
     public class NamedPipeServerStreamAclTests : PipeServerStreamAclTestBase
     {
-        private const PipeDirection DefaultPipeDirection = PipeDirection.InOut;
         private const int DefaultNumberOfServerInstances = 1;
         private const PipeTransmissionMode DefaultPipeTransmissionMode = PipeTransmissionMode.Byte;
         private const PipeOptions DefaultPipeOptions = PipeOptions.None;
-        private const int DefaultInBufferSize = 1;
-        private const int DefaultOutBufferSize = 1;
-        private const HandleInheritability DefaultInheritability = HandleInheritability.None;
-        private const PipeAccessRights DefaultAdditionalPipeAccessRights = 0;
 
         [Fact]
         public void Create_NullSecurity()
@@ -70,19 +65,6 @@ namespace System.IO.Pipes.Tests
             });
         }
 
-        // Synchronize is handled in a special way inside the PipeAccessRuleInstance constructor when creating
-        // the access mask. If Deny is specified, Synchronize gets removed from the rights.
-        [Fact]
-        public void Create_SynchronizeSecurity()
-        {
-            GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, PipeAccessRights.Synchronize, AccessControlType.Allow);
-
-            Assert.Throws<ArgumentException>("accessMask", () =>
-            {
-                GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, PipeAccessRights.Synchronize, AccessControlType.Deny);
-            });
-        }
-
         [Fact]
         public void Create_InvalidName()
         {
@@ -103,10 +85,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData((PipeDirection)(int.MinValue))]
-        [InlineData((PipeDirection)0)]
-        [InlineData((PipeDirection)4)]
-        [InlineData((PipeDirection)(int.MaxValue))]
+        [MemberData(nameof(Create_InvalidPipeDirection_MemberData))]
         public void Create_InvalidPipeDirection(PipeDirection direction)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -150,8 +129,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(int.MinValue)]
-        [InlineData(-1)]
+        [MemberData(nameof(Create_InvalidBufferSize_MemberData))]
         public void Create_InvalidInBufferSize(int inBufferSize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -161,8 +139,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(int.MinValue)]
-        [InlineData(-1)]
+        [MemberData(nameof(Create_InvalidBufferSize_MemberData))]
         public void Create_InvalidOutBufferSize(int outBufferSize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -172,10 +149,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData((HandleInheritability)(int.MinValue))]
-        [InlineData((HandleInheritability)(-1))]
-        [InlineData((HandleInheritability)2)]
-        [InlineData((HandleInheritability)(int.MaxValue))]
+        [MemberData(nameof(Create_InvalidInheritability_MemberData))]
         public void Create_InvalidInheritability(HandleInheritability inheritability)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -184,35 +158,56 @@ namespace System.IO.Pipes.Tests
             });
         }
 
-        // Two rights were excluded from this array:
-        // - Synchronize has a special unit test case: Create_SynchronizeSecurity
-        // - AccessSystemSecurity throws 'A required privilege is not held by the client'
-        private static PipeAccessRights[] _mostRights = new[] { PipeAccessRights.ReadData, PipeAccessRights.WriteData, PipeAccessRights.CreateNewInstance, PipeAccessRights.ReadExtendedAttributes, PipeAccessRights.WriteExtendedAttributes, PipeAccessRights.ReadAttributes, PipeAccessRights.WriteAttributes, PipeAccessRights.Write, PipeAccessRights.Delete, PipeAccessRights.ReadPermissions, PipeAccessRights.Read, PipeAccessRights.ReadWrite, PipeAccessRights.ChangePermissions, PipeAccessRights.TakeOwnership, PipeAccessRights.FullControl };
-
-        private static PipeAccessRights[] _bitWisePipeAccessRights = new[]
+        [Theory]
+        [InlineData(PipeAccessRights.Read)]
+        [InlineData(PipeAccessRights.ReadData)]
+        [InlineData(PipeAccessRights.ReadExtendedAttributes)]
+        [InlineData(PipeAccessRights.ReadAttributes)]
+        [InlineData(PipeAccessRights.ReadPermissions)]
+        [InlineData(PipeAccessRights.Write)]
+        [InlineData(PipeAccessRights.WriteData)]
+        [InlineData(PipeAccessRights.WriteExtendedAttributes)]
+        [InlineData(PipeAccessRights.WriteAttributes)]
+        public void Create_InvalidAdditionalAccessRights(PipeAccessRights additionalAccessRights)
         {
-            PipeAccessRights.ChangePermissions | PipeAccessRights.ReadPermissions | PipeAccessRights.WriteExtendedAttributes,
-            PipeAccessRights.ReadData | PipeAccessRights.WriteData
-        };
+            // GetBasicPipeSecurity returns an object created with PipeAccessRights.ReadWrite as default. This enum is formed by:
+            //     - PipeAccessRights.Read: This enum is formed by:
+            //         - PipeAccessRights.ReadData | PipeAccessRights.ReadExtendedAttributes | PipeAccessRights.ReadAttributes | PipeAccessRights.ReadPermissions
+            //     - PipeAccessRights.Write: This enum is formed by:
+            //         - PipeAccessRights.WriteData | PipeAccessRights.WriteExtendedAttributes | PipeAccessRights.WriteAttributes
 
-        //public static IEnumerable<object[]> Create_AdditionalAccessRights_MemberData() =>
-        //    from rights in _mostRights
-        //    select new object[] { rights };
+            // So if we pass any of those rights as additional, we throw with the message 'The parameter is incorrect.'
+            Assert.Throws<IOException>(() =>
+            {
+                Create_AdditionalAccessRights(additionalAccessRights).Dispose();
+            });
+        }
 
-        //[Theory]
-        //[MemberData(nameof(Create_AdditionalAccessRights_MemberData))]
-        //public void Create_AdditionalAccessRights(PipeAccessRights additionalAccessRights)
-        //{
-        //    PipeSecurity zeroRightsSecurity = GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, 0, AccessControlType.Allow);
+        [Theory]
+        [InlineData(PipeAccessRights.CreateNewInstance)]
+        [InlineData(PipeAccessRights.Delete)]
+        [InlineData(PipeAccessRights.ChangePermissions)]
+        [InlineData(PipeAccessRights.TakeOwnership)]
+        [InlineData(PipeAccessRights.AccessSystemSecurity)]
+        public void Create_ValidAdditionalAccessRights(PipeAccessRights additionalAccessRights)
+        {
+            using var pipe = Create_AdditionalAccessRights(additionalAccessRights);
 
-        //    PipeSecurity additionalSecurity = GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, additionalAccessRights, AccessControlType.Allow);
+            // This contains the rights added to BasicPipeSecurity plus the one we are testing
+            PipeSecurity expectedPipeSecurity = GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, additionalAccessRights | PipeAccessRights.ReadWrite, AccessControlType.Allow);
 
-        //    using NamedPipeServerStream pipe = CreateNamedPipe(GetRandomName(), zeroRightsSecurity, additionalAccessRights: additionalAccessRights);
-        //    PipeSecurity actualSecurity = pipe.GetAccessControl();
-        //    VerifyPipeSecurity(additionalSecurity, actualSecurity);
-        //}
+            // additional should be applied to the pipe, so actual should be identical to expected
+            PipeSecurity actualPipeSecurity = pipe.GetAccessControl();
 
-        private static IEnumerable<PipeAccessRights> _combinedPipeAccessRights = _mostRights.Concat(_bitWisePipeAccessRights);
+            VerifyPipeSecurity(expectedPipeSecurity, actualPipeSecurity);
+        }
+
+        private NamedPipeServerStream Create_AdditionalAccessRights(PipeAccessRights additionalAccessRights)
+        {
+            // GetBasicPipeSecurity returns an object created with PipeAccessRights.ReadWrite as default
+            PipeSecurity initialPipeSecurity = GetBasicPipeSecurity();
+            return CreateNamedPipe(GetRandomName(), initialPipeSecurity, additionalAccessRights: additionalAccessRights);
+        }
 
         public static IEnumerable<object[]> Create_ValidParameters_MemberData() =>
             from options in new[] { PipeOptions.None, PipeOptions.Asynchronous, PipeOptions.WriteThrough }
@@ -222,7 +217,7 @@ namespace System.IO.Pipes.Tests
             from inBufferSize in new[] { 0, 1 }
             from outBufferSize in new[] { 0, 1 }
             from maxNumberOfServerInstances in new[] { -1, 1, 254 }
-            from rights in _combinedPipeAccessRights
+            from rights in s_combinedPipeAccessRights
             from controlType in new[] { AccessControlType.Allow, AccessControlType.Deny }
             select new object[] { options, direction, transmissionMode, inheritability, inBufferSize, outBufferSize, maxNumberOfServerInstances, rights, controlType };
 
@@ -244,10 +239,10 @@ namespace System.IO.Pipes.Tests
             int maxNumberOfServerInstances = DefaultNumberOfServerInstances,
             PipeTransmissionMode transmissionMode = DefaultPipeTransmissionMode,
             PipeOptions options = DefaultPipeOptions,
-            int inBufferSize = DefaultInBufferSize,
-            int outBufferSize = DefaultOutBufferSize,
+            int inBufferSize = DefaultBufferSize,
+            int outBufferSize = DefaultBufferSize,
             HandleInheritability inheritability = DefaultInheritability,
-            PipeAccessRights additionalAccessRights = DefaultAdditionalPipeAccessRights)
+            PipeAccessRights additionalAccessRights = 0)
         {
             NamedPipeServerStream pipe = CreateNamedPipe(pipeName, expectedSecurity, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability, additionalAccessRights);
 
@@ -266,10 +261,10 @@ namespace System.IO.Pipes.Tests
             int maxNumberOfServerInstances = DefaultNumberOfServerInstances,
             PipeTransmissionMode transmissionMode = DefaultPipeTransmissionMode,
             PipeOptions options = DefaultPipeOptions,
-            int inBufferSize = DefaultInBufferSize,
-            int outBufferSize = DefaultOutBufferSize,
+            int inBufferSize = DefaultBufferSize,
+            int outBufferSize = DefaultBufferSize,
             HandleInheritability inheritability = DefaultInheritability,
-            PipeAccessRights additionalAccessRights = DefaultAdditionalPipeAccessRights)
+            PipeAccessRights additionalAccessRights = 0)
         {
             NamedPipeServerStream pipe = NamedPipeServerStreamAcl.Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, expectedSecurity, inheritability, additionalAccessRights);
             Assert.NotNull(pipe);
