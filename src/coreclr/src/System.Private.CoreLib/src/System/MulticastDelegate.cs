@@ -561,7 +561,7 @@ namespace System
                 return (MethodInfo)_methodBase;
             }
 
-            // Otherwise, must be an inner delegate of a WrapperDelegate of an open virtual method. In that case, call base implementation
+            // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
             return base.GetMethodImpl();
         }
 

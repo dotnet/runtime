@@ -1765,12 +1765,6 @@ public:
         PromoteCallerStack(fn, sc);
     }
 
-    virtual Assembly *GetAssembly()
-    {
-        WRAPPER_NO_CONTRACT;
-        return Frame::GetAssembly();
-    }
-
     int GetFrameType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
