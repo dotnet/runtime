@@ -7,6 +7,8 @@
     <!-- Duplicating the assembly path here as CoreClr current overrides the Configuration property. -->
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(IntermediateOutputPath)netstandard2.0\installer.tasks.dll</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(IntermediateOutputPath)net46\installer.tasks.dll</InstallerTasksAssemblyPath>
+    <!-- Set platform to AnyCPU (not TargetArchitecture) to avoid arch-specific output path. -->
+    <Platform>AnyCPU</Platform>
   </PropertyGroup>
 
   <ItemGroup>
