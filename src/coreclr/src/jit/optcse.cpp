@@ -541,7 +541,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdHashKey        = key;
             hashDsc->csdIndex          = 0;
-            hashDsc->csdLiveAcrossCall = 0;
+            hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
             hashDsc->csdDefWtCnt       = 0;
