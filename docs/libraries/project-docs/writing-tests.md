@@ -65,7 +65,7 @@ This doesn't mean that you should mark every test which executes against a remot
 
 # Relay Server
 For network related tests which needs to contact a remote endpoint instead of a LoopbackServer, you can use our Relay Servers. We invest in Infrastructure to provide these "safe" remote endpoints.
-For more information see https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Net/Configuration.Http.cs
+For more information see https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/Net/Configuration.Http.cs
 
 Example:
 ```cs

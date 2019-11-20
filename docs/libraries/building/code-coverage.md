@@ -20,7 +20,7 @@ Our default, somewhat-arbitrary initial goal for a library is 90% code coverage.
 
 ## Issues
 
-Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [up-for-grabs](https://github.com/dotnet/corefx/labels/up-for-grabs).
+Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [up-for-grabs](https://github.com/dotnet/runtime/labels/up-for-grabs).
 
 An issue need not be addressed in its entirety. We happily accept contributions that improve our tests and work towards improving code coverage numbers even if they only incrementally improve the situation.
 
@@ -58,6 +58,6 @@ Some of the libraries for which contracts and tests live in the corefx repo are 
 
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll add `/p:TestRuntime=true` to the coverage build command listed above.
 
-If you want to get coverage report against a private build of System.Private.CoreLib follow the steps outlined at [Testing with Private CoreClr Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).
+If you want to get coverage report against a private build of System.Private.CoreLib follow the steps outlined at [Testing with Private CoreClr Bits](../project-docs/developer-guide.md#testing-with-private-coreclr-bits).
 
 The build and test projects take care of copying assemblies and PDBs as needed for coverage runs. The resulting code coverage report should now also include details for System.Private.CoreLib.

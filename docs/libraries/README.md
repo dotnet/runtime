@@ -65,8 +65,8 @@ Building from Source
 Other Information
 =================
 
-- [CoreCLR Repo documentation](https://github.com/dotnet/coreclr/tree/master/Documentation)
+- [CoreCLR Repo documentation](../coreclr)
 - [Porting to .NET Core](project-docs/support-dotnet-core-instructions.md)
-- [.NET Standards (Ecma)](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/dotnet-standards.md)
+- [.NET Standards (Ecma)](../coreclr/project-docs/dotnet-standards.md)
 - [MSDN Entry for the CLR](http://msdn.microsoft.com/library/8bs2ecf4.aspx)
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)

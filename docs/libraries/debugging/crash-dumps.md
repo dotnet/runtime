@@ -13,4 +13,4 @@ The crash dump can then be located via this unique identifier from the Dumpling 
 
 Note that, while Dumpling archives the crash dumps for a long time, the Jenkins CI logs (containing the test info and the crash dump identifier) are not persisted for more than a few days.
 
-Debugging crash dumps is a fairly involved process. Windows crash dumps are well-supported using existing and documented tools like Visual Studio, WinDBG, and SOS. The instructions for Unix platforms are complicated, and are documented [here](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/unix-instructions.md#debugging-core-dumps-with-lldb).
+Debugging crash dumps is a fairly involved process. Windows crash dumps are well-supported using existing and documented tools like Visual Studio, WinDBG, and SOS. The instructions for Unix platforms are complicated, and are documented [here](../debugging/unix-instructions.md#debugging-core-dumps-with-lldb).
