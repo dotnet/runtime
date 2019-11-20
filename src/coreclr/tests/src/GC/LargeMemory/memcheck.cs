@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ public static class MemCheck {
 
     public static uint ParseSizeMBArgument(IReadOnlyList<string> args) {
         try {
-            return UInt32.Parse(args[0]);
+            return ParseUint(args[0]);
         } catch (Exception e) {
             if ( (e is IndexOutOfRangeException) || (e is FormatException) || (e is OverflowException) ) {
                 throw new Exception("args: uint - number of MB to allocate");
@@ -41,9 +42,9 @@ public static class MemCheck {
 
     private static uint? TryGetPhysicalMemMBNonWindows() {
         string? kb = File.Exists("/proc/meminfo")
-            ? TryExtractLine(File.ReadAllText("/proc/meminfo"), prefix: "MemAvailable", suffix: "kB")
+            ? TryExtractLine(File.ReadAllText("/proc/meminfo"), prefix: "MemAvailable:", suffix: "kB")
             : null;
-        return kb == null ? (uint?) null : KBToMB(uint.Parse(kb));
+        return kb == null ? (uint?) null : KBToMB(ParseUint(kb));
     }
 
     private static uint KBToMB(uint i) =>
@@ -52,7 +53,7 @@ public static class MemCheck {
     private static uint? TryGetPhysicalMemMBWindows()
     {
         string? mb = TryExtractLine(RunCommand("systeminfo"), prefix: "Total Physical Memory:", suffix: "MB");
-        return mb == null ? (uint?) null : uint.Parse(mb);
+        return mb == null ? (uint?) null : ParseUint(mb);
     }
 
     private static string? TryExtractLine(string s, string prefix, string suffix) =>
@@ -67,6 +68,9 @@ public static class MemCheck {
             ? s.Substring(start.Length, newLength)
             : null;
     }
+
+    private static uint ParseUint(string s) =>
+        uint.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
 
     private static string RunCommand(string name) {
         ProcessStartInfo startInfo = new ProcessStartInfo(name) {
