@@ -82,6 +82,12 @@ namespace ILCompiler
             else
             {
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                if ((impl != null) && (impl != declMethod ) && impl.IsNewSlot)
+                {
+                    // We cannot resolve virtual method in case the impl is a new slot since in such case,
+                    // the real target may be on a type derived from the implType.
+                    impl = null;
+                }
             }
 
             return impl;
