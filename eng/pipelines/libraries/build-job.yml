@@ -1,0 +1,120 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  framework: netcoreapp
+  isOfficialBuild: false
+  timeoutInMinutes: 150
+  preBuildSteps: []
+  container: ''
+  variables: {}
+  pool: ''
+  runTests: false
+
+jobs:
+  - template: /eng/pipelines/libraries/base-job.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      osGroup:  ${{ parameters.osGroup }}
+      osSubgroup:  ${{ parameters.osSubgroup }}
+      archType:  ${{ parameters.archType }}
+      framework:  ${{ parameters.framework }}
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      preBuildSteps: ${{ parameters.preBuildSteps }}
+      container: ${{ parameters.container }}
+      pool: ${{ parameters.pool }}
+      stepName: Build
+
+      variables:
+        - _skipTestRestoreArg: /p:SkipTestRestore=true
+        - _buildAction: -build
+        - ${{ parameters.variables }}
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
+        - ${{ if eq(parameters.runTests, true) }}:
+          - _buildAction: -build -buildtests /p:ArchiveTests=true
+          - ${{ if ne(parameters.framework, 'allConfigurations') }}:
+            - _skipTestRestoreArg: /p:SkipTestRestore=false
+
+      steps:
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+          displayName: Restore
+
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - task: DotNetCoreCLI@2
+            displayName: Restore internal tools
+            condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+            inputs:
+              command: restore
+              feedsToUse: config
+              projects: 'eng/common/internal/Tools.csproj'
+              nugetConfigPath: 'eng/internal/NuGet.config'
+              restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+              verbosityRestore: 'normal'
+              externalFeedCredentials: 'dotnet-core-internal-tooling'
+
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: |
+              brew install pkgconfig openssl
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+            displayName: Install Build Dependencies
+
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - script: |
+              EMSCRIPTEN_VERSION=1.38.47
+              git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_PATH)
+              cd $(EMSDK_PATH)
+              ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
+              ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
+            displayName: Install Emscripten
+
+        - script: $(_buildScript)
+                $(_buildAction)
+                $(_buildArguments)
+          displayName: Build
+
+        - ${{ if eq(parameters.runTests, false) }}:
+          - task: CopyFiles@2
+            displayName: Prepare ref folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+
+          - task: CopyFiles@2
+            displayName: Prepare runtime folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+          
+          - task: CopyFiles@2
+            displayName: Prepare testhost folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
+        
+          - template: /eng/pipelines/common/upload-artifact-step.yml
+            parameters:
+              rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+              includeRootFolder: true
+              archiveType: $(archiveType)
+              archiveExtension: $(archiveExtension)
+              tarCompression: $(tarCompression)
+              artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+              displayName: Build Assets
+        
+        - ${{ if eq(parameters.runTests, true) }}:
+          - template: /eng/pipelines/libraries/helix.yml
+            parameters:
+              targetOS: ${{ parameters.osGroup }}
+              archGroup: ${{ parameters.archType }}
+              configuration: ${{ parameters.buildConfig }}
+              helixQueues: ${{ join(';', parameters.helixQueues) }}
+              msbuildScript: $(_msbuildCommand)
+              framework: ${{ parameters.framework }}
+              testScope: ${{ parameters.testScope }}
+              creator: dotnet-bot
+              helixToken: ''
