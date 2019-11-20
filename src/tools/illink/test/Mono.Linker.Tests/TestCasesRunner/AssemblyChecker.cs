@@ -171,8 +171,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (expectedInterfaces.Count == 0) {
 				Assert.IsFalse (linked.HasInterfaces, $"Type `{src}' has unexpected interfaces");
 			} else {
-				foreach (var iface in linked.Interfaces) {
-					Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.FullName), $"Type `{src}' interface `{iface.InterfaceType.FullName}' should have been removed");
+				foreach (var iface in linked.Interfaces) { 
+					if (!expectedInterfaces.Remove(iface.InterfaceType.FullName)) {
+						Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.Resolve().FullName), $"Type `{src}' interface `{iface.InterfaceType.Resolve().FullName}' should have been removed");
+					}
 				}
 
 				Assert.IsEmpty (expectedInterfaces, $"Unexpected interfaces on {src}");
