@@ -16,6 +16,7 @@ Below table shows the combined area owners on this repository:
 | area-Infrastructure-coreclr | _@_jeffschwMSFT _@_jashook _@_trylek |
 | area-Infrastructure-installer | _@_dleeapho _@_wtgodbe _@_dagood |
 | area-Infrastructure-libraries | _@_ViktorHofer _@_ericstj _@_wtgodbe _@_safern _@_Anipik |
+| area-Infrastructure | _@_ViktorHofer _@_jeffschwMSFT _@_dleeapho |
 | area-Interop | _@_jeffschwMSFT _@_AaronRobinsonMSFT |
 | area-Meta | _@_joperezr |
 | area-Meta-corelib | _@_joperezr |
