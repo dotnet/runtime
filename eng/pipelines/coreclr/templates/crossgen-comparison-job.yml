@@ -128,15 +128,15 @@ jobs:
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
         WorkItemTimeout: 1:00 # 1 hour
-        WorkItemDirectory: '$(binDirectory)'
+        WorkItemDirectory: '$(artifactsDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
-            chmod +x     $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen;
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
-            --crossgen   $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen
-            --il_corelib $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
+            --crossgen   $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
             --core_root  $HELIX_WORKITEM_PAYLOAD/tests/coreclr/$(targetFlavor)/Tests/Core_Root
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
@@ -146,8 +146,8 @@ jobs:
           WorkItemCommand:
             mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
-            --crossgen   %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\crossgen
-            --il_corelib %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\IL\System.Private.CoreLib.dll
+            --crossgen   %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\crossgen
+            --il_corelib %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\IL\System.Private.CoreLib.dll
             --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\coreclr\$(targetFlavor)\Tests\Core_Root
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
