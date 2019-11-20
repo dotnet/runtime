@@ -172,9 +172,9 @@ namespace System.Xml.Linq.Tests
         }
 
         [Fact]
-        public void DifferentNamespaceAndSameNameProduceDifferentInstance()
+        public void DifferentNamespaceAndSameNameProduceDifferentXNameInstance()
         {
-            XName a = "{A2WVLA}A2WVKA", b = "{A2WVKA}A2WVKA";
+            XName a = "{Namesapce1}Name1", b = "{Namesapce2}Name1";
             Assert.NotSame(a.Namespace, b.Namespace);
             Assert.NotSame(a, b);
             Assert.NotSame(a.ToString(), b.ToString());
@@ -182,10 +182,10 @@ namespace System.Xml.Linq.Tests
         }
 
         [Fact]
-        public void DefaultNamespaceSameNameProduceSameInstance()
+        public void SameDefaultNamespaceSameNameProduceSameXNameInstance()
         {
-            XName a = "A2WVKB";
-            var b = new XElement("A2WVKB");
+            XName a = "Name2";
+            var b = new XElement($"Name2");
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.Same(a, b.Name);
             Assert.Same(XNamespace.None, a.Namespace);
@@ -193,10 +193,21 @@ namespace System.Xml.Linq.Tests
         }
 
         [Fact]
-        public void SameNamespaceDifferentNameProduceDifferentInstance()
+        public void SameNamespaceSameStringDifferentInstanceProduceSameXNameInstance()
         {
-            XName a = "{A2WVLC}A2WVKC";
-            var b = new XElement("{A2WVLC}A2WVLC");
+            XName a = "Name3";
+            var b = new XElement($"Name3{null}");
+            Assert.Same(a.Namespace, b.Name.Namespace);
+            Assert.Same(a, b.Name);
+            Assert.Same(XNamespace.None, a.Namespace);
+            Assert.Same(a.ToString(), b.Name.ToString());
+        }
+
+        [Fact]
+        public void SameNamespaceDifferentNameProduceDifferentXNameInstance()
+        {
+            XName a = "{Namesapce2}Name4";
+            var b = new XElement("{Namesapce2}Name5");
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.NotSame(a, b.Name);
             Assert.Same(a.Namespace.ToString(), b.Name.Namespace.ToString());

@@ -234,30 +234,35 @@ namespace System.Xml.Linq
 
             if (count == 0) return None;
 
+            // determine whether it's a special namespace
+            if (count == xmlPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlPrefixNamespace, 0, count) == 0) return Xml;
+            if (count == xmlnsPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlnsPrefixNamespace, 0, count) == 0) return Xmlns;
+
             // Use CompareExchange to ensure that exactly one XHashtable<WeakReference> is used to store namespaces
             if (s_namespaces == null)
                 Interlocked.CompareExchange(ref s_namespaces, new XHashtable<WeakReference<XNamespace>>(ExtractNamespace, NamespacesCapacity), null);
 
             XNamespace ns = null;
 
-            // Keep looping until a non-null namespace has been retrieved
-            do
+            // Attempt to get the WeakReference for the namespace from the hash table
+            if (s_namespaces.TryGetValue(namespaceName, index, count, out WeakReference<XNamespace> refNamespace))
             {
-                // Attempt to get the WeakReference for the namespace from the hash table
-                if (!s_namespaces.TryGetValue(namespaceName, index, count, out WeakReference<XNamespace> refNamespace))
+                if (refNamespace.TryGetTarget(out ns))
                 {
-                    // If it is not there, first determine whether it's a special namespace
-                    if (count == xmlPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlPrefixNamespace, 0, count) == 0) return Xml;
-                    if (count == xmlnsPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlnsPrefixNamespace, 0, count) == 0) return Xmlns;
-
-                    // Go ahead and create the namespace and add it to the table
-                    refNamespace = s_namespaces.Add(new WeakReference<XNamespace>(new XNamespace(namespaceName.Substring(index, count))));
+                    return ns;
                 }
-
-                refNamespace?.TryGetTarget(out ns);
+                else
+                {
+                    ns = new XNamespace(namespaceName.Substring(index, count));
+                    refNamespace.SetTarget(ns);
+                }
             }
-            while (ns == null);
-
+            else
+            {
+                // Go ahead and create the namespace and add it to the table
+                ns = new XNamespace(namespaceName.Substring(index, count));
+                s_namespaces.Add(new WeakReference<XNamespace>(ns));
+            }
             return ns;
         }
 
