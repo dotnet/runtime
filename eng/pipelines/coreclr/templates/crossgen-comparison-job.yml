@@ -134,7 +134,7 @@ jobs:
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
             --crossgen   $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen
             --il_corelib $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/$(targetFlavor)/Tests/Core_Root
+            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/coreclr/$(targetFlavor)/Tests/Core_Root
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
@@ -145,7 +145,7 @@ jobs:
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
             --crossgen   %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\crossgen
             --il_corelib %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\$(targetFlavor)\Tests\Core_Root
+            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\coreclr\$(targetFlavor)\Tests\Core_Root
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)
