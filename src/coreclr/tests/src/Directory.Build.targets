@@ -205,6 +205,43 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(__LocalCoreFXPath)' != ''">
+      <__ExcludeFiles Include="clrcompression" />
+      <__ExcludeFiles Include="clretwrc" />
+      <__ExcludeFiles Include="clrgc" />
+      <__ExcludeFiles Include="clrjit" />
+      <__ExcludeFiles Include="coreclr" />
+      <__ExcludeFiles Include="coredistools" />
+      <__ExcludeFiles Include="corerun" />
+      <__ExcludeFiles Include="CoreShim" />
+      <__ExcludeFiles Include="comhost" />
+      <__ExcludeFiles Include="dbgshim" />
+      <__ExcludeFiles Include="hostfxr" />
+      <__ExcludeFiles Include="hostpolicy" />
+      <__ExcludeFiles Include="ijwhost" />
+      <__ExcludeFiles Include="jitinterface" />
+      <__ExcludeFiles Include="linuxnonjit" />
+      <__ExcludeFiles Include="Microsoft.DiaSymReader.Native.amd64" />
+      <__ExcludeFiles Include="mscordbi" />
+      <__ExcludeFiles Include="mscordaccore" />
+      <__ExcludeFiles Include="mscorrc" />
+      <__ExcludeFiles Include="mscorrc.debug" />
+      <__ExcludeFiles Include="nethost" />
+      <__ExcludeFiles Include="protononjit" />
+      <__ExcludeFiles Include="sni" />
+      <__ExcludeFiles Include="superpmi-shim-counter" />
+      <__ExcludeFiles Include="superpmi-shim-simple" />
+      <__ExcludeFiles Include="superpmi-shim-collector" />
+
+      <__ExcludePaths Include="$(__LocalCoreFXPath)/%(__ExcludeFiles.Identity).dll" />
+
+      <__LocalCoreFXManagedFiles Include="$(__LocalCoreFXPath)/*.dll" Exclude="@(__ExcludePaths)" />
+
+      <Reference Include="@(__LocalCoreFXManagedFiles)">
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+
   </Target>
 
   <Target Name="AfterBuild">

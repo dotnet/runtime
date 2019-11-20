@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  coreFxArtifactName: ''
   displayNameArgs: ''
   condition: true
   stagedBuild: false
@@ -30,7 +31,6 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
-    variables: ${{ parameters.variables }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -61,6 +61,23 @@ jobs:
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 160
 
+    variables:
+    - name: coreFxDownloadPath
+      value: ''
+
+    - name: localCoreFxArg
+      value: ''
+
+    - ${{ if ne(parameters.coreFxArtifactName, '') }}:
+      - name: coreFxDownloadPath
+        value: $(binTestsPath)/CoreFX
+
+      - name: localCoreFxArg
+        value: ' localcorefxpath $(binTestsPath)/CoreFX'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ insert }}: ${{ variable }}
+
     steps:
 
     # Install test build dependencies
@@ -82,13 +99,19 @@ jobs:
         displayName: 'product build'
 
 
+    # Optionally download live-built CoreFX artifacts
+    - ${{ if ne(parameters.coreFxArtifactName, '') }}:
+      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(_coreFxOverridePath)
+          artifactFileName: '${{ parameters.coreFxArtifactName }}$(archiveExtension)'
+          artifactName: '${{ parameters.coreFxArtifactName }}'
+          displayName: 'live-built CoreFX artifacts'
+
+
     # Build managed test components
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
-        displayName: Build managed test components
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
-        displayName: Build managed test components
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(localCoreFxArg) ci
+      displayName: Build managed test components
 
 
     # Zip and publish managed test components

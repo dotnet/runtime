@@ -4,24 +4,6 @@ pr:
   branches:
     include:
     - master
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
-    - src/installer/*
-    - src/libraries/*
-    - eng/pipelines/installer/*
-    - eng/pipelines/libraries/*
 
 jobs:
 #
@@ -30,74 +12,45 @@ jobs:
 - template: templates/checkout-job.yml
 
 #
-# Debug builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: debug
-    platforms:
-    - Windows_NT_x64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-
-#
-# Checked builds
+# Build CoreCLR
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_x64
     - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
     jobParameters:
       testGroup: innerloop
 
 #
-# Release builds
+# Build CoreFX using live CoreLib from CoreCLR
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: release
+    jobTemplate: /eng/pipelines/libraries/corefx-steps.yml
+    buildConfig: checked
     platforms:
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_rhel6_x64
     - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
     jobParameters:
-      testGroup: innerloop
+      isOfficialBuild: false
+      testScope: empty
+      coreClrArtifactName: 'BinDir_OSX_x64_checked'
+      coreFxArtifactName: 'CoreFX_OSX_x64_checked'
 
 #
-# Checked test builds
+# Checked test builds using live CoreFX
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
     - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
     helixQueueGroup: pr
     jobParameters:
       testGroup: innerloop
+      coreFxArtifactName: 'CoreFX_OSX_x64_checked'
 
 #
 # Checked JIT test executions
@@ -107,97 +60,8 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    helixQueueGroup: pr
-    jobParameters:
-      testGroup: innerloop
-
-#
-# Checked R2R test executions
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    helixQueueGroup: pr
-    jobParameters:
-      testGroup: innerloop
-      readyToRun: true
-      displayNameArgs: R2R
-
-#
-# CoreFX test runs against CoreCLR
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
-    helixQueueGroup: pr
-    testGroup: innerloop
-    jobParameters:
-      testGroup: innerloop
-      corefxTests: true
-      displayNameArgs: CoreFX
-
-#
-# Crossgen-comparison jobs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_arm
-    helixQueueGroup: pr
-
-#
-# Release test builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
-    buildConfig: release
-    platforms:
     - OSX_x64
     helixQueueGroup: pr
     jobParameters:
       testGroup: innerloop
 
-#
-# Release test builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: release
-    platforms:
-    - Linux_musl_x64
-    helixQueueGroup: pr
-    jobParameters:
-      testGroup: innerloop
-
-#
-# Formatting
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
