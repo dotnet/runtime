@@ -2111,9 +2111,6 @@ public:
         IAssemblyName *    pAssemblyName,
         PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
 
-
-    PEAssembly *TryResolveAssembly(AssemblySpec *pSpec);
-
     //****************************************************************************************
     //
     //****************************************************************************************
@@ -2122,8 +2119,6 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    void OnAssemblyLoad(Assembly *assem);
-    void OnAssemblyLoadUnlocked(Assembly *assem);
     static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
 
 #endif
@@ -2138,9 +2133,6 @@ public:
     // Send unload notifications to the debugger for all assemblies, modules and classes in this AppDomain
     void NotifyDebuggerUnload();
 #endif // DEBUGGING_SUPPORTED
-
-    void SetSystemAssemblyLoadEventSent (BOOL fFlag);
-    BOOL WasSystemAssemblyLoadEventSent (void);
 
 #ifndef DACCESS_COMPILE
     OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTREF** ppLazyAllocate = NULL)
@@ -2485,7 +2477,8 @@ private:
     DispIDCache* SetupRefDispIDCache();
 #endif // FEATURE_COMINTEROP
 
-protected:
+private:
+    PEAssembly *TryResolveAssemblyUsingEvent(AssemblySpec *pSpec);
     BOOL PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
                                  AssemblySpec  *pPostPolicySpec,
                                  HRESULT        hrBindResult,
@@ -2496,7 +2489,6 @@ public:
     void ReleaseRCWs(LPVOID pCtxCookie);
     void DetachRCWs();
 
-protected:
 #endif // FEATURE_COMINTEROP
 
 private:
@@ -2679,7 +2671,6 @@ public:
 
     enum {
         CONTEXT_INITIALIZED =               0x0001,
-        LOAD_SYSTEM_ASSEMBLY_EVENT_SENT =   0x0040,
         COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
     };
@@ -2926,9 +2917,6 @@ public:
 
         return AppDomain::GetCurrentDomain();
     }
-
-    // Notification when an assembly is loaded into the system domain
-    void OnAssemblyLoad(Assembly *assem);
 
     //****************************************************************************************
     //

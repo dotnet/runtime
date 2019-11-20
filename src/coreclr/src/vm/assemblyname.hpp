@@ -20,9 +20,7 @@ class AssemblyNameNative
 {
 public:
     static FCDECL1(Object*, GetFileInformation, StringObject* filenameUNSAFE);
-    static FCDECL1(Object*, ToString, Object* refThisUNSAFE);
     static FCDECL1(Object*, GetPublicKeyToken, Object* refThisUNSAFE);
-    static FCDECL1(Object*, EscapeCodeBase, StringObject* filenameUNSAFE);
     static FCDECL1(void, Init, Object * refThisUNSAFE);
 };
 
