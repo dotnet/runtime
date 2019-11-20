@@ -2282,11 +2282,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-#ifdef DEBUG
-    /* We're done generating code for this function */
-    compiler->compCodeGenDone = true;
-#endif
-
     compiler->EndPhase(PHASE_GENERATE_CODE);
 
     codeSize =
@@ -2295,6 +2290,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
                                      &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
+
+#ifdef DEBUG
+    assert(compiler->compCodeGenDone == false);
+
+    /* We're done generating code for this function */
+    compiler->compCodeGenDone = true;
+#endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
     // Add code size information into the Perf Score
@@ -2307,9 +2309,10 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("; Total bytes of code %d, prolog size %d, perf score %.2f, (MethodHash=%08x) for method %s\n", codeSize,
-               prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(), compiler->info.compFullName);
-        printf("; ============================================================\n");
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+               compiler->info.compFullName);
+        printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
     }
 
