@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments/>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GetConfigurationVariables_common.cs" />
+    <Compile Include="GetConfigurationVariables_defaults.cs" />
+  </ItemGroup>
+</Project>

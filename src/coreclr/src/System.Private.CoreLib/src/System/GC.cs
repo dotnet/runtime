@@ -78,6 +78,47 @@ namespace System
                                     fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
         }
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Ansi)]
+        private static extern void GetGCConfigurationVariable(string name, StringHandleOnStack retString);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern string[] GetGCConfigurationVariables();
+
+        /// <summary>
+        /// Given the name of a GC configuration variable, get the set or default value.
+        /// </summary>
+        /// <remarks>
+        /// Returns `null` for an invalid name.
+        /// For a list of possible names, see the keys of `GetConfigurationVariables`.
+        ///
+        /// Numeric are in decimal even though environment variables are specified using hexadecimal.
+        ///
+        /// This reflects actually used values, not just explicit settings.
+        /// For example, if you set `System.GC.HeapCount` but not `System.GC.Server`,
+        /// the result for "HeapCount" would be "1" as workstation GC only uses 1 heap.
+        /// Similarly, "NoAffinitize" may be true if "HeapHardLimit" is set and HeapAffinitizeRanges is not.
+        /// </remarks>
+        public static string? GetConfigurationVariable(string name)
+        {
+            string result = "";
+            GetGCConfigurationVariable(name, new StringHandleOnStack(ref result));
+            return result == "" ? null : result;
+        }
+
+        /// <summary>
+        /// Returns all possible GC configuration variables and their values.
+        /// </summary>
+        /// <remarks>
+        /// See `GetConfigurationVariable` for description of how we get values.
+        /// </remarks>
+        public static IEnumerable<KeyValuePair<string, string>> GetConfigurationVariables()
+        {
+            foreach (string v in GetGCConfigurationVariables())
+            {
+                yield return new KeyValuePair<string, string>(v, GetConfigurationVariable(v)!);
+            }
+        }
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 

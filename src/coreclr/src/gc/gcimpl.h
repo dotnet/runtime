@@ -177,6 +177,9 @@ public:
                        uint32_t* lastRecordedMemLoadPct,
                        size_t* lastRecordedHeapSizeBytes,
                        size_t* lastRecordedFragmentationBytes);
+    
+    const char* GetGCConfigurationVariable(const char* key);
+    slice<char const* const> GetGCConfigurationVariables();
 
     int GetGcLatencyMode();
     int SetGcLatencyMode(int newLatencyMode);

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments/>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable  Include="export COMPlus_GCServer=1" />
+    <CLRTestBatchEnvironmentVariable Include="set    COMPlus_GCServer=1" />
+    <!--
+    On a single-processor machine there is a max of 1 heap regardless of the setting here.
+    So must set to 1 here so the value will be consistent on all machines.
+    -->
+    <CLRTestBashEnvironmentVariable  Include="export COMPlus_GCHeapCount=1" />
+    <CLRTestBatchEnvironmentVariable Include="set    COMPlus_GCHeapCount=1" />
+    <!-- In decimial this is 123456789 -->
+    <CLRTestBashEnvironmentVariable  Include="export COMPlus_GCHeapHardLimit=75bcd15" />
+    <CLRTestBatchEnvironmentVariable Include="set    COMPlus_GCHeapHardLimit=75bcd15" />
+    <CLRTestBashEnvironmentVariable  Include="export COMPlus_GCHighMemoryPercent=80" />
+    <CLRTestBatchEnvironmentVariable Include="set    COMPlus_GCHighMemoryPercent=80" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GetConfigurationVariables_common.cs" />
+    <Compile Include="GetConfigurationVariables_withEnvVars.cs" />
+  </ItemGroup>
+</Project>

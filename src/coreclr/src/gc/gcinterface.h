@@ -14,6 +14,32 @@
 // mismatches can still interopate correctly, with some care.
 #define GC_INTERFACE_MINOR_VERSION 1
 
+template <typename T>
+class slice {
+    T* _begin;
+    size_t _length;
+
+    slice(T* begin, size_t length) : _begin{begin}, _length{length} {}
+
+public:
+    template <size_t size>
+    static slice<T> FromArray(T data[size])
+    {
+        return slice<T> { data, size };
+    }
+
+    size_t size() const
+    {
+        return _length;
+    }
+
+    const T& operator[](size_t index) const
+    {
+        assert(index < _length);
+        return _begin[index];
+    }
+};
+
 struct ScanContext;
 struct gc_alloc_context;
 class CrawlFrame;
@@ -611,6 +637,9 @@ public:
                                uint32_t* lastRecordedMemLoadPct,
                                size_t* lastRecordedHeapSizeBytes,
                                size_t* lastRecordedFragmentationBytes) = 0;
+
+    virtual const char* GetGCConfigurationVariable(const char* key) = 0;
+    virtual slice<char const* const> GetGCConfigurationVariables() = 0;
 
     // Gets the current GC latency mode.
     virtual int GetGcLatencyMode() = 0;

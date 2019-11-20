@@ -48,6 +48,14 @@ public:
 
     // Retrieves the wrapped config string.
     const char* Get() const { return m_str; }
+
+    // Returns the wrapped config string and sets to null.
+    // Now the caller is responsible for freeing it.
+    const char* Extract() {
+        const char* result = m_str;
+        m_str = nullptr;
+        return result;
+    }
 };
 
 // Note that the configs starting BGCFLTuningEnabled ending BGCG2RatioStep are for BGC servo

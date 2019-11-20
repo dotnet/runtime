@@ -20,6 +20,8 @@
 #include "corinfo.h"
 #include "volatile.h"
 
+#include "../inc/configuration.h"
+
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
 #endif //!DACCESS_COMPILE
@@ -989,7 +991,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
-    BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
+    BOOL enableGCCPUGroups     = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
 
     if (!enableGCCPUGroups)

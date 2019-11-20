@@ -814,11 +814,17 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
 #endif //BIT64
 
-    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
+    ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
+    if (!ullHeapHardLimit) ullHeapHardLimit = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapHardLimit, 0);
     iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
         ? static_cast<size_t>(ullHeapHardLimit)
         : ClrSafeInt<size_t>::MaxInt();
     iGCHeapHardLimitPercent = Configuration::GetKnobDWORDValue(W("System.GC.HeapHardLimitPercent"), 0);
+
+    iGCCpuGroup = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
+    iGCHighMemoryPercent = Configuration::GetKnobDWORDValue(W("System.GC.HighMemoryPercent"), CLRConfig::EXTERNAL_GCHighMemPercent);
+    fGCLargePages = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::EXTERNAL_GCLargePages);
+    lpszGCHeapAffinitizeRanges = Configuration::GetKnobStringValue(W("System.GC.HeapAffinitizeRanges"), CLRConfig::EXTERNAL_GCHeapAffinitizeRanges);
 
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;

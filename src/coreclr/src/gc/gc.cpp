@@ -38815,6 +38815,121 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
     *lastRecordedFragmentationBytes = gc_heap::last_gc_fragmentation;
 }
 
+static const char* bool_to_str(const bool value)
+{
+    const char* content = value ? "true" : "false";
+    const size_t len = strlen(content);
+    // + 1 for the '\0'
+    char* out = new (nothrow) char[len + 1];
+    if (out != nullptr)
+    {
+        strncpy(out, content, len + 1);
+        assert(out[len] == '\0' && strcmp(out, content) == 0);
+    }
+    return out;
+}
+
+static const char* int64_t_to_str(const int64_t value)
+{
+    // 2**64 in base ten has 20 characters at most, + 1 for the '\0'
+    const size_t max_size = 21;
+    char* out = new (nothrow) char[max_size];
+    if (out != nullptr)
+    {
+        int n = _snprintf_s (out, max_size, _TRUNCATE, "%llu", (long long) value);
+        // -1 because n does not include the '\0'
+        assert (n <= max_size - 1);
+    }
+    return out;
+}
+
+static char const* const configuration_variables[11] =
+{
+    "CpuGroup",
+    "HeapAffinitizeMask",
+    "HeapAffinitizeRanges",
+    "HeapCount",
+    "HeapHardLimit",
+    "HeapHardLimitPercent",
+    "HighMemoryPercent",
+    "LargePages",
+    "LOHThreshold",
+    "NoAffinitize",
+    "Server"
+};
+
+slice<char const* const> GCHeap::GetGCConfigurationVariables()
+{
+    return slice<char const* const>::FromArray<11>(configuration_variables);
+}
+
+const char* GCHeap::GetGCConfigurationVariable(const char* key)
+{
+    if (strcmp(key, "CpuGroup") == 0)
+    {
+        return bool_to_str(GCConfig::GetGCCpuGroup());
+    }
+    else if (strcmp(key, "HeapAffinitizeMask") == 0)
+    {
+        return int64_t_to_str(GCConfig::GetGCHeapAffinitizeMask());
+    }
+    else if (strcmp(key, "HeapAffinitizeRanges") == 0)
+    {
+        // GetGCHeapAffinitizeRanges returns a GCConfigStringHolder which will delete the string, but not if we Extract() it.
+        return GCConfig::GetGCHeapAffinitizeRanges().Extract();
+    }
+    else if (strcmp(key, "HeapCount") == 0)
+    {
+#ifdef MULTIPLE_HEAPS
+        const size_t heapCount = gc_heap::n_heaps;
+#else
+        const size_t heapCount = 1;
+#endif
+        return int64_t_to_str(heapCount);
+    }
+    else if (strcmp(key, "HeapHardLimit") == 0)
+    {
+        return int64_t_to_str(gc_heap::heap_hard_limit);
+    }
+    else if (strcmp(key, "HeapHardLimitPercent") == 0)
+    {
+        return int64_t_to_str(GCConfig::GetGCHeapHardLimitPercent());
+    }
+    else if (strcmp(key, "HighMemoryPercent") == 0)
+    {
+        return int64_t_to_str(gc_heap::high_memory_load_th);
+    }
+    else if (strcmp(key, "LargePages") == 0)
+    {
+        return bool_to_str(gc_heap::use_large_pages_p);
+    }
+    else if (strcmp(key, "LOHThreshold") == 0)
+    {
+        return int64_t_to_str(loh_size_threshold);
+    }
+    else if (strcmp(key, "NoAffinitize") == 0)
+    {
+#ifdef MULTIPLE_HEAPS
+        const bool noAffinitize = gc_heap::gc_thread_no_affinitize_p;
+#else
+        const bool noAffinitize = false;
+#endif
+        return bool_to_str(noAffinitize);
+    }
+    else if (strcmp(key, "Server") == 0)
+    {
+#ifdef MULTIPLE_HEAPS
+        return bool_to_str(true);
+#else
+        return bool_to_str(false);
+#endif
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 int GCHeap::GetGcLatencyMode()
 {
     return (int)(pGenGCHeap->settings.pause_mode);

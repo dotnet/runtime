@@ -696,6 +696,43 @@ FCIMPL6(void, GCInterface::GetMemoryInfo, UINT64* highMemLoadThreshold, UINT64* 
 }
 FCIMPLEND
 
+void QCALLTYPE GCInterface::GetGCConfigurationVariable(const char* key, QCall::StringHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    AConstStringHolder value;
+    value = GCHeapUtilities::GetGCHeap()->GetGCConfigurationVariable(key);
+    if (value)
+    {
+        result.Set(value);
+    }
+
+    END_QCALL;
+}
+
+FCIMPL0(Object*, GCInterface::GetGCConfigurationVariables)
+{
+    FCALL_CONTRACT;
+
+    slice<char const* const> configVariables = GCHeapUtilities::GetGCHeap()->GetGCConfigurationVariables();
+
+    PTRARRAYREF strArray = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(strArray);
+    strArray = (PTRARRAYREF) AllocateObjectArray(static_cast<DWORD>(configVariables.size()), g_pStringClass);
+    for (unsigned int i = 0; i < configVariables.size(); i++)
+    {
+        STRINGREF str = StringObject::NewString(configVariables[i]); // This copies it
+        STRINGREF * destData = ((STRINGREF*)(strArray->GetDataPtr())) + i;
+        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str);
+    }
+
+    HELPER_METHOD_FRAME_END();
+    return OBJECTREFToObject(strArray);
+}
+FCIMPLEND
+
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;

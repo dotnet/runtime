@@ -1028,6 +1028,7 @@ FORCEINLINE void DeleteArray(TYPE *value)
 
 NEW_WRAPPER_TEMPLATE1(NewArrayHolder, DeleteArray<_TYPE>);
 typedef NewArrayHolder<CHAR>  AStringHolder;
+typedef NewArrayHolder<const CHAR> AConstStringHolder;
 typedef NewArrayHolder<WCHAR> WStringHolder;
 
 //-----------------------------------------------------------------------------
