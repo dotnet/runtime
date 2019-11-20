@@ -298,6 +298,28 @@ mono_llvm_set_func_nonnull_arg (LLVMValueRef func, int argNo)
 }
 
 gboolean
+mono_llvm_can_be_gep (LLVMValueRef base, LLVMValueRef* gep_base, LLVMValueRef* gep_offset)
+{
+#ifdef ENABLE_NETCORE
+	// Look for a pattern like this:
+	//   %1 = ptrtoint i8* %gep_base to i64
+	//   %2 = add i64 %1, %gep_offset
+	if (Instruction *base_inst = dyn_cast<Instruction> (unwrap (base))) {
+		if (base_inst->getOpcode () == Instruction::Add) {
+			if (Instruction *base_ptr_ins = dyn_cast<Instruction> (base_inst->getOperand (0))) {
+				if (base_ptr_ins->getOpcode () == Instruction::PtrToInt) {
+					*gep_base = wrap (base_ptr_ins->getOperand (0));
+					*gep_offset = wrap (base_inst->getOperand (1));
+					return TRUE;
+				}
+			}
+		}
+	}
+#endif
+	return FALSE;
+}
+
+gboolean
 mono_llvm_is_nonnull (LLVMValueRef wrapped)
 {
 	// Argument to function
