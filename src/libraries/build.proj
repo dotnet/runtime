@@ -23,7 +23,7 @@
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
     </ItemGroup>
     
-    <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(SkipTestRestore)' != 'true'">
+    <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Build="false" />
     </ItemGroup>
 

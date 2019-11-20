@@ -44,29 +44,6 @@ pr:
     - eng/pipelines/coreclr/*
     - eng/pipelines/installer/*
 
-resources:
-  containers:
-  - container: centos7_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
-
-  - container: centos6_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-f39df28-20191023143802
-
-  - container: alpine_39_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
-
-  - container: alpine_37_arm64_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
-
-  - container: ubuntu_1604_arm64_cross_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20191023143847
-
-  - container: ubuntu_1604_arm_cross_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20191023143847
-
-  - container: ubuntu_1604
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191023143845
-
 variables:
   - template: variables.yml
 
@@ -86,18 +63,18 @@ stages:
 
   - stage: Build
     jobs:
-      - template: /eng/pipelines/coreclr/templates/platform-matrix.yml
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build.yml
+          jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: Release
           platforms:
           - Windows_NT_x64
           jobParameters:
             isOfficialBuild: ${{ variables['isOfficialBuild'] }}
 
-      - template: /eng/pipelines/coreclr/templates/platform-matrix.yml
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build.yml
+          jobTemplate: /eng/pipelines/libraries/test-job.yml
           buildConfig: Release
           platforms:
           - Windows_NT_x64

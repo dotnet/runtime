@@ -1,0 +1,68 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  framework: ''
+  isOfficialBuild: false
+  timeoutInMinutes: 150
+  container: ''
+  steps: []
+  preBuildSteps: []
+  dependsOn: []
+  variables: {}
+  name: ''
+  displayName: ''
+  pool: ''
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+      name: ${{ parameters.name }}
+      displayName: ${{ parameters.displayName }}
+      enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
+      container: ${{ parameters.container }}
+      helixRepo: dotnet/runtime
+      pool: ${{ parameters.pool }}
+      variables:
+        - _BuildConfig: ${{ parameters.buildConfig }}
+        - _msbuildCommonParameters: ''
+        - _stripSymbolsArg: ''
+        - _finalFrameworkArg: -framework ${{ parameters.framework }}
+        - _buildScript: $(buildScriptFileName)$(scriptExt)
+
+        - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+          - _finalFrameworkArg: -allConfigurations
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        # Windows variables
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _stripSymbolsArg: -stripSymbols
+
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_msbuildCommonParameters)
+        - ${{ parameters.variables }}
+
+      dependsOn:
+      - ${{ parameters.dependsOn }}
+      workspace:
+        clean: all
+
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+      steps:
+        - ${{ if ne(parameters.preBuildSteps[0], '') }}:
+          - ${{ parameters.preBuildSteps }}
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+          displayName: Restore
+
+        - ${{ parameters.steps }}
