@@ -40,8 +40,6 @@ We assign each issue to assignee, when the assignee is ready to pick up the work
 ### Areas
 Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area typically corresponds to one or more contract assemblies. To view owners for each area in this repository check out the [area-owners.md](https://github.com/dotnet/runtime/blob/master/docs/area-owners.md) page.
 
-Note: Area triage will apply the new scheme (issue types and assignee) throughout 2016.
-
 ### Community Partner Experts
 
 | Area        | Owners / experts | Description |
