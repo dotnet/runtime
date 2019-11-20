@@ -18,7 +18,11 @@ namespace Internal.TypeSystem.Ecma
         private EcmaModule _module;
         private BlobReader _reader;
 
+#if TYPE_LOADER_IMPLEMENTATION
+        private LowLevelStack<int> _indexStack;
+#else
         private Stack<int> _indexStack;
+#endif
         private List<EmbeddedSignatureData> _embeddedSignatureDataList;
 
 
@@ -226,7 +230,11 @@ namespace Internal.TypeSystem.Ecma
         {
             try
             {
+#if TYPE_LOADER_IMPLEMENTATION
+                _indexStack = new LowLevelStack<int>();
+#else
                 _indexStack = new Stack<int>();
+#endif
                 _indexStack.Push(0);
                 _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
                 return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
