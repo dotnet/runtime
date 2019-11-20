@@ -47,13 +47,38 @@ public static class MemCheck {
         return kb == null ? (uint?) null : KBToMB(ParseUint(kb));
     }
 
-    private static uint KBToMB(uint i) =>
-         i / 1024;
+    private static uint KBToMB(uint kb) =>
+         kb / 1024;
+
+    private static uint BytesToMB(ulong bytes) =>
+        (uint) (bytes / (1024 * 1024));
 
     private static uint? TryGetPhysicalMemMBWindows()
     {
-        string? mb = TryExtractLine(RunCommand("systeminfo"), prefix: "Total Physical Memory:", suffix: "MB");
-        return mb == null ? (uint?) null : ParseUint(mb);
+        MEMORYSTATUSEX mem = new MEMORYSTATUSEX
+        {
+            dwLength = (uint) Marshal.SizeOf(typeof(MEMORYSTATUSEX))
+        };
+        bool success = GlobalMemoryStatusEx(ref mem);
+        return success ? BytesToMB(mem.ullAvailPhys) : (uint?) null;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
+
+    // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MEMORYSTATUSEX
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;
+        public ulong ullTotalPhys;
+        public ulong ullAvailPhys;
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
     }
 
     private static string? TryExtractLine(string s, string prefix, string suffix) =>
