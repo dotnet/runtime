@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,7 +8,33 @@ using System.Runtime.InteropServices;
 #nullable enable
 
 public static class MemCheck {
-    public static uint? TryGetPhysicalMemMB() =>
+    public static uint ParseSizeMBAndLimitByAvailableMem(IReadOnlyList<string> args) =>
+        LimitByAvailableMemMB(ParseSizeMBArgument(args));
+
+    public static uint ParseSizeMBArgument(IReadOnlyList<string> args) {
+        try {
+            return UInt32.Parse(args[0]);
+        } catch (Exception e) {
+            if ( (e is IndexOutOfRangeException) || (e is FormatException) || (e is OverflowException) ) {
+                throw new Exception("args: uint - number of MB to allocate");
+            }
+            throw;
+        }
+    }
+
+    public static uint LimitByAvailableMemMB(uint sizeMB, uint defaultMB = 300)
+    {
+        uint? availableMem = TryGetPhysicalMemMB();
+        if (availableMem != null && availableMem < sizeMB){
+            uint mb = availableMem > defaultMB ? defaultMB : (availableMem.Value / 2);
+            Console.WriteLine($"Not enough memory. Allocating {mb}MB instead.");
+            return mb;
+        } else {
+            return sizeMB;
+        }
+    }
+
+    private static uint? TryGetPhysicalMemMB() =>
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? TryGetPhysicalMemMBWindows()
             : TryGetPhysicalMemMBNonWindows();
