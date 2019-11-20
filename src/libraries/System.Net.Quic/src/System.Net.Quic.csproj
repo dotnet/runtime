@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Quic</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,6 +6,22 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- All configurations -->
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\IntResettableCompletionSource.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\UIntResettableCompletionSource.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicConstants.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicEnums.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicNativeMethods.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicStatusException.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicStatusHelper.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\UIntExtensions.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicConnection.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicListener.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicStream.cs" />
     <Compile Include="System\Net\Quic\Implementations\QuicImplementationProvider.cs" />
     <Compile Include="System\Net\Quic\Implementations\QuicListenerProvider.cs" />
     <Compile Include="System\Net\Quic\Implementations\QuicConnectionProvider.cs" />
@@ -25,6 +41,7 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Console" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
@@ -35,8 +52,26 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Channels" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="libmsquic.so" Condition="Exists('libmsquic.so')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 </Project>
