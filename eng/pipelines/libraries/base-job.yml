@@ -1,0 +1,68 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  framework: ''
+  isOfficialBuild: false
+  timeoutInMinutes: 150
+  container: ''
+  steps: []
+  dependsOn: []
+  variables: {}
+  name: ''
+  displayName: ''
+  pool: ''
+  runRestore: true
+  stepName: ''
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.stepName, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if eq(parameters.framework, 'netcoreapp') }}:
+        displayName: ${{ format('{0} {1} {2} {3}_{4}', parameters.stepName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if ne(parameters.framework, 'netcoreapp') }}:
+        displayName: ${{ format('{0} {1} {2} {3}_{4}', parameters.stepName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+
+      enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
+      container: ${{ parameters.container }}
+      helixRepo: dotnet/runtime
+      pool: ${{ parameters.pool }}
+      variables:
+        - _BuildConfig: ${{ parameters.buildConfig }}
+        - _msbuildCommonParameters: ''
+        - _stripSymbolsArg: ''
+        - _finalFrameworkArg: -framework ${{ parameters.framework }}
+        - _buildScript: $(buildScriptFileName)$(scriptExt)
+
+        - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+          - _finalFrameworkArg: -allConfigurations
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        # Windows variables
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
+          - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _stripSymbolsArg: -stripSymbols
+
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_msbuildCommonParameters)
+        - ${{ parameters.variables }}
+
+      dependsOn:
+      - ${{ parameters.dependsOn }}
+      workspace:
+        clean: all
+
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+      steps:
+      - ${{ parameters.steps }}
