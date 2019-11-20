@@ -21,7 +21,6 @@
 **/[Dd]ebugPublic/
 **/[Rr]elease/
 **/[Rr]eleases/
-**/build/
 **/bld/
 **/[Bb]in/
 **/[Oo]bj/
@@ -41,6 +40,9 @@
 
 # Visual Studio
 **/.vs/
+
+# Ionide
+**/.ionide/
 
 # MSTest test Results
 **/[Tt]est[Rr]esult*/
@@ -142,9 +144,6 @@
 **/DocProject/Help/Html2
 **/DocProject/Help/html
 
-# Click-Once directory
-**/publish/
-
 # Publish Web Output
 **/*.[Pp]ublish.xml
 **/*.azurePubxml
@@ -152,13 +151,14 @@
 **/*.publishproj
 
 # NuGet Packages
-**/*.nuget.props
-**/*.nuget.targets
 **/*.nupkg
+**/*.nuget.g.props
+**/*.nuget.g.targets
+**/*.nuget.cache
 **/**/packages/*
-
-# NuGet package restore lockfiles
 **/project.lock.json
+**/project.assets.json
+**/*.nuget.dgspec.json
 
 # Windows Azure Build Output
 **/csx/
@@ -203,6 +203,12 @@
 
 # Microsoft Fakes
 **/FakesAssemblies/
+
+# C/C++ extension for Visual Studio Code
+**/browse.VC.db
+# Local settings folder for Visual Studio Code
+**/**/.vscode/**
+!**/**/.vscode/c_cpp_properties.json
 
 ### MonoDevelop ###
 
@@ -277,3 +283,58 @@
 
 # VS debug support files
 **/launchSettings.json
+
+# Snapcraft files
+**/.snapcraft
+**/*.snap
+**/parts/
+**/prime/
+**/stage/
+
+# CLR prebuilt generated files
+!**/src/pal/prebuilt/idl/*_i.c
+
+# Valid 'debug' folder, that contains CLR debugging code
+!**/src/debug
+
+# Ignore folders created by the CLR test build
+**/TestWrappers_x64_[d|D]ebug
+**/TestWrappers_x64_[c|C]hecked
+**/TestWrappers_x64_[r|R]elease
+**/TestWrappers_x86_[d|D]ebug
+**/TestWrappers_x86_[c|C]hecked
+**/TestWrappers_x86_[r|R]elease
+**/TestWrappers_arm_[d|D]ebug
+**/TestWrappers_arm_[c|C]hecked
+**/TestWrappers_arm_[r|R]elease
+**/TestWrappers_arm64_[d|D]ebug
+**/TestWrappers_arm64_[c|C]hecked
+**/TestWrappers_arm64_[r|R]elease
+**/tests/src/common/test_runtime/project.json
+
+**/Vagrantfile
+**/.vagrant
+
+# CMake files
+**/CMakeFiles/
+**/cmake_install.cmake
+**/CMakeCache.txt
+**/Makefile
+
+# Cross compilation
+**/cross/rootfs/*
+**/cross/android-rootfs/*
+# add x86 as it is ignored in 'Build results'
+!**/cross/x86
+
+#python import files
+**/*.pyc
+
+# JIT32 files
+**/src/jit32
+
+# performance testing sandbox
+**/sandbox
+
+#IL linker for testing
+**/linker
