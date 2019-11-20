@@ -52,6 +52,12 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
         worklist.erase(worklist.begin());
 
         callback.StartMerge(block);
+        if (m_pCompiler->bbIsHandlerBeg(block))
+        {
+            EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(block);
+            callback.MergeHandler(block, ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
+        }
+        else
         {
             flowList* preds = m_pCompiler->BlockPredsWithEH(block);
             for (flowList* pred = preds; pred; pred = pred->flNext)

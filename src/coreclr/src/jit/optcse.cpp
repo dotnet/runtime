@@ -1034,6 +1034,11 @@ public:
 #endif // DEBUG
     }
 
+    void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
+    {
+        // TODO CQ: add CSE for handler blocks, CSE_INTO_HANDLERS should be defined.
+    }
+
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     // We also handle the case where calls conditionally kill CSE availabilty.
     //
