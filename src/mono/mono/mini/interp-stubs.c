@@ -138,6 +138,12 @@ stub_create_method_pointer_llvmonly (MonoMethod *method, gboolean compile, MonoE
 	return NULL;
 }
 
+static void
+stub_free_method (MonoDomain *domain, MonoMethod *method)
+{
+	g_assert_not_reached ();
+}
+
 static MonoObject*
 stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {

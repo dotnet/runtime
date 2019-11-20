@@ -2539,11 +2539,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	g_assert (method->dynamic);
 
 	if (mono_use_interpreter) {
-		mono_domain_jit_code_hash_lock (domain);
-		/* InterpMethod is allocated in the domain mempool. We might haven't
-		 * allocated an InterpMethod for this instance yet */
-		mono_internal_hash_table_remove (&info->interp_code_hash, method);
-		mono_domain_jit_code_hash_unlock (domain);
+		mini_get_interp_callbacks ()->free_method (domain, method);
 	}
 
 	mono_domain_lock (domain);
