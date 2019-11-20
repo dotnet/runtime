@@ -34,7 +34,7 @@ namespace System.IO.Pipes
         {
             ValidateParameters(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
 
-            if (pipeSecurity != null && IsCurrentUserOnly == true)
+            if (pipeSecurity != null && IsCurrentUserOnly)
             {
                 throw new ArgumentException(SR.NotSupported_PipeSecurityIsCurrentUserOnly, nameof(pipeSecurity));
             }
@@ -110,7 +110,7 @@ namespace System.IO.Pipes
             GCHandle pinningHandle = default;
             try
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
                 SafePipeHandle handle = Interop.Kernel32.CreateNamedPipe(fullPipeName, openMode, pipeModes,
                     maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
 

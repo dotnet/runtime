@@ -160,12 +160,10 @@ namespace System.IO.Pipes.Tests
 
         [Theory]
         [InlineData(PipeAccessRights.Read)]
-        [InlineData(PipeAccessRights.ReadData)]
         [InlineData(PipeAccessRights.ReadExtendedAttributes)]
         [InlineData(PipeAccessRights.ReadAttributes)]
         [InlineData(PipeAccessRights.ReadPermissions)]
         [InlineData(PipeAccessRights.Write)]
-        [InlineData(PipeAccessRights.WriteData)]
         [InlineData(PipeAccessRights.WriteExtendedAttributes)]
         [InlineData(PipeAccessRights.WriteAttributes)]
         public void Create_InvalidAdditionalAccessRights(PipeAccessRights additionalAccessRights)
@@ -176,7 +174,13 @@ namespace System.IO.Pipes.Tests
             //     - PipeAccessRights.Write: This enum is formed by:
             //         - PipeAccessRights.WriteData | PipeAccessRights.WriteExtendedAttributes | PipeAccessRights.WriteAttributes
 
-            // So if we pass any of those rights as additional, we throw with the message 'The parameter is incorrect.'
+            // additionalAccessRights gets bitwise merged with the 'dwOpenMode' parameter we pass to CreateNamedPipeW.
+            // This parameter can acquire any of the values described here: https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea
+            // It's particularly important to mention that two of the accepted values collide with the value of two PipeAccessRights enum values:
+            // - ReadData (0x1): Same value as PIPE_ACCESS_INBOUND
+            // - WriteData (0x2): Same value as PIPE_ACCESS_OUTBOUND
+
+            // Any other value will throw with the message 'The parameter is incorrect.'
             Assert.Throws<IOException>(() =>
             {
                 Create_AdditionalAccessRights(additionalAccessRights).Dispose();
@@ -186,9 +190,33 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeAccessRights.CreateNewInstance)]
         [InlineData(PipeAccessRights.Delete)]
+        public void Create_WindowsNotAcceptedAdditionalAccessRights(PipeAccessRights additionalAccessRights)
+        {
+            // Exception message: "The parameter is incorrect."
+            // Neither CreateNewInstance (0x4) nor Delete (0x10000) collide with any of the dwOpenMode values that get into the bitwise combination:
+            // PipeOptions, PipeDirection, Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE
+            // But Windows does not accept them anyway
+            Assert.Throws<IOException>(() =>
+            {
+                Create_AdditionalAccessRights(additionalAccessRights).Dispose();
+            });
+        }
+
+        [Fact]
+        public void Create_NotEnoughPrivilegesAdditionalAccessRights()
+        {
+            // Exception message: "A required privilege is not held by the client"
+            Assert.Throws<IOException>(() =>
+            {
+                Create_AdditionalAccessRights(PipeAccessRights.AccessSystemSecurity).Dispose();
+            });
+        }
+
+        [Theory]
+        [InlineData(PipeAccessRights.ReadData)]
+        [InlineData(PipeAccessRights.WriteData)]
         [InlineData(PipeAccessRights.ChangePermissions)]
         [InlineData(PipeAccessRights.TakeOwnership)]
-        [InlineData(PipeAccessRights.AccessSystemSecurity)]
         public void Create_ValidAdditionalAccessRights(PipeAccessRights additionalAccessRights)
         {
             using var pipe = Create_AdditionalAccessRights(additionalAccessRights);
