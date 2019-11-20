@@ -20,6 +20,12 @@ namespace System.Collections.Tests
             yield return new object[] { 75 };
         }
 
+        public static IEnumerable<object[]> ValidPositiveCollectionSizes()
+        {
+            yield return new object[] { 1 };
+            yield return new object[] { 75 };
+        }
+
         public enum EnumerableType
         {
             HashSet,

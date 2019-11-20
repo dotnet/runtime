@@ -626,5 +626,29 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region Remove
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void Remove_NonDefaultComparer_ComparerUsed(int capacity)
+        {
+            var c = new TrackingEqualityComparer<T>();
+            var set = new HashSet<T>(capacity, c);
+
+            AddToCollection(set, capacity);
+            T first = set.First();
+            c.EqualsCalls = 0;
+            c.GetHashCodeCalls = 0;
+
+            Assert.Equal(capacity, set.Count);
+            set.Remove(first);
+            Assert.Equal(capacity - 1, set.Count);
+
+            Assert.InRange(c.EqualsCalls, 1, int.MaxValue);
+            Assert.InRange(c.GetHashCodeCalls, 1, int.MaxValue);
+        }
+
+        #endregion
     }
 }
