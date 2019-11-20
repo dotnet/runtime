@@ -1,6 +1,3 @@
-.git/
-**/syntax: glob
-
 ### VisualStudio ###
 
 # Tool Runtime Dir
