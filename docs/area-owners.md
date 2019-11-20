@@ -15,49 +15,47 @@ Below table shows the combined area owners on this repository:
 | area-ILTools | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
 | area-Infrastructure-installer | @dleeapho @wtgodbe @dagood | |
-| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | |
+| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for CoreFX repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop | @jeffschwMSFT @AaronRobinsonMSFT | |
-| area-Meta | @joperezr | |
+| area-Meta | @joperezr | Issues without clear association to any specific API/contract, e.g. <ul><li>new contract proposals</li><li>cross-cutting code/test pattern changes (e.g. FxCop failures)</li><li>project-wide docs</li></ul><br/> |
 | area-Meta-corelib | @joperezr | |
-| area-Microsoft.CSharp | @cston @333fred | |
-| area-Microsoft.VisualBasic | @cston @333fred | |
-| area-Microsoft.Win32 | @maryamariyan @Anipik | |
 | area-PAL | @janvorli | |
 | area-R2RDump | @nattress | |
 | area-ReadyToRun | @fadimounir | |
 | area-Setup | @dagood @dleeapho | |
 | area-SDK | @janvorli | |
-| area-Serialization | @StephenMolloy @HongGit | |
+| area-Serialization | @StephenMolloy @HongGit | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
 | area-Snap | @dleeapho @leecow @MichaelSimons | |
+| **System contract assemblies** | | |
 | area-System.AppContext | @safern @Anipik | |
 | area-System.Buffers | @layomia @JeremyKuhne @ahsonkhan | |
 | area-System.CodeDom | @buyaa-n @krwq | |
-| area-System.Collections | @safern | |
+| area-System.Collections | @safern | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
 | area-System.ComponentModel | @maryamariyan @safern | |
 | area-System.ComponentModel.DataAnnotations | @lajones @ajcvickers | |
 | area-System.Composition | @maryamariyan @ViktorHofer | |
 | area-System.Configuration | @maryamariyan @safern | |
 | area-System.Console | @wtgodbe | |
-| area-System.Data | @ajcvickers @cheenamalhotra @david-engel @Gary-Zh | |
-| area-System.Data.SqlClient | @cheenamalhotra @Gary-Zh @david-engel | |
-| area-System.Diagnostics | @tommcdon @wtgodbe @krwq | |
+| area-System.Data | @ajcvickers @cheenamalhotra @david-engel @Gary-Zh | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
+| area-System.Data.SqlClient | @cheenamalhotra @Gary-Zh @david-engel | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
+| area-System.Diagnostics | @tommcdon @wtgodbe @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
 | area-System.Diagnostics.Process | @wtgodbe @krwq | |
-| area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik | |
+| area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
 | area-System.Drawing | @safern @maryamariyan | |
-| area-System.Dynamic.Runtime | @cston @333fred | |
+| area-System.Dynamic.Runtime | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Globalization | @krwq @tarekgh | |
 | area-System.IO | @JeremyKuhne @carlossanlop | |
 | area-System.IO.Compression | @carlossanlop @ahsonkhan @ViktorHofer | |
 | area-System.IO.Packaging | @JeremyKuhne @carlossanlop | |
 | area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse | |
 | area-System.Linq | @maryamariyan | |
-| area-System.Linq.Expressions | @cston @333fred | |
+| area-System.Linq.Expressions | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Linq.Parallel | @tarekgh @kouvel | |
-| area-System.Management | @Anipik | |
+| area-System.Management | @Anipik | WMI |
 | area-System.Memory | @ahsonkhan | |
-| area-System.Net | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
+| area-System.Net | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | Included:<ul><li>System.Uri - [@wtgodbe](https://github.com/wtgodbe)</li></ul> |
 | area-System.Net.Http | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
 | area-System.Net.Security | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
 | area-System.Net.Sockets | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
@@ -67,14 +65,15 @@ Below table shows the combined area owners on this repository:
 | area-System.Reflection.Emit | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Metadata | @tmat @nguerrera | |
 | area-System.Resources | @krwq @tarekgh | |
-| area-System.Runtime | @bartonjs @joperezr | |
+| area-System.Runtime | @bartonjs @joperezr | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul> |
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |
 | area-System.Runtime.CompilerServices | @Anipik | |
 | area-System.Runtime.Extensions | @Anipik | |
-| area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | |
+| area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
 | area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph | |
 | area-System.Security | @bartonjs @GrabYourPitchforks | |
 | area-System.Security.Cryptography.Xml | @bartonjs | |
+| System.ServiceModel | N/A | [dotnet/wcf](https://github.com/dotnet/wcf) (except System.ServiceModel.Syndication) |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |
 | area-System.ServiceProcess | @Anipik | |
 | area-System.Text.Encoding | @layomia @krwq @tarekgh | |
@@ -92,4 +91,7 @@ Below table shows the combined area owners on this repository:
 | area-TypeSystem | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | |
 | area-VM | @sergiy-k | |
-
+| **Microsoft contract assemblies** | | |
+| area-Microsoft.CSharp | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
+| area-Microsoft.VisualBasic | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
+| area-Microsoft.Win32 | @maryamariyan @Anipik | |
