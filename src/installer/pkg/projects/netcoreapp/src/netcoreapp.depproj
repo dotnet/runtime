@@ -43,7 +43,7 @@
   </Target>
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
-    <ItemGroup Condition="'$(PackageRID)' == ''">
+    <ItemGroup>
       <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
       <Reference Include="@(LibrariesRefAssemblies)" />
     </ItemGroup>
