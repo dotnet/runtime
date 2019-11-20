@@ -16,18 +16,18 @@ jobs:
 #
 - template: templates/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platformGroup: gcstress
     managedOsxBuild: false
     jobParameters:
       testGroup: gcstress-extra
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
     platformGroup: gcstress
     helixQueueGroup: ci

@@ -57,30 +57,6 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - name: archiveExtension
-        value: '.zip'
-      - name: archiveType
-        value: zip
-      - name: tarCompression
-        value: ''
-      - name: scriptExt
-        value: '.cmd'
-      - name: dir
-        value: '\'
-
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - name: archiveExtension
-        value: '.tar.gz'
-      - name: archiveType
-        value: tar
-      - name: tarCompression
-        value: gz
-      - name: scriptExt
-        value: '.sh'
-      - name: dir
-        value: '/'
-
     - name: coreClrRepoRoot
       value: '$(Build.SourcesDirectory)/src/coreclr'
 

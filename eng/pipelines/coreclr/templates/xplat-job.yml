@@ -27,7 +27,7 @@ jobs:
 
     name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
-
+    container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
       - ${{ if ne(parameters.stagedBuild, true) }}:
@@ -88,12 +88,6 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if ne(parameters.container, '') }}:
-      ${{ if eq(parameters.container.registry, 'mcr') }}:
-        container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
-      ${{ if ne(parameters.container.registry, 'mcr') }}:
-        container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
-
     ${{ if eq(parameters.osGroup, 'Linux') }}:
       agentOs: Ubuntu
     ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
@@ -151,9 +145,6 @@ jobs:
         value: 'cross'
       - name: crossPackagesArg
         value: '-__DoCrossArchBuild=1'
-      # This is only required for cross builds.
-      - name: ROOTFS_DIR
-        value: ${{ parameters.crossrootfsDir }}
     - ${{ if eq(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: ''
