@@ -43,6 +43,7 @@ namespace System.Collections.Specialized
         public HybridDictionary(bool caseInsensitive) { }
         public HybridDictionary(int initialSize) { }
         public HybridDictionary(int initialSize, bool caseInsensitive) { }
+        public HybridDictionary(int initialSize, bool caseInsensitive, bool testingLabeler) { }
         public int Count { get { throw null; } }
         public bool IsFixedSize { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
