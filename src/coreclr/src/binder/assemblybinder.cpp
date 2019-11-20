@@ -713,34 +713,10 @@ namespace BINDER_SPACE
 
     namespace
     {
-        enum ProbingPaths
-        {
-            AppNiPaths,
-            AppPaths,
-            PlatformResourceRoots
-        };
-
-        const StringArrayList* GetBindingPaths(ApplicationContext *applicationContext, ProbingPaths paths)
-        {
-            switch (paths)
-            {
-                case ProbingPaths::AppNiPaths:
-                    return applicationContext->GetAppNiPaths();
-                case ProbingPaths::AppPaths:
-                    return applicationContext->GetAppPaths();
-                case ProbingPaths::PlatformResourceRoots:
-                    return applicationContext->GetPlatformResourceRoots();
-            }
-
-            _ASSERTE(false && "Unexpected probing path type");
-            return nullptr;
-        }
-
         HRESULT BindSatelliteResourceByProbingPaths(
-            ApplicationContext  *pApplicationContext,
-            ProbingPaths        paths,
-            AssemblyName        *pRequestedAssemblyName,
-            BindResult          *pBindResult)
+            const StringArrayList   *pResourceRoots,
+            AssemblyName            *pRequestedAssemblyName,
+            BindResult              *pBindResult)
         {
             HRESULT hr = S_OK;
 
@@ -749,7 +725,6 @@ namespace BINDER_SPACE
 
             _ASSERTE(!cultureRef.IsEmpty() && !cultureRef.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral));
 
-            const StringArrayList *pResourceRoots = GetBindingPaths(pApplicationContext, paths);
             for (UINT i = 0; i < pResourceRoots->GetCount(); i++)
             {
                 ReleaseHolder<Assembly> pAssembly;
@@ -761,9 +736,9 @@ namespace BINDER_SPACE
                 fileName.Append(W(".dll"));
 
                 hr = AssemblyBinder::GetAssembly(fileName,
-                                                FALSE /* fIsInGAC */,
-                                                FALSE /* fExplicitBindToNativeImage */,
-                                                &pAssembly);
+                                                 FALSE /* fIsInGAC */,
+                                                 FALSE /* fExplicitBindToNativeImage */,
+                                                 &pAssembly);
 
                 // Missing files are okay and expected when probing
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -790,14 +765,11 @@ namespace BINDER_SPACE
         }
 
         HRESULT BindAssemblyByProbingPaths(
-            ApplicationContext  *pApplicationContext,
-            ProbingPaths        paths,
-            AssemblyName        *pRequestedAssemblyName,
-            Assembly            **ppAssembly)
+            const StringArrayList   *pBindingPaths,
+            AssemblyName            *pRequestedAssemblyName,
+            bool                    useNativeImages,
+            Assembly                **ppAssembly)
         {
-            const StringArrayList *pBindingPaths = GetBindingPaths(pApplicationContext, paths);
-            bool useNativeImages = paths == ProbingPaths::AppNiPaths;
-
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
 
             // Loop through the binding paths looking for a matching assembly
@@ -807,25 +779,25 @@ namespace BINDER_SPACE
                 ReleaseHolder<Assembly> pAssembly;
                 LPCWSTR wszBindingPath = (*pBindingPaths)[i];
 
-                // Look for a matching dll first
                 SString fileNameWithoutExtension(wszBindingPath);
                 CombinePath(fileNameWithoutExtension, simpleName, fileNameWithoutExtension);
 
+                // Look for a matching dll first
                 SString fileName(fileNameWithoutExtension);
                 fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
                 hr = AssemblyBinder::GetAssembly(fileName,
-                                    FALSE, // fIsInGAC
-                                    useNativeImages, // fExplicitBindToNativeImage
-                                    &pAssembly);
+                                                 FALSE, // fIsInGAC
+                                                 useNativeImages, // fExplicitBindToNativeImage
+                                                 &pAssembly);
 
                 if (FAILED(hr))
                 {
                     fileName.Set(fileNameWithoutExtension);
                     fileName.Append(useNativeImages ? W(".ni.exe") : W(".exe"));
                     hr = AssemblyBinder::GetAssembly(fileName,
-                                        FALSE, // fIsInGAC
-                                        useNativeImages, // fExplicitBindToNativeImage
-                                        &pAssembly);
+                                                     FALSE, // fIsInGAC
+                                                     useNativeImages, // fExplicitBindToNativeImage
+                                                     &pAssembly);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -887,10 +859,9 @@ namespace BINDER_SPACE
             // followed by App Paths.
             //
 
-            hr = BindSatelliteResourceByProbingPaths(pApplicationContext,
-                                                      ProbingPaths::PlatformResourceRoots,
-                                                      pRequestedAssemblyName,
-                                                      pBindResult);
+            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
+                                                     pRequestedAssemblyName,
+                                                     pBindResult);
 
             // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
             // back to application resource lookup to handle case where a user creates resources with the same
@@ -902,10 +873,9 @@ namespace BINDER_SPACE
 
             if (!pBindResult->HaveResult())
             {
-                IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext,
-                                                                ProbingPaths::AppPaths,
-                                                                pRequestedAssemblyName,
-                                                                pBindResult));
+                IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
+                                                               pRequestedAssemblyName,
+                                                               pBindResult));
             }
         }
         else
@@ -964,9 +934,17 @@ namespace BINDER_SPACE
             {
                 // Probe AppNiPaths first, then AppPaths
                 ReleaseHolder<Assembly> pAssembly;
-                hr = BindAssemblyByProbingPaths(pApplicationContext, ProbingPaths::AppNiPaths, pRequestedAssemblyName, &pAssembly);
+                hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppNiPaths(),
+                                                pRequestedAssemblyName,
+                                                true, // useNativeImages
+                                                &pAssembly);
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                    hr = BindAssemblyByProbingPaths(pApplicationContext, ProbingPaths::AppPaths, pRequestedAssemblyName, &pAssembly);
+                {
+                    hr = BindAssemblyByProbingPaths(pApplicationContext->GetAppPaths(),
+                                                    pRequestedAssemblyName,
+                                                    false, // useNativeImages
+                                                    &pAssembly);
+                }
 
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 {
