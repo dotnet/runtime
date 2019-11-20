@@ -70,8 +70,6 @@ namespace Internal.TypeSystem.Interop
     // and also argument specific marshalling informaiton
     abstract partial class Marshaller
     {
-        static MethodMarshallersCache s_marshallersCache = new MethodMarshallersCache();
-
         #region Instance state information
         public TypeSystemContext Context;
 #if !READYTORUN
@@ -370,7 +368,43 @@ namespace Internal.TypeSystem.Interop
         public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
-            return s_marshallersCache.GetOrCreateValue(targetMethod).Marshallers;
+
+            MarshalDirection direction = MarshalDirection.Forward;
+            MethodSignature methodSig = targetMethod.Signature;
+            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+
+            ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
+            Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
+            ParameterMetadata parameterMetadata;
+
+            for (int i = 0, parameterIndex = 0; i < marshallers.Length; i++)
+            {
+                Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
+                if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
+                {
+                    // if we don't have metadata for the parameter, create a dummy one
+                    parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
+                }
+                else
+                {
+                    Debug.Assert(i == parameterMetadataArray[parameterIndex].Index);
+                    parameterMetadata = parameterMetadataArray[parameterIndex++];
+                }
+
+                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
+                marshallers[i] = CreateMarshaller(parameterType,
+                                                    MarshallerType.Argument,
+                                                    parameterMetadata.MarshalAsDescriptor,
+                                                    direction,
+                                                    marshallers,
+                                                    parameterMetadata.Index,
+                                                    flags,
+                                                    parameterMetadata.In,
+                                                    parameterMetadata.Out,
+                                                    parameterMetadata.Return);
+            }
+
+            return marshallers;
         }
         #endregion
 
@@ -402,7 +436,7 @@ namespace Internal.TypeSystem.Interop
             if (targetMethod.GetPInvokeMethodMetadata().Flags.SetLastError)
                 return true;
 
-            var marshallers = s_marshallersCache.GetOrCreateValue(targetMethod).Marshallers;
+            var marshallers = GetMarshallersForMethod(targetMethod);
 
             for (int i = 0; i < marshallers.Length; i++)
             {
