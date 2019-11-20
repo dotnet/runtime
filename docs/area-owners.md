@@ -2,94 +2,94 @@ Below table shows the combined area owners on this repository:
 
 | Area        | Owners / experts |
 |-------------|------------------|
-| area-AssemblyLoader | _@_jeffschwMSFT _@_vitek-karas |
-| area-CodeGen | _@_BruceForstall _@_dotnet/jit-contrib |
-| area-CrossGen/NGEN | _@_fadimounir |
-| area-crossgen2 | _@_nattress _@_MichalStrehovsky _@_trylek _@_fadimounir |
-| area-DependencyModel | _@_eerhardt |
-| area-Diagnostics | _@_tommcdon |
-| area-ExceptionHandling | _@_janvorli |
-| area-GC | _@_Maoni0 |
-| area-Host | _@_jeffschwMSFT _@_vitek-karas _@_swaroop-sridhar |
-| area-HostModel | _@_vitek-karas _@_swaroop-sridhar |
-| area-ILTools | _@_BruceForstall _@_dotnet/jit-contrib |
-| area-Infrastructure-coreclr | _@_jeffschwMSFT _@_jashook _@_trylek |
-| area-Infrastructure-installer | _@_dleeapho _@_wtgodbe _@_dagood |
-| area-Infrastructure-libraries | _@_ViktorHofer _@_ericstj _@_wtgodbe _@_safern _@_Anipik |
-| area-Infrastructure | _@_ViktorHofer _@_jeffschwMSFT _@_dleeapho |
-| area-Interop | _@_jeffschwMSFT _@_AaronRobinsonMSFT |
-| area-Meta | _@_joperezr |
-| area-Meta-corelib | _@_joperezr |
-| area-Microsoft.CSharp | _@_cston _@_333fred |
-| area-Microsoft.VisualBasic | _@_cston _@_333fred |
-| area-Microsoft.Win32 | _@_maryamariyan _@_Anipik |
-| area-PAL | _@_janvorli |
-| area-R2RDump | _@_nattress |
-| area-ReadyToRun | _@_fadimounir |
-| area-Setup | _@_dagood _@_dleeapho |
-| area-SDK | _@_janvorli |
-| area-Serialization | _@_StephenMolloy _@_HongGit |
-| area-Snap | _@_dleeapho _@_leecow _@_MichaelSimons |
-| area-System.AppContext | _@_safern _@_Anipik |
-| area-System.Buffers | _@_layomia _@_JeremyKuhne _@_ahsonkhan |
-| area-System.CodeDom | _@_buyaa-n _@_krwq |
-| area-System.Collections | _@_safern |
-| area-System.ComponentModel | _@_maryamariyan _@_safern |
-| area-System.ComponentModel.DataAnnotations | _@_lajones _@_ajcvickers |
-| area-System.Composition | _@_maryamariyan _@_ViktorHofer |
-| area-System.Configuration | _@_maryamariyan _@_safern |
-| area-System.Console | _@_wtgodbe |
-| area-System.Data | _@_ajcvickers _@_cheenamalhotra _@_david-engel _@_Gary-Zh |
-| area-System.Data.SqlClient | _@_cheenamalhotra _@_Gary-Zh _@_david-engel |
-| area-System.Diagnostics | _@_tommcdon _@_wtgodbe _@_krwq |
-| area-System.Diagnostics.Process | _@_wtgodbe _@_krwq |
-| area-System.Diagnostics.Tracing | _@_noahfalk _@_tommcdon _@_Anipik |
-| area-System.DirectoryServices | _@_tquerec _@_josephisenhour |
-| area-System.Drawing | _@_safern _@_maryamariyan |
-| area-System.Dynamic.Runtime | _@_cston _@_333fred |
-| area-System.Globalization | _@_krwq _@_tarekgh |
-| area-System.IO | _@_JeremyKuhne _@_carlossanlop |
-| area-System.IO.Compression | _@_carlossanlop _@_ahsonkhan _@_ViktorHofer |
-| area-System.IO.Packaging | _@_JeremyKuhne _@_carlossanlop |
-| area-System.IO.Pipelines | _@_davidfowl _@_halter73 _@_jkotalik _@_anurse |
-| area-System.Linq | _@_maryamariyan |
-| area-System.Linq.Expressions | _@_cston _@_333fred |
-| area-System.Linq.Parallel | _@_tarekgh _@_kouvel |
-| area-System.Management | _@_Anipik |
-| area-System.Memory | _@_ahsonkhan |
-| area-System.Net | _@_davidsh _@_wfurt _@_scalablecory _@_eiriktsarpalis _@_karelz |
-| area-System.Net.Http | _@_davidsh _@_wfurt _@_scalablecory _@_eiriktsarpalis _@_karelz |
-| area-System.Net.Security | _@_davidsh _@_wfurt _@_scalablecory _@_eiriktsarpalis _@_karelz |
-| area-System.Net.Sockets | _@_davidsh _@_wfurt _@_scalablecory _@_eiriktsarpalis _@_karelz |
-| area-System.Numerics | _@_tannergooding _@_ViktorHofer |
-| area-System.Numerics.Tensors | _@_tannergooding |
-| area-System.Reflection | _@_steveharter _@_GrabYourPitchforks |
-| area-System.Reflection.Emit | _@_steveharter _@_GrabYourPitchforks |
-| area-System.Reflection.Metadata | _@_tmat _@_nguerrera |
-| area-System.Resources | _@_krwq _@_tarekgh |
-| area-System.Runtime | _@_bartonjs _@_joperezr |
-| area-System.Runtime.Caching | _@_StephenMolloy _@_HongGit |
-| area-System.Runtime.CompilerServices | _@_Anipik |
-| area-System.Runtime.Extensions | _@_Anipik |
-| area-System.Runtime.InteropServices | _@_AaronRobinsonMSFT _@_jkoritzinsky |
-| area-System.Runtime.Intrinsics | _@_tannergooding _@_CarolEidt _@_RussKeldorph |
-| area-System.Security | _@_bartonjs _@_GrabYourPitchforks |
-| area-System.Security.Cryptography.Xml | _@_bartonjs |
-| area-System.ServiceModel.Syndication | _@_StephenMolloy _@_HongGit |
-| area-System.ServiceProcess | _@_Anipik |
-| area-System.Text.Encoding | _@_layomia _@_krwq _@_tarekgh |
-| area-System.Text.Encodings.Web | _@_GrabYourPitchforks _@_layomia _@_tarekgh |
-| area-System.Text.Json | _@_ahsonkhan _@_steveharter |
-| area-System.Text.RegularExpressions | _@_ViktorHofer _@_maryamariyan |
-| area-System.Threading | _@_kouvel |
-| area-System.Threading.Channels | _@_tarekgh _@_stephentoub |
-| area-System.Threading.Tasks | _@_tarekgh _@_stephentoub |
-| area-System.Transactions | _@_dasetser _@_HongGit |
-| area-System.Xml | _@_buyaa-n _@_krwq |
-| area-TieredCompilation | _@_kouvel |
-| area-Tizen | _@_alpencolt _@_gbalykov |
-| area-Tracing | _@_sywhang _@_josalem |
-| area-TypeSystem | _@_davidwrighton _@_MichalStrehovsky _@_fadimounir |
-| area-UWP | _@_nattress |
-| area-VM | _@_sergiy-k |
+| area-AssemblyLoader | @jeffschwMSFT @vitek-karas |
+| area-CodeGen | @BruceForstall @dotnet/jit-contrib |
+| area-CrossGen/NGEN | @fadimounir |
+| area-crossgen2 | @nattress @MichalStrehovsky @trylek @fadimounir |
+| area-DependencyModel | @eerhardt |
+| area-Diagnostics | @tommcdon |
+| area-ExceptionHandling | @janvorli |
+| area-GC | @Maoni0 |
+| area-Host | @jeffschwMSFT @vitek-karas @swaroop-sridhar |
+| area-HostModel | @vitek-karas @swaroop-sridhar |
+| area-ILTools | @BruceForstall @dotnet/jit-contrib |
+| area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek |
+| area-Infrastructure-installer | @dleeapho @wtgodbe @dagood |
+| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik |
+| area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho |
+| area-Interop | @jeffschwMSFT @AaronRobinsonMSFT |
+| area-Meta | @joperezr |
+| area-Meta-corelib | @joperezr |
+| area-Microsoft.CSharp | @cston @333fred |
+| area-Microsoft.VisualBasic | @cston @333fred |
+| area-Microsoft.Win32 | @maryamariyan @Anipik |
+| area-PAL | @janvorli |
+| area-R2RDump | @nattress |
+| area-ReadyToRun | @fadimounir |
+| area-Setup | @dagood @dleeapho |
+| area-SDK | @janvorli |
+| area-Serialization | @StephenMolloy @HongGit |
+| area-Snap | @dleeapho @leecow @MichaelSimons |
+| area-System.AppContext | @safern @Anipik |
+| area-System.Buffers | @layomia @JeremyKuhne @ahsonkhan |
+| area-System.CodeDom | @buyaa-n @krwq |
+| area-System.Collections | @safern |
+| area-System.ComponentModel | @maryamariyan @safern |
+| area-System.ComponentModel.DataAnnotations | @lajones @ajcvickers |
+| area-System.Composition | @maryamariyan @ViktorHofer |
+| area-System.Configuration | @maryamariyan @safern |
+| area-System.Console | @wtgodbe |
+| area-System.Data | @ajcvickers @cheenamalhotra @david-engel @Gary-Zh |
+| area-System.Data.SqlClient | @cheenamalhotra @Gary-Zh @david-engel |
+| area-System.Diagnostics | @tommcdon @wtgodbe @krwq |
+| area-System.Diagnostics.Process | @wtgodbe @krwq |
+| area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik |
+| area-System.DirectoryServices | @tquerec @josephisenhour |
+| area-System.Drawing | @safern @maryamariyan |
+| area-System.Dynamic.Runtime | @cston @333fred |
+| area-System.Globalization | @krwq @tarekgh |
+| area-System.IO | @JeremyKuhne @carlossanlop |
+| area-System.IO.Compression | @carlossanlop @ahsonkhan @ViktorHofer |
+| area-System.IO.Packaging | @JeremyKuhne @carlossanlop |
+| area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse |
+| area-System.Linq | @maryamariyan |
+| area-System.Linq.Expressions | @cston @333fred |
+| area-System.Linq.Parallel | @tarekgh @kouvel |
+| area-System.Management | @Anipik |
+| area-System.Memory | @ahsonkhan |
+| area-System.Net | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz |
+| area-System.Net.Http | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz |
+| area-System.Net.Security | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz |
+| area-System.Net.Sockets | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz |
+| area-System.Numerics | @tannergooding @ViktorHofer |
+| area-System.Numerics.Tensors | @tannergooding |
+| area-System.Reflection | @steveharter @GrabYourPitchforks |
+| area-System.Reflection.Emit | @steveharter @GrabYourPitchforks |
+| area-System.Reflection.Metadata | @tmat @nguerrera |
+| area-System.Resources | @krwq @tarekgh |
+| area-System.Runtime | @bartonjs @joperezr |
+| area-System.Runtime.Caching | @StephenMolloy @HongGit |
+| area-System.Runtime.CompilerServices | @Anipik |
+| area-System.Runtime.Extensions | @Anipik |
+| area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky |
+| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph |
+| area-System.Security | @bartonjs @GrabYourPitchforks |
+| area-System.Security.Cryptography.Xml | @bartonjs |
+| area-System.ServiceModel.Syndication | @StephenMolloy @HongGit |
+| area-System.ServiceProcess | @Anipik |
+| area-System.Text.Encoding | @layomia @krwq @tarekgh |
+| area-System.Text.Encodings.Web | @GrabYourPitchforks @layomia @tarekgh |
+| area-System.Text.Json | @ahsonkhan @steveharter |
+| area-System.Text.RegularExpressions | @ViktorHofer @maryamariyan |
+| area-System.Threading | @kouvel |
+| area-System.Threading.Channels | @tarekgh @stephentoub |
+| area-System.Threading.Tasks | @tarekgh @stephentoub |
+| area-System.Transactions | @dasetser @HongGit |
+| area-System.Xml | @buyaa-n @krwq |
+| area-TieredCompilation | @kouvel |
+| area-Tizen | @alpencolt @gbalykov |
+| area-Tracing | @sywhang @josalem |
+| area-TypeSystem | @davidwrighton @MichalStrehovsky @fadimounir |
+| area-UWP | @nattress |
+| area-VM | @sergiy-k |
 
