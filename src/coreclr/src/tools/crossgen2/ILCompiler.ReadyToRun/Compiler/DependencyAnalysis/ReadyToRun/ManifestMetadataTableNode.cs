@@ -96,8 +96,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int ModuleToIndex(EcmaModule module)
         {
             AssemblyName assemblyName = module.Assembly.GetName();
-
-            if (!_manifestAssemblies.Contains(assemblyName))
+            int assemblyRefIndex;
+            if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {
@@ -108,14 +108,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // the verification logic would be broken at runtime.
                 Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
 
+                assemblyRefIndex = _nextModuleId++;
                 _manifestAssemblies.Add(assemblyName);
-                if (!_assemblyRefToModuleIdMap.ContainsKey(assemblyName.Name))
-                    _assemblyRefToModuleIdMap.Add(assemblyName.Name, _nextModuleId);
-
-                _nextModuleId++;
+                _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
             }
-
-            return _assemblyRefToModuleIdMap[assemblyName.Name];
+            return assemblyRefIndex;
         }
 
         public override int ClassCode => 791828335;

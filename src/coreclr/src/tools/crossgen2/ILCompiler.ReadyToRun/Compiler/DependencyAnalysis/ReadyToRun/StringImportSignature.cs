@@ -25,10 +25,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-            dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle, _token.Module, _signatureContext);
-            dataBuilder.EmitUInt(_token.TokenRid);
+            if (!relocsOnly)
+            {
+                dataBuilder.AddSymbol(this);
+
+                dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle, _token.Module, _signatureContext);
+                dataBuilder.EmitUInt(_token.TokenRid);
+            }
 
             return dataBuilder.ToObjectData();
         }

@@ -27,11 +27,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-            dataBuilder.AddSymbol(this);
 
-            EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray, targetModule, _signatureContext);
-            dataBuilder.EmitTypeSignature(_arrayType, innerContext);
+            if (!relocsOnly)
+            {
+                dataBuilder.AddSymbol(this);
+
+                EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray, targetModule, _signatureContext);
+                dataBuilder.EmitTypeSignature(_arrayType, innerContext);
+            }
 
             return dataBuilder.ToObjectData();
         }
