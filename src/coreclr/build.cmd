@@ -643,10 +643,8 @@ if %__BuildCoreLib% EQU 1 (
             exit /b !errorlevel!
         )
 
-        REM Disable warnAsError to work around VS bug (948084) where ucrt lib path is not set properly, resulting in CS1668
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-            %__ProjectDir%\src\build.proj -warnAsError:0^
-            /nodeReuse:false /p:PortableBuild=true /maxcpucount^
+            %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
