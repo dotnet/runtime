@@ -779,11 +779,11 @@ namespace BINDER_SPACE
                 ReleaseHolder<Assembly> pAssembly;
                 LPCWSTR wszBindingPath = (*pBindingPaths)[i];
 
-                SString fileNameWithoutExtension(wszBindingPath);
+                PathString fileNameWithoutExtension(wszBindingPath);
                 CombinePath(fileNameWithoutExtension, simpleName, fileNameWithoutExtension);
 
                 // Look for a matching dll first
-                SString fileName(fileNameWithoutExtension);
+                PathString fileName(fileNameWithoutExtension);
                 fileName.Append(useNativeImages ? W(".ni.dll") : W(".dll"));
                 hr = AssemblyBinder::GetAssembly(fileName,
                                                  FALSE, // fIsInGAC
