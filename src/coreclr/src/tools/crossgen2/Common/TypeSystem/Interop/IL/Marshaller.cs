@@ -1436,6 +1436,11 @@ namespace Internal.TypeSystem.Interop
                 ILLocalVariable vPinnedFirstElement = emitter.NewLocal(ManagedElementType.MakeByRefType(), true);
 
                 LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.ldlen);
+                codeStream.Emit(ILOpcode.conv_i4);
+                codeStream.Emit(ILOpcode.brfalse, lNullArray);
+
+                LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
                 codeStream.EmitStLoc(vPinnedFirstElement);
 
