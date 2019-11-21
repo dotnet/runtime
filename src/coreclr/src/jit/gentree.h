@@ -3861,7 +3861,7 @@ struct GenTreeCall final : public GenTree
 
 #define GTF_CALL_M_R2R_REL_INDIRECT        0x00002000 // GT_CALL -- ready to run call is indirected through a relative address
 #define GTF_CALL_M_DOES_NOT_RETURN         0x00004000 // GT_CALL -- call does not return
-#define GTF_CALL_M_SECURE_DELEGATE_INV     0x00008000 // GT_CALL -- call is in secure delegate
+#define GTF_CALL_M_WRAPPER_DELEGATE_INV    0x00008000 // GT_CALL -- call is in wrapper delegate
 #define GTF_CALL_M_FAT_POINTER_CHECK       0x00010000 // GT_CALL -- CoreRT managed calli needs transformation, that checks
                                                       // special bit in calli address. If it is set, then it is necessary
                                                       // to restore real function address and load hidden argument

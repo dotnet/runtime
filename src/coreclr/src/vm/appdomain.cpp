@@ -2506,28 +2506,14 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     if (frame && frame->GetFrameType() == Frame::TYPE_MULTICAST)
     {
-        // This must be either a secure delegate frame or a true multicast delegate invocation.
+        // This must be either a multicast delegate invocation.
 
         _ASSERTE(pFunc->GetMethodTable()->IsDelegate());
 
-        DELEGATEREF del = (DELEGATEREF)((SecureDelegateFrame*)frame)->GetThis(); // This can throw.
+        DELEGATEREF del = (DELEGATEREF)((MulticastFrame*)frame)->GetThis(); // This can throw.
 
-        if (COMDelegate::IsSecureDelegate(del))
-        {
-            if (del->IsWrapperDelegate())
-            {
-                // On ARM, we use secure delegate infrastructure to preserve R4 register.
-                return SWA_CONTINUE;
-            }
-            // For a secure delegate frame, we should return the delegate creator instead
-            // of the delegate method itself.
-            pFunc = (MethodDesc*) del->GetMethodPtrAux();
-        }
-        else
-        {
-            _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
-            return SWA_CONTINUE;
-        }
+        _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
+        return SWA_CONTINUE;
     }
 
     // Return the first non-reflection/remoting frame if no stack mark was

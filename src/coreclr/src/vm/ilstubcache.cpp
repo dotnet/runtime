@@ -225,13 +225,13 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
 #endif
-#ifdef FEATURE_STUBS_AS_IL
-    if (SF_IsSecureDelegateStub(dwStubFlags))
+    if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdSecureDelegateStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::SecureDelegateStub);
+        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdWrapperDelegateStub;
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::WrapperDelegateStub);
     }
     else
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     if (SF_IsUnboxingILStub(dwStubFlags))
     {
         pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnboxingILStub;

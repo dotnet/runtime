@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  variables: {}
 
 ### Perf job
 
@@ -32,12 +33,13 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     # Test job depends on the corresponding build job
     dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      
+
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
     ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
-
+    
+    variables: ${{ parameters.variables }}
     frameworks:
       - ${{ parameters.framework }}
     steps:

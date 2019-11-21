@@ -416,7 +416,7 @@ namespace System.Collections.Generic
 
                     for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                     {
-                        if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, item))
+                        if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, item))
                         {
                             goto ReturnFound;
                         }

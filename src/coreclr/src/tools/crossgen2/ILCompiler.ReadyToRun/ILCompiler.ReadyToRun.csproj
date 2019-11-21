@@ -169,6 +169,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
+    <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
     <Compile Include="IBC\ReaderExtensions.cs" />

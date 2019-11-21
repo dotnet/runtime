@@ -5,60 +5,24 @@
 ### and OSX build clients don't have 7-zip installed) and simplify other details such
 ### as line endings.
 jobs:
-- job: 'checkout_windows'
-  displayName: 'Checkout (Windows)'
+- job: checkout
+  displayName: Checkout
 
   pool:
-    # Public Windows Build Pool
     ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      vmImage: 'windows-latest'
+      name: Hosted MacOS
 
-    # Private Windows Build Pool
     ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: NetCoreInternal-Pool
-      queue: BuildPool.Windows.10.Amd64.VS2017
+      name: Hosted Mac Internal
   
   steps:
   - checkout: self
     clean: true
     fetchDepth: 5
 
-  ### Zip up downloaded repo and publish to Helix
-  - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
-    parameters:
-      displayName: 'GIT repository (Windows)'
-      rootFolder: $(Build.SourcesDirectory)
-      includeRootFolder: false
-      archiveType: 'zip'
-      tarCompression: ''
-      archiveExtension: '.zip'
-      artifactName: repo_windows
+  - script: git bundle create $(Build.StagingDirectory)/Checkout.bundle HEAD
+    displayName: Create Checkout.bundle
 
-- job: 'checkout_unix'
-  displayName: 'Checkout (Unix)'
-
-  pool:
-    # Public Linux Build Pool
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      vmImage: 'ubuntu-latest'
-
-    # Private Linux Build Pool
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: NetCoreInternal-Pool
-      queue: BuildPool.Ubuntu.1604.Amd64
-
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 5
-
-  ### Zip up downloaded repo and publish to Helix
-  - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
-    parameters:
-      displayName: 'GIT repository (Unix)'
-      rootFolder: $(Build.SourcesDirectory)
-      includeRootFolder: false
-      archiveType: 'tar'
-      tarCompression: 'gz'
-      archiveExtension: '.tar.gz'
-      artifactName: repo_unix
+  - publish: $(Build.StagingDirectory)/Checkout.bundle
+    artifact: Checkout_bundle
+    displayName: Upload Checkout.bundle

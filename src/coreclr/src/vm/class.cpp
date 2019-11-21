@@ -2942,7 +2942,7 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pUMThunkMarshInfo));
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pStaticCallStub));
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pMultiCastInvokeStub));
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pSecureDelegateInvokeStub));
+        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pWrapperDelegateInvokeStub));
         image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pMarshalStub));
 
 #ifdef FEATURE_COMINTEROP

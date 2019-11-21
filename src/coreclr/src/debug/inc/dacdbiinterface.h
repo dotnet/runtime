@@ -2718,7 +2718,7 @@ public:
         kOpenInstanceVSD,
         kClosedStaticWithScpecialSig,
         kTrueMulticastDelegate,
-        kSecureDelegate,
+        kWrapperDelegate,
         kUnmanagedFunctionDelegate,
         kUnknownDelegateType
     } DelegateType;

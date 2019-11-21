@@ -1703,7 +1703,7 @@ struct CORINFO_CALL_INFO
 
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
 
-    BOOL                    secureDelegateInvoke;
+    BOOL                    wrapperDelegateInvoke;
 };
 
 //----------------------------------------------------------------------------
@@ -1830,8 +1830,8 @@ struct CORINFO_EE_INFO
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
 
-    // Secure delegate offsets
-    unsigned    offsetOfSecureDelegateIndirectCell;
+    // Wrapper delegate offsets
+    unsigned    offsetOfWrapperDelegateIndirectCell;
 
     // Remoting offsets
     unsigned    offsetOfTransparentProxyRP;

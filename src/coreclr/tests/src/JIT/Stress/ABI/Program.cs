@@ -16,13 +16,13 @@ using System.Text;
 
 namespace ABIStress
 {
-    internal class Program
+    internal partial class Program
     {
         private static int Main(string[] args)
         {
             static void Usage()
             {
-                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--max-params <number>] [--no-ctrlc-summary]");
+                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--instantiatingstubs] [--unboxingstubs] [--sharedgenericunboxingstubs] [--max-params <number>] [--no-ctrlc-summary]");
                 Console.WriteLine("Either --caller-index or --num-calls must be specified.");
                 Console.WriteLine("Example: --num-calls 100");
                 Console.WriteLine("  Stress first 100 tailcalls and pinvokes");
@@ -46,6 +46,12 @@ namespace ABIStress
                 Config.StressModes |= StressModes.TailCalls;
             if (args.Contains("--pinvokes"))
                 Config.StressModes |= StressModes.PInvokes;
+            if (args.Contains("--instantiatingstubs"))
+                Config.StressModes |= StressModes.InstantiatingStubs;
+            if (args.Contains("--unboxingstubs"))
+                Config.StressModes |= StressModes.UnboxingStubs;
+            if (args.Contains("--sharedgenericunboxingstubs"))
+                Config.StressModes |= StressModes.SharedGenericUnboxingStubs;
 
             if (Config.StressModes == StressModes.None)
                 Config.StressModes = StressModes.All;
@@ -72,6 +78,12 @@ namespace ABIStress
                 Console.WriteLine("Stressing tailcalls");
             if (Config.StressModes.HasFlag(StressModes.PInvokes))
                 Console.WriteLine("Stressing pinvokes");
+            if (Config.StressModes.HasFlag(StressModes.InstantiatingStubs))
+                Console.WriteLine("Stressing instantiatingstubs");
+            if (Config.StressModes.HasFlag(StressModes.UnboxingStubs))
+                Console.WriteLine("Stressing unboxingstubs");
+            if (Config.StressModes.HasFlag(StressModes.SharedGenericUnboxingStubs))
+                Console.WriteLine("Stressing sharedgenericunboxingstubs");
 
             using var tcel = new TailCallEventListener();
 
@@ -123,6 +135,7 @@ namespace ABIStress
                 }
             }
 
+            Console.WriteLine($"  Done with {mismatches} mismatches");
             return 100 + mismatches;
         }
 
@@ -133,166 +146,24 @@ namespace ABIStress
                 result &= DoTailCall(index);
             if (Config.StressModes.HasFlag(StressModes.PInvokes))
                 result &= DoPInvokes(index);
-
+            if (Config.StressModes.HasFlag(StressModes.UnboxingStubs))
+            {
+                result &= DoStubCall(index, staticMethod: false, onValueType: true, typeGenericShape: GenericShape.NotGeneric, methodGenericShape: GenericShape.NotGeneric);
+                result &= DoStubCall(index, staticMethod: false, onValueType: true, typeGenericShape: GenericShape.NotGeneric, methodGenericShape: GenericShape.GenericOverReferenceType);
+            }
+            if (Config.StressModes.HasFlag(StressModes.SharedGenericUnboxingStubs))
+            {
+                result &= DoStubCall(index, staticMethod: false, onValueType: true, typeGenericShape: GenericShape.GenericOverReferenceType, methodGenericShape: GenericShape.NotGeneric);
+            }
+            if (Config.StressModes.HasFlag(StressModes.InstantiatingStubs))
+            {
+                result &= DoStubCall(index, staticMethod: false, onValueType: false, typeGenericShape: GenericShape.NotGeneric, methodGenericShape: GenericShape.GenericOverReferenceType);
+                result &= DoStubCall(index, staticMethod: true, onValueType: false, typeGenericShape: GenericShape.GenericOverReferenceType, methodGenericShape: GenericShape.NotGeneric);
+                result &= DoStubCall(index, staticMethod: true, onValueType: true, typeGenericShape: GenericShape.GenericOverReferenceType, methodGenericShape: GenericShape.NotGeneric);
+                result &= DoStubCall(index, staticMethod: true, onValueType: false, typeGenericShape: GenericShape.GenericOverValueType, methodGenericShape: GenericShape.GenericOverReferenceType);
+                result &= DoStubCall(index, staticMethod: true, onValueType: false, typeGenericShape: GenericShape.GenericOverReferenceType, methodGenericShape: GenericShape.GenericOverValueType);
+            }
             return result;
-        }
-
-        private static List<Callee> s_tailCallees;
-        private static bool DoTailCall(int callerIndex)
-        {
-            // We pregenerate tail callee parameter lists because we want to be able to select
-            // a callee with less arg stack space than this caller.
-            if (s_tailCallees == null)
-            {
-                s_tailCallees =
-                    Enumerable.Range(0, Config.NumCallees)
-                              .Select(i => CreateCallee(Config.TailCalleePrefix + i, s_tailCalleeCandidateArgTypes))
-                              .ToList();
-            }
-
-            string callerName = Config.TailCallerPrefix + callerIndex;
-            Random rand = new Random(GetSeed(callerName));
-            List<TypeEx> callerParams;
-            List<Callee> callable;
-            do
-            {
-                callerParams = RandomParameters(s_tailCalleeCandidateArgTypes, rand);
-                int argStackSizeApprox = s_abi.ApproximateArgStackAreaSize(callerParams);
-                callable = s_tailCallees.Where(t => t.ArgStackSizeApprox < argStackSizeApprox).ToList();
-            } while (callable.Count <= 0);
-
-            int calleeIndex = rand.Next(callable.Count);
-            Callee callee = callable[calleeIndex];
-            callee.Emit();
-
-            DynamicMethod caller = new DynamicMethod(
-                callerName, typeof(int), callerParams.Select(t => t.Type).ToArray(), typeof(Program).Module);
-
-            ILGenerator g = caller.GetILGenerator();
-
-            // Create the args to pass to the callee from the caller.
-            List<Value> args = GenCallerToCalleeArgs(callerParams, callee.Parameters, rand);
-
-            if (Config.Verbose)
-            {
-                EmitDumpValues("Caller's incoming args", g, callerParams.Select((p, i) => new ArgValue(p, i)));
-                EmitDumpValues("Caller's args to tailcall", g, args);
-            }
-
-            foreach (Value v in args)
-                v.Emit(g);
-
-            g.Emit(OpCodes.Tailcall);
-            g.EmitCall(OpCodes.Call, callee.Method, null);
-            g.Emit(OpCodes.Ret);
-
-            (object callerResult, object calleeResult) = InvokeCallerCallee(caller, callerParams, callee.Method, args, rand);
-
-            if (callerResult.Equals(calleeResult))
-                return true;
-
-            Console.WriteLine("Mismatch in tailcall: expected {0}, got {1}", calleeResult, callerResult);
-            WriteSignature(caller);
-            WriteSignature(callee.Method);
-            return false;
-        }
-
-        private static readonly List<DynamicMethod> s_keepRooted = new List<DynamicMethod>();
-        private static readonly Dictionary<int, Callee> s_pinvokees = new Dictionary<int, Callee>();
-        private static bool DoPInvokes(int callerIndex)
-        {
-            string callerName = Config.PInvokerPrefix + callerIndex;
-            Random rand = new Random(GetSeed(callerName));
-            List<TypeEx> pms = RandomParameters(s_allTypes, rand);
-
-            int calleeIndex = rand.Next(0, Config.NumCallees);
-            Callee callee;
-            if (!s_pinvokees.TryGetValue(calleeIndex, out callee))
-            {
-                callee = CreateCallee(Config.PInvokeePrefix + calleeIndex, s_pinvokeeCandidateArgTypes);
-                callee.Emit();
-                callee.EmitPInvokeDelegateTypes();
-                s_pinvokees.Add(calleeIndex, callee);
-            }
-
-            DynamicMethod caller = new DynamicMethod(
-                callerName, typeof(int[]), pms.Select(t => t.Type).ToArray(), typeof(Program).Module);
-
-            // We need to keep callers rooted due to a stale cache bug in the runtime related to calli.
-            s_keepRooted.Add(caller);
-
-            ILGenerator g = caller.GetILGenerator();
-
-            // Create the args to pass to the callee from the caller.
-            List<Value> args = GenCallerToCalleeArgs(pms, callee.Parameters, rand);
-
-            if (Config.Verbose)
-                EmitDumpValues("Caller's incoming args", g, pms.Select((p, i) => new ArgValue(p, i)));
-
-            // Create array to store results in
-            LocalBuilder resultsArrLocal = g.DeclareLocal(typeof(int[]));
-            g.Emit(OpCodes.Ldc_I4, callee.PInvokeDelegateTypes.Count);
-            g.Emit(OpCodes.Newarr, typeof(int));
-            g.Emit(OpCodes.Stloc, resultsArrLocal);
-
-            // Emit pinvoke calls for each calling convention. Keep delegates rooted in a list.
-            LocalBuilder resultLocal = g.DeclareLocal(typeof(int));
-            List<Delegate> delegates = new List<Delegate>();
-            int resultIndex = 0;
-            foreach (var (cc, delegateType) in callee.PInvokeDelegateTypes)
-            {
-                Delegate dlg = callee.Method.CreateDelegate(delegateType);
-                delegates.Add(dlg);
-
-                if (Config.Verbose)
-                    EmitDumpValues($"Caller's args to {cc} calli", g, args);
-
-                foreach (Value v in args)
-                    v.Emit(g);
-
-                IntPtr ptr = Marshal.GetFunctionPointerForDelegate(dlg);
-                g.Emit(OpCodes.Ldc_I8, (long)ptr);
-                g.Emit(OpCodes.Conv_I);
-                g.EmitCalli(OpCodes.Calli, cc, typeof(int), callee.Parameters.Select(p => p.Type).ToArray());
-                g.Emit(OpCodes.Stloc, resultLocal);
-
-                g.Emit(OpCodes.Ldloc, resultsArrLocal);
-                g.Emit(OpCodes.Ldc_I4, resultIndex); // where to store result
-                g.Emit(OpCodes.Ldloc, resultLocal); // result
-                g.Emit(OpCodes.Stelem_I4);
-                resultIndex++;
-            }
-
-            g.Emit(OpCodes.Ldloc, resultsArrLocal);
-            g.Emit(OpCodes.Ret);
-
-            (object callerResult, object calleeResult) =
-                InvokeCallerCallee(caller, pms, callee.Method, args, rand);
-
-            // The pointers used in the calli instructions are only valid while the delegates are alive,
-            // so keep these alive until we're done executing.
-            GC.KeepAlive(delegates);
-
-            int[] results = (int[])callerResult;
-
-            bool allCorrect = true;
-            for (int i = 0; i < results.Length; i++)
-            {
-                if (results[i] == (int)calleeResult)
-                    continue;
-
-                allCorrect = false;
-                string callType = callee.PInvokeDelegateTypes.ElementAt(i).Key.ToString();
-                Console.WriteLine("Mismatch in {0}: expected {1}, got {2}", callType, calleeResult, results[i]);
-            }
-
-            if (!allCorrect)
-            {
-                WriteSignature(caller);
-                WriteSignature(callee.Method);
-            }
-
-            return allCorrect;
         }
 
         private static Callee CreateCallee(string name, TypeEx[] candidateParamTypes)
@@ -452,7 +323,7 @@ namespace ABIStress
             g.Emit(OpCodes.Call, instantiated);
         }
 
-        private static void EmitDumpValues(string listName, ILGenerator g, IEnumerable<Value> values)
+        public static void EmitDumpValues(string listName, ILGenerator g, IEnumerable<Value> values)
         {
             g.Emit(OpCodes.Ldstr, $"{listName}:");
             g.Emit(OpCodes.Call, s_writeLineString);
@@ -484,6 +355,9 @@ namespace ABIStress
             }.Select(t => new TypeEx(t)).ToArray();
 
         private static readonly IAbi s_abi = SelectAbi();
+
+        public static IAbi Abi => s_abi;
+
         private static readonly TypeEx[] s_tailCalleeCandidateArgTypes =
             s_abi.TailCalleeCandidateArgTypes.Select(t => new TypeEx(t)).ToArray();
 
@@ -540,101 +414,6 @@ namespace ABIStress
             }
 
             throw new NotSupportedException($"Platform {Environment.OSVersion.Platform} is not supported");
-        }
-
-        private class Callee
-        {
-            private static readonly MethodInfo s_hashCodeAddMethod =
-                typeof(HashCode).GetMethods().Single(mi => mi.Name == "Add" && mi.GetParameters().Length == 1);
-            private static readonly MethodInfo s_hashCodeToHashCodeMethod =
-                typeof(HashCode).GetMethod("ToHashCode");
-
-            public Callee(string name, List<TypeEx> parameters)
-            {
-                Name = name;
-                Parameters = parameters;
-                ArgStackSizeApprox = s_abi.ApproximateArgStackAreaSize(Parameters);
-            }
-
-            public string Name { get; }
-            public List<TypeEx> Parameters { get; }
-            public int ArgStackSizeApprox { get; }
-            public DynamicMethod Method { get; private set; }
-            public Dictionary<CallingConvention, Type> PInvokeDelegateTypes { get; private set; }
-
-            public void Emit()
-            {
-                if (Method != null)
-                    return;
-
-                Method = new DynamicMethod(
-                    Name, typeof(int), Parameters.Select(t => t.Type).ToArray(), typeof(Program));
-
-                ILGenerator g = Method.GetILGenerator();
-                LocalBuilder hashCode = g.DeclareLocal(typeof(HashCode));
-
-                if (Config.Verbose)
-                    EmitDumpValues("Callee's incoming args", g, Parameters.Select((t, i) => new ArgValue(t, i)));
-
-                g.Emit(OpCodes.Ldloca, hashCode);
-                g.Emit(OpCodes.Initobj, typeof(HashCode));
-
-                for (int i = 0; i < Parameters.Count; i++)
-                {
-                    TypeEx pm = Parameters[i];
-                    g.Emit(OpCodes.Ldloca, hashCode);
-                    g.Emit(OpCodes.Ldarg, checked((short)i));
-                    g.Emit(OpCodes.Call, s_hashCodeAddMethod.MakeGenericMethod(pm.Type));
-                }
-
-                g.Emit(OpCodes.Ldloca, hashCode);
-                g.Emit(OpCodes.Call, s_hashCodeToHashCodeMethod);
-                g.Emit(OpCodes.Ret);
-            }
-
-            private static ModuleBuilder s_delegateTypesModule;
-            private static ConstructorInfo s_unmanagedFunctionPointerCtor =
-                typeof(UnmanagedFunctionPointerAttribute).GetConstructor(new[] { typeof(CallingConvention) });
-
-            public void EmitPInvokeDelegateTypes()
-            {
-                if (PInvokeDelegateTypes != null)
-                    return;
-
-                PInvokeDelegateTypes = new Dictionary<CallingConvention, Type>();
-
-                if (s_delegateTypesModule == null)
-                {
-                    AssemblyBuilder delegates = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ABIStress_Delegates"), AssemblyBuilderAccess.RunAndCollect);
-                    s_delegateTypesModule = delegates.DefineDynamicModule("ABIStress_Delegates");
-                }
-
-                foreach (CallingConvention cc in s_abi.PInvokeConventions)
-                {
-                    // This code is based on DelegateHelpers.cs in System.Linq.Expressions.Compiler
-                    TypeBuilder tb =
-                        s_delegateTypesModule.DefineType(
-                            $"{Name}_Delegate_{cc}",
-                            TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AutoClass,
-                            typeof(MulticastDelegate));
-
-                    tb.DefineConstructor(
-                        MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName,
-                        CallingConventions.Standard,
-                        new[] { typeof(object), typeof(IntPtr) })
-                      .SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
-
-                    tb.DefineMethod(
-                        "Invoke",
-                        MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
-                        typeof(int),
-                        Parameters.Select(t => t.Type).ToArray())
-                      .SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
-
-                    tb.SetCustomAttribute(new CustomAttributeBuilder(s_unmanagedFunctionPointerCtor, new object[] { cc }));
-                    PInvokeDelegateTypes.Add(cc, tb.CreateType());
-                }
-            }
         }
     }
 }

@@ -150,6 +150,7 @@ struct FloatArgumentRegisters {
         double  d[8];   // d0-d7
     };
 };
+#define NUM_FLOAT_ARGUMENT_REGISTERS 16 // Count the single registers, as they are addressable more finely
 
 // forward decl
 struct REGDISPLAY;
@@ -933,9 +934,6 @@ public:
     }
 #endif // FEATURE_INTERPRETER
 
-    void EmitStubLinkFrame(TADDR pFrameVptr, int offsetOfFrame, int offsetOfTransitionBlock);
-    void EmitStubUnlinkFrame();
-
     void ThumbEmitCondFlagJump(CodeLabel * target,UINT cond);
 
     void ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbReg reg);
@@ -945,15 +943,8 @@ public:
     // Scratches r12.
     void ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall);
 
-    void EmitUnboxMethodStub(MethodDesc* pRealMD);
-    static UINT_PTR HashMulticastInvoke(MetaSig* pSig);
-
-    void EmitMulticastInvoke(UINT_PTR hash);
-    void EmitSecureDelegateInvoke(UINT_PTR hash);
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
-#if defined(FEATURE_SHARE_GENERIC_CODE)
-    void EmitInstantiatingMethodStub(MethodDesc* pSharedMD, void* extra);
-#endif // FEATURE_SHARE_GENERIC_CODE
+    VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 
     static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
                                               MethodDesc* pMD,

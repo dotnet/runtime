@@ -16,9 +16,9 @@ jobs:
 #
 - template: templates/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
     # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.
@@ -31,9 +31,9 @@ jobs:
     jobParameters:
       testGroup: jitstressregs
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: run-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
     # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.

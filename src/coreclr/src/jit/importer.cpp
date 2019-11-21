@@ -7835,9 +7835,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Set the delegate flag */
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
-        if (callInfo->secureDelegateInvoke)
+        if (callInfo->wrapperDelegateInvoke)
         {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SECURE_DELEGATE_INV;
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_WRAPPER_DELEGATE_INV;
         }
 
         if (opcode == CEE_CALLVIRT)
