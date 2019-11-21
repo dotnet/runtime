@@ -388,7 +388,7 @@ PAL_nanosleep(
     struct timespec rem;
     int result;
 
-    req.tv_sec = 0;
+    req.tv_sec = timeInSec;
     req.tv_nsec = timeInNs;
 
     do
