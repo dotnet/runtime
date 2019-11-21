@@ -72,12 +72,8 @@
           DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages">
     <ItemGroup>
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
     </ItemGroup>
-
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
   </Target>
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild">
