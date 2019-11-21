@@ -420,8 +420,6 @@ protected:
 #ifndef DACCESS_COMPILE
     PEFile(PEImage *image);
     virtual ~PEFile();
-
-    virtual void ReleaseIL();
 #else
     virtual ~PEFile() {}
 #endif
@@ -638,10 +636,6 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     ULONG HashIdentity();
-
-#ifndef  DACCESS_COMPILE
-    virtual void ReleaseIL();
-#endif
 
     // ------------------------------------------------------------
     // Descriptive strings

@@ -648,8 +648,6 @@ BaseDomain::BaseDomain()
     }
     CONTRACTL_END;
 
-    m_fDisableInterfaceCache = FALSE;
-
     m_pTPABinderContext = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
@@ -912,33 +910,6 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
     }
 }
 
-void AppDomain::ReleaseFiles()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Shutdown assemblies
-    AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
-        kIncludeLoaded  | kIncludeExecution | kIncludeFailedToLoad | kIncludeLoading));
-    CollectibleAssemblyHolder<DomainAssembly *> pAsm;
-
-    while (i.Next(pAsm.This()))
-    {
-        if (pAsm->GetCurrentAssembly() == NULL)
-        {
-            // Might be domain neutral or not, but should have no live objects as it has not been
-            // really loaded yet. Just reset it.
-            _ASSERTE(FitsIn<DWORD>(i.GetIndex()));
-            m_Assemblies.Set(this, static_cast<DWORD>(i.GetIndex()), NULL);
-            delete pAsm.Extract();
-        }
-        else
-        {
-            pAsm->ReleaseFiles();
-        }
-    }
-} // AppDomain::ReleaseFiles
-
-
 OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate)
 {
     CONTRACTL
@@ -1026,29 +997,6 @@ void AppDomain::InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert /*=FALSE
     }
 }
 
-void AppDomain::InsertClassForCLSID(MethodTable* pMT, GUID *pGuid)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(CheckPointer(pGuid));
-    }
-    CONTRACT_END;
-
-    LPVOID val = (LPVOID)pMT;
-    {
-        LockHolder lh(this);
-
-        CVID* cvid = pGuid;
-        if (LookupClass(*cvid) != pMT)
-        {
-            m_clsidHash.InsertValue(GetKeyFromGUID(pGuid), val);
-        }
-    }
-
-    RETURN;
-}
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP
@@ -2786,8 +2734,6 @@ AppDomain::AppDomain()
 
 #ifdef _DEBUG
     m_dwIterHolders=0;
-    m_dwRefTakers=0;
-    m_dwCreationHolders=0;
 #endif
 
 #ifdef FEATURE_TYPEEQUIVALENCE
@@ -2818,8 +2764,6 @@ AppDomain::~AppDomain()
     CONTRACTL_END;
 
 #ifndef CROSSGEN_COMPILE
-
-    _ASSERTE(m_dwCreationHolders == 0);
 
     // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
     // can only be released once all threads in the AppDomain have exited.
