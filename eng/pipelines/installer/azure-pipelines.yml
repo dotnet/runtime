@@ -33,6 +33,7 @@ pr:
     - src/libraries/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
+    - eng/pipelines/common/*
     - docs/*
     - README.md
     - CONTRIBUTING.md
