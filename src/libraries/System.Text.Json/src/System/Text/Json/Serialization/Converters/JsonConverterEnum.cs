@@ -21,14 +21,14 @@ namespace System.Text.Json.Serialization.Converters
         [PreserveDependency(
             ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions)",
             "System.Text.Json.Serialization.Converters.JsonConverterEnum`1")]
-        public override JsonConverter? CreateConverter(Type type, JsonSerializerOptions? options)
+        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions? options)
         {
-            JsonConverter? converter = (JsonConverter?)Activator.CreateInstance(
+            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
                 typeof(JsonConverterEnum<>).MakeGenericType(type),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 new object[] { EnumConverterOptions.AllowNumbers },
-                culture: null);
+                culture: null)!;
 
             return converter;
         }

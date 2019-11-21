@@ -130,14 +130,12 @@ namespace System.Text.Json
         /// <summary>
         /// Gets a message that describes the current exception.
         /// </summary>
-        public override string? Message
+        public override string Message
         {
-#pragma warning disable 8609
             get
             {
-                return _message;
+                return _message ?? base.Message;
             }
-#pragma warning restore 8609
         }
 
         internal void SetMessage(string? message)

@@ -12,7 +12,10 @@ namespace System.Text.Json
     /// <summary>
     ///   Represents a mutable text JSON value.
     /// </summary>
-    public sealed class JsonString : JsonNode, IEquatable<JsonString>
+    public sealed class JsonString : JsonNode,
+#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
+        IEquatable<JsonString>
+#nullable restore
     {
         private string _value = null!;
 
