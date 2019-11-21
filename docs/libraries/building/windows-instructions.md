@@ -66,7 +66,7 @@ For more information about the different options when building, run `build.cmd -
 ### Running tests from the command line
 
 From the root, use `build.cmd -test`.
-For more details, or to test an individual project, see the [developer guide topic](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md).
+For more details, or to test an individual project, see the [developer guide topic](../project-docs/developer-guide.md).
 
 ### Running tests from Visual Studio
 
@@ -90,7 +90,7 @@ For more details, or to test an individual project, see the [developer guide top
 
 VS Test Explorer support is limited to the .NET Core. To switch between Configurations (Debug / Release), Visual Studio needs to be reopened with the command above together with the additional `--configuration/-c` option.
 
-For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/windows-instructions.md)
+For advanced debugging using WinDBG see [Debugging CoreFX on Windows](../debugging/windows-instructions.md)
 
 ### Notes
 * At any given time, the corefx repo might be configured to use a [more recent compiler](../../../DotnetCLIVersion.txt) than

@@ -1,7 +1,7 @@
 Contributing to CoreFX
 ======================
 
-This document describes contribution guidelines that are specific to CoreFX. Please read [.NET Core Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md) for more general .NET Core contribution guidelines.
+This document describes contribution guidelines that are specific to CoreFX. Please read [.NET Core Guidelines](../../coreclr/project-docs/contributing.md) for more general .NET Core contribution guidelines.
 
 Coding Style Changes
 --------------------
