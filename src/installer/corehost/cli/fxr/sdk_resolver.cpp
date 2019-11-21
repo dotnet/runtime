@@ -46,15 +46,17 @@ pal::string_t const& sdk_resolver::global_file_path() const
     return global_file;
 }
 
-pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root) const
+pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print_errors) const
 {
-    auto requested = version.is_empty() ? pal::string_t{} : version.as_str();
-
-    trace::verbose(
-        _X("Resolving SDKs with version = '%s', rollForward = '%s', allowPrerelease = %s"),
-        requested.empty() ? _X("latest") : requested.c_str(),
-        to_policy_name(roll_forward),
-        allow_prerelease ? _X("true") : _X("false"));
+    if (trace::is_enabled())
+    {
+        auto requested = version.is_empty() ? pal::string_t{} : version.as_str();
+        trace::verbose(
+            _X("Resolving SDKs with version = '%s', rollForward = '%s', allowPrerelease = %s"),
+            requested.empty() ? _X("latest") : requested.c_str(),
+            to_policy_name(roll_forward),
+            allow_prerelease ? _X("true") : _X("false"));
+    }
 
     pal::string_t resolved_sdk_path;
     fx_ver_t resolved_version;
@@ -78,27 +80,44 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root) const
         return resolved_sdk_path;
     }
 
-    if (!requested.empty())
+    if (print_errors)
+        print_resolution_error(dotnet_root, _X(""));
+
+    return {};
+}
+
+void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const
+{
+    bool sdk_exists = false;
+    const pal::char_t *no_sdk_message = _X("It was not possible to find any installed .NET Core SDKs.");
+    if (!version.is_empty())
     {
+        pal::string_t requested = version.as_str();
         if (!global_file.empty())
         {
-            trace::error(_X("A compatible installed .NET Core SDK for global.json version [%s] from [%s] was not found"), requested.c_str(), global_file.c_str());
-            trace::error(_X("Install the [%s] .NET Core SDK or update [%s] with an installed .NET Core SDK:"), requested.c_str(), global_file.c_str());
+            trace::error(_X("%sA compatible installed .NET Core SDK for global.json version [%s] from [%s] was not found."), prefix, requested.c_str(), global_file.c_str());
+            trace::error(_X("%sInstall the [%s] .NET Core SDK or update [%s] with an installed .NET Core SDK:"), prefix, requested.c_str(), global_file.c_str());
         }
         else
         {
-            trace::error(_X("A compatible installed .NET Core SDK version [%s] was not found"), requested.c_str());
-            trace::error(_X("Install the [%s] .NET Core SDK or create a global.json file with an installed .NET Core SDK:"), requested.c_str());
+            trace::error(_X("%sA compatible installed .NET Core SDK version [%s] was not found."), prefix, requested.c_str());
+            trace::error(_X("%sInstall the [%s] .NET Core SDK or create a global.json file with an installed .NET Core SDK:"), prefix, requested.c_str());
         }
+
+        sdk_exists = sdk_info::print_all_sdks(dotnet_root, pal::string_t{prefix}.append(_X("  ")));
+        if (!sdk_exists)
+            trace::error(_X("%s  %s"), prefix, no_sdk_message);
+    }
+    else
+    {
+        trace::error(_X("%s%s"), prefix, no_sdk_message);
     }
 
-    if (requested.empty() || !sdk_info::print_all_sdks(dotnet_root, _X("  ")))
+    if (!sdk_exists)
     {
-        trace::error(_X("  It was not possible to find any installed .NET Core SDKs"));
-        trace::error(_X("  Did you mean to run .NET Core SDK commands? Install a .NET Core SDK from:"));
-        trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
+        trace::error(_X("%sInstall a .NET Core SDK from:"), prefix);
+        trace::error(_X("%s  %s"), prefix, DOTNET_CORE_DOWNLOAD_URL);
     }
-    return {};
 }
 
 sdk_resolver sdk_resolver::from_nearest_global_file(bool allow_prerelease)

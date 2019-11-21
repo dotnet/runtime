@@ -531,7 +531,7 @@ int fx_muxer_t::execute(
     int result = command_line::parse_args_for_mode(mode, host_info, argc, argv, &new_argoff, app_candidate, opts);
     if (static_cast<StatusCode>(result) == AppArgNotRunnable)
     {
-        return handle_cli(host_info, argc, argv);
+        return handle_cli(host_info, argc, argv, app_candidate);
     }
 
     if (!result)
@@ -964,7 +964,8 @@ int fx_muxer_t::handle_exec_host_command(
 int fx_muxer_t::handle_cli(
     const host_startup_info_t& host_info,
     int argc,
-    const pal::char_t* argv[])
+    const pal::char_t* argv[],
+    const pal::string_t& app_candidate)
 {
     // Check for commands that don't depend on the CLI SDK to be loaded
     if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
@@ -979,10 +980,11 @@ int fx_muxer_t::handle_cli(
     }
 
     //
-    // Did not exececute the app or run other commands, so try the CLI SDK dotnet.dll
+    // Did not execute the app or run other commands, so try the CLI SDK dotnet.dll
     //
 
-    auto sdk_dotnet = sdk_resolver::from_nearest_global_file().resolve(host_info.dotnet_root);
+    sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
+    auto sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/);
     if (sdk_dotnet.empty())
     {
         assert(argc > 1);
@@ -999,6 +1001,13 @@ int fx_muxer_t::handle_cli(
             command_line::print_muxer_info(host_info.dotnet_root);
             return StatusCode::Success;
         }
+
+        trace::error(_X("Could not execute because the application was not found or a compatible .NET Core SDK is not installed."));
+        trace::error(_X("Possible reasons for this include:"));
+        trace::error(_X("  * You intended to execute a .NET Core program:"));
+        trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
+        trace::error(_X("  * You intended to execute a .NET Core SDK command:"));
+        resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
     }
@@ -1022,16 +1031,16 @@ int fx_muxer_t::handle_cli(
     trace::verbose(_X("Using .NET Core SDK dll=[%s]"), sdk_dotnet.c_str());
 
     int new_argoff;
-    pal::string_t app_candidate;
+    pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, new_argv.size(), new_argv.data(), &new_argoff, app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info, new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
         result = handle_exec_host_command(
             pal::string_t{} /*host_command*/,
             host_info,
-            app_candidate,
+            sdk_app_candidate,
             opts,
             new_argv.size(),
             new_argv.data(),
