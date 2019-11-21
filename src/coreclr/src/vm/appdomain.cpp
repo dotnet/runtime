@@ -4735,14 +4735,13 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     BOOL fFailure = TRUE;
     *ppFailedSpec = pPrePolicySpec;
 
-
     PEAssemblyHolder result;
 
     if ((EEFileLoadException::GetFileLoadKind(hrBindResult) == kFileNotFoundException) ||
         (hrBindResult == FUSION_E_REF_DEF_MISMATCH) ||
         (hrBindResult == FUSION_E_INVALID_NAME))
     {
-        result = TryResolveAssembly(*ppFailedSpec);
+        result = TryResolveAssemblyUsingEvent(*ppFailedSpec);
 
         if (result != NULL && pPrePolicySpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
         {
@@ -4969,7 +4968,7 @@ EndTry2:;
     {
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;
-        
+
         bool isCached = false;
         EX_TRY
         {
@@ -5151,22 +5150,30 @@ EndTry2:;
 
 
 
-PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec)
+PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    PEAssembly *result = NULL;
+    // No assembly resolve on codebase binds
+    if (pSpec->GetName() == nullptr)
+        return nullptr;
 
+    PEAssembly *result = nullptr;
     EX_TRY
     {
-        result = pSpec->ResolveAssemblyFile(this);
+        Assembly *pAssembly = RaiseAssemblyResolveEvent(pSpec);
+        if (pAssembly != nullptr)
+        {
+            PEAssembly *pFile = pAssembly->GetManifestFile();
+            pFile->AddRef();
+            result = pFile;
+        }
     }
     EX_HOOK
     {
         Exception *pEx = GET_EXCEPTION();
-
         if (!pEx->IsTransient())
         {
             AddExceptionToCache(pSpec, pEx);
@@ -5447,21 +5454,6 @@ void AppDomain::NotifyDebuggerUnload()
     }
 }
 #endif // DEBUGGING_SUPPORTED
-
-void AppDomain::SetSystemAssemblyLoadEventSent(BOOL fFlag)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (fFlag == TRUE)
-        m_dwFlags |= LOAD_SYSTEM_ASSEMBLY_EVENT_SENT;
-    else
-        m_dwFlags &= ~LOAD_SYSTEM_ASSEMBLY_EVENT_SENT;
-}
-
-BOOL AppDomain::WasSystemAssemblyLoadEventSent(void)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ((m_dwFlags & LOAD_SYSTEM_ASSEMBLY_EVENT_SENT) == 0) ? FALSE : TRUE;
-}
 
 #ifndef CROSSGEN_COMPILE
 
