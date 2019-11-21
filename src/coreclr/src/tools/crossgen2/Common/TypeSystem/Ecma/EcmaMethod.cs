@@ -466,7 +466,12 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
             Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
-            return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
+            PInvokeAttributes attributes = (PInvokeAttributes)import.Attributes;
+
+            if ((ImplAttributes & MethodImplAttributes.PreserveSig) != 0)
+                attributes |= PInvokeAttributes.PreserveSig;
+
+            return new PInvokeMetadata(moduleName, name, attributes);
         }
 
         public override ParameterMetadata[] GetParameterMetadata()

@@ -469,6 +469,24 @@ namespace Internal.TypeSystem.Ecma
                         }
                     }
                     break;
+                case NativeTypeKind.CustomMarshaler:
+                    {
+                        // There's nobody to consume CustomMarshaller, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Read typelib guid
+                        _reader.ReadSerializedString();
+
+                        // Read native type name
+                        _reader.ReadSerializedString();
+
+                        // Read managed marshaler name
+                        _reader.ReadSerializedString();
+
+                        // Read cookie
+                        _reader.ReadSerializedString();
+                    }
+                    break;
                 default:
                     break;
             }
