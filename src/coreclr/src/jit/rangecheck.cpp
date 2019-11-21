@@ -313,9 +313,9 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     {
         // To determine the lower bound, ask if the loop increases monotonically.
         bool increasing = IsMonotonicallyIncreasing(tree, false);
-        JITDUMP("IsMonotonicallyIncreasing %d", increasing);
         if (increasing)
         {
+            JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             GetRangeMap()->RemoveAll();
             *pRange = GetRange(block, tree, true DEBUGARG(0));
         }
@@ -1039,6 +1039,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
+    JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
     return overflows;
 }
 
