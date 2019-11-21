@@ -32,7 +32,7 @@ namespace System.Linq
             Func<Pair<bool, T>, T> resultSelector = MakeResultSelectorFunction();
 
             AssociativeAggregationOperator<T, Pair<bool, T>, T> aggregation =
-                new AssociativeAggregationOperator<T, Pair<bool, T>, T>(source, new Pair<bool, T>(false, default), null,
+                new AssociativeAggregationOperator<T, Pair<bool, T>, T>(source, new Pair<bool, T>(false, default!), null,
                                                                         true, intermediateReduce, finalReduce, resultSelector, default(T)! != null, QueryAggregationOptions.AssociativeCommutative);
 
             return aggregation.Aggregate();

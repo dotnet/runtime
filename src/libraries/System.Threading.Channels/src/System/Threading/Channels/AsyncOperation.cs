@@ -163,7 +163,7 @@ namespace System.Threading.Channels
             }
 
             error?.Throw();
-            return result;
+            return result!;
         }
 
         /// <summary>Gets the result of the operation.</summary>

@@ -572,7 +572,7 @@ namespace System.Linq
                 bool sourceFound;
                 TSource input = _source.TryGetElementAt(index, out sourceFound);
                 found = sourceFound;
-                return sourceFound ? _selector(input) : default!;
+                return sourceFound ? _selector(input!) : default!;
             }
 
             [return: MaybeNull]
@@ -581,7 +581,7 @@ namespace System.Linq
                 bool sourceFound;
                 TSource input = _source.TryGetFirst(out sourceFound);
                 found = sourceFound;
-                return sourceFound ? _selector(input) : default!;
+                return sourceFound ? _selector(input!) : default!;
             }
 
             [return: MaybeNull]
@@ -590,7 +590,7 @@ namespace System.Linq
                 bool sourceFound;
                 TSource input = _source.TryGetLast(out sourceFound);
                 found = sourceFound;
-                return sourceFound ? _selector(input) : default!;
+                return sourceFound ? _selector(input!) : default!;
             }
 
             private TResult[] LazyToArray()

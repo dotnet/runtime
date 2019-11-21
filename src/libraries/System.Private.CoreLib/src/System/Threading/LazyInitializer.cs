@@ -140,7 +140,7 @@ namespace System.Threading
             // Fast path.
             if (Volatile.Read(ref initialized))
             {
-                return target;
+                return target!;
             }
 
             return EnsureInitializedCore(ref target, ref initialized, ref syncLock);
@@ -177,7 +177,7 @@ namespace System.Threading
                 }
             }
 
-            return target;
+            return target!;
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace System.Threading
             // Fast path.
             if (Volatile.Read(ref initialized))
             {
-                return target;
+                return target!;
             }
 
             return EnsureInitializedCore(ref target, ref initialized, ref syncLock, valueFactory);
@@ -230,7 +230,7 @@ namespace System.Threading
                 }
             }
 
-            return target;
+            return target!;
         }
 
         /// <summary>

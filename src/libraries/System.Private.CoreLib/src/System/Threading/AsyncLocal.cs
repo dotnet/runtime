@@ -98,8 +98,8 @@ namespace System.Threading
 
         internal AsyncLocalValueChangedArgs([AllowNull] T previousValue, [AllowNull] T currentValue, bool contextChanged)
         {
-            PreviousValue = previousValue;
-            CurrentValue = currentValue;
+            PreviousValue = previousValue!;
+            CurrentValue = currentValue!;
             ThreadContextChanged = contextChanged;
         }
     }
