@@ -1049,7 +1049,8 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
 // but continues to loop, which will happen with phi nodes. We end the looping by calling the
 // value as "dependent" (dep).
 // If the loop is proven to be "monIncreasing", then make liberal decisions while merging phi node.
-// eg.: merge((0, dep), (dep, dep)) = (0, dep)
+// eg.: merge((0, dep), (dep, dep)) = (0, dep), merge((0, 1), (dep, dep)) = (0, dep),
+// merge((0, 5), (dep, 10)) = (0, 10).
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
     bool  newlyAdded = !m_pSearchPath->Set(expr, block, SearchPath::Overwrite);

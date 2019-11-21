@@ -52,7 +52,7 @@
 //  **Step 4. Check if the dependency chain is monotonic.
 //
 //  **Step 5. If monotonic increasing is true, then perform a widening step, where we assume, the
-//  SSA variables that are "dependent" get their values from the definitions in the
+//  SSA variables that are "dependent" get their lower bound values from the definitions in the
 //  dependency loop and their initial values must be the definitions that are not in
 //  the dependency loop, in this case i_0's value which is 0.
 //
@@ -293,7 +293,7 @@ struct RangeOps
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
-    // then ignore the dependent variables.
+    // then ignore the dependent variables for the lower bound.
     static Range Merge(Range& r1, Range& r2, bool monIncreasing)
     {
         Limit& r1lo = r1.LowerLimit();
@@ -335,14 +335,7 @@ struct RangeOps
         }
         else if (r1hi.IsDependent() || r2hi.IsDependent())
         {
-            if (monIncreasing)
-            {
-                result.uLimit = r1hi.IsDependent() ? r2hi : r1hi;
-            }
-            else
-            {
-                result.uLimit = Limit(Limit::keDependent);
-            }
+            result.uLimit = Limit(Limit::keDependent);
         }
 
         if (r1lo.IsConstant() && r2lo.IsConstant())
@@ -461,7 +454,7 @@ public:
     // The range of a variable depends on its rhs which in turn depends on its constituent variables.
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
     // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions.
+    // at phi definitions for the lower bound.
     Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
