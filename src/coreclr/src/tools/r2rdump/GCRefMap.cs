@@ -50,52 +50,6 @@ namespace R2RDump
             StackPop = stackPop;
             Entries = entries;
         }
-
-        public void WriteTo(TextWriter writer)
-        {
-            if (StackPop != InvalidStackPop)
-            {
-                writer.Write(@"POP(0x{StackPop:X}) ");
-            }
-            for (int entryIndex = 0; entryIndex < Entries.Length; entryIndex++)
-            {
-                GCRefMapEntry entry = Entries[entryIndex];
-                if (entryIndex == 0 || entry.Token != Entries[entryIndex - 1].Token)
-                {
-                    if (entryIndex != 0)
-                    {
-                        writer.Write(") ");
-                    }
-                    switch (entry.Token)
-                    {
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF:
-                            writer.Write("R");
-                            break;
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR:
-                            writer.Write("I");
-                            break;
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_METHOD_PARAM:
-                            writer.Write("M");
-                            break;
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_TYPE_PARAM:
-                            writer.Write("T");
-                            break;
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_VASIG_COOKIE:
-                            writer.Write("V");
-                            break;
-                        default:
-                            throw new NotImplementedException();
-                    }
-                    writer.Write("(");
-                }
-                else
-                {
-                    writer.Write(" ");
-                }
-                writer.Write($"{entry.Offset:X2}");
-            }
-            writer.Write(")");
-        }
     }
 
     /// <summary>

@@ -80,10 +80,9 @@ namespace R2RDump
 
     public class EcmaMetadataReader
     {
-        /// <summary>
-        /// Option are used to specify details of signature formatting.
-        /// </summary>
-        public readonly DumpOptions Options;
+        protected IAssemblyResolver _assemblyResolver;
+        protected Dictionary<string, EcmaMetadataReader> _assemblyCache;
+
 
         /// <summary>
         /// Underlying PE image reader is used to access raw PE structures like header
@@ -132,9 +131,10 @@ namespace R2RDump
         /// <param name="filename">PE image</param>
         /// <param name="manifestReferenceAssemblies">List of reference assemblies from the R2R metadata manifest</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe EcmaMetadataReader(DumpOptions options, string filename, List<string> manifestReferenceAssemblies)
+        public unsafe EcmaMetadataReader(IAssemblyResolver assemblyResolver, string filename, List<string> manifestReferenceAssemblies)
         {
-            Options = options;
+            _assemblyResolver = assemblyResolver;
+            _assemblyCache = new Dictionary<string, EcmaMetadataReader>();
             Filename = filename;
             ManifestReferenceAssemblies = manifestReferenceAssemblies;
             Image = File.ReadAllBytes(filename);
@@ -178,15 +178,15 @@ namespace R2RDump
             }
 
             EcmaMetadataReader ecmaReader;
-            if (!Options.AssemblyCache.TryGetValue(name, out ecmaReader))
+            if (!_assemblyCache.TryGetValue(name, out ecmaReader))
             {
-                string assemblyPath = Options.FindAssembly(name, Filename);
+                string assemblyPath = _assemblyResolver.FindAssembly(name, Filename);
                 if (assemblyPath == null)
                 {
                     throw new Exception($"Missing reference assembly: {name}");
                 }
-                ecmaReader = new EcmaMetadataReader(Options, assemblyPath, ManifestReferenceAssemblies);
-                Options.AssemblyCache.Add(name, ecmaReader);
+                ecmaReader = new EcmaMetadataReader(_assemblyResolver, assemblyPath, ManifestReferenceAssemblies);
+                _assemblyCache.Add(name, ecmaReader);
             }
             return ecmaReader;
         }
@@ -274,8 +274,8 @@ namespace R2RDump
         /// </summary>
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe R2RReader(DumpOptions options, string filename)
-            : base(options, filename, new List<string>())
+        public unsafe R2RReader(IAssemblyResolver assemblyResolver, string filename)
+            : base(assemblyResolver, filename, new List<string>())
         {
             IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
             if (!IsR2R)
@@ -470,7 +470,7 @@ namespace R2RDump
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
             {
-                SignatureDecoder decoder = new SignatureDecoder(Options, this, (int)curParser.Offset);
+                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, this, (int)curParser.Offset);
                 MetadataReader mdReader = MetadataReader;
 
                 string owningType = null;
@@ -595,12 +595,14 @@ namespace R2RDump
                     }
 
                     EHInfo ehInfo = null;
-
                     EHInfoLocation ehInfoLocation;
                     if (EHLookupTable != null && EHLookupTable.RuntimeFunctionToEHInfoMap.TryGetValue(startRva, out ehInfoLocation))
                     {
                         ehInfo = new EHInfo(this, ehInfoLocation.EHInfoRVA, startRva, GetOffset(ehInfoLocation.EHInfoRVA), ehInfoLocation.ClauseCount);
                     }
+
+                    DebugInfo debugInfo;
+                    _runtimeFunctionToDebugInfo.TryGetValue(runtimeFunctionId, out debugInfo);
 
                     RuntimeFunction rtf = new RuntimeFunction(
                         runtimeFunctionId,
@@ -612,7 +614,7 @@ namespace R2RDump
                         unwindInfo,
                         gcInfo,
                         ehInfo,
-                        _runtimeFunctionToDebugInfo.GetValueOrDefault(runtimeFunctionId));
+                        debugInfo);
 
                     method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
@@ -736,7 +738,7 @@ namespace R2RDump
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    string cellName = MetadataNameFormatter.FormatSignature(Options, this, sigOffset);
+                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
                     entries.Add(new R2RImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
                     ImportCellNames.Add(rva + entrySize * i, cellName);
                 }
@@ -770,7 +772,7 @@ namespace R2RDump
                     continue;
                 }
 
-                var debugInfo = new DebugInfo(Image, offset, Machine, Options.Normalize);
+                var debugInfo = new DebugInfo(Image, offset, Machine);
                 _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
             }
         }

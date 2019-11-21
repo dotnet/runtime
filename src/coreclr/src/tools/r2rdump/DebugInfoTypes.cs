@@ -3,17 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 namespace R2RDump
 {
-    struct DebugInfoBoundsEntry
+    public struct DebugInfoBoundsEntry
     {
         public uint NativeOffset;
         public uint ILOffset;
         public SourceTypes SourceTypes;
     }
 
-    struct NativeVarInfo
+    public struct NativeVarInfo
     {
         public uint StartOffset;
         public uint EndOffset;
@@ -22,7 +23,7 @@ namespace R2RDump
     }
 
     [Flags]
-    enum SourceTypes
+    public enum SourceTypes
     {
         /// <summary>
         /// Indicates that no other options apply
@@ -50,7 +51,7 @@ namespace R2RDump
         CallInstruction = 0x10
     }
 
-    enum MappingTypes : int
+    public enum MappingTypes : int
     {
         NoMapping = -1,
         Prolog = -2,
@@ -58,7 +59,7 @@ namespace R2RDump
         MaxMappingValue = Epilog
     }
 
-    enum ImplicitILArguments
+    public enum ImplicitILArguments
     {
         VarArgsHandle = -1,
         ReturnBuffer = -2,
@@ -67,7 +68,7 @@ namespace R2RDump
         Max = Unknown
     }
 
-    enum VarLocType
+    public enum VarLocType
     {
         VLT_REG,        // variable is in a register
         VLT_REG_BYREF,  // address of the variable is in a register
@@ -85,7 +86,7 @@ namespace R2RDump
         VLT_INVALID,
     }
 
-    struct VarLoc
+    public struct VarLoc
     {
         public VarLocType VarLocType;
         // What's stored in the Data# fields changes based on VarLocType and will be
@@ -93,5 +94,31 @@ namespace R2RDump
         public int Data1;
         public int Data2;
         public int Data3;
+    }
+    public class NativeVarInfoComparer : IComparer<NativeVarInfo>
+    {
+        public int Compare(NativeVarInfo left, NativeVarInfo right)
+        {
+            if (left.VariableNumber < right.VariableNumber)
+            {
+                return -1;
+            }
+            else if (left.VariableNumber > right.VariableNumber)
+            {
+                return 1;
+            }
+            else if (left.StartOffset < right.StartOffset)
+            {
+                return -1;
+            }
+            else if (left.StartOffset > right.StartOffset)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
     }
 }

@@ -55,16 +55,6 @@ namespace R2RDump
             Size = size;
         }
 
-        public void WriteTo(TextWriter writer, DumpOptions options)
-        {
-            writer.WriteLine($"Type:  {Enum.GetName(typeof(SectionType), Type)} ({Type:D})");
-            if (!options.Naked)
-            {
-                writer.WriteLine($"RelativeVirtualAddress: 0x{RelativeVirtualAddress:X8}");
-            }
-            writer.WriteLine($"Size: {Size} bytes");
-        }
-
         public override string ToString()
         {
             throw new NotImplementedException();

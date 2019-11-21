@@ -39,9 +39,9 @@ namespace R2RDump
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride, signaturePrefix);
         }
 
-        public static string FormatSignature(DumpOptions options, EcmaMetadataReader ecmaReader, int imageOffset)
+        public static string FormatSignature(IAssemblyResolver assemblyResolver, EcmaMetadataReader ecmaReader, int imageOffset)
         {
-            SignatureDecoder decoder = new SignatureDecoder(options, ecmaReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, ecmaReader, imageOffset);
             string result = decoder.ReadR2RSignature();
             return result;
         }
@@ -358,7 +358,7 @@ namespace R2RDump
         /// <summary>
         /// Dump options are used to specify details of signature formatting.
         /// </summary>
-        private readonly DumpOptions _options;
+        private readonly IAssemblyResolver _options;
 
         /// <summary>
         /// Byte array representing the R2R PE file read from disk.
@@ -381,7 +381,7 @@ namespace R2RDump
         /// <param name="options">Dump options and paths</param>
         /// <param name="ecmaReader">EcmaMetadataReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, int offset)
+        public SignatureDecoder(IAssemblyResolver options, EcmaMetadataReader ecmaReader, int offset)
         {
             _ecmaReader = ecmaReader;
             _options = options;
@@ -398,7 +398,7 @@ namespace R2RDump
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Signature offset within the signature byte array</param>
         /// <param name="contextReader">Top-level signature context reader</param>
-        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, byte[] signature, int offset, EcmaMetadataReader contextReader)
+        public SignatureDecoder(IAssemblyResolver options, EcmaMetadataReader ecmaReader, byte[] signature, int offset, EcmaMetadataReader contextReader)
         {
             _ecmaReader = ecmaReader;
             _options = options;
@@ -559,7 +559,7 @@ namespace R2RDump
             return builder.ToString();
         }
 
-        private void EmitInlineSignatureBinaryFrom(StringBuilder builder, int startOffset)
+        private void EmitInlineSignatureBinaryForm(StringBuilder builder, int startOffset)
         {
             EmitInlineSignatureBinaryBytes(builder, _offset - startOffset);
         }
@@ -589,7 +589,7 @@ namespace R2RDump
         {
             int startOffset = _offset;
             uint value = ReadUInt();
-            EmitInlineSignatureBinaryFrom(builder, startOffset);
+            EmitInlineSignatureBinaryForm(builder, startOffset);
             return value;
         }
 
@@ -597,7 +597,7 @@ namespace R2RDump
         {
             int startOffset = _offset;
             int value = ReadInt();
-            EmitInlineSignatureBinaryFrom(builder, startOffset);
+            EmitInlineSignatureBinaryForm(builder, startOffset);
             return value;
         }
 
@@ -605,7 +605,7 @@ namespace R2RDump
         {
             int startOffset = _offset;
             uint value = ReadToken();
-            EmitInlineSignatureBinaryFrom(builder, startOffset);
+            EmitInlineSignatureBinaryForm(builder, startOffset);
             return value;
         }
 

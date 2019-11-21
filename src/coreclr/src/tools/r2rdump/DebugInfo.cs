@@ -21,12 +21,10 @@ namespace R2RDump
         private List<DebugInfoBoundsEntry> _boundsList = new List<DebugInfoBoundsEntry>();
         private List<NativeVarInfo> _variablesList = new List<NativeVarInfo>();
         private Machine _machine;
-        private bool _normalize;
 
-        public DebugInfo(byte[] image, int offset, Machine machine, bool normalize)
+        public DebugInfo(byte[] image, int offset, Machine machine)
         {
             _machine = machine;
-            _normalize = normalize;
 
             // Get the id of the runtime function from the NativeArray
             uint lookback = 0;
@@ -55,83 +53,14 @@ namespace R2RDump
             }
         }
 
-        public void WriteTo(TextWriter writer, DumpOptions dumpOptions)
-        {
-            if (_boundsList.Count > 0)
-                writer.WriteLine("Debug Info");
-
-            writer.WriteLine("\tBounds:");
-            for (int i = 0; i < _boundsList.Count; ++i)
-            {
-                writer.Write('\t');
-                if (!dumpOptions.Naked)
-                {
-                    writer.Write($"Native Offset: 0x{_boundsList[i].NativeOffset:X}, ");
-                }
-                writer.WriteLine($"IL Offset: 0x{_boundsList[i].ILOffset:X}, Source Types: {_boundsList[i].SourceTypes}");
-            }
-
-            writer.WriteLine("");
-
-            if (_variablesList.Count > 0)
-                writer.WriteLine("\tVariable Locations:");
-
-            for (int i = 0; i < _variablesList.Count; ++i)
-            {
-                var varLoc = _variablesList[i];
-                writer.WriteLine($"\tVariable Number: {varLoc.VariableNumber}");
-                writer.WriteLine($"\tStart Offset: 0x{varLoc.StartOffset:X}");
-                writer.WriteLine($"\tEnd Offset: 0x{varLoc.EndOffset:X}");
-                writer.WriteLine($"\tLoc Type: {varLoc.VariableLocation.VarLocType}");
-
-                switch (varLoc.VariableLocation.VarLocType)
-                {
-                    case VarLocType.VLT_REG:
-                    case VarLocType.VLT_REG_FP:
-                    case VarLocType.VLT_REG_BYREF:
-                        writer.WriteLine($"\tRegister: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        break;
-                    case VarLocType.VLT_STK:
-                    case VarLocType.VLT_STK_BYREF:
-                        writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
-                        break;
-                    case VarLocType.VLT_REG_REG:
-                        writer.WriteLine($"\tRegister 1: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tRegister 2: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data2)}");
-                        break;
-                    case VarLocType.VLT_REG_STK:
-                        writer.WriteLine($"\tRegister: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data3}");
-                        break;
-                    case VarLocType.VLT_STK_REG:
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data1}");
-                        writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tRegister: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data3)}");
-                        break;
-                    case VarLocType.VLT_STK2:
-                        writer.WriteLine($"\tBase Register: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
-                        break;
-                    case VarLocType.VLT_FPSTK:
-                        writer.WriteLine($"\tOffset: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        break;
-                    case VarLocType.VLT_FIXED_VA:
-                        writer.WriteLine($"\tOffset: {GetPlatformSpecificRegister(_machine, varLoc.VariableLocation.Data1)}");
-                        break;
-                    default:
-                        throw new BadImageFormatException("Unexpected var loc type");
-                }
-
-                writer.WriteLine("");
-            }
-        }
+        public List<DebugInfoBoundsEntry> BoundsList => _boundsList;
+        public List<NativeVarInfo> VariablesList => _variablesList;
+        public Machine Machine => _machine;
 
         /// <summary>
         /// Convert a register number in debug info into a machine-specific register
         /// </summary>
-        private static string GetPlatformSpecificRegister(Machine machine, int regnum)
+        public static string GetPlatformSpecificRegister(Machine machine, int regnum)
         {
             switch (machine)
             {
@@ -232,35 +161,6 @@ namespace R2RDump
 
                 entry.VariableLocation = varLoc;
                 _variablesList.Add(entry);
-            }
-
-            if (_normalize)
-            {
-                _variablesList.Sort(CompareNativeVarInfo);
-            }
-        }
-
-        private static int CompareNativeVarInfo(NativeVarInfo left, NativeVarInfo right)
-        {
-            if (left.VariableNumber < right.VariableNumber)
-            {
-                return -1;
-            }
-            else if (left.VariableNumber > right.VariableNumber)
-            {
-                return 1;
-            }
-            else if (left.StartOffset < right.StartOffset)
-            {
-                return -1;
-            }
-            else if (left.StartOffset > right.StartOffset)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
             }
         }
 
