@@ -16,6 +16,7 @@
 #endif //FEATURE_PAL
 
 const unsigned long NUM_NANOSECONDS_IN_1_MS = 1000000;
+const unsigned long NUM_NANOSECONDS_IN_1_S = 1000000000;
 
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread *SampleProfiler::s_pSamplingThread = NULL;
@@ -270,7 +271,7 @@ void SampleProfiler::PlatformSleep(unsigned long nanoseconds)
     CONTRACTL_END;
 
 #ifdef FEATURE_PAL
-    PAL_nanosleep(nanoseconds);
+    PAL_nanosleep(nanoseconds / NUM_NANOSECONDS_IN_1_S, nanoseconds % NUM_NANOSECONDS_IN_1_S);
 #else  //FEATURE_PAL
     ClrSleepEx(s_samplingRateInNs / NUM_NANOSECONDS_IN_1_MS, FALSE);
 #endif //FEATURE_PAL

@@ -134,7 +134,7 @@ static void PlatformSleep()
     const uint32_t PeriodInNanoSeconds = 100000000; // 100 msec.
 
 #ifdef FEATURE_PAL
-    PAL_nanosleep(PeriodInNanoSeconds);
+    PAL_nanosleep(0, PeriodInNanoSeconds);
 #else  //FEATURE_PAL
     const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
     ClrSleepEx(PeriodInNanoSeconds / NUM_NANOSECONDS_IN_1_MS, FALSE);

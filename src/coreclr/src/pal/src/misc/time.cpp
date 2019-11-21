@@ -374,12 +374,13 @@ GetTickCount64()
 Function:
   PAL_nanosleep
 
-Sleeps for the time specified in timeInNs.
+Sleeps for the time specified by timeInSec and timeInNs.
 Returns 0 on successful completion of the operation.
 --*/
 PALAPI
 INT
 PAL_nanosleep(
+    IN int timeInSec,
     IN long timeInNs
     )
 {
