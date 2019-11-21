@@ -4,23 +4,15 @@ Recommended reading to better understand this document:
 | [Package-Projects](package-projects.md)
 
 # Add APIs
-- [Add APIs](#add-apis)
-  - [Determining versions and targets](#determining-versions-and-targets)
-    - [Determine what library](#determine-what-library)
-    - [Determine target framework](#determine-target-framework)
-    - [Determine library version](#determine-library-version)
-  - [Making the changes in repo](#making-the-changes-in-repo)
-  - [FAQ](#faq)
+- [Determining versions and targets](#determining-versions-and-targets)
+- [Making the changes in repo](#making-the-changes-in-repo)
+- [FAQ](#faq)
 
 ## Determining versions and targets
 
-- [Add APIs](#add-apis)
-  - [Determining versions and targets](#determining-versions-and-targets)
-    - [Determine what library](#determine-what-library)
-    - [Determine target framework](#determine-target-framework)
-    - [Determine library version](#determine-library-version)
-  - [Making the changes in repo](#making-the-changes-in-repo)
-  - [FAQ](#faq)
+1. [Determine what library](#determine-what-library) the API goes into.
+2. [Determine the target framework](#determine-target-framework) for the library that will contain the API.
+3. [Determine the version](#determine-library-version) for the library that will contain the API.
 
 ### Determine what library
 - Propose a library for exposing it as part of the [API review process](http://aka.ms/apireview).

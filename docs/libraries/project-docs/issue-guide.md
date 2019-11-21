@@ -19,7 +19,7 @@ We use GitHub [labels](https://github.com/dotnet/runtime/labels) on our issues i
   * [bug](https://github.com/dotnet/runtime/labels/bug): Bugs in an assembly.
   * api-&#42; ([api-approved](https://github.com/dotnet/runtime/labels/api-approved), [api-needs-work](https://github.com/dotnet/runtime/labels/api-needs-work), [api-ready-for-review](https://github.com/dotnet/runtime/labels/api-ready-for-review)): Issues which would add APIs to an assembly (see [API Review process](api-review-process.md) for details).
   * [enhancement](https://github.com/dotnet/runtime/labels/enhancement): Improvements to an assembly which do not add new APIs (e.g. performance improvements, code cleanup).
-  * [test bug](https://github.com/dotnet/coruntimerefx/labels/test%20bug): Bugs in the tests for a specific assembly.
+  * [test bug](https://github.com/dotnet/runtime/labels/test%20bug): Bugs in the tests for a specific assembly.
   * [test enhancement](https://github.com/dotnet/runtime/labels/test%20enhancement): Improvements in the tests for a specific assembly (e.g. improving test coverage).
   * [documentation](https://github.com/dotnet/runtime/labels/documentation): Issues related to documentation (e.g. incorrect documentation, enhancement requests).
   * [question](https://github.com/dotnet/runtime/labels/question): Questions about the product, source code, etc.

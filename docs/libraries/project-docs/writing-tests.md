@@ -33,7 +33,7 @@ public class HttpWebRequestTest
 ```
 
  # LoopbackServer
-When writing network related tests we try to avoid running tests against a remote endpoint if possible. We provide simple APIs to create a LoopbackServer and send responses. A high number of scenarios can be tested with it. For additional information see https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Net/Http/LoopbackServer.cs
+When writing network related tests we try to avoid running tests against a remote endpoint if possible. We provide simple APIs to create a LoopbackServer and send responses. A high number of scenarios can be tested with it. For additional information see https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/Net/Http/LoopbackServer.cs
 
 Example (skipping additional usings and class scoping):
 ```cs
