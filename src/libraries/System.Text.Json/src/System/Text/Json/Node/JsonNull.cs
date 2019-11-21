@@ -7,7 +7,10 @@ namespace System.Text.Json
     /// <summary>
     ///   Represents the null JSON value.
     /// </summary>
-    public sealed class JsonNull : JsonNode, IEquatable<JsonNull>
+    public sealed class JsonNull : JsonNode,
+#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
+        IEquatable<JsonNull>
+#nullable restore
     {
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonNull"/> class representing the value <see langword="null"/>.

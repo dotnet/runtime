@@ -206,8 +206,9 @@ namespace System.Text.Json
             }
             else
             {
-                ConstructorInfo ctor = type.GetConstructor(Type.EmptyTypes)!;
-                if (!typeof(JsonConverter).IsAssignableFrom(type) || !ctor.IsPublic)
+                ConstructorInfo? ctor = type.GetConstructor(Type.EmptyTypes);
+
+                if (!typeof(JsonConverter).IsAssignableFrom(type) || ctor == null || !ctor.IsPublic)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(classTypeAttributeIsOn, propertyInfo);
                 }

@@ -45,7 +45,7 @@ namespace System.Text.Json
         ///   This method is functionally equal to doing an ordinal comparison of <paramref name="text" /> and
         ///   <see cref="Name" />, but can avoid creating the string instance.
         /// </remarks>
-        public bool NameEquals(string text)
+        public bool NameEquals(string? text)
         {
             return NameEquals(text.AsSpan());
         }

@@ -450,13 +450,13 @@ namespace System.Text.Json
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
         /// <seealso cref="ToString"/>
-        public string GetString()
+        public string? GetString()
         {
             CheckValidInstance();
 
             if (_parent is JsonDocument document)
             {
-                return document.GetString(_idx, JsonTokenType.String)!;
+                return document.GetString(_idx, JsonTokenType.String);
             }
 
             var jsonNode = (JsonNode)_parent!;
@@ -1722,7 +1722,7 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public override string ToString()
+        public override string? ToString()
         {
             if (_parent is JsonNode jsonNode)
             {

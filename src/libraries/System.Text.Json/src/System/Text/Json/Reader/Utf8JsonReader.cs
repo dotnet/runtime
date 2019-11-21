@@ -458,7 +458,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(string text)
+        public bool ValueTextEquals(string? text)
         {
             return ValueTextEquals(text.AsSpan());
         }

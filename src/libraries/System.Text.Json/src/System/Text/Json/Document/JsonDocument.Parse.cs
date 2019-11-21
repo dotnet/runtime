@@ -128,7 +128,8 @@ namespace System.Text.Json
             {
                 // Holds document content, clear it before returning it.
                 drained.AsSpan().Clear();
-                ArrayPool<byte>.Shared.Return(drained.Array!);
+                Debug.Assert(drained.Array != null);
+                ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }
         }
@@ -177,7 +178,8 @@ namespace System.Text.Json
             {
                 // Holds document content, clear it before returning it.
                 drained.AsSpan().Clear();
-                ArrayPool<byte>.Shared.Return(drained.Array!);
+                Debug.Assert(drained.Array != null);
+                ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }
         }

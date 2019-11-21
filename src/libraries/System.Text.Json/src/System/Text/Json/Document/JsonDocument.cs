@@ -252,6 +252,7 @@ namespace System.Text.Json
 
             if (lastIdx == index)
             {
+                Debug.Assert(lastString != null);
                 return lastString;
             }
 
@@ -279,6 +280,7 @@ namespace System.Text.Json
                 lastString = JsonReaderHelper.TranscodeHelper(segment);
             }
 
+            Debug.Assert(lastString != null);
             _lastIndexAndString = (index, lastString);
             return lastString;
         }

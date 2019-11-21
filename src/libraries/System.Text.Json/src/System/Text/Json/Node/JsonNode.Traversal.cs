@@ -90,7 +90,9 @@ namespace System.Text.Json
                         AddToParent(new KeyValuePair<string?, JsonNode?>(currentPair.Key, jsonNumber), ref currentNodes, ref toReturn);
                         break;
                     case JsonValueKind.String:
-                        var jsonString = new JsonString(currentJsonElement.Value.GetString());
+                        string? value = currentJsonElement.Value.GetString();
+                        Debug.Assert(value != null);
+                        var jsonString = new JsonString(value);
                         AddToParent(new KeyValuePair<string?, JsonNode?>(currentPair.Key, jsonString), ref currentNodes, ref toReturn);
                         break;
                     case JsonValueKind.True:

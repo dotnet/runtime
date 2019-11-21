@@ -141,7 +141,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack readStack, JsonReaderException ex)
         {
-            Debug.Assert(ex.Path == null && ex.Message != null);
+            Debug.Assert(ex.Path == null);
 
             string path = readStack.JsonPath();
             string message = ex.Message;
@@ -179,7 +179,7 @@ namespace System.Text.Json
             string path = readStack.JsonPath();
             ex.Path = path;
 
-            string? message = ex.Message;
+            string? message = ex._message;
 
             if (string.IsNullOrEmpty(message))
             {
@@ -214,7 +214,7 @@ namespace System.Text.Json
             string path = writeStack.PropertyPath();
             ex.Path = path;
 
-            string? message = ex.Message;
+            string? message = ex._message;
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.

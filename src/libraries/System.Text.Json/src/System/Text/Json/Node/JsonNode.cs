@@ -36,7 +36,15 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   Provided <see cref="JsonElement"/> was not built from <see cref="JsonNode"/>.
         /// </exception>
-        public static JsonNode GetNode(JsonElement jsonElement) => !jsonElement.IsImmutable ? (JsonNode)jsonElement._parent! : throw new ArgumentException(SR.NotNodeJsonElementParent);
+        public static JsonNode GetNode(JsonElement jsonElement)
+        {
+            if (jsonElement.IsImmutable)
+            {
+                throw new ArgumentException(SR.NotNodeJsonElementParent);
+            }
+            Debug.Assert(jsonElement._parent != null);
+            return (JsonNode)jsonElement._parent;
+        }
 
         /// <summary>
         ///    Gets the <see cref="JsonNode"/> represented by the <paramref name="jsonElement"/>.
