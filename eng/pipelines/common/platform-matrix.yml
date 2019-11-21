@@ -117,9 +117,9 @@ jobs:
         managedTestBuildOsGroup: Linux
         helixQueues:
         - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+          - (Alpine.38.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          - (Alpine.38.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+          - (Alpine.38.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
