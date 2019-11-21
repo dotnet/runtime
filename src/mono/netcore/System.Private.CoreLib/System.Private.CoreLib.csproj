@@ -273,20 +273,20 @@
       <Compile Include="src\System\Threading\Semaphore.Unix.Mono.cs" />
       <Compile Include="src\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
 
-      <Compile Include="..\..\mcs\class\corlib\System.IO\MonoIOError.cs" />
+      <Compile Include="src\System\IO\MonoIOError.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <Compile Include="src\System\Globalization\GlobalizationMode.Windows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
-      <Compile Include="..\..\mcs\class\corlib\Mono\RuntimeStructs.cs" />
-      <Compile Include="..\..\mcs\class\corlib\Mono\RuntimeMarshal.cs" />
-      <Compile Include="..\..\mcs\class\corlib\Mono\SafeStringMarshal.cs" />
-      <Compile Include="..\..\mcs\class\corlib\Mono\SafeGPtrArrayHandle.cs" />
+      <Compile Include="src\Mono\RuntimeStructs.cs" />
+      <Compile Include="src\Mono\RuntimeMarshal.cs" />
+      <Compile Include="src\Mono\SafeStringMarshal.cs" />
+      <Compile Include="src\Mono\SafeGPtrArrayHandle.cs" />
 
-      <Compile Include="..\..\mcs\class\corlib\System\TypeSpec.cs" />
+      <Compile Include="src\System\TypeSpec.cs" />
 
-      <Compile Include="..\..\mcs\class\corlib\System.Runtime.CompilerServices\PreserveDependencyAttribute.cs" />
+      <Compile Include="src\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
   </ItemGroup>
 
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" />
