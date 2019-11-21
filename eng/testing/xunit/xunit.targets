@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'Windows_NT'">nonwindowstests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'Linux'">nonlinuxtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'OSX'">nonosxtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'FreeBSD'">nonfreebsdtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'NetBSD'">nonnetbsdtests</TargetOSTrait>
+
+    <!-- Legacy Outerloop switch -->
+    <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
+    
+    <!-- Traits -->
+    <WithoutCategories Condition="'$(ArchiveTest)' == 'true'">IgnoreForCI</WithoutCategories>
+    <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
+    <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
+    <!-- Default categories -->
+    <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
+    <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
+    <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
+  </PropertyGroup>
+
+  <Target Name="ValidateTargetOSTrait"
+          BeforeTargets="GenerateRunScript">
+    <Error Condition="'$(TargetOSTrait)' == ''"
+           Text="TargetOS [$(TargetOS)] is unknown so we don't know how to configure the test run for this project [$(TestProjectName)]" />
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" Condition="'$(TestRunner)' == 'xunit.console'" />
+</Project>

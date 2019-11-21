@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
+    <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="xunit.runner.console" Version="$(XUnitVersion)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,45 @@
+<Project> 
+  <PropertyGroup>
+    <!-- Copies the app.config file to the OutDir. -->
+    <TestRuntimeConfigurationFile Condition="'$(TargetsNetFx)' == 'true'">$(MSBuildThisFileDirectory)netfx.exe.config</TestRuntimeConfigurationFile>
+
+    <!-- By default copy the test runtime config file for executable test projects (+ test support projects). -->
+    <GenerateRuntimeConfigurationFiles Condition="'$(IsTestProject)' == 'true' and ('$(IsTestSupportProject)' != 'true' or '$(OutputType.ToLower())' == 'exe')">true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
+    <None Include="$(TestRuntimeConfigurationFile)"
+          Condition="Exists('$(TestRuntimeConfigurationFile)')"
+          Link="$(TargetName).exe.config"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
+    <!--
+      Include deps.json and runtimeconfig.json in ContentWithTargetPath so they will
+      be copied to the output folder of projects that reference this one.
+      Tracking issue: https://github.com/dotnet/sdk/issues/1675
+    -->
+    <ContentWithTargetPath Include="$(ProjectDepsFilePath)"
+                           Condition="'$(TargetsNetCoreApp)' == 'true' and '$(GenerateDependencyFile)' == 'true'"
+                           CopyToOutputDirectory="PreserveNewest"
+                           TargetPath="$(ProjectDepsFileName)" />
+    <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)"
+                           Condition="'$(TargetsNetCoreApp)' == 'true'"
+                           CopyToOutputDirectory="PreserveNewest"
+                           TargetPath="$(ProjectRuntimeConfigFileName)" />
+  </ItemGroup>
+
+    <!--
+    We disabled implicit framework references but still want to be treated as framework dependent:
+    1. To have runtimeTargets in the deps file.
+    2. To populate the framework node in the runtimeconfig's runtimeOptions 
+    To do this we manually set the RuntimeFramework.
+    At that point restore and conflict resolution already happened therefore setting the item here has no side effects.
+   -->
+  <Target Name="_SetRuntimeFrameworksForTestAssemblies"
+          Condition="'$(SelfContained)' != 'true'"
+          BeforeTargets="GenerateBuildDependencyFile">
+    <ItemGroup>
+      <RuntimeFramework Include="Microsoft.NETCore.App" Version="$(ProductVersion)" />
+    </ItemGroup>
+  </Target>
+</Project>
