@@ -134,7 +134,7 @@ namespace System.Text.Json
         {
             get
             {
-                return _message ?? base.Message;
+                return _message!;
             }
         }
 
