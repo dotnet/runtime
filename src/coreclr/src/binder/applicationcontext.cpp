@@ -76,7 +76,6 @@ namespace BINDER_SPACE
         m_pFailureCache = NULL;
         m_contextCS = NULL;
         m_pTrustedPlatformAssemblyMap = nullptr;
-        m_pFileNameHash = nullptr;
     }
 
     ApplicationContext::~ApplicationContext()
@@ -92,11 +91,6 @@ namespace BINDER_SPACE
         if (m_pTrustedPlatformAssemblyMap != nullptr)
         {
             delete m_pTrustedPlatformAssemblyMap;
-        }
-
-        if (m_pFileNameHash != nullptr)
-        {
-            delete m_pFileNameHash;
         }
     }
 
@@ -220,7 +214,6 @@ namespace BINDER_SPACE
         // Parse TrustedPlatformAssemblies
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
-        m_pFileNameHash = new TpaFileNameHash();
 
         sTrustedPlatformAssemblies.Normalize();
 
@@ -349,10 +342,6 @@ namespace BINDER_SPACE
             }
 
             m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
-
-            FileNameMapEntry fileNameExistenceEntry;
-            fileNameExistenceEntry.m_wszFileName = wszFileName;
-            m_pFileNameHash->AddOrReplace(fileNameExistenceEntry);
         }
 
         //

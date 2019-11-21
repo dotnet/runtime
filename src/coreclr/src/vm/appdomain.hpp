@@ -966,14 +966,6 @@ public:
         return NULL;
     }
 
-#ifdef FEATURE_COMINTEROP
-    //****************************************************************************************
-    //
-    // This will look up interop data for a method table
-    //
-
-#endif // FEATURE_COMINTEROP
-
     void SetDisableInterfaceCache()
     {
         m_fDisableInterfaceCache = TRUE;
@@ -1141,10 +1133,7 @@ public:
 
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
-
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
-
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1157,10 +1146,6 @@ protected:
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitLargeHeapHandleTable();
-
-    //****************************************************************************************
-    // Adds an assembly to the domain.
-    void AddAssemblyNoLock(Assembly* assem);
 
     //****************************************************************************************
     //
@@ -1186,11 +1171,6 @@ protected:
     JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
 
-    // Fusion context, used for adding assemblies to the is domain. It defines
-    // fusion properties for finding assemblyies such as SharedBinPath,
-    // PrivateBinPath, Application Directory, etc.
-    IUnknown *m_pFusionContext; // Current binding context for the domain
-
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
     IGCHandleStore* m_handleStore;
@@ -1215,7 +1195,7 @@ protected:
 public:
     // Only call this routine when you can guarantee there are no
     // loads in progress.
-    void ClearFusionContext();
+    void ClearBinderContext();
 
     //****************************************************************************************
     // Synchronization holders.
@@ -2260,7 +2240,7 @@ public:
         return m_tpIndex;
     }
 
-    IUnknown *CreateFusionContext();
+    IUnknown *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -3015,10 +2995,6 @@ public:
     static void PublishAppDomainAndInformDebugger (AppDomain *pDomain);
 #endif // DEBUGGING_SUPPORTED
 
-    //****************************************************************************************
-    // Helper function to remove a domain from the system
-    BOOL RemoveDomain(AppDomain* pDomain); // Does not decrement the reference
-
 #ifdef PROFILING_SUPPORTED
     //****************************************************************************************
     // Tell profiler about system created domains which are created before the profiler is
@@ -3112,10 +3088,6 @@ public:
     }
 
 private:
-
-    //****************************************************************************************
-    // Helper function to create the single COM domain
-    void CreateDefaultDomain();
 
     //****************************************************************************************
     // Helper function to add a domain to the global list
