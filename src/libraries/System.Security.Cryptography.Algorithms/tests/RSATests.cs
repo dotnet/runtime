@@ -192,6 +192,12 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.True(rsa.VerifyData(new MemoryStream(new byte[] { 42 }), new byte[1] { 24 }, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
         }
 
+        [Fact]
+        public void RSAEncryptionPadding_Equals()
+        {
+            Assert.Equal(RSAEncryptionPadding.Pkcs1, RSAEncryptionPadding.Pkcs1);
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
