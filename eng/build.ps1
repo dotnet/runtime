@@ -94,7 +94,7 @@ if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
 }
 
-if (!$actionPassedIn -or $subsetCategory -ne "libraries") {
+if (!$actionPassedIn -and $subsetCategory -ne "libraries") {
   $arguments = "-restore -build"
 }
 
