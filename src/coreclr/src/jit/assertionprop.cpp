@@ -4526,6 +4526,23 @@ public:
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 
+    //------------------------------------------------------------------------
+    // MergeHandler: Merge assertions into the first exception handler/filter block.
+    //
+    // Arguments:
+    //   block         - the block that is the start of a handler or filter;
+    //   firstTryBlock - the first block of the try for "block" handler;
+    //   lastTryBlock  - the last block of the try for "block" handler;.
+    //
+    // Notes:
+    //   We can jump to the handler from any instruction in the try region.
+    //   It means we can propagate only assertions that are valid for the whole try region.
+    void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
+    {
+        BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
+        BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
+    }
+
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
@@ -4677,20 +4694,9 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 
     // Initially estimate the OUT sets to everything except killed expressions
     // Also set the IN sets to 1, so that we can perform the intersection.
-    // Also, zero-out the flags for handler blocks, as we could be in the
-    // handler due to an exception bypassing the regular program flow which
-    // actually generates assertions along the bbAssertionOut/jumpDestOut
-    // edges.
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        if (bbIsHandlerBeg(block))
-        {
-            block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
-        }
-        else
-        {
-            block->bbAssertionIn = BitVecOps::MakeCopy(apTraits, apValidFull);
-        }
+        block->bbAssertionIn      = BitVecOps::MakeCopy(apTraits, apValidFull);
         block->bbAssertionGen     = BitVecOps::MakeEmpty(apTraits);
         block->bbAssertionOut     = BitVecOps::MakeCopy(apTraits, apValidFull);
         jumpDestOut[block->bbNum] = BitVecOps::MakeCopy(apTraits, apValidFull);
