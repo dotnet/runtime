@@ -72,6 +72,14 @@ void MethodDesc::Init()
 
 #endif
 
+#define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
+                                        "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n", \
+                                        DBG_ADDR(pCode),                                                                  \
+                                        m_pszDebugClassName,                                                              \
+                                        m_pszDebugMethodName,                                                             \
+                                        m_pszDebugMethodSignature,                                                        \
+                                        GetMemberDef()));
+
 //==========================================================================
 
 PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
@@ -352,30 +360,27 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     if (pConfig->MayUsePrecompiledCode())
     {
 #ifdef FEATURE_READYTORUN
-        // TODO: Remove IsSystem check when IL Stubs are fixed to be non-shared
-        if (this->IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
+        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
         {
-            DynamicMethodDesc *stubMethodDesc = this->AsDynamicMethodDesc();
-            if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
+            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
+            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
+            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
             {
-                ILStubResolver *pStubResolver = stubMethodDesc->GetILStubResolver();
-                if (pStubResolver->IsCLRToNativeInteropStub())
+                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
+                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
-                    MethodDesc *pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
+                    ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
+                    if (pStubResolver->IsCLRToNativeInteropStub())
                     {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != NULL)
+                        MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                        if (pTargetMD != NULL)
                         {
-                            LOG((LF_ZAP, LL_INFO10000,
-                                "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
-                                DBG_ADDR(pCode),
-                                m_pszDebugClassName,
-                                m_pszDebugMethodName,
-                                m_pszDebugMethodSignature,
-                                GetMemberDef()));
-
-                            pConfig->SetNativeCode(pCode, &pCode);
+                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                            if (pCode != NULL)
+                            {
+                                LOG_USING_R2R_CODE(this);
+                                pConfig->SetNativeCode(pCode, &pCode);
+                            }
                         }
                     }
                 }
@@ -430,13 +435,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         pCode = GetPrecompiledR2RCode(pConfig);
         if (pCode != NULL)
         {
-            LOG((LF_ZAP, LL_INFO10000,
-                    "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
-                    DBG_ADDR(pCode),
-                    m_pszDebugClassName,
-                    m_pszDebugMethodName,
-                    m_pszDebugMethodSignature,
-                    GetMemberDef()));
+            LOG_USING_R2R_CODE(this);
 
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
@@ -2079,7 +2078,21 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {
-        pCode = GetStubForInteropMethod(this);
+        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        {
+            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
+            // a stub, we'll use it directly instead and avoid emitting an IL stub.
+            PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+            pCode = GetPrecompiledR2RCode(&config);
+            if (pCode != NULL)
+            {
+                LOG_USING_R2R_CODE(this);
+            }
+        }
+
+        if (pCode == NULL)
+            pCode = GetStubForInteropMethod(this);
+
         GetOrCreatePrecode();
     }
     else if (IsFCall())

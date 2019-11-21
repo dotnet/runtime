@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
+using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -191,13 +191,19 @@ namespace ILCompiler
 
         public override bool GeneratesPInvoke(MethodDesc method)
         {
-            // PInvokes depend on details of the core library.
+            // PInvokes depend on details of the core library, so for now only compile them if:
+            //    1) We're compiling the core library module, or
+            //    2) We're compiling any module, and no marshalling is needed
             //
-            // We allow compiling them if both the module of the pinvoke and the core library
-            // are in the version bubble.
+            // TODO Future: consider compiling PInvokes with complex marshalling in version bubble
+            // mode when the core library is included in the bubble.
+
             Debug.Assert(method is EcmaMethod);
-            return _versionBubbleModuleSet.Contains(((EcmaMethod)method).Module)
-                && _versionBubbleModuleSet.Contains(method.Context.SystemModule);
+
+            if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
+                return true;
+
+            return !Marshaller.IsMarshallingRequired(method);
         }
     }
 }
