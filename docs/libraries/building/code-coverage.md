@@ -45,7 +45,7 @@ The results for this one library will then show up in the aforementioned index.h
 
 And then once the run completes:
 
-    $(TestPath)\report\index.htm
+    $(OutDir)\report\index.htm
 
 **Note:** If you only want to measure the coverage of your local changes (that haven't been pushed to git), run:
 

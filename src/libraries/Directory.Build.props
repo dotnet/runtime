@@ -86,7 +86,19 @@
   </PropertyGroup>
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
-  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.props" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
+
+  <!-- Define test projects and companions -->
+  <PropertyGroup>
+    <IsTestProject>false</IsTestProject>
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+
+    <IsTestSupportProject>false</IsTestSupportProject>
+    <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) OR $(MSBuildProjectFullPath.Contains('/tests/'))) AND '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
+    <IsTestProject Condition="'$(IsTestSupportProject)' == 'true'">true</IsTestProject>
+
+    <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
+    <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
+  </PropertyGroup>
 
   <PropertyGroup>    
     <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
@@ -304,45 +316,25 @@
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
-    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
-    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
-
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
-
-    <TestHostRuntimePath Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</TestHostRuntimePath>
-    <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
-
-    <PlatformManifestFile>$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
-    <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
-    <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == '' and '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
-  </PropertyGroup>
-
-  <!-- Test properties for full build. -->
-  <PropertyGroup Condition="'$(TestAllProjects)' == 'true'">
-    <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
-  </PropertyGroup>
-
   <Import Project="$(RepositoryEngineeringDir)references.props" />
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
-  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
-    <!-- Set the documentation output file globally. -->
-    <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-  </PropertyGroup>
-
-  <!-- Additional optimizations -->
   <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
+    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+
+    <!-- Set the documentation output file globally. -->
+    <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+
+    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
+
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
@@ -356,21 +348,35 @@
     <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <EnableDefaultItems>false</EnableDefaultItems>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
+    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
-    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
-    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
-    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
+    <TestHostRuntimePath Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</TestHostRuntimePath>
+    <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
+
+    <PlatformManifestFile Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
-    <ProjectReference Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
+    <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+    <EnableTestSupport>true</EnableTestSupport>
+    <EnableCoverageSupport Condition="'$(Coverage)' == 'true' and '$(CoverageSupported)' != 'false'">true</EnableCoverageSupport>
+    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
   <ItemGroup>

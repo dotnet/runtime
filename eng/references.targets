@@ -17,8 +17,9 @@
     <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</IncludeDefaultReferences>
     <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.vbproj'">true</IncludeDefaultReferences>
   </PropertyGroup>
+
   <Target Name="SetupDefaultReferences">
-    <ItemGroup Condition="'$(IncludeDefaultReferences)' =='true'">
+    <ItemGroup Condition="'$(IncludeDefaultReferences)' == 'true'">
       <!-- netstandard is a default reference whenever building for NETStandard or building an implementation assembly -->
       <DefaultReference Condition="('$(TargetsNetStandard)' == 'true' or '$(IsReferenceAssembly)' != 'true') and Exists('$(RefPath)netstandard.dll')" Include="netstandard" />
     </ItemGroup>
@@ -32,6 +33,33 @@
       <Reference Condition="'%(Reference.Extension)' != '.dll'">
         <Private>false</Private>
       </Reference>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddDefaultTestReferences" BeforeTargets="SetupDefaultReferences" Condition="'$(IsTestProject)' == 'true'">
+    <ItemGroup>
+      <DefaultReferenceExclusions Include="@(ReferenceFromRuntime)"/>
+
+      <!-- Reference everything in the targeting pack directory -->
+      <DefaultReferenceDirs Include="$(RefPath)" />
+      <DefaultReferenceItems Include="%(DefaultReferenceDirs.Identity)/*.dll" />
+
+      <DefaultReferenceExclusions>
+        <RefDir>%(DefaultReferenceDirs.Identity)</RefDir>
+      </DefaultReferenceExclusions>
+      <_defaultReferenceExclusionsFullPath Include="%(DefaultReferenceExclusions.RefDir)%(DefaultReferenceExclusions.Identity).dll" />
+
+      <!-- Ensure conflict resolution can see these references. -->
+      <Reference Include="%(DefaultReferenceItems.FullPath)" Private="false" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveConflictResolutionAssetsForTests"
+          AfterTargets="_HandlePackageFileConflicts"
+          DependsOnTargets="AddDefaultTestReferences"
+          Condition="'@(_defaultReferenceExclusionsFullPath)' != ''">
+    <ItemGroup>
+      <Reference Remove="@(_defaultReferenceExclusionsFullPath)" />
     </ItemGroup>
   </Target>
 

@@ -134,7 +134,7 @@ stages:
                       -allconfigurations
                       -arch $(_architecture)
                       /p:RuntimeOS=win10
-                      /p:ArchiveTests=Packages
+                      /p:ArchiveTests=true
                       $(_msbuildCommonParameters)
               displayName: Build Packages and Tests
 

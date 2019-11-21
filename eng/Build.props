@@ -79,6 +79,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
+             Properties="Configuration=Debug"
              Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"
@@ -89,7 +90,7 @@
   <Target Name="GetRepoTasksSrc">
     <PropertyGroup>
       <RepoTasksDir>$(RepoTasksDir)</RepoTasksDir>
-      <RepoTasksOutputFile>$(ArtifactsObjDir)runtime.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
+      <RepoTasksOutputFile>$(ArtifactsObjDir)runtime.tasks\Debug\build-semaphore.txt</RepoTasksOutputFile>
     </PropertyGroup>
 
     <ItemGroup>

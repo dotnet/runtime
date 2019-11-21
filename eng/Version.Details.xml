@@ -130,5 +130,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.4.0">
+      <Uri>https://github.com/Microsoft/vstest</Uri>
+      <Sha>ca987de449d17284f8c9806df36f42276f13962a</Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>

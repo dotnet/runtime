@@ -115,9 +115,12 @@
   <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\launchSettings.targets" Condition="'$(EnableLaunchSettings)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
-  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
@@ -176,17 +179,6 @@
     <ItemGroup>
       <IsNotNetCoreAppProjectResult Condition="'$(IsNetCoreApp)' != 'true'" Include="$(MSBuildProjectName)" Version="$(PackageVersion)" />
     </ItemGroup>
-  </Target>
-
-  <!-- Routing dotnet test to a test project's BuildAndTest target. -->
-  <Target Name="VSTest"
-          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
-          DependsOnTargets="BuildAndTest" />
-
-  <Target Name="ValidateTestProjectConfigurations"
-          BeforeTargets="CoreCompile"
-          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true' and '$(TargetsNetStandard)' == 'true'">
-    <Error Text="Targeting .NET Standard in a test project isn't supported." />
   </Target>
 
   <PropertyGroup>
