@@ -140,8 +140,8 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
 
-        public CorInfoImpl(ReadyToRunCodegenCompilation compilation, JitConfigProvider jitConfig)
-            : this(jitConfig)
+        public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
+            : this()
         {
             _compilation = compilation;
         }
