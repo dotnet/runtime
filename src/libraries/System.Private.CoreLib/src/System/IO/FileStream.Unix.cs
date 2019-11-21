@@ -66,6 +66,7 @@ namespace System.IO
         /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
         /// <param name="mode">How the file should be opened.</param>
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
+        /// <param name="originalPath">The original path specified for the FileStream.</param>
         private void Init(FileMode mode, FileShare share, string originalPath)
         {
             _fileHandle.IsAsync = _useAsyncIO;
@@ -802,6 +803,7 @@ namespace System.IO
         }
 
         /// <summary>Sets the current position of this stream to the given value.</summary>
+        /// <param name="fileHandle">The file handle on which to seek.</param>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">
         /// Specifies the beginning, the end, or the current position as a reference
