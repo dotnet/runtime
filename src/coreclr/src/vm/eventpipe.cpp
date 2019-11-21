@@ -72,8 +72,10 @@ void EventPipe::Initialize()
     InitProvidersAndEvents();
 
     // Set the sampling rate for the sample profiler.
-    const unsigned long DefaultProfilerSamplingRateInNanoseconds = 1000000; // 1 msec.
-    SampleProfiler::SetSamplingRate(DefaultProfilerSamplingRateInNanoseconds);
+    const unsigned long msToNanoSeconds = 1000000; // 1 msec.
+
+    int samplingPeriod = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SampleProfilerSamplingPeriodMS);
+    SampleProfiler::SetSamplingRate(samplingPeriod * msToNanoSeconds);
 
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeProcNumbers) != 0)
