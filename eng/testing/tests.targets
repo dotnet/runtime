@@ -75,7 +75,6 @@
   </Target>
 
   <Target Name="ValidateTestPlatform">
-
     <ItemGroup>
       <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)" />
     </ItemGroup>
@@ -91,13 +90,11 @@
 
     <Message Condition="'$(ConfigurationErrorMsg)' != ''"
              Text="Skipping tests in $(AssemblyName) because there is no configuration compatible with the current BuildConfiguration." />
-
   </Target>
 
   <Target Name="RunTests"
           Condition="'$(TestDisabled)' != 'true'"
           DependsOnTargets="ValidateTestPlatform">
-
     <Error Condition="!Exists('$(TargetPath)')"
            Text="Test assembly couldn't be found. Make sure to build the test project first." />
 
@@ -119,7 +116,6 @@
     </PropertyGroup>
 
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
-
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />

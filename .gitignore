@@ -50,6 +50,7 @@ cross/android-rootfs/
 #NUNIT
 *.VisualState.xml
 TestResult.xml
+testResults.xml
 
 # Build Results of an ATL Project
 [Dd]ebugPS/

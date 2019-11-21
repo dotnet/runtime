@@ -4,15 +4,13 @@
     <RunArguments>$(RunArguments) -xml $(TestResultsName)</RunArguments>
     <RunArguments>$(RunArguments) -nologo</RunArguments>
     <RunArguments Condition="'$(ArchiveTest)' == 'true'">$(RunArguments) -nocolor</RunArguments>
-    <RunArguments>$(RunArguments) -notrait category=non$(_bc_TargetGroup)tests</RunArguments>
-    <RunArguments Condition="'$(TargetOSTrait)' != ''">$(RunArguments) -notrait category=$(TargetOSTrait)</RunArguments>
 
     <!-- Add local and global options to the argument stack. -->
-    <RunArguments Condition="'$(XUnitMaxThreads)' != ''">$(RunArguments) -maxthreads $(XUnitMaxThreads)</RunArguments>
+    <RunArguments Condition="'$(TestDisableParallelization)' == 'true'">$(RunArguments) -maxthreads 1</RunArguments>
     <RunArguments Condition="'$(XUnitMethodName)' != ''">$(RunArguments) -method $(XUnitMethodName)</RunArguments>
     <RunArguments Condition="'$(XUnitClassName)' != ''">$(RunArguments) -class $(XUnitClassName)</RunArguments>
     <RunArguments Condition="'$(XUnitShowProgress)' == 'true'">$(RunArguments) -verbose</RunArguments>
-    <RunArguments Condition="'$(TargetsNetFx)' == 'true' and '$(XUnitNoAppdomain)' == 'true'">$(RunArguments) -noappdomain</RunArguments>
+    <RunArguments Condition="'$(TargetsNetFx)' == 'true' and '$(TestDisableAppDomain)' == 'true'">$(RunArguments) -noappdomain</RunArguments>
 
     <!-- Add to run argument string -->
     <RunArguments>$(RunArguments)$(_withCategories.Replace(';', ' -trait category='))</RunArguments>

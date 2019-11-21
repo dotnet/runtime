@@ -38,8 +38,6 @@
 
   <Target Name="AddDefaultTestReferences" BeforeTargets="SetupDefaultReferences" Condition="'$(IsTestProject)' == 'true'">
     <ItemGroup>
-      <!-- Harmless, but causes PRI targets to run -->
-      <DefaultReferenceExclusions Include="System.Runtime.WindowsRuntime.UI.Xaml" />
       <DefaultReferenceExclusions Include="@(ReferenceFromRuntime)"/>
 
       <!-- Reference everything in the targeting pack directory -->
