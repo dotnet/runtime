@@ -454,11 +454,40 @@ namespace Internal.TypeSystem.Ecma
                 return default(PInvokeMetadata);
 
             MetadataReader metadataReader = MetadataReader;
-            MethodImport import = metadataReader.GetMethodDefinition(_handle).GetImport();
+            MethodDefinition methodDef = metadataReader.GetMethodDefinition(_handle);
+            MethodImport import = methodDef.GetImport();
             string name = metadataReader.GetString(import.Name);
 
             ModuleReference moduleRef = metadataReader.GetModuleReference(import.Module);
             string moduleName = metadataReader.GetString(moduleRef.Name);
+
+            MethodImportAttributes importAttributes = import.Attributes;
+
+            // If either BestFitMapping or ThrowOnUnmappable wasn't set on the p/invoke,
+            // look for the value in the owning type or assembly.
+            if ((importAttributes & MethodImportAttributes.BestFitMappingMask) == 0 ||
+                (importAttributes & MethodImportAttributes.ThrowOnUnmappableCharMask) == 0)
+            {
+                TypeDefinition declaringType = metadataReader.GetTypeDefinition(methodDef.GetDeclaringType());
+
+                // Start with owning type
+                MethodImportAttributes fromCA = GetImportAttributesFromBestFitMappingAttribute(declaringType.GetCustomAttributes());
+                if ((importAttributes & MethodImportAttributes.BestFitMappingMask) == 0)
+                    importAttributes |= fromCA & MethodImportAttributes.BestFitMappingMask;
+                if ((importAttributes & MethodImportAttributes.ThrowOnUnmappableCharMask) == 0)
+                    importAttributes |= fromCA & MethodImportAttributes.ThrowOnUnmappableCharMask;
+
+                // If we still don't know, check the assembly
+                if ((importAttributes & MethodImportAttributes.BestFitMappingMask) == 0 ||
+                    (importAttributes & MethodImportAttributes.ThrowOnUnmappableCharMask) == 0)
+                {
+                    fromCA = GetImportAttributesFromBestFitMappingAttribute(metadataReader.GetAssemblyDefinition().GetCustomAttributes());
+                    if ((importAttributes & MethodImportAttributes.BestFitMappingMask) == 0)
+                        importAttributes |= fromCA & MethodImportAttributes.BestFitMappingMask;
+                    if ((importAttributes & MethodImportAttributes.ThrowOnUnmappableCharMask) == 0)
+                        importAttributes |= fromCA & MethodImportAttributes.ThrowOnUnmappableCharMask;
+                }
+            }
 
             // Spot check the enums match
             Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
@@ -466,12 +495,53 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
             Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
-            PInvokeAttributes attributes = (PInvokeAttributes)import.Attributes;
+            PInvokeAttributes attributes = (PInvokeAttributes)importAttributes;
 
             if ((ImplAttributes & MethodImplAttributes.PreserveSig) != 0)
                 attributes |= PInvokeAttributes.PreserveSig;
 
             return new PInvokeMetadata(moduleName, name, attributes);
+        }
+
+        private MethodImportAttributes GetImportAttributesFromBestFitMappingAttribute(CustomAttributeHandleCollection attributeHandles)
+        {
+            // Look for the [BestFitMapping(BestFitMapping: x, ThrowOnUnmappableChar = y)] attribute and
+            // translate that to MethodImportAttributes
+
+            MethodImportAttributes result = 0;
+            MetadataReader reader = MetadataReader;
+
+            CustomAttributeHandle attributeHandle = reader.GetCustomAttributeHandle(
+                attributeHandles, "System.Runtime.InteropServices", "BestFitMappingAttribute");
+            if (!attributeHandle.IsNil)
+            {
+                CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
+                CustomAttributeValue<TypeDesc> decoded = attribute.DecodeValue(
+                    new CustomAttributeTypeProvider(_type.EcmaModule));
+
+                if (decoded.FixedArguments.Length != 1 || !(decoded.FixedArguments[0].Value is bool))
+                    ThrowHelper.ThrowBadImageFormatException();
+                if ((bool)decoded.FixedArguments[0].Value)
+                    result |= MethodImportAttributes.BestFitMappingEnable;
+                else
+                    result |= MethodImportAttributes.BestFitMappingDisable;
+
+                foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decoded.NamedArguments)
+                {
+                    if (namedArg.Name == "ThrowOnUnmappableChar")
+                    {
+                        if (!(namedArg.Value is bool))
+                            ThrowHelper.ThrowBadImageFormatException();
+                        if ((bool)namedArg.Value)
+                            result |= MethodImportAttributes.ThrowOnUnmappableCharEnable;
+                        else
+                            result |= MethodImportAttributes.ThrowOnUnmappableCharDisable;
+                        break;
+                    }
+                }
+            }
+
+            return result;
         }
 
         public override ParameterMetadata[] GetParameterMetadata()
