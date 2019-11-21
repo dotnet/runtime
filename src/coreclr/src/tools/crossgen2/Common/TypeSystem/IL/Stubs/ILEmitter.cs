@@ -223,17 +223,23 @@ namespace Internal.IL.Stubs
         {
             switch (type.UnderlyingType.Category)
             {
-                case TypeFlags.Byte:
                 case TypeFlags.SByte:
-                case TypeFlags.Boolean:
                     Emit(ILOpcode.ldind_i1);
                     break;
-                case TypeFlags.Char:
-                case TypeFlags.UInt16:
+                case TypeFlags.Byte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.ldind_u1);
+                    break;
                 case TypeFlags.Int16:
                     Emit(ILOpcode.ldind_i2);
                     break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                    Emit(ILOpcode.ldind_u2);
+                    break;
                 case TypeFlags.UInt32:
+                    Emit(ILOpcode.ldind_u4);
+                    break;
                 case TypeFlags.Int32:
                     Emit(ILOpcode.ldind_i4);
                     break;

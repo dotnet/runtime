@@ -13,6 +13,8 @@ namespace ABIStress
         internal const string PInvokerPrefix = "ABIStress_PInvoker";
         internal const string PInvokeePrefix = "ABIStress_PInvokee";
 
+        internal const string InstantiatingStubPrefix = "ABIStress_InstantiatingStub_";
+
         internal static StressModes StressModes { get; set; } = StressModes.None;
         // The base seed. This value combined with the index of the
         // caller/pinvoker/callee will uniquely determine how it is generated
@@ -36,7 +38,10 @@ namespace ABIStress
         None = 0,
         TailCalls = 0x1,
         PInvokes = 0x2,
+        InstantiatingStubs = 0x4,
+        UnboxingStubs = 0x8,
+        SharedGenericUnboxingStubs = 0x10,
 
-        All = TailCalls | PInvokes,
+        All = TailCalls | PInvokes | InstantiatingStubs | UnboxingStubs | SharedGenericUnboxingStubs,
     }
 }

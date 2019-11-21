@@ -1051,6 +1051,30 @@ INST1(asrv,    "asrv",   0, 0, IF_DR_3A,  0x1AC02800)
 INST1(rorv,    "rorv",   0, 0, IF_DR_3A,  0x1AC02C00)
                                    //  rorv    Rd,Rn,Rm             DR_3A  X0011010110mmmmm 001011nnnnnddddd   1AC0 2C00
 
+INST1(crc32b,  "crc32b", 0, 0, IF_DR_3A,  0x1AC04000)
+                                   //  crc32b  Rd,Rn,Rm             DR_3A  00011010110mmmmm 010000nnnnnddddd   1AC0 4000
+
+INST1(crc32h,  "crc32h", 0, 0, IF_DR_3A,  0x1AC04400)
+                                   //  crc32h  Rd,Rn,Rm             DR_3A  00011010110mmmmm 010001nnnnnddddd   1AC0 4400
+
+INST1(crc32w,  "crc32w", 0, 0, IF_DR_3A,  0x1AC04800)
+                                   //  crc32w  Rd,Rn,Rm             DR_3A  00011010110mmmmm 010010nnnnnddddd   1AC0 4800
+
+INST1(crc32x,  "crc32x", 0, 0, IF_DR_3A,  0x9AC04C00)
+                                   //  crc32x  Rd,Rn,Xm             DR_3A  10011010110mmmmm 010011nnnnnddddd   9AC0 4C00
+
+INST1(crc32cb, "crc32cb",0, 0, IF_DR_3A,  0x1AC05000)
+                                   //  crc32cb Rd,Rn,Rm             DR_3A  00011010110mmmmm 010100nnnnnddddd   1AC0 5000
+
+INST1(crc32ch, "crc32ch",0, 0, IF_DR_3A,  0x1AC05400)
+                                   //  crc32ch Rd,Rn,Rm             DR_3A  00011010110mmmmm 010101nnnnnddddd   1AC0 5400
+
+INST1(crc32cw, "crc32cw",0, 0, IF_DR_3A,  0x1AC05800)
+                                   //  crc32cw Rd,Rn,Rm             DR_3A  00011010110mmmmm 010110nnnnnddddd   1AC0 5800
+
+INST1(crc32cx, "crc32cx",0, 0, IF_DR_3A,  0x9AC05C00)
+                                   //  crc32cx Rd,Rn,Xm             DR_3A  10011010110mmmmm 010111nnnnnddddd   9AC0 5C00
+
 INST1(sha1c,   "sha1c",  0, 0, IF_DV_3F,   0x5E000000)
                                    //  sha1c   Qd, Sn Vm.4S         DV_3F  01011110000mmmmm 000000nnnnnddddd   5E00 0000   Qd Sn Vm.4S   (vector)
 

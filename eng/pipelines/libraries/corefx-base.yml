@@ -84,7 +84,7 @@ jobs:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
         - ${{ if eq(job.submitToHelix, 'true') }}:
-          - _archiveTestsParameter: /p:ArchiveTests=Tests
+          - _archiveTestsParameter: /p:ArchiveTests=true
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - group: DotNet-HelixApi-Access
 

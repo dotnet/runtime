@@ -621,18 +621,4 @@ inline LPCSTR BaseAssemblySpec::GetName()  const
     return m_pAssemblyName;
 }
 
-
-
-inline BOOL BaseAssemblySpec::VerifyBindingString(LPCWSTR pwStr)
-{
-    WRAPPER_NO_CONTRACT;
-    if (wcschr(pwStr, '\\') ||
-        wcschr(pwStr, '/') ||
-        wcschr(pwStr, ':'))
-        return FALSE;
-
-    return TRUE;
-}
-
-
 #endif // __BASE_ASSEMBLY_SPEC_INL__

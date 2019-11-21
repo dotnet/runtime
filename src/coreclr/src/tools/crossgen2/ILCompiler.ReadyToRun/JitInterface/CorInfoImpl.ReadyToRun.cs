@@ -11,6 +11,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -661,6 +662,9 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc)
                 {
+                    if (resultDef is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        resultDef = rawPinvoke.Target;
+
                     Debug.Assert(resultDef is EcmaMethod);
                     Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
@@ -1403,6 +1407,10 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        {
+                            nonUnboxingMethod = rawPinvoke.Target;
+                        }
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
@@ -1926,7 +1934,10 @@ namespace Internal.JitInterface
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
-            EcmaMethod ecmaMethod = (EcmaMethod)HandleToObject(method);
+            MethodDesc methodDesc = HandleToObject(method);
+            if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
+                methodDesc = rawPInvoke.Target;
+            EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
             
@@ -1944,13 +1955,26 @@ namespace Internal.JitInterface
 
             if (handle != null)
             {
-                EcmaMethod method = (EcmaMethod)HandleToObject(handle);
-                return MethodRequiresMarshaling(method);
+                var method = HandleToObject(handle);
+                if (method.IsRawPInvoke())
+                {
+                    return false;
+                }
+
+                MethodIL stubIL = _compilation.GetMethodIL(method);
+                if (stubIL == null)
+                {
+                    // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
+                    Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                    return true;
+                }
+
+                return ((PInvokeILStubMethodIL)stubIL).IsMarshallingRequired;
             }
             else
             {
                 var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
-                return SignatureRequiresMarshaling(sig);
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
             }
         }
 
@@ -1964,86 +1988,6 @@ namespace Internal.JitInterface
             // If we answer "true" here, RyuJIT is going to ask for the cookie and for the CORINFO_HELP_PINVOKE_CALLI
             // helper. The helper doesn't exist in ReadyToRun, so let's just throw right here.
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
-        }
-
-        private bool MethodRequiresMarshaling(EcmaMethod method)
-        {
-            if (method.GetPInvokeMethodMetadata().Flags.SetLastError)
-            {
-                // SetLastError is handled by stub
-                return true;
-            }
-
-            if ((method.ImplAttributes & MethodImplAttributes.PreserveSig) == 0)
-            {
-                // HRESULT swapping is handled by stub
-                return true;
-            }
-
-            return SignatureRequiresMarshaling(method.Signature);
-        }
-
-        private bool SignatureRequiresMarshaling(MethodSignature sig)
-        {
-            if (TypeRequiresMarshaling(sig.ReturnType, isReturnType: true))
-            {
-                return true;
-            }
-
-            foreach (TypeDesc argType in sig)
-            {
-                if (TypeRequiresMarshaling(argType, isReturnType: false))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType)
-        {
-            switch (type.Category)
-            {
-                case TypeFlags.Pointer:
-                    // TODO: custom modifiers S(NeedsCopyConstructorModifier, IsCopyConstructed)
-                    break;
-
-                case TypeFlags.Enum:
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                    {
-                        return true;
-                    }
-                    break;
-
-                case TypeFlags.ValueType:
-                    if (!MarshalUtils.IsBlittableType(type))
-                    {
-                        return true;
-                    }
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                    {
-                        return true;
-                    }
-                    if (isReturnType && !type.IsPrimitive)
-                    {
-                        return true;
-                    }
-                    break;
-
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                    return true;
-
-                default:
-                    if (!type.IsPrimitive)
-                    {
-                        return true;
-                    }
-                    break;
-            }
-
-            return false;
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;

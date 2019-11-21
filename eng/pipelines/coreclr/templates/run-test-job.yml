@@ -16,6 +16,7 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  variables: {}
 
 ### Test run job
 
@@ -85,6 +86,8 @@ jobs:
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
+    
+    - ${{ parameters.variables }}
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:

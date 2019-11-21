@@ -155,7 +155,7 @@
 
   <Target Name="ArchiveHelixItems"
           DependsOnTargets="GenerateProjects;CopyProducedPackages"
-          Condition="'$(ArchiveTests.ToLower())' == 'packages' or '$(ArchiveTests.ToLower())' == 'all'">
+          Condition="'$(ArchiveTests)' == 'true'">
 
     <MakeDir Directories="$(TestArchiveTestsRoot)" />
     <ZipDirectory
@@ -173,7 +173,7 @@
 
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects"
-          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
+          Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
       <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
@@ -191,7 +191,7 @@
 
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects"
-          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
+          Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
       <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>

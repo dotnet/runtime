@@ -41,9 +41,9 @@ stages:
     #
     # Release builds
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: build-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
         buildConfig: release
         platformGroup: all
         stagedBuild: true
@@ -91,9 +91,9 @@ stages:
     #
     # Release test builds
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: build-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
         buildConfig: release
         platforms:
         - Linux_arm
@@ -112,9 +112,9 @@ stages:
     #
     # Release JIT test executions
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: run-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
@@ -126,9 +126,9 @@ stages:
     #
     # Release R2R test executions
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: run-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all

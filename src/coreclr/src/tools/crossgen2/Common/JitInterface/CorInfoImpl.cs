@@ -659,6 +659,11 @@ namespace Internal.JitInterface
             if (method.IsPInvoke)
             {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+                if (method.IsRawPInvoke())
+                {
+                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
+                }
             }
 
 #if READYTORUN
@@ -773,14 +778,6 @@ namespace Internal.JitInterface
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
-
-#if READYTORUN
-            // IL stubs don't inline well
-            if (calleeMethod.IsPInvoke)
-            {
-                return CorInfoInline.INLINE_NEVER;
-            }
-#endif
 
             if (_compilation.CanInline(callerMethod, calleeMethod))
             {
@@ -3066,10 +3063,6 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.IsPInvoke)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_IL_STUB);
-
-#if READYTORUN
-                flags.Set(CorJitFlag.CORJIT_FLAG_PUBLISH_SECRET_PARAM);
-#endif
             }
 
             if (this.MethodBeingCompiled.IsNoOptimization)

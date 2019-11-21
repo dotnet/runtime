@@ -155,7 +155,7 @@ namespace Internal.TypeSystem.Interop
         protected PInvokeILCodeStreams _ilCodeStreams;
         protected Home _managedHome;
         protected Home _nativeHome;
-#endregion
+        #endregion
 
         enum HomeType
         {
@@ -255,7 +255,7 @@ namespace Internal.TypeSystem.Interop
             int _argIndex;
         }
 
-#region Creation of marshallers
+        #region Creation of marshallers
 
         /// <summary>
         /// Protected ctor
@@ -365,12 +365,54 @@ namespace Internal.TypeSystem.Interop
             return marshaller;
         }
 
-        public bool IsMarshallingRequired()
+        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
         {
-            if (Out)
-                return true;
+            Debug.Assert(targetMethod.IsPInvoke);
 
-            switch (MarshallerKind)
+            MarshalDirection direction = MarshalDirection.Forward;
+            MethodSignature methodSig = targetMethod.Signature;
+            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+
+            ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
+            Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
+            ParameterMetadata parameterMetadata;
+
+            for (int i = 0, parameterIndex = 0; i < marshallers.Length; i++)
+            {
+                Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
+                if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
+                {
+                    // if we don't have metadata for the parameter, create a dummy one
+                    parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
+                }
+                else
+                {
+                    Debug.Assert(i == parameterMetadataArray[parameterIndex].Index);
+                    parameterMetadata = parameterMetadataArray[parameterIndex++];
+                }
+
+                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
+                marshallers[i] = CreateMarshaller(parameterType,
+                                                    MarshallerType.Argument,
+                                                    parameterMetadata.MarshalAsDescriptor,
+                                                    direction,
+                                                    marshallers,
+                                                    parameterMetadata.Index,
+                                                    flags,
+                                                    parameterMetadata.In,
+                                                    parameterMetadata.Out,
+                                                    parameterMetadata.Return);
+            }
+
+            return marshallers;
+        }
+        #endregion
+
+
+        #region Marshalling Requirement Checking
+        private static bool IsMarshallingRequired(MarshallerKind kind)
+        {
+            switch (kind)
             {
                 case MarshallerKind.Enum:
                 case MarshallerKind.BlittableValue:
@@ -381,7 +423,59 @@ namespace Internal.TypeSystem.Interop
             }
             return true;
         }
-#endregion
+
+        private bool IsMarshallingRequired()
+        {
+            return Out || IsMarshallingRequired(MarshallerKind);
+        }
+
+        public static bool IsMarshallingRequired(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+
+            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+
+            if (flags.SetLastError)
+                return true;
+
+            if (!flags.PreserveSig)
+                return true;
+
+            var marshallers = GetMarshallersForMethod(targetMethod);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
+        {
+            for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
+            {
+                ParameterMetadata parameterMetadata = (paramIndex == paramMetadata.Length || i < paramMetadata[paramIndex].Index) ?
+                    new ParameterMetadata(i, ParameterMetadataAttributes.None, null) :
+                    paramMetadata[paramIndex++];
+
+                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
+
+                MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
+                    parameterType,
+                    parameterMetadata.MarshalAsDescriptor,
+                    parameterMetadata.Return,
+                    isAnsi: true,
+                    MarshallerType.Argument,
+                    out MarshallerKind elementMarshallerKind);
+
+                if (IsMarshallingRequired(marshallerKind))
+                    return true;
+            }
+
+            return false;
+        }
+        #endregion
 
         public virtual void EmitMarshallingIL(PInvokeILCodeStreams pInvokeILCodeStreams)
         {
@@ -680,9 +774,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            // TODO This should be in finally block
-            // https://github.com/dotnet/corert/issues/6075
-            EmitCleanupManaged(_ilCodeStreams.UnmarshallingCodestream);
+            EmitCleanupManaged(_ilCodeStreams.CleanupCodeStream);
         }
 
         /// <summary>
@@ -1095,17 +1187,17 @@ namespace Internal.TypeSystem.Interop
 
             var lRangeCheck = emitter.NewCodeLabel();
             var lLoopHeader = emitter.NewCodeLabel();
-            var  lNullArray = emitter.NewCodeLabel();
+            var lNullArray = emitter.NewCodeLabel();
 
             var vNativeTemp = emitter.NewLocal(NativeType);
             var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             var vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
             var vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            
+
             // Check for null array
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
-            
+
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
             codeStream.EmitStLoc(vLength);
@@ -1307,8 +1399,7 @@ namespace Internal.TypeSystem.Interop
             }
 
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
             codeStream.EmitLabel(lNullArray);
         }
     }
@@ -1343,6 +1434,11 @@ namespace Internal.TypeSystem.Interop
             else
             {
                 ILLocalVariable vPinnedFirstElement = emitter.NewLocal(ManagedElementType.MakeByRefType(), true);
+
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.ldlen);
+                codeStream.Emit(ILOpcode.conv_i4);
+                codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
                 LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
@@ -1405,7 +1501,7 @@ namespace Internal.TypeSystem.Interop
         {
             get
             {
-                return MarshalDirection == MarshalDirection.Forward 
+                return MarshalDirection == MarshalDirection.Forward
                     && MarshallerType != MarshallerType.Field
                     && !IsManagedByRef
                     && In
@@ -1529,7 +1625,7 @@ namespace Internal.TypeSystem.Interop
             //
             // ANSI marshalling. Allocate a byte array, copy characters
             //
-            
+
 #if READYTORUN
             var stringToAnsi =
                 Context.SystemModule.GetKnownType("System.StubHelpers", "AnsiBSTRMarshaler")
@@ -1653,28 +1749,27 @@ namespace Internal.TypeSystem.Interop
         private void AllocSafeHandle(ILCodeStream codeStream)
         {
             var ctor = ManagedType.GetParameterlessConstructor();
-            if (ctor == null)
+            if (ctor == null || ((MetadataType)ManagedType).IsAbstract)
             {
+#if READYTORUN
+                // Let the runtime generate the proper MissingMemberException for this.
+                throw new NotSupportedException();
+#else
                 var emitter = _ilCodeStreams.Emitter;
 
                 MethodSignature ctorSignature = new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                       new TypeDesc[] {
-#if !READYTORUN
                           Context.GetWellKnownType(WellKnownType.String)
-#endif
                       });
                 MethodDesc exceptionCtor = InteropTypes.GetMissingMemberException(Context).GetKnownMethod(".ctor", ctorSignature);
 
-#if !READYTORUN // In ReadyToRun we cannot make new string literals out of thin air
                 string name = ((MetadataType)ManagedType).Name;
                 codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(String.Format("'{0}' does not have a default constructor. Subclasses of SafeHandle must have a default constructor to support marshaling a Windows HANDLE into managed code.", name)));
-#endif
                 codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
                 codeStream.Emit(ILOpcode.throw_);
-                
-                // This is unreachable, but it maintains invariants about stack height prescribed by ECMA-335
-                codeStream.Emit(ILOpcode.ldnull);
+
                 return;
+#endif
             }
 
             codeStream.Emit(ILOpcode.newobj, _ilCodeStreams.Emitter.NewToken(ctor));
@@ -1705,6 +1800,7 @@ namespace Internal.TypeSystem.Interop
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
             ILCodeStream callsiteCodeStream = _ilCodeStreams.CallsiteSetupCodeStream;
             ILCodeStream unmarshallingCodeStream = _ilCodeStreams.UnmarshallingCodestream;
+            ILCodeStream cleanupCodeStream = _ilCodeStreams.CleanupCodeStream;
 
             SetupArguments();
 
@@ -1734,12 +1830,14 @@ namespace Internal.TypeSystem.Interop
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.IntPtr), TypeDesc.EmptyTypes))));
                 StoreNativeValue(marshallingCodeStream);
 
-                // TODO: This should be inside finally block and only executed if the handle was addrefed
-                // https://github.com/dotnet/corert/issues/6075
-                LoadManagedValue(unmarshallingCodeStream);
-                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("DangerousRelease",
+                ILCodeLabel lNotAddrefed = emitter.NewCodeLabel();
+                cleanupCodeStream.EmitLdLoc(vAddRefed);
+                cleanupCodeStream.Emit(ILOpcode.brfalse, lNotAddrefed);
+                LoadManagedValue(cleanupCodeStream);
+                cleanupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("DangerousRelease", 
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes))));
+                cleanupCodeStream.EmitLabel(lNotAddrefed);
             }
 
             if (Out && IsManagedByRef)
@@ -1763,23 +1861,23 @@ namespace Internal.TypeSystem.Interop
                     LoadNativeValue(marshallingCodeStream);
                     marshallingCodeStream.EmitStLoc(vOriginalValue);
 
-                    unmarshallingCodeStream.EmitLdLoc(vOriginalValue);
-                    LoadNativeValue(unmarshallingCodeStream);
-                    unmarshallingCodeStream.Emit(ILOpcode.beq, lSkipPropagation);
+                    cleanupCodeStream.EmitLdLoc(vOriginalValue);
+                    LoadNativeValue(cleanupCodeStream);
+                    cleanupCodeStream.Emit(ILOpcode.beq, lSkipPropagation);
                 }
 
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                LoadNativeValue(unmarshallingCodeStream);
-                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                LoadNativeValue(cleanupCodeStream);
+                cleanupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     safeHandleType.GetKnownMethod("SetHandle",
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                             new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr) }))));
 
-                unmarshallingCodeStream.EmitLdArg(Index - 1);
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                unmarshallingCodeStream.EmitStInd(ManagedType);
+                cleanupCodeStream.EmitLdArg(Index - 1);
+                cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                cleanupCodeStream.EmitStInd(ManagedType);
 
-                unmarshallingCodeStream.EmitLabel(lSkipPropagation);
+                cleanupCodeStream.EmitLabel(lSkipPropagation);
             }
 
             LoadNativeArg(callsiteCodeStream);

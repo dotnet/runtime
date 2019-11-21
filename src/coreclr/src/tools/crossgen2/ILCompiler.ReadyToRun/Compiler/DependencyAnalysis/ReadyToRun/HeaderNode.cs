@@ -119,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
 
             // ReadyToRunHeader.Flags
-            builder.EmitInt(0);
+            builder.EmitInt((int)ReadyToRunFlag.READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();

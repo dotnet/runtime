@@ -74,6 +74,12 @@ public:
         return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    BOOL HasNonShareablePInvokeStubs()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
+    }
+
     PTR_PEImageLayout GetImage()
     {
         LIMITED_METHOD_CONTRACT;

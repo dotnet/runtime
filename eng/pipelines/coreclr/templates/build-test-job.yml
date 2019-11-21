@@ -8,6 +8,7 @@ parameters:
   displayNameArgs: ''
   condition: true
   stagedBuild: false
+  variables: {}
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -29,6 +30,7 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    variables: ${{ parameters.variables }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <TestProjectName Condition="'$(TestProjectName)' == ''">$(MSBuildProjectName)</TestProjectName>
+    <TestFramework Condition="'$(TestFramework)' == ''">xunit</TestFramework>
+  </PropertyGroup>
+
+  <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <RunScriptCommands Include="set DEVPATH=%RUNTIME_PATH%" />
+  </ItemGroup>
+
+  <!--
+    Unit/Functional/Integration test support.
+    Supported runners: xunit.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.props" Condition="'$(TestFramework)' == 'xunit'" />
+</Project>

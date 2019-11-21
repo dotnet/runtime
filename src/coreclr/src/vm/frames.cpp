@@ -1836,42 +1836,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
 
 #include "comdelegate.h"
 
-Assembly* SecureDelegateFrame::GetAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-
-#if !defined(DACCESS_COMPILE)
-    // obtain the frame off the delegate pointer
-    DELEGATEREF delegate = (DELEGATEREF) GetThis();
-    _ASSERTE(delegate);
-    if (!delegate->IsWrapperDelegate())
-    {
-        MethodDesc* pMethod = (MethodDesc*) delegate->GetMethodPtrAux();
-        Assembly* pAssembly = pMethod->GetAssembly();
-        _ASSERTE(pAssembly != NULL);
-        return pAssembly;
-    }
-    else
-        return NULL;
-#else
-    DacNotImpl();
-    return NULL;
-#endif
-}
-
-BOOL SecureDelegateFrame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(!fromPatch);
-
-    // Unlike multicast delegates, secure delegates only call one method.  So, we should just return false here
-    // and let the step out logic continue to the caller of the secure delegate stub.
-    LOG((LF_CORDB, LL_INFO1000, "SDF::TF: return FALSE\n"));
-
-    return FALSE;
-}
-
 BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                                 TraceDestination *trace, REGDISPLAY *regs)
 {

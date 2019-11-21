@@ -5161,6 +5161,14 @@ void emitter::emitIns_R_R_R(
         case INS_lsrv:
         case INS_asrv:
         case INS_rorv:
+        case INS_crc32b:
+        case INS_crc32h:
+        case INS_crc32w:
+        case INS_crc32x:
+        case INS_crc32cb:
+        case INS_crc32ch:
+        case INS_crc32cw:
+        case INS_crc32cx:
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
             assert(isGeneralRegister(reg1));

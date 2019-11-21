@@ -32,9 +32,9 @@ jobs:
 #
 # Debug builds
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: debug
     platforms:
     - Linux_arm
@@ -52,9 +52,9 @@ jobs:
 #
 # Checked builds
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platformGroup: all
     jobParameters:
@@ -63,9 +63,9 @@ jobs:
 #
 # Release builds
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
     - Linux_arm
@@ -79,9 +79,9 @@ jobs:
 #
 # Checked test builds
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm
@@ -97,9 +97,9 @@ jobs:
 #
 # Checked JIT test runs
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: run-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
@@ -109,9 +109,9 @@ jobs:
 #
 # Checked R2R test runs
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: run-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64
@@ -133,9 +133,9 @@ jobs:
 #
 # Crossgen-comparison jobs
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: crossgen-comparison-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
     - Linux_arm
@@ -144,9 +144,9 @@ jobs:
 #
 # Formatting
 #
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: format-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
     - Windows_NT_x64

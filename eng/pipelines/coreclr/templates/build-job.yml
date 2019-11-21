@@ -10,6 +10,7 @@ parameters:
   signBinaries: false
   publishToBlobFeed: false
   stagedBuild: false
+  variables: {}
 
 ### Product build
 jobs:
@@ -90,6 +91,8 @@ jobs:
     - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
+    
+    - ${{ parameters.variables }}
 
     steps:
 

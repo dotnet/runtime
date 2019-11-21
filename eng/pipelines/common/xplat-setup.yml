@@ -1,0 +1,52 @@
+parameters:
+  jobTemplate: ''
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  container: ''
+  jobParameters: {}
+
+jobs:
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    variables:
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: archiveExtension
+          value: '.zip'
+        - name: archiveType
+          value: zip
+        - name: tarCompression
+          value: ''
+        - name: scriptExt
+          value: '.cmd'
+        - name: dir
+          value: '\'
+
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: archiveExtension
+          value: '.tar.gz'
+        - name: archiveType
+          value: tar
+        - name: tarCompression
+          value: gz
+        - name: scriptExt
+          value: '.sh'
+        - name: dir
+          value: '/'
+      
+      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+        # This is only required for cross builds.
+        - name: ROOTFS_DIR
+          value: ${{ parameters.jobParameters.crossrootfsDir }}
+    
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    archType:  ${{ parameters.archType }}
+
+    ${{ if ne(parameters.container, '') }}:
+      ${{ if eq(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
+      ${{ if ne(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
+
+    ${{ insert }}: ${{ parameters.jobParameters }}

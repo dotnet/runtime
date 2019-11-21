@@ -366,10 +366,18 @@ class StubLinkerCPU : public StubLinker
 #endif // _TARGET_X86_
 #endif // !FEATURE_STUBS_AS_IL
 
+#ifdef _TARGET_X86_
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
+#endif // _TARGET_X86_
+        VOID EmitTailJumpToMethod(MethodDesc *pMD);
+#ifdef _TARGET_AMD64_
+        VOID EmitLoadMethodAddressIntoAX(MethodDesc *pMD);
+#endif
+
 #if defined(FEATURE_SHARE_GENERIC_CODE)
         VOID EmitInstantiatingMethodStub(MethodDesc* pSharedMD, void* extra);
 #endif // FEATURE_SHARE_GENERIC_CODE
+        VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 
 #if defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
         //========================================================================
@@ -393,13 +401,11 @@ class StubLinkerCPU : public StubLinker
         VOID EmitDelegateInvoke();
 #endif // _TARGET_X86_
 
+#if defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
         //===========================================================================
         // Emits code for MulticastDelegate.Invoke() - sig specific
         VOID EmitMulticastInvoke(UINT_PTR hash);
-
-        //===========================================================================
-        // Emits code for Delegate.Invoke() on delegates that recorded creator assembly
-        VOID EmitSecureDelegateInvoke(UINT_PTR hash);
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 #endif // !FEATURE_STUBS_AS_IL
 
         //===========================================================================
