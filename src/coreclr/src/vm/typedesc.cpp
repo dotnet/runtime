@@ -809,8 +809,8 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
         case CLASS_LOADED:
             if (fBailed)
             {
-                // We couldn't complete security checks on some dependency because he is already being processed by one of our callers.
-                // Do not mark this class fully loaded yet. Put him on the pending list and he will be marked fully loaded when
+                // We couldn't complete security checks on some dependency because it is already being processed by one of our callers.
+                // Do not mark this class fully loaded yet. Put it on the pending list and it will be marked fully loaded when
                 // everything unwinds.
 
                 *pfBailed = TRUE;

@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 
             using (var e = new ECDiffieHellmanOpenSsl(ecKey))
             {
-                // Make sure ECDsaOpenSsl did his own ref-count bump.
+                // Make sure ECDsaOpenSsl did its own ref-count bump.
                 Interop.Crypto.EcKeyDestroy(ecKey);
 
                 int keySize = e.KeySize;

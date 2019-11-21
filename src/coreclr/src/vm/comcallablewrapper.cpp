@@ -3199,8 +3199,8 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         MethodTable * pMT = pWrap->GetMethodTableOfObjectRef();
 
         // Check if this index is actually an interface implemented by us
-        // if it belongs to the base COM guy then we can hand over the call
-        // to him
+        // if it belongs to the base COM object then we can hand over the call
+        // to it
         if (pMT->IsWinRTObjectType())
         {
             bDelegateToBase = pTemplate->GetComMTForIndex(intfIndex)->IsWinRTTrivialAggregate();
@@ -3235,7 +3235,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
 
     if (bDelegateToBase)
     {
-        // This is an interface of the base COM guy so delegate the call to him
+        // This is an interface of the base COM object so delegate the call to it
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
@@ -3561,7 +3561,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         }
     }
 
-    // COM plus objects that extend from COM guys are special
+    // COM plus objects that extend from COM objects are special
     // If we're being asked for just an IInspectable, we don't need to do this (we may be in the process
     // of activating our aggregated object so can't use the RCW yet) - this is analagous to how IUnkown is handled
     // specially with GetBasicIP at the top of this function.

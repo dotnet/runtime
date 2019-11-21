@@ -794,7 +794,7 @@ namespace System.Threading.Tasks.Tests
                 // Component A creates a linked token source representing the CT from the user and the "timeout" CT.
                 var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cts2Token, userToken);
 
-                // User calls Cancel() on his CTS and then Dispose()
+                // User calls Cancel() on their CTS and then Dispose()
                 userTokenSource.Cancel();
                 userTokenSource.Dispose();
 

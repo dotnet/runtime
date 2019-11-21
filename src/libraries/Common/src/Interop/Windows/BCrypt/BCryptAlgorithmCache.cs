@@ -44,7 +44,7 @@ internal partial class Interop
                 newCache[newCache.Length - 1] = newEntry;
 
                 // Atomically overwrite the cache with our new cache. It's possible some other thread raced to add a new entry with us - if so, one of the new entries
-                // will be lost and the next guy that requests it will have to allocate it again. That's considered acceptable collateral damage.
+                // will be lost and the next request will have to allocate it again. That's considered acceptable collateral damage.
                 _cache = newCache;
                 return newEntry.Handle;
             }

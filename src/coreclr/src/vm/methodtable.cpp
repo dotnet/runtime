@@ -5797,8 +5797,8 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             if (locals.fBailed)
             {
-                // We couldn't complete security checks on some dependency because he is already being processed by one of our callers.
-                // Do not mark this class fully loaded yet. Put him on the pending list and he will be marked fully loaded when
+                // We couldn't complete security checks on some dependency because it is already being processed by one of our callers.
+                // Do not mark this class fully loaded yet. Put it on the pending list and it will be marked fully loaded when
                 // everything unwinds.
 
                 *pfBailed = TRUE;
@@ -6824,7 +6824,7 @@ MethodTable::FindDispatchImpl(
                 // Get the type of T (as in IList<T>)
                 TypeHandle theT = pIfcMT->GetInstantiation()[0];
 
-                // Retrieve the corresponding method of SZArrayHelper. This is the guy that will actually execute.
+                // Retrieve the corresponding method of SZArrayHelper. This is what will actually execute.
                 // This method will be an instantiation of a generic method. I.e. if the caller requested
                 // IList<T>.Meth(), he will actually be diverted to SZArrayHelper.Meth<T>().
                 MethodDesc * pActualImplementor = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pIfcMD, theT);

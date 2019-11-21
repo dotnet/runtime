@@ -52,8 +52,8 @@ using namespace CorUnix;
 //      assumptions may still work.
 //    - From managed code point of view, one could try to interop directly
 //      to unmanaged critical sections APIs (though that would be quite
-//      meaningless). In order to do that, she would need to define a copy
-//      of the CRITICAL_SECTION structure in his/her code, and that may lead
+//      meaningless). In order to do that, one would need to define a copy
+//      of the CRITICAL_SECTION structure in one's code, and that may lead
 //      to access random data beyond the structure limit, if that managed
 //      code is compiled on Unix.
 //      In case such scenario should be supported, the  current implementation

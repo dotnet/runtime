@@ -1088,7 +1088,7 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
 //---------------------------------------------------------------------------------------
 //
 // Callback of type walk_fn used by the GC when walking the heap, to help profapi and ETW
-// track objects.  This guy orchestrates the use of the above callbacks which dig
+// track objects.  This orchestrates the use of the above callbacks which dig
 // into object references contained each object encountered by this callback.
 // This method is defined when either GC_PROFILING is defined or FEATURE_EVENT_TRACING
 // is defined and can operate fully when only one of the two is defined.

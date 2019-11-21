@@ -602,7 +602,7 @@ endif
         REPRET
 endif
 
-    ; make sure this guy is bigger than any of the other guys
+    ; make sure this is bigger than any of the others
     align 16
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT

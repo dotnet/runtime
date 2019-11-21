@@ -2578,7 +2578,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    // this guy does not implement IXmlSerializable, so we need to handle serialization via XmlSerializer
+                                    // this column's type does not implement IXmlSerializable, so we need to handle serialization via XmlSerializer
                                     if (columnValue.GetType() != col.DataType)
                                     { // throw if polymorphism; not supported
                                         throw ExceptionBuilder.PolymorphismNotSupported(valuesType.AssemblyQualifiedName);
@@ -3003,7 +3003,7 @@ namespace System.Data
                                     col.ConvertObjectToXml(value, _xmlw, null); // pass XmlRootAttribute as null, it also means: No XmlSerializer
                                 }
                                 else
-                                { // startElement is skipped: this guy does not implement IXmlSerializable, need to go via XmlSerializer
+                                { // startElement is skipped: this column's type does not implement IXmlSerializable, need to go via XmlSerializer
                                     if (value.GetType() != col.DataType)
                                     { // throw if polymorphism; not supported
                                         throw ExceptionBuilder.PolymorphismNotSupported(valuesType.AssemblyQualifiedName);
