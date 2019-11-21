@@ -1,14 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="Configuration;Debug">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net46</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <!-- Duplicating the assembly path here as CoreClr current overrides the Configuration property. -->
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(IntermediateOutputPath)netstandard2.0\installer.tasks.dll</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(IntermediateOutputPath)net46\installer.tasks.dll</InstallerTasksAssemblyPath>
     <!-- Set platform to AnyCPU (not TargetArchitecture) to avoid arch-specific output path. -->
     <Platform>AnyCPU</Platform>
+    <Configuration>Debug</Configuration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,15 +19,13 @@
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
     <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.7.0" />
   </ItemGroup>
 
   <Choose>
     <When Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
       <ItemGroup>
         <Compile Include="net46/ProcessSharedFrameworkDeps.net46.cs" />
-      </ItemGroup>
-      <ItemGroup>
-        <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
       </ItemGroup>
       <ItemGroup>
         <Reference Include="Microsoft.Build.Framework" />
