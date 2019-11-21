@@ -675,7 +675,7 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
     if (cbPublicKey == 0)
         ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
 
-    if (m_dwFlags & afPublicKey)
+    if (IsAfPublicKey(m_dwFlags))
     {
         if ((m_cbPublicKeyOrToken != cbPublicKey) ||
             memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
