@@ -14,6 +14,8 @@
 #define _USE_MATH_DEFINES // needed by MSVC to define math constants
 #include <math.h>
 
+#ifndef ENABLE_NETCORE
+
 typedef struct double_complex {
 	double real;
 	double imag;
@@ -59,3 +61,5 @@ double_complex mono_double_complex_sub(double_complex left, double_complex right
 }
 
 #include "../../support/libm/complex.c"
+
+#endif

@@ -5,7 +5,10 @@
 #ifndef _MONO_METADATA_THREADPOOL_WORKER_H
 #define _MONO_METADATA_THREADPOOL_WORKER_H
 
+#include <config.h>
 #include <glib.h>
+
+#ifndef ENABLE_NETCORE
 
 typedef void (*MonoThreadPoolWorkerCallback)(void);
 
@@ -21,14 +24,6 @@ mono_threadpool_worker_request (void);
 gboolean
 mono_threadpool_worker_notify_completed (void);
 
-#ifdef ENABLE_NETCORE
-gint64
-mono_threadpool_worker_get_completed_threads_count (void);
-
-gint32
-mono_threadpool_worker_get_threads_count (void);
-#endif
-
 gint32
 mono_threadpool_worker_get_min (void);
 gboolean
@@ -41,5 +36,7 @@ mono_threadpool_worker_set_max (gint32 value);
 
 void
 mono_threadpool_worker_set_suspended (gboolean suspended);
+
+#endif /* ENABLE_NETCORE */
 
 #endif /* _MONO_METADATA_THREADPOOL_WORKER_H */
