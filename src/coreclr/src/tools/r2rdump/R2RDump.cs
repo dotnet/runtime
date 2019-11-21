@@ -15,7 +15,7 @@ using System.Xml;
 
 namespace R2RDump
 {
-    public class DumpOptions
+    public class DumpOptions : IAssemblyResolver
     {
         public FileInfo[] In { get; set; }
         public FileInfo Out { get; set; }

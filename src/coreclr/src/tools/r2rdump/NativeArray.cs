@@ -9,8 +9,9 @@ namespace R2RDump
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeArray</a>
     /// </summary>
-    class NativeArray
+    public class NativeArray
     {
+        // TODO (refactoring) - all these Native* class should be private
         private const int _blockSize = 16;
         private uint _baseOffset;
         private uint _nElements;

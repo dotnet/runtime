@@ -41,24 +41,6 @@ namespace R2RDump
                 SignatureRVA = signatureRVA;
                 Signature = signature;
             }
-
-            public void WriteTo(TextWriter writer, DumpOptions options)
-            {
-                if (!options.Naked)
-                {
-                    writer.Write($"+{StartOffset:X4}");
-                    writer.Write($" ({StartRVA:X4})");
-                    writer.Write($"  Section: 0x{Section:X8}");
-                    writer.Write($"  SignatureRVA: 0x{SignatureRVA:X8}");
-                    writer.Write("   ");
-                }
-                writer.Write(Signature);
-                if (GCRefMap != null)
-                {
-                    writer.Write(" -- ");
-                    GCRefMap.WriteTo(writer);
-                }
-            }
         }
 
         [XmlAttribute("Index")]

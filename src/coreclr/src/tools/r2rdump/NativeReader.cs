@@ -8,8 +8,9 @@ using System.Text;
 
 namespace R2RDump
 {
-    class NativeReader
+    public class NativeReader
     {
+        // TODO (refactoring) - all these Native* class should be private
         private const int BITS_PER_BYTE = 8;
         private const int BITS_PER_SIZE_T = 32;
 

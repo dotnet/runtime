@@ -10,8 +10,9 @@ namespace R2RDump
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeParser</a>
     /// </summary>
-    struct NativeParser
+    public struct NativeParser
     {
+        // TODO (refactoring) - all these Native* class should be private
         /// <summary>
         /// The current index of the image byte array
         /// </summary>
@@ -82,8 +83,9 @@ namespace R2RDump
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeHashtable</a>
     /// </summary>
-    struct NativeHashtable
+    public struct NativeHashtable
     {
+        // TODO (refactoring) - all these Native* class should be private
         private byte[] _image;
         private uint _baseOffset;
         private uint _bucketMask;
@@ -242,8 +244,9 @@ namespace R2RDump
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeHashtable</a>
     /// </summary>
-    struct NativeCuckooFilter
+    public struct NativeCuckooFilter
     {
+        // TODO (refactoring) - all these Native* class should be private
         private byte[] _image;
         private int _filterStartOffset;
         private int _filterEndOffset;

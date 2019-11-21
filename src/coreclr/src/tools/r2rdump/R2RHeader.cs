@@ -88,7 +88,8 @@ namespace R2RDump
                 var sectionType = (R2RSection.SectionType)type;
                 if (!Enum.IsDefined(typeof(R2RSection.SectionType), type))
                 {
-                    R2RDump.WriteWarning("Invalid ReadyToRun section type");
+                    // TODO (refactoring) - what should we do?
+                    // R2RDump.WriteWarning("Invalid ReadyToRun section type");
                 }
                 Sections[sectionType] = new R2RSection(sectionType,
                     NativeReader.ReadInt32(image, ref curOffset),

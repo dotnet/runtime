@@ -239,7 +239,8 @@ namespace R2RDump.Amd64
                         code.NextFrameOffset = (int)offset * 16;
                         if ((UnwindCodeArray[i].FrameOffset & 0xF0000000) != 0)
                         {
-                            R2RDump.WriteWarning("Illegal unwindInfo unscaled offset: too large");
+                            // TODO (refactoring) - what should we do?
+                            // R2RDump.WriteWarning("Illegal unwindInfo unscaled offset: too large");
                         }
                     }
                     break;
