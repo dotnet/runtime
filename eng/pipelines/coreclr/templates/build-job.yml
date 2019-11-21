@@ -11,6 +11,7 @@ parameters:
   publishToBlobFeed: false
   stagedBuild: false
   variables: {}
+  pool: ''
 
 ### Product build
 jobs:
@@ -24,6 +25,7 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
+    pool: ${{ parameters.pool }}
 
     # Compute job name from template parameters
     name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -159,7 +161,7 @@ jobs:
         condition: always()
 
     # Publish product output directory for consumption by tests.
-    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+    - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(buildProductRootFolderPath)
         includeRootFolder: false
@@ -170,7 +172,7 @@ jobs:
         displayName: 'product build'
 
     # Publish test native components for consumption by test execution.
-    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+    - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(testNativeRootFolderPath)
         includeRootFolder: false
@@ -181,7 +183,7 @@ jobs:
         displayName: 'native test components'
 
     # Publish test build root for consumption by test execution.
-    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+    - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(testBuildRootFolderPath)
         includeRootFolder: false

@@ -14,7 +14,7 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -37,7 +37,6 @@ jobs:
     - Linux_arm64
     - Windows_NT_x64
     - Windows_NT_arm64
-    helixQueueGroup: ci
     jobParameters:
       testGroup: gc-longrunning
 
@@ -51,6 +50,7 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_arm64
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     managedOsxBuild: false
     jobParameters:
       testGroup: gc-longrunning

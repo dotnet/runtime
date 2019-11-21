@@ -6,6 +6,7 @@ parameters:
   container: ''
   framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   variables: {}
+  pool: ''
 
 ### Perf job
 
@@ -18,15 +19,7 @@ jobs:
     # Compute job name from template parameters
     jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Performance {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    pool: 
-      # Hosted Linux Build Pool
-      ${{ if eq(parameters.osGroup, 'Linux') }}:
-        name:  NetCoreInternal-Pool
-        queue: BuildPool.Ubuntu.1604.Amd64
-      # Hosted Windows Build Pool
-      ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        name: NetCoreInternal-Pool
-        queue: BuildPool.Windows.10.Amd64.VS2019
+    pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
@@ -47,7 +40,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'

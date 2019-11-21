@@ -17,6 +17,7 @@ parameters:
   displayNameArgs: ''
   runInUnloadableContext: false
   variables: {}
+  pool: ''
 
 ### Test run job
 
@@ -38,6 +39,7 @@ jobs:
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'build/tests/'
+    pool: ${{ parameters.pool }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -105,7 +107,7 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testRootFolderPath)'
           artifactFileName: '$(testArtifactName)$(archiveExtension)'
@@ -115,7 +117,7 @@ jobs:
 
     # Download and unzip test build tree
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testBuildRootFolderPath)'
           cleanUnpackFolder: false
@@ -125,7 +127,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
@@ -136,7 +138,7 @@ jobs:
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
           artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
@@ -146,7 +148,7 @@ jobs:
 
     # Download and unzip native test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(testNativeRootFolderPath)'
           artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'

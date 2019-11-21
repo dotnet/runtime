@@ -1,9 +1,5 @@
-### Check out job pulls down the GIT repository and packs its contents
+### Check out job creating a git bundle and publishing it
 ### into an Azure artifact for reuse by the subsequent build and test execution phases.
-### We're using two separate jobs for Windows and all other platforms due to the need
-### to use different compression formats (Windows doesn't support tar.gz and the Linux
-### and OSX build clients don't have 7-zip installed) and simplify other details such
-### as line endings.
 jobs:
 - job: checkout
   displayName: Checkout

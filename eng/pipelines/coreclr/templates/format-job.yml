@@ -8,6 +8,7 @@ parameters:
   timeoutInMinutes: ''
   stagedBuild: false
   variables: {}
+  pool: ''
 
 ### Format job
 jobs:
@@ -24,6 +25,7 @@ jobs:
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
+    pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
     steps:
     - task: UseDotNet@2

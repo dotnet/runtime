@@ -43,6 +43,7 @@ pr:
     - src/coreclr/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/installer/*
+    - eng/pipelines/common/*
 
 resources:
   containers:
