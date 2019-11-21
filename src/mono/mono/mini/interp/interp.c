@@ -5584,7 +5584,7 @@ common_vcall:
 		MINT_IN_CASE(MINT_ARRAY_ELEMENT_SIZE) {
 			MonoObject* const o = sp [-1].data.o;
 			NULL_CHECK (o);
-			sp [-1].data.i = mono_class_array_element_size (mono_object_class (o));
+			sp [-1].data.i = mono_array_element_size (mono_object_class (o));
 			ip++;
 			MINT_IN_BREAK;
 		}
