@@ -9,7 +9,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   readyToRun: false
-  coreFxArtifactName: ''
+  useLiveLibraries: ''
   crossgen2: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
@@ -90,11 +90,13 @@ jobs:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
 
+    - coreFxArtifactName: ''
     - coreFxDownloadPath: ''
     - localCoreFxArg: ''
 
-    - ${{ if ne(parameters.coreFxArtifactName, '') }}:
-      - coreFxDownloadPath: $(binTestsPath)/CoreFX
+    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+      - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - coreFxDownloadPath: '$(binTestsPath)/CoreFX'
       - localCoreFxArg: ' localcorefxpath $(coreFxDownloadPath)'
 
 
@@ -125,13 +127,13 @@ jobs:
 
 
     # Optionally download live-built CoreFX artifacts
-    - ${{ if ne(parameters.coreFxArtifactName, '') }}:
-      - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(_coreFxOverridePath)
-          artifactFileName: '${{ parameters.coreFxArtifactName }}$(archiveExtension)'
-          artifactName: '${{ parameters.coreFxArtifactName }}'
-          displayName: 'live-built CoreFX artifacts'
+          unpackFolder: $(coreFxDownloadPath)
+          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
+          artifactName: '$(coreFxArtifactName)'
+          displayName: 'live-built CoreFX'
 
 
     # Download and unzip test build tree

@@ -12,6 +12,7 @@ parameters:
   crossrootfsDir: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
+  useLiveLibraries: false
   displayNameArgs: ''
   runInUnloadableContext: false
   condition: true
@@ -37,6 +38,7 @@ jobs:
       displayNameArgs: ${{ parameters.displayNameArgs }}
       condition: ${{ parameters.condition }}
       stagedBuild: ${{ parameters.stagedBuild }}
+      useLiveLibraries: ${{ parameters.useLiveLibraries }}
       variables: ${{ parameters.variables }}
       pool: ${{ parameters.pool }}
 
@@ -54,6 +56,7 @@ jobs:
     readyToRun: ${{ parameters.readyToRun }}
     helixQueues: ${{ parameters.helixQueues }}
     corefxTests: ${{ parameters.coreFxTests }}
+    useLiveLibraries: ${{ parameters.useLiveLibraries }}
     displayNameArgs: ${{ parameters.displayNameArgs }}
     stagedBuild: ${{ parameters.stagedBuild }}
     runInUnloadableContext: ${{ parameters.runInUnloadableContext }}

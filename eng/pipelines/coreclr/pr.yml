@@ -28,15 +28,14 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/corefx-steps.yml
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Debug
     platforms:
     - OSX_x64
     jobParameters:
       isOfficialBuild: false
       testScope: empty
-      coreClrArtifactName: 'BinDir_OSX_x64_checked'
-      coreFxArtifactName: 'CoreFX_OSX_x64_checked'
+      useLiveCoreClr: true
 
 #
 # Checked test builds using live CoreFX
@@ -49,7 +48,7 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
-      coreFxArtifactName: 'CoreFX_OSX_x64_checked'
+      useLiveLibraries: true
 
 #
 # Checked JIT test executions

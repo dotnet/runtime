@@ -44,7 +44,7 @@ jobs:
         - ${{ parameters.variables }}
 
       preBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+        - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
             artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

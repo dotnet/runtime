@@ -25,11 +25,19 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
+        # Tempoarily moved from variables.yml
+        - name: buildScriptFileName
+          value: libraries
+        - name: sourcesRoot
+          value: $(Build.SourcesDirectory)/src/libraries
+        - name: pipelinesPath
+          value: /eng/pipelines/libraries
+
         - _BuildConfig: ${{ parameters.buildConfig }}
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
-        - _buildScript: $(buildScriptFileName)$(scriptExt)
+        - _buildScript: $(Build.SourcesDirectory)$(dir)$(buildScriptFileName)$(scriptExt)
 
         - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
           - _finalFrameworkArg: -allConfigurations
@@ -59,6 +67,14 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: |
+              brew install pkgconfig openssl
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+            displayName: Install Build Dependencies
+
         - ${{ if ne(parameters.preBuildSteps[0], '') }}:
           - ${{ parameters.preBuildSteps }}
 

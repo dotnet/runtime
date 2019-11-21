@@ -147,7 +147,7 @@ jobs:
         displayName: Restore Build Tools
 
       - ${{ if ne(parameters.coreClrArtifactName, '') }}:
-        - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+        - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_coreClrOverridePath)
             artifactFileName: '$(parameters.coreClrArtifactName)$(_archiveExtension)'
