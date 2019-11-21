@@ -4526,6 +4526,17 @@ public:
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 
+    //------------------------------------------------------------------------
+    // MergeHandler: Merge assertions into the first exception handler/filter block.
+    //
+    // Arguments:
+    //   block         - the block that is the start of a handler or filter;
+    //   firstTryBlock - the first block of the try for "block" handler;
+    //   lastTryBlock  - the last block of the try for "block" handler;.
+    //
+    // Notes:
+    //   We can jump to the handler from any instruction in the try region.
+    //   It means we can propagate only assertions that are valid for the whole try region.
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
