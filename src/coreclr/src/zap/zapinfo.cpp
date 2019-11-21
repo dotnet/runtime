@@ -2882,7 +2882,7 @@ CORINFO_METHOD_HANDLE ZapInfo::GetDelegateCtor(CORINFO_METHOD_HANDLE   methHnd,
     {
         if (pCtorData->pArg4)
         {
-            // cannot optimize any secure delegate, give up
+            // cannot optimize any wrapper delegate, give up
             delegateCtor = methHnd;
         }
         else if (pCtorData->pArg3)

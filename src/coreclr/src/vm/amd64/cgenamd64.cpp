@@ -79,9 +79,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #ifndef DACCESS_COMPILE
 
-extern "C" TADDR s_pStubHelperFrameVPtr;
-TADDR s_pStubHelperFrameVPtr = StubHelperFrame::GetMethodFrameVPtr();
-
 void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 {
     WRAPPER_NO_CONTRACT;

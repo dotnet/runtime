@@ -17,10 +17,9 @@ namespace System
     [ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {
-        // This is set under 3 circumstances
+        // This is set under 2 circumstances
         // 1. Multicast delegate
-        // 2. Secure/Wrapper delegate
-        // 3. Inner delegate of secure delegate where the secure delegate security context is a collectible method
+        // 2. Wrapper delegate
         private object? _invocationList; // Initialized by VM as needed
         private IntPtr _invocationCount;
 
@@ -74,7 +73,7 @@ namespace System
             {
                 // there are 4 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
-                // 2- Secure/Wrapper (_invocationList is Delegate)
+                // 2- Wrapper (_invocationList is Delegate)
                 // 3- Unmanaged FntPtr (_invocationList == null)
                 // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
 
@@ -90,7 +89,7 @@ namespace System
 
                     // now we know 'this' is not a special one, so we can work out what the other is
                     if (d._invocationList is Delegate)
-                        // this is a secure/wrapper delegate so we need to unwrap and check the inner one
+                        // this is a wrapper delegate so we need to unwrap and check the inner one
                         return Equals(d._invocationList);
 
                     return base.Equals(obj);
@@ -99,7 +98,7 @@ namespace System
                 {
                     if (_invocationList is Delegate invocationListDelegate)
                     {
-                        // this is a secure/wrapper delegate so we need to unwrap and check the inner one
+                        // this is a wrapper delegate so we need to unwrap and check the inner one
                         return invocationListDelegate.Equals(obj);
                     }
                     else
@@ -124,7 +123,7 @@ namespace System
 
                 // now we know 'this' is not a special one, so we can work out what the other is
                 if (d._invocationList is Delegate)
-                    // this is a secure/wrapper delegate so we need to unwrap and check the inner one
+                    // this is a wrapper delegate so we need to unwrap and check the inner one
                     return Equals(d._invocationList);
 
                 // now we can call on the base
@@ -472,7 +471,7 @@ namespace System
             {
                 if (_invocationList is Delegate t)
                 {
-                    // this is a secure/wrapper delegate so we need to unwrap and check the inner one
+                    // this is a wrapper delegate so we need to unwrap and check the inner one
                     return t.GetHashCode();
                 }
             }
@@ -499,7 +498,7 @@ namespace System
             {
                 // _invocationCount != 0 we are in one of these cases:
                 // - Multicast -> return the target of the last delegate in the list
-                // - Secure/wrapper delegate -> return the target of the inner delegate
+                // - Wrapper delegate -> return the target of the inner delegate
                 // - unmanaged function pointer - return null
                 // - virtual open delegate - return null
                 if (InvocationListLogicallyNull())
@@ -537,7 +536,7 @@ namespace System
 
                 if (_invocationList is MulticastDelegate innerDelegate)
                 {
-                    // must be a secure/wrapper delegate
+                    // must be a wrapper delegate
                     return innerDelegate.GetMethodImpl();
                 }
             }
@@ -562,7 +561,7 @@ namespace System
                 return (MethodInfo)_methodBase;
             }
 
-            // Otherwise, must be an inner delegate of a SecureDelegate of an open virtual method. In that case, call base implementation
+            // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
             return base.GetMethodImpl();
         }
 
