@@ -94,8 +94,23 @@ if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
 }
 
-if (!$actionPassedIn -or $subsetCategory -ne "libraries") {
+if (!$actionPassedIn) {
   $arguments = "-restore -build"
+}
+
+$possibleDirToBuild = if($properties.Length -gt 0) { $properties[0]; } else { $null }
+
+if ($null -ne $possibleDirToBuild -and $subsetCategory -eq "libraries") {
+  $dtb = $possibleDirToBuild.TrimEnd('\')
+  if (Test-Path $dtb) {
+    $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+  }
+  else {
+    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $dtb
+    if (Test-Path $dtb) {
+      $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+    }
+  }
 }
 
 foreach ($argument in $PSBoundParameters.Keys)
