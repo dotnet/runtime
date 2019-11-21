@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
-    <XUnitNoAppdomain>true</XUnitNoAppdomain>
-    <XUnitMaxThreads>1</XUnitMaxThreads>
+    <TestDisableAppDomain>true</TestDisableAppDomain>
+    <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>

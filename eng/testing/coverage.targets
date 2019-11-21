@@ -1,0 +1,62 @@
+<Project InitialTargets="SetupCoverageFilter">
+  <!-- Wrap RunCommand and RunArguments inside code coverage invocation. -->
+  <PropertyGroup>
+    <RunArguments>"$(TargetFileName)" --target "$(RunCommand)" --targetargs "$(RunArguments)" --format "$(CoverageFormat)" --output "$(CoverageOutputPath)" --threshold "$(CoverageThreshold)" --threshold-type "$(CoverageThresholdType)" --verbosity "$(CoverageVerbosity)"</RunArguments>
+    <RunArguments Condition="'$(CoverageSourceLink)' == 'true'">$(RunArguments) --use-source-link</RunArguments>
+    <RunCommand>"$(DotNetTool)" tool run coverlet</RunCommand>
+  </PropertyGroup>
+
+  <!-- Coverage report -->
+  <PropertyGroup>
+    <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'report'))</CoverageReportDir>
+    <CoverageReportResultsPath>$([MSBuild]::NormalizePath('$(CoverageReportDir)', 'index.htm'))</CoverageReportResultsPath>
+    <CoverageReportCommandLine>"$(DotNetTool)" tool run reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:$(CoverageReportTypes)" "-verbosity:$(CoverageReportVerbosity)"</CoverageReportCommandLine>
+  </PropertyGroup>
+
+  <!-- Skip generating individual reports if a full report is generated. -->
+  <ItemGroup Condition="'$(TestAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'">
+    <PostRunScriptCommands Include="$(CoverageReportCommandLine)" />
+  </ItemGroup>
+
+  <Target Name="SetupCoverageFilter">
+    <PropertyGroup Condition="'@(CoverageExcludeFile)' != ''">
+      <CoverageExcludeByFileFilter>--exclude-by-file @(CoverageExcludeFile -> '"%(Identity)"', ' --exclude-by-file ')</CoverageExcludeByFileFilter>
+      <RunArguments>$(RunArguments) $(CoverageExcludeByFileFilter)</RunArguments>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(CoverageProbePath)' != ''">
+      <IncludeDirectoriesFilter>--include-directory @(CoverageProbePath -> '"$(RunScriptHostDir)%(Identity)"', ' --include-directory ')</IncludeDirectoriesFilter>
+      <RunArguments>$(RunArguments) $(IncludeDirectoriesFilter)</RunArguments>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(CoverageExclude)' != ''">
+      <CoverageExcludeFilter>--exclude @(CoverageExclude -> '"%(Identity)"', ' --exclude ')</CoverageExcludeFilter>
+      <RunArguments>$(RunArguments) $(CoverageExcludeFilter)</RunArguments>
+    </PropertyGroup>
+
+    <!--
+      We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
+      If the code being tested is part of the runtime itself, it requires special treatment.
+    -->
+    <PropertyGroup Condition="'$(AssemblyBeingTested)' == ''">
+      <_ProjectDirectoryUnderSourceDir>$(MSBuildProjectDirectory.SubString($(LibrariesProjectRoot.Length)))</_ProjectDirectoryUnderSourceDir>
+      <AssemblyBeingTested>$(_ProjectDirectoryUnderSourceDir.SubString(0, $(_ProjectDirectoryUnderSourceDir.IndexOfAny("\\/"))))</AssemblyBeingTested>
+    </PropertyGroup>
+
+    <!--
+      By default, code coverage data is only gathered for the assembly being tested.
+      CoverageAssemblies can be passed in to the build to gather coverage on additional assemblies.
+    -->
+    <ItemGroup>
+      <_CoverageAssemblies Include="$(AssemblyBeingTested)" />
+      <_CoverageAssemblies Include="System.Private.CoreLib" Condition="'$(TestRuntime)' == 'true'" />
+      <_CoverageAssemblies Include="@(AssembliesBeingTested)" />
+      <_CoverageAssemblies Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(CoverageType)' != 'all'">
+      <CoverageFilter>--include @(_CoverageAssemblies -> '"[%(Identity)]*"', ' --include ')</CoverageFilter>
+      <RunArguments>$(RunArguments) $(CoverageFilter)</RunArguments>
+    </PropertyGroup>
+  </Target>
+</Project>

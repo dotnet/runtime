@@ -35,11 +35,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-
-// ShuffleOfs not needed
-
-#elif defined(_TARGET_X86_)
+#if defined(_TARGET_X86_)
 
 // Return an encoded shuffle entry describing a general register or stack offset that needs to be shuffled.
 static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
@@ -64,8 +60,9 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 
     return static_cast<UINT16>(ofs);
 }
+#endif
 
-#else // Portable default implementation
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
 
 // Iterator for extracting shuffle entries for argument desribed by an ArgLocDesc.
 // Used when calculating shuffle array entries in GenerateShuffleArray below.
@@ -149,9 +146,7 @@ public:
     bool HasNextOfs()
     {
         return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) ||
-#if defined(UNIX_AMD64_ABI)
                (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
-#endif
                (m_currentStackSlotIndex < m_argLocDesc->m_cStack);
     }
 
@@ -168,6 +163,7 @@ public:
         {
             return GetNextOfsInStruct();
         }
+#endif // UNIX_AMD64_ABI
 
         // Shuffle float registers first
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
@@ -177,7 +173,6 @@ public:
 
             return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
         }
-#endif // UNIX_AMD64_ABI
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
         // over a register we later need to shuffle down as well).
@@ -211,9 +206,7 @@ public:
     }
 };
 
-#endif
 
-#if defined(UNIX_AMD64_ABI)
 // Return an index of argument slot. First indices are reserved for general purpose registers,
 // the following ones for float registers and then the rest for stack slots.
 // This index is independent of how many registers are actually used to pass arguments.
@@ -232,7 +225,11 @@ int GetNormalizedArgumentSlotIndex(UINT16 offset)
     else
     {
         // stack slot
-        index = NUM_ARGUMENT_REGISTERS + NUM_FLOAT_ARGUMENT_REGISTERS + (offset & ShuffleEntry::OFSMASK);
+        index = NUM_ARGUMENT_REGISTERS
+#ifdef NUM_FLOAT_ARGUMENT_REGISTERS
+                + NUM_FLOAT_ARGUMENT_REGISTERS
+#endif
+                + (offset & ShuffleEntry::OFSMASK);
     }
 
     return index;
@@ -253,52 +250,308 @@ struct ShuffleGraphNode
     UINT8 isMarked;
 };
 
-#endif // UNIX_AMD64_ABI
+BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
+{
+    ShuffleEntry entry;
+    ZeroMemory(&entry, sizeof(entry));
 
-VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
+    ShuffleIterator iteratorSrc(&sArgSrc);
+    ShuffleIterator iteratorDst(&sArgDst);
+
+    // Shuffle each slot in the argument (register or stack slot) from source to destination.
+    while (iteratorSrc.HasNextOfs())
+    {
+        // We should have slots to shuffle in the destination at the same time as the source.
+        _ASSERTE(iteratorDst.HasNextOfs());
+
+        // Locate the next slot to shuffle in the source and destination and encode the transfer into a
+        // shuffle entry.
+        entry.srcofs = iteratorSrc.GetNextOfs();
+        entry.dstofs = iteratorDst.GetNextOfs();
+
+        // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
+        // different).
+        if (entry.srcofs != entry.dstofs)
+        {
+            if (shuffleType == ShuffleComputationType::InstantiatingStub)
+            {
+                // Instantiating Stub shuffles only support general register to register moves. More complex cases are handled by IL stubs
+                if (!(entry.srcofs & ShuffleEntry::REGMASK) || !(entry.dstofs & ShuffleEntry::REGMASK))
+                {
+                    return FALSE;
+                }
+                if ((entry.srcofs == ShuffleEntry::HELPERREG) || (entry.dstofs == ShuffleEntry::HELPERREG))
+                {
+                    return FALSE;
+                }
+            }
+            pShuffleEntryArray->Append(entry);
+        }
+    }
+
+    // We should have run out of slots to shuffle in the destination at the same time as the source.
+    _ASSERTE(!iteratorDst.HasNextOfs());
+
+    return TRUE;
+}
+
+BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
 {
     STANDARD_VM_CONTRACT;
 
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-    MetaSig msig(pInvoke);
-    ArgIterator argit(&msig);
+    MetaSig sSigSrc(pMethodSrc);
+    MetaSig sSigDst(pMethodDst);
 
-    if (argit.HasRetBuffArg())
+    // Initialize helpers that determine how each argument for the source and destination signatures is placed
+    // in registers or on the stack.
+    ArgIterator sArgPlacerSrc(&sSigSrc);
+    ArgIterator sArgPlacerDst(&sSigDst);
+
+    if (shuffleType == ShuffleComputationType::InstantiatingStub)
     {
-        if (!pTargetMeth->IsStatic())
-        {
-            // Use ELEMENT_TYPE_END to signal the special handling required by
-            // instance method with return buffer. "this" needs to come from
-            // the first argument.
-            entry.argtype = ELEMENT_TYPE_END;
-            pShuffleEntryArray->Append(entry);
+        // Instantiating Stub shuffles only support register to register moves. More complex cases are handled by IL stubs
+        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
+        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
+        if (stackSizeSrc != stackSizeDst)
+            return FALSE;
+    }
 
-            msig.NextArgNormalized();
+    UINT stackSizeDelta = 0;
+
+#if defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
+    {
+        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
+        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
+
+        // Windows X86 calling convention requires the stack to shrink when removing
+        // arguments, as it is callee pop
+        if (stackSizeDst > stackSizeSrc)
+        {
+            // we can drop arguments but we can never make them up - this is definitely not allowed
+            COMPlusThrow(kVerificationException);
+        }
+
+        stackSizeDelta = stackSizeSrc - stackSizeDst;
+    }
+#endif // Callee pop architectures - defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
+
+    INT ofsSrc;
+    INT ofsDst;
+    ArgLocDesc sArgSrc;
+    ArgLocDesc sArgDst;
+
+    unsigned int argSlots = NUM_ARGUMENT_REGISTERS
+#ifdef NUM_FLOAT_ARGUMENT_REGISTERS
+                    + NUM_FLOAT_ARGUMENT_REGISTERS 
+#endif
+                    + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
+
+    // If the target method in non-static (this happens for open instance delegates), we need to account for
+    // the implicit this parameter.
+    if (sSigDst.HasThis())
+    {
+        if (shuffleType == ShuffleComputationType::DelegateShuffleThunk)
+        {
+            // The this pointer is an implicit argument for the destination signature. But on the source side it's
+            // just another regular argument and needs to be iterated over by sArgPlacerSrc and the MetaSig.
+            sArgPlacerSrc.GetArgLoc(sArgPlacerSrc.GetNextOffset(), &sArgSrc);
+            sArgPlacerSrc.GetThisLoc(&sArgDst);
+        }
+        else if (shuffleType == ShuffleComputationType::InstantiatingStub)
+        {
+            _ASSERTE(sSigSrc.HasThis()); // Instantiating stubs should have the same HasThis flag
+            sArgPlacerDst.GetThisLoc(&sArgDst);
+            sArgPlacerSrc.GetThisLoc(&sArgSrc);
         }
         else
         {
-            entry.argtype = ELEMENT_TYPE_PTR;
-            pShuffleEntryArray->Append(entry);
+            _ASSERTE(FALSE); // Unknown shuffle type being generated
+        }
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
+    // Handle any return buffer argument.
+    _ASSERTE(!!sArgPlacerDst.HasRetBuffArg() == !!sArgPlacerSrc.HasRetBuffArg());
+    if (sArgPlacerDst.HasRetBuffArg())
+    {
+        // The return buffer argument is implicit in both signatures.
+
+#if !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
+        // The ifdef above disables this code if the ret buff arg is always in the same register, which
+        // means that we don't need to do any shuffling for it.
+
+        sArgPlacerSrc.GetRetBuffArgLoc(&sArgSrc);
+        sArgPlacerDst.GetRetBuffArgLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+#endif // !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
+    }
+
+    // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
+    // destination locations.
+    while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
+    {
+        ofsDst = sArgPlacerDst.GetNextOffset();
+
+        // Find the argument location mapping for both source and destination signature. A single argument can
+        // occupy a floating point register, a general purpose register, a pair of registers of any kind or
+        // a stack slot.
+        sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
+        sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
+    if (shuffleType == ShuffleComputationType::InstantiatingStub
+#if defined(UNIX_AMD64_ABI)
+        || true
+#endif // UNIX_AMD64_ABI
+      )
+    {
+        // The Unix AMD64 ABI can cause a struct to be passed on stack for the source and in registers for the destination.
+        // That can cause some arguments that are passed on stack for the destination to be passed in registers in the source.
+        // An extreme example of that is e.g.:
+        //   void fn(int, int, int, int, int, struct {int, double}, double, double, double, double, double, double, double, double, double, double)
+        // For this signature, the shuffle needs to move slots as follows (please note the "forward" movement of xmm registers):
+        //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
+        // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
+
+        NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
+
+        // Initialize the graph array
+        for (unsigned int i = 0; i < argSlots; i++)
+        {
+            pGraphNodes[i].prev = ShuffleGraphNode::NoNode;
+            pGraphNodes[i].isMarked = true;
+            pGraphNodes[i].isSource = false;
+        }
+
+        // Build the directed graph representing register and stack slot shuffling. 
+        // The links are directed from destination to source.
+        // During the build also set isSource flag for nodes that are sources of data.
+        // The ones that don't have the isSource flag set are beginnings of non-cyclic 
+        // segments of the graph.
+        for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
+        {
+            ShuffleEntry entry = (*pShuffleEntryArray)[i];
+
+            int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
+            int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
+
+            _ASSERTE((srcIndex >= 0) && ((unsigned int)srcIndex < argSlots));
+            _ASSERTE((dstIndex >= 0) && ((unsigned int)dstIndex < argSlots));
+
+            // Unmark the node to indicate that it was not processed yet
+            pGraphNodes[srcIndex].isMarked = false;
+            // The node contains a register / stack slot that is a source from which we move data to a destination one
+            pGraphNodes[srcIndex].isSource = true; 
+            pGraphNodes[srcIndex].ofs = entry.srcofs;
+
+            // Unmark the node to indicate that it was not processed yet
+            pGraphNodes[dstIndex].isMarked = false;
+            // Link to the previous node in the graph (source of data for the current node)
+            pGraphNodes[dstIndex].prev = srcIndex;
+            pGraphNodes[dstIndex].ofs = entry.dstofs;
+        }
+
+        // Now that we've built the graph, clear the array, we will regenerate it from the graph ensuring a proper order of shuffling
+        pShuffleEntryArray->Clear();
+
+        // Add all non-cyclic subgraphs to the target shuffle array and mark their nodes as visited
+        for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
+        {
+            unsigned int index = startIndex;
+
+            if (!pGraphNodes[index].isMarked && !pGraphNodes[index].isSource)
+            {
+                // This node is not a source, that means it is an end of shuffle chain
+                // Generate shuffle array entries for all nodes in the chain in a correct
+                // order.
+                UINT16 dstOfs = ShuffleEntry::SENTINEL;
+
+                do
+                {
+                    _ASSERTE(index < argSlots);
+                    pGraphNodes[index].isMarked = true;
+                    if (dstOfs != ShuffleEntry::SENTINEL)
+                    {
+                        entry.srcofs = pGraphNodes[index].ofs;
+                        entry.dstofs = dstOfs;
+                        pShuffleEntryArray->Append(entry);
+                    }
+
+                    dstOfs = pGraphNodes[index].ofs;
+                    index = pGraphNodes[index].prev;
+                }
+                while (index != ShuffleGraphNode::NoNode);
+            }
+        }
+
+        // Process all cycles in the graph
+        for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
+        {
+            unsigned int index = startIndex;
+
+            if (!pGraphNodes[index].isMarked)
+            {
+                if (shuffleType == ShuffleComputationType::InstantiatingStub)
+                {
+                    // Use of the helper reg isn't supported for these stubs.
+                    return FALSE;
+                }
+                // This node is part of a new cycle as all non-cyclic parts of the graphs were already visited
+
+                // Move the first node register / stack slot to a helper reg
+                UINT16 dstOfs = ShuffleEntry::HELPERREG;
+
+                do
+                {
+                    _ASSERTE(index < argSlots);
+                    pGraphNodes[index].isMarked = true;
+
+                    entry.srcofs = pGraphNodes[index].ofs;
+                    entry.dstofs = dstOfs;
+                    pShuffleEntryArray->Append(entry);
+
+                    dstOfs = pGraphNodes[index].ofs;
+                    index = pGraphNodes[index].prev;
+                }
+                while (index != startIndex);
+
+                // Move helper reg to the last node register / stack slot
+                entry.srcofs = ShuffleEntry::HELPERREG;
+                entry.dstofs = dstOfs;
+                pShuffleEntryArray->Append(entry);
+            }
         }
     }
 
-    CorElementType sigType;
-
-    while ((sigType = msig.NextArgNormalized()) != ELEMENT_TYPE_END)
-    {
-        ZeroMemory(&entry, sizeof(entry));
-        entry.argtype = sigType;
-        pShuffleEntryArray->Append(entry);
-    }
-
-    ZeroMemory(&entry, sizeof(entry));
-    entry.srcofs  = ShuffleEntry::SENTINEL;
+    entry.srcofs = ShuffleEntry::SENTINEL;
+    entry.dstofs = 0;
     pShuffleEntryArray->Append(entry);
 
+    return TRUE;
+}
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
+
+VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
+{
+    STANDARD_VM_CONTRACT;
+
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+    // Portable default implementation
+    GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk);
 #elif defined(_TARGET_X86_)
+    ShuffleEntry entry;
+    ZeroMemory(&entry, sizeof(entry));
+
     // Must create independent msigs to prevent the argiterators from
     // interfering with other.
     MetaSig sSigSrc(pInvoke);
@@ -379,222 +632,16 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     entry.dstofs = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
-#else // Portable default implementation
-    MetaSig sSigSrc(pInvoke);
-    MetaSig sSigDst(pTargetMeth);
-
-    // Initialize helpers that determine how each argument for the source and destination signatures is placed
-    // in registers or on the stack.
-    ArgIterator sArgPlacerSrc(&sSigSrc);
-    ArgIterator sArgPlacerDst(&sSigDst);
-
-    INT ofsSrc;
-    INT ofsDst;
-    ArgLocDesc sArgSrc;
-    ArgLocDesc sArgDst;
-
-#if defined(UNIX_AMD64_ABI)
-    uint32_t argSlots = NUM_FLOAT_ARGUMENT_REGISTERS + NUM_ARGUMENT_REGISTERS + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
-#endif // UNIX_AMD64_ABI
-
-    // If the target method in non-static (this happens for open instance delegates), we need to account for
-    // the implicit this parameter.
-    if (sSigDst.HasThis())
-    {
-        // The this pointer is an implicit argument for the destination signature. But on the source side it's
-        // just another regular argument and needs to be iterated over by sArgPlacerSrc and the MetaSig.
-        sArgPlacerSrc.GetArgLoc(sArgPlacerSrc.GetNextOffset(), &sArgSrc);
-
-        sArgPlacerSrc.GetThisLoc(&sArgDst);
-
-        ShuffleIterator iteratorSrc(&sArgSrc);
-        ShuffleIterator iteratorDst(&sArgDst);
-
-        entry.srcofs = iteratorSrc.GetNextOfs();
-        entry.dstofs = iteratorDst.GetNextOfs();
-        pShuffleEntryArray->Append(entry);
-    }
-
-    // Handle any return buffer argument.
-    if (sArgPlacerDst.HasRetBuffArg())
-    {
-        // The return buffer argument is implicit in both signatures.
-
-#if !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
-        // The ifdef above disables this code if the ret buff arg is always in the same register, which
-        // means that we don't need to do any shuffling for it.
-
-        sArgPlacerSrc.GetRetBuffArgLoc(&sArgSrc);
-        sArgPlacerDst.GetRetBuffArgLoc(&sArgDst);
-
-        ShuffleIterator iteratorSrc(&sArgSrc);
-        ShuffleIterator iteratorDst(&sArgDst);
-
-        entry.srcofs = iteratorSrc.GetNextOfs();
-        entry.dstofs = iteratorDst.GetNextOfs();
-
-        // Depending on the type of target method (static vs instance) the return buffer argument may end up
-        // in the same register in both signatures. So we only commit the entry (by moving the entry pointer
-        // along) in the case where it's not a no-op (i.e. the source and destination ops are different).
-        if (entry.srcofs != entry.dstofs)
-            pShuffleEntryArray->Append(entry);
-#endif // !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
-    }
-
-    // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
-    // destination locations.
-    while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
-    {
-        ofsDst = sArgPlacerDst.GetNextOffset();
-
-        // Find the argument location mapping for both source and destination signature. A single argument can
-        // occupy a floating point register, a general purpose register, a pair of registers of any kind or
-        // a stack slot.
-        sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
-        sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
-
-        ShuffleIterator iteratorSrc(&sArgSrc);
-        ShuffleIterator iteratorDst(&sArgDst);
-
-        // Shuffle each slot in the argument (register or stack slot) from source to destination.
-        while (iteratorSrc.HasNextOfs())
-        {
-            // Locate the next slot to shuffle in the source and destination and encode the transfer into a
-            // shuffle entry.
-            entry.srcofs = iteratorSrc.GetNextOfs();
-            entry.dstofs = iteratorDst.GetNextOfs();
-
-            // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
-            // different).
-            if (entry.srcofs != entry.dstofs)
-                pShuffleEntryArray->Append(entry);
-        }
-
-        // We should have run out of slots to shuffle in the destination at the same time as the source.
-        _ASSERTE(!iteratorDst.HasNextOfs());
-    }
-
-
-#if defined(UNIX_AMD64_ABI)
-    // The Unix AMD64 ABI can cause a struct to be passed on stack for the source and in registers for the destination.
-    // That can cause some arguments that are passed on stack for the destination to be passed in registers in the source.
-    // An extreme example of that is e.g.:
-    //   void fn(int, int, int, int, int, struct {int, double}, double, double, double, double, double, double, double, double, double, double)
-    // For this signature, the shuffle needs to move slots as follows (please note the "forward" movement of xmm registers):
-    //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
-    // To prevent overwriting of slots before they are moved, we need to perform the shuffling in correct order
-
-    NewArrayHolder<ShuffleGraphNode> pGraphNodes = new ShuffleGraphNode[argSlots];
-
-    // Initialize the graph array
-    for (unsigned int i = 0; i < argSlots; i++)
-    {
-        pGraphNodes[i].prev = ShuffleGraphNode::NoNode;
-        pGraphNodes[i].isMarked = true;
-        pGraphNodes[i].isSource = false;
-    }
-
-    // Build the directed graph representing register and stack slot shuffling.
-    // The links are directed from destination to source.
-    // During the build also set isSource flag for nodes that are sources of data.
-    // The ones that don't have the isSource flag set are beginnings of non-cyclic
-    // segments of the graph.
-    for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
-    {
-        ShuffleEntry entry = (*pShuffleEntryArray)[i];
-
-        int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
-        int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
-
-        // Unmark the node to indicate that it was not processed yet
-        pGraphNodes[srcIndex].isMarked = false;
-        // The node contains a register / stack slot that is a source from which we move data to a destination one
-        pGraphNodes[srcIndex].isSource = true;
-        pGraphNodes[srcIndex].ofs = entry.srcofs;
-
-        // Unmark the node to indicate that it was not processed yet
-        pGraphNodes[dstIndex].isMarked = false;
-        // Link to the previous node in the graph (source of data for the current node)
-        pGraphNodes[dstIndex].prev = srcIndex;
-        pGraphNodes[dstIndex].ofs = entry.dstofs;
-    }
-
-    // Now that we've built the graph, clear the array, we will regenerate it from the graph ensuring a proper order of shuffling
-    pShuffleEntryArray->Clear();
-
-    // Add all non-cyclic subgraphs to the target shuffle array and mark their nodes as visited
-    for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
-    {
-        unsigned int index = startIndex;
-
-        if (!pGraphNodes[index].isMarked && !pGraphNodes[index].isSource)
-        {
-            // This node is not a source, that means it is an end of shuffle chain
-            // Generate shuffle array entries for all nodes in the chain in a correct
-            // order.
-            UINT16 dstOfs = ShuffleEntry::SENTINEL;
-
-            do
-            {
-                pGraphNodes[index].isMarked = true;
-                if (dstOfs != ShuffleEntry::SENTINEL)
-                {
-                    entry.srcofs = pGraphNodes[index].ofs;
-                    entry.dstofs = dstOfs;
-                    pShuffleEntryArray->Append(entry);
-                }
-
-                dstOfs = pGraphNodes[index].ofs;
-                index = pGraphNodes[index].prev;
-            }
-            while (index != ShuffleGraphNode::NoNode);
-        }
-    }
-
-    // Process all cycles in the graph
-    for (unsigned int startIndex = 0; startIndex < argSlots; startIndex++)
-    {
-        unsigned int index = startIndex;
-
-        if (!pGraphNodes[index].isMarked)
-        {
-            // This node is part of a new cycle as all non-cyclic parts of the graphs were already visited
-
-            // Move the first node register / stack slot to a helper reg
-            UINT16 dstOfs = ShuffleEntry::HELPERREG;
-
-            do
-            {
-                pGraphNodes[index].isMarked = true;
-
-                entry.srcofs = pGraphNodes[index].ofs;
-                entry.dstofs = dstOfs;
-                pShuffleEntryArray->Append(entry);
-
-                dstOfs = pGraphNodes[index].ofs;
-                index = pGraphNodes[index].prev;
-            }
-            while (index != startIndex);
-
-            // Move helper reg to the last node register / stack slot
-            entry.srcofs = ShuffleEntry::HELPERREG;
-            entry.dstofs = dstOfs;
-            pShuffleEntryArray->Append(entry);
-        }
-    }
-
-#endif // UNIX_AMD64_ABI
-
-    entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = 0;
-    pShuffleEntryArray->Append(entry);
+#else
+#error Unsupported architecture
 #endif
 }
 
 
 ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
-MulticastStubCache *COMDelegate::m_pSecureDelegateStubCache = NULL;
+#ifndef FEATURE_MULTICASTSTUB_AS_IL
 MulticastStubCache *COMDelegate::m_pMulticastStubCache = NULL;
+#endif
 
 CrstStatic   COMDelegate::s_DelegateToFPtrHashCrst;
 PtrHashMap*  COMDelegate::s_pDelegateToFPtrHash = NULL;
@@ -619,8 +666,9 @@ void COMDelegate::Init()
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
     m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+#ifndef FEATURE_MULTICASTSTUB_AS_IL
     m_pMulticastStubCache = new MulticastStubCache();
-    m_pSecureDelegateStubCache = new MulticastStubCache();
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -946,7 +994,7 @@ FCIMPLEND
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
 // (signature matching etc.) have been done at this point and the only major reason we could fail now is on security grounds
 // (someone trying to create a delegate over a method that's not visible to them for instance). This method will initialize the
-// delegate (wrapping it in a secure delegate if necessary). Upon return the delegate should be ready for invocation.
+// delegate (wrapping it in a wrapper delegate if necessary). Upon return the delegate should be ready for invocation.
 void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                OBJECTREF     *pRefFirstArg,
                                MethodDesc    *pTargetMethod,
@@ -966,8 +1014,8 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     CONTRACTL_END;
 
-    // We might have to wrap the delegate in a secure delegate depending on the location of the target method. The following local
-    // keeps track of the real (i.e. non-secure) delegate whether or not this is required.
+    // We might have to wrap the delegate in a wrapper delegate depending on the the target method. The following local
+    // keeps track of the real (i.e. non-wrapper) delegate whether or not this is required.
     DELEGATEREF refRealDelegate = NULL;
     GCPROTECT_BEGIN(refRealDelegate);
 
@@ -1002,11 +1050,11 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                       pTargetMethod);
     }
 
-    // If we didn't wrap the real delegate in a secure delegate then the real delegate is the one passed in.
+    // If we didn't wrap the real delegate in a wrapper delegate then the real delegate is the one passed in.
     if (refRealDelegate == NULL)
     {
         if (NeedsWrapperDelegate(pTargetMethod))
-            refRealDelegate = CreateSecureDelegate(*pRefThis, NULL, pTargetMethod);
+            refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
         else
             refRealDelegate = *pRefThis;
     }
@@ -1770,7 +1818,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     }
 
     if (NeedsWrapperDelegate(pMeth))
-        gc.refThis = CreateSecureDelegate(gc.refThis, NULL, pMeth);
+        gc.refThis = CreateWrapperDelegate(gc.refThis, pMeth);
 
     if (pMeth->GetLoaderAllocator()->IsCollectible())
         gc.refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
@@ -1883,10 +1931,10 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
-        // - secure delegate - _invocationList is Delegate && _invocationCount != NULL
+        // - wrapper delegate - _invocationList is Delegate && _invocationCount != NULL
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Secure Delegate)
-        // in the secure delegate case we want to unwrap and return the method desc of the inner delegate
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
+        // in the wrapper delegate case we want to unwrap and return the method desc of the inner delegate
         // in the other cases we return the method desc for the invoke
         innerDel = (DELEGATEREF) thisDel->GetInvocationList();
         bool fOpenVirtualDelegate = false;
@@ -1967,10 +2015,10 @@ OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
         // this is one of the following:
         // - multicast
         // - unmanaged ftn ptr
-        // - secure delegate
+        // - wrapper delegate
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Secure Delegate)
-        // in the secure delegate case we want to unwrap and return the object of the inner delegate
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
+        // in the wrapper delegate case we want to unwrap and return the object of the inner delegate
         innerDel = (DELEGATEREF) thisDel->GetInvocationList();
         if (innerDel != NULL)
         {
@@ -2157,9 +2205,9 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 #ifdef _TARGET_ARM_
     // For arm VSD expects r4 to contain the indirection cell. However r4 is a non-volatile register
     // and its value must be preserved. So we need to erect a frame and store indirection cell in r4 before calling
-    // virtual stub dispatch. Erecting frame is already done by secure delegates so the secureDelegate infrastructure
+    // virtual stub dispatch. Erecting frame is already done by wrapper delegates so the Wrapper Delegate infrastructure
     //  can easliy be used for our purpose.
-    // set needsSecureDelegate flag in order to erect a frame. (Secure Delegate stub also loads the right value in r4)
+    // set needsWrapperDelegate flag in order to erect a frame. (Wrapper Delegate stub also loads the right value in r4)
     if (!pTargetMD->IsStatic() && pTargetMD->IsVirtual() && !pTargetMD->GetMethodTable()->IsValueType())
         return TRUE;
 #endif
@@ -2170,14 +2218,13 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 
 #ifndef CROSSGEN_COMPILE
 
-// to create a secure delegate wrapper we need:
+// to create a wrapper delegate wrapper we need:
 // - the delegate to forward to         -> _invocationList
-// - the creator assembly               -> _methodAuxPtr
 // - the delegate invoke MethodDesc     -> _count
 // the 2 fields used for invocation will contain:
 // - the delegate itself                -> _pORField
-// - the secure stub                    -> _pFPField
-DELEGATEREF COMDelegate::CreateSecureDelegate(DELEGATEREF delegate, MethodDesc* pCreatorMethod, MethodDesc* pTargetMD)
+// - the wrapper stub                    -> _pFPField
+DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD)
 {
     CONTRACTL
     {
@@ -2191,10 +2238,10 @@ DELEGATEREF COMDelegate::CreateSecureDelegate(DELEGATEREF delegate, MethodDesc* 
     MethodDesc *pMD = ((DelegateEEClass*)(pDelegateType->GetClass()))->GetInvokeMethod();
     // allocate the object
     struct _gc {
-        DELEGATEREF refSecDel;
+        DELEGATEREF refWrapperDel;
         DELEGATEREF innerDel;
     } gc;
-    gc.refSecDel = delegate;
+    gc.refWrapperDel = delegate;
     gc.innerDel = NULL;
 
     GCPROTECT_BEGIN(gc);
@@ -2203,38 +2250,17 @@ DELEGATEREF COMDelegate::CreateSecureDelegate(DELEGATEREF delegate, MethodDesc* 
     //
 
     // Object reference field...
-    gc.refSecDel->SetTarget(gc.refSecDel);
+    gc.refWrapperDel->SetTarget(gc.refWrapperDel);
 
-    // save the secure invoke stub.  GetSecureInvoke() can trigger GC.
-    PCODE tmp = GetSecureInvoke(pMD);
-    gc.refSecDel->SetMethodPtr(tmp);
-    // save the assembly
-    gc.refSecDel->SetMethodPtrAux((PCODE)(void *)pCreatorMethod);
+    // save the secure invoke stub.  GetWrapperInvoke() can trigger GC.
+    PCODE tmp = GetWrapperInvoke(pMD);
+    gc.refWrapperDel->SetMethodPtr(tmp);
     // save the delegate MethodDesc for the frame
-    gc.refSecDel->SetInvocationCount((INT_PTR)pMD);
+    gc.refWrapperDel->SetInvocationCount((INT_PTR)pMD);
 
     // save the delegate to forward to
     gc.innerDel = (DELEGATEREF) pDelegateType->Allocate();
-    gc.refSecDel->SetInvocationList(gc.innerDel);
-
-    if (pCreatorMethod != NULL)
-    {
-        // If the pCreatorMethod is a collectible method, then stash a reference to the
-        // LoaderAllocator/DynamicResolver of the collectible assembly/method in the invocationList
-        // of the inner delegate
-        // (The invocationList of the inner delegate is the only field garaunteed to be unused for
-        //  other purposes at this time.)
-        if (pCreatorMethod->IsLCGMethod())
-        {
-            OBJECTREF refCollectible = pCreatorMethod->AsDynamicMethodDesc()->GetLCGMethodResolver()->GetManagedResolver();
-            gc.innerDel->SetInvocationList(refCollectible);
-        }
-        else if (pCreatorMethod->GetLoaderAllocator()->IsCollectible())
-        {
-            OBJECTREF refCollectible = pCreatorMethod->GetLoaderAllocator()->GetExposedObject();
-            gc.innerDel->SetInvocationList(refCollectible);
-        }
-    }
+    gc.refWrapperDel->SetInvocationList(gc.innerDel);
 
     GCPROTECT_END();
 
@@ -2477,8 +2503,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 FCIMPLEND
 #endif // FEATURE_MULTICASTSTUB_AS_IL
 
-#ifdef FEATURE_STUBS_AS_IL
-PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
+PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -2490,7 +2515,7 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
 
     MethodTable *       pDelegateMT = pMD->GetMethodTable();
     DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
-    Stub *pStub = delegateEEClass->m_pSecureDelegateInvokeStub;
+    Stub *pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
 
     if (pStub == NULL)
     {
@@ -2529,7 +2554,7 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
         MethodDesc* pStubMD =
             ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                           pMD->GetMethodTable(),
-                                                          ILSTUB_SECUREDELEGATE_INVOKE,
+                                                          ILSTUB_WRAPPERDELEGATE_INVOKE,
                                                           pMD->GetModule(),
                                                           pSig, cbSig,
                                                           NULL,
@@ -2539,64 +2564,11 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
 
         g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
-        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pSecureDelegateInvokeStub, pStub, NULL);
+        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, NULL);
 
     }
     return pStub->GetEntryPoint();
 }
-#else // FEATURE_STUBS_AS_IL
-PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
-{
-    CONTRACT (PCODE)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    MethodTable *       pDelegateMT = pMD->GetMethodTable();
-    DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
-
-    Stub *pStub = delegateEEClass->m_pSecureDelegateInvokeStub;
-
-    if (pStub == NULL)
-    {
-        GCX_PREEMP();
-
-        MetaSig sig(pMD);
-
-        UINT_PTR hash = CPUSTUBLINKER::HashMulticastInvoke(&sig);
-
-        pStub = m_pSecureDelegateStubCache->GetStub(hash);
-        if (!pStub)
-        {
-            CPUSTUBLINKER sl;
-
-            LOG((LF_CORDB,LL_INFO10000, "COMD::GIMS making a multicast delegate\n"));
-            sl.EmitSecureDelegateInvoke(hash);
-
-            // The cache is process-wide, based on signature.  It never unloads
-            Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-            Stub *pWinner = m_pSecureDelegateStubCache->AttemptToSetStub(hash, pCandidate);
-            pCandidate->DecRef();
-            if (!pWinner)
-                COMPlusThrowOM();
-
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%x (code:0x%x)\n",
-                pWinner, (BYTE*)pWinner+sizeof(Stub)));
-
-            pStub = pWinner;
-        }
-
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
-        delegateEEClass->m_pSecureDelegateInvokeStub = pStub;
-    }
-    RETURN (pStub->GetEntryPoint());
-}
-#endif // FEATURE_STUBS_AS_IL
 
 #endif // CROSSGEN_COMPILE
 
@@ -3096,7 +3068,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
     if (NeedsWrapperDelegate(pTargetMethod))
     {
-        // If we need a wrapper even it is not a secure delegate, go through slow path
+        // If we need a wrapper, go through slow path
         return NULL;
     }
 
@@ -3124,7 +3096,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 4- Static closed                 first arg       target method           null                null                0
     // 5- Static closed (special sig)   delegate        specialSig thunk        target method       first arg           0
     // 6- Static opened                 delegate        shuffle thunk           target method       null                0
-    // 7- Secure                        delegate        call thunk              MethodDesc (frame)  target delegate     creator assembly
+    // 7- Wrapper                       delegate        call thunk              MethodDesc (frame)  target delegate     (arm only, VSD indirection cell address)
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
@@ -3293,7 +3265,7 @@ BOOL COMDelegate::ValidateCtor(TypeHandle instHnd,
     return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
 }
 
-BOOL COMDelegate::IsSecureDelegate(DELEGATEREF dRef)
+BOOL COMDelegate::IsWrapperDelegate(DELEGATEREF dRef)
 {
     CONTRACTL
     {
@@ -3308,7 +3280,7 @@ BOOL COMDelegate::IsSecureDelegate(DELEGATEREF dRef)
         innerDel = (DELEGATEREF) dRef->GetInvocationList();
         if (innerDel != NULL && innerDel->GetMethodTable()->IsDelegate())
         {
-            // We have a secure delegate
+            // We have a wrapper delegate
             return TRUE;
         }
     }

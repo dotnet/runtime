@@ -423,7 +423,7 @@ cd src\System.Collections.Immutable\tests
 dotnet msbuild /t:BuildAndTest /p:Coverage=true
 ```
 
-If coverage succeeds, the individual report can be found at `$(TestPath)\report\index.htm`.
+If coverage succeeds, the individual report can be found at `$(OutDir)\report\index.htm`.
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 

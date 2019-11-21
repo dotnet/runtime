@@ -155,19 +155,20 @@ T VolatileLoad(T const * pt)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T val;
+    T* pv = &val;
     switch (sizeof(T))
     {
     case 1:
-        val = (typename RemoveVolatile<T>::type)__ldar8 ((unsigned __int8  volatile*)pt);
+        *(unsigned __int8* )pv = __ldar8 ((unsigned __int8   volatile*)pt);
         break;
     case 2:
-        val = (typename RemoveVolatile<T>::type)__ldar16((unsigned __int16 volatile*)pt);
+        *(unsigned __int16*)pv = __ldar16((unsigned __int16  volatile*)pt);
         break;
     case 4:
-        val = (typename RemoveVolatile<T>::type)__ldar32((unsigned __int32 volatile*)pt);
+        *(unsigned __int32*)pv = __ldar32((unsigned __int32  volatile*)pt);
         break;
     case 8:
-        val = (typename RemoveVolatile<T>::type)__ldar64((unsigned __int64 volatile*)pt);
+        *(unsigned __int64*)pv = __ldar64((unsigned __int64  volatile*)pt);
         break;
     default:
         val = *(T volatile const*)pt;
@@ -234,19 +235,20 @@ void VolatileStore(T* pt, T val)
 #pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
+    T* pv = &val;
     switch (sizeof(T))
     {
     case 1:
-        __stlr8 ((unsigned __int8  volatile*)pt, (unsigned __int8) val);
+        __stlr8 ((unsigned __int8  volatile*)pt, *(unsigned __int8* )pv);
         break;
     case 2:
-        __stlr16((unsigned __int16 volatile*)pt, (unsigned __int16)val);
+        __stlr16((unsigned __int16 volatile*)pt, *(unsigned __int16*)pv);
         break;
     case 4:
-        __stlr32((unsigned __int32 volatile*)pt, (unsigned __int32)val);
+        __stlr32((unsigned __int32 volatile*)pt, *(unsigned __int32*)pv);
         break;
     case 8:
-        __stlr64((unsigned __int64 volatile*)pt ,(unsigned __int64)val);
+        __stlr64((unsigned __int64 volatile*)pt, *(unsigned __int64*)pv);
         break;
     default:
         __dmb(_ARM64_BARRIER_ISH);

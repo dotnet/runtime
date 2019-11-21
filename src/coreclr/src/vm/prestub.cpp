@@ -72,6 +72,14 @@ void MethodDesc::Init()
 
 #endif
 
+#define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
+                                        "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n", \
+                                        DBG_ADDR(pCode),                                                                  \
+                                        m_pszDebugClassName,                                                              \
+                                        m_pszDebugMethodName,                                                             \
+                                        m_pszDebugMethodSignature,                                                        \
+                                        GetMemberDef()));
+
 //==========================================================================
 
 PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
@@ -352,30 +360,27 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     if (pConfig->MayUsePrecompiledCode())
     {
 #ifdef FEATURE_READYTORUN
-        // TODO: Remove IsSystem check when IL Stubs are fixed to be non-shared
-        if (this->IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
+        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
         {
-            DynamicMethodDesc *stubMethodDesc = this->AsDynamicMethodDesc();
-            if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
+            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
+            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
+            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
             {
-                ILStubResolver *pStubResolver = stubMethodDesc->GetILStubResolver();
-                if (pStubResolver->IsCLRToNativeInteropStub())
+                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
+                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
-                    MethodDesc *pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
+                    ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
+                    if (pStubResolver->IsCLRToNativeInteropStub())
                     {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != NULL)
+                        MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                        if (pTargetMD != NULL)
                         {
-                            LOG((LF_ZAP, LL_INFO10000,
-                                "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
-                                DBG_ADDR(pCode),
-                                m_pszDebugClassName,
-                                m_pszDebugMethodName,
-                                m_pszDebugMethodSignature,
-                                GetMemberDef()));
-
-                            pConfig->SetNativeCode(pCode, &pCode);
+                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                            if (pCode != NULL)
+                            {
+                                LOG_USING_R2R_CODE(this);
+                                pConfig->SetNativeCode(pCode, &pCode);
+                            }
                         }
                     }
                 }
@@ -430,13 +435,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         pCode = GetPrecompiledR2RCode(pConfig);
         if (pCode != NULL)
         {
-            LOG((LF_ZAP, LL_INFO10000,
-                    "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
-                    DBG_ADDR(pCode),
-                    m_pszDebugClassName,
-                    m_pszDebugMethodName,
-                    m_pszDebugMethodSignature,
-                    GetMemberDef()));
+            LOG_USING_R2R_CODE(this);
 
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
@@ -1371,7 +1370,7 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 #endif //FEATURE_CODE_VERSIONING
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 
 // CreateInstantiatingILStubTargetSig:
 // This method is used to create the signature of the target of the ILStub
@@ -1633,17 +1632,57 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
     _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
-#ifdef FEATURE_STUBS_AS_IL
-    if (pUnboxedMD->RequiresInstMethodTableArg())
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+    StackSArray<ShuffleEntry> portableShuffle;
+    BOOL usePortableShuffle = FALSE;
+    if (!pUnboxedMD->RequiresInstMethodTableArg())
     {
-        pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
+        ShuffleEntry entry;
+        entry.srcofs = ShuffleEntry::SENTINEL;
+        entry.dstofs = 0;
+        portableShuffle.Append(entry);
+        usePortableShuffle = TRUE;
+    }
+    else
+    {
+        usePortableShuffle = GenerateShuffleArrayPortable(pMD, pUnboxedMD, &portableShuffle, ShuffleComputationType::InstantiatingStub);
+    }
+
+    if (usePortableShuffle)
+    {
+        CPUSTUBLINKER sl;
+        _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
+
+        // The shuffle for an unboxing stub of a method that doesn't capture the 
+        // type of the this pointer must be a no-op
+        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1)); 
+
+        sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
+
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
     }
     else
 #endif
     {
-        CPUSTUBLINKER sl;
-        sl.EmitUnboxMethodStub(pUnboxedMD);
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        if (pUnboxedMD->RequiresInstMethodTableArg())
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+        {
+            _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg());
+            pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
+        }
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        else
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
+#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
+        {
+            CPUSTUBLINKER sl;
+            sl.EmitUnboxMethodStub(pUnboxedMD);
+            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        }
+#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
     }
     RETURN pstub;
 }
@@ -1685,15 +1724,29 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
     }
     Stub *pstub = NULL;
 
-#ifdef FEATURE_STUBS_AS_IL
-    pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
-#else
-    CPUSTUBLINKER sl;
-    _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
-    sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+    StackSArray<ShuffleEntry> portableShuffle;
+    if (GenerateShuffleArrayPortable(pMD, pSharedMD, &portableShuffle, ShuffleComputationType::InstantiatingStub))
+    {
+        CPUSTUBLINKER sl;
+        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
+        sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-    pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+    }
+    else
 #endif
+    {
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+        pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
+#else
+        CPUSTUBLINKER sl;
+        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
+        sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
+
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+#endif
+    }
 
     RETURN pstub;
 }
@@ -2025,7 +2078,21 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {
-        pCode = GetStubForInteropMethod(this);
+        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        {
+            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
+            // a stub, we'll use it directly instead and avoid emitting an IL stub.
+            PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+            pCode = GetPrecompiledR2RCode(&config);
+            if (pCode != NULL)
+            {
+                LOG_USING_R2R_CODE(this);
+            }
+        }
+
+        if (pCode == NULL)
+            pCode = GetStubForInteropMethod(this);
+
         GetOrCreatePrecode();
     }
     else if (IsFCall())
@@ -3210,7 +3277,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     if (ctorData.pArg4 != NULL || ctorData.pArg5 != NULL)
                     {
-                        // This should never happen - we should never get collectible or secure delegates here
+                        // This should never happen - we should never get collectible or wrapper delegates here
                         _ASSERTE(false);
                         pDelegateCtor = NULL;
                     }

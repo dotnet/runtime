@@ -3510,7 +3510,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
                 *delegateType = kTrueMulticastDelegate;
 
             if (invocationListMT->IsDelegate())
-                *delegateType = kSecureDelegate;
+                *delegateType = kWrapperDelegate;
 
             // Cases missing: Loader allocator, or dynamic resolver.
             return S_OK;

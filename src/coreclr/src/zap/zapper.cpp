@@ -1282,8 +1282,7 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
 
     // If assembly name (and hence fileName) has invalid characters,
     // GenerateFile() will fail later on.
-    // VerifyBindingString is a Runtime requirement, but StringHasLegalFileNameChars
-    // is a ngen restriction.
+    // StringHasLegalFileNameChars is a ngen restriction.
 
     if (!StringHasLegalFileNameChars(wszAssemblyName))
     {

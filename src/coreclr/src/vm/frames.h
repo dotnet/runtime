@@ -65,11 +65,7 @@
 //    | |                         to either a EE runtime helper function or
 //    | |                         a framed method.
 //    | |
-//    | +-StubHelperFrame       - for instantiating stubs that need to grow stack arguments
-//    | |
-//    | +-SecureDelegateFrame   - represents a call Delegate.Invoke for secure delegate
-//    |   |
-//    |   +-MulticastFrame      - this frame protects arguments to a MulticastDelegate
+//    | +-MulticastFrame        - this frame protects arguments to a MulticastDelegate
 //    |                           Invoke() call while calling each subscriber.
 //    |
 //    | +-FramedMethodFrame     - this abstract frame represents a call to a method
@@ -213,7 +209,6 @@ FRAME_TYPE_NAME(HelperMethodFrame_2OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_3OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 FRAME_ABSTRACT_TYPE_NAME(FramedMethodFrame)
-FRAME_TYPE_NAME(SecureDelegateFrame)
 FRAME_TYPE_NAME(MulticastFrame)
 FRAME_ABSTRACT_TYPE_NAME(UnmanagedToManagedFrame)
 #ifdef FEATURE_COMINTEROP
@@ -230,9 +225,6 @@ FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
-#endif
-#if !defined(_TARGET_X86_)
-FRAME_TYPE_NAME(StubHelperFrame)
 #endif
 #ifdef FEATURE_INTERPRETER
 FRAME_TYPE_NAME(InterpreterFrame)
@@ -1733,31 +1725,20 @@ protected:
     }
 };
 
-//+----------------------------------------------------------------------------
-//
-//  Class:      TPMethodFrame            private
-//
-//  Synopsis:   This frame is pushed onto the stack for calls on transparent
-//              proxy
-//
-//
-//+----------------------------------------------------------------------------
-
 //------------------------------------------------------------------------
-// This represents a call Delegate.Invoke for secure delegate
-// It's only used to gc-protect the arguments during the call.
-// Actually the only reason to have this frame is so a proper
-// Assembly can be reported
+// This represents a call Multicast.Invoke. It's only used to gc-protect
+// the arguments during the iteration.
 //------------------------------------------------------------------------
 
-class SecureDelegateFrame : public TransitionFrame
+class MulticastFrame : public TransitionFrame
 {
-    VPTR_VTABLE_CLASS(SecureDelegateFrame, TransitionFrame)
+    VPTR_VTABLE_CLASS(MulticastFrame, TransitionFrame)
 
     PTR_MethodDesc m_pMD;
     TransitionBlock m_TransitionBlock;
 
 public:
+
     virtual MethodDesc* GetFunction()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1767,20 +1748,14 @@ public:
     virtual TADDR GetTransitionBlock()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return PTR_HOST_MEMBER_TADDR(SecureDelegateFrame, this,
+        return PTR_HOST_MEMBER_TADDR(MulticastFrame, this,
                                      m_TransitionBlock);
-    }
-
-    static BYTE GetOffsetOfDatum()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return offsetof(SecureDelegateFrame, m_pMD);
     }
 
     static int GetOffsetOfTransitionBlock()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return offsetof(SecureDelegateFrame, m_TransitionBlock);
+        return offsetof(MulticastFrame, m_TransitionBlock);
     }
 
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc)
@@ -1789,8 +1764,6 @@ public:
         TransitionFrame::GcScanRoots(fn, sc);
         PromoteCallerStack(fn, sc);
     }
-
-    virtual Assembly *GetAssembly();
 
     int GetFrameType()
     {
@@ -1806,37 +1779,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_NONE;
-    }
-
-    virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch,
-                            TraceDestination *trace, REGDISPLAY *regs);
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(SecureDelegateFrame)
-};
-
-
-//------------------------------------------------------------------------
-// This represents a call Multicast.Invoke. It's only used to gc-protect
-// the arguments during the iteration.
-//------------------------------------------------------------------------
-
-class MulticastFrame : public SecureDelegateFrame
-{
-    VPTR_VTABLE_CLASS(MulticastFrame, SecureDelegateFrame)
-
-    public:
-
-    virtual Assembly *GetAssembly()
-    {
-        WRAPPER_NO_CONTRACT;
-        return Frame::GetAssembly();
-    }
-
-    int GetFrameType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_MULTICAST;
     }
 
     virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch,
@@ -2371,40 +2313,6 @@ public:
 
 typedef VPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
 #endif // FEATURE_READYTORUN
-
-//------------------------------------------------------------------------
-// This frame is used for instantiating stubs when the argument transform
-// is too complex to generate a tail-calling stub.
-//------------------------------------------------------------------------
-#if !defined(_TARGET_X86_)
-class StubHelperFrame : public TransitionFrame
-{
-    friend class CheckAsmOffsets;
-    friend class StubLinkerCPU;
-
-    VPTR_VTABLE_CLASS(StubHelperFrame, TransitionFrame)
-    VPTR_UNIQUE(VPTR_UNIQUE_StubHelperFrame)
-
-    TransitionBlock m_TransitionBlock;
-
-    virtual TADDR GetTransitionBlock()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return PTR_HOST_MEMBER_TADDR(StubHelperFrame, this,
-            m_TransitionBlock);
-    }
-
-    static int GetOffsetOfTransitionBlock()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return offsetof(StubHelperFrame, m_TransitionBlock);
-    }
-
-private:
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(StubHelperFrame)
-};
-#endif // _TARGET_X86_
 
 #ifdef FEATURE_COMINTEROP
 

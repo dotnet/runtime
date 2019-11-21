@@ -1,12 +1,11 @@
 <Project InitialTargets="IncludeProjectReferences">
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
-  <PropertyGroup>
-    <EnableFullCoverageReportTarget>true</EnableFullCoverageReportTarget>
-    <GenerateFullCoverageReport>true</GenerateFullCoverageReport>
+  <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects Condition="'$(Coverage)' == 'true'">true</SerializeProjects>
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -25,10 +24,19 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="GenerateCoverageReport"
+          Condition="'$(EnableCoverageSupport)' == 'true' and '$(SkipCoverageReport)' != 'true'"
+          AfterTargets="TestAllProjects"
+          Inputs="$(CoverageReportInputPath)"
+          Outputs="$(CoverageReportResultsPath)">
+    <Exec Command="$(CoverageReportCommandLine)" />
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects" DependsOnTargets="$(TraversalBuildDependsOn);FilterProjects">
+  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
              Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
@@ -36,7 +44,7 @@
              ContinueOnError="ErrorAndStop" />
 
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
   </Target>
 
   <Target Name="Test" DependsOnTargets="TestAllProjects" />
@@ -57,7 +65,7 @@
              ContinueOnError="ErrorAndContinue" />
 
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
   </Target>
 
 </Project>

@@ -2594,13 +2594,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     }
 #endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 #if defined(_TARGET_ARM_)
-    // A non-standard calling convention using secure delegate invoke is used on ARM, only, but not for secure
+    // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
     // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
     // R4, a callee-saved register, with a special value. Since R4 is a callee-saved register, its value needs
-    // to be preserved. Thus, the VM uses a secure delegate IL stub, which preserves R4 and also sets up R4
-    // correctly for the VSD call. The VM is simply reusing an existing mechanism (secure delegate IL stub)
+    // to be preserved. Thus, the VM uses a wrapper delegate IL stub, which preserves R4 and also sets up R4
+    // correctly for the VSD call. The VM is simply reusing an existing mechanism (wrapper delegate IL stub)
     // to achieve its goal for delegate VSD call. See COMDelegate::NeedsWrapperDelegate() in the VM for details.
-    else if (call->gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV)
+    else if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
     {
         GenTree* arg = call->gtCallThisArg->GetNode();
         if (arg->OperIsLocal())
@@ -2617,7 +2617,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         noway_assert(arg != nullptr);
 
         GenTree* newArg = new (this, GT_ADDR)
-            GenTreeAddrMode(TYP_BYREF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
+            GenTreeAddrMode(TYP_BYREF, arg, nullptr, 0, eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell);
 
         // Append newArg as the last arg
         GenTreeCall::Use** insertionPoint = &call->gtCallArgs;

@@ -2165,8 +2165,7 @@ public: name(int dummy) : base(dummy) {}
 #define VPTR_UNIQUE_BaseDomain                          (100000)
 #define VPTR_UNIQUE_SystemDomain                        (VPTR_UNIQUE_BaseDomain + 1)
 #define VPTR_UNIQUE_ComMethodFrame                      (VPTR_UNIQUE_SystemDomain + 1)
-#define VPTR_UNIQUE_StubHelperFrame                     (VPTR_UNIQUE_ComMethodFrame + 1)
-#define VPTR_UNIQUE_RedirectedThreadFrame               (VPTR_UNIQUE_StubHelperFrame + 1)
+#define VPTR_UNIQUE_RedirectedThreadFrame               (VPTR_UNIQUE_ComMethodFrame + 1)
 #define VPTR_UNIQUE_HijackFrame                         (VPTR_UNIQUE_RedirectedThreadFrame + 1)
 
 #define PTR_TO_TADDR(ptr) ((TADDR)(ptr))

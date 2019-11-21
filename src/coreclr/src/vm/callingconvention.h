@@ -546,6 +546,29 @@ public:
 #endif
     }
 
+#ifdef _TARGET_X86_
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        pLoc->Init();
+
+        int cSlots = (GetArgSize() + 3) / 4;
+        if (!TransitionBlock::IsStackArgumentOffset(argOffset))
+        {
+            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
+            _ASSERTE(cSlots == 1);
+            pLoc->m_cGenReg = cSlots;
+        }
+        else
+        {
+            pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
+            pLoc->m_cStack = cSlots;
+        }
+    }
+#endif
+
 #ifdef _TARGET_ARM_
     // Get layout information for the argument that the ArgIterator is currently visiting.
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
@@ -643,7 +666,7 @@ public:
     }
 #endif // _TARGET_ARM64_
 
-#if defined(_TARGET_AMD64_) && defined(UNIX_AMD64_ABI)
+#if defined(_TARGET_AMD64_)
     // Get layout information for the argument that the ArgIterator is currently visiting.
     void GetArgLoc(int argOffset, ArgLocDesc* pLoc)
     {
@@ -655,7 +678,6 @@ public:
             *pLoc = m_argLocDescForStructInRegs;
             return;
         }
-#endif // UNIX_AMD64_ABI
 
         if (argOffset == TransitionBlock::StructInRegsOffset)
         {
@@ -664,27 +686,47 @@ public:
             _ASSERTE(false);
             return;
         }
+#endif // UNIX_AMD64_ABI
 
         pLoc->Init();
 
+#if defined(UNIX_AMD64_ABI)
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
             // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
             pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 16;
             pLoc->m_cFloatReg = 1;
         }
-        else if (!TransitionBlock::IsStackArgumentOffset(argOffset))
+        else 
+#endif // UNIX_AMD64_ABI
+        if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
-            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = 1;
+#if !defined(UNIX_AMD64_ABI)
+            // On Windows x64, we re-use the location in the transition block for both the integer and floating point registers
+            if ((m_argType == ELEMENT_TYPE_R4) || (m_argType == ELEMENT_TYPE_R8))
+            {
+                pLoc->m_idxFloatReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
+                pLoc->m_cFloatReg = 1;
+            }
+            else
+#endif
+            {
+                pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
+                pLoc->m_cGenReg = 1;
+            }
         }
         else
         {
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
-            pLoc->m_cStack = (GetArgSize() + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
+            int argOnStackSize;
+            if (IsArgPassedByRef())
+                argOnStackSize = STACK_ELEM_SIZE;
+            else
+                argOnStackSize = GetArgSize();
+            pLoc->m_cStack = (argOnStackSize + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
         }
     }
-#endif // _TARGET_AMD64_ && UNIX_AMD64_ABI
+#endif // _TARGET_AMD64_
 
 protected:
     DWORD               m_dwFlags;              // Cached flags

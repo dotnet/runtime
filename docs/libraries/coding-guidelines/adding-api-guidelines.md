@@ -1,7 +1,7 @@
 Recommended reading to better understand this document:
 [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/faq.md)
-| [Project-Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md)
-| [Package-Projects](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/package-projects.md)
+| [Project-Guidelines](project-guidelines.md)
+| [Package-Projects](package-projects.md)
 
 # Add APIs
 - [Determining versions and targets](#determining-versions-and-targets)
@@ -31,7 +31,7 @@ the implementation without compat concerns in future releases.
 - If the library is not part of netstandard
   - If package dependencies are changed then your target framework should be the minimum target framework that supports all your package dependencies.
   - If your package depends directly on runtime changes or library changes that ship with the runtime (i.e. System.Private.CoreLib) then your target framework should be `netstandard`.
-  - When targeting `netstandardX` your new API must be supported by all target frameworks that map to that netstandard version (see [mapping table](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md#mapping-the-net-platform-standard-to-platforms)). If not bump the version to the minimum netstandard version that supports this API on all frameworks that map to that netstandard version.
+  - When targeting `netstandardX` your new API must be supported by all target frameworks that map to that netstandard version (see [mapping table][net-standard table]). If not bump the version to the minimum netstandard version that supports this API on all frameworks that map to that netstandard version.
 
 ### Determine library version
 - If targeting netstandard
@@ -49,13 +49,13 @@ the implementation without compat concerns in future releases.
 
 **Update pkg**
  - If changing the target framework
-    - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md#nuget)). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
+    - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings][net-standard table]). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
   - If assembly or package version is updated the package index needs to be updated by running
     `dotnet msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
 
 **Update tests**
   - Set `TargetGroup` which will generally match the `TargetGroup` in the src library build configuration. (ex: [System.Runtime\tests\Configurations.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/tests/Configurations.props#L3))
-  - Add new test code following [conventions](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
+  - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
   - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
 
 ## FAQ
@@ -81,3 +81,6 @@ _**What to do if you are moving types down into a lower contract?**_
 If you are moving types down you need to version both contracts at the same time and temporarily use
 project references across the projects. You also need to be sure to leave type-forwards in the places
 where you removed types in order to maintain back-compat.
+
+
+[net-standard table]: https://docs.microsoft.com/en-us/dotnet/standard/net-standard#net-implementation-support

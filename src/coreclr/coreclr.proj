@@ -18,7 +18,8 @@
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build.sh</_CoreClrBuildScript>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <Target Name="Restore" />

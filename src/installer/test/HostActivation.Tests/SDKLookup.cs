@@ -388,7 +388,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("It was not possible to find any installed .NET Core SDKs")
-                .And.HaveStdErrContaining("Did you mean to run .NET Core SDK commands? Install a .NET Core SDK from");
+                .And.HaveStdErrContaining("Install a .NET Core SDK from");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
@@ -423,7 +423,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
         {
             WriteEmptyGlobalJson();
-            
+
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0", "9999.0.3-dummy.9", "9999.0.3-dummy.10");
 
@@ -1291,7 +1291,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
         }
-        
+
         private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
     }
 }

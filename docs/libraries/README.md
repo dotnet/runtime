@@ -28,8 +28,8 @@ Project Docs
 - [Developer Guide](project-docs/developer-guide.md)
 - [Performance Testing](project-docs/performance-tests.md)
 - [Contributing to CoreFX](project-docs/contributing.md)
-- [Contributing to .NET Core](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md)
-- [Contributing Workflow](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md)
+- [Contributing to .NET Core](../coreclr/project-docs/contributing.md)
+- [Contributing Workflow](../coreclr/project-docs/contributing-workflow.md)
 - [Issue Guide](project-docs/issue-guide.md)
 - [Branching Guide](project-docs/branching-guide.md)
 - [API Review Process](project-docs/api-review-process.md)
@@ -65,8 +65,8 @@ Building from Source
 Other Information
 =================
 
-- [CoreCLR Repo documentation](https://github.com/dotnet/coreclr/tree/master/Documentation)
+- [CoreCLR Repo documentation](../coreclr)
 - [Porting to .NET Core](project-docs/support-dotnet-core-instructions.md)
-- [.NET Standards (Ecma)](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/dotnet-standards.md)
+- [.NET Standards (Ecma)](../coreclr/project-docs/dotnet-standards.md)
 - [MSDN Entry for the CLR](http://msdn.microsoft.com/library/8bs2ecf4.aspx)
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
