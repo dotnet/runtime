@@ -411,7 +411,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 		/* Both the caller and the callee pass the vtype ret address in r8 (System V) and RCX or RDX (Windows) */
 		g_assert (gcinfo->ret.storage == ArgValuetypeAddrInIReg || gcinfo->ret.storage == ArgGsharedvtVariableInReg);
-		add_to_map (map, map_reg (cinfo->ret.reg), map_reg (cinfo->ret.reg));
+		add_to_map (map, map_reg (caller_cinfo->ret.reg), map_reg (callee_cinfo->ret.reg));
 	}
 
 	info = mono_domain_alloc0 (mono_domain_get (), sizeof (GSharedVtCallInfo) + (map->len * sizeof (int)));

@@ -2217,6 +2217,30 @@ public class Tests
 		var s = new AStruct () { a = 1, b = 2 };
 		return iface.foo<AStruct> (s);
 	}
+
+	interface IFaceOpenDel {
+		object AMethod<T> ();
+	}
+
+	class ClassOpenDel : IFaceOpenDel {
+		public Nullable<int> field;
+
+		public Nullable<int> getField () {
+			return field;
+		}
+
+		public object AMethod<T> () {
+			var d = (Func<ClassOpenDel, T>)Delegate.CreateDelegate (typeof (Func<ClassOpenDel, T>), typeof (ClassOpenDel).GetMethod ("getField"));
+			return d (this);
+		}
+	}
+
+	// Open instance delegate returning a gsharedvt value
+	public static int test_0_open_delegate () {
+		IFaceOpenDel iface = new ClassOpenDel () { field = 42 };
+		var res = (Nullable<int>)iface.AMethod<Nullable<int>> ();
+		return res == 42 ? 0 : 1;
+	}
 }
 
 // #13191
