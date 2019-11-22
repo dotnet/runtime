@@ -817,6 +817,33 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
             }
 
+            if (metadataType.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
+
+            // Check that all virtual methods are defined
+            foreach(MethodDesc virtualMd in metadataType.EnumAllVirtualSlots())
+            {
+                if (virtualMd.IsAbstract)
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+                }
+            }
+
+            // Check that all methods of the interfaces that the type implements are defined
+            foreach (TypeDesc interfaceTd in metadataType.RuntimeInterfaces)
+            {
+                foreach (MethodDesc md in interfaceTd.GetMethods())
+                {
+                    MethodDesc mdImpl = metadataType.ResolveInterfaceMethodToVirtualMethodOnType(md);
+                    if (mdImpl == null)
+                    {
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+                    }
+                }
+            }
+
             if (pHasSideEffects != null)
             {
                 *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
@@ -907,6 +934,11 @@ namespace Internal.JitInterface
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
 
             // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
             // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at

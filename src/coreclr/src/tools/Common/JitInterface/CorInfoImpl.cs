@@ -1357,6 +1357,27 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(type);
             }
 #endif
+            // Check that all methods of the interfaces that the type implements are defined
+            if (!type.IsArray)
+            {
+                foreach (TypeDesc interfaceTd in type.RuntimeInterfaces)
+                {
+                    foreach (MethodDesc md in interfaceTd.GetMethods())
+                    {
+                        MethodDesc mdImpl = type.ResolveInterfaceMethodToVirtualMethodOnType(md);
+                        if (mdImpl == null)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, md);
+                        }
+                    }
+                }
+            }
+
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
             return (uint)classSize.AsInt;
         }
 
