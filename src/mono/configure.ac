@@ -7,7 +7,7 @@
 AC_INIT(mono, [6.9.0],
         [https://github.com/mono/mono/issues/new])
 
-AC_CONFIG_SRCDIR([README.md])
+AC_CONFIG_SRCDIR([Makefile.am])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
@@ -2031,13 +2031,8 @@ if test "x$support_boehm" = "xyes"; then
 	LIBGC_CPPFLAGS=
 	LIBGC_LIBS=
 	LIBGC_STATIC_LIBS=
-	libgc_dir=
 	case "x$libgc" in
 		xincluded)
-			if test "x$support_boehm" = "xyes"; then
-				libgc_dir=external/bdwgc
-			fi
-
 			LIBGC_CPPFLAGS='-I$(top_srcdir)/external/bdwgc/include -I$(top_srcdir)/external/bdwgc/libatomic_ops/src'
 			LIBGC_LIBS='$(top_builddir)/external/bdwgc/libgc.la'
 			LIBGC_STATIC_LIBS='$(top_builddir)/external/bdwgc/libgc-static.la'
@@ -2085,7 +2080,6 @@ if test "x$support_boehm" = "xyes"; then
 	AC_SUBST(LIBGC_CPPFLAGS)
 	AC_SUBST(LIBGC_LIBS)
 	AC_SUBST(LIBGC_STATIC_LIBS)
-	AC_SUBST(libgc_dir)
 	AC_SUBST(BOEHM_DEFINES)
 
 fi
@@ -2216,13 +2210,9 @@ if test x$host_win32 = xno; then
 	dnl ******************************************************************
 	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no      build the IKVM JNI interface library (defaults to yes)],[with_ikvm_native=$withval],[with_ikvm_native=$ikvm_native])
 
-	ikvm_native_dir=
 	if test x$with_ikvm_native = xyes; then
-		ikvm_native_dir=ikvm-native
 		jdk_headers_found="IKVM Native"
 	fi
-
-	AC_SUBST(ikvm_native_dir)
 
 	AC_CHECK_HEADERS(execinfo.h)
 
@@ -5964,13 +5954,6 @@ fi
 
 AM_CONDITIONAL(BTLS_ANDROID, test x$btls_android = xyes)
 
-if test x$DISABLE_MCS_DOCS = xyes; then
-   docs_dir=""
-else
-   docs_dir=docs
-fi
-AC_SUBST(docs_dir)
-
 ## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
 AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_build != xno])
 AM_CONDITIONAL(BUILD_SUPPORT, [test x$enable_support_build != xno])
@@ -6100,166 +6083,192 @@ AC_SUBST(mono_cfg_dir)
 
 AC_SUBST(CSC)
 
-AC_CONFIG_FILES([po/mcs/Makefile.in])
+if test "x$with_core" != "xonly"; then
 
-AC_CONFIG_FILES([acceptance-tests/microbench-perf.sh],[chmod +x acceptance-tests/microbench-perf.sh])
-AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
-AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
-AC_CONFIG_FILES([runtime/bin/mono-hang-watchdog],[chmod +x runtime/bin/mono-hang-watchdog])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/1.0
+		cd runtime/etc/mono/1.0
+		rm -f machine.config
+		$LN_S $reldir/data/net_1_1/machine.config machine.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/1.0
-    cd runtime/etc/mono/1.0
-    rm -f machine.config
-    $LN_S $reldir/data/net_1_1/machine.config machine.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/machine.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/2.0
+		cd runtime/etc/mono/2.0
+		rm -f machine.config
+		$LN_S $reldir/data/net_2_0/machine.config machine.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/machine.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/2.0
-    cd runtime/etc/mono/2.0
-    rm -f machine.config
-    $LN_S $reldir/data/net_2_0/machine.config machine.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/web.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/2.0
+		cd runtime/etc/mono/2.0
+		rm -f web.config
+		$LN_S $reldir/data/net_2_0/web.config web.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/web.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/2.0
-    cd runtime/etc/mono/2.0
-    rm -f web.config
-    $LN_S $reldir/data/net_2_0/web.config web.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/browscap.ini],
+	[   depth=../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/
+		cd runtime/etc/mono/
+		rm -f browscap.ini
+		$LN_S $reldir/data/browscap.ini browscap.ini
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/browscap.ini],
-[   depth=../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/
-    cd runtime/etc/mono/
-    rm -f browscap.ini
-    $LN_S $reldir/data/browscap.ini browscap.ini
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
+	[   depth=../../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/2.0/Browsers/
+		cd runtime/etc/mono/2.0/Browsers
+		rm -f Compat.browser
+		$LN_S $reldir/data/Browsers/Compat.browser Compat.browser
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
-[   depth=../../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/2.0/Browsers/
-    cd runtime/etc/mono/2.0/Browsers
-    rm -f Compat.browser
-    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/Browsers/Compat.browser],
+	[   depth=../../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.0/Browsers/
+		cd runtime/etc/mono/4.0/Browsers
+		rm -f Compat.browser
+		$LN_S $reldir/data/Browsers/Compat.browser Compat.browser
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/Browsers/Compat.browser],
-[   depth=../../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0/Browsers/
-    cd runtime/etc/mono/4.0/Browsers
-    rm -f Compat.browser
-    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/Browsers/Compat.browser],
+	[   depth=../../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.5/Browsers/
+		cd runtime/etc/mono/4.5/Browsers
+		rm -f Compat.browser
+		$LN_S $reldir/data/Browsers/Compat.browser Compat.browser
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/Browsers/Compat.browser],
-[   depth=../../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.5/Browsers/
-    cd runtime/etc/mono/4.5/Browsers
-    rm -f Compat.browser
-    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/machine.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.0
+		cd runtime/etc/mono/4.0
+		rm -f machine.config
+		$LN_S $reldir/data/net_4_0/machine.config machine.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/machine.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0
-    cd runtime/etc/mono/4.0
-    rm -f machine.config
-    $LN_S $reldir/data/net_4_0/machine.config machine.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/web.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.0
+		cd runtime/etc/mono/4.0
+		rm -f web.config
+		$LN_S $reldir/data/net_4_0/web.config web.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/web.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0
-    cd runtime/etc/mono/4.0
-    rm -f web.config
-    $LN_S $reldir/data/net_4_0/web.config web.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/machine.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.5
+		cd runtime/etc/mono/4.5
+		rm -f machine.config
+		$LN_S $reldir/data/net_4_5/machine.config machine.config
+		cd $depth
+	],[LN_S='$LN_S'])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/machine.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.5
-    cd runtime/etc/mono/4.5
-    rm -f machine.config
-    $LN_S $reldir/data/net_4_5/machine.config machine.config
-    cd $depth
-],[LN_S='$LN_S'])
+	AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
+	[   depth=../../../..
+		case $srcdir in
+		[[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+		.) reldir=$depth ;;
+		*) reldir=$depth/$srcdir ;;
+		esac
+		$ac_aux_dir/install-sh -d runtime/etc/mono/4.5
+		cd runtime/etc/mono/4.5
+		rm -f web.config
+		$LN_S $reldir/data/net_4_5/web.config web.config
+		cd $depth
+	],[LN_S='$LN_S'])
+fi
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/4.5
-    cd runtime/etc/mono/4.5
-    rm -f web.config
-    $LN_S $reldir/data/net_4_5/web.config web.config
-    cd $depth
-],[LN_S='$LN_S'])
+# Top level Makefile.am subdirs
+if test "x$with_core" = "xonly"; then
+	MONO_SUBDIRS="mk llvm mono"
+else
+	if test "x$support_boehm" = "xyes" -a "x$libgc" = "xincluded"; then
+		mono_subdirs_libgc=external/bdwgc
+	fi
+
+	if test x$enable_support_build != xno; then
+		mono_subdirs_support=support
+	fi
+
+	if test x$cross_compiling = xno; then
+		# Some tools might not build when cross-compiling
+		mono_subdirs_tools=tools
+	fi
+
+	if test x$DISABLE_MCS_DOCS != xyes; then
+		mono_subdirs_docs=docs
+	fi
+
+	if test x$with_ikvm_native = xyes; then
+		mono_subdirs_ikvm_native=ikvm-native
+	fi
+
+	MONO_SUBDIRS="mk po $mono_subdirs_libgc llvm mono $mono_subdirs_ikvm_native $mono_subdirs_support data runtime scripts man samples $mono_subdirs_tools $mono_subdirs_docs msvc acceptance-tests"
+fi
+
+AC_SUBST(MONO_SUBDIRS)
 
 AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/echo "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/lock_old_archive_extraction=no/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
@@ -6699,95 +6708,7 @@ if test "x$with_core" != "xonly"; then
 	(cd $srcdir && scripts/update_submodules.sh)
 fi
 
-AC_OUTPUT([
-Makefile
-mono-uninstalled.pc
-acceptance-tests/Makefile
-llvm/Makefile
-scripts/mono-find-provides
-scripts/mono-find-requires
-mk/Makefile
-mono/Makefile
-mono/btls/Makefile
-mono/native/Makefile
-mono/utils/Makefile
-mono/utils/jemalloc/Makefile
-mono/metadata/Makefile
-mono/zlib/Makefile
-mono/dis/Makefile
-mono/cil/Makefile
-mono/arch/Makefile
-mono/arch/x86/Makefile
-mono/arch/amd64/Makefile
-mono/arch/ppc/Makefile
-mono/arch/sparc/Makefile
-mono/arch/s390x/Makefile
-mono/arch/arm/Makefile
-mono/arch/arm64/Makefile
-mono/arch/mips/Makefile
-mono/arch/riscv/Makefile
-mono/sgen/Makefile
-mono/native/platform-type.c
-mono/native/platform-type-compat.c
-mono/native/platform-type-unified.c
-mono/tests/Makefile
-mono/tests/assembly-load-reference/Makefile
-mono/tests/tests-config
-mono/tests/gc-descriptors/Makefile
-mono/tests/testing_gac/Makefile
-mono/tests/fullaot-mixed/Makefile
-mono/tests/llvmonly-mixed/Makefile
-mono/unit-tests/Makefile
-mono/benchmark/Makefile
-mono/mini/Makefile
-mono/profiler/Makefile
-mono/eglib/Makefile
-mono/eglib/eglib-config.h
-mono/eglib/test/Makefile
-m4/Makefile
-ikvm-native/Makefile
-scripts/Makefile
-man/Makefile
-docs/Makefile
-data/Makefile
-data/net_2_0/Makefile
-data/net_4_0/Makefile
-data/net_4_5/Makefile
-data/net_2_0/Browsers/Makefile
-data/net_4_0/Browsers/Makefile
-data/net_4_5/Browsers/Makefile
-data/mint.pc
-data/mono-2.pc
-data/monosgen-2.pc
-data/mono.pc
-data/mono-cairo.pc
-data/mono-options.pc
-data/mono-lineeditor.pc
-data/monodoc.pc
-data/dotnet.pc
-data/dotnet35.pc
-data/wcf.pc
-data/cecil.pc
-data/system.web.extensions_1.0.pc
-data/system.web.extensions.design_1.0.pc
-data/system.web.mvc.pc
-data/system.web.mvc2.pc
-data/system.web.mvc3.pc
-data/aspnetwebstack.pc
-data/reactive.pc
-samples/Makefile
-support/Makefile
-data/config
-tools/Makefile
-tools/locale-builder/Makefile
-tools/sgen/Makefile
-tools/pedump/Makefile
-tools/mono-hang-watchdog/Makefile
-runtime/Makefile
-msvc/Makefile
-po/Makefile
-netcore/corerun/Makefile
-])
+AC_MONO_OUTPUT()
 
 if test x$host_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names
