@@ -74,7 +74,7 @@ jobs:
 
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - coreFxDownloadPath: '$(binTestsPath)/CoreFX'
+      - coreFxDownloadPath: ${{ format('{0}/artifacts/bin/runtime/netcoreapp-{1}-{2}-{3}', variables['Build.SourcesDirectory'], parameters.osGroup, parameters.buildConfig, parameters.archType) }}
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - localCoreFxArg: ' localcorefxpath $(coreFxDownloadPath)'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
