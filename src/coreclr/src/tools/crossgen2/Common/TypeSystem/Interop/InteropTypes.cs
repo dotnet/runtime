@@ -108,6 +108,36 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "ArgIterator");
         }
 
+        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ByReference`1");
+        }
+
+        public static bool IsSystemNullable(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Nullable`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector64T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector128`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector256T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector256`1");
+        }
+
+        public static bool IsSystemNumericsVectorT(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Numerics", "Vector`1");
+        }
+
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)
         {
             while (type != null)

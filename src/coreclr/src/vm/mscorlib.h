@@ -499,6 +499,14 @@ DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMax
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
 DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_Str_AssemblyBase_Bool_UInt_RetIntPtr)
 
+DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
+DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
+DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
+
+#ifndef CROSSGEN_COMPILE
+DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
+#endif // !CROSSGEN_COMPILE
+
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 

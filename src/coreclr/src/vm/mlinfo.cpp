@@ -2796,7 +2796,25 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
 #endif // FEATURE_COMINTEROP
 
-                if (m_pMT->HasInstantiation())
+                // Blittable generics are allowed to be marshalled with the following exceptions:
+                // * ByReference<T>: This represents an interior pointer and is not actually blittable
+                // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+                // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+                // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+                // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
+
+                if (m_pMT->HasInstantiation() && (!m_pMT->IsBlittable()
+                    || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                    || m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+#ifndef CROSSGEN_COMPILE
+                    // Crossgen scenarios block Vector<T> from even being loaded
+                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+#endif // !CROSSGEN_COMPILE
+                    ))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
@@ -2916,7 +2934,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (m_ms != MARSHAL_SCENARIO_WINRT)
 #endif // FEATURE_COMINTEROP
             {
-                if (thElement.HasInstantiation())
+                if (thElement.HasInstantiation() && !thElement.IsBlittable())
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
