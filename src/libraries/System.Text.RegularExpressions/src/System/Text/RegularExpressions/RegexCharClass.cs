@@ -529,22 +529,37 @@ namespace System.Text.RegularExpressions
 
         public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
-            if (s_definedCategories.TryGetValue(categoryName, out string? category) && !categoryName.Equals(InternalRegexIgnoreCase))
+            if (s_definedCategories.TryGetValue(categoryName, out string? category) &&
+                !categoryName.Equals(InternalRegexIgnoreCase))
             {
                 if (caseInsensitive)
                 {
                     if (categoryName.Equals("Ll") || categoryName.Equals("Lu") || categoryName.Equals("Lt"))
+                    {
                         // when RegexOptions.IgnoreCase is specified then {Ll}, {Lu}, and {Lt} cases should all match
                         category = s_definedCategories[InternalRegexIgnoreCase];
+                    }
                 }
 
+                StringBuilder categories = EnsureCategories();
                 if (invert)
-                    category = NegateCategory(category); // negate the category
-
-                EnsureCategories().Append(category);
+                {
+                    // Negate category
+                    for (int i = 0; i < category.Length; i++)
+                    {
+                        short ch = (short)category[i];
+                        categories.Append(unchecked((char)-ch));
+                    }
+                }
+                else
+                {
+                    categories.Append(category);
+                }
             }
             else
+            {
                 AddSet(SetFromProperty(categoryName, invert, pattern, currentPos));
+            }
         }
 
         private void AddCategory(string category)
@@ -995,21 +1010,6 @@ namespace System.Text.RegularExpressions
                 }
                 return answer;
             }
-        }
-
-        private static string? NegateCategory(string category)
-        {
-            if (category == null)
-                return null;
-
-            return string.Create(category.Length, category, (span, _category) =>
-            {
-                for (int i = 0; i < _category.Length; i++)
-                {
-                    short ch = (short)_category[i];
-                    span[i] = unchecked((char)-ch);
-                }
-            });
         }
 
         public static RegexCharClass Parse(string charClass)
