@@ -234,6 +234,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (intrin.id)
         {
+            case NI_AdvSimd_BitwiseSelect:
+                if (targetReg == op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
+                }
+                else if (targetReg == op2Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bif, emitSize, targetReg, op3Reg, op1Reg, opt);
+                }
+                else if (targetReg == op3Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bit, emitSize, targetReg, op2Reg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
+                }
+                break;
+
             case NI_Aes_Decrypt:
             case NI_Aes_Encrypt:
                 if (targetReg != op1Reg)
