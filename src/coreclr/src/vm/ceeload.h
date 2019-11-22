@@ -2053,9 +2053,6 @@ protected:
     // concurrently with other uses of the reader (i.e. not shutdown/unload time)
     void ReleaseISymUnmanagedReader(void);
 
-    virtual void ReleaseILData();
-
-
 #endif // DACCESS_COMPILE
 
     // IL stub cache
@@ -3307,8 +3304,6 @@ public:
     static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
-
-    void ReleaseILData();
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
     // Overides functions to access sections

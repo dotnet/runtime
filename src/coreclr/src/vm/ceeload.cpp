@@ -3339,15 +3339,6 @@ void Module::StartUnload()
 }
 #endif // CROSSGEN_COMPILE
 
-void Module::ReleaseILData(void)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ReleaseISymUnmanagedReader();
-}
-
-
-
 //---------------------------------------------------------------------------------------
 //
 // Simple wrapper around calling IsAfContentType_WindowsRuntime() against the flags
@@ -13225,18 +13216,6 @@ void ReflectionModule::ResumeMetadataCapture()
     CaptureModuleMetaDataToMemory();
 }
 
-void ReflectionModule::ReleaseILData()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (m_pISymUnmanagedWriter)
-    {
-        m_pISymUnmanagedWriter->Release();
-        m_pISymUnmanagedWriter = NULL;
-    }
-
-    Module::ReleaseILData();
-}
 #endif // !CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

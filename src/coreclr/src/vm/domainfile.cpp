@@ -109,47 +109,6 @@ LoaderAllocator * DomainFile::GetLoaderAllocator()
 
 #ifndef DACCESS_COMPILE
 
-void DomainFile::ReleaseFiles()
-{
-    WRAPPER_NO_CONTRACT;
-    Module* pModule=GetCurrentModule();
-    if(pModule)
-        pModule->StartUnload();
-
-    if (m_pFile)
-        m_pFile->ReleaseIL();
-    if(m_pOriginalFile)
-        m_pOriginalFile->ReleaseIL();
-
-    if(pModule)
-        pModule->ReleaseILData();
-}
-
-BOOL DomainFile::TryEnsureActive()
-{
-    CONTRACT(BOOL)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    BOOL success = TRUE;
-
-    EX_TRY
-      {
-          EnsureActive();
-      }
-    EX_CATCH
-      {
-          success = FALSE;
-      }
-    EX_END_CATCH(RethrowTransientExceptions);
-
-    RETURN success;
-}
-
 // Optimization intended for EnsureLoadLevel only
 #include <optsmallperfcritical.h>
 void DomainFile::EnsureLoadLevel(FileLoadLevel targetLevel)
@@ -1260,22 +1219,6 @@ DomainAssembly::~DomainAssembly()
     {
         delete m_pAssembly;
     }
-}
-
-void DomainAssembly::ReleaseFiles()
-{
-    STANDARD_VM_CONTRACT;
-
-    if(m_pAssembly)
-        m_pAssembly->StartUnload();
-    ModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
-    {
-        if (i.GetDomainFile() != this)
-             i.GetDomainFile()->ReleaseFiles();
-    }
-
-    DomainFile::ReleaseFiles();
 }
 
 void DomainAssembly::SetAssembly(Assembly* pAssembly)
