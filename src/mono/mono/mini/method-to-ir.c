@@ -8961,8 +8961,8 @@ calli_end:
 					EMIT_NEW_ICONST (cfg, ins, is_eq ? 0 : 1);
 					ins->type = STACK_I4;
 					*sp++ = ins;
+					break;
 				}
-				break;
 			}
 
 			gboolean is_true;
