@@ -8938,6 +8938,33 @@ calli_end:
 				}
 			}
 
+			// Optimize
+			// 
+			//    box
+			//    ldnull
+			//    ceq (or cgt.un)
+			//    
+			// to just
+			// 
+			//    ldc.i4.0 (or 1)
+			guchar* ldnull_ip;
+			if ((ldnull_ip = il_read_op (next_ip, end, CEE_LDNULL, MONO_CEE_LDNULL)) && ip_in_bb (cfg, cfg->cbb, ldnull_ip)) {
+				gboolean is_eq = FALSE, is_neq = FALSE;
+				if (ip = il_read_op (ldnull_ip, end, CEE_PREFIX1, MONO_CEE_CEQ))
+					is_eq = TRUE;
+				else if (ip = il_read_op (ldnull_ip, end, CEE_PREFIX1, MONO_CEE_CGT_UN))
+					is_neq = TRUE;
+
+				if ((is_eq || is_neq) && ip_in_bb (cfg, cfg->cbb, ip)) {
+					next_ip = ip;
+					il_op = is_eq ? CEE_LDC_I4_0 : CEE_LDC_I4_1;
+					EMIT_NEW_ICONST (cfg, ins, is_eq ? 0 : 1);
+					ins->type = STACK_I4;
+					*sp++ = mono_decompose_opcode (cfg, ins);
+				}
+				break;
+			}
+
 			gboolean is_true;
 
 			// FIXME: LLVM can't handle the inconsistent bb linking
