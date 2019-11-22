@@ -151,11 +151,11 @@ namespace SslStress
                 if (!showAggregatesOnly)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkBlue;
-                    Console.Write("\tTx: ");
+                    Console.Write("\tCurr. Tx: ");
                     Console.ResetColor();
                     Console.Write(FmtBytes(counters.Select(c => c.current.BytesWritten).Sum()));
                     Console.ForegroundColor = ConsoleColor.DarkMagenta;
-                    Console.Write($"\tRx: ");
+                    Console.Write($"\tCurr. Rx: ");
                     Console.ResetColor();
                     Console.Write(FmtBytes(counters.Select(c => c.current.BytesRead).Sum()));
                 }

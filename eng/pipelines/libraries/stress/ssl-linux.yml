@@ -1,0 +1,43 @@
+trigger: none
+
+schedules:
+- cron: "0 13 * * *" # 1PM UTC => 5 AM PST
+  displayName: HttpStress nightly run
+  branches:
+    include:
+    - master
+
+pool:
+  name: Hosted Ubuntu 1604
+
+variables:
+  - template: ../variables.yml
+  - name: httpStressProject
+    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
+  - name: sslStressProject
+    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress/
+  - name: sdkBaseImage
+    value: sdk-corefx-current
+  - name: sslStressImage
+    value: sslstress
+
+steps:
+- checkout: self
+  clean: true
+  fetchDepth: 0
+  lfs: false
+
+- bash: |
+    docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) --build-arg BUILD_SCRIPT_NAME=$(buildScriptFileName) -f $(HttpStressProject)corefx.Dockerfile .
+  displayName: Build Corefx
+
+- bash: |
+    docker build -t $(sslStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(sslStressProject)/Dockerfile src/libraries
+  displayName: Build HttpStress
+
+- bash: |
+    cd '$(HttpStressProject)'
+    docker-compose up --abort-on-container-exit --no-color
+  displayName: Run HttpStress
+  env:
+    HTTPSTRESS_IMAGE: $(httpStressImage)

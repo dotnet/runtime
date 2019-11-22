@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SslStress.Utils;
 
@@ -129,7 +130,7 @@ namespace SslStress
             {
                 RunMode = parseResult.ValueForOption<RunMode>("-m"),
                 MaxConnections = parseResult.ValueForOption<int>("-n"),
-                ServerEndpoint = IPEndPoint.Parse(parseResult.ValueForOption<string>("-e")),
+                ServerEndpoint = ParseEndpoint(parseResult.ValueForOption<string>("-e")),
                 MaxExecutionTime = parseResult.ValueForOption<double?>("-t")?.Pipe(TimeSpan.FromMinutes),
                 MaxBufferLength = parseResult.ValueForOption<int>("-b"),
                 MinConnectionLifetime = TimeSpan.FromSeconds(parseResult.ValueForOption<double>("-l")),
@@ -153,6 +154,35 @@ namespace SslStress
             {
                 Console.WriteLine();
                 new HelpBuilder(new SystemConsole()).Write(cmd);
+            }
+
+            static IPEndPoint ParseEndpoint(string value)
+            {
+                try
+                {
+                    return IPEndPoint.Parse(value);
+                }
+                catch (FormatException)
+                {
+                    // support hostname:port endpoints
+                    Match match = Regex.Match(value, "^([^:]+):([0-9]+)$");
+                    if (match.Success)
+                    {
+                        string hostname = match.Groups[1].Value;
+                        int port = int.Parse(match.Groups[2].Value);
+                        switch(hostname)
+                        {
+                            case "+":
+                            case "*":
+                                return new IPEndPoint(IPAddress.Any, port);
+                            default:
+                                IPAddress[] addresses = Dns.GetHostAddresses(hostname);
+                                return new IPEndPoint(addresses[0], port);
+                        }
+                    }
+
+                    throw;
+                }
             }
         }
     }
