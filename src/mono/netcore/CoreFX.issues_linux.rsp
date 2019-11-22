@@ -41,3 +41,6 @@
 -nomethod System.Tests.DoubleTests.ToStringRoundtrip_R
 -nomethod System.Reflection.Tests.BindingFlagsDoNotWrapTests.*
 -nomethod System.Tests.TypeTests.FilterName_Invoke_DelegateFiltersExpectedMembers
+
+# fails on Interpreter
+-nomethod System.Runtime.CompilerServices.Tests.RuntimeFeatureTests.DynamicCode_Jit
