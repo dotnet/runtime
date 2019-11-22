@@ -330,7 +330,7 @@ bool GCToOSInterface::Initialize()
 
     if (st == 0)
     {
-        for (size_t i = 0; i < g_totalCpuCount; i++)
+        for (size_t i = 0; i < CPU_SETSIZE; i++)
         {
             if (CPU_ISSET(i, &cpuSet))
             {

@@ -665,9 +665,6 @@ typedef enum _TimeConversionConstants
 bool
 ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
-int
-GetMaxCpuIndex();
-
 #ifdef __APPLE__
 bool
 GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength);
