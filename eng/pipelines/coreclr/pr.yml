@@ -61,3 +61,4 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
+      useLiveLibraries: true
