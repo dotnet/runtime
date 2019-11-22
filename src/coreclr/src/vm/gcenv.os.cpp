@@ -1007,7 +1007,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     // Locate heap_number-th available processor
     uint16_t procIndex;
     size_t cnt = heap_number;
-    for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
+    for (uint16_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
     {
         if (g_processAffinitySet.Contains(i))
         {
