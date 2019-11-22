@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
-    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
+    <DefineConstants>$(DefineConstants);NOSPAN;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Linux-Debug;netstandard2.0-Linux-Release;netstandard2.0-OSX-Debug;netstandard2.0-OSX-Release;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
@@ -25,6 +25,7 @@
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DCB.cs</Link>
