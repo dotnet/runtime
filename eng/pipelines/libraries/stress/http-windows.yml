@@ -8,7 +8,7 @@ schedules:
     - master
 
 pool:
-  name: Hosted VS2017
+  vmImage: 'windows-latest'
 
 variables:
   - template: ../variables.yml
