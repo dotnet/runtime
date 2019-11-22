@@ -82,6 +82,17 @@ namespace ILCompiler
             else
             {
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                if (impl != null && (impl != declMethod))
+                {
+                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
+                    MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
+
+                    if (slotDefiningMethodImpl != slotDefiningMethodDecl)
+                    {
+                        // We cannot resolve virtual method in case the impl is a different slot from the declMethod
+                        impl = null;
+                    }
+                }
             }
 
             return impl;

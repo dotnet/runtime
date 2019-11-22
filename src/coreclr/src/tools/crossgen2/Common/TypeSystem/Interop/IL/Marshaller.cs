@@ -433,16 +433,21 @@ namespace Internal.TypeSystem.Interop
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
-            if (targetMethod.GetPInvokeMethodMetadata().Flags.SetLastError)
+            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+
+            if (flags.SetLastError)
+                return true;
+
+            if (!flags.PreserveSig)
                 return true;
 
             var marshallers = GetMarshallersForMethod(targetMethod);
-
             for (int i = 0; i < marshallers.Length; i++)
             {
                 if (marshallers[i].IsMarshallingRequired())
                     return true;
             }
+
             return false;
         }
 
@@ -769,9 +774,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            // TODO This should be in finally block
-            // https://github.com/dotnet/corert/issues/6075
-            EmitCleanupManaged(_ilCodeStreams.UnmarshallingCodestream);
+            EmitCleanupManaged(_ilCodeStreams.CleanupCodeStream);
         }
 
         /// <summary>
@@ -1396,8 +1399,7 @@ namespace Internal.TypeSystem.Interop
             }
 
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
             codeStream.EmitLabel(lNullArray);
         }
     }
@@ -1432,6 +1434,11 @@ namespace Internal.TypeSystem.Interop
             else
             {
                 ILLocalVariable vPinnedFirstElement = emitter.NewLocal(ManagedElementType.MakeByRefType(), true);
+
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.ldlen);
+                codeStream.Emit(ILOpcode.conv_i4);
+                codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
                 LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
@@ -1742,28 +1749,27 @@ namespace Internal.TypeSystem.Interop
         private void AllocSafeHandle(ILCodeStream codeStream)
         {
             var ctor = ManagedType.GetParameterlessConstructor();
-            if (ctor == null)
+            if (ctor == null || ((MetadataType)ManagedType).IsAbstract)
             {
+#if READYTORUN
+                // Let the runtime generate the proper MissingMemberException for this.
+                throw new NotSupportedException();
+#else
                 var emitter = _ilCodeStreams.Emitter;
 
                 MethodSignature ctorSignature = new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                       new TypeDesc[] {
-#if !READYTORUN
                           Context.GetWellKnownType(WellKnownType.String)
-#endif
                       });
                 MethodDesc exceptionCtor = InteropTypes.GetMissingMemberException(Context).GetKnownMethod(".ctor", ctorSignature);
 
-#if !READYTORUN // In ReadyToRun we cannot make new string literals out of thin air
                 string name = ((MetadataType)ManagedType).Name;
                 codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(String.Format("'{0}' does not have a default constructor. Subclasses of SafeHandle must have a default constructor to support marshaling a Windows HANDLE into managed code.", name)));
-#endif
                 codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
                 codeStream.Emit(ILOpcode.throw_);
 
-                // This is unreachable, but it maintains invariants about stack height prescribed by ECMA-335
-                codeStream.Emit(ILOpcode.ldnull);
                 return;
+#endif
             }
 
             codeStream.Emit(ILOpcode.newobj, _ilCodeStreams.Emitter.NewToken(ctor));
@@ -1794,6 +1800,7 @@ namespace Internal.TypeSystem.Interop
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
             ILCodeStream callsiteCodeStream = _ilCodeStreams.CallsiteSetupCodeStream;
             ILCodeStream unmarshallingCodeStream = _ilCodeStreams.UnmarshallingCodestream;
+            ILCodeStream cleanupCodeStream = _ilCodeStreams.CleanupCodeStream;
 
             SetupArguments();
 
@@ -1823,12 +1830,14 @@ namespace Internal.TypeSystem.Interop
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.IntPtr), TypeDesc.EmptyTypes))));
                 StoreNativeValue(marshallingCodeStream);
 
-                // TODO: This should be inside finally block and only executed if the handle was addrefed
-                // https://github.com/dotnet/corert/issues/6075
-                LoadManagedValue(unmarshallingCodeStream);
-                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    safeHandleType.GetKnownMethod("DangerousRelease",
+                ILCodeLabel lNotAddrefed = emitter.NewCodeLabel();
+                cleanupCodeStream.EmitLdLoc(vAddRefed);
+                cleanupCodeStream.Emit(ILOpcode.brfalse, lNotAddrefed);
+                LoadManagedValue(cleanupCodeStream);
+                cleanupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("DangerousRelease", 
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes))));
+                cleanupCodeStream.EmitLabel(lNotAddrefed);
             }
 
             if (Out && IsManagedByRef)
@@ -1852,23 +1861,23 @@ namespace Internal.TypeSystem.Interop
                     LoadNativeValue(marshallingCodeStream);
                     marshallingCodeStream.EmitStLoc(vOriginalValue);
 
-                    unmarshallingCodeStream.EmitLdLoc(vOriginalValue);
-                    LoadNativeValue(unmarshallingCodeStream);
-                    unmarshallingCodeStream.Emit(ILOpcode.beq, lSkipPropagation);
+                    cleanupCodeStream.EmitLdLoc(vOriginalValue);
+                    LoadNativeValue(cleanupCodeStream);
+                    cleanupCodeStream.Emit(ILOpcode.beq, lSkipPropagation);
                 }
 
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                LoadNativeValue(unmarshallingCodeStream);
-                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                LoadNativeValue(cleanupCodeStream);
+                cleanupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     safeHandleType.GetKnownMethod("SetHandle",
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                             new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr) }))));
 
-                unmarshallingCodeStream.EmitLdArg(Index - 1);
-                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                unmarshallingCodeStream.EmitStInd(ManagedType);
+                cleanupCodeStream.EmitLdArg(Index - 1);
+                cleanupCodeStream.EmitLdLoc(vSafeHandle);
+                cleanupCodeStream.EmitStInd(ManagedType);
 
-                unmarshallingCodeStream.EmitLabel(lSkipPropagation);
+                cleanupCodeStream.EmitLabel(lSkipPropagation);
             }
 
             LoadNativeArg(callsiteCodeStream);

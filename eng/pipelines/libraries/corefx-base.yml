@@ -58,20 +58,57 @@ jobs:
   - ${{ each job in parameters.jobs }}:
     - template: /eng/pipelines/libraries/corefx-steps.yml
       parameters:
-        targetOS: ${{ parameters.targetOS }}
-        isOfficialBuild: ${{ parameters.isOfficialBuild }}
-        testScope: ${{ parameters.testScope }}
-        coreClrArtifactName: ${{ parameters.coreClrArtifactName }}
-        coreFxArtifactName: ${{ parameters.coreFxArtifactName }}
-        variables: ${{ job.variables }}
-        submitToHelix: ${{ job.submitToHelix }}
-        frameworkArg: ${{ job.frameworkArg }}
-        buildExtraArguments: ${{ job.buildExtraArguments }}
-        buildScriptPrefix: ${{ job.buildScriptPrefix }}
-        preBuildSteps: ${{ job.preBuildSteps }}
-        customBuildSteps: ${{ job.customBuildSteps }}
-        job: ${{ job.job }}
-        timeoutInMinutes: ${{ job.timeoutInMinutes }}
+        variables:
+
+        # pass along job variables
+        - ${{ each variable in job.variables }}:
+          - ${{ if ne(variable.name, '') }}:
+            - name: ${{ variable.name }}
+              value: ${{ variable.value }}
+          - ${{ if ne(variable.group, '') }}:
+            - group: ${{ variable.group }}
+
+          # handle key-value variable syntax.
+          # example:
+          # - [key]: [value]
+          - ${{ if and(eq(variable.name, ''), eq(variable.group, '')) }}:
+            - ${{ each pair in variable }}:
+              - name: ${{ pair.key }}
+                value: ${{ pair.value }}
+
+        - _msbuildCommonParameters: ''
+        - _archiveTestsParameter: ''
+        - _finalFrameworkArg: -framework $(_framework)
+        - _testScopeArg: ''
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        - ${{ if eq(job.submitToHelix, 'true') }}:
+          - _archiveTestsParameter: /p:ArchiveTests=true
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - group: DotNet-HelixApi-Access
+
+        - ${{ if ne(job.frameworkArg, '') }}:
+          - _finalFrameworkArg: ${{ job.frameworkArg }}
+
+        - _args: -configuration $(_BuildConfig) -ci -arch $(_architecture) $(_finalFrameworkArg) $(_archiveTestsParameter) ${{ job.buildExtraArguments }}
+        - _commonArguments: $(_args)
+
+        # Windows variables
+        - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: $(buildScriptFileName).cmd
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: ${{ job.buildScriptPrefix }}./$(buildScriptFileName).sh
+          - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _commonArguments: $(_args) -stripSymbols
 
         # pass along job properties
         ${{ each property in job }}:

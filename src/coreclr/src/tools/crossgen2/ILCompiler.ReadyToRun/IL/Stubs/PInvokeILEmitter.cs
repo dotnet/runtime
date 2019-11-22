@@ -76,9 +76,23 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitIL()
         {
+            if (!_importMetadata.Flags.PreserveSig)
+                throw new NotSupportedException();
+
+            if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
+                throw new NotSupportedException();
+
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
+            ILCodeStream marshallingCodestream = pInvokeILCodeStreams.MarshallingCodeStream;
             ILCodeStream unmarshallingCodestream = pInvokeILCodeStreams.UnmarshallingCodestream;
+            ILCodeStream cleanupCodestream = pInvokeILCodeStreams.CleanupCodeStream;
+
+            // Marshalling is wrapped in a finally block to guarantee cleanup
+            ILExceptionRegionBuilder tryFinally = emitter.NewFinallyRegion();
+
+            marshallingCodestream.BeginTry(tryFinally);
+            cleanupCodestream.BeginHandler(tryFinally);
 
             // Marshal the arguments
             for (int i = 0; i < _marshallers.Length; i++)
@@ -88,8 +102,17 @@ namespace Internal.IL.Stubs
 
             EmitPInvokeCall(pInvokeILCodeStreams);
 
-            _marshallers[0].LoadReturnValue(unmarshallingCodestream);
-            unmarshallingCodestream.Emit(ILOpcode.ret);
+            ILCodeLabel lReturn = emitter.NewCodeLabel();
+            unmarshallingCodestream.Emit(ILOpcode.leave, lReturn);
+            unmarshallingCodestream.EndTry(tryFinally);
+
+            cleanupCodestream.Emit(ILOpcode.endfinally);
+            cleanupCodestream.EndHandler(tryFinally);
+
+            cleanupCodestream.EmitLabel(lReturn);
+
+            _marshallers[0].LoadReturnValue(cleanupCodestream);
+            cleanupCodestream.Emit(ILOpcode.ret);
 
             return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod));
         }

@@ -22,38 +22,18 @@ jobs:
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
-
-      name: ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if eq(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0}{1} Libraries Build {2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if ne(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} Libraries Build {1} {2}_{3}', parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
-
-      ${{ if eq(parameters.useLiveCoreClr, true) }}:
-        dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      stepName: Build
 
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
-
-        - _coreClrArtifactName: ''
-        - _coreClrDownloadPath: ''
-        - _coreClrOverridePathArg: ''
-
-        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
-          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
-          - _coreClrArtifactName: 'BinDir_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
-          - _skipTestRestoreArg: /p:SkipTestRestore=true $(_coreClrOverridePathArg)
-
-        - _archiveExtension: '.tar.gz'
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - _archiveExtension: '.zip'
-
         - ${{ parameters.variables }}
 
-      preBuildSteps:
+      steps:
+        - ${{ parameters.preBuildSteps }}
+
         - ${{ if eq(parameters.useLiveCoreClr, true) }}:
           - template: /eng/pipelines/common/download-artifact-step.yml
             parameters:
@@ -62,9 +42,9 @@ jobs:
               artifactName: '$(_coreClrArtifactName)'
               displayName: 'CoreCLR build drop'
 
-        - ${{ parameters.preBuildSteps }}
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+          displayName: Restore
 
-      steps:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - task: DotNetCoreCLI@2
             displayName: Restore internal tools
@@ -78,10 +58,17 @@ jobs:
               verbosityRestore: 'normal'
               externalFeedCredentials: 'dotnet-core-internal-tooling'
 
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: |
+              brew install pkgconfig openssl
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+            displayName: Install Build Dependencies
+
         - script: $(_buildScript)
                 -build
                 $(_buildArguments)
-                $(_coreClrOverridePathArg)
           displayName: Build
 
         - task: CopyFiles@2
@@ -102,7 +89,7 @@ jobs:
             sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
             targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
         
-        - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+        - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
             includeRootFolder: true

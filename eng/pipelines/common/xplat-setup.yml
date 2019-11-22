@@ -71,11 +71,11 @@ jobs:
         ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: dnceng-freebsd-internal
 
-        # Official OSX Build Pool
+        # Official Build OSX Pool
         ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
           name: Hosted Mac Internal
 
-        # Public Build OSX Pool
+        # Public OSX Build Pool
         ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
           name: Hosted macOS
 

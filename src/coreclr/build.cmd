@@ -911,7 +911,7 @@ if %__BuildTests% EQU 1 (
 ) else if %__GenerateLayout% EQU 1 (
     echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set NEXTCMD=call %__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly msbuildargs %__UnprocessedBuildArgs%
+    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% generatelayoutonly %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
     !NEXTCMD!
 
