@@ -173,7 +173,6 @@ case "$host" in
 		# Boehm not supported on 64-bit Windows.
 		case "$host" in
 		x86_64-*-* | amd64-*-*)
-			support_boehm=no
 			with_gc=sgen
 			RID="win-x64"
 			COREARCH="x64"
@@ -192,9 +191,6 @@ case "$host" in
 		with_tls=pthread
 		with_sgen_default_concurrent=yes
 		LN_S=cp
-
-		# This forces libgc to use the DllMain based thread registration code on win32
-		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
 		;;
 	*-*-*netbsd*)
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DGC_NETBSD_THREADS -D_GNU_SOURCE"
@@ -2039,14 +2035,14 @@ if test "x$support_boehm" = "xyes"; then
 	case "x$libgc" in
 		xincluded)
 			if test "x$support_boehm" = "xyes"; then
-				libgc_dir=libgc
+				libgc_dir=external/bdwgc
 			fi
 
-			LIBGC_CPPFLAGS='-I$(top_srcdir)/libgc/include'
-			LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
-			LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
+			LIBGC_CPPFLAGS='-I$(top_srcdir)/external/bdwgc/include -I$(top_srcdir)/external/bdwgc/libatomic_ops/src'
+			LIBGC_LIBS='$(top_builddir)/external/bdwgc/libgc.la'
+			LIBGC_STATIC_LIBS='$(top_builddir)/external/bdwgc/libgc-static.la'
 
-			BOEHM_DEFINES="-DHAVE_BOEHM_GC"
+			BOEHM_DEFINES="-DHAVE_BOEHM_GC -DGC_THREADS"
 
 			if test x$target_win32 = xyes; then
 				BOEHM_DEFINES="$BOEHM_DEFINES -DGC_NOT_DLL"
@@ -5153,7 +5149,12 @@ AC_SEARCH_LIBS(dlopen, dl)
 # Apple -bind_at_load
 # The rest GNU.
 #
-AX_APPEND_LINK_FLAGS([-Wl,--export-dynamic -Wl,-Bsymbolic -bsymbolic -Wl,-z,now -Wl,-bind_at_load])
+export_link_flags=--export-dynamic
+case $host_os in
+	mingw*|cygwin*)
+	export_link_flags=--export-all-symbols
+esac
+AX_APPEND_LINK_FLAGS([-Wl,$export_link_flags -Wl,-Bsymbolic -bsymbolic -Wl,-z,now -Wl,-bind_at_load])
 
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h iconv.h sys/types.h sys/resource.h)
 dnl giconv.c will check on HAVE_ICONV_H but we need this for link time
@@ -5605,9 +5606,9 @@ case "x$libgc" in
 		# if these are instrumented it will be very bad news 
 		# (infinite recursion, undefined parking behavior, etc)
 		TMP_CPPFLAGS=`echo $TMP_CPPFLAGS | sed -e 's/-finstrument-for-thread-suspension//g'`
-		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$TMP_CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
+		ac_configure_args="$ac_configure_args --enable-single-obj-compilation --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$TMP_CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
 		if test "x$support_boehm" = "xyes"; then
-			AC_CONFIG_SUBDIRS(libgc)
+			AC_CONFIG_SUBDIRS(external/bdwgc)
 		fi
 		;;
 esac
@@ -6043,10 +6044,6 @@ fi
 AM_CONDITIONAL(ENABLE_MSVC, test x$enable_msvc = xyes)
 
 if test "x$enable_msvc" = "xyes"; then
-	if test "x$support_boehm" = "xyes"; then
-		echo "Error, Boehm GC is not supported when using --enable-msvc."
-		exit 1
-	fi
 	mono_msvc_build_dir='$(top_srcdir)'/msvc/build/sgen
 	if test "x$host_cpu" = "xi686"; then
 		mono_msvc_build_lib_dir='$(mono_msvc_build_dir)'/Win32/lib/Release

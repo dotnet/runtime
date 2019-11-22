@@ -23,8 +23,8 @@ if SUPPORT_NULLGC
 libgc_libs=
 libgc_static_libs=
 else
-libgc_libs=$(monodir)/libgc/libmonogc.la
-libgc_static_libs=$(monodir)/libgc/libmonogc-static.la
+libgc_libs=$(monodir)/external/bdwgc/libgc.la
+libgc_static_libs=$(monodir)/external/bdwgc/libgc-static.la
 endif
 
 glib_libs = $(monodir)/mono/eglib/libeglib.la

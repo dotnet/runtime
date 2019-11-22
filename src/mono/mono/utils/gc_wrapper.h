@@ -41,7 +41,6 @@
 #	endif
 #endif // HOST_WIN32
 
-#	define GC_INSIDE_DLL
 #	include <gc.h>
 #	include <gc_typed.h>
 #	include <gc_mark.h>

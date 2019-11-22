@@ -13,7 +13,10 @@ EXTRA_DIST = \
 if ENABLE_MSVC
 all-local:
 	@echo "Building Mono runtime using Visual Studio."
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)"
+if SUPPORT_BOEHM
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "boehm"
+endif
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen"
 	$(mono_msvc_build_bin_dir)/mono-sgen.exe --version
 
 clean-local:
@@ -30,69 +33,69 @@ install-exec-local:
 	$(install_sh) $(mono_msvc_build_bin_dir)/*.pdb "$(DESTDIR)$(bindir)"
 
 eglib:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "eglib.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "eglib.vcxproj"
 
 clean-eglib:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "eglib.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "eglib.vcxproj"
 
 libgcmonosgen:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "libgcmonosgen.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "libgcmonosgen.vcxproj"
 
 clean-libgcmonosgen:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "libgcmonosgen.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "libgcmonosgen.vcxproj"
 
 libmonoposixhelper:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "monoposixhelper.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "monoposixhelper.vcxproj"
 
 clean-libmonoposixhelper:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "monoposixhelper.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "monoposixhelper.vcxproj"
 
 libmonoutils:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "libmonoutils.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "libmonoutils.vcxproj"
 
 clean-libmonoutils:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "libmonoutils.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "libmonoutils.vcxproj"
 
 libmonoruntime:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "libmonoruntime.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "libmonoruntime.vcxproj"
 
 clean-libmonoruntime:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "libmonoruntime.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "libmonoruntime.vcxproj"
 
 mono:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "mono.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "mono.vcxproj"
 
 clean-mono:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "mono.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "mono.vcxproj"
 
 monow:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "monow.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "monow.vcxproj"
 
 clean-monow:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "monow.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "monow.vcxproj"
 
 pedump:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "pedump.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "pedump.vcxproj"
 
 clean-pedump:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "pedump.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "pedump.vcxproj"
 
 monodis:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "monodis.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "monodis.vcxproj"
 
 clean-monodis:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "monodis.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "monodis.vcxproj"
 
 genmdesc:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "genmdesc.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "genmdesc.vcxproj"
 
 clean-genmdesc:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "genmdesc.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "genmdesc.vcxproj"
 
 jay:
-	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
 
 clean-jay:
-	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
 
 endif

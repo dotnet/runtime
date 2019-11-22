@@ -27,6 +27,7 @@
     <ProjectGuid>{EB56000B-C80B-4E8B-908D-D84D31B517D3}</ProjectGuid>
     <RootNamespace>libgc</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <MonoDisableHaveConfigH>true</MonoDisableHaveConfigH>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">

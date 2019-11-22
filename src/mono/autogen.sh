@@ -150,10 +150,10 @@ automake $am_opt ||
 echo "Running autoconf ..."
 autoconf || { echo "**Error**: autoconf failed."; exit 1; }
 
-if test -d $srcdir/libgc; then
-  echo Running libgc/autogen.sh ...
-  (cd $srcdir/libgc ; NOCONFIGURE=1 ./autogen.sh "$@")
-  echo Done running libgc/autogen.sh ...
+if test -d $srcdir/external/bdwgc; then
+  echo Running external/bdwgc/autogen.sh ...
+  (cd $srcdir/external/bdwgc ; NOCONFIGURE=1 ./autogen.sh "$@")
+  echo Done running external/bdwgc/autogen.sh ...
 fi
 
 if test x$MONO_EXTRA_CONFIGURE_FLAGS != x; then
