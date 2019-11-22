@@ -187,8 +187,8 @@ static GHashTable *static_aot_modules;
  * and it needs to be fully loaded by the time the other code needs it, it
  * must be eagerly loaded before other modules.
  */
-static char *container_assm_name = NULL;
-static MonoAotModule *container_amodule = NULL;
+static char *container_assm_name;
+static MonoAotModule *container_amodule;
 
 /*
  * Maps MonoJitInfo* to the aot module they belong to, this can be different
@@ -301,9 +301,12 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	 * current AOT module matches the wanted name and guid and just return
 	 * the AOT module's assembly.
 	 */
-	if (!strcmp (amodule->assembly->image->guid, amodule->image_guids [index]))
+	if (!strcmp (amodule->assembly->image->guid, amodule->image_guids [index])) {
 		assembly = amodule->assembly;
-	else {
+	} else if (mono_get_corlib () && !strcmp (mono_get_corlib ()->guid, amodule->image_guids [index])) {
+		/* This might be called before corlib is added to the root domain */
+		assembly = mono_get_corlib ()->assembly;
+	} else {
 		MonoAssemblyByNameRequest req;
 		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
 		req.basedir = amodule->assembly->basedir;
@@ -2096,23 +2099,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	mono_aot_lock ();
 
-if (container_assm_name && !container_amodule) {
-	char *local_ref = container_assm_name;
-	container_assm_name = NULL;
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssemblyOpenRequest req;
-	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
-	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
-	if (!assm) {
-		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
-		assm = mono_assembly_request_open (exe, &req, &status);
-	}
-	g_assert (assm);
-	load_aot_module (alc, assm, NULL, error);
-	container_amodule = assm->image->aot_module;
-}
-
 	if (static_aot_modules)
 		info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assembly->aname.name);
 
@@ -2540,6 +2526,30 @@ void
 mono_aot_cleanup (void)
 {
 	g_hash_table_destroy (aot_modules);
+}
+
+static void
+load_container_amodule (MonoAssemblyLoadContext *alc)
+{
+	ERROR_DECL (error);
+
+	if (!container_assm_name || container_amodule)
+		return;
+
+	char *local_ref = container_assm_name;
+	container_assm_name = NULL;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssemblyOpenRequest req;
+	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
+	if (!assm) {
+		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
+		assm = mono_assembly_request_open (exe, &req, &status);
+	}
+	g_assert (assm);
+	load_aot_module (alc, assm, NULL, error);
+	container_amodule = assm->image->aot_module;
 }
 
 static gboolean
@@ -4714,6 +4724,9 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
+
+	/* Load the dedup module lazily */
+	load_container_amodule (mono_assembly_get_alc (amodule->assembly));
 
 	/*
 	 * Use the original method instead of its invoke-with-check wrapper.

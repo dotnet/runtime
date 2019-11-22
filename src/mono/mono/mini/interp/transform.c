@@ -1848,8 +1848,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
-		if (!strcmp (tm, "get_IsDynamicCodeSupported") || !strcmp (tm, "get_IsDynamicCodeCompiled"))
+		if (!strcmp (tm, "get_IsDynamicCodeSupported"))
 			*op = MINT_LDC_I4_1;
+		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
+			*op = MINT_LDC_I4_0;
 	}
 
 	return FALSE;

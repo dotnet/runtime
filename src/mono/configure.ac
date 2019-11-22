@@ -148,7 +148,7 @@ case "$host" in
 		platform_wasm=yes
 		# FIXME:
 		RID="osx-x64"
-		COREARCH="x64"
+		COREARCH="wasm32"
 		CORETARGETS="-p:TargetsUnix=true -p:TargetsOSX=true"
 		build_darwin=yes
 		;;
