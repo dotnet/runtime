@@ -348,6 +348,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateMethodHandleHelper(MethodWithToken method, SignatureContext signatureContext)
         {
+            bool useUnboxingStub = method.Method.IsUnboxingThunk();
+            if (useUnboxingStub)
+            {
+                method = new MethodWithToken(method.Method.GetUnboxedMethod(), method.Token, method.ConstrainedType);
+            }
+
             bool useInstantiatingStub = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method.Method;
 
             return new PrecodeHelperImport(
@@ -355,7 +361,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                     method,
-                    isUnboxingStub: false,
+                    isUnboxingStub: useUnboxingStub,
                     isInstantiatingStub: useInstantiatingStub,
                     signatureContext));
         }

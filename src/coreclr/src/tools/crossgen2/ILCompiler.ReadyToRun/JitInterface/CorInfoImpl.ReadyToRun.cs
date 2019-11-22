@@ -1698,10 +1698,20 @@ namespace Internal.JitInterface
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
-                            ReadyToRunHelperId.MethodHandle,
-                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                            GetSignatureContext());
+                        {
+                            MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                            TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                            if (td.IsValueType)
+                            {
+                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                            }
+
+                            symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
+                                ReadyToRunHelperId.MethodHandle,
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                GetSignatureContext());
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD:
