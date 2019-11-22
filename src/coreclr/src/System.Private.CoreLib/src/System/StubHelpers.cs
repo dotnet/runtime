@@ -127,7 +127,7 @@ namespace System.StubHelpers
         {
             if (strManaged == null)
             {
-                if (length > 0 && pNativeBuffer != IntPtr.Zero)
+                if (length > 0)
                     *(byte*)pNativeBuffer = 0;
                 return;
             }
@@ -169,9 +169,9 @@ namespace System.StubHelpers
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
 
-            if (cbWritten >= (int)length)
+            if (cbWritten == (int)length)
             {
-                cbWritten = length - 1;
+                cbWritten--;
             }
 
             buffer[cbWritten] = 0;
