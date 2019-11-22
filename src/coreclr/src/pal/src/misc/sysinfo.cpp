@@ -145,7 +145,7 @@ DWORD
 PALAPI
 PAL_GetLogicalCpuCountFromOS()
 {
-    static int nrcpus = -1;
+    static volatile int nrcpus = -1;
 
     if (nrcpus == -1)
     {
@@ -165,6 +165,53 @@ PAL_GetLogicalCpuCountFromOS()
     }
 
     return nrcpus;
+}
+
+/*++
+Function:
+  GetMaxCpuIndex
+
+The GetMaxCpuIndex function returns maximum index of CPU available on the system. On some systems, it doesn't match
+the PAL_GetTotalCpuCount() - 1, as the CPU indices may form a noncontinuous range. E.g. on Jetson TX2, there are
+four CPUs available and their indices are 0, 3, 4, 5. While glibc returns 6 as the number of CPUs configured,
+MUSL returns 4.
+--*/
+int GetMaxCpuIndex()
+{
+    static volatile int maxCpuIndex = -1;
+
+    if (maxCpuIndex == -1)
+    {
+        FILE* cpuInfoFile = fopen("/proc/cpuinfo", "r");
+        if (cpuInfoFile != NULL)
+        {
+            char *line = nullptr;
+            size_t lineLen = 0;
+
+            while (getline(&line, &lineLen, cpuInfoFile) != -1)
+            {
+                int cpuIndex;
+                int fieldsParsed = sscanf(line, "processor : %d", &cpuIndex);
+
+                if ((fieldsParsed == 1) && (cpuIndex > maxCpuIndex))
+                {
+                    maxCpuIndex = cpuIndex;
+                }
+            }
+
+            free(line);
+            fclose(cpuInfoFile);
+        }
+
+        if (maxCpuIndex == -1)
+        {
+            // Reading the /proc/cpuinfo has failed, return the total CPU count - 1 as a fallback as we don't
+            // have anything better
+            maxCpuIndex = PAL_GetTotalCpuCount() - 1;
+        }
+    }
+
+    return maxCpuIndex;
 }
 
 /*++
