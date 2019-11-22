@@ -638,6 +638,7 @@ handle_arguments() {
                 echo "ERROR: 'localcorefxpath' requires a non-empty option argument"
                 exit 1
             fi
+            ;;
 
         corefxoverridepath=*|-corefxoverridepath=*)
             __CoreFXOverridePath=$(echo "$1" | cut -d'=' -f 2)
