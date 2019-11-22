@@ -33,9 +33,10 @@ namespace System.Text.RegularExpressions
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
-            ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[256]);
-            List<string> strings = new List<string>();
-            List<int> rules = new List<int>();
+            Span<char> vsbStack = stackalloc char[256];
+            var vsb = new ValueStringBuilder(vsbStack);
+            var strings = new List<string>();
+            var rules = new List<int>();
 
             for (int i = 0; i < concat.ChildCount(); i++)
             {
@@ -56,7 +57,7 @@ namespace System.Text.RegularExpressions
                         {
                             rules.Add(strings.Count);
                             strings.Add(vsb.ToString());
-                            vsb.Length = 0;
+                            vsb = new ValueStringBuilder(vsbStack);
                         }
                         int slot = child.M;
 

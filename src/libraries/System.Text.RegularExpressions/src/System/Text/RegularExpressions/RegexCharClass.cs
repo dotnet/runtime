@@ -396,9 +396,9 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
-        private readonly List<SingleRange> _rangelist;
+        private List<SingleRange>? _rangelist;
         private StringBuilder? _categories;
-        private bool _canonical;
+        private bool _canonical = true;
         private bool _negate;
         private RegexCharClass? _subtractor;
 
@@ -425,15 +425,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexCharClass()
         {
-            _rangelist = new List<SingleRange>(6);
-            _canonical = true;
         }
 
-        private RegexCharClass(bool negate, List<SingleRange> ranges, StringBuilder categories, RegexCharClass? subtraction)
+        private RegexCharClass(bool negate, List<SingleRange>? ranges, StringBuilder? categories, RegexCharClass? subtraction)
         {
             _rangelist = ranges;
             _categories = categories;
-            _canonical = true;
             _negate = negate;
             _subtractor = subtraction;
         }
@@ -461,21 +458,22 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void AddCharClass(RegexCharClass cc)
         {
-            int i;
-
             Debug.Assert(cc.CanMerge && CanMerge, "Both character classes added together must be able to merge");
 
-            if (!cc._canonical)
+            int ccRangeCount = cc._rangelist?.Count ?? 0;
+
+            if (!cc._canonical || // if the new char class to add isn't canonical, we're not either.
+                (_canonical &&
+                 ccRangeCount > 0 &&
+                 _rangelist != null && _rangelist.Count > 0 &&
+                 cc._rangelist![0].First <= _rangelist[^1].Last))
             {
-                // if the new char class to add isn't canonical, we're not either.
                 _canonical = false;
             }
-            else if (_canonical && RangeCount() > 0 && cc.RangeCount() > 0 && cc.GetRangeAt(0).First <= GetRangeAt(RangeCount() - 1).Last)
-                _canonical = false;
 
-            for (i = 0; i < cc.RangeCount(); i += 1)
+            if (ccRangeCount != 0)
             {
-                _rangelist.Add(cc.GetRangeAt(i));
+                EnsureRangeList().AddRange(cc._rangelist!);
             }
 
             if (cc._categories != null)
@@ -487,25 +485,35 @@ namespace System.Text.RegularExpressions
         private StringBuilder EnsureCategories() =>
             _categories ??= new StringBuilder();
 
+        private List<SingleRange> EnsureRangeList() =>
+            _rangelist ??= new List<SingleRange>(6);
+
         /// <summary>
         /// Adds a set (specified by its string representation) to the class.
         /// </summary>
-        private void AddSet(string set)
+        private void AddSet(ReadOnlySpan<char> set)
         {
-            int i;
+            if (set.Length == 0)
+            {
+                return;
+            }
 
-            if (_canonical && RangeCount() > 0 && set.Length > 0 &&
-                set[0] <= GetRangeAt(RangeCount() - 1).Last)
+            List<SingleRange> rangeList = EnsureRangeList();
+
+            if (_canonical && rangeList.Count > 0 && set[0] <= rangeList[^1].Last)
+            {
                 _canonical = false;
+            }
 
+            int i;
             for (i = 0; i < set.Length - 1; i += 2)
             {
-                _rangelist.Add(new SingleRange(set[i], (char)(set[i + 1] - 1)));
+                rangeList.Add(new SingleRange(set[i], (char)(set[i + 1] - 1)));
             }
 
             if (i < set.Length)
             {
-                _rangelist.Add(new SingleRange(set[i], LastChar));
+                rangeList.Add(new SingleRange(set[i], LastChar));
             }
         }
 
@@ -520,7 +528,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void AddRange(char first, char last)
         {
-            _rangelist.Add(new SingleRange(first, last));
+            EnsureRangeList().Add(new SingleRange(first, last));
             if (_canonical && first <= last)
             {
                 _canonical = false;
@@ -575,18 +583,22 @@ namespace System.Text.RegularExpressions
         {
             _canonical = false;
 
-            int count = _rangelist.Count;
-            for (int i = 0; i < count; i++)
+            List<SingleRange>? rangeList = _rangelist;
+            if (rangeList != null)
             {
-                SingleRange range = _rangelist[i];
-                if (range.First == range.Last)
+                int count = rangeList.Count;
+                for (int i = 0; i < count; i++)
                 {
-                    char lower = culture.TextInfo.ToLower(range.First);
-                    _rangelist[i] = new SingleRange(lower, lower);
-                }
-                else
-                {
-                    AddLowercaseRange(range.First, range.Last, culture);
+                    SingleRange range = rangeList[i];
+                    if (range.First == range.Last)
+                    {
+                        char lower = culture.TextInfo.ToLower(range.First);
+                        rangeList[i] = new SingleRange(lower, lower);
+                    }
+                    else
+                    {
+                        AddLowercaseRange(range.First, range.Last, culture);
+                    }
                 }
             }
         }
@@ -598,8 +610,6 @@ namespace System.Text.RegularExpressions
         private void AddLowercaseRange(char chMin, char chMax, CultureInfo culture)
         {
             int i, iMax, iMid;
-            char chMinT, chMaxT;
-            LowerCaseMapping lc;
 
             for (i = 0, iMax = s_lcTable.Length; i < iMax;)
             {
@@ -612,6 +622,9 @@ namespace System.Text.RegularExpressions
 
             if (i >= s_lcTable.Length)
                 return;
+
+            char chMinT, chMaxT;
+            LowerCaseMapping lc;
 
             for (; i < s_lcTable.Length && (lc = s_lcTable[i]).ChMin <= chMax; i++)
             {
@@ -1023,36 +1036,41 @@ namespace System.Text.RegularExpressions
             int myCategoryLength = charClass[start + CATEGORYLENGTH];
             int myEndPosition = start + SETSTART + mySetLength + myCategoryLength;
 
-            List<SingleRange> ranges = new List<SingleRange>(mySetLength);
             int i = start + SETSTART;
             int end = i + mySetLength;
-            while (i < end)
-            {
-                char first = charClass[i];
-                i++;
 
-                char last;
-                if (i < end)
-                    last = (char)(charClass[i] - 1);
-                else
-                    last = LastChar;
-                i++;
-                ranges.Add(new SingleRange(first, last));
+            List<SingleRange>? ranges = null;
+            if (mySetLength > 0)
+            {
+                ranges = new List<SingleRange>(mySetLength);
+                while (i < end)
+                {
+                    char first = charClass[i];
+                    i++;
+
+                    char last = i < end ?
+                        (char)(charClass[i] - 1) :
+                        LastChar;
+                    i++;
+
+                    ranges.Add(new SingleRange(first, last));
+                }
             }
 
             RegexCharClass? sub = null;
             if (charClass.Length > myEndPosition)
+            {
                 sub = ParseRecursive(charClass, myEndPosition);
+            }
 
-            return new RegexCharClass(charClass[start + FLAGS] == 1, ranges, new StringBuilder(charClass.Substring(end, myCategoryLength)), sub);
-        }
+            StringBuilder? categoriesBuilder = null;
+            if (myCategoryLength > 0)
+            {
+                categoriesBuilder = new StringBuilder();
+                categoriesBuilder.Append(charClass.AsSpan(end, myCategoryLength));
+            }
 
-        /// <summary>
-        /// The number of single ranges that have been accumulated so far.
-        /// </summary>
-        private int RangeCount()
-        {
-            return _rangelist.Count;
+            return new RegexCharClass(charClass[start + FLAGS] == 1, ranges, categoriesBuilder, sub);
         }
 
         /// <summary>
@@ -1060,58 +1078,54 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string ToStringClass()
         {
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            ToStringClass(ref vsb);
+            return vsb.ToString();
+        }
+
+        private void ToStringClass(ref ValueStringBuilder vsb)
+        {
             if (!_canonical)
-                Canonicalize();
-
-            // make a guess about the length of the ranges.  We'll update this at the end.
-            // This is important because if the last range ends in LastChar, we won't append
-            // LastChar to the list.
-            int categoriesLength = _categories?.Length ?? 0;
-            int rangeLen = _rangelist.Count * 2;
-            int strGuessCount = rangeLen + categoriesLength + 3;
-
-            ValueStringBuilder vsb = strGuessCount <= 256 ?
-                new ValueStringBuilder(stackalloc char[256]) :
-                new ValueStringBuilder(strGuessCount);
-
-            int flags = _negate ? 1 : 0;
-
-            vsb.Append((char)flags);
-            vsb.Append((char)rangeLen);
-            vsb.Append((char)categoriesLength);
-
-            for (int i = 0; i < _rangelist.Count; i++)
             {
-                SingleRange currentRange = _rangelist[i];
-                vsb.Append(currentRange.First);
-
-                if (currentRange.Last != LastChar)
-                    vsb.Append((char)(currentRange.Last + 1));
+                Canonicalize();
             }
 
-            vsb[SETLENGTH] = (char)(vsb.Length - SETSTART);
+            int initialLength = vsb.Length;
+            int categoriesLength = _categories?.Length ?? 0;
+            vsb.Append((char)(_negate ? 1 : 0)); // FLAGS
+            vsb.Append('\0'); // SETLENGTH (will be replaced once we know how long a range we've added)
+            vsb.Append((char)categoriesLength); // CATEGORYLENGTH
 
-            // Append the categories string
-            if (_categories != null)
+            // Append ranges
+            List<SingleRange>? rangelist = _rangelist;
+            if (rangelist != null)
             {
-                foreach (ReadOnlyMemory<char> chunk in _categories.GetChunks())
+                for (int i = 0; i < rangelist.Count; i++)
+                {
+                    SingleRange currentRange = rangelist[i];
+                    vsb.Append(currentRange.First);
+                    if (currentRange.Last != LastChar)
+                    {
+                        vsb.Append((char)(currentRange.Last + 1));
+                    }
+                }
+            }
+
+            // Update the range length.  The ValueStringBuilder may have already had some
+            // contents (if this is a subtactor), so we need to offset by the initial length.
+            vsb[initialLength + SETLENGTH] = (char)((vsb.Length - initialLength) - SETSTART);
+
+            // Append categories
+            if (categoriesLength != 0)
+            {
+                foreach (ReadOnlyMemory<char> chunk in _categories!.GetChunks())
                 {
                     vsb.Append(chunk.Span);
                 }
             }
 
-            if (_subtractor != null)
-                vsb.Append(_subtractor.ToStringClass());
-
-            return vsb.ToString();
-        }
-
-        /// <summary>
-        /// The ith range.
-        /// </summary>
-        private SingleRange GetRangeAt(int i)
-        {
-            return _rangelist[i];
+            // Append a subtractor if there is one.
+            _subtractor?.ToStringClass(ref vsb);
         }
 
         /// <summary>
@@ -1119,41 +1133,40 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void Canonicalize()
         {
-            SingleRange CurrentRange;
-            int i;
-            int j;
-            char last;
-            bool done;
-
             _canonical = true;
-            _rangelist.Sort(SingleRangeComparer.Instance);
 
-            //
-            // Find and eliminate overlapping or abutting ranges
-            //
-
-            if (_rangelist.Count > 1)
+            List<SingleRange>? rangelist = _rangelist;
+            if (rangelist != null && rangelist.Count > 1)
             {
-                done = false;
+                rangelist.Sort((x, y) => x.First.CompareTo(y.First));
+
+                //
+                // Find and eliminate overlapping or abutting ranges
+                //
+
+                bool done = false;
+                int i, j;
 
                 for (i = 1, j = 0; ; i++)
                 {
-                    for (last = _rangelist[j].Last; ; i++)
+                    char last;
+                    for (last = rangelist[j].Last; ; i++)
                     {
-                        if (i == _rangelist.Count || last == LastChar)
+                        if (i == rangelist.Count || last == LastChar)
                         {
                             done = true;
                             break;
                         }
 
-                        if ((CurrentRange = _rangelist[i]).First > last + 1)
+                        SingleRange currentRange;
+                        if ((currentRange = rangelist[i]).First > last + 1)
                             break;
 
-                        if (last < CurrentRange.Last)
-                            last = CurrentRange.Last;
+                        if (last < currentRange.Last)
+                            last = currentRange.Last;
                     }
 
-                    _rangelist[j] = new SingleRange(_rangelist[j].First, last);
+                    rangelist[j] = new SingleRange(rangelist[j].First, last);
 
                     j++;
 
@@ -1161,13 +1174,14 @@ namespace System.Text.RegularExpressions
                         break;
 
                     if (j < i)
-                        _rangelist[j] = _rangelist[i];
+                        rangelist[j] = rangelist[i];
                 }
-                _rangelist.RemoveRange(j, _rangelist.Count - j);
+
+                rangelist.RemoveRange(j, rangelist.Count - j);
             }
         }
 
-        private static string SetFromProperty(string capname, bool invert, string pattern, int currentPos)
+        private static ReadOnlySpan<char> SetFromProperty(string capname, bool invert, string pattern, int currentPos)
         {
             int min = 0;
             int max = s_propTable.Length;
@@ -1176,25 +1190,21 @@ namespace System.Text.RegularExpressions
                 int mid = (min + max) / 2;
                 int res = string.Compare(capname, s_propTable[mid][0], StringComparison.Ordinal);
                 if (res < 0)
+                {
                     max = mid;
+                }
                 else if (res > 0)
+                {
                     min = mid + 1;
+                }
                 else
                 {
                     string set = s_propTable[mid][1];
                     Debug.Assert(!string.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
-                    if (invert)
-                    {
-                        if (set[0] == NullChar)
-                        {
-                            return set.Substring(1);
-                        }
-                        return NullCharString + set;
-                    }
-                    else
-                    {
-                        return set;
-                    }
+                    return
+                        !invert ? set :
+                        set[0] == NullChar ? set.AsSpan(1) :
+                        NullCharString + set;
                 }
             }
 
@@ -1382,23 +1392,6 @@ namespace System.Text.RegularExpressions
                 ChMax = chMax;
                 LcOp = lcOp;
                 Data = data;
-            }
-        }
-
-        /// <summary>
-        /// For sorting ranges; compare based on the first char in the range.
-        /// </summary>
-        private sealed class SingleRangeComparer : IComparer<SingleRange>
-        {
-            public static readonly SingleRangeComparer Instance = new SingleRangeComparer();
-
-            private SingleRangeComparer()
-            {
-            }
-
-            public int Compare(SingleRange x, SingleRange y)
-            {
-                return x.First.CompareTo(y.First);
             }
         }
 
