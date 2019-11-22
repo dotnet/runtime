@@ -26,12 +26,12 @@ steps:
   lfs: false
 
 - powershell: |
-    docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(HttpStressProject)corefx.Dockerfile .
+    docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(HttpStressProject)corefx.windows.Dockerfile .
   displayName: Build Libraries
 
 - powershell: |
     cd '$(HttpStressProject)'
-    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) .
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
   displayName: Build HttpStress
 
 - powershell: |
