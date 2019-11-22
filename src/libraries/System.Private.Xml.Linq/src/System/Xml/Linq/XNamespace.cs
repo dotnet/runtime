@@ -23,7 +23,7 @@ namespace System.Xml.Linq
 
         private readonly string _namespaceName;
         private readonly int _hashCode;
-        private readonly XHashtable<XName> _names;
+        private readonly XHashtable<WeakReference<XName>> _names;
 
         private const int NamesCapacity = 8;           // Starting capacity of XName table, which must be power of 2
         private const int NamespacesCapacity = 32;     // Starting capacity of XNamespace table, which must be power of 2
@@ -35,7 +35,7 @@ namespace System.Xml.Linq
         {
             _namespaceName = namespaceName;
             _hashCode = namespaceName.GetHashCode();
-            _names = new XHashtable<XName>(ExtractLocalName, NamesCapacity);
+            _names = new XHashtable<WeakReference<XName>>(ExtractLocalName, NamesCapacity);
         }
 
         /// <summary>
@@ -216,11 +216,23 @@ namespace System.Xml.Linq
 
             // Attempt to get the local name from the hash table
             XName name;
-            if (_names.TryGetValue(localName, index, count, out name))
-                return name;
 
-            // No local name has yet been added, so add it now
-            return _names.Add(new XName(this, localName.Substring(index, count)));
+            if (_names.TryGetValue(localName, index, count, out WeakReference<XName> nameRef))
+            {
+                if (!nameRef.TryGetTarget(out name))
+                {
+                    name = new XName(this, localName.Substring(index, count));
+                    nameRef.SetTarget(name);
+                }
+            }
+            else
+            {
+                // No local name has yet been added, so add it now
+                name = new XName(this, localName.Substring(index, count));
+                _names.Add(new WeakReference<XName>(name));
+            }
+
+            return name;
         }
 
         /// <summary>
@@ -234,24 +246,16 @@ namespace System.Xml.Linq
 
             if (count == 0) return None;
 
-            // determine whether it's a special namespace
-            if (count == xmlPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlPrefixNamespace, 0, count) == 0) return Xml;
-            if (count == xmlnsPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlnsPrefixNamespace, 0, count) == 0) return Xmlns;
-
             // Use CompareExchange to ensure that exactly one XHashtable<WeakReference> is used to store namespaces
             if (s_namespaces == null)
                 Interlocked.CompareExchange(ref s_namespaces, new XHashtable<WeakReference<XNamespace>>(ExtractNamespace, NamespacesCapacity), null);
 
-            XNamespace ns = null;
+            XNamespace ns;
 
             // Attempt to get the WeakReference for the namespace from the hash table
             if (s_namespaces.TryGetValue(namespaceName, index, count, out WeakReference<XNamespace> refNamespace))
             {
-                if (refNamespace.TryGetTarget(out ns))
-                {
-                    return ns;
-                }
-                else
+                if (!refNamespace.TryGetTarget(out ns))
                 {
                     ns = new XNamespace(namespaceName.Substring(index, count));
                     refNamespace.SetTarget(ns);
@@ -259,20 +263,26 @@ namespace System.Xml.Linq
             }
             else
             {
+                // determine whether it's a special namespace
+                if (count == xmlPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlPrefixNamespace, 0, count) == 0) return Xml;
+                if (count == xmlnsPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlnsPrefixNamespace, 0, count) == 0) return Xmlns;
+
                 // Go ahead and create the namespace and add it to the table
                 ns = new XNamespace(namespaceName.Substring(index, count));
                 s_namespaces.Add(new WeakReference<XNamespace>(ns));
             }
+
             return ns;
         }
 
         /// <summary>
-        /// This function is used by the <see cref="XHashtable{XName}"/> to extract the local name part from an <see cref="XName"/>.  The hash table
+        /// This function is used by the <see cref="XHashtable{WeakReference}"/> to extract the local name part from an <see cref="XName"/>.  The hash table
         /// uses the local name as the hash key.
         /// </summary>
-        private static string ExtractLocalName(XName n)
+        private static string ExtractLocalName(WeakReference<XName> r)
         {
-            Debug.Assert(n != null, "Null name should never exist here");
+            if (r == null || !r.TryGetTarget(out XName n))
+                return null;
             return n.LocalName;
         }
 

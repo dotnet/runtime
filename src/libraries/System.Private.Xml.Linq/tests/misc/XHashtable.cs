@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Threading;
 using Xunit;
 
 namespace System.Xml.Linq.Tests
@@ -174,7 +175,7 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void DifferentNamespaceAndSameNameProduceDifferentXNameInstance()
         {
-            XName a = "{Namesapce1}Name1", b = "{Namesapce2}Name1";
+            XName a = "{Namespace1}Name1", b = "{Namespace2}Name1";
             Assert.NotSame(a.Namespace, b.Namespace);
             Assert.NotSame(a, b);
             Assert.NotSame(a.ToString(), b.ToString());
@@ -195,8 +196,11 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void SameNamespaceSameStringDifferentInstanceProduceSameXNameInstance()
         {
-            XName a = "Name3";
-            var b = new XElement($"Name3{null}");
+            string instance1 = "Name3";
+            string instance2 = $"Name3{null}"; // different string instance populated
+            XName a = instance1;
+            var b = new XElement(instance2);
+            Assert.NotSame(instance1, instance2);
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.Same(a, b.Name);
             Assert.Same(XNamespace.None, a.Namespace);
@@ -206,11 +210,27 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void SameNamespaceDifferentNameProduceDifferentXNameInstance()
         {
-            XName a = "{Namesapce2}Name4";
-            var b = new XElement("{Namesapce2}Name5");
+            XName a = "{Namespace2}Name4";
+            var b = new XElement("{Namespace2}Name5");
             Assert.Same(a.Namespace, b.Name.Namespace);
             Assert.NotSame(a, b.Name);
             Assert.Same(a.Namespace.ToString(), b.Name.Namespace.ToString());
+        }
+
+        [Fact]
+        public void SameNamespaceSameNameProduceSameXNameInstanceAfterGC()
+        {
+            XName a = "Name6";
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            var b = new XElement($"Name6");
+            Assert.Same(a.Namespace, b.Name.Namespace);
+            Assert.Same(a, b.Name);
+            Assert.Same(XNamespace.None, a.Namespace);
+            Assert.Same(a.ToString(), b.Name.ToString());
         }
     }
 }
