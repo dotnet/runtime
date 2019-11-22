@@ -293,7 +293,7 @@ struct RangeOps
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
-    // then ignore the dependent variables for the lower bound.
+    // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(Range& r1, Range& r2, bool monIncreasing)
     {
         Limit& r1lo = r1.LowerLimit();

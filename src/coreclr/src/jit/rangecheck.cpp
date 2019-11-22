@@ -338,7 +338,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     }
     if (op1->OperGet() != GT_LCL_VAR)
     {
-        JITDUMP("Not monIncreasing because op1 is not lclVar.\n");
+        JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
         return false;
     }
     switch (op2->OperGet())
@@ -351,7 +351,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
 
         default:
-            JITDUMP("Not monIncreasing because expression is not recognized.\n");
+            JITDUMP("Not monotonically increasing because expression is not recognized.\n");
             return false;
     }
 }
@@ -1043,14 +1043,27 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     return overflows;
 }
 
-// Compute the range recursively by asking for the range of each variable in the dependency chain.
-// eg.: c = a + b; ask range of "a" and "b" and add the results.
-// If the result cannot be determined i.e., the dependency chain does not terminate in a value,
-// but continues to loop, which will happen with phi nodes. We end the looping by calling the
-// value as "dependent" (dep).
-// If the loop is proven to be "monIncreasing", then make liberal decisions while merging phi node.
-// eg.: merge((0, dep), (dep, dep)) = (0, dep), merge((0, 1), (dep, dep)) = (0, dep),
-// merge((0, 5), (dep, 10)) = (0, 10).
+//------------------------------------------------------------------------
+// ComputeRange: Compute the range recursively by asking for the range of each variable in the dependency chain.
+//
+// Arguments:
+//   block - the block that contains `expr`;
+//   expr - expression to compute the range for;
+//   monIncreasing - true if `expr` is proven to be monotonically increasing;
+//   indent - debug printing indent.
+//
+// Return value:
+//   'expr' range as lower and upper limits.
+//
+// Notes:
+//   eg.: c = a + b; ask range of "a" and "b" and add the results.
+//   If the result cannot be determined i.e., the dependency chain does not terminate in a value,
+//   but continues to loop, which will happen with phi nodes we end the looping by calling the
+//   value as "dependent" (dep).
+//   If the loop is proven to be "monIncreasing", then make liberal decisions for the lower bound
+//   while merging phi node. eg.: merge((0, dep), (dep, dep)) = (0, dep),
+//   merge((0, 1), (dep, dep)) = (0, dep), merge((0, 5), (dep, 10)) = (0, 10).
+//
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
     bool  newlyAdded = !m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
