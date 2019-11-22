@@ -33,6 +33,21 @@ jobs:
 
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
+
+        - _coreClrArtifactName: ''
+        - _coreClrDownloadPath: ''
+        - _coreClrOverridePathArg: ''
+
+        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+          - _coreClrArtifactName: 'BinDir_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+          - _skipTestRestoreArg: /p:SkipTestRestore=true $(_coreClrOverridePathArg)
+
+        - _archiveExtension: '.tar.gz'
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _archiveExtension: '.zip'
+
         - ${{ parameters.variables }}
 
       steps:
