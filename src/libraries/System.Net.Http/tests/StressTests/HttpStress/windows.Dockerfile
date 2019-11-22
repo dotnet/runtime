@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.101-nanoserver-1909
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-nanoserver-1903
 FROM $SDK_BASE_IMAGE
 
 # Use powershell as the default shell

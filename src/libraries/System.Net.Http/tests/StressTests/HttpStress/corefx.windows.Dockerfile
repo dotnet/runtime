@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-nanoserver-1909
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-nanoserver-1903
 
 # TODO Docker builds
 # FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019 as corefxbuild
