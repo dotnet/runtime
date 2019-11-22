@@ -14,6 +14,10 @@ variables:
   - template: ../variables.yml
   - name: httpStressProject
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
+  - name: sdkBaseImage
+    value: sdk-corefx-current
+  - name: httpStressImage
+    value: httpstress
 
 steps:
 - checkout: self
@@ -22,15 +26,17 @@ steps:
   lfs: false
 
 - powershell: |
-    .\$(buildScriptFileName).cmd -ci -c $(BUILD_CONFIGURATION)
-  displayName: Build Corefx
+    docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(HttpStressProject)corefx.Dockerfile .
+  displayName: Build Libraries
 
 - powershell: |
     cd '$(HttpStressProject)'
-    # Load testhost sdk in environment
-    . .\load-corefx-testhost.ps1 -c $(BUILD_CONFIGURATION) -b
-    # Run the stress suite
-    dotnet run -c $(BUILD_CONFIGURATION) -- $(HTTPSTRESS_ARGS)
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) .
+  displayName: Build HttpStress
+
+- powershell: |
+    cd '$(HttpStressProject)'
+    docker run -e HTTPSTRESS_ARGS=$(HTTPSTRESS_ARGS) $(httpStressImage)
   displayName: Run HttpStress
 
 - task: PublishBuildArtifacts@1

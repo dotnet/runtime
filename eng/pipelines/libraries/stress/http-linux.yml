@@ -27,7 +27,7 @@ steps:
 
 - bash: |
     docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) --build-arg BUILD_SCRIPT_NAME=$(buildScriptFileName) -f $(HttpStressProject)corefx.Dockerfile .
-  displayName: Build Corefx
+  displayName: Build Libraries
 
 - bash: |
     cd '$(HttpStressProject)'
