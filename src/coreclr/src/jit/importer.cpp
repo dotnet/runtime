@@ -11816,7 +11816,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 arrayNodeFrom = impStackTop().val;
 
                 // Is this a case where we can skip the covariant store check?
-                if (opts.IsOptimizationEnabled() && impCanSkipCovariantStoreCheck(arrayNodeFrom, arrayNodeTo))
+                if (opts.OptimizationEnabled() && impCanSkipCovariantStoreCheck(arrayNodeFrom, arrayNodeTo))
                 {
                     lclTyp = TYP_REF;
                     goto ARR_ST_POST_VERIFY;
@@ -20710,7 +20710,7 @@ bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 bool Compiler::impCanSkipCovariantStoreCheck(GenTree* arrayNodeFrom, GenTree* arrayNodeTo)
 {
     // We should only call this when optimizing.
-    assert(!opts.OptimizationEnabled());
+    assert(opts.OptimizationEnabled());
 
     // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
     if (arrayNodeFrom->OperIs(GT_INDEX) && arrayNodeTo->OperIs(GT_LCL_VAR))
