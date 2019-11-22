@@ -27,12 +27,5 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
             }
         }
-
-        [Fact]
-        public static void DynamicCode_Jit()
-        {
-            Assert.True(RuntimeFeature.IsDynamicCodeSupported);
-            Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
-        }
     }
 }
