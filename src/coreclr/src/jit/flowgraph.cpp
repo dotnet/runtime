@@ -4266,13 +4266,14 @@ void Compiler::fgSwitchToOptimized()
     JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
+
+    // Leave a note for jit diagnostics
+    compSwitchedToOptimized = true;
+
     compInitOptions(opts.jitFlags);
 
     // Notify the VM of the change
     info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
-
-    // And leave a note for jit diagnostics too
-    compSwitchedToOptimized = true;
 }
 
 //------------------------------------------------------------------------
