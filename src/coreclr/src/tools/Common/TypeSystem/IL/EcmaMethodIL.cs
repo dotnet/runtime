@@ -6,7 +6,7 @@ using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
+using System.Threading;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -64,20 +64,8 @@ namespace Internal.IL
             if (_ilBytes != null)
                 return _ilBytes;
 
-            // This lock is necessary since the JIT requires that we provide the same address
-            // for the IL buffer each time (it uses the address to detect recursive calls).
-            // Since MethodBodyBlock.GetAllBytes creates a new array each time, if two threads
-            // call this on the same function then it is possible for both to set _ilBytes.
-            // Then, one of the threads will receive the first value on the first call and the
-            // second value on all subsequent calls, and we will not detect the recursive call.
-            lock (this)
-            {
-                if (_ilBytes != null)
-                    return _ilBytes;
-
-                byte[] ilBytes = _methodBody.GetILBytes();
-                return (_ilBytes = ilBytes);
-            }
+            Interlocked.CompareExchange(ref _ilBytes, _methodBody.GetILBytes(), null);
+            return _ilBytes;
         }
 
         public override bool IsInitLocals
