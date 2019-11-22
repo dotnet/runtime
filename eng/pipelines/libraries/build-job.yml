@@ -27,6 +27,10 @@ jobs:
       pool: ${{ parameters.pool }}
       stepName: Build
 
+      ${{ if eq(parameters.useLiveCoreClr, true) }}:
+        dependsOn:
+        - ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
         - ${{ parameters.variables }}

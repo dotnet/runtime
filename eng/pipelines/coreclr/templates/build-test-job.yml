@@ -32,7 +32,6 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
-    variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
 
     # Test jobs should continue on error for internal builds
