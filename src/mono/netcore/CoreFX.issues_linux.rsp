@@ -24,7 +24,7 @@
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
 
-# fails wit some OpenSSL error
+# fails with some OpenSSL error
 -nomethod System.Net.Security.Tests.ServerRequireEncryptionTest.ServerRequireEncryption_ClientNoEncryption_NoConnect
 -nomethod System.Net.Security.Tests.SslStreamAlpnTests.SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail
 -nomethod System.Net.Security.Tests.ClientDefaultEncryptionTest.ClientDefaultEncryption_ServerNoEncryption_NoConnect
@@ -32,3 +32,12 @@
 -nomethod System.Net.Security.Tests.ClientAsyncAuthenticateTest.ClientAsyncAuthenticate_ServerNoEncryption_NoConnect
 -nomethod System.Net.Security.Tests.ServerAsyncAuthenticateTest.ServerAsyncAuthenticate_MismatchProtocols_Fails
 -nomethod System.Net.Security.Tests.ClientAsyncAuthenticateTest.ClientAsyncAuthenticate_MismatchProtocols_Fails
+
+# fails on LLVM
+-nomethod System.Tests.StringTests.StartsWith
+-nomethod System.Tests.SingleTests.ToStringRoundtrip
+-nomethod System.Tests.SingleTests.ToStringRoundtrip_R
+-nomethod System.Tests.DoubleTests.ToStringRoundtrip
+-nomethod System.Tests.DoubleTests.ToStringRoundtrip_R
+-nomethod System.Reflection.Tests.BindingFlagsDoNotWrapTests.*
+-nomethod System.Tests.TypeTests.FilterName_Invoke_DelegateFiltersExpectedMembers

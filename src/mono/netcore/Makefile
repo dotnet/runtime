@@ -20,7 +20,7 @@ PLATFORM_AOT_SUFFIX := .dll
 PLATFORM_AOT_PREFIX :=
 NETCORESDK_EXT = zip
 UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extractall()"
-XUNIT_FLAGS = -notrait category=nonwindowstests @../../../../CoreFX.issues_windows.rsp
+XUNIT_INNER_ARGS = -notrait category=nonwindowstests @../../../../CoreFX.issues_windows.rsp
 TESTS_PLATFORM = Windows_NT.x64
 ON_RUNTIME_EXTRACT = chmod -R 755 {host,shared,./dotnet}
 DOTNET := $(shell powershell -ExecutionPolicy Bypass -Command "./init-tools.ps1")/dotnet.exe
@@ -32,7 +32,7 @@ PLATFORM_AOT_SUFFIX := .dylib
 PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
-XUNIT_FLAGS = -notrait category=nonosxtests @../../../../CoreFX.issues_mac.rsp
+XUNIT_INNER_ARGS = -notrait category=nonosxtests @../../../../CoreFX.issues_mac.rsp
 TESTS_PLATFORM = OSX.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
@@ -42,9 +42,9 @@ PLATFORM_AOT_SUFFIX := .so
 PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
-XUNIT_FLAGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
+XUNIT_INNER_ARGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
 ifeq ($(COREARCH), arm64)
-XUNIT_FLAGS += @../../../../CoreFX.issues_linux_arm64.rsp
+XUNIT_INNER_ARGS += @../../../../CoreFX.issues_linux_arm64.rsp
 endif
 TESTS_PLATFORM = Linux.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
@@ -222,12 +222,12 @@ run-tests-corefx-%: prepare update-tests-corefx
 	@cp corefx/restore/corefx-restore.dll corefx/tests/extracted/$*/corefx-restore.dll
 	@sed -i -e 's/5.0.0\"/$(NETCOREAPP_VERSION)\"/g' corefx/tests/extracted/$*/*.runtimeconfig.json
 	cd corefx/tests/extracted/$* && \
-	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet exec \
+	MONO_ENV_OPTIONS="--debug $(XUNIT_MONO_ENV_OPTIONS)" COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet exec \
 		--runtimeconfig $*.runtimeconfig.json --additional-deps $*.deps.json \
 		--fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
 		-html ../../TestResult-$*.html -xml ../../TestResult-$*-netcore-xunit.xml \
-		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
-		$(FIXTURE)
+		$(XUNIT_INNER_ARGS) @../../../../CoreFX.issues.rsp \
+		$(XUNIT_ARGS)
 
 # build a test assembly in COREFX_ROOT (path to a fully built corefx repo) and copy it to corefx/tests/extracted
 # e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`
