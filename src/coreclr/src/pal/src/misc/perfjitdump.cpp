@@ -295,6 +295,7 @@ exit:
                     if (result < item[itemsWritten].iov_len)
                     {
                         item[itemsWritten].iov_len -= result;
+                        item[items].iov_base = (void*)((uint64_t) item[items].iov_base + result);
                         break;
                     }
                     else
