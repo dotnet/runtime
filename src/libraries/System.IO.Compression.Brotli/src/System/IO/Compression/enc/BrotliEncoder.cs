@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using size_t = System.IntPtr;
@@ -64,6 +65,7 @@ namespace System.IO.Compression
             if (_state == null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
+                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
             {
@@ -81,6 +83,7 @@ namespace System.IO.Compression
             if (_state == null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
+                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
             {
