@@ -915,7 +915,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
             {
-                throw new RequiresRuntimeJitException("CallVirt to static method");
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
             exactType = type;
@@ -1095,7 +1095,7 @@ namespace Internal.JitInterface
                     // Compensate for always treating delegates as direct calls above
                     !(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0) && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && !resolvedCallVirt))
                 {
-                    throw new RequiresRuntimeJitException("Direct calls to abstract methods are not allowed");
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
                 }
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;

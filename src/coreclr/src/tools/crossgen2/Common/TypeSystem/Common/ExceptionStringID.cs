@@ -32,6 +32,8 @@ namespace Internal.TypeSystem
         InvalidProgramVararg,
         InvalidProgramCallVirtFinalize,
         InvalidProgramNativeCallable,
+        InvalidProgramCallAbstractMethod,
+        InvalidProgramCallVirtStatic,
 
         // BadImageFormatException
         BadImageFormatGeneric,
