@@ -125,7 +125,7 @@ namespace System.Linq
                     }
 
                     _slots[i]._hashCode = -1;
-                    _slots[i]._value = default;
+                    _slots[i]._value = default!;
                     _slots[i]._next = -1;
                     return true;
                 }
@@ -235,7 +235,6 @@ namespace System.Linq
             /// <summary>
             /// The item held by this slot.
             /// </summary>
-            [MaybeNull, AllowNull]
             internal TElement _value;
         }
     }

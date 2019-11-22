@@ -215,7 +215,7 @@ namespace System.Threading.Channels
                         VoidAsyncOperationWithData<T> w = parent._blockedWriters.DequeueHead();
                         if (w.TrySetResult(default))
                         {
-                            parent._items.EnqueueTail(w.Item);
+                            parent._items.EnqueueTail(w.Item!);
                             return item;
                         }
                     }

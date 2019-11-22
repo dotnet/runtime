@@ -65,6 +65,6 @@ namespace System.Linq.Parallel
             return false;
         }
 
-        protected abstract bool MoveNextCore(ref TIntermediate currentElement);
+        protected abstract bool MoveNextCore([MaybeNullWhen(false), AllowNull] ref TIntermediate currentElement);
     }
 }

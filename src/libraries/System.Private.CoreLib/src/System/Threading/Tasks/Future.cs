@@ -60,7 +60,7 @@ namespace System.Threading.Tasks
     public class Task<TResult> : Task
     {
         // The value itself, if set.
-        [MaybeNull] internal TResult m_result = default!;
+        [MaybeNull, AllowNull] internal TResult m_result = default!;
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 
@@ -439,7 +439,7 @@ namespace System.Threading.Tasks
         public TResult Result =>
             IsWaitNotificationEnabledOrNotRanToCompletion ?
                 GetResultCore(waitCompletionNotification: true) :
-                m_result;
+                m_result!;
 
         /// <summary>
         /// Gets the result value of this <see cref="Task{TResult}"/> once the task has completed successfully.
@@ -454,7 +454,7 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
                     "Should only be used when the task completed successfully and there's no wait notification enabled");
-                return m_result;
+                return m_result!;
             }
         }
 
@@ -473,7 +473,7 @@ namespace System.Threading.Tasks
             // We shouldn't be here if the result has not been set.
             Debug.Assert(IsCompletedSuccessfully, "Task<T>.Result getter: Expected result to have been set.");
 
-            return m_result;
+            return m_result!;
         }
 
         /// <summary>
