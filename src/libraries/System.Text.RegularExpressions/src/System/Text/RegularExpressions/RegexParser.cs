@@ -1849,7 +1849,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        string str = Convert.ToString(j, _culture);
+                        string str = j.ToString(_culture);
                         _capnamelist.Add(str);
                         _capnames[str] = j;
                     }

@@ -108,11 +108,11 @@ namespace System.Text.RegularExpressions
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
                         {
-                            string pref = string.Empty.PadRight(curNode.M, curNode.Ch);
+                            string pref = new string(curNode.Ch, curNode.M);
                             return new RegexPrefix(pref, 0 != (curNode.Options & RegexOptions.IgnoreCase));
                         }
-                        else
-                            return RegexPrefix.Empty;
+
+                        return RegexPrefix.Empty;
 
                     case RegexNode.One:
                         return new RegexPrefix(curNode.Ch.ToString(), 0 != (curNode.Options & RegexOptions.IgnoreCase));

@@ -476,7 +476,7 @@ namespace System.Text.RegularExpressions
                     if (prev.NType == One)
                     {
                         prev.NType = Multi;
-                        prev.Str = Convert.ToString(prev.Ch, CultureInfo.InvariantCulture);
+                        prev.Str = prev.Ch.ToString();
                     }
 
                     if ((optionsAt & RegexOptions.RightToLeft) == 0)

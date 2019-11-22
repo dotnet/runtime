@@ -305,18 +305,15 @@ namespace System.Text.RegularExpressions
 
             if (capslist == null)
             {
-                int max = capsize;
-                result = new string[max];
-
-                for (int i = 0; i < max; i++)
+                result = new string[capsize];
+                for (int i = 0; i < result.Length; i++)
                 {
-                    result[i] = Convert.ToString(i, CultureInfo.InvariantCulture);
+                    result[i] = i.ToString();
                 }
             }
             else
             {
-                result = new string[capslist.Length];
-                Array.Copy(capslist, result, capslist.Length);
+                result = capslist.AsSpan().ToArray();
             }
 
             return result;
@@ -375,7 +372,7 @@ namespace System.Text.RegularExpressions
             if (capslist == null)
             {
                 if (i >= 0 && i < capsize)
-                    return i.ToString(CultureInfo.InvariantCulture);
+                    return i.ToString();
 
                 return string.Empty;
             }
@@ -469,10 +466,9 @@ namespace System.Text.RegularExpressions
             if (runner == null)
             {
                 // Use the compiled RegexRunner factory if the code was compiled to MSIL
-                if (factory != null)
-                    runner = factory.CreateInstance();
-                else
-                    runner = new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                runner = factory != null ?
+                    factory.CreateInstance() :
+                    new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
             }
 
             Match? match;
