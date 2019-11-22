@@ -2,13 +2,21 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 
-# Creates a .sln that includes all of the library src, ref, or test projects.
+# Creates a .sln that includes all of the library src, ref, or tests projects.
 
 param (
-    [string]$type = "src"
+    [string]$type = "src" # can also be "ref" or "tests"
 )
 
-$SolutionName = "Libraries." $($type) ".Generated.sln"
+if (($type -ne "src") -and
+    ($type -ne "ref") -and
+    ($type -ne "tests"))
+{
+    Write-Host "Unsupported type '$($type)'. Must be 'src', 'ref', or 'tests'."
+    exit
+}
+
+$SolutionName = "Libraries.$($type).Generated.sln"
 
 # Delete the existing solution if it exists
 if (Test-Path $SolutionName)
@@ -19,8 +27,8 @@ if (Test-Path $SolutionName)
 # Create the new solution
 dotnet new sln --name $([System.IO.Path]::GetFileNameWithoutExtension($SolutionName))
 
-# Populate it with all *\src\*.csproj projects
-foreach ($f in Get-ChildItem -Path $([System.IO.Path]::Combine("*", $type, "*")) -Filter *.csproj)
+# Populate it with all *\$type\*.csproj projects
+foreach ($f in Get-ChildItem -Recurse -Path $([System.IO.Path]::Combine("*", $type)) -Filter *.csproj)
 {
     dotnet sln $SolutionName add --in-root $f.FullName
 }
