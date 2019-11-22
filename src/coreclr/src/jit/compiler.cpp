@@ -5855,6 +5855,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #endif
     }
 
+    compSwitchedToOptimized = false;
+    compSwitchedToMinOpts   = false;
+
     // compInitOptions will set the correct verbose flag.
 
     compInitOptions(compileFlags);
@@ -5946,9 +5949,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     info.compTotalHotCodeSize  = 0;
     info.compTotalColdCodeSize = 0;
 
-    compHasBackwardJump     = false;
-    compSwitchedToOptimized = false;
-    compSwitchedToMinOpts   = false;
+    compHasBackwardJump = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
