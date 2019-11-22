@@ -79,7 +79,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug"
+             Properties="Configuration=Debug;Platform=AnyCPU"
              Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"

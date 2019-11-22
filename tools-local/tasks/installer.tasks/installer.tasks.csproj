@@ -1,12 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="Configuration;Debug">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net46</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <!-- Set platform to AnyCPU (not TargetArchitecture) to avoid arch-specific output path. -->
-    <Platform>AnyCPU</Platform>
-    <Configuration>Debug</Configuration>
   </PropertyGroup>
 
   <ItemGroup>
