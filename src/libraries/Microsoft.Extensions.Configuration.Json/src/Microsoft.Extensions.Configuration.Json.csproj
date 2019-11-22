@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <Description>JSON configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
     <PackageTags>$(PackageTags);json</PackageTags>
     <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
