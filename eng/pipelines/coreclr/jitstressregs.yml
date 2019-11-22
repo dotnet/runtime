@@ -14,7 +14,7 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -29,7 +29,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platformGroup: all
-    helixQueueGroup: ci
     jobParameters:
       testGroup: jitstressregs
 
@@ -39,5 +38,6 @@ jobs:
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstressregs

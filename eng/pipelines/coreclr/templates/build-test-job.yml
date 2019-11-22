@@ -9,6 +9,7 @@ parameters:
   condition: true
   stagedBuild: false
   variables: {}
+  pool: ''
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -31,6 +32,7 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
+    pool: ${{ parameters.pool }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -74,7 +76,7 @@ jobs:
 
 
     # Download product binaries directory
-    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
@@ -92,7 +94,7 @@ jobs:
 
 
     # Zip and publish managed test components
-    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+    - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(testRootFolderPath)
         includeRootFolder: false
@@ -105,7 +107,7 @@ jobs:
 
     # Publish .packages/microsoft.net.sdk.il needed for traversing
     # test projects during the copynativeonly command in run test job.
-    - template: /eng/pipelines/coreclr/templates/upload-artifact-step.yml
+    - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(microsoftNetSdkIlFolderPath)
         includeRootFolder: false

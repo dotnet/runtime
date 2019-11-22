@@ -6,7 +6,7 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -32,6 +32,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: checked
     platforms:
     - Linux_x64

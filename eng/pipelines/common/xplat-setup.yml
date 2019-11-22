@@ -4,10 +4,12 @@ parameters:
   osSubgroup: ''
   archType: ''
   container: ''
+  helixQueuesTemplate: ''
+  platform: ''
   jobParameters: {}
 
 jobs:
-- template: ${{ parameters.jobTemplate }}
+- template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     variables:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -21,6 +23,8 @@ jobs:
           value: '.cmd'
         - name: dir
           value: '\'
+        - name: _msbuildCommand
+          value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -33,6 +37,8 @@ jobs:
           value: '.sh'
         - name: dir
           value: '/'
+        - name: _msbuildCommand
+          value: ./eng/common/msbuild.sh --warnaserror false --ci
       
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
@@ -49,4 +55,43 @@ jobs:
       ${{ if ne(parameters.container.registry, 'mcr') }}:
         container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
 
-    ${{ insert }}: ${{ parameters.jobParameters }}
+    ${{ if eq(parameters.jobParameters.pool, '') }}:
+      pool:
+        # Public Linux Build Pool
+        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+          name:  NetCorePublic-Pool
+          queue: BuildPool.Ubuntu.1604.Amd64.Open
+
+        # Official Build Linux Pool
+        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: NetCoreInternal-Pool
+          queue: BuildPool.Ubuntu.1604.Amd64
+
+        # FreeBSD builds only in the internal project
+        ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: dnceng-freebsd-internal
+
+        # Official Build OSX Pool
+        ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: Hosted Mac Internal
+
+        # Public OSX Build Pool
+        ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
+          name: Hosted macOS
+
+        # Official Build Windows Pool
+        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: NetCoreInternal-Pool
+          queue: BuildPool.Windows.10.Amd64.VS2019
+
+        # Public Windows Build Pool
+        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+          name: NetCorePublic-Pool
+          queue: BuildPool.Windows.10.Amd64.VS2019.Open
+
+    ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      ${{ insert }}: ${{ parameters.jobParameters }}
+    ${{ if ne(parameters.helixQueuesTemplate, '') }}:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      jobParameters: ${{ parameters.jobParameters }}
+      platform: ${{ parameters.platform }}

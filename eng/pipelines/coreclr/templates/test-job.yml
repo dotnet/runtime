@@ -17,6 +17,7 @@ parameters:
   condition: true
   stagedBuild: false
   variables: {}
+  pool: ''
 
 ### Test job
 
@@ -37,6 +38,7 @@ jobs:
       condition: ${{ parameters.condition }}
       stagedBuild: ${{ parameters.stagedBuild }}
       variables: ${{ parameters.variables }}
+      pool: ${{ parameters.pool }}
 
 - template: /eng/pipelines/coreclr/templates/run-test-job.yml
   parameters:
@@ -56,3 +58,4 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
     variables: ${{ parameters.variables }}
+    pool: ${{ parameters.pool }}
