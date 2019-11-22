@@ -4192,7 +4192,7 @@ FOR_START:
         stelem.i4
         leave TRY_END_a
     }
-    catch [mscorlib]System.IndexOutOfRangeException
+    catch [mscorlib]System.NullReferenceException
     {
         leave TRY_END_a
     }
