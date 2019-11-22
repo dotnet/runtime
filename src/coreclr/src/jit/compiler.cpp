@@ -3577,11 +3577,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         if (compSwitchedToOptimized)
         {
-            printf("OPTIONS: Tier-0 compilation, switched to FullOpts");
+            printf("OPTIONS: Tier-0 compilation, switched to FullOpts\n");
         }
         if (compSwitchedToMinOpts)
         {
-            printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts");
+            printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts\n");
         }
 
         printf("OPTIONS: compCodeOpt = %s\n",
