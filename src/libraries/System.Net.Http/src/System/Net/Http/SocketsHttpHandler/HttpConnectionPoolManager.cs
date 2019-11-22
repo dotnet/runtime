@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.NetworkInformation;
 
 namespace System.Net.Http
 {
@@ -42,6 +43,8 @@ namespace System.Net.Http
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy _proxy;
         private readonly ICredentials _proxyCredentials;
+
+        private NetworkAddressChangedEventHandler _networkChangedDelegate;
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -127,6 +130,34 @@ namespace System.Net.Http
                 {
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
+            }
+
+            // Monitor network changes to invalidate Alt-Svc headers.
+            // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
+            var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
+            NetworkAddressChangedEventHandler networkChangedDelegate = null;
+
+            networkChangedDelegate = delegate
+            {
+                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> pools))
+                {
+                    foreach (HttpConnectionPool pool in pools.Values)
+                    {
+                        pool.OnNetworkChanged();
+                    }
+                }
+                else
+                {
+                    // Our pools were GCed; user did not dispose the handler.
+                    NetworkChange.NetworkAddressChanged -= networkChangedDelegate;
+                }
+            };
+
+            _networkChangedDelegate = networkChangedDelegate;
+
+            using (ExecutionContext.SuppressFlow())
+            {
+                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
             }
         }
 
@@ -230,12 +261,7 @@ namespace System.Net.Http
             HttpConnectionPool pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                // TODO https://github.com/dotnet/corefx/issues/28863:
-                // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-                // So, we need to add them manually for now.
-                bool isNonNullIPv6address = key.Host != null && request.RequestUri.HostNameType == UriHostNameType.IPv6;
-
-                pool = new HttpConnectionPool(this, key.Kind, isNonNullIPv6address ? "[" + key.Host + "]" : key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
 
                 if (_cleaningTimer == null)
                 {
@@ -349,6 +375,12 @@ namespace System.Net.Http
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
+            }
+
+            if (_networkChangedDelegate != null)
+            {
+                NetworkChange.NetworkAddressChanged -= _networkChangedDelegate;
+                _networkChangedDelegate = null;
             }
         }
 

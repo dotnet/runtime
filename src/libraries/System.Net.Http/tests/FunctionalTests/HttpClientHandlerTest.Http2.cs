@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
-        protected override bool UseHttp2 => true;
+        protected override Version UseVersion => HttpVersion.Version20;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 
