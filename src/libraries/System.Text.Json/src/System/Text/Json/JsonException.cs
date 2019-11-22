@@ -14,7 +14,7 @@ namespace System.Text.Json
     public class JsonException : Exception
     {
         // Allow the message to mutate to avoid re-throwing and losing the StackTrace to an inner exception.
-        private string? _message;
+        internal string? _message;
 
         /// <summary>
         /// Creates a new exception object to relay error information to the user.
@@ -134,7 +134,7 @@ namespace System.Text.Json
         {
             get
             {
-                return _message!;
+                return _message ?? base.Message;
             }
         }
 

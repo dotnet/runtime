@@ -598,7 +598,7 @@ namespace System.Text.Json
         public bool TrySkip() { throw null; }
         public bool ValueTextEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
-        public bool ValueTextEquals(string text) { throw null; }
+        public bool ValueTextEquals(string? text) { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IAsyncDisposable, System.IDisposable
     {
