@@ -741,7 +741,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int dreg = alloc_ireg (cfg);
 			int t1 = alloc_ireg (cfg);
 	
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, t1, args [0]->dreg, 3);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, t1, args [0]->dreg, 3);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_MUL_IMM, dreg, t1, 2654435761u);
 			ins->type = STACK_I4;
 
