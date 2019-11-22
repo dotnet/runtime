@@ -2,7 +2,7 @@ ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-buster
 FROM $SDK_BASE_IMAGE
 
 WORKDIR /app
-COPY . .
+COPY System.Net.Http/test/StressTests/HttpStress .
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $CONFIGURATION
