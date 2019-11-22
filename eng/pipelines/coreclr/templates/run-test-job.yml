@@ -92,15 +92,15 @@ jobs:
 
     - coreFxArtifactName: ''
     - coreFxDownloadPath: ''
-    - localCoreFxArg: ''
+    - coreFxOverrideArg: ''
 
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - coreFxDownloadPath: $(Build.SourcesDirectory)/${{ format('artifacts/bin/runtime/netcoreapp-{0}-{1}-{2}', parameters.osGroup, parameters.buildConfig, parameters.archType) }}
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - localCoreFxArg: ' localcorefxpath $(coreFxDownloadPath)'
+        - coreFxOverrideArg: ' corefxoverridepath $(coreFxDownloadPath)'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - localCoreFxArg: ' localcorefxpath=$(coreFxDownloadPath)'
+        - coreFxOverrideArg: ' corefxoverridepath=$(coreFxDownloadPath)'
 
 
     - ${{ parameters.variables }}
@@ -186,19 +186,19 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(localCoreFxArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(coreFxOverrideArg)
         displayName: Copy native test components to test output folder
 
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(localCoreFxArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(coreFxOverrideArg)
         displayName: Generate test host
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(localCoreFxArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(coreFxOverrideArg)
         displayName: Crossgen framework assemblies
 
 
