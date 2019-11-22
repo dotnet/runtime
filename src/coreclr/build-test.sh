@@ -630,9 +630,14 @@ handle_arguments() {
             __SkipGenerateLayout=1
             ;;
 
-        localcorefxpath=*|-localcorefxpath=*)
-            __LocalCoreFXPath=$(echo "$1" | cut -d'=' -f 2)
-            ;;
+        localcorefxpath)
+            if [ -n "$2" ]; then
+                __LocalCoreFXPath="$2"
+                shift
+            else
+                echo "ERROR: 'localcorefxpath' requires a non-empty option argument"
+                exit 1
+            fi
 
         corefxoverridepath=*|-corefxoverridepath=*)
             __CoreFXOverridePath=$(echo "$1" | cut -d'=' -f 2)

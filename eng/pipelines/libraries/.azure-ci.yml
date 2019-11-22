@@ -45,6 +45,29 @@ pr:
     - eng/pipelines/installer/*
     - eng/pipelines/common/*
 
+resources:
+  containers:
+  - container: centos7_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
+
+  - container: centos6_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-f39df28-20191023143802
+
+  - container: alpine_39_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
+
+  - container: alpine_37_arm64_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20191023143847
+
+  - container: ubuntu_1604_arm_cross_container
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20191023143847
+
+  - container: ubuntu_1604
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191023143845
+
 variables:
   - template: variables.yml
 
@@ -61,49 +84,39 @@ variables:
       value: .NETCore
 
 stages:
+  # Windows legs
+  - template: ${{ variables['pipelinesPath'] }}/windows.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-  - stage: Build
-    jobs:
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: Release
-          platforms:
-          - OSX_x64
-          jobParameters:
-            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-            framework: netcoreapp
+  # Linux legs
+  - template: ${{ variables['pipelinesPath'] }}/linux.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-          buildConfig: Release
-          platforms:
-          - OSX_x64
-          jobParameters:
-            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-            testScope: innerloop
-            framework: netcoreapp
-      
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - OSX_x64
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          jobParameters:
-            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-            isFullMatrix: ${{ variables['isFullMatrix'] }}
-            testScope: innerloop
-            framework: netcoreapp
+  # MacOS legs
+  - template: ${{ variables['pipelinesPath'] }}/macos.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+
+    # FreeBSD leg is only for official builds
+    # - template: ${{ variables['pipelinesPath'] }}/freebsd.yml
+    #   parameters:
+    #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+    #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Publish and validation steps. Only run in official builds
-  - ${{ if eq(variables['isOfficialBuild'], 'true') }}:
-    - template: /eng/pipelines/libraries/pre-publish.yml
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+    - template: ${{ variables['pipelinesPath'] }}/pre-publish.yml
       parameters:
         dependsOn:
-          - Build
+          - WindowsStage
+          - LinuxStage
+          - MacOSStage
+          # - FreeBSD
 
     - template: eng\common\templates\post-build\post-build.yml
       parameters:
