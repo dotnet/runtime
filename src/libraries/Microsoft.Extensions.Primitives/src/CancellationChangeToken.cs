@@ -31,6 +31,14 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public IDisposable RegisterChangeCallback(Action<object> callback, object state)
         {
+            // Don't capture the current ExecutionContext and its AsyncLocals onto the token registration causing them to live forever
+            var restoreFlow = false;
+            if (!ExecutionContext.IsFlowSuppressed())
+            {
+                ExecutionContext.SuppressFlow();
+                restoreFlow = true;
+            }
+
             try
             {
                 return Token.Register(callback, state);
@@ -39,6 +47,14 @@ namespace Microsoft.Extensions.Primitives
             {
                 // Reset the flag so that we can indicate to future callers that this wouldn't work.
                 ActiveChangeCallbacks = false;
+            }
+            finally
+            {
+                // Restore the current ExecutionContext
+                if (restoreFlow)
+                {
+                    ExecutionContext.RestoreFlow();
+                }
             }
 
             return NullDisposable.Instance;

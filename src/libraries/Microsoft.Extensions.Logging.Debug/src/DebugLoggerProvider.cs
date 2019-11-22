@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.Logging.Debug
         /// Initializes a new instance of the <see cref="DebugLoggerProvider"/> class.
         /// </summary>
         /// <param name="filter">The function used to filter events based on the log level.</param>
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is using LoggerFactory to configure filtering.")]
         public DebugLoggerProvider(Func<string, LogLevel, bool> filter)
         {
             _filter = filter;

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is ConsoleLoggerOptions.")]
     public class ConsoleLoggerSettings : IConsoleLoggerSettings
     {
         public IChangeToken ChangeToken { get; set; }

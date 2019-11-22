@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="$(SharedSourceRoot)EmptyDisposable.cs" />
+    <Compile Include="$(SharedSourceRoot)NonCapturingTimer\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

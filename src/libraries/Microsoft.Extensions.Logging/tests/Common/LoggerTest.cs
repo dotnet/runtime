@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test
@@ -121,6 +122,31 @@ namespace Microsoft.Extensions.Logging.Test
 
             // Assert
             Assert.Equal(new[] { "provider1.Test-Hello" }, store);
+        }
+
+        [Fact]
+        public void ScopesAreNotCreatedForDisabledLoggers()
+        {
+            var provider = new Mock<ILoggerProvider>();
+            var logger = new Mock<ILogger>();
+
+            provider.Setup(loggerProvider => loggerProvider.CreateLogger(It.IsAny<string>()))
+                .Returns(logger.Object);
+
+            var factory = TestLoggerBuilder.Create(
+                builder => {
+                    builder.AddProvider(provider.Object);
+                    // Disable all logs
+                    builder.AddFilter(null, LogLevel.None);
+                });
+
+            var newLogger = factory.CreateLogger("Logger");
+            using (newLogger.BeginScope("Scope"))
+            {
+            }
+
+            provider.Verify(p => p.CreateLogger("Logger"), Times.Once);
+            logger.Verify(l => l.BeginScope(It.IsAny<object>()), Times.Never);
         }
 
         private class CustomLoggerProvider : ILoggerProvider

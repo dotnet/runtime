@@ -1,8 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
@@ -23,6 +21,9 @@ namespace Microsoft.Extensions.Options
             _factory = factory;
         }
 
+        /// <summary>
+        /// The default configured TOptions instance, equivalent to Get(Options.DefaultName).
+        /// </summary>
         public TOptions Value
         {
             get
@@ -31,6 +32,9 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Returns a configured TOptions instance with the given name.
+        /// </summary>
         public virtual TOptions Get(string name)
         {
             name = name ?? Options.DefaultName;
