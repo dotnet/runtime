@@ -28,6 +28,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
+        - buildScriptFileName: libraries
         - _BuildConfig: ${{ parameters.buildConfig }}
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
