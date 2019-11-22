@@ -193,9 +193,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
-        public void RSAEncryptionPadding_Equals()
+        public void RSAEncryptionPadding_Equality()
         {
-            Assert.Equal(RSAEncryptionPadding.Pkcs1, RSAEncryptionPadding.Pkcs1);
+            Assert.True(RSAEncryptionPadding.Pkcs1.Equals(RSAEncryptionPadding.Pkcs1));
+            Assert.True(RSAEncryptionPadding.Pkcs1.Equals((object)RSAEncryptionPadding.Pkcs1));
+            Assert.True(RSAEncryptionPadding.Pkcs1 == RSAEncryptionPadding.Pkcs1);
+            Assert.False(RSAEncryptionPadding.Pkcs1 != RSAEncryptionPadding.Pkcs1);
+
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals(RSAEncryptionPadding.OaepSHA1));
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals((object)RSAEncryptionPadding.OaepSHA1));
+            Assert.False(RSAEncryptionPadding.Pkcs1 == RSAEncryptionPadding.OaepSHA1);
+            Assert.True(RSAEncryptionPadding.Pkcs1 != RSAEncryptionPadding.OaepSHA1);
+
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals(null));
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals((object)null));
+            Assert.False(RSAEncryptionPadding.Pkcs1 == null);
+            Assert.True(RSAEncryptionPadding.Pkcs1 != null);
         }
 
         private sealed class EmptyRSA : RSA
