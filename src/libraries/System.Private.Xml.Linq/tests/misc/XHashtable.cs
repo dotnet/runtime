@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Threading;
 using Xunit;
 
 namespace System.Xml.Linq.Tests
