@@ -10239,10 +10239,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             // See if we can sharpen exactness by looking for final classes
             if (!isExact)
             {
-                DWORD flags     = info.compCompHnd->getClassAttribs(fromClass);
-                DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_CONTEXTFUL |
-                                  CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
-                isExact = ((flags & flagsMask) == CORINFO_FLG_FINAL);
+                isExact = impIsClassExact(fromClass);
             }
 
             // Cast to exact type will fail. Handle case where we have
@@ -10344,14 +10341,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         {
             if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
             {
-                // Check the class attributes.
-                DWORD flags = info.compCompHnd->getClassAttribs(pResolvedToken->hClass);
-
                 // If the class is final and is not marshal byref, variant or
                 // contextful, the jit can expand the IsInst check inline.
-                DWORD flagsMask =
-                    CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_VARIANCE | CORINFO_FLG_CONTEXTFUL;
-                canExpandInline = ((flags & flagsMask) == CORINFO_FLG_FINAL);
+                canExpandInline = impIsClassExact(pResolvedToken->hClass);
             }
         }
     }
@@ -11863,7 +11855,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         goto ARR_ST_POST_VERIFY;
                     }
 
-                    // Check if destination array is exactly object[], or T[] with T final.
+                    // Check if destination array is exactly object[], or T[] with T exact.
                     if (arrayNodeFrom->gtType == TYP_REF)
                     {
                         bool                 isExact     = false;
@@ -11891,18 +11883,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     lclTyp = TYP_REF;
                                     goto ARR_ST_POST_VERIFY;
                                 }
-                                // Look for T[] with T final.
+                                // Look for T[] with T exact.
                                 //
                                 // Note we are conservative on array of arrays here. It might be worth checking
-                                // for element types like int[] which are effectively final.
+                                // for element types like int[].
                                 else
                                 {
-                                    DWORD elementAttribs = info.compCompHnd->getClassAttribs(arrayElementHandle);
-                                    DWORD flagsMask      = CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF |
-                                                      CORINFO_FLG_CONTEXTFUL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
-                                    bool elementTypeIsFinal = ((elementAttribs & flagsMask) == CORINFO_FLG_FINAL);
+                                    const bool elementTypeIsExact = impIsClassExact(arrayElementHandle);
 
-                                    if (elementTypeIsFinal)
+                                    if (elementTypeIsExact)
                                     {
                                         bool                 valueIsExact   = false;
                                         bool                 valueIsNonNull = false;
@@ -11911,7 +11900,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                         if (valueHandle == arrayElementHandle)
                                         {
-                                            JITDUMP("\nstelem to T[] with T final: skipping covariant store check\n");
+                                            JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
                                             lclTyp = TYP_REF;
                                             goto ARR_ST_POST_VERIFY;
                                         }
@@ -20775,4 +20764,24 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     }
 
     call->gtGuardedDevirtualizationCandidateInfo = pInfo;
+}
+
+//------------------------------------------------------------------------
+// impIsClassExact: check if a class handle can only describe values
+//    of exactly one class.
+//
+// Arguments:
+//    classHnd - handle for class in question
+//
+// Returns:
+//    true if class is final and not subject to special casting from
+//    variance or similar.
+//
+bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
+{
+    DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
+    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_MARSHAL_BYREF | CORINFO_FLG_CONTEXTFUL | CORINFO_FLG_VARIANCE |
+                      CORINFO_FLG_ARRAY;
+
+    return ((flags & flagsMask) == CORINFO_FLG_FINAL);
 }
