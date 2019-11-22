@@ -78,8 +78,6 @@ namespace ILCompiler
 
         public virtual MethodIL GetMethodIL(MethodDesc method)
         {
-            // TODO: Remove the ILCache and use the pinned heap for the IL stream once this GC
-            // feature ships (in dotnet5)
             return _methodILCache.GetOrCreateValue(method).MethodIL;
         }
 
