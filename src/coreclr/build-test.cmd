@@ -60,6 +60,7 @@ set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
 set __LocalCoreFXPath=
+set __CoreFXOverridePath=
 set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
 
@@ -106,6 +107,7 @@ if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "localcorefxpath"       (set __LocalCoreFXPath=%2&set __SkipFXRestoreArg=/p:__SkipFXRestore=true&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "corefxoverridepath"    (set __CoreFXOverridePath=%2&set __SkipFXRestoreArg=/p:__SkipFXRestore=true&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 

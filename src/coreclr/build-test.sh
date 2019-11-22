@@ -634,6 +634,10 @@ handle_arguments() {
             __LocalCoreFXPath=$(echo "$1" | cut -d'=' -f 2)
             ;;
 
+        corefxoverridepath=*|-corefxoverridepath=*)
+            __CoreFXOverridePath=$(echo "$1" | cut -d'=' -f 2)
+            ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;

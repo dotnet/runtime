@@ -205,7 +205,7 @@
       </Reference>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(__LocalCoreFXPath)' != ''">
+    <ItemGroup Condition="'$(__CoreFXOverridePath)' != ''">
       <__ExcludeFiles Include="clrcompression" />
       <__ExcludeFiles Include="clretwrc" />
       <__ExcludeFiles Include="clrgc" />
@@ -233,9 +233,9 @@
       <__ExcludeFiles Include="superpmi-shim-simple" />
       <__ExcludeFiles Include="superpmi-shim-collector" />
 
-      <__ExcludePaths Include="$(__LocalCoreFXPath)/%(__ExcludeFiles.Identity).dll" />
+      <__ExcludePaths Include="$(__CoreFXOverridePath)/%(__ExcludeFiles.Identity).dll" />
 
-      <__LocalCoreFXManagedFiles Include="$(__LocalCoreFXPath)/*.dll" Exclude="@(__ExcludePaths)" />
+      <__LocalCoreFXManagedFiles Include="$(__CoreFXOverridePath)/*.dll" Exclude="@(__ExcludePaths)" />
 
       <Reference Include="@(__LocalCoreFXManagedFiles)">
         <Private>false</Private>
