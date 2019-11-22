@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
 #include <linux/limits.h>
@@ -232,11 +233,32 @@ exit:
 
             JitCodeLoadRecord record;
 
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+
+            record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
             record.code_addr = (uint64_t) pCode;
             record.code_size = codeSize;
             record.code_index = ++codeIndex;
-            record.header.total_size = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+            record.header.total_size = bytesRemaining;
+
+            const int maxItems = 3;
+            struct iovec item[maxItems];
+            int items = 0;
+
+            // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
+
+            item[items].iov_base = &record;
+            item[items++].iov_len = sizeof(JitCodeLoadRecord);
+            item[items].iov_base = (void*) symbol;
+            item[items++].iov_len = symbolLen + 1;
+            item[items].iov_base = pCode;
+            item[items++].iov_len = codeSize;
+
+            if (items > maxItems)
+                return FatalError(false);
+
+            int itemsWritten = 0;
 
             result = pthread_mutex_lock(&mutex);
 
@@ -246,36 +268,52 @@ exit:
             if (!enabled)
                 goto exit;
 
-            // ToDo write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+            do
+            {
+                result = writev(fd, item + itemsWritten, items - itemsWritten);
 
-            record.header.timestamp = GetTimeStampNS();
+                if (result == bytesRemaining)
+                    break;
 
-            result = write(fd, &record, sizeof(JitCodeLoadRecord));
+                if (result < 0)
+                {
+                    if ((result == -1) && (errno == EINTR))
+                    {
+                        result = 0;
+                    }
+                    else
+                    {
+                        return FatalError(true);
+                    }
+                }
 
-            if (result == -1)
-                return FatalError(true);
+                // Handle partial write case
+                bytesRemaining -= result;
 
-            result = write(fd, symbol, symbolLen + 1);
+                do
+                {
+                    if (result < item[itemsWritten].iov_len)
+                    {
+                        item[itemsWritten].iov_len -= result;
+                        break;
+                    }
+                    else
+                    {
+                        result -= item[itemsWritten].iov_len;
+                        itemsWritten++;
+                    }
+                } while (result > 0);
 
-            if (result == -1)
-                return FatalError(true);
-
-            result = write(fd, pCode, codeSize);
-
-            if (result == -1)
-                return FatalError(true);
-
-            result = fsync(fd);
-
-            if (result == -1)
-                return FatalError(true);
+                // Detect unexpected failure cases.
+                if ((itemsWritten >= items) || (bytesRemaining < 0))
+                    return FatalError(true);
+            } while (true);
 
 exit:
             result = pthread_mutex_unlock(&mutex);
 
             if (result != 0)
                 return FatalError(false);
-
         }
         return 0;
     }
