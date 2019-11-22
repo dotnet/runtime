@@ -199,13 +199,6 @@ CLRPrivBinderWinRT::GetOrCreateBinder(
 }
 
 //=====================================================================================================================
-STDAPI
-CreateAssemblyNameObjectFromMetaData(
-    LPASSEMBLYNAME    *ppAssemblyName,
-    LPCOLESTR          szAssemblyName,
-    ASSEMBLYMETADATA  *pamd);
-
-//=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     IAssemblyName *         pAssemblyName,
     CLRPrivAssemblyWinRT ** ppAssembly)
@@ -300,20 +293,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 NewHolder<CLRPrivResourcePathImpl> pResource(
                     new CLRPrivResourcePathImpl(wszFileName));
 
-                ReleaseHolder<IAssemblyName> pAssemblyDefName;
-
-                // Instead of using the metadata of the assembly to get the AssemblyDef name, fake one up from the filename.
-                // This ties in with the PreBind binding behavior and ngen. This particular logic was implemented in order
-                // to provide best performance as actually reading the metadata was prohibitively slow. (Due to the cost of opening
-                // the assembly file.) We use a zeroed out ASSEMBLYMETADATA structure to create the assembly name object
-                // in order to ensure that every field of the assembly name is filled out as if this was created from  a normal
-                // assembly def row.
-                // See comment on CLRPrivBinderWinRT::PreBind for further details about NGEN binding and WinMDs.
-                ASSEMBLYMETADATA asmd = { 0 };
-                IfFailGo(CreateAssemblyNameObjectFromMetaData(&pAssemblyDefName, wszFileNameStripped, &asmd));
-                DWORD dwAsmContentType = AssemblyContentType_WindowsRuntime;
-                IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_CONTENT_TYPE, (LPBYTE)&dwAsmContentType, sizeof(dwAsmContentType)));
-
                 //
                 // Creating the BindResult we will pass to the native binder to find native images.
                 // We strip off the type from the assembly name, leaving the simple assembly name.
@@ -323,8 +302,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 // native image for this WinRT assembly.
                 // The WinRT team has said that WinMDs will have the same simple name as the filename.
                 //
-                IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_NAME, wszFileNameStripped, (DWORD)((wcslen(wszFileNameStripped) + 1) * sizeof(WCHAR))));
-
                 NewHolder<CoreBindResult> pBindResult(new CoreBindResult());
                 StackSString sAssemblyPath(pResource->GetPath());
                 ReleaseHolder<BINDER_SPACE::Assembly> pBinderAssembly;
@@ -387,24 +364,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     ReleaseHolder<CLRPrivAssemblyWinRT> pWinRTAssembly;
     IfFailRet(BindWinRTAssemblyByName(pAssemblyName, &pWinRTAssembly));
     IfFailRet(pWinRTAssembly->QueryInterface(__uuidof(ICLRPrivAssembly), (LPVOID *)ppPrivAssembly));
-
-    return hr;
-}
-
-//=====================================================================================================================
-HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
-    IAssemblyName * pAssemblyName,
-    IBindResult ** ppIBindResult)
-{
-    STANDARD_VM_CONTRACT;
-    HRESULT hr = S_OK;
-
-    VALIDATE_ARG_RET(pAssemblyName != nullptr);
-    VALIDATE_ARG_RET(ppIBindResult != nullptr);
-
-    ReleaseHolder<CLRPrivAssemblyWinRT> pWinRTAssembly;
-    IfFailRet(BindWinRTAssemblyByName(pAssemblyName, &pWinRTAssembly));
-    IfFailRet(pWinRTAssembly->GetIBindResult(ppIBindResult));
 
     return hr;
 }
@@ -964,21 +923,21 @@ CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded(
 CLRPrivAssemblyWinRT::CLRPrivAssemblyWinRT(
     CLRPrivBinderWinRT *      pBinder,
     CLRPrivResourcePathImpl * pResourceIL,
-    IBindResult *             pIBindResult,
+    CoreBindResult *          pBindResult,
     BOOL                      fShareable)
     : m_pBinder(nullptr),
       m_pResourceIL(nullptr),
       m_pIResourceNI(nullptr),
-      m_pIBindResult(nullptr),
+      m_pBindResult(nullptr),
       m_dwImageTypes(0),
       m_FallbackBinder(nullptr)
 {
     STANDARD_VM_CONTRACT;
-    VALIDATE_ARG_THROW((pBinder != nullptr) && (pResourceIL != nullptr) && (pIBindResult != nullptr));
+    VALIDATE_ARG_THROW((pBinder != nullptr) && (pResourceIL != nullptr) && (pBindResult != nullptr));
 
     m_pBinder = clr::SafeAddRef(pBinder);
     m_pResourceIL = clr::SafeAddRef(pResourceIL);
-    m_pIBindResult = clr::SafeAddRef(pIBindResult);
+    m_pBindResult = clr::SafeAddRef(pBindResult);
 }
 
 //=====================================================================================================================
@@ -1064,7 +1023,7 @@ HRESULT CLRPrivAssemblyWinRT::GetImageResource(
     STANDARD_BIND_CONTRACT;
     HRESULT hr = S_OK;
 
-    VALIDATE_ARG_RET((ppIResource != nullptr) && (m_pIBindResult != nullptr));
+    VALIDATE_ARG_RET((ppIResource != nullptr) && (m_pBindResult != nullptr));
 
     EX_TRY
     {
@@ -1115,21 +1074,6 @@ HRESULT CLRPrivBinderWinRT::GetBinderID(
     return S_OK;
 }
 
-
-//=====================================================================================================================
-HRESULT CLRPrivAssemblyWinRT::GetIBindResult(
-    IBindResult ** ppIBindResult)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    VALIDATE_ARG_RET(ppIBindResult != nullptr);
-    VALIDATE_CONDITION((m_pIBindResult != nullptr), return E_UNEXPECTED);
-
-    *ppIBindResult = clr::SafeAddRef(m_pIBindResult);
-
-    return S_OK;
-}
-
 //=====================================================================================================================
 HRESULT CLRPrivAssemblyWinRT::EnsureAvailableImageTypes()
 {
@@ -1143,9 +1087,9 @@ HRESULT CLRPrivAssemblyWinRT::EnsureAvailableImageTypes()
     {
         if (m_pIResourceNI == nullptr)
         {
-            if (m_pIBindResult->HasNativeImage())
+            if (m_pBindResult->HasNativeImage())
             {
-                SString sPath = m_pIBindResult->GetNativeImage()->GetPath();
+                SString sPath = m_pBindResult->GetNativeImage()->GetPath();
                 m_pIResourceNI = new CLRPrivResourcePathImpl(sPath.GetUnicode());
                 m_pIResourceNI->AddRef();
             }
@@ -1165,26 +1109,6 @@ HRESULT CLRPrivAssemblyWinRT::EnsureAvailableImageTypes()
 ErrExit:
 
     return hr;
-}
-
-//=====================================================================================================================
-//static
-HRESULT CLRPrivAssemblyWinRT::GetIBindResult(
-    ICLRPrivAssembly * pPrivAssembly,
-    IBindResult **     ppIBindResult)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    HRESULT hr;
-
-    VALIDATE_ARG_RET(pPrivAssembly != nullptr);
-
-    ReleaseHolder<ICLRPrivAssemblyID_WinRT> pAssemblyID;
-    IfFailRet(pPrivAssembly->QueryInterface(__uuidof(ICLRPrivAssemblyID_WinRT), (LPVOID *)&pAssemblyID));
-    // QI succeeded, we can cast up:
-    CLRPrivAssemblyWinRT * pPrivAssemblyWinRT = static_cast<CLRPrivAssemblyWinRT *>(pPrivAssembly);
-
-    return pPrivAssemblyWinRT->GetIBindResult(ppIBindResult);
 }
 
 #endif //!DACCESS_COMPILE

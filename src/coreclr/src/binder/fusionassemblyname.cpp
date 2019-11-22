@@ -482,16 +482,11 @@ CreateAssemblyNameObject(
 
     if (parseDisplayName)
     {
-        hr = pName->Init(NULL, NULL);
-        if (FAILED(hr)) {
-            goto exit;
-        }
-
         hr = pName->Parse((LPWSTR)szAssemblyName);
     }
     else
     {
-        hr = pName->Init(szAssemblyName, NULL);
+        hr = pName->SetName(szAssemblyName);
     }
 
     if (FAILED(hr))
@@ -504,40 +499,6 @@ CreateAssemblyNameObject(
 
 exit:
     END_ENTRYPOINT_NOTHROW;
-    return hr;
-}
-
-// ---------------------------------------------------------------------------
-// CreateAssemblyNameObjectFromMetaData
-// ---------------------------------------------------------------------------
-STDAPI
-CreateAssemblyNameObjectFromMetaData(
-    LPASSEMBLYNAME    *ppAssemblyName,
-    LPCOLESTR          szAssemblyName,
-    ASSEMBLYMETADATA  *pamd)
-{
-
-    HRESULT hr = S_OK;
-    CAssemblyName *pName = NULL;
-
-    pName = NEW(CAssemblyName);
-    if (!pName)
-    {
-        hr = E_OUTOFMEMORY;
-        goto exit;
-    }
-
-    hr = pName->Init(szAssemblyName, pamd);
-
-    if (FAILED(hr))
-    {
-        SAFERELEASE(pName);
-        goto exit;
-    }
-
-    *ppAssemblyName = pName;
-
-exit:
     return hr;
 }
 
@@ -566,50 +527,15 @@ CAssemblyName::~CAssemblyName()
 }
 
 // ---------------------------------------------------------------------------
-// CAssemblyName::Init
+// CAssemblyName::SetName
 // ---------------------------------------------------------------------------
-HRESULT
-CAssemblyName::Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd)
+HRESULT CAssemblyName::SetName(LPCTSTR pszAssemblyName)
 {
-    HRESULT hr = S_OK;
+    if (pszAssemblyName == nullptr)
+        return E_INVALIDARG;
 
-    // Name
-    if (pszAssemblyName)
-    {
-        hr = SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName,
-            (DWORD)((wcslen(pszAssemblyName)+1) * sizeof(TCHAR)));
-        if (FAILED(hr))
-            goto exit;
-    }
-
-    if (pamd) {
-            // Major version
-        if (FAILED(hr = SetProperty(ASM_NAME_MAJOR_VERSION,
-                &pamd->usMajorVersion, sizeof(WORD)))
-
-            // Minor version
-            || FAILED(hr = SetProperty(ASM_NAME_MINOR_VERSION,
-                &pamd->usMinorVersion, sizeof(WORD)))
-
-            // Revision number
-            || FAILED(hr = SetProperty(ASM_NAME_REVISION_NUMBER,
-                &pamd->usRevisionNumber, sizeof(WORD)))
-
-            // Build number
-            || FAILED(hr = SetProperty(ASM_NAME_BUILD_NUMBER,
-                &pamd->usBuildNumber, sizeof(WORD)))
-
-            // Culture
-            || FAILED(hr = SetProperty(ASM_NAME_CULTURE,
-                pamd->szLocale, pamd->cbLocale * sizeof(WCHAR)))
-                )
-            {
-                goto exit;
-            }
-    }
-
-exit:
-    return hr;
+    return SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName,
+        (DWORD)((wcslen(pszAssemblyName)+1) * sizeof(TCHAR)));
 }
 
 // ---------------------------------------------------------------------------

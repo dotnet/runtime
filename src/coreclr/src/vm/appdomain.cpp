@@ -650,7 +650,6 @@ BaseDomain::BaseDomain()
 
     m_fDisableInterfaceCache = FALSE;
 
-    m_pFusionContext = NULL;
     m_pTPABinderContext = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
@@ -794,7 +793,7 @@ void BaseDomain::InitVSD()
 
 #ifndef CROSSGEN_COMPILE
 
-void BaseDomain::ClearFusionContext()
+void BaseDomain::ClearBinderContext()
 {
     CONTRACTL
     {
@@ -804,10 +803,6 @@ void BaseDomain::ClearFusionContext()
     }
     CONTRACTL_END;
 
-    if(m_pFusionContext) {
-        m_pFusionContext->Release();
-        m_pFusionContext = NULL;
-    }
     if (m_pTPABinderContext) {
         m_pTPABinderContext->Release();
         m_pTPABinderContext = NULL;
@@ -1705,10 +1700,10 @@ void SystemDomain::DetachEnd()
     if(m_pSystemDomain)
     {
         GCX_PREEMP();
-        m_pSystemDomain->ClearFusionContext();
+        m_pSystemDomain->ClearBinderContext();
         AppDomain* pAppDomain = GetAppDomain();
         if (pAppDomain)
-            pAppDomain->ClearFusionContext();
+            pAppDomain->ClearBinderContext();
     }
 }
 
@@ -2667,30 +2662,6 @@ void SystemDomain::AddDomain(AppDomain* pDomain)
     LOG((LF_CORDB, LL_INFO1000, "SD::AD:Would have added domain here! 0x%x\n",
         pDomain));
 }
-
-BOOL SystemDomain::RemoveDomain(AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pDomain));
-        PRECONDITION(!pDomain->IsDefaultDomain());
-    }
-    CONTRACTL_END;
-
-    // You can not remove the default domain.
-
-
-    if (!pDomain->IsActive())
-        return FALSE;
-
-    pDomain->Release();
-
-    return TRUE;
-}
-
 
 #ifdef PROFILING_SUPPORTED
 void SystemDomain::NotifyProfilerStartup()
@@ -5344,7 +5315,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateFusionContext()
+IUnknown *AppDomain::CreateBinderContext()
 {
     CONTRACT(IUnknown *)
     {
@@ -5356,23 +5327,17 @@ IUnknown *AppDomain::CreateFusionContext()
     }
     CONTRACT_END;
 
-    if (!m_pFusionContext)
+    if (!m_pTPABinderContext)
     {
         ETWOnStartup (FusionAppCtx_V1, FusionAppCtxEnd_V1);
-        CLRPrivBinderCoreCLR *pTPABinder = NULL;
 
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &pTPABinder));
-        m_pFusionContext = reinterpret_cast<IUnknown *>(pTPABinder);
-
-        // By default, initial binding context setup for CoreCLR is also the TPABinding context
-        (m_pTPABinderContext = pTPABinder)->AddRef();
-
+        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
     }
 
-    RETURN m_pFusionContext;
+    RETURN m_pTPABinderContext;
 }
 
 
@@ -6879,7 +6844,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
 
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths)
 {
-    CLRPrivBinderCoreCLR *pBinder = static_cast<CLRPrivBinderCoreCLR*>(((CompilationDomain *)pDomain)->GetFusionContext());
+    CLRPrivBinderCoreCLR *pBinder = ((CompilationDomain *)pDomain)->GetTPABinderContext();
     _ASSERTE(pBinder != NULL);
     pBinder->SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths);
 #ifdef FEATURE_COMINTEROP
