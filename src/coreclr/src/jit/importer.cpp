@@ -10517,7 +10517,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     GenTree*                     arrayNodeFrom;
     GenTree*                     arrayNodeTo;
-    GenTree*                     arrayNodeToIndex;
     CorInfoHelpFunc              helper;
     CorInfoIsAccessAllowedResult accessAllowedResult;
     CORINFO_HELPER_DESC          calloutHelper;
@@ -11813,107 +11812,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             STELEM_REF_POST_VERIFY:
 
-                arrayNodeTo      = impStackTop(2).val;
-                arrayNodeToIndex = impStackTop(1).val;
-                arrayNodeFrom    = impStackTop().val;
+                arrayNodeTo   = impStackTop(2).val;
+                arrayNodeFrom = impStackTop().val;
 
-                // Look for opportunities to optimize the covariant store check.
-                //
-                // Note that it is not legal to optimize away CORINFO_HELP_ARRADDR_ST in a
-                // lot of cases because of covariance. ie. foo[] can be cast to object[].
-                //
-                // We only do this when optimizing, as the version without the covariant
-                // check involves an inline bounds check, and so will produce larger code
-                // sequences unless the now explicit bounds check can also be optimized away.
-                //
-                if (opts.OptimizationEnabled())
+                // Is this a case where we can skip the covariant store check?
+                if (impCanSkipCovariantStoreCheck(arrayNodeFrom, arrayNodeTo))
                 {
-                    // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
-                    // This does not need CORINFO_HELP_ARRADDR_ST
-                    if (arrayNodeFrom->OperGet() == GT_INDEX && arrayNodeTo->gtOper == GT_LCL_VAR)
-                    {
-                        GenTree* indexFromOp1 = arrayNodeFrom->AsIndex()->Arr();
-                        if (indexFromOp1->OperGet() == GT_LCL_VAR)
-                        {
-                            unsigned indexFrom = indexFromOp1->AsLclVar()->GetLclNum();
-                            unsigned indexTo   = arrayNodeTo->AsLclVar()->GetLclNum();
-                            if (indexFrom == indexTo && !lvaGetDesc(indexTo)->lvAddrExposed)
-                            {
-                                JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
-                                lclTyp = TYP_REF;
-                                goto ARR_ST_POST_VERIFY;
-                            }
-                        }
-                    }
-
-                    // Check for assignment of NULL. This does not need CORINFO_HELP_ARRADDR_ST
-                    if (arrayNodeFrom->OperGet() == GT_CNS_INT)
-                    {
-                        JITDUMP("\nstelem of null: skipping covariant store check\n");
-                        assert(arrayNodeFrom->gtType == TYP_REF && arrayNodeFrom->AsIntCon()->gtIconVal == 0);
-                        lclTyp = TYP_REF;
-                        goto ARR_ST_POST_VERIFY;
-                    }
-
-                    // Check if destination array is exactly object[], or T[] with T exact.
-                    if (arrayNodeFrom->gtType == TYP_REF)
-                    {
-                        bool                 isExact     = false;
-                        bool                 isNonNull   = false;
-                        CORINFO_CLASS_HANDLE arrayHandle = gtGetClassHandle(arrayNodeTo, &isExact, &isNonNull);
-
-                        if (arrayHandle != NO_CLASS_HANDLE)
-                        {
-                            // There are some methods in corelib where we're storing to an array but the IL
-                            // doesn't reflect this (see SZArrayHelper). Avoid.
-                            DWORD attribs = info.compCompHnd->getClassAttribs(arrayHandle);
-                            if ((attribs & CORINFO_FLG_ARRAY) != 0)
-                            {
-                                CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-                                CorInfoType          arrayElemType =
-                                    info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
-
-                                // Verify array type handle is really an array of ref type
-                                assert(arrayElemType == CORINFO_TYPE_CLASS);
-
-                                // Look for exactly object[]
-                                if (isExact && (arrayElementHandle == impGetObjectClass()))
-                                {
-                                    JITDUMP("\nstelem to (exact) object[]: skipping covariant store check\n");
-                                    lclTyp = TYP_REF;
-                                    goto ARR_ST_POST_VERIFY;
-                                }
-                                // Look for T[] with T exact.
-                                //
-                                // Note we are conservative on array of arrays here. It might be worth checking
-                                // for element types like int[].
-                                else
-                                {
-                                    const bool elementTypeIsExact = impIsClassExact(arrayElementHandle);
-
-                                    if (elementTypeIsExact)
-                                    {
-                                        bool                 valueIsExact   = false;
-                                        bool                 valueIsNonNull = false;
-                                        CORINFO_CLASS_HANDLE valueHandle =
-                                            gtGetClassHandle(arrayNodeFrom, &valueIsExact, &valueIsNonNull);
-
-                                        if (valueHandle == arrayElementHandle)
-                                        {
-                                            JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
-                                            lclTyp = TYP_REF;
-                                            goto ARR_ST_POST_VERIFY;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    lclTyp = TYP_REF;
+                    goto ARR_ST_POST_VERIFY;
                 }
 
-                /* Call a helper function to do the assignment */
+                // If not, call a helper function to do the assignment
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, impPopCallArgs(3, nullptr));
-
                 goto SPILL_APPEND;
 
             case CEE_STELEM_I1:
@@ -20784,4 +20694,106 @@ bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
                       CORINFO_FLG_ARRAY;
 
     return ((flags & flagsMask) == CORINFO_FLG_FINAL);
+}
+
+//------------------------------------------------------------------------
+// impCanSkipCovariantStoreCheck: see if storing a ref type to an array
+//    can skip the array store covariance check.
+//
+// Arguments:
+//    arrayNodeFrom -- tree producing the value to store
+//    arrayNodeTo -- tree representing the array to store to
+//
+// Returns:
+//    true if the store does not require a covariance check.
+//
+bool Compiler::impCanSkipCovariantStoreCheck(GenTree* arrayNodeFrom, GenTree* arrayNodeTo)
+{
+    if (!opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
+    if (arrayNodeFrom->OperIs(GT_INDEX) && arrayNodeTo->OperIs(GT_LCL_VAR))
+    {
+        GenTree* indexFromOp1 = arrayNodeFrom->AsIndex()->Arr();
+        if (indexFromOp1->OperIs(GT_LCL_VAR))
+        {
+            unsigned lclFrom = indexFromOp1->AsLclVar()->GetLclNum();
+            unsigned lclTo   = arrayNodeTo->AsLclVar()->GetLclNum();
+            if (lclFrom == lclTo && !lvaGetDesc(lclTo)->lvAddrExposed)
+            {
+                JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
+                return true;
+            }
+        }
+    }
+
+    // Check for assignment of NULL.
+    if (arrayNodeFrom->OperIs(GT_CNS_INT))
+    {
+        JITDUMP("\nstelem of null: skipping covariant store check\n");
+        assert(arrayNodeFrom->gtType == TYP_REF && arrayNodeFrom->AsIntCon()->gtIconVal == 0);
+        return true;
+    }
+
+    // Check if destination array is exactly object[].
+    if (arrayNodeFrom->gtType != TYP_REF)
+    {
+        return false;
+    }
+
+    bool                 isExact     = false;
+    bool                 isNonNull   = false;
+    CORINFO_CLASS_HANDLE arrayHandle = gtGetClassHandle(arrayNodeTo, &isExact, &isNonNull);
+
+    if (arrayHandle == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    // There are some methods in corelib where we're storing to an array but the IL
+    // doesn't reflect this (see SZArrayHelper). Avoid.
+    DWORD attribs = info.compCompHnd->getClassAttribs(arrayHandle);
+    if ((attribs & CORINFO_FLG_ARRAY) == 0)
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
+    CorInfoType          arrayElemType      = info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
+
+    // Verify array type handle is really an array of ref type
+    assert(arrayElemType == CORINFO_TYPE_CLASS);
+
+    // Look for exactly object[]
+    if (isExact && (arrayElementHandle == impGetObjectClass()))
+    {
+        JITDUMP("\nstelem to (exact) object[]: skipping covariant store check\n");
+        return true;
+    }
+
+    // Check for T[] with T exact.
+    //
+    // Note we are conservative on array of arrays here. It might be worth checking
+    // for element types like int[].
+    const bool elementTypeIsExact = impIsClassExact(arrayElementHandle);
+
+    if (!elementTypeIsExact)
+    {
+        return false;
+    }
+
+    bool                 valueIsExact   = false;
+    bool                 valueIsNonNull = false;
+    CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(arrayNodeFrom, &valueIsExact, &valueIsNonNull);
+
+    if (valueHandle == arrayElementHandle)
+    {
+        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+        return true;
+    }
+
+    return false;
 }
