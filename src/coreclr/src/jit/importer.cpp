@@ -10341,8 +10341,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         {
             if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
             {
-                // If the class is final and is not marshal byref, variant or
-                // contextful, the jit can expand the IsInst check inline.
+                // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
             }
         }
@@ -10512,11 +10511,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     }
 #endif
 
-    unsigned  nxtStmtIndex = impInitBlockLineInfo();
-    IL_OFFSET nxtStmtOffs;
-
-    GenTree*                     arrayNodeFrom;
-    GenTree*                     arrayNodeTo;
+    unsigned                     nxtStmtIndex = impInitBlockLineInfo();
+    IL_OFFSET                    nxtStmtOffs;
     CorInfoHelpFunc              helper;
     CorInfoIsAccessAllowedResult accessAllowedResult;
     CORINFO_HELPER_DESC          calloutHelper;
@@ -11812,17 +11808,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             STELEM_REF_POST_VERIFY:
 
-                arrayNodeTo   = impStackTop(2).val;
-                arrayNodeFrom = impStackTop().val;
-
-                // Is this a case where we can skip the covariant store check?
-                if (opts.OptimizationEnabled() && impCanSkipCovariantStoreCheck(arrayNodeFrom, arrayNodeTo))
+                if (opts.OptimizationEnabled())
                 {
-                    lclTyp = TYP_REF;
-                    goto ARR_ST_POST_VERIFY;
+                    GenTree* array = impStackTop(2).val;
+                    GenTree* value = impStackTop().val;
+
+                    // Is this a case where we can skip the covariant store check?
+                    if (impCanSkipCovariantStoreCheck(value, array))
+                    {
+                        lclTyp = TYP_REF;
+                        goto ARR_ST_POST_VERIFY;
+                    }
                 }
 
-                // If not, call a helper function to do the assignment
+                // Else call a helper function to do the assignment
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, impPopCallArgs(3, nullptr));
                 goto SPILL_APPEND;
 
@@ -20687,6 +20686,10 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
 //    true if class is final and not subject to special casting from
 //    variance or similar.
 //
+// Note:
+//    We are conservative on arrays here. It might be worth checking
+//    for types like int[].
+
 bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 {
     DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
@@ -20697,30 +20700,30 @@ bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 }
 
 //------------------------------------------------------------------------
-// impCanSkipCovariantStoreCheck: see if storing a ref type to an array
+// impCanSkipCovariantStoreCheck: see if storing a ref type value to an array
 //    can skip the array store covariance check.
 //
 // Arguments:
-//    arrayNodeFrom -- tree producing the value to store
-//    arrayNodeTo -- tree representing the array to store to
+//    value -- tree producing the value to store
+//    array -- tree representing the array to store to
 //
 // Returns:
 //    true if the store does not require a covariance check.
 //
-bool Compiler::impCanSkipCovariantStoreCheck(GenTree* arrayNodeFrom, GenTree* arrayNodeTo)
+bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
 {
     // We should only call this when optimizing.
     assert(opts.OptimizationEnabled());
 
     // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
-    if (arrayNodeFrom->OperIs(GT_INDEX) && arrayNodeTo->OperIs(GT_LCL_VAR))
+    if (value->OperIs(GT_INDEX) && array->OperIs(GT_LCL_VAR))
     {
-        GenTree* indexFromOp1 = arrayNodeFrom->AsIndex()->Arr();
-        if (indexFromOp1->OperIs(GT_LCL_VAR))
+        GenTree* valueIndex = value->AsIndex()->Arr();
+        if (valueIndex->OperIs(GT_LCL_VAR))
         {
-            unsigned lclFrom = indexFromOp1->AsLclVar()->GetLclNum();
-            unsigned lclTo   = arrayNodeTo->AsLclVar()->GetLclNum();
-            if (lclFrom == lclTo && !lvaGetDesc(lclTo)->lvAddrExposed)
+            unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
+            unsigned arrayLcl = array->AsLclVar()->GetLclNum();
+            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->lvAddrExposed)
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;
@@ -20729,22 +20732,22 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* arrayNodeFrom, GenTree* ar
     }
 
     // Check for assignment of NULL.
-    if (arrayNodeFrom->OperIs(GT_CNS_INT))
+    if (value->OperIs(GT_CNS_INT))
     {
         JITDUMP("\nstelem of null: skipping covariant store check\n");
-        assert(arrayNodeFrom->gtType == TYP_REF && arrayNodeFrom->AsIntCon()->gtIconVal == 0);
+        assert((value->gtType == TYP_REF) && (value->AsIntCon()->gtIconVal == 0));
         return true;
     }
 
-    // Check if destination array is exactly object[].
-    if (arrayNodeFrom->gtType != TYP_REF)
+    // Try and get a class handle for the array
+    if (value->gtType != TYP_REF)
     {
         return false;
     }
 
-    bool                 isExact     = false;
-    bool                 isNonNull   = false;
-    CORINFO_CLASS_HANDLE arrayHandle = gtGetClassHandle(arrayNodeTo, &isExact, &isNonNull);
+    bool                 arrayIsExact   = false;
+    bool                 arrayIsNonNull = false;
+    CORINFO_CLASS_HANDLE arrayHandle    = gtGetClassHandle(array, &arrayIsExact, &arrayIsNonNull);
 
     if (arrayHandle == NO_CLASS_HANDLE)
     {
@@ -20765,27 +20768,22 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* arrayNodeFrom, GenTree* ar
     // Verify array type handle is really an array of ref type
     assert(arrayElemType == CORINFO_TYPE_CLASS);
 
-    // Look for exactly object[]
-    if (isExact && (arrayElementHandle == impGetObjectClass()))
+    // Check for exactly object[]
+    if (arrayIsExact && (arrayElementHandle == impGetObjectClass()))
     {
         JITDUMP("\nstelem to (exact) object[]: skipping covariant store check\n");
         return true;
     }
 
     // Check for T[] with T exact.
-    //
-    // Note we are conservative on array of arrays here. It might be worth checking
-    // for element types like int[].
-    const bool elementTypeIsExact = impIsClassExact(arrayElementHandle);
-
-    if (!elementTypeIsExact)
+    if (!impIsClassExact(arrayElementHandle))
     {
         return false;
     }
 
     bool                 valueIsExact   = false;
     bool                 valueIsNonNull = false;
-    CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(arrayNodeFrom, &valueIsExact, &valueIsNonNull);
+    CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
     if (valueHandle == arrayElementHandle)
     {
