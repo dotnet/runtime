@@ -7,6 +7,11 @@
   -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('disableversioncheck.targets', '$(MSBuildThisFileDirectory)../'))" />
 
+  <ItemGroup>
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+
   <Target Name="CopyDependencyToCoreRoot"
           DependsOnTargets="ResolveAssemblyReferences">
 
