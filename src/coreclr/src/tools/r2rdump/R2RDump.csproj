@@ -15,8 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Common\CorConstants.cs" Link="Common\CorConstants.cs" />
-    <Compile Include="..\Common\R2RConstants.cs" Link="Common\R2RConstants.cs" />
+    <Compile Include="..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
   </ItemGroup>
 
   <ItemGroup>
