@@ -4659,12 +4659,13 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n" FMT_BB " valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
+            printf(FMT_BB " valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
             if (block->bbJumpKind == BBJ_COND)
             {
                 printf(" => " FMT_BB " valueGen = %s,", block->bbJumpDest->bbNum,
                        BitVecOps::ToString(apTraits, jumpDestGen[block->bbNum]));
             }
+            printf("\n");
         }
 #endif
     }
