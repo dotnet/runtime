@@ -89,12 +89,6 @@ jobs:
     - name: testNativeRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: testBuildRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: testBuildArtifactName
-      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
       

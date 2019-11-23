@@ -182,17 +182,6 @@ jobs:
         artifactName: $(testNativeArtifactName)
         displayName: 'native test components'
 
-    # Publish test build root for consumption by test execution.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(testBuildRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(testBuildArtifactName)
-        displayName: 'test build tree'
-
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - task: AzureKeyVault@1

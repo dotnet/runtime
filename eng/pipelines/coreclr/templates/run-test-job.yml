@@ -115,17 +115,6 @@ jobs:
           displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
-    # Download and unzip test build tree
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(testBuildRootFolderPath)'
-          cleanUnpackFolder: false
-          artifactFileName: '$(testBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(testBuildArtifactName)'
-          displayName: 'test build tree'
-
-
     # Download product binaries directory
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
