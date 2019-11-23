@@ -17,8 +17,8 @@ uint64_t g_TotalTimeSinceLastGCEnd = 0;
 
 uint32_t g_percentTimeInGCSinceLastGC = 0;
 
-size_t g_GenerationSizes[NUMBERGENERATIONS];
-size_t g_GenerationPromotedSizes[NUMBERGENERATIONS];
+size_t g_GenerationSizes[total_generation_count];
+size_t g_GenerationPromotedSizes[total_generation_count];
 
 void GCHeap::UpdatePreGCCounters()
 {

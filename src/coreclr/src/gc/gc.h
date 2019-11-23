@@ -89,7 +89,7 @@ enum gc_etw_segment_type
 {
     gc_etw_segment_small_object_heap = 0,
     gc_etw_segment_large_object_heap = 1,
-    gc_etw_segment_read_only_heap = 2
+    gc_etw_segment_read_only_heap = 2,
 };
 
 // Types of allocations, emitted by the GCAllocationTick ETW event.
@@ -107,7 +107,24 @@ class IGCHeapInternal;
 
 /* misc defines */
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
-#define max_generation 2
+
+enum generation_num
+{
+    // small object heap includes generations [0-2], which are "generations" in the general sense. 
+    soh_gen0 = 0,
+    soh_gen1 = 1,
+    soh_gen2 = 2,
+    max_generation = soh_gen2,
+
+    // large object heap, technically not a generation, but it is convenient to represent it as such
+    loh_generation = 3,
+
+    // number of ephemeral generations 
+    ephemeral_generation_count = max_generation,
+
+    // number of all generations 
+    total_generation_count = loh_generation + 1
+};
 
 #ifdef GC_CONFIG_DRIVEN
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
@@ -184,9 +201,9 @@ enum bgc_state
     bgc_mark_handles,
     bgc_mark_stack,
     bgc_revisit_soh,
-    bgc_revisit_loh,
+    bgc_revisit_ploh,
     bgc_overflow_soh,
-    bgc_overflow_loh,
+    bgc_overflow_ploh,
     bgc_final_marking,
     bgc_sweep_soh,
     bgc_sweep_loh,
