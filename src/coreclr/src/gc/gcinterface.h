@@ -137,7 +137,7 @@ struct gc_alloc_context
     uint8_t*       alloc_ptr;
     uint8_t*       alloc_limit;
     int64_t        alloc_bytes; //Number of bytes allocated on SOH by this context
-    int64_t        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
+    int64_t        alloc_bytes_ploh; //Number of bytes allocated not on SOH by this context
     // These two fields are deliberately not exposed past the EE-GC interface.
     void*          gc_reserved_1;
     void*          gc_reserved_2;
@@ -151,7 +151,7 @@ public:
         alloc_ptr = 0;
         alloc_limit = 0;
         alloc_bytes = 0;
-        alloc_bytes_loh = 0;
+        alloc_bytes_ploh = 0;
         gc_reserved_1 = 0;
         gc_reserved_2 = 0;
         alloc_count = 0;
@@ -793,8 +793,8 @@ public:
     Heap verification routines. These are used during heap verification only.
     ===========================================================================
     */
-    // Returns whether or not this object is in the fixed heap.
-    virtual bool IsObjectInFixedHeap(Object* pObj) = 0;
+    // Returns whether or not this object is too large for SOH.
+    virtual bool IsLargeObject(Object* pObj) = 0;
 
     // Walks an object and validates its members.
     virtual void ValidateObjectMember(Object* obj) = 0;

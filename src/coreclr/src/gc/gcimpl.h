@@ -125,7 +125,7 @@ public:
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
 
-    bool IsObjectInFixedHeap(Object *pObj);
+    bool IsLargeObject(Object *pObj);
 
     HRESULT GarbageCollect (int generation = -1, bool low_memory_p=false, int mode=collection_blocking);
 
