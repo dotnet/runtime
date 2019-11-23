@@ -169,12 +169,12 @@ jobs:
     # Publish test native components for consumption by test execution.
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(testNativeRootFolderPath)
+        rootFolder: $(nativeTestArtifactRootFolderPath)
         includeRootFolder: false
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
         archiveExtension: $(archiveExtension)
-        artifactName: $(testNativeArtifactName)
+        artifactName: $(nativeTestArtifactName)
         displayName: 'native test components'
 
     # Get key vault secrets for publishing

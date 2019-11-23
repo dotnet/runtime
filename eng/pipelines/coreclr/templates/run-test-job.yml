@@ -109,9 +109,9 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: '$(testRootFolderPath)'
-          artifactFileName: '$(testArtifactName)$(archiveExtension)'
-          artifactName: '$(testArtifactName)'
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
+          artifactName: '$(managedTestArtifactName)'
           displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
@@ -139,9 +139,9 @@ jobs:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: '$(testNativeRootFolderPath)'
-          artifactFileName: '$(testNativeArtifactName)$(archiveExtension)'
-          artifactName: '$(testNativeArtifactName)'
+          unpackFolder: '$(nativeTestArtifactRootFolderPath)'
+          artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
+          artifactName: '$(nativeTestArtifactName)'
           displayName: 'native test artifacts'
 
 
