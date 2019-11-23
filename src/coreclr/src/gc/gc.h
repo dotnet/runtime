@@ -278,7 +278,7 @@ public:
         return (cbSize >= 64*1024);
     }
 
-    BOOL IsLargeObject(MethodTable *mt)
+    BOOL IsLarge(MethodTable *mt)
     {
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
     }

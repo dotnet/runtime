@@ -4066,9 +4066,9 @@ public:
         if (fSmallObjectHeapPtr)
         {
 #ifdef FEATURE_BASICFREEZE
-            _ASSERTE(!g_theGCHeap->IsLargeObject(pMT) || g_theGCHeap->IsInFrozenSegment(this));
+            _ASSERTE(!g_theGCHeap->IsLarge(pMT) || g_theGCHeap->IsInFrozenSegment(this));
 #else
-            _ASSERTE(!g_theGCHeap->IsLargeObject(pMT));
+            _ASSERTE(!g_theGCHeap->IsLarge(pMT));
 #endif
         }
     }
