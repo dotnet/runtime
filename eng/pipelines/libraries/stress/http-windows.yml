@@ -8,7 +8,7 @@ schedules:
     - master
 
 pool:
-  name: Hosted VS2017
+  vmImage: 'windows-latest'
 
 variables:
   - template: ../variables.yml
@@ -36,6 +36,7 @@ steps:
   displayName: Build HttpStress
 
 - powershell: |
+    cd '$(HttpStressProject)'
     docker run -e HTTPSTRESS_ARGS=$(HTTPSTRESS_ARGS) $(httpStressImage)
   displayName: Run HttpStress
 
