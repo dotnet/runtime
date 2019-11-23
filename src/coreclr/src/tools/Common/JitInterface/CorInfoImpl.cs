@@ -18,6 +18,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
@@ -2260,7 +2261,7 @@ namespace Internal.JitInterface
                     {
                         pResult->fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
+                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif

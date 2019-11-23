@@ -7,6 +7,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -58,8 +59,8 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress, key.Field, key.SignatureContext)
+                    ReadyToRunHelper.DelayLoad_Helper,
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key.Field, key.SignatureContext)
                 );
             });
 
@@ -67,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldOffset, key.Field, key.SignatureContext)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldOffset, key.Field, key.SignatureContext)
                 );
             });
 
@@ -75,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldBaseOffset, key.Type, key.SignatureContext)
+                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.FieldBaseOffset, key.Type, key.SignatureContext)
                 );
             });
 
@@ -84,11 +85,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.DispatchImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_MethodCall,
+                    ReadyToRunHelper.DelayLoad_MethodCall,
                     cellKey.Method,
                     useVirtualCall: true,
                     useInstantiatingStub: false,
-                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.VirtualEntry,
                         cellKey.Method,
                         cellKey.IsUnboxingStub, isInstantiatingStub: false, cellKey.SignatureContext),
                     cellKey.SignatureContext,
@@ -108,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
+                    ReadyToRunHelper.DelayLoad_Helper,
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token, signatureContext));
             });
 
@@ -117,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
+                    ReadyToRunHelper.DelayLoad_Helper,
                     new GenericLookupSignature(
                         key.LookupKind,
                         key.FixupKind,
@@ -133,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_IndirectPInvokeTarget,
+                        ReadyToRunFixupKind.IndirectPInvokeTarget,
                         key.MethodWithToken,
                         signatureContext: key.SignatureContext,
                         isUnboxingStub: false,
@@ -262,7 +263,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
+        public ISymbolNode CreateReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
         {
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target, signatureContext));
         }
@@ -272,7 +273,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
+                ReadyToRunHelper.DelayLoad_Helper,
                 new NewObjectFixupSignature(type, signatureContext));
         }
 
@@ -281,7 +282,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
+                ReadyToRunHelper.DelayLoad_Helper,
                 new NewArrayFixupSignature(type, signatureContext));
         }
 
@@ -290,8 +291,8 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseGC, type, signatureContext));
         }
 
         private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
@@ -299,8 +300,8 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseNonGC, type, signatureContext));
         }
 
         private ISymbolNode CreateThreadGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
@@ -308,8 +309,8 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseGC, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseGC, type, signatureContext));
         }
 
         private ISymbolNode CreateThreadNonGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
@@ -317,8 +318,8 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseNonGC, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseNonGC, type, signatureContext));
         }
 
         private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type, SignatureContext signatureContext)
@@ -326,8 +327,8 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.IsInstanceOf, type, signatureContext));
         }
 
         private ISymbolNode CreateCastClassHelper(TypeDesc type, SignatureContext signatureContext)
@@ -335,15 +336,15 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper_Obj,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ChkCast, type, signatureContext));
         }
 
         private ISymbolNode CreateTypeHandleHelper(TypeDesc type, SignatureContext signatureContext)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type, signatureContext));
         }
 
         private ISymbolNode CreateMethodHandleHelper(MethodWithToken method, SignatureContext signatureContext)
@@ -359,7 +360,7 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                    ReadyToRunFixupKind.MethodHandle,
                     method,
                     isUnboxingStub: useUnboxingStub,
                     isInstantiatingStub: useInstantiatingStub,
@@ -370,7 +371,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, signatureContext));
+                new FieldFixupSignature(ReadyToRunFixupKind.FieldHandle, field, signatureContext));
         }
 
         private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
@@ -378,15 +379,15 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
+                ReadyToRunHelper.DelayLoad_Helper,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.CctorTrigger, type, signatureContext));
         }
 
         private ISymbolNode CreateTypeDictionary(TypeDesc type, SignatureContext signatureContext)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, signatureContext)
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeDictionary, type, signatureContext)
             );
         }
 
@@ -395,7 +396,7 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, 
+                    ReadyToRunFixupKind.MethodDictionary, 
                     method, 
                     isUnboxingStub: false,
                     isInstantiatingStub: true,
@@ -606,7 +607,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeHandle:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle,
+                        ReadyToRunFixupKind.TypeHandle,
                         helperArgument,
                         methodContext,
                         signatureContext);
@@ -614,7 +615,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodHandle:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                        ReadyToRunFixupKind.MethodHandle,
                         (MethodWithToken)helperArgument,
                         methodContext,
                         signatureContext);
@@ -622,7 +623,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodEntry:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        ReadyToRunFixupKind.MethodEntry,
                         (MethodWithToken)helperArgument,
                         methodContext,
                         signatureContext);
@@ -630,7 +631,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
+                        ReadyToRunFixupKind.MethodHandle,
                         (MethodWithToken)helperArgument,
                         methodContext,
                         signatureContext);
@@ -638,7 +639,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeDictionary:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary,
+                        ReadyToRunFixupKind.TypeDictionary,
                         (TypeDesc)helperArgument,
                         methodContext,
                         signatureContext);
@@ -646,7 +647,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.VirtualDispatchCell:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        ReadyToRunFixupKind.VirtualEntry,
                         (MethodWithToken)helperArgument,
                         methodContext,
                         signatureContext);
@@ -654,7 +655,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.FieldHandle:
                     return GenericLookupFieldHelper(
                         runtimeLookupKind,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle,
+                        ReadyToRunFixupKind.FieldHandle,
                         (FieldDesc)helperArgument,
                         methodContext,
                         signatureContext);

@@ -12,6 +12,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Serialization;
 
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
+
 namespace R2RDump
 {
     /// <summary>
