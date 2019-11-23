@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using size_t = System.IntPtr;
@@ -11,7 +12,7 @@ namespace System.IO.Compression
 {
     public struct BrotliDecoder : IDisposable
     {
-        private SafeBrotliDecoderHandle _state;
+        private SafeBrotliDecoderHandle? _state;
         private bool _disposed;
 
         internal void InitializeDecoder()
@@ -43,6 +44,8 @@ namespace System.IO.Compression
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
+            Debug.Assert(_state != null);
+
             bytesConsumed = 0;
             bytesWritten = 0;
             if (Interop.Brotli.BrotliDecoderIsFinished(_state))
