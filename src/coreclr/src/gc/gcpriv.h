@@ -975,8 +975,8 @@ enum alloc_wait_reason
     // no longer used with the introduction of loh msl.
     awr_loh_alloc_during_plan = 10,
 
-    // we don't allow too much ploh allocation during bgc.
-    awr_ploh_alloc_during_bgc = 11
+    // we don't allow too much uoh allocation during bgc.
+    awr_uoh_alloc_during_bgc = 11
 };
 
 struct alloc_thread_wait_data
@@ -1269,17 +1269,17 @@ public:
     static
     void balance_heaps (alloc_context* acontext);
     PER_HEAP
-    ptrdiff_t get_balance_heaps_ploh_effective_budget (int generation_num);
+    ptrdiff_t get_balance_heaps_uoh_effective_budget (int generation_num);
     static 
-    gc_heap* balance_heaps_ploh (alloc_context* acontext, size_t size, int generation_num);
-    // Unlike balance_heaps_ploh, this may return nullptr if we failed to change heaps.
+    gc_heap* balance_heaps_uoh (alloc_context* acontext, size_t size, int generation_num);
+    // Unlike balance_heaps_uoh, this may return nullptr if we failed to change heaps.
     static
-    gc_heap* balance_heaps_ploh_hard_limit_retry (alloc_context* acontext, size_t size, int generation_num);
+    gc_heap* balance_heaps_uoh_hard_limit_retry (alloc_context* acontext, size_t size, int generation_num);
     static
     void gc_thread_stub (void* arg);
 #endif //MULTIPLE_HEAPS
 
-    // For LOH allocations we only update the alloc_bytes_ploh in allocation
+    // For LOH allocations we only update the alloc_bytes_uoh in allocation
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
     // Note: This is an instance method, but the heap instance is only used for
@@ -1532,7 +1532,7 @@ protected:
     void wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
 
     PER_HEAP
-    void bgc_ploh_alloc_clr (uint8_t* alloc_start,
+    void bgc_uoh_alloc_clr (uint8_t* alloc_start,
                             size_t size,
                             alloc_context* acontext,
                             uint32_t flags,
@@ -1544,10 +1544,10 @@ protected:
 
 #ifdef BACKGROUND_GC
     PER_HEAP
-    void bgc_track_ploh_alloc();
+    void bgc_track_uoh_alloc();
 
     PER_HEAP
-    void bgc_untrack_ploh_alloc();
+    void bgc_untrack_uoh_alloc();
 
     PER_HEAP
     BOOL bgc_loh_allocate_spin();
@@ -1598,14 +1598,14 @@ protected:
                                   BOOL* commit_failed_p,
                                   oom_reason* oom_r);
     PER_HEAP
-    BOOL ploh_get_new_seg (int gen_number,
+    BOOL uoh_get_new_seg (int gen_number,
                           size_t size,
                           int align_const,
                           BOOL* commit_failed_p,
                           oom_reason* oom_r);
 
     PER_HEAP_ISOLATED
-    size_t get_ploh_seg_size (size_t size);
+    size_t get_uoh_seg_size (size_t size);
 
     PER_HEAP
     BOOL retry_full_compact_gc (size_t size);
@@ -1632,7 +1632,7 @@ protected:
                       BOOL* commit_failed_p,
                       BOOL* short_seg_end_p);
     PER_HEAP
-    BOOL ploh_try_fit (int gen_number,
+    BOOL uoh_try_fit (int gen_number,
                       size_t size, 
                       alloc_context* acontext,
                       uint32_t flags,
@@ -1688,7 +1688,7 @@ protected:
     void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                                  int align_const);
     PER_HEAP
-    void fix_ploh_allocation_area (BOOL for_gc_p);
+    void fix_uoh_allocation_area (BOOL for_gc_p);
     PER_HEAP
     void fix_older_allocation_area (generation* older_gen);
     PER_HEAP
@@ -1722,11 +1722,11 @@ protected:
     PER_HEAP_ISOLATED
     void seg_mapping_table_remove_segment (heap_segment* seg);
     PER_HEAP
-    heap_segment* get_ploh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc);
+    heap_segment* get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc);
     PER_HEAP
-    void thread_ploh_segment (int gen_number, heap_segment* new_seg);
+    void thread_uoh_segment (int gen_number, heap_segment* new_seg);
     PER_HEAP_ISOLATED
-    heap_segment* get_segment_for_ploh (int gen_number, size_t size
+    heap_segment* get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
                                       , gc_heap* hp
 #endif //MULTIPLE_HEAPS
@@ -1750,7 +1750,7 @@ protected:
     void rearrange_small_heap_segments();
 #endif //BACKGROUND_GC
     PER_HEAP
-    void rearrange_ploh_segments();
+    void rearrange_uoh_segments();
     PER_HEAP
     void rearrange_heap_segments(BOOL compacting);
 
@@ -2095,7 +2095,7 @@ protected:
     // there so we mark them as to be deleted and deleted them
     // at the next chance we get.
     PER_HEAP
-    void background_delay_delete_ploh_segments();
+    void background_delay_delete_uoh_segments();
     PER_HEAP
     void generation_delete_heap_segment (generation*,
                                          heap_segment*, heap_segment*, heap_segment*);
@@ -2942,11 +2942,11 @@ protected:
     PER_HEAP
     BOOL ephemeral_gen_fit_p (gc_tuning_point tp);
     PER_HEAP
-    void sweep_ploh_objects (generation_num gen_num);
+    void sweep_uoh_objects (generation_num gen_num);
     PER_HEAP
-    void relocate_in_ploh_objects (generation_num gen_num);
+    void relocate_in_uoh_objects (generation_num gen_num);
     PER_HEAP
-    void mark_through_cards_for_ploh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
+    void mark_through_cards_for_uoh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
                                               CARD_MARKING_STEALING_ARG(gc_heap* hpt));
     PER_HEAP
     void descr_segment (heap_segment* seg);
@@ -3299,7 +3299,7 @@ public:
     uint32_t fgn_maxgen_percent;
 
     PER_HEAP_ISOLATED
-    uint32_t fgn_ploh_percent;
+    uint32_t fgn_uoh_percent;
 
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
@@ -3338,7 +3338,7 @@ public:
     uint64_t total_alloc_bytes_soh;
 
     PER_HEAP
-    uint64_t total_alloc_bytes_ploh;
+    uint64_t total_alloc_bytes_uoh;
 
     PER_HEAP
     int gc_policy;  //sweep, compact, expand
@@ -3527,7 +3527,7 @@ public:
     size_t soh_segment_size;
 
     PER_HEAP_ISOLATED
-    size_t min_ploh_segment_size;
+    size_t min_uoh_segment_size;
 
     PER_HEAP_ISOLATED
     size_t segment_info_size;
@@ -3767,7 +3767,7 @@ protected:
     // ms. So we are already 30% over the original heap size the thread will
     // sleep for 3ms.
     PER_HEAP
-    uint32_t   bgc_alloc_spin_ploh;
+    uint32_t   bgc_alloc_spin_uoh;
 
     // This includes what we allocate at the end of segment - allocating
     // in free list doesn't increase the heap size.
@@ -3778,10 +3778,10 @@ protected:
     size_t     background_soh_alloc_count;
 
     PER_HEAP
-    size_t     background_ploh_alloc_count;
+    size_t     background_uoh_alloc_count;
 
     PER_HEAP
-    VOLATILE(int32_t) ploh_alloc_thread_count;
+    VOLATILE(int32_t) uoh_alloc_thread_count;
 
     PER_HEAP
     uint8_t**  background_mark_stack_tos;
@@ -3914,7 +3914,7 @@ protected:
     // The more_space_lock and gc_lock is used for 3 purposes:
     //
     // 1) to coordinate threads that exceed their quantum (UP & MP) (more_space_lock_soh)
-    // 2) to synchronize allocations of large objects (more_space_lock_ploh)
+    // 2) to synchronize allocations of large objects (more_space_lock_uoh)
     // 3) to synchronize the GC itself (gc_lock)
     //
     PER_HEAP_ISOLATED
@@ -3924,7 +3924,7 @@ protected:
     GCSpinLock more_space_lock_soh; //lock while allocating more space for soh
 
     PER_HEAP
-    GCSpinLock more_space_lock_ploh;
+    GCSpinLock more_space_lock_uoh;
 
 #ifdef SYNCHRONIZATION_STATS
 
@@ -4155,7 +4155,7 @@ protected:
 #endif //BACKGROUND_GC
 
     PER_HEAP
-    heap_segment* freeable_ploh_segment;
+    heap_segment* freeable_uoh_segment;
 
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
@@ -4287,7 +4287,7 @@ public:
     VOLATILE(uint32_t)    card_mark_chunk_index_loh;
 
     PER_HEAP
-    VOLATILE(bool)        card_mark_done_ploh;
+    VOLATILE(bool)        card_mark_done_uoh;
 
     PER_HEAP
     void reset_card_marking_enumerators()
@@ -4297,7 +4297,7 @@ public:
         card_mark_done_soh = false;
 
         card_mark_chunk_index_loh = ~0;
-        card_mark_done_ploh = false;
+        card_mark_done_uoh = false;
     }
 
     PER_HEAP
@@ -4785,7 +4785,7 @@ struct loh_padding_obj
 #define heap_segment_flags_ma_committed 64
 // for segments whose mark array is only partially committed.
 #define heap_segment_flags_ma_pcommitted 128
-#define heap_segment_flags_ploh_delete   256
+#define heap_segment_flags_uoh_delete   256
 
 #endif //BACKGROUND_GC
 
@@ -4873,7 +4873,7 @@ BOOL heap_segment_unmappable_p (heap_segment* inst)
 }
 
 inline
-BOOL heap_segment_ploh_p (heap_segment * inst)
+BOOL heap_segment_uoh_p (heap_segment * inst)
 {
     return !!(inst->flags & (heap_segment_flags_loh));
 }
