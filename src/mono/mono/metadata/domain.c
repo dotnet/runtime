@@ -807,12 +807,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
 
-	ERROR_DECL (error);
-
 #ifndef ENABLE_NETCORE
 	MonoClass *threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
 
+	ERROR_DECL (error);
 	mono_defaults.threadpool_perform_wait_callback_method = mono_class_get_method_from_name_checked (
 		threadpool_wait_callback_class, "PerformWaitCallback", 0, 0, error);
 	mono_error_assert_ok (error);

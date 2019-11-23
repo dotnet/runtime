@@ -557,14 +557,6 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 }
 
 void
-ves_icall_System_GC_KeepAlive (MonoObjectHandle obj, MonoError *error)
-{
-	/*
-	 * Does nothing.
-	 */
-}
-
-void
 ves_icall_System_GC_GetGCMemoryInfo (gint64* high_memory_load_threshold_bytes,
 									gint64* memory_load_bytes,
 									gint64* total_available_memory_bytes,
