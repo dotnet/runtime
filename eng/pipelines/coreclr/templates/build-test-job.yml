@@ -32,6 +32,8 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    useLiveLibraries: ${{ parameters.useLiveLibraries }}
+    variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
 
     # Test jobs should continue on error for internal builds
@@ -66,22 +68,6 @@ jobs:
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 160
-
-    variables:
-    - coreFxArtifactName: ''
-    - coreFxDownloadPath: ''
-    - coreFxOverrideArg: ''
-
-    - ${{ if eq(parameters.useLiveLibraries, true) }}:
-      - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - coreFxDownloadPath: $(Build.SourcesDirectory)/${{ format('artifacts/bin/runtime/netcoreapp-{0}-{1}-{2}', parameters.osGroup, parameters.buildConfig, parameters.archType) }}
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath $(coreFxDownloadPath)'
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath=$(coreFxDownloadPath)'
-
-    - ${{ each variable in parameters.variables }}:
-      - ${{ insert }}: ${{ variable }}
 
     steps:
 

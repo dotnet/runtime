@@ -29,7 +29,9 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - buildScriptFileName: libraries
-        - _BuildConfig: ${{ parameters.buildConfig }}
+        - _BuildConfig: Debug
+        - ${{ if eq(parameters.buildConfig, 'release') }}:
+          - _BuildConfig: Release
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
@@ -52,7 +54,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration $(_BuildConfig) -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_msbuildCommonParameters)
         - ${{ parameters.variables }}
 
       dependsOn:

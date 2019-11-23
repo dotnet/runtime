@@ -39,6 +39,7 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    useLiveLibraries: ${{ parameters.useLiveLibraries }}
     helixType: 'build/tests/'
     pool: ${{ parameters.pool }}
 
@@ -89,19 +90,6 @@ jobs:
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
-
-    - coreFxArtifactName: ''
-    - coreFxDownloadPath: ''
-    - coreFxOverrideArg: ''
-
-    - ${{ if eq(parameters.useLiveLibraries, true) }}:
-      - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - coreFxDownloadPath: $(Build.SourcesDirectory)/${{ format('artifacts/bin/runtime/netcoreapp-{0}-{1}-{2}', parameters.osGroup, parameters.buildConfig, parameters.archType) }}
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath $(coreFxDownloadPath)'
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath=$(coreFxDownloadPath)'
-
 
     - ${{ parameters.variables }}
 
