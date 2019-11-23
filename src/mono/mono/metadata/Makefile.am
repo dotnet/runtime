@@ -91,18 +91,6 @@ if !ENABLE_ILGEN
 ilgen_libraries = libmono-ilgen.la
 endif
 
-support_sources=empty.c
-
-if ENABLE_MONOTOUCH
-support_sources += ../../support/zlib-helper.c
-else
-if ENABLE_MONODROID
-support_sources += \
-	../../support/nl.c \
-	../../support/zlib-helper.c
-endif
-endif
-
 BUNDLE_ZLIB_PATH=$(top_builddir)/mono/zlib/libz.la
 
 if HAVE_STATIC_ZLIB
@@ -115,7 +103,7 @@ Z_LIBS=$(BUNDLE_ZLIB_PATH)
 endif
 endif
 
-noinst_LTLIBRARIES = libmonoruntime-config.la libmonoruntime-support.la $(boehm_libraries) $(sgen_libraries)
+noinst_LTLIBRARIES = libmonoruntime-config.la $(support_libraries) $(boehm_libraries) $(sgen_libraries)
 
 lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
 
@@ -142,9 +130,13 @@ libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" 
 #
 # Support is a separate library because it is not valid C++.
 #
-libmonoruntime_support_la_SOURCES = $(support_sources)
+if !ENABLE_NETCORE
+support_libraries = libmonoruntime-support.la
+
+libmonoruntime_support_la_SOURCES = support.c
 libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
+endif
 
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables
@@ -434,12 +426,12 @@ if !ENABLE_MSVC_ONLY
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntime_la_LIBADD = libmonoruntime-config.la libmonoruntime-support.la
+libmonoruntime_la_LIBADD = libmonoruntime-config.la $(support_libraries)
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la libmonoruntime-support.la
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(support_libraries)
 
 endif # !ENABLE_MSVC_ONLY
 
