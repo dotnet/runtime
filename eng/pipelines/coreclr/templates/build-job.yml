@@ -96,9 +96,6 @@ jobs:
     - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
-    - intermediateDirSetEnvPrefix: ''
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - intermediateDirSetEnvPrefix: 'set __TestIntermediateDir=int&&'
 
     - ${{ parameters.variables }}
 
@@ -137,8 +134,12 @@ jobs:
             externalFeedCredentials: 'dotnet-core-internal-tooling'
 
     # Build
-    - script: $(intermediateDirSetEnvPrefix)$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
-      displayName: Build product
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+        displayName: Build product
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+        displayName: Build product
 
     # Build native test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
