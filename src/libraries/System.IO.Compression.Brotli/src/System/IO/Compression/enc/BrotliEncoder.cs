@@ -12,7 +12,7 @@ namespace System.IO.Compression
 {
     public partial struct BrotliEncoder : IDisposable
     {
-        internal SafeBrotliEncoderHandle _state;
+        internal SafeBrotliEncoderHandle? _state;
         private bool _disposed;
 
         public BrotliEncoder(int quality, int window)
@@ -122,6 +122,8 @@ namespace System.IO.Compression
         internal OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
             EnsureInitialized();
+            Debug.Assert(_state != null);
+
             bytesWritten = 0;
             bytesConsumed = 0;
             size_t availableOutput = (size_t)destination.Length;
