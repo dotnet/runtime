@@ -18,7 +18,12 @@ namespace Mono  {
 		IntPtr marshaled_string;
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public extern static IntPtr StringToUtf8 (string str);
+		extern static IntPtr StringToUtf8_icall (ref string str);
+
+		public static IntPtr StringToUtf8 (string str)
+		{
+			return StringToUtf8_icall (ref str);
+		}
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static void GFree (IntPtr ptr);
