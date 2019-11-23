@@ -590,10 +590,11 @@ public class Helper
     #endregion
     
     #region methods for S8 struct
-    public static S8 NewS8(string name, bool gender, UInt16 jobNum, int i32, uint ui32, sbyte mySByte)
+    public static S8 NewS8(string name, string fullName, bool gender, UInt16 jobNum, int i32, uint ui32, sbyte mySByte)
     {
         S8 s8 = new S8();
         s8.name = name;
+        s8.fullName = fullName;
         s8.gender = gender;
         s8.i32 = i32;
         s8.ui32 = ui32;
@@ -604,6 +605,7 @@ public class Helper
     public static void PrintS8(S8 str1, string name)
     {
         Console.WriteLine("\t{0}.name = {1}", name, str1.name);
+        Console.WriteLine("\t{0}.fullName = {1}", name, str1.fullName);
         Console.WriteLine("\t{0}.gender = {1}", name, str1.gender);
         Console.WriteLine("\t{0}.jobNum = {1}", name, str1.jobNum);
         Console.WriteLine("\t{0}.i32 = {1}", name, str1.i32);
@@ -612,7 +614,7 @@ public class Helper
     }
     public static bool ValidateS8(S8 str1, S8 str2, string methodName)
     {
-        if (str1.name != str2.name || str1.gender != str2.gender ||
+        if (str1.name != str2.name || str1.fullName != str2.fullName || str1.gender != str2.gender ||
             str1.jobNum != str2.jobNum ||
             str1.i32 != str2.i32 || str1.ui32 != str2.ui32 || str1.mySByte != str2.mySByte)
         {
