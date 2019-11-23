@@ -242,21 +242,13 @@ exit:
             record.code_index = ++codeIndex;
             record.header.total_size = bytesRemaining;
 
-            const int maxItems = 3;
-            struct iovec item[maxItems];
-            int items = 0;
-
-            // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
-
-            item[items].iov_base = &record;
-            item[items++].iov_len = sizeof(JitCodeLoadRecord);
-            item[items].iov_base = (void*) symbol;
-            item[items++].iov_len = symbolLen + 1;
-            item[items].iov_base = pCode;
-            item[items++].iov_len = codeSize;
-
-            if (items > maxItems)
-                return FatalError(false);
+            iovec item[] = {
+                // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
+                { &record, sizeof(JitCodeLoadRecord) },
+                { (void *)symbol, symbolLen + 1 },
+                { pCode, codeSize },
+            };
+            auto items = sizeof(item) / sizeof(item[0]);
 
             int itemsWritten = 0;
 
@@ -275,19 +267,20 @@ exit:
                 if (result == bytesRemaining)
                     break;
 
-                if (result < 0)
+                if (result <= 0)
                 {
                     if ((result == -1) && (errno == EINTR))
-                    {
-                        result = 0;
-                    }
-                    else
-                    {
-                        return FatalError(true);
-                    }
+                        continue;
+
+                    return FatalError(true);
                 }
 
+                // Detect unexpected failure case.
+                if (bytesRemaining < result)
+                    return FatalError(true);
+
                 // Handle partial write case
+
                 bytesRemaining -= result;
 
                 do
@@ -295,19 +288,19 @@ exit:
                     if (result < item[itemsWritten].iov_len)
                     {
                         item[itemsWritten].iov_len -= result;
-                        item[items].iov_base = (void*)((uint64_t) item[items].iov_base + result);
+                        item[itemsWritten].iov_base = (void*)((size_t) item[items].iov_base + result);
                         break;
                     }
                     else
                     {
                         result -= item[itemsWritten].iov_len;
                         itemsWritten++;
+
+                        // Detect unexpected failure case.
+                        if (itemsWritten >= items)
+                            return FatalError(true);
                     }
                 } while (result > 0);
-
-                // Detect unexpected failure cases.
-                if ((itemsWritten >= items) || (bytesRemaining < 0))
-                    return FatalError(true);
             } while (true);
 
 exit:
