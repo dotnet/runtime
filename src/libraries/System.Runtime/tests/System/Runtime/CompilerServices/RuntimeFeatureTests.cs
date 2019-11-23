@@ -27,5 +27,16 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
             }
         }
+
+        [Fact]
+        public static void DynamicCode_Jit()
+        {
+            // some modes on Mono don't support these features
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+                Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
+            }
+        }
     }
 }
