@@ -196,7 +196,8 @@ g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 		} else {
 			outleftptr = NULL;
 		}
-#if defined(__NetBSD__)
+// AIX needs this for C++ and GNU iconv
+#if defined(__NetBSD__) || defined(_AIX)
 		return iconv (cd->cd, (const gchar **)inbytes, inleftptr, outbytes, outleftptr);
 #else
 		return iconv (cd->cd, inbytes, inleftptr, outbytes, outleftptr);

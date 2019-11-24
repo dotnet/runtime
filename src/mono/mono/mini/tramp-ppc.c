@@ -90,7 +90,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	mono_domain_lock (domain);
 	start = code = mono_domain_code_reserve (domain, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
-	short_branch = branch_for_target_reachable (code + 4, addr);
+	short_branch = branch_for_target_reachable (code + 4, (guint8*)addr);
 	if (short_branch)
 		mono_domain_code_commit (domain, code, size, 8);
 	mono_domain_unlock (domain);
@@ -140,7 +140,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	mono_domain_lock (domain);
 	start = code = mono_domain_code_reserve (domain, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
-	short_branch = branch_for_target_reachable (code + imm_size, addr);
+	short_branch = branch_for_target_reachable (code + imm_size, (guint8*)addr);
 	if (short_branch)
 		mono_domain_code_commit (domain, code, size, imm_size + 4);
 	mono_domain_unlock (domain);
@@ -168,7 +168,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 {
 	guint32 *code = (guint32*)code_ptr;
 
-	addr = mono_get_addr_from_ftnptr (addr);
+	addr = (guint8*)mono_get_addr_from_ftnptr (addr);
 
 	/* This is the 'blrl' instruction */
 	--code;
@@ -404,7 +404,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (aot) {
 		g_error ("Not implemented");
 	} else {
-		gconstpointer checkpoint = mono_thread_force_interruption_checkpoint_noraise;
+		gconstpointer checkpoint = (gconstpointer)mono_thread_force_interruption_checkpoint_noraise;
 		ppc_load_func (code, PPC_CALL_REG, checkpoint);
 		ppc_mtlr (code, PPC_CALL_REG);
 	}

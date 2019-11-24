@@ -3885,7 +3885,7 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	total = 0;
 
 	MONO_ENTER_GC_SAFE;
-	ret = mntctl (MCTL_QUERY, sizeof(needsize), &needsize);
+	ret = mntctl (MCTL_QUERY, sizeof(needsize), (char*)&needsize);
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1)
 		return 0;
@@ -3893,7 +3893,7 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	if (mounts == NULL)
 		return 0;
 	MONO_ENTER_GC_SAFE;
-	ret = mntctl (MCTL_QUERY, needsize, mounts);
+	ret = mntctl (MCTL_QUERY, needsize, (char*)mounts);
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		g_free (mounts);
@@ -3908,7 +3908,7 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 		} 
 		g_free (dir);
 		total += length + 1;
-		mounts = (void*)mounts + mounts->vmt_length; // next!
+		mounts = (struct vmount *)((char*)mounts + mounts->vmt_length); // next!
 	}
 	if (total < len)
 		buf [total] = 0;

@@ -3785,7 +3785,7 @@ mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 #if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	gpointer* desc = NULL;
 
-	if ((desc = g_hash_table_lookup (domain->ftnptrs_hash, addr)))
+	if ((desc = (gpointer*)g_hash_table_lookup (domain->ftnptrs_hash, addr)))
 		return desc;
 #if defined(__mono_ppc64__)
 	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));

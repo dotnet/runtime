@@ -424,7 +424,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return cached;
 
 		if (mono_ee_features.use_aot_trampolines) {
-			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
+			start = (guint8*)mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
 		} else {
 			MonoTrampInfo *info;
 			start = get_delegate_invoke_impl (&info, TRUE, 0, FALSE);
@@ -450,7 +450,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		if (mono_ee_features.use_aot_trampolines) {
 			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
-			start = mono_aot_get_trampoline (name);
+			start = (guint8*)mono_aot_get_trampoline (name);
 			g_free (name);
 		} else {
 			MonoTrampInfo *info;
@@ -1736,7 +1736,7 @@ void
 mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
 	MonoCallInst *call = (MonoCallInst*)ins->inst_p0;
-	ArgInfo *ainfo = ins->inst_p1;
+	ArgInfo *ainfo = (ArgInfo*)ins->inst_p1;
 	int ovf_size = ainfo->vtsize;
 	int doffset = ainfo->offset;
 	int i, soffset, dreg;
@@ -2916,7 +2916,7 @@ ppc_patch_full (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar
 			}
 		} else {
 			if (is_fd)
-				target = mono_get_addr_from_ftnptr ((gpointer)target);
+				target = (const guchar*)mono_get_addr_from_ftnptr ((gpointer)target);
 		}
 
 		/* FIXME: make this thread safe */
@@ -3650,13 +3650,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_GOT_ENTRY:
 			// FIXME: Fix max instruction length
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
+			/* XXX: This is hairy; we're casting a pointer from a union to an enum... */
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(intptr_t)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
 			/* arch_emit_got_access () patches this */
 			ppc_load32 (code, ppc_r0, 0);
 			ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
 			break;
 		case OP_AOTCONST:
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(intptr_t)ins->inst_i1, ins->inst_p0);
 			ppc_load_sequence (code, ins->dreg, 0);
 			break;
 		CASE_PPC32 (OP_ICONV_TO_I4)
@@ -4049,7 +4050,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_LE_UN:
-			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_EQ, ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_EQ, (const char*)ins->inst_p1);
 			break;
 		case OP_COND_EXC_IEQ:
 		case OP_COND_EXC_INE_UN:
@@ -4061,7 +4062,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_IGE_UN:
 		case OP_COND_EXC_ILE:
 		case OP_COND_EXC_ILE_UN:
-			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_IEQ, ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_IEQ, (const char*)ins->inst_p1);
 			break;
 		case OP_IBEQ:
 		case OP_IBNE_UN:
@@ -4422,12 +4423,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1 << 13)); /* CA */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, (const char*)ins->inst_p1);
 			break;
 		case OP_COND_EXC_OV:
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1 << 14)); /* OV */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, (const char*)ins->inst_p1);
 			break;
 		case OP_LBEQ:
 		case OP_LBNE_UN:
@@ -4684,7 +4685,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		/* fall through */
 #endif
 	default:
-		ppc_patch_full (cfg, domain, ip, target, is_fd);
+		ppc_patch_full (cfg, domain, ip, (const guchar*)target, is_fd);
 		break;
 	}
 }
@@ -5353,7 +5354,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
-			i = exception_id_by_name (patch_info->data.target);
+			i = exception_id_by_name ((const char*)patch_info->data.target);
 			if (!exc_throw_found [i]) {
 				max_epilog_size += (2 * PPC_LOAD_SEQUENCE_LENGTH) + 5 * 4;
 				exc_throw_found [i] = TRUE;
@@ -5416,7 +5417,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			MonoClass *exc_class;
 
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
-			i = exception_id_by_name (patch_info->data.target);
+			i = exception_id_by_name ((const char*)patch_info->data.target);
 			if (exc_throw_pos [i] && !(ip > exc_throw_pos [i] && ip - exc_throw_pos [i] > 50000)) {
 				ppc_patch (ip, exc_throw_pos [i]);
 				patch_info->type = MONO_PATCH_INFO_NONE;

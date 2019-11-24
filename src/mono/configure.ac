@@ -510,8 +510,8 @@ case "$host" in
 		dnl We still set this for *FLAGS, however, because we may not
 		dnl be setting OBJECT_MODE.
 		LDFLAGS="$LDFLAGS -maix64"
-		CPPFLAGS="$CPPFLAGS -maix64 -DGC_AIX_THREADS -D_ALL_SOURCE -D_THREAD_SAFE -D_LARGE_FILES -D_REENTRANT"
-		libmono_cflags="-D_THREAD_SAFE -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -maix64 -DGC_AIX_THREADS -D_ALL_SOURCE -pthread -D_THREAD_SAFE -D_LARGE_FILES -D_REENTRANT"
+		libmono_cflags="-pthread -D_THREAD_SAFE -D_REENTRANT"
 		dnl Would you believe GNU nm doesn't know how to process AIX libraries?
 		dnl Hardcode IBM binutils in case GNU ones end up on our path. Also
 		dnl specifiy 64-bit mode for tools. (OBJECT_MODE is finicky with cmake.)
@@ -1206,8 +1206,10 @@ AC_ARG_ENABLE(cxx, [  --enable-cxx   compile some code as C++])
 
 # mono/corefx/native has a lot of invalid C++98 in its headers
 # dotnet/corefx/native looks a lot better, i.e. 44e5bdafb8d989a220c9cf1b94f31a64a6e4f052
+# use these C99 print macros in the command line, since glib may not win first inttypes include
 #CXXFLAGS_COMMON=' -std=gnu++98 -fno-exceptions -fno-rtti '
 CXXFLAGS_COMMON=' -std=gnu++0x -fno-exceptions -fno-rtti '
+CXXFLAGS_COMMON="$CXXFLAGS_COMMON -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS"
 # "c++0x" instead of C++11, for compat with Centos6/gcc4.4
 
 # -stdlib=libc++ is needed by clang for iOS 6.0 (-miphoneos-version-min=6.0)

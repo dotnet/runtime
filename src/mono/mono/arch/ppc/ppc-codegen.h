@@ -124,7 +124,7 @@ enum {
 	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
 };
 
-#define ppc_emit32(c,x) do { *((guint32 *) (c)) = (guint32) (x); (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
+#define ppc_emit32(c,x) do { *((guint32 *) (c)) = (guint32) (x); (c) = ((guint8 *)(c) + sizeof (guint32));} while (0)
 
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)

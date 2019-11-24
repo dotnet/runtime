@@ -528,7 +528,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-	os_ucontext *uc = sigctx;
+	os_ucontext *uc = (os_ucontext*)sigctx;
 
 	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
 	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
@@ -540,7 +540,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-	os_ucontext *uc = sigctx;
+	os_ucontext *uc = (os_ucontext*)sigctx;
 
 	memcpy (&UCONTEXT_REG_Rn(uc, 0), &mctx->regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 	memcpy (&UCONTEXT_REG_FPRn(uc, 0), &mctx->fregs, sizeof (double) * MONO_MAX_FREGS);
