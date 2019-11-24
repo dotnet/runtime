@@ -395,8 +395,8 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private List<CustAttr>? m_ca;
         private TypeToken m_tdType;
-        private readonly ModuleBuilder m_module;
-        private string? m_strName;
+        private readonly ModuleBuilder m_module = null!;
+        private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
         private Type? m_typeParent;
@@ -416,9 +416,9 @@ namespace System.Reflection.Emit
         private bool m_hasBeenCreated;
         private RuntimeType m_bakedRuntimeType = null!;
 
-        private int m_genParamPos;
+        private readonly int m_genParamPos;
         private GenericTypeParameterBuilder[]? m_inst;
-        private bool m_bIsGenParam;
+        private readonly bool m_bIsGenParam;
         private readonly MethodBuilder? m_declMeth;
         private readonly TypeBuilder? m_genTypeDef;
         #endregion
@@ -437,25 +437,24 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic method parameter
-        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
+        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth) : this(szName, genParamPos)
         {
             Debug.Assert(declMeth != null);
             m_declMeth = declMeth;
             m_DeclaringType = m_declMeth.GetTypeBuilder();
             m_module = declMeth.GetModuleBuilder();
-            InitAsGenericParam(szName, genParamPos);
         }
 
         // ctor for generic type parameter
-        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType)
+        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType) : this(szName, genParamPos)
         {
             Debug.Assert(declType != null);
             m_DeclaringType = declType;
             m_module = declType.GetModuleBuilder();
-            InitAsGenericParam(szName, genParamPos);
         }
 
-        private void InitAsGenericParam(string szName, int genParamPos)
+        // only for delegating to by other ctors
+        private TypeBuilder(string szName, int genParamPos)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
