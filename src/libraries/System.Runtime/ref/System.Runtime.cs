@@ -6292,11 +6292,11 @@ namespace System.Reflection
     }
     public sealed partial class ReflectionTypeLoadException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
-        public ReflectionTypeLoadException(System.Type[]? classes, System.Exception?[]? exceptions) { }
-        public ReflectionTypeLoadException(System.Type[]? classes, System.Exception?[]? exceptions, string? message) { }
-        public System.Exception?[]? LoaderExceptions { get { throw null; } }
+        public ReflectionTypeLoadException(System.Type?[]? classes, System.Exception?[]? exceptions) { }
+        public ReflectionTypeLoadException(System.Type?[]? classes, System.Exception?[]? exceptions, string? message) { }
+        public System.Exception?[] LoaderExceptions { get { throw null; } }
         public override string Message { get { throw null; } }
-        public System.Type[]? Types { get { throw null; } }
+        public System.Type?[] Types { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
