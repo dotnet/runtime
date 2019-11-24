@@ -111,11 +111,11 @@ jobs:
 
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - coreFxDownloadPath: $(Build.SourcesDirectory)/${{ format('artifacts/bin/runtime/netcoreapp-{0}-{1}-{2}', parameters.osGroup, parameters.buildConfig, parameters.archType) }}
+      - coreFxDownloadPath: '$(Build.SourcesDirectory)/artifacts'
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath $(coreFxDownloadPath)'
+        - coreFxOverrideArg: ' localcorefxpath $(coreFxDownloadPath)'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - coreFxOverrideArg: ' corefxoverridepath=$(coreFxDownloadPath)'
+        - coreFxOverrideArg: ' localcorefxpath=$(coreFxDownloadPath)'
 
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:

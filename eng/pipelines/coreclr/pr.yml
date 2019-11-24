@@ -17,39 +17,13 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Linux_arm
-    - Linux_arm64
     - Windows_NT_x86
+    - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-
 
 #
 # Build CoreFX using live CoreLib from CoreCLR
@@ -57,40 +31,11 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
-    jobParameters:
-      isOfficialBuild: false
-      testScope: empty
-      useLiveCoreClr: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Linux_arm
-    - Linux_arm64
     - Windows_NT_x86
-    jobParameters:
-      isOfficialBuild: false
-      testScope: empty
-      useLiveCoreClr: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
+    - Windows_NT_arm64
     jobParameters:
       isOfficialBuild: false
       testScope: empty
@@ -102,38 +47,11 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-      useLiveLibraries: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Linux_arm
-    - Linux_arm64
     - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-      useLiveLibraries: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
+    - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
       useLiveLibraries: true
@@ -144,38 +62,11 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-      useLiveLibraries: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
-    - Linux_arm
-    - Linux_arm64
     - Windows_NT_x86
-    jobParameters:
-      testGroup: innerloop
-      useLiveLibraries: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_arm
-    - Linux_arm64
-    - Windows_NT_x86
+    - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
       useLiveLibraries: true

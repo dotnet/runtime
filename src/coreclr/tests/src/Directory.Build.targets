@@ -205,39 +205,24 @@
       </Reference>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(__CoreFXOverridePath)' != ''">
-      <__ExcludeFiles Include="clrcompression" />
-      <__ExcludeFiles Include="clretwrc" />
-      <__ExcludeFiles Include="clrgc" />
-      <__ExcludeFiles Include="clrjit" />
-      <__ExcludeFiles Include="coreclr" />
-      <__ExcludeFiles Include="coredistools" />
-      <__ExcludeFiles Include="corerun" />
-      <__ExcludeFiles Include="CoreShim" />
-      <__ExcludeFiles Include="comhost" />
-      <__ExcludeFiles Include="dbgshim" />
-      <__ExcludeFiles Include="hostfxr" />
-      <__ExcludeFiles Include="hostpolicy" />
-      <__ExcludeFiles Include="ijwhost" />
-      <__ExcludeFiles Include="jitinterface" />
-      <__ExcludeFiles Include="linuxnonjit" />
-      <__ExcludeFiles Include="Microsoft.DiaSymReader.Native.amd64" />
-      <__ExcludeFiles Include="mscordbi" />
-      <__ExcludeFiles Include="mscordaccore" />
-      <__ExcludeFiles Include="mscorrc" />
-      <__ExcludeFiles Include="mscorrc.debug" />
-      <__ExcludeFiles Include="nethost" />
-      <__ExcludeFiles Include="protononjit" />
-      <__ExcludeFiles Include="sni" />
-      <__ExcludeFiles Include="superpmi-shim-counter" />
-      <__ExcludeFiles Include="superpmi-shim-simple" />
-      <__ExcludeFiles Include="superpmi-shim-collector" />
+    <ItemGroup Condition="'$(__LocalCoreFXPath)' != '' and '$(ReferenceSystemPrivateCoreLib)' == 'true'">
+      <RemoveSimpleNames Include="System.Collections" />
+      <RemoveSimpleNames Include="System.Runtime" />
+      <RemoveSimpleNames Include="System.Runtime.Extensions" />
+      <RemoveSimpleNames Include="System.Runtime.InteropServices" />
+      <RemoveSimpleNames Include="System.Runtime.Loader" />
 
-      <__ExcludePaths Include="$(__CoreFXOverridePath)/%(__ExcludeFiles.Identity).dll" />
+      <RemoveCoreFXRefAsmPaths Include="$(__LocalCoreFXPath)/bin/ref/netcoreapp/%(RemoveSimpleNames.Identity).dll" />
 
-      <__LocalCoreFXManagedFiles Include="$(__CoreFXOverridePath)/*.dll" Exclude="@(__ExcludePaths)" />
+      <Reference Include="$(RepoRoot)/artifacts/bin/coreclr/$(OSGroup).$(Platform).$(Configuration)/System.Private.CoreLib.dll">
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
 
-      <Reference Include="@(__LocalCoreFXManagedFiles)">
+    <Message Importance="High" Text="$(MSBuildProjectFile): %(RemoveSimpleNames.Identity)" />
+
+    <ItemGroup Condition="'$(__LocalCoreFXPath)' != ''">
+      <Reference Include="$(__LocalCoreFXPath)/bin/ref/netcoreapp/*.dll" Exclude="@(RemoveCoreFXRefAsmPaths)">
         <Private>false</Private>
       </Reference>
     </ItemGroup>
