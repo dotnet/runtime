@@ -786,17 +786,35 @@ namespace System.Net.Mail
         public Task SendMailAsync(string from, string recipients, string subject, string body)
         {
             var message = new MailMessage(from, recipients, subject, body);
-            return SendMailAsync(message);
+            return SendMailAsync(message, cancellationToken: default);
         }
 
         public Task SendMailAsync(MailMessage message)
         {
+            return SendMailAsync(message, cancellationToken: default);
+        }
+
+        public Task SendMailAsync(string from, string recipients, string subject, string body, CancellationToken cancellationToken)
+        {
+            var message = new MailMessage(from, recipients, subject, body);
+            return SendMailAsync(message, cancellationToken);
+        }
+
+        public Task SendMailAsync(MailMessage message, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
             // Create a TaskCompletionSource to represent the operation
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            CancellationTokenRegistration ctr = default;
 
             // Register a handler that will transfer completion results to the TCS Task
             SendCompletedEventHandler handler = null;
-            handler = (sender, e) => HandleCompletion(tcs, e, handler);
+            handler = (sender, e) => HandleCompletion(tcs, ctr, e, handler);
             SendCompleted += handler;
 
             // Start the async operation.
@@ -810,20 +828,45 @@ namespace System.Net.Mail
                 throw;
             }
 
+            // Only register on the CT if HandleCompletion hasn't started to ensure the CTR is disposed
+            bool lockTaken = false;
+            try
+            {
+                Monitor.TryEnter(tcs, ref lockTaken);
+                if (lockTaken && !tcs.Task.IsCompleted)
+                {
+                    ctr = cancellationToken.Register(s =>
+                    {
+                        ((SmtpClient)s).SendAsyncCancel();
+                    }, this);
+                }
+            }
+            finally
+            {
+                if (lockTaken) Monitor.Exit(tcs);
+            }
+
             // Return the task to represent the asynchronous operation
             return tcs.Task;
         }
 
-        private void HandleCompletion(TaskCompletionSource<object> tcs, AsyncCompletedEventArgs e, SendCompletedEventHandler handler)
+        private void HandleCompletion(TaskCompletionSource<object> tcs, CancellationTokenRegistration ctr, AsyncCompletedEventArgs e, SendCompletedEventHandler handler)
         {
             if (e.UserState == tcs)
             {
-                try { SendCompleted -= handler; }
-                finally
+                lock (tcs)
                 {
-                    if (e.Error != null) tcs.TrySetException(e.Error);
-                    else if (e.Cancelled) tcs.TrySetCanceled();
-                    else tcs.TrySetResult(null);
+                    try
+                    {
+                        SendCompleted -= handler;
+                        ctr.Dispose();
+                    }
+                    finally
+                    {
+                        if (e.Error != null) tcs.TrySetException(e.Error);
+                        else if (e.Cancelled) tcs.TrySetCanceled();
+                        else tcs.TrySetResult(null);
+                    }
                 }
             }
         }
