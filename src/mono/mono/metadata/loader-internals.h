@@ -112,4 +112,7 @@ mono_alc_domain (MonoAssemblyLoadContext *alc)
 MonoLoadedImages *
 mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);
 
+MONO_API void
+mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
+
 #endif

@@ -42,6 +42,16 @@ static GHashTable *global_module_map; // should only be accessed with the global
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
 
+// Did we initialize the temporary directory for dynamic libraries
+// FIXME: this is racy
+static gboolean bundle_save_library_initialized;
+
+// List of bundled libraries we unpacked
+static GSList *bundle_library_paths;
+
+// Directory where we unpacked dynamic libraries
+static char *bundled_dylibrary_directory;
+
 typedef enum {
 	LOOKUP_PINVOKE_ERR_OK = 0, /* No error */
 	LOOKUP_PINVOKE_ERR_NO_LIB, /* DllNotFoundException */
@@ -1522,3 +1532,56 @@ leave:
 	return handle;
 }
 #endif
+
+#ifdef HAVE_ATEXIT
+static void
+delete_bundled_libraries (void)
+{
+	GSList *list;
+
+	for (list = bundle_library_paths; list != NULL; list = list->next){
+		unlink ((const char*)list->data);
+	}
+	rmdir (bundled_dylibrary_directory);
+}
+#endif
+
+static void
+bundle_save_library_initialize (void)
+{
+	bundle_save_library_initialized = TRUE;
+	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", (const char*)NULL);
+	bundled_dylibrary_directory = g_mkdtemp (path);
+	g_free (path);
+	if (bundled_dylibrary_directory == NULL)
+		return;
+#ifdef HAVE_ATEXIT
+	atexit (delete_bundled_libraries);
+#endif
+}
+
+void
+mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
+{
+	MonoDl *lib;
+	char *file, *buffer, *err, *internal_path;
+	if (!bundle_save_library_initialized)
+		bundle_save_library_initialize ();
+	
+	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
+	buffer = g_str_from_region (fd, offset, size);
+	g_file_set_contents (file, buffer, size, NULL);
+
+	lib = mono_dl_open (file, MONO_DL_LAZY, &err);
+	if (lib == NULL){
+		fprintf (stderr, "Error loading shared library: %s %s\n", file, err);
+		exit (1);
+	}
+	// Register the name with "." as this is how it will be found when embedded
+	internal_path = g_build_filename (".", destfname, (const char*)NULL);
+ 	mono_loader_register_module (internal_path, lib);
+	g_free (internal_path);
+	bundle_library_paths = g_slist_append (bundle_library_paths, file);
+	
+	g_free (buffer);
+}

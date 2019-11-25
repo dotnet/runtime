@@ -32,8 +32,8 @@ typedef struct {
 	MonoDlFallbackHandler *dl_fallback;
 } MonoDl;
 
-
-MONO_API MonoDl* mono_dl_open  (const char *name, int flags, char **error_msg) MONO_LLVM_INTERNAL_NO_EXTERN_C;
+MONO_EXTERN_C
+MonoDl*     mono_dl_open       (const char *name, int flags, char **error_msg) MONO_LLVM_INTERNAL_NO_EXTERN_C;
 MONO_EXTERN_C
 char*       mono_dl_symbol     (MonoDl *module, const char *name, void **symbol) MONO_LLVM_INTERNAL_NO_EXTERN_C;
 MONO_EXTERN_C
