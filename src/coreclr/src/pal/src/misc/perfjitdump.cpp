@@ -140,7 +140,7 @@ struct PerfJitDumpState
     int fd;
     void *mmapAddr;
     pthread_mutex_t mutex;
-    uint64_t codeIndex;
+    volatile uint64_t codeIndex;
 
     int FatalError(bool locked)
     {
