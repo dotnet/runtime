@@ -379,7 +379,7 @@ gchar       *g_strchomp       (gchar *str);
 void         g_strdown        (gchar *string);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 gsize        g_strnlen        (const char*, gsize);
-char        *g_str_from_region (gint fd, guint64 offset, guint64 size);
+char        *g_str_from_file_region (int fd, guint64 offset, gsize size);
 
 void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
 gchar       *g_strescape      (const gchar *source, const gchar *exceptions);

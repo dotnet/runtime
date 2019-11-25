@@ -1136,7 +1136,7 @@ g_strnlen (const char* s, gsize n)
  * on error.
  */
 char *
-g_str_from_region (gint fd, guint64 offset, guint64 size)
+g_str_from_file_region (int fd, guint64 offset, gsize size)
 {
 	char *buffer;
 	off_t loc;
@@ -1147,7 +1147,7 @@ g_str_from_region (gint fd, guint64 offset, guint64 size)
 	} while (loc == -1 && errno == EINTR);
 	if (loc == -1)
 		return NULL;
-	buffer = g_malloc (size + 1);
+	buffer = (char *)g_malloc (size + 1);
 	if (buffer == NULL)
 		return NULL;
 	buffer [size] = 0;

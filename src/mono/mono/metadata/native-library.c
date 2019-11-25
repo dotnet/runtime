@@ -1569,7 +1569,7 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 		bundle_save_library_initialize ();
 	
 	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
-	buffer = g_str_from_region (fd, offset, size);
+	buffer = g_str_from_file_region (fd, offset, size);
 	g_file_set_contents (file, buffer, size, NULL);
 
 	lib = mono_dl_open (file, MONO_DL_LAZY, &err);

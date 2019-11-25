@@ -232,19 +232,19 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			char *config = kind + strlen ("config:");
 			char *aname = g_strdup (config);
 			aname [strlen(aname)-strlen(".config")] = 0;
-			mono_register_config_for_assembly (aname, g_str_from_region (fd, offset, item_size));
+			mono_register_config_for_assembly (aname, g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "systemconfig:", strlen ("systemconfig:")) == 0){
-			mono_config_parse_memory (g_str_from_region (fd, offset, item_size));
+			mono_config_parse_memory (g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
-			mono_parse_options_from (g_str_from_region (fd, offset, item_size), ref_argc, ref_argv);
+			mono_parse_options_from (g_str_from_file_region (fd, offset, item_size), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){
 			char *mono_path_value = g_getenv ("MONO_PATH");
-			mono_set_dirs (mono_path_value, g_str_from_region (fd, offset, item_size));
+			mono_set_dirs (mono_path_value, g_str_from_file_region (fd, offset, item_size));
 			g_free (mono_path_value);
 		} else if (strncmp (kind, "machineconfig:", strlen ("machineconfig:")) == 0) {
-			mono_register_machine_config (g_str_from_region (fd, offset, item_size));
+			mono_register_machine_config (g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "env:", strlen ("env:")) == 0){
-			char *data = g_str_from_region (fd, offset, item_size);
+			char *data = g_str_from_file_region (fd, offset, item_size);
 			uint8_t count = *data++;
 			char *value = data + count + 1;
 			g_setenv (data, value, FALSE);
