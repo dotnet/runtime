@@ -185,6 +185,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override object VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, constantCallSite.DefaultValue);
+
+            if (constantCallSite.ServiceType.IsValueType)
+            {
+                argument.Generator.Emit(OpCodes.Unbox_Any, constantCallSite.ServiceType);
+            }
+
             return null;
         }
 
