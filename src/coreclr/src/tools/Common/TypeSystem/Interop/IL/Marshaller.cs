@@ -1824,7 +1824,12 @@ namespace Internal.TypeSystem.Interop
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
+            ILCodeLabel lNullPointer = _ilCodeStreams.Emitter.NewCodeLabel();
+            ILCodeLabel lDone = _ilCodeStreams.Emitter.NewCodeLabel();
+
             LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.dup);
+            codeStream.Emit(ILOpcode.brfalse, lNullPointer);
 
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
                 InteropTypes.GetMarshal(Context).GetKnownMethod("GetFunctionPointerForDelegate",
@@ -1832,12 +1837,25 @@ namespace Internal.TypeSystem.Interop
                     new TypeDesc[] { Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType }
                 ))));
 
+            codeStream.Emit(ILOpcode.br, lDone);
+
+            codeStream.EmitLabel(lNullPointer);
+            codeStream.Emit(ILOpcode.pop);
+            codeStream.EmitLdc(0);
+            codeStream.Emit(ILOpcode.conv_i);
+
+            codeStream.EmitLabel(lDone);
             StoreNativeValue(codeStream);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
+            ILCodeLabel lNullPointer = _ilCodeStreams.Emitter.NewCodeLabel();
+            ILCodeLabel lDone = _ilCodeStreams.Emitter.NewCodeLabel();
+
             LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.dup);
+            codeStream.Emit(ILOpcode.brfalse, lNullPointer);
 
             TypeDesc systemType = Context.SystemModule.GetKnownType("System", "Type");
 
@@ -1850,6 +1868,13 @@ namespace Internal.TypeSystem.Interop
                     new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr), systemType }
                 ))));
 
+            codeStream.Emit(ILOpcode.br, lDone);
+
+            codeStream.EmitLabel(lNullPointer);
+            codeStream.Emit(ILOpcode.pop);
+            codeStream.Emit(ILOpcode.ldnull);
+
+            codeStream.EmitLabel(lDone);
             StoreManagedValue(codeStream);
         }
 
