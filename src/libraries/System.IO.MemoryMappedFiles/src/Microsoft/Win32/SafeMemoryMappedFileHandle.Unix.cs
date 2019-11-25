@@ -6,8 +6,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
@@ -22,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
         /// onto the underlying handle to ensure that logic associated with disposing the stream
         /// (e.g. deleting the file for DeleteOnClose) happens at the appropriate time.
         /// </summary>
-        internal readonly FileStream _fileStream;
+        internal readonly FileStream? _fileStream;
 
         /// <summary>Whether this SafeHandle owns the _fileStream and should Dispose it when disposed.</summary>
         internal readonly bool _ownsFileStream;
@@ -47,7 +45,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="options">The options for the memory-mapped file.</param>
         /// <param name="capacity">The capacity of the memory-mapped file.</param>
         internal SafeMemoryMappedFileHandle(
-            FileStream fileStream, bool ownsFileStream, HandleInheritability inheritability,
+            FileStream? fileStream, bool ownsFileStream, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options,
             long capacity)
             : base(ownsHandle: true)
@@ -72,7 +70,7 @@ namespace Microsoft.Win32.SafeHandles
             if (disposing && _ownsFileStream)
             {
                 // Clean up the file descriptor (either for a file on disk or a shared memory object) if we created it
-                _fileStream.Dispose();
+                _fileStream!.Dispose();
             }
             base.Dispose(disposing);
         }

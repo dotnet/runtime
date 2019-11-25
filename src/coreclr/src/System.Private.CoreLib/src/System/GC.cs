@@ -13,10 +13,10 @@
 **
 ===========================================================*/
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -674,7 +674,7 @@ namespace System
             return AllocateNewUninitializedArray(length);
 
             // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
-            T[] AllocateNewUninitializedArray(int length)
+            static T[] AllocateNewUninitializedArray(int length)
                 => Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, zeroingOptional: true));
         }
     }

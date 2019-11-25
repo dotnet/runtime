@@ -27,7 +27,7 @@ internal partial class Interop
             ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
-            string name)
+            string? name)
     {
         // split the long into two ints
         int capacityHigh, capacityLow;
@@ -41,7 +41,7 @@ internal partial class Interop
             ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
-            string name)
+            string? name)
     {
         // split the long into two ints
         int capacityHigh, capacityLow;

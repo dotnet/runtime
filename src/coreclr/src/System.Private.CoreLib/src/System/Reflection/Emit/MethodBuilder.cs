@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using CultureInfo = System.Globalization.CultureInfo;
+using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
+using System.Text;
+using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
@@ -18,7 +17,7 @@ namespace System.Reflection.Emit
         // Identity
         internal string m_strName; // The name of the method
         private MethodToken m_tkMethod; // The token of this method
-        private ModuleBuilder m_module;
+        private readonly ModuleBuilder m_module;
         internal TypeBuilder m_containingType;
 
         // IL
@@ -29,16 +28,14 @@ namespace System.Reflection.Emit
         private byte[]? m_ubBody;                     // The IL for the method
         private ExceptionHandler[]? m_exceptions; // Exception handlers or null if there are none.
         private const int DefaultMaxStack = 16;
-        private int m_maxStack = DefaultMaxStack;
 
         // Flags
         internal bool m_bIsBaked;
-        private bool m_bIsGlobalMethod;
         private bool m_fInitLocals; // indicating if the method stack frame will be zero initialized or not.
 
         // Attributes
-        private MethodAttributes m_iAttributes;
-        private CallingConventions m_callingConvention;
+        private readonly MethodAttributes m_iAttributes;
+        private readonly CallingConventions m_callingConvention;
         private MethodImplAttributes m_dwMethodImplFlags;
 
         // Parameters
@@ -60,7 +57,7 @@ namespace System.Reflection.Emit
         internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod)
+            ModuleBuilder mod, TypeBuilder type)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -135,7 +132,6 @@ namespace System.Reflection.Emit
             //                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
             m_iAttributes = attributes;
-            m_bIsGlobalMethod = bIsGlobalMethod;
             m_bIsBaked = false;
             m_fInitLocals = true;
 
@@ -269,15 +265,6 @@ namespace System.Reflection.Emit
                 //
                 symWriter.OpenScope(0);
 
-                if (m_symCustomAttrs != null)
-                {
-                    foreach (SymCustomAttr symCustomAttr in m_symCustomAttrs)
-                        dynMod.GetSymWriter()!.SetSymAttribute(
-                        new SymbolToken(MetadataTokenInternal),
-                            symCustomAttr.m_name,
-                            symCustomAttr.m_data);
-                }
-
                 if (m_localSymInfo != null)
                     m_localSymInfo.EmitLocalSymInfo(symWriter);
                 il.m_ScopeTree.EmitScopeTree(symWriter);
@@ -380,7 +367,7 @@ namespace System.Reflection.Emit
             else
             {
                 // this is the case when client provide an array of IL byte stream rather than going through ILGenerator.
-                return m_maxStack;
+                return DefaultMaxStack;
             }
         }
 
@@ -431,7 +418,7 @@ namespace System.Reflection.Emit
             {
                 return false;
             }
-            if (!this.m_strName.Equals(((MethodBuilder)obj).m_strName))
+            if (!m_strName.Equals(((MethodBuilder)obj).m_strName))
             {
                 return false;
             }
@@ -451,7 +438,7 @@ namespace System.Reflection.Emit
 
         public override int GetHashCode()
         {
-            return this.m_strName.GetHashCode();
+            return m_strName.GetHashCode();
         }
 
         public override string ToString()
@@ -740,13 +727,6 @@ namespace System.Reflection.Emit
 
             attributes &= ~ParameterAttributes.ReservedMask;
             return new ParameterBuilder(this, position, attributes, strParamName);
-        }
-
-        private List<SymCustomAttr>? m_symCustomAttrs;
-        private struct SymCustomAttr
-        {
-            public string m_name;
-            public byte[] m_data;
         }
 
         public void SetImplementationFlags(MethodImplAttributes attributes)

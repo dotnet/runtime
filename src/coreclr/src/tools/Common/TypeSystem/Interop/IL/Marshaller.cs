@@ -364,48 +364,6 @@ namespace Internal.TypeSystem.Interop
 
             return marshaller;
         }
-
-        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
-        {
-            Debug.Assert(targetMethod.IsPInvoke);
-
-            MarshalDirection direction = MarshalDirection.Forward;
-            MethodSignature methodSig = targetMethod.Signature;
-            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
-
-            ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
-            Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
-            ParameterMetadata parameterMetadata;
-
-            for (int i = 0, parameterIndex = 0; i < marshallers.Length; i++)
-            {
-                Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
-                if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
-                {
-                    // if we don't have metadata for the parameter, create a dummy one
-                    parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
-                }
-                else
-                {
-                    Debug.Assert(i == parameterMetadataArray[parameterIndex].Index);
-                    parameterMetadata = parameterMetadataArray[parameterIndex++];
-                }
-
-                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-                marshallers[i] = CreateMarshaller(parameterType,
-                                                    MarshallerType.Argument,
-                                                    parameterMetadata.MarshalAsDescriptor,
-                                                    direction,
-                                                    marshallers,
-                                                    parameterMetadata.Index,
-                                                    flags,
-                                                    parameterMetadata.In,
-                                                    parameterMetadata.Out,
-                                                    parameterMetadata.Return);
-            }
-
-            return marshallers;
-        }
         #endregion
 
 
@@ -424,56 +382,9 @@ namespace Internal.TypeSystem.Interop
             return true;
         }
 
-        private bool IsMarshallingRequired()
+        public bool IsMarshallingRequired()
         {
             return Out || IsMarshallingRequired(MarshallerKind);
-        }
-
-        public static bool IsMarshallingRequired(MethodDesc targetMethod)
-        {
-            Debug.Assert(targetMethod.IsPInvoke);
-
-            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
-
-            if (flags.SetLastError)
-                return true;
-
-            if (!flags.PreserveSig)
-                return true;
-
-            var marshallers = GetMarshallersForMethod(targetMethod);
-            for (int i = 0; i < marshallers.Length; i++)
-            {
-                if (marshallers[i].IsMarshallingRequired())
-                    return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
-        {
-            for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
-            {
-                ParameterMetadata parameterMetadata = (paramIndex == paramMetadata.Length || i < paramMetadata[paramIndex].Index) ?
-                    new ParameterMetadata(i, ParameterMetadataAttributes.None, null) :
-                    paramMetadata[paramIndex++];
-
-                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-
-                MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
-                    parameterType,
-                    parameterMetadata.MarshalAsDescriptor,
-                    parameterMetadata.Return,
-                    isAnsi: true,
-                    MarshallerType.Argument,
-                    out MarshallerKind elementMarshallerKind);
-
-                if (IsMarshallingRequired(marshallerKind))
-                    return true;
-            }
-
-            return false;
         }
         #endregion
 
