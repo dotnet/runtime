@@ -81,16 +81,12 @@ jobs:
         displayName: Install native dependencies
 
 
-    # Download product binaries directory
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
-
-
     # Optionally download live-built CoreFX artifacts
+    # This needs to be done first as it unzips the artifacts under (root)/artifacts
+    # and the subsequent (product download) populates its subtree (artifacts/bin/coreclr/os.arch.cfg).
+    # The download-artifact-step by defaults cleans up the target subtree and that seems to be
+    # overall goodness to prevent non-determinism caused by left-over artifacts from previous
+    # runs. Making sure the unzips run in proper order seems like the lesser evil.
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -98,6 +94,15 @@ jobs:
           artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
           artifactName: '$(coreFxArtifactName)'
           displayName: 'live-built CoreFX'
+
+
+    # Download product binaries directory
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'product build'
 
 
     # Build managed test components

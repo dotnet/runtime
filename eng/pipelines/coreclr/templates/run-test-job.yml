@@ -107,6 +107,22 @@ jobs:
 
     steps:
 
+    # Optionally download live-built CoreFX artifacts
+    # This needs to be done first as it unzips the artifacts under (root)/artifacts
+    # and the subsequent (managed test and product download) populate its subtrees
+    # (artifacts/tests/coreclr/os.arch.cfg and artifacts/bin/coreclr/os.arch.cfg, respectively).
+    # The download-artifact-step by defaults cleans up the target subtree and that seems to be
+    # overall goodness to prevent non-determinism caused by left-over artifacts from previous
+    # runs. Making sure the unzips run in proper order seems like the lesser evil.
+    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(coreFxDownloadPath)
+          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
+          artifactName: '$(coreFxArtifactName)'
+          displayName: 'live-built CoreFX'
+
+
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
@@ -115,16 +131,6 @@ jobs:
           artifactFileName: '$(testArtifactName)$(archiveExtension)'
           artifactName: '$(testArtifactName)'
           displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
-
-
-    # Optionally download live-built CoreFX artifacts
-    - ${{ if eq(parameters.useLiveLibraries, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(coreFxDownloadPath)
-          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
-          artifactName: '$(coreFxArtifactName)'
-          displayName: 'live-built CoreFX'
 
 
     # Download and unzip test build tree
