@@ -37,7 +37,7 @@ steps:
   displayName: Build HttpStress
 
 - powershell: |
-    cd '$(HttpStressProject)'
+    echo docker run -e HTTPSTRESS_ARGS=$(HTTPSTRESS_ARGS) $(httpStressImage)
     docker run -e HTTPSTRESS_ARGS=$(HTTPSTRESS_ARGS) $(httpStressImage)
   displayName: Run HttpStress
 
