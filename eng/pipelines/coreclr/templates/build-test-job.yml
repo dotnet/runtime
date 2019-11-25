@@ -40,12 +40,12 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'build_test_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: 'Build Test Pri0 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'coreclr_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: 'CoreCLR Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      name: 'build_test_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: 'Build Test Pri1 ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'coreclr_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: 'CoreCLR Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -55,7 +55,7 @@ jobs:
     # because it needs System.Private.Corelib; we should be able to remove this dependency
     # by switching over to using reference assembly.
     ${{ if ne(parameters.stagedBuild, true) }}:
-      dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 90
@@ -85,23 +85,19 @@ jobs:
 
 
     # Build managed test components
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
-        displayName: Build managed test components
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(priorityArg) ci
-        displayName: Build managed test components
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
+      displayName: Build managed test components
 
 
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(testRootFolderPath)
+        rootFolder: $(managedTestArtifactRootFolderPath)
         includeRootFolder: false
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
         archiveExtension: $(archiveExtension)
-        artifactName: $(testArtifactName)
+        artifactName: $(managedTestArtifactName)
         displayName: 'managed test components'
 
 

@@ -68,32 +68,23 @@ jobs:
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 
-    - name: testRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: nativeRootFolderPath
-      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
-
     - name: buildProductArtifactName
-      value: 'BinDir_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: testArtifactName
-      value: Tests_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)
+    - name: managedTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
-    - name: testNativeArtifactName
-      value: 'NativeTestComponents_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: testNativeRootFolderPath
-      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
-
-    - name: testBuildRootFolderPath
+    - name: managedTestArtifactRootFolderPath
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: testBuildArtifactName
-      value: 'TestBuild_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+    - name: nativeTestArtifactName
+      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: nativeTestArtifactRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'

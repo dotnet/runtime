@@ -28,8 +28,8 @@ jobs:
     pool: ${{ parameters.pool }}
 
     # Compute job name from template parameters
-    name: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -58,15 +58,18 @@ jobs:
       - name: portableBuildArg
         value: '-portablebuild=false'
     - name: clangArg
-      value: '-clang9'
-    # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      value: ''
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: clangArg
-        value: '-clang6.0'
-    # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
-      - name: clangArg
-        value: ''
+        value: '-clang9'
+      # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
+      - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+        - name: clangArg
+          value: '-clang6.0'
+      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+        - name: clangArg
+          value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -93,7 +96,7 @@ jobs:
     - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
-    
+
     - ${{ parameters.variables }}
 
     steps:
@@ -139,12 +142,8 @@ jobs:
         displayName: Build product
 
     # Build native test components
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
-        displayName: Build native test components
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(priorityArg)
-        displayName: Build native test components
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg)
+      displayName: Build native test components
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
@@ -174,24 +173,13 @@ jobs:
     # Publish test native components for consumption by test execution.
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(testNativeRootFolderPath)
+        rootFolder: $(nativeTestArtifactRootFolderPath)
         includeRootFolder: false
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
         archiveExtension: $(archiveExtension)
-        artifactName: $(testNativeArtifactName)
+        artifactName: $(nativeTestArtifactName)
         displayName: 'native test components'
-
-    # Publish test build root for consumption by test execution.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(testBuildRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(testBuildArtifactName)
-        displayName: 'test build tree'
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -202,12 +190,8 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Build packages
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
-        displayName: Build packages
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(officialBuildIdArg) -ci
-        displayName: Build packages
+    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
+      displayName: Build packages
 
     # Publish official build
     - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
