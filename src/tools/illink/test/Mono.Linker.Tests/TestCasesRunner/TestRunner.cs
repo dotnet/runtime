@@ -96,9 +96,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
-			linker.Link (builder.ToArgs ());
+			LinkerTestLogger logger = new LinkerTestLogger();
+			linker.Link (builder.ToArgs (), logger);
 
-			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult);
+			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logger);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -165,6 +166,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
+			VerifyLoggedMessages(original, linkResult.Logger);
 		}
 
 		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -583,6 +585,31 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				var missingMembersInLinked = originalMembers.Except (linkedMembers);
 				
 				Assert.That (missingMembersInLinked, Is.Empty, $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
+			}
+		}
+
+		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger)
+		{
+			string allMessages = string.Join (Environment.NewLine, logger.Messages.Select (mc => mc.Message));
+
+			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
+				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
+					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
+						var expectedMessagePattern = (string)attr.ConstructorArguments [0].Value;
+						Assert.That (
+							logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessagePattern)),
+							$"Expected to find logged message matching `{expectedMessagePattern}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+					}
+
+					if (attr.AttributeType.Resolve ().Name == nameof (LogDoesNotContainAttribute)) {
+						var unexpectedMessagePattern = (string)attr.ConstructorArguments [0].Value;
+						foreach (var loggedMessage in logger.Messages) {
+							Assert.That (
+								!Regex.IsMatch (loggedMessage.Message, unexpectedMessagePattern),
+								$"Expected to not find logged message matching `{unexpectedMessagePattern}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+						}
+					}
+				}
 			}
 		}
 
