@@ -8955,7 +8955,8 @@ calli_end:
 				else if ((ip = il_read_op (ldnull_ip, end, CEE_PREFIX1, MONO_CEE_CGT_UN)))
 					is_neq = TRUE;
 
-				if ((is_eq || is_neq) && ip_in_bb (cfg, cfg->cbb, ip)) {
+				if ((is_eq || is_neq) && ip_in_bb (cfg, cfg->cbb, ip) && 
+					!mono_class_is_nullable (klass) && !mini_is_gsharedvt_klass (klass)) {
 					next_ip = ip;
 					il_op = (MonoOpcodeEnum) (is_eq ? CEE_LDC_I4_0 : CEE_LDC_I4_1);
 					EMIT_NEW_ICONST (cfg, ins, is_eq ? 0 : 1);
