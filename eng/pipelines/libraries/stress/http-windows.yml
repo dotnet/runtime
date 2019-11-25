@@ -25,15 +25,14 @@ steps:
   fetchDepth: 1
   lfs: false
 
-# - powershell: |
-#     .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
-#     docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile artifacts/bin/testhost
-#   displayName: Build Libraries
+- powershell: |
+    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
+    docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile artifacts/bin/testhost
+  displayName: Build Libraries
 
 - powershell: |
     cd '$(HttpStressProject)'
-    # docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
-    docker build -t $(httpStressImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
   displayName: Build HttpStress
 
 - powershell: |

@@ -22,7 +22,7 @@ variables:
 steps:
 - checkout: self
   clean: true
-  fetchDepth: 0
+  fetchDepth: 1
   lfs: false
 
 - bash: |
