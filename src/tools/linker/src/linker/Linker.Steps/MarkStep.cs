@@ -2341,6 +2341,7 @@ namespace Mono.Linker.Steps {
 			if (HasManuallyTrackedDependency (body))
 				return;
 
+			var methodCalling = body.Method;
 			var instructions = body.Instructions;
 
 			//
@@ -2373,6 +2374,13 @@ namespace Mono.Linker.Steps {
 				// System.Type
 				//
 				case "Type" when methodCalledType.Namespace == "System":
+
+					// Some of the overloads are implemented by calling another overload of the same name.
+					// These "internal" calls are not interesting to analyze, the outermost call is the one
+					// which needs to be analyzed. The assumption is that all overloads have the same semantics.
+					// (for example that all overload of GetConstructor if used require the specified type to have a .ctor).
+					if (methodCalling.DeclaringType == methodCalling.DeclaringType && methodCalling.Name == methodCalled.Name)
+						break;
 
 					switch (methodCalled.Name) {
 					//

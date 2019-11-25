@@ -52,6 +52,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ((string)ca [0].Value, values));
 			}
 
+			if (_testCaseTypeDefinition.CustomAttributes.Any (attr => 
+				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))) {
+				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ("--verbose", new string [] { }));
+			}
+
 			return tclo;
 		}
 
