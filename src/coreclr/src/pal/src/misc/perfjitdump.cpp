@@ -136,7 +136,7 @@ struct PerfJitDumpState
         codeIndex(0)
     {}
 
-    bool enabled;
+    volatile bool enabled;
     int fd;
     void *mmapAddr;
     pthread_mutex_t mutex;
@@ -259,6 +259,7 @@ exit:
             if (!enabled)
                 goto exit;
 
+            // Increment codeIndex while locked
             record.code_index = ++codeIndex;
 
             do
