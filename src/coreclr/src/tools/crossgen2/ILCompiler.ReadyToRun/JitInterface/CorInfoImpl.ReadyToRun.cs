@@ -182,6 +182,20 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            if (MethodBeingCompiled.IsAbstract)
+            {
+                return true;
+            }
+            if (MethodBeingCompiled.OwningType.IsDelegate && (
+                MethodBeingCompiled.IsConstructor ||
+                MethodBeingCompiled.Name == "BeginInvoke" ||
+                MethodBeingCompiled.Name == "Invoke" ||
+                MethodBeingCompiled.Name == "EndInvoke"))
+            {
+                // Special methods on delegate types
+                return true;
+            }
+
             return false;
         }
 
