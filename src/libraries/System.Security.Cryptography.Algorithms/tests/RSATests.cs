@@ -211,6 +211,25 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.True(RSAEncryptionPadding.Pkcs1 != null);
         }
 
+        [Fact]
+        public void RSASignaturePadding_Equality()
+        {
+            Assert.True(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.Pkcs1));
+            Assert.True(RSASignaturePadding.Pkcs1.Equals((object)RSASignaturePadding.Pkcs1));
+            Assert.True(RSASignaturePadding.Pkcs1 == RSASignaturePadding.Pkcs1);
+            Assert.False(RSASignaturePadding.Pkcs1 != RSASignaturePadding.Pkcs1);
+
+            Assert.False(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.Pss));
+            Assert.False(RSASignaturePadding.Pkcs1.Equals((object)RSASignaturePadding.Pss));
+            Assert.False(RSASignaturePadding.Pkcs1 == RSASignaturePadding.Pss);
+            Assert.True(RSASignaturePadding.Pkcs1 != RSASignaturePadding.Pss);
+
+            Assert.False(RSASignaturePadding.Pkcs1.Equals(null));
+            Assert.False(RSASignaturePadding.Pkcs1.Equals((object)null));
+            Assert.False(RSASignaturePadding.Pkcs1 == null);
+            Assert.True(RSASignaturePadding.Pkcs1 != null);
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
