@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public IDisposable RegisterChangeCallback(Action<object> callback, object state)
         {
-#if NETCOREAPP3_0
+#if NETCOREAPP
             try
             {
                 return Token.UnsafeRegister(callback, state);

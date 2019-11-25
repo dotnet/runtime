@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -21,17 +20,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public abstract CallSiteKind Kind { get; }
         public ResultCache Cache { get; }
 
-        public bool CaptureDisposable
-        {
-            get
-            {
-                return ImplementationType == null ||
-                       typeof(IDisposable).GetTypeInfo().IsAssignableFrom(ImplementationType.GetTypeInfo())
-#if DISPOSE_ASYNC
-                       || typeof(IAsyncDisposable).GetTypeInfo().IsAssignableFrom(ImplementationType.GetTypeInfo())
-#endif
-                    ;
-            }
-        }
+        public bool CaptureDisposable =>
+            ImplementationType == null ||
+            typeof(IDisposable).IsAssignableFrom(ImplementationType) ||
+            typeof(IAsyncDisposable).IsAssignableFrom(ImplementationType);
     }
 }
