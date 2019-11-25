@@ -11,15 +11,10 @@ using System.Runtime.Versioning;
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
 using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-#if !CORECLR
-#if BIT64
 using nint = System.Int64;
 #else
+using nuint = System.UInt32;
 using nint = System.Int32;
-#endif
 #endif
 
 //
@@ -152,6 +147,17 @@ namespace Internal.Runtime.CompilerServices
 
         /// <summary>
         /// Adds an element offset to the given reference.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ref T Add<T>(ref T source, nint elementOffset)
+        {
+            return ref Unsafe.Add(ref source, (IntPtr)(void*)elementOffset);
+        }
+
+        /// <summary>
+        /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
         [NonVersionable]
@@ -295,7 +301,7 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Adds an element offset to the given reference.
+        /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
         [NonVersionable]
