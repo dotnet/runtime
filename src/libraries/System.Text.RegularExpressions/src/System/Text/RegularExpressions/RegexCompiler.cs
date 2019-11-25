@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -2882,15 +2881,15 @@ namespace System.Text.RegularExpressions
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
-            if (charClass.Length == RegexCharClass.SETSTART + 2 && // one set of two values
-                charClass[RegexCharClass.SETLENGTH] == 2 && // validate we have the right number of ranges
-                charClass[RegexCharClass.CATEGORYLENGTH] == 0 && // must not have any categories
-                charClass[RegexCharClass.SETSTART] < charClass[RegexCharClass.SETSTART + 1]) // valid range
+            if (charClass.Length == RegexCharClass.SetStartIndex + 2 && // one set of two values
+                charClass[RegexCharClass.SetLengthIndex] == 2 && // validate we have the right number of ranges
+                charClass[RegexCharClass.CategoryLengthIndex] == 0 && // must not have any categories
+                charClass[RegexCharClass.SetStartIndex] < charClass[RegexCharClass.SetStartIndex + 1]) // valid range
             {
                 // (uint)ch - charClass[3] < charClass[4] - charClass[3]
-                Ldc(charClass[RegexCharClass.SETSTART]);
+                Ldc(charClass[RegexCharClass.SetStartIndex]);
                 Sub();
-                Ldc(charClass[RegexCharClass.SETSTART + 1] - charClass[RegexCharClass.SETSTART]);
+                Ldc(charClass[RegexCharClass.SetStartIndex + 1] - charClass[RegexCharClass.SetStartIndex]);
                 CltUn();
 
                 // Negate the answer if the negation flag was set
@@ -2937,14 +2936,14 @@ namespace System.Text.RegularExpressions
             // We currently go with (2).  We may sometimes generate a fallback when we don't need one, but the cost of
             // doing so once in a while is minimal.
             bool asciiOnly =
-                charClass.Length > RegexCharClass.SETSTART &&
-                charClass[RegexCharClass.CATEGORYLENGTH] == 0 && // if there are any categories, assume there's unicode
-                charClass[RegexCharClass.SETLENGTH] % 2 == 0 && // range limits must come in pairs
+                charClass.Length > RegexCharClass.SetStartIndex &&
+                charClass[RegexCharClass.CategoryLengthIndex] == 0 && // if there are any categories, assume there's unicode
+                charClass[RegexCharClass.SetLengthIndex] % 2 == 0 && // range limits must come in pairs
                 !RegexCharClass.IsNegated(charClass) && // if there's negation, assume there's unicode
                 !RegexCharClass.IsSubtraction(charClass); // if it's subtraction, assume there's unicode
             if (asciiOnly)
             {
-                for (int i = RegexCharClass.SETSTART; i < charClass.Length; i++)
+                for (int i = RegexCharClass.SetStartIndex; i < charClass.Length; i++)
                 {
                     if (charClass[i] >= 128) // validate all characters in the set are ASCII
                     {

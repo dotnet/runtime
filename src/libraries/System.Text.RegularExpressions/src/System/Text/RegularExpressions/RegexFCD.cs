@@ -12,6 +12,7 @@
 // sequences of codes.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -54,16 +55,21 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static RegexPrefix? FirstChars(RegexTree t)
         {
-            RegexFCD s = new RegexFCD(stackalloc int[StackBufferSize]);
+            var s = new RegexFCD(stackalloc int[StackBufferSize]);
             RegexFC? fc = s.RegexFCFromRegexTree(t);
             s.Dispose();
 
             if (fc == null || fc._nullable)
+            {
                 return null;
+            }
 
-            CultureInfo culture = ((t.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            if (fc.CaseInsensitive)
+            {
+                fc.AddLowercase(((t.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+            }
 
-            return new RegexPrefix(fc.GetFirstChars(culture), fc.CaseInsensitive);
+            return new RegexPrefix(fc.GetFirstChars(), fc.CaseInsensitive);
         }
 
         /// <summary>
@@ -250,54 +256,32 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// To avoid recursion, we use a simple integer stack.
         /// </summary>
-        private void PushInt(int i)
-        {
-            _intStack.Append(i);
-        }
+        private void PushInt(int i) => _intStack.Append(i);
 
-        private bool IntIsEmpty()
-        {
-            return _intStack.Length == 0;
-        }
+        private bool IntIsEmpty() => _intStack.Length == 0;
 
-        private int PopInt()
-        {
-            return _intStack.Pop();
-        }
+        private int PopInt() => _intStack.Pop();
 
         /// <summary>
         /// We also use a stack of RegexFC objects.
         /// </summary>
-        private void PushFC(RegexFC fc)
-        {
-            _fcStack.Add(fc);
-        }
+        private void PushFC(RegexFC fc) => _fcStack.Add(fc);
 
-        private bool FCIsEmpty()
-        {
-            return _fcStack.Count == 0;
-        }
+        private bool FCIsEmpty() => _fcStack.Count == 0;
 
         private RegexFC PopFC()
         {
             RegexFC item = TopFC();
             _fcStack.RemoveAt(_fcStack.Count - 1);
-
             return item;
         }
 
-        private RegexFC TopFC()
-        {
-            return _fcStack[_fcStack.Count - 1];
-        }
+        private RegexFC TopFC() => _fcStack[_fcStack.Count - 1];
 
         /// <summary>
         /// Return rented buffers.
         /// </summary>
-        public void Dispose()
-        {
-            _intStack.Dispose();
-        }
+        public void Dispose() => _intStack.Dispose();
 
         /// <summary>
         /// The main FC computation. It does a shortcutted depth-first walk
@@ -362,10 +346,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Called in Beforechild to prevent further processing of the current child
         /// </summary>
-        private void SkipChild()
-        {
-            _skipchild = true;
-        }
+        private void SkipChild() => _skipchild = true;
 
         /// <summary>
         /// FC computation and shortcut cases for each node type
@@ -534,9 +515,14 @@ namespace System.Text.RegularExpressions
             if (not)
             {
                 if (ch > 0)
+                {
                     _cc.AddRange('\0', (char)(ch - 1));
+                }
+
                 if (ch < 0xFFFF)
+                {
                     _cc.AddRange((char)(ch + 1), '\uFFFF');
+                }
             }
             else
             {
@@ -583,12 +569,12 @@ namespace System.Text.RegularExpressions
 
         public bool CaseInsensitive { get; private set; }
 
-        public string GetFirstChars(CultureInfo culture)
+        public void AddLowercase(CultureInfo culture)
         {
-            if (CaseInsensitive)
-                _cc.AddLowercase(culture);
-
-            return _cc.ToStringClass();
+            Debug.Assert(CaseInsensitive);
+            _cc.AddLowercase(culture);
         }
+
+        public string GetFirstChars() => _cc.ToStringClass();
     }
 }

@@ -89,16 +89,7 @@ namespace System.Text.RegularExpressions
             _balancing = false;
         }
 
-        public virtual GroupCollection Groups
-        {
-            get
-            {
-                if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, null);
-
-                return _groupcoll;
-            }
-        }
+        public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);
 
         /// <summary>
         /// Returns a new Match with the results for the next match, starting
@@ -127,12 +118,9 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException(SR.NoResultOnFailed);
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize,
-                _regex.capnames!, _regex.roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize, _regex.capnames!, _regex.roptions);
             var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
-
             repl.ReplacementImpl(ref vsb, this);
-
             return vsb.ToString();
         }
 
@@ -181,12 +169,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal void AddMatch(int cap, int start, int len)
         {
-            int capcount;
+            _matches[cap] ??= new int[2];
 
-            if (_matches[cap] == null)
-                _matches[cap] = new int[2];
-
-            capcount = _matchcount[cap];
+            int capcount = _matchcount[cap];
 
             if (capcount * 2 + 2 > _matches[cap].Length)
             {
@@ -333,16 +318,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        internal bool Debug
-        {
-            get
-            {
-                if (_regex == null)
-                    return false;
-
-                return _regex.Debug;
-            }
-        }
+        internal bool Debug => _regex != null && _regex.Debug;
 
         internal virtual void Dump()
         {
@@ -380,16 +356,7 @@ namespace System.Text.RegularExpressions
             _caps = caps;
         }
 
-        public override GroupCollection Groups
-        {
-            get
-            {
-                if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, _caps);
-
-                return _groupcoll;
-            }
-        }
+        public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
 
 #if DEBUG
         internal override void Dump()

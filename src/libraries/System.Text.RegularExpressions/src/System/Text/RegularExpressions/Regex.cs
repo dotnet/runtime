@@ -187,10 +187,7 @@ namespace System.Text.RegularExpressions
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? Caps
         {
-            get
-            {
-                return caps;
-            }
+            get => caps;
             set
             {
                 if (value == null)
@@ -203,10 +200,7 @@ namespace System.Text.RegularExpressions
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? CapNames
         {
-            get
-            {
-                return capnames;
-            }
+            get => capnames;
             set
             {
                 if (value == null)
@@ -222,7 +216,7 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions, bool hasTimeout)
         {
             return RegexCompiler.Compile(code!, roptions, hasTimeout);
@@ -403,38 +397,32 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public int GroupNumberFromName(string name)
         {
-            int result = -1;
-
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
+
+            int result;
 
             // look up name if we have a hashtable of names
             if (capnames != null)
             {
-                if (!capnames.TryGetValue(name, out result))
-                    return -1;
-
-                return result;
+                return capnames.TryGetValue(name, out result) ? result : -1;
             }
 
             // convert to an int if it looks like a number
             result = 0;
             for (int i = 0; i < name.Length; i++)
             {
-                char ch = name[i];
-
-                if (ch > '9' || ch < '0')
+                uint digit = (uint)(name[i] - '0');
+                if (digit > 9)
+                {
                     return -1;
+                }
 
-                result *= 10;
-                result += (ch - '0');
+                result = (result * 10) + (int)digit;
             }
 
             // return int if it's in range
-            if (result >= 0 && result < capsize)
-                return result;
-
-            return -1;
+            return result >= 0 && result < capsize ? result : -1;
         }
 
         protected void InitializeReferences()
@@ -492,9 +480,7 @@ namespace System.Text.RegularExpressions
 
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
-        /*
-         * True if the L option was set
-         */
+        /// <summary>True if the L option was set</summary>
         protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
 
         internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;
