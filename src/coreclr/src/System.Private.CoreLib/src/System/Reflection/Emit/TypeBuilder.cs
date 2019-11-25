@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Collections.Generic;
 using CultureInfo = System.Globalization.CultureInfo;
-using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
@@ -21,9 +21,9 @@ namespace System.Reflection.Emit
         #region Declarations
         private class CustAttr
         {
-            private ConstructorInfo m_con = null!;
-            private byte[]? m_binaryAttribute;
-            private CustomAttributeBuilder? m_customBuilder;
+            private readonly ConstructorInfo? m_con;
+            private readonly byte[]? m_binaryAttribute;
+            private readonly CustomAttributeBuilder? m_customBuilder;
 
             public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
             {
@@ -49,7 +49,8 @@ namespace System.Reflection.Emit
             {
                 if (m_customBuilder == null)
                 {
-                    TypeBuilder.DefineCustomAttribute(module, token, module.GetConstructorToken(m_con).Token,
+                    Debug.Assert(m_con != null);
+                    DefineCustomAttribute(module, token, module.GetConstructorToken(m_con).Token,
                         m_binaryAttribute, false, false);
                 }
                 else
@@ -259,7 +260,7 @@ namespace System.Reflection.Emit
             }
 
             // If the type builder view is equal then it is equal
-            if (tb1 != null && tb2 != null && object.ReferenceEquals(tb1, tb2))
+            if (tb1 != null && tb2 != null && ReferenceEquals(tb1, tb2))
                 return true;
 
             // if the runtimetype view is eqaul than it is equal
@@ -394,20 +395,20 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private List<CustAttr>? m_ca;
         private TypeToken m_tdType;
-        private ModuleBuilder m_module;
-        private string? m_strName;
-        private string? m_strNameSpace;
+        private readonly ModuleBuilder m_module = null!;
+        private readonly string? m_strName;
+        private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
         private Type? m_typeParent;
         private List<Type> m_typeInterfaces = null!;
-        private TypeAttributes m_iAttr;
+        private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
         internal List<MethodBuilder> m_listMethods = null!;
         internal int m_lastTokenizedMethod;
         private int m_constructorCount;
-        private int m_iTypeSize;
-        private PackingSize m_iPackingSize;
-        private TypeBuilder? m_DeclaringType;
+        private readonly int m_iTypeSize;
+        private readonly PackingSize m_iPackingSize;
+        private readonly TypeBuilder? m_DeclaringType;
 
         // We cannot store this on EnumBuilder because users can define enum types manually using TypeBuilder.
         private Type? m_enumUnderlyingType;
@@ -415,11 +416,11 @@ namespace System.Reflection.Emit
         private bool m_hasBeenCreated;
         private RuntimeType m_bakedRuntimeType = null!;
 
-        private int m_genParamPos;
+        private readonly int m_genParamPos;
         private GenericTypeParameterBuilder[]? m_inst;
-        private bool m_bIsGenParam;
-        private MethodBuilder? m_declMeth;
-        private TypeBuilder? m_genTypeDef;
+        private readonly bool m_bIsGenParam;
+        private readonly MethodBuilder? m_declMeth;
+        private readonly TypeBuilder? m_genTypeDef;
         #endregion
 
         #region Constructor
@@ -436,25 +437,24 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic method parameter
-        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
+        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth) : this(szName, genParamPos)
         {
             Debug.Assert(declMeth != null);
             m_declMeth = declMeth;
             m_DeclaringType = m_declMeth.GetTypeBuilder();
             m_module = declMeth.GetModuleBuilder();
-            InitAsGenericParam(szName, genParamPos);
         }
 
         // ctor for generic type parameter
-        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType)
+        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType) : this(szName, genParamPos)
         {
             Debug.Assert(declType != null);
             m_DeclaringType = declType;
             m_module = declType.GetModuleBuilder();
-            InitAsGenericParam(szName, genParamPos);
         }
 
-        private void InitAsGenericParam(string szName, int genParamPos)
+        // only for delegating to by other ctors
+        private TypeBuilder(string szName, int genParamPos)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -917,7 +917,7 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom(Type? c)
         {
-            if (TypeBuilder.IsTypeEqual(c, this))
+            if (IsTypeEqual(c, this))
                 return true;
 
             Type? fromRuntimeType;
@@ -947,7 +947,7 @@ namespace System.Reflection.Emit
             if (fromTypeBuilder.IsSubclassOf(this))
                 return true;
 
-            if (!this.IsInterface)
+            if (!IsInterface)
                 return false;
 
             // now is This type a base type on one of the interface impl?
@@ -955,7 +955,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < interfaces.Length; i++)
             {
                 // unfortunately, IsSubclassOf does not cover the case when they are the same type.
-                if (TypeBuilder.IsTypeEqual(interfaces[i], this))
+                if (IsTypeEqual(interfaces[i], this))
                     return true;
 
                 if (interfaces[i].IsSubclassOf(this))
@@ -1016,14 +1016,14 @@ namespace System.Reflection.Emit
         {
             Type? p = this;
 
-            if (TypeBuilder.IsTypeEqual(p, c))
+            if (IsTypeEqual(p, c))
                 return false;
 
             p = p.BaseType;
 
             while (p != null)
             {
-                if (TypeBuilder.IsTypeEqual(p, c))
+                if (IsTypeEqual(p, c))
                     return true;
 
                 p = p.BaseType;
@@ -1197,7 +1197,7 @@ namespace System.Reflection.Emit
 
             ThrowIfCreated();
 
-            if (!object.ReferenceEquals(methodInfoBody.DeclaringType, this))
+            if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
                 // Loader restriction: body method has to be from this class
                 throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
 
@@ -1281,7 +1281,7 @@ namespace System.Reflection.Emit
                 name, attributes, callingConvention,
                 returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
-                m_module, this, false);
+                m_module, this);
 
             if (!m_isHiddenGlobalType)
             {
@@ -1372,7 +1372,7 @@ namespace System.Reflection.Emit
                 MethodBuilder method = new MethodBuilder(name, attributes, callingConvention,
                     returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                     parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
-                    m_module, this, false);
+                    m_module, this);
 
                 // The signature grabbing code has to be up here or the signature won't be finished
                 // and our equals check won't work.
@@ -1494,16 +1494,16 @@ namespace System.Reflection.Emit
                 Type inst = genericTypeDefinition.MakeGenericType(m_typeParent.GetGenericArguments());
 
                 if (inst is TypeBuilderInstantiation)
-                    con = TypeBuilder.GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null)!);
+                    con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
                 else
                     con = inst.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
             if (con == null)
             {
-                con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
             if (con == null)
@@ -1762,7 +1762,6 @@ namespace System.Reflection.Emit
             CheckContext(parameterTypeOptionalCustomModifiers);
 
             SignatureHelper sigHelper;
-            int sigLength;
             byte[] sigBytes;
 
             ThrowIfCreated();
@@ -1774,6 +1773,7 @@ namespace System.Reflection.Emit
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
             // get the signature in byte form
+            int sigLength;
             sigBytes = sigHelper.InternalGetSignature(out sigLength);
 
             ModuleBuilder module = m_module;
@@ -2125,7 +2125,7 @@ namespace System.Reflection.Emit
             if (binaryAttribute == null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
-            TypeBuilder.DefineCustomAttribute(m_module, m_tdType.Token, ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
+            DefineCustomAttribute(m_module, m_tdType.Token, ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
                 binaryAttribute, false, false);
         }
 
