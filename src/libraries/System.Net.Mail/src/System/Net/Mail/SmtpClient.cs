@@ -721,10 +721,6 @@ namespace System.Net.Mail
                     }
 
                     Abort();
-                    if (_timedOut)
-                    {
-                        throw new SmtpException(SR.net_timeout);
-                    }
 
                     if (e is SecurityException ||
                         e is AuthenticationException ||
