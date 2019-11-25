@@ -72,9 +72,9 @@ clean-local:
 	-rm -rf build-shared
 
 install-exec-local:
-	$(mkinstalldirs) "$(DESTDIR)$(libdir)"
+	mkdir -p "$(DESTDIR)$(libdir)"
 if HOST_WIN32
-	$(mkinstalldirs) "$(DESTDIR)$(bindir)"
+	mkdir -p "$(DESTDIR)$(bindir)"
 	$(install_sh) build-shared/libmono-btls-shared*.a "$(DESTDIR)$(libdir)"
 	$(install_sh) build-shared/libmono-btls-shared*.dll "$(DESTDIR)$(bindir)"
 else

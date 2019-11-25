@@ -25,8 +25,8 @@ clean-local:
 
 install-exec-local:
 	@echo "Install Visual Studio build Mono runtime."
-	$(mkinstalldirs) "$(DESTDIR)$(libdir)"
-	$(mkinstalldirs) "$(DESTDIR)$(bindir)"
+	mkdir -p "$(DESTDIR)$(libdir)"
+	mkdir -p "$(DESTDIR)$(bindir)"
 	$(install_sh) $(mono_msvc_build_lib_dir)/*.lib "$(DESTDIR)$(libdir)"
 	$(install_sh) $(mono_msvc_build_bin_dir)/*.dll "$(DESTDIR)$(bindir)"
 	$(install_sh) $(mono_msvc_build_bin_dir)/*.exe "$(DESTDIR)$(bindir)"
