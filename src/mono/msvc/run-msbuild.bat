@@ -67,10 +67,10 @@ call %RUN_MSBUILD_SCRIPT_PATH%setup-windows-env.bat
 call %RUN_MSBUILD_SCRIPT_PATH%setup-vs-msbuild-env.bat
 
 if "%VS_ADDITIONAL_ARGUMENTS%" == "" (
-    set "VS_ADDITIONAL_ARGUMENTS=/p:PlatformToolset=%VS_DEFAULT_PLATFORM_TOOL_SET% /p:MONO_TARGET_GC=%VS_TARGET_GC%"
+    set "VS_ADDITIONAL_ARGUMENTS=/p:PlatformToolset=%VS_DEFAULT_PLATFORM_TOOL_SET%"
 )
 
-set VS_BUILD_ARGS=/p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% %VS_ADDITIONAL_ARGUMENTS% /t:%VS_TARGET% /m
+set VS_BUILD_ARGS=/p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /p:MONO_TARGET_GC=%VS_TARGET_GC% %VS_ADDITIONAL_ARGUMENTS% /t:%VS_TARGET% /m
 call msbuild.exe %VS_BUILD_ARGS% "%VS_BUILD_PROJ%" && (
     set BUILD_RESULT=0
 ) || (
