@@ -219,12 +219,20 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	/* This zero-on-failure is unlike other Unix APIs. */
 	if (ret == 0)
 		return FALSE;
-	if (file_name != NULL && file_name_len >= 1)
-		g_strlcpy(file_name, dli.dli_fname, file_name_len);
+	if (file_name != NULL && file_name_len >= 1) {
+		if (dli.dli_fname != NULL)
+			g_strlcpy(file_name, dli.dli_fname, file_name_len);
+		else
+			file_name [0] = '\0';
+	}
 	if (file_base != NULL)
 		*file_base = dli.dli_fbase;
-	if (sym_name != NULL && sym_name_len >= 1)
-		g_strlcpy(sym_name, dli.dli_sname, sym_name_len);
+	if (sym_name != NULL && sym_name_len >= 1) {
+		if (dli.dli_sname != NULL)
+			g_strlcpy(sym_name, dli.dli_sname, sym_name_len);
+		else
+			sym_name [0] = '\0';
+	}
 	if (sym_addr != NULL)
 		*sym_addr = dli.dli_saddr;
 	return TRUE;

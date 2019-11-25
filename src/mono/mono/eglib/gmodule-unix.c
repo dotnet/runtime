@@ -94,8 +94,12 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 	/*
 	 * AIX/Win32 return non-const, so we use caller-allocated bufs instead
 	 */
-	if (file_name != NULL && file_name_len >= 1)
-		g_strlcpy(file_name, dli.dli_fname, file_name_len);
+	if (file_name != NULL && file_name_len >= 1) {
+		if (dli.dli_fname)
+			g_strlcpy(file_name, dli.dli_fname, file_name_len);
+		else
+			file_name [0] = '\0';
+	}
 	if (file_base != NULL)
 		*file_base = dli.dli_fbase;
 	if (sym_name != NULL && sym_name_len >= 1) {
