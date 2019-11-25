@@ -8,9 +8,7 @@
       <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
       <DisabledProjects Include="Common\test_runtime\test_runtime.csproj" />
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
-      <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />      
-      <DisabledProjects Include="Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj" />
-      <DisabledProjects Include="Common\targeting_pack_ref\targeting_pack_ref.csproj" />
+      <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />
       <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />
       <DisabledProjects Include="Common\stress_dependencies\stress_dependencies.csproj" />
       <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
@@ -125,7 +123,7 @@
   </Target>
 
   <Import Project="..\dir.traversal.targets" />
-  
+
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
     <RemoveDir Directories="$(BinDir)" />
