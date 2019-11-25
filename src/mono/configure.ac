@@ -6726,40 +6726,6 @@ if test x$host_darwin = xyes; then
    sed -e 's,lock_old_archive_extraction=yes,lock_old_archive_extraction=no,g' < libtool > libtool.new && mv libtool.new libtool && chmod +x libtool
 fi
 
-force_enable_compiler_server=no;
-
-AC_MSG_CHECKING([compiler server])
-AC_ARG_WITH(compiler-server, [  --with-compiler-server=yes,no,default,force      Enables or disables compiler server],[
-   if test x$withval = xyes; then
-       enable_compiler_server=yes;
-   # force will bypass any automatic disables to allow you to test the compiler server
-   #  in scenarios where it is disabled
-   elif test x$withval = xforce; then
-       enable_compiler_server=yes;
-       force_enable_compiler_server=yes;
-   elif test x$withval = xno; then
-       enable_compiler_server=no;
-   elif test x$withval = xdefault; then
-       enable_compiler_server=yes;
-   else
-       AC_MSG_ERROR([You must supply one of "yes", "no", "default" or "force" to the --with-compiler-server option])
-   fi
-],[enable_compiler_server=yes])
-
-AC_MSG_RESULT($enable_compiler_server)
-
-if test x$enable_compiler_server = xyes; then
-   if test x$force_enable_compiler_server = xyes; then
-       AC_MSG_WARN([forcing compiler server to stay enabled])
-   elif test x$host_darwin = xyes || test x$host_win32 = xyes; then
-       AC_MSG_WARN([compiler server temporarily disabled on darwin and win32])
-       enable_compiler_server=no;
-   elif test x$csc_compiler = xmcs; then
-       AC_MSG_WARN([mcs does not support the compiler server])
-       enable_compiler_server=no;
-   fi
-fi
-
 (
   case $prefix in
   NONE) prefix=$ac_default_prefix ;;
@@ -6887,6 +6853,40 @@ fi
       echo "MONO_NATIVE_USING_COMPAT=true" >> $srcdir/$mcsdir/build/config.make
     else
       echo "MONO_NATIVE_USING_COMPAT=false" >> $srcdir/$mcsdir/build/config.make
+    fi
+
+    force_enable_compiler_server=no;
+
+    AC_MSG_CHECKING([compiler server])
+    AC_ARG_WITH(compiler-server, [  --with-compiler-server=yes,no,default,force      Enables or disables compiler server],[
+       if test x$withval = xyes; then
+           enable_compiler_server=yes;
+       # force will bypass any automatic disables to allow you to test the compiler server
+       #  in scenarios where it is disabled
+       elif test x$withval = xforce; then
+           enable_compiler_server=yes;
+           force_enable_compiler_server=yes;
+       elif test x$withval = xno; then
+           enable_compiler_server=no;
+       elif test x$withval = xdefault; then
+           enable_compiler_server=yes;
+       else
+           AC_MSG_ERROR([You must supply one of "yes", "no", "default" or "force" to the --with-compiler-server option])
+       fi
+    ],[enable_compiler_server=yes])
+
+    AC_MSG_RESULT($enable_compiler_server)
+
+    if test x$enable_compiler_server = xyes; then
+       if test x$force_enable_compiler_server = xyes; then
+           AC_MSG_WARN([forcing compiler server to stay enabled])
+       elif test x$host_darwin = xyes || test x$host_win32 = xyes; then
+           AC_MSG_WARN([compiler server temporarily disabled on darwin and win32])
+           enable_compiler_server=no;
+       elif test x$csc_compiler = xmcs; then
+           AC_MSG_WARN([mcs does not support the compiler server])
+           enable_compiler_server=no;
+       fi
     fi
 
     echo "MONO_NATIVE_PLATFORM_TYPE=$MONO_NATIVE_PLATFORM_TYPE" >> $srcdir/$mcsdir/build/config.make
