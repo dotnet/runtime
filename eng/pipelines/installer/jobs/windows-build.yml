@@ -58,7 +58,7 @@ jobs:
       displayName: Clear NuGet http cache (if exists)
 
     - script: >-
-        $(buildScriptFileName).cmd -ci -test
+        $(buildScriptFileName).cmd -restore -build -ci -test
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build
