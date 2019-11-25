@@ -2179,6 +2179,15 @@ interp_constrained_box (TransformData *td, MonoDomain *domain, MonoClass *constr
 	}
 }
 
+static MonoMethod*
+interp_get_method (MonoMethod *method, guint32 token, MonoImage *image, MonoGenericContext *generic_context, MonoError *error)
+{
+	if (method->wrapper_type == MONO_WRAPPER_NONE)
+		return mono_get_method_checked (image, token, NULL, generic_context, error);
+	else
+		return (MonoMethod *)mono_method_get_wrapper_data (method, token);
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error)
@@ -2220,11 +2229,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 			target_method = NULL;
 		} else {
-			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				target_method = mono_get_method_checked (image, token, NULL, generic_context, error);
-				return_val_if_nok (error, FALSE);
-			} else
-				target_method = (MonoMethod *)mono_method_get_wrapper_data (method, token);
+			target_method = interp_get_method (method, token, image, generic_context, error);
+			return_val_if_nok (error, FALSE);
 			csignature = mono_method_signature_internal (target_method);
 
 			if (generic_context) {
@@ -4500,12 +4506,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = read32 (td->ip);
 			td->ip += 4;
 
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				m = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-			else  {
-				m = mono_get_method_checked (image, token, NULL, generic_context, error);
-				goto_if_nok (error, exit);
-			}
+			m = interp_get_method (method, token, image, generic_context, error);
+			goto_if_nok (error, exit);
 
 			csignature = mono_method_signature_internal (m);
 			klass = m->klass;
@@ -5665,7 +5667,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (next_ip < end &&
 					(inlining || !td->is_bb_start [next_ip - td->il_code]) &&
 					(*next_ip == CEE_CALL || *next_ip == CEE_CALLVIRT) &&
-					(cmethod = mono_get_method_checked (image, read32 (next_ip + 1), NULL, generic_context, error)) &&
+					(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
 					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 				interp_add_ins (td, MINT_MONO_LDPTR);
@@ -5996,12 +5998,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					--td->sp;
 				}
 				token = read32 (td->ip + 1);
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					m = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-				else {
-					m = mono_get_method_checked (image, token, NULL, generic_context, error);
-					goto_if_nok (error, exit);
-				}
+				m = interp_get_method (method, token, image, generic_context, error);
+				goto_if_nok (error, exit);
 
 				if (!mono_method_can_access_method (method, m))
 					interp_generate_mae_throw (td, method, m);
