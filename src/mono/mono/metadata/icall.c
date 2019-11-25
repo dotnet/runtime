@@ -8107,8 +8107,6 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
 
-#endif /* ENABLE_NETCORE */
-
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 
 // FIXME? Names should start "mono"?
@@ -8169,6 +8167,7 @@ ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer strea
 }
 
 #endif
+#endif /* ENABLE_NETCORE */
 
 #ifndef PLATFORM_NO_DRIVEINFO
 MonoBoolean
