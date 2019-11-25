@@ -84,6 +84,8 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 
 	if (flags & MONO_HINT_CANONICAL_NAME)
 		hints.ai_flags = AI_CANONNAME;
+	if (flags & MONO_HINT_NUMERIC_HOST)
+		hints.ai_flags |= AI_NUMERICHOST;
 
 /* Some ancient libc don't define AI_ADDRCONFIG */
 #ifdef AI_ADDRCONFIG

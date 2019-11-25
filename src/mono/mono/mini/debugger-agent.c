@@ -1234,11 +1234,20 @@ socket_transport_connect (const char *address)
 	listen_fd = -1;
 
 	if (host) {
+		int hints[] = {
+			MONO_HINT_IPV4 | MONO_HINT_NUMERIC_HOST,
+			MONO_HINT_IPV6 | MONO_HINT_NUMERIC_HOST,
+			MONO_HINT_UNSPECIFIED
+		};
 
 		mono_network_init ();
 
-		/* Obtain address(es) matching host/port */
-		s = mono_get_address_info (host, port, MONO_HINT_UNSPECIFIED, &result);
+		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
+			/* Obtain address(es) matching host/port */
+			s = mono_get_address_info (host, port, hints[i], &result);
+			if (s == 0)
+				break;
+		}
 		if (s != 0) {
 			g_printerr ("debugger-agent: Unable to resolve %s:%d: %d\n", host, port, s); // FIXME add portable error conversion functions
 			exit (1);

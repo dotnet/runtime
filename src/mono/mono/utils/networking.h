@@ -43,6 +43,7 @@ typedef enum {
 	MONO_HINT_IPV6				= 2,
 	MONO_HINT_CANONICAL_NAME	= 4,
 	MONO_HINT_CONFIGURED_ONLY	= 8,
+	MONO_HINT_NUMERIC_HOST      = 16,
 } MonoGetAddressHints;
 
 typedef struct _MonoAddressEntry MonoAddressEntry;
