@@ -145,6 +145,7 @@ namespace Internal.Runtime.CompilerServices
 #endif
         }
 
+#if BIT64
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
@@ -155,6 +156,7 @@ namespace Internal.Runtime.CompilerServices
         {
             return ref Unsafe.Add(ref source, (IntPtr)(void*)elementOffset);
         }
+#endif
 
         /// <summary>
         /// Adds an byte offset to the given reference.
