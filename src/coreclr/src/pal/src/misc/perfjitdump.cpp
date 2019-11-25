@@ -239,16 +239,15 @@ exit:
             record.vma = (uint64_t) pCode;
             record.code_addr = (uint64_t) pCode;
             record.code_size = codeSize;
-            record.code_index = ++codeIndex;
             record.header.total_size = bytesRemaining;
 
-            iovec item[] = {
+            iovec items[] = {
                 // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
                 { &record, sizeof(JitCodeLoadRecord) },
                 { (void *)symbol, symbolLen + 1 },
                 { pCode, codeSize },
             };
-            auto items = sizeof(item) / sizeof(item[0]);
+            size_t itemsCount = sizeof(items) / sizeof(items[0]);
 
             int itemsWritten = 0;
 
@@ -260,24 +259,26 @@ exit:
             if (!enabled)
                 goto exit;
 
+            record.code_index = ++codeIndex;
+
             do
             {
-                result = writev(fd, item + itemsWritten, items - itemsWritten);
+                result = writev(fd, items + itemsWritten, itemsCount - itemsWritten);
 
                 if (result == bytesRemaining)
                     break;
 
-                if (result <= 0)
+                if (result == -1)
                 {
-                    if ((result == -1) && (errno == EINTR))
+                    if (errno == EINTR)
                         continue;
 
                     return FatalError(true);
                 }
 
-                // Detect unexpected failure case.
-                if (bytesRemaining < result)
-                    return FatalError(true);
+                // Detect unexpected failure cases.
+                _ASSERTE(bytesRemaining > result);
+                _ASSERTE(result > 0);
 
                 // Handle partial write case
 
@@ -285,20 +286,19 @@ exit:
 
                 do
                 {
-                    if (result < item[itemsWritten].iov_len)
+                    if (result < items[itemsWritten].iov_len)
                     {
-                        item[itemsWritten].iov_len -= result;
-                        item[itemsWritten].iov_base = (void*)((size_t) item[items].iov_base + result);
+                        items[itemsWritten].iov_len -= result;
+                        items[itemsWritten].iov_base = (void*)((size_t) items[itemsWritten].iov_base + result);
                         break;
                     }
                     else
                     {
-                        result -= item[itemsWritten].iov_len;
+                        result -= items[itemsWritten].iov_len;
                         itemsWritten++;
 
                         // Detect unexpected failure case.
-                        if (itemsWritten >= items)
-                            return FatalError(true);
+                        _ASSERTE(itemsWritten < itemsCount);
                     }
                 } while (result > 0);
             } while (true);
