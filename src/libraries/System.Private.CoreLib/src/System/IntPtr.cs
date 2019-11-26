@@ -202,13 +202,13 @@ namespace System
         public static bool TryParse(string? s, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
-            return nint.TryParse(s, Unsafe.As<IntPtr, nint>(ref result));
+            return nint.TryParse(s, out Unsafe.As<IntPtr, nint>(ref result));
         }
 
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
-            return nint.TryParse(s, style, provider, Unsafe.As<IntPtr, nint>(ref result));
+            return nint.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint>(ref result));
         }
     }
 }
