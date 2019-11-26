@@ -114,7 +114,7 @@ jobs:
               targetOS: ${{ parameters.osGroup }}
               archGroup: ${{ parameters.archType }}
               configuration: ${{ parameters.buildConfig }}
-              helixQueues: ${{ join(';', parameters.helixQueues) }}
+              helixQueues: ${{ join('+', parameters.helixQueues) }}
               msbuildScript: $(_msbuildCommand)
               framework: ${{ parameters.framework }}
               testScope: ${{ parameters.testScope }}
