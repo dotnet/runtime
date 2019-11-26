@@ -8938,6 +8938,7 @@ calli_end:
 				}
 			}
 
+#ifdef ENABLE_NETCORE
 			// Optimize
 			// 
 			//    box
@@ -8965,6 +8966,7 @@ calli_end:
 					break;
 				}
 			}
+#endif
 
 			gboolean is_true;
 
