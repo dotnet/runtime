@@ -16,7 +16,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print availabe subsets with -subset help"
-  echo "  --subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
+  echo "  --subsetCategory           Build a subsetCategory, print availabe subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
