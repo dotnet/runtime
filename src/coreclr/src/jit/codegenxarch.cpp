@@ -2966,8 +2966,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
         {
-            assert(dstAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
-            dstOffset = static_cast<int>(dstAddr->AsLclFld()->gtLclOffs);
+            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
         }
     }
 
@@ -3090,7 +3089,7 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
     {
         if (baseNode->gtOper == GT_LCL_FLD_ADDR)
         {
-            offset += baseNode->AsLclFld()->gtLclOffs;
+            offset += baseNode->AsLclFld()->GetLclOffs();
         }
         emit->emitIns_R_S(ins, size, dst, baseNode->AsLclVarCommon()->GetLclNum(), offset);
     }
@@ -3146,8 +3145,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
         {
-            assert(dstAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
-            dstOffset = static_cast<int>(dstAddr->AsLclFld()->gtLclOffs);
+            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
         }
     }
 
@@ -3166,8 +3164,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         if (src->OperIs(GT_LCL_FLD))
         {
-            assert(src->AsLclFld()->gtLclOffs <= INT32_MAX);
-            srcOffset = static_cast<int>(src->AsLclFld()->gtLclOffs);
+            srcOffset = src->AsLclFld()->GetLclOffs();
         }
     }
     else
@@ -3203,8 +3200,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
             if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
             {
-                assert(srcAddr->AsLclFld()->gtLclOffs <= INT32_MAX);
-                srcOffset = static_cast<int>(srcAddr->AsLclFld()->gtLclOffs);
+                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
             }
         }
     }
@@ -4557,7 +4553,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     noway_assert(targetType != TYP_STRUCT);
 
     emitAttr size   = emitTypeSize(targetType);
-    unsigned offs   = tree->gtLclOffs;
+    unsigned offs   = tree->GetLclOffs();
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
@@ -7348,13 +7344,9 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
                 }
 
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = srcNode->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclOffs;
+                    varNum = srcNode->AsLclFld()->GetLclNum();
+                    offset = srcNode->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -8227,7 +8219,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
             {
-                srcLclOffset = srcAddr->AsLclFld()->gtLclOffs;
+                srcLclOffset = srcAddr->AsLclFld()->GetLclOffs();
             }
         }
 

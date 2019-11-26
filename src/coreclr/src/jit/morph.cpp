@@ -3944,9 +3944,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->gtFieldSeq     = GetFieldSeqStore()->CreateSingleton(GetRefanyDataField());
+            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField()));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->gtFieldSeq = GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField());
+            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField()));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);
@@ -4661,7 +4661,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             assert(varNum < lvaCount);
             LclVarDsc* varDsc = &lvaTable[varNum];
 
-            unsigned baseOffset = (argValue->OperGet() == GT_LCL_FLD) ? argValue->AsLclFld()->gtLclOffs : 0;
+            unsigned baseOffset = argValue->OperIs(GT_LCL_FLD) ? argValue->AsLclFld()->GetLclOffs() : 0;
             unsigned lastOffset = baseOffset + structSize;
 
             // The allocated size of our LocalVar must be at least as big as lastOffset
@@ -8554,8 +8554,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     {
         if (info.compIsVarArgs)
         {
-            GenTree* newTree =
-                fgMorphStackArgForVarArgs(tree->AsLclFld()->GetLclNum(), tree->gtType, tree->AsLclFld()->gtLclOffs);
+            GenTree* newTree = fgMorphStackArgForVarArgs(tree->AsLclFld()->GetLclNum(), tree->TypeGet(),
+                                                         tree->AsLclFld()->GetLclOffs());
             if (newTree != nullptr)
             {
                 if (newTree->OperIsBlk() && ((tree->gtFlags & GTF_VAR_DEF) == 0))
@@ -9785,7 +9785,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 assert(dest->gtOper == GT_LCL_FLD);
                 blockWidth = genTypeSize(dest->TypeGet());
                 destAddr   = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
-                destFldSeq = dest->AsLclFld()->gtFieldSeq;
+                destFldSeq = dest->AsLclFld()->GetFieldSeq();
             }
         }
         else
@@ -9867,7 +9867,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             srcLclNum     = srcLclVarTree->GetLclNum();
             if (rhs->OperGet() == GT_LCL_FLD)
             {
-                srcFldSeq = rhs->AsLclFld()->gtFieldSeq;
+                srcFldSeq = rhs->AsLclFld()->GetFieldSeq();
             }
         }
         else if (rhs->OperIsIndir())
@@ -10403,10 +10403,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                             {
                                 srcLclVarTree->gtFlags |= GTF_VAR_CAST;
                                 srcLclVarTree->ChangeOper(GT_LCL_FLD);
-                                srcLclVarTree->gtType                 = destType;
-                                srcLclVarTree->AsLclFld()->gtFieldSeq = curFieldSeq;
-                                src                                   = srcLclVarTree;
-                                done                                  = true;
+                                srcLclVarTree->gtType = destType;
+                                srcLclVarTree->AsLclFld()->SetFieldSeq(curFieldSeq);
+                                src  = srcLclVarTree;
+                                done = true;
                             }
                         }
                     }
@@ -12882,8 +12882,8 @@ DONE_MORPHING_CHILDREN:
                             if ((fieldSeq != nullptr) && (temp->OperGet() == GT_LCL_FLD))
                             {
                                 // Append the field sequence, change the type.
-                                temp->AsLclFld()->gtFieldSeq =
-                                    GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                                temp->AsLclFld()->SetFieldSeq(
+                                    GetFieldSeqStore()->Append(temp->AsLclFld()->GetFieldSeq(), fieldSeq));
                                 temp->gtType = typ;
 
                                 foldAndReturnTemp = true;
@@ -13005,29 +13005,29 @@ DONE_MORPHING_CHILDREN:
                     if (temp->OperGet() == GT_LCL_FLD)
                     {
                         lclFld = temp->AsLclFld();
-                        lclFld->gtLclOffs += (unsigned short)ival1;
-                        lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
+                        lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
+                        lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                     }
                     else // we have a GT_LCL_VAR
                     {
                         assert(temp->OperGet() == GT_LCL_VAR);
                         temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField",
                         // unless there is a zero filed offset associated with 'temp'.
-                        lclFld            = temp->AsLclFld();
-                        lclFld->gtLclOffs = (unsigned short)ival1;
+                        lclFld = temp->AsLclFld();
+                        lclFld->SetLclOffs(static_cast<unsigned>(ival1));
 
-                        if (lclFld->gtFieldSeq == FieldSeqStore::NotAField())
+                        if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
                         {
                             if (fieldSeq != nullptr)
                             {
                                 // If it does represent a field, note that.
-                                lclFld->gtFieldSeq = fieldSeq;
+                                lclFld->SetFieldSeq(fieldSeq);
                             }
                         }
                         else
                         {
                             // Append 'fieldSeq' to the existing one
-                            lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
+                            lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                         }
                     }
                     temp->gtType      = tree->gtType;
@@ -17010,7 +17010,7 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
     if (varTypeIsStruct(varDsc) && (varDsc->lvPromoted))
     {
         // Promoted struct
-        unsigned   fldOffset     = tree->AsLclFld()->gtLclOffs;
+        unsigned   fldOffset     = tree->AsLclFld()->GetLclOffs();
         unsigned   fieldLclIndex = 0;
         LclVarDsc* fldVarDsc     = nullptr;
 
@@ -17886,7 +17886,7 @@ public:
             case GT_LCL_FLD:
                 assert(TopValue(0).Node() == node);
 
-                TopValue(0).Location(node->AsLclFld()->GetLclNum(), node->AsLclFld()->gtLclOffs);
+                TopValue(0).Location(node->AsLclFld()->GetLclNum(), node->AsLclFld()->GetLclOffs());
                 break;
 
             case GT_ADDR:
@@ -18331,9 +18331,9 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
         case GT_LCL_FLD:
         {
             GenTreeLclFld* lclFld = addr->AsLclFld();
-            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
-            lclFld->gtFieldSeq    = fieldSeqUpdate;
-            fieldSeqRecorded      = true;
+            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
+            lclFld->SetFieldSeq(fieldSeqUpdate);
+            fieldSeqRecorded = true;
             break;
         }
 
@@ -18343,9 +18343,9 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
                 fieldSeqNode = addr->AsOp()->gtOp1;
 
                 GenTreeLclFld* lclFld = addr->AsOp()->gtOp1->AsLclFld();
-                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
-                lclFld->gtFieldSeq    = fieldSeqUpdate;
-                fieldSeqRecorded      = true;
+                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
+                lclFld->SetFieldSeq(fieldSeqUpdate);
+                fieldSeqRecorded = true;
             }
             break;
 

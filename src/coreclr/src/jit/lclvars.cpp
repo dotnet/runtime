@@ -7344,7 +7344,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             /* Change lclVar(lclNum) to lclFld(lclNum,padding) */
 
             tree->ChangeOper(GT_LCL_FLD);
-            tree->AsLclFld()->gtLclOffs = padding;
+            tree->AsLclFld()->SetLclOffs(padding);
         }
         else
         {

@@ -1322,8 +1322,8 @@ AGAIN:
                 return true;
 
             case GT_LCL_FLD:
-                if (op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum() ||
-                    op1->AsLclFld()->gtLclOffs != op2->AsLclFld()->gtLclOffs)
+                if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
+                    (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()))
                 {
                     break;
                 }
@@ -1971,7 +1971,7 @@ AGAIN:
                 break;
             case GT_LCL_FLD:
                 hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
-                add  = tree->AsLclFld()->gtLclOffs;
+                add  = tree->AsLclFld()->GetLclOffs();
                 break;
 
             case GT_CNS_INT:
@@ -6153,7 +6153,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
 
     // assert(lnum < lvaCount);
 
-    node->gtFieldSeq = FieldSeqStore::NotAField();
+    node->SetFieldSeq(FieldSeqStore::NotAField());
     return node;
 }
 
@@ -6925,9 +6925,10 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             // Remember that the LclVar node has been cloned. The flag will be set
             // on 'copy' as well.
             tree->gtFlags |= GTF_VAR_CLONED;
-            copy = new (this, tree->gtOper) GenTreeLclFld(tree->gtOper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
-                                                          tree->AsLclFld()->gtLclOffs);
-            copy->AsLclFld()->gtFieldSeq = tree->AsLclFld()->gtFieldSeq;
+            copy = new (this, tree->OperGet())
+                GenTreeLclFld(tree->OperGet(), tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
+                              tree->AsLclFld()->GetLclOffs());
+            copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
             break;
 
         case GT_CLS_VAR:
@@ -7120,9 +7121,9 @@ GenTree* Compiler::gtCloneExpr(
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
                     copy = new (this, GT_LCL_FLD)
-                        GenTreeLclFld(tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->gtLclOffs);
-                    copy->AsLclFld()->gtFieldSeq = tree->AsLclFld()->gtFieldSeq;
-                    copy->gtFlags                = tree->gtFlags;
+                        GenTreeLclFld(tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
+                    copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
+                    copy->gtFlags = tree->gtFlags;
                 }
                 goto DONE;
 
@@ -10583,8 +10584,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
             if (isLclFld)
             {
-                printf("[+%u]", tree->AsLclFld()->gtLclOffs);
-                gtDispFieldSeq(tree->AsLclFld()->gtFieldSeq);
+                printf("[+%u]", tree->AsLclFld()->GetLclOffs());
+                gtDispFieldSeq(tree->AsLclFld()->GetFieldSeq());
             }
 
             if (varDsc->lvRegister)
@@ -15820,7 +15821,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
                 unsigned lclOffset = 0;
                 if (addrArg->OperIsLocalField())
                 {
-                    lclOffset = addrArg->AsLclFld()->gtLclOffs;
+                    lclOffset = addrArg->AsLclFld()->GetLclOffs();
                 }
 
                 if (lclOffset != 0)
@@ -15922,7 +15923,7 @@ bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, Fie
         if (OperGet() == GT_LCL_FLD)
         {
             // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsLclFld()->gtFieldSeq, *pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(AsLclFld()->GetFieldSeq(), *pFldSeq);
         }
         return true;
     }
@@ -15972,7 +15973,7 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
             if (addrArg->OperGet() == GT_LCL_FLD)
             {
                 // Otherwise, prepend this field to whatever we've already accumulated outside in.
-                *pFldSeq = comp->GetFieldSeqStore()->Append(addrArg->AsLclFld()->gtFieldSeq, *pFldSeq);
+                *pFldSeq = comp->GetFieldSeqStore()->Append(addrArg->AsLclFld()->GetFieldSeq(), *pFldSeq);
             }
             return true;
         }
@@ -15986,7 +15987,7 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
         *pLclVarTree = this->AsLclVarCommon();
         if (this->OperGet() == GT_LCL_FLD_ADDR)
         {
-            *pFldSeq = comp->GetFieldSeqStore()->Append(this->AsLclFld()->gtFieldSeq, *pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(this->AsLclFld()->GetFieldSeq(), *pFldSeq);
         }
         return true;
     }
