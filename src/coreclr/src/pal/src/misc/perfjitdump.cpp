@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
 #include <linux/limits.h>
@@ -135,11 +136,11 @@ struct PerfJitDumpState
         codeIndex(0)
     {}
 
-    bool enabled;
+    volatile bool enabled;
     int fd;
     void *mmapAddr;
     pthread_mutex_t mutex;
-    uint64_t codeIndex;
+    volatile uint64_t codeIndex;
 
     int FatalError(bool locked)
     {
@@ -232,11 +233,23 @@ exit:
 
             JitCodeLoadRecord record;
 
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+
+            record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
             record.code_addr = (uint64_t) pCode;
             record.code_size = codeSize;
-            record.code_index = ++codeIndex;
-            record.header.total_size = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+            record.header.total_size = bytesRemaining;
+
+            iovec items[] = {
+                // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
+                { &record, sizeof(JitCodeLoadRecord) },
+                { (void *)symbol, symbolLen + 1 },
+                { pCode, codeSize },
+            };
+            size_t itemsCount = sizeof(items) / sizeof(items[0]);
+
+            int itemsWritten = 0;
 
             result = pthread_mutex_lock(&mutex);
 
@@ -246,36 +259,56 @@ exit:
             if (!enabled)
                 goto exit;
 
-            // ToDo write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+            // Increment codeIndex while locked
+            record.code_index = ++codeIndex;
 
-            record.header.timestamp = GetTimeStampNS();
+            do
+            {
+                result = writev(fd, items + itemsWritten, itemsCount - itemsWritten);
 
-            result = write(fd, &record, sizeof(JitCodeLoadRecord));
+                if (result == bytesRemaining)
+                    break;
 
-            if (result == -1)
-                return FatalError(true);
+                if (result == -1)
+                {
+                    if (errno == EINTR)
+                        continue;
 
-            result = write(fd, symbol, symbolLen + 1);
+                    return FatalError(true);
+                }
 
-            if (result == -1)
-                return FatalError(true);
+                // Detect unexpected failure cases.
+                _ASSERTE(bytesRemaining > result);
+                _ASSERTE(result > 0);
 
-            result = write(fd, pCode, codeSize);
+                // Handle partial write case
 
-            if (result == -1)
-                return FatalError(true);
+                bytesRemaining -= result;
 
-            result = fsync(fd);
+                do
+                {
+                    if (result < items[itemsWritten].iov_len)
+                    {
+                        items[itemsWritten].iov_len -= result;
+                        items[itemsWritten].iov_base = (void*)((size_t) items[itemsWritten].iov_base + result);
+                        break;
+                    }
+                    else
+                    {
+                        result -= items[itemsWritten].iov_len;
+                        itemsWritten++;
 
-            if (result == -1)
-                return FatalError(true);
+                        // Detect unexpected failure case.
+                        _ASSERTE(itemsWritten < itemsCount);
+                    }
+                } while (result > 0);
+            } while (true);
 
 exit:
             result = pthread_mutex_unlock(&mutex);
 
             if (result != 0)
                 return FatalError(false);
-
         }
         return 0;
     }
