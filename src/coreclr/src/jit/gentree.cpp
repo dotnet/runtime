@@ -16052,7 +16052,7 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
             GenTree* rhsOp1    = rhs->AsOp()->gtOp1;
             GenTree* rhsOp2    = rhs->AsOp()->gtOp2;
 
-            // Some operators, such as HWINTRINSIC, are currently decalred as binary but
+            // Some operators, such as HWINTRINSIC, are currently declared as binary but
             // do not have two operands. We must check that both operands actually exist.
             if ((rhsOp1 != nullptr) && (rhsOp2 != nullptr) && (rhsOp1->OperGet() == GT_LCL_VAR) &&
                 (rhsOp1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
