@@ -5,7 +5,6 @@
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -14,10 +13,8 @@ namespace System.Text.RegularExpressions
         private static int s_regexCount = 0;
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
-        /*
-         * The top-level driver. Initializes everything then calls the Generate* methods.
-         */
-        public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options)
+        /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
+        public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
         {
             _code = code;
             _codes = code.Codes;
@@ -27,10 +24,10 @@ namespace System.Text.RegularExpressions
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
             _options = options;
+            _hasTimeout = hasTimeout;
 
             // pick a unique number for the methods we generate
-            int regexnum = Interlocked.Increment(ref s_regexCount);
-            string regexnumString = regexnum.ToString(CultureInfo.InvariantCulture);
+            string regexnumString = ((uint)Interlocked.Increment(ref s_regexCount)).ToString();
 
             DynamicMethod goMethod = DefineDynamicMethod("Go" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateGo();
@@ -41,22 +38,23 @@ namespace System.Text.RegularExpressions
             DynamicMethod trackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateInitTrackCount();
 
-            return new CompiledRegexRunnerFactory(goMethod, firstCharMethod, trackCountMethod);
+            return new CompiledRegexRunnerFactory(
+                (Action<RegexRunner>)goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
+                (Func<RegexRunner, bool>)firstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
+                (Action<RegexRunner>)trackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
         }
 
-        /*
-         * Begins the definition of a new method (no args) with a specified return value
-         */
+        /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
         public DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType)
         {
             // We're claiming that these are static methods, but really they are instance methods.
             // By giving them a parameter which represents "this", we're tricking them into
             // being instance methods.
 
-            MethodAttributes attribs = MethodAttributes.Public | MethodAttributes.Static;
-            CallingConventions conventions = CallingConventions.Standard;
+            const MethodAttributes Attribs = MethodAttributes.Public | MethodAttributes.Static;
+            const CallingConventions Conventions = CallingConventions.Standard;
 
-            DynamicMethod dm = new DynamicMethod(methname, attribs, conventions, returntype, s_paramTypes, hostType, false /*skipVisibility*/);
+            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, skipVisibility: false);
             _ilg = dm.GetILGenerator();
             return dm;
         }

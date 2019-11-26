@@ -37,10 +37,7 @@ namespace System.Reflection
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
         {
-            if (memberInfo == null)
-                throw new ArgumentNullException(nameof(memberInfo));
-
-            m_memberInfo = memberInfo;
+            m_memberInfo = memberInfo ?? throw new ArgumentNullException(nameof(memberInfo));
             m_value = typedArgument;
         }
 

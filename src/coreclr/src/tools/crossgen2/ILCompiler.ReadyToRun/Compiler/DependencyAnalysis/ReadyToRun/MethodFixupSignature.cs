@@ -8,6 +8,8 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -57,18 +59,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
             if (!_isUnboxingStub && !_isInstantiatingStub && _method.ConstrainedType == null &&
-                fixupKind == ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry)
+                fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {
-                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken;
+                        fixupKind = ReadyToRunFixupKind.MethodEntry_DefToken;
                         optimized = true;
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
-                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken;
+                        fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
                         optimized = true;
                     }
                 }

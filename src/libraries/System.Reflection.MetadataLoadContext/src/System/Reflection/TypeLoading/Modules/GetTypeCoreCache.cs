@@ -156,7 +156,7 @@ namespace System.Reflection.TypeLoading
                 Debug.Assert(newNextFreeEntry <= _nextFreeEntry);
 
                 // The line that atomically installs the resize. If this thread is killed before this point,
-                // the table remains full and the next guy attempting an add will have to redo the resize.
+                // the table remains full and the next attempt to add will have to redo the resize.
                 _owner._container = new Container(_owner, newBuckets, newEntries, newNextFreeEntry);
 
                 _owner._container.VerifyUnifierConsistency();

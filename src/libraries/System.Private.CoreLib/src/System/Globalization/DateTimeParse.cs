@@ -15,7 +15,7 @@ namespace System
 
         internal delegate bool MatchNumberDelegate(ref __DTString str, int digitLen, out int result);
 
-        internal static MatchNumberDelegate m_hebrewNumberParser = new MatchNumberDelegate(DateTimeParse.MatchHebrewDigits);
+        private static readonly MatchNumberDelegate s_hebrewNumberParser = new MatchNumberDelegate(MatchHebrewDigits);
 
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
@@ -334,7 +334,7 @@ namespace System
         ////////////////////////////////////////////////////////////////////////////
 
         // End        NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone   Era         UTCTimeMark
-        private static readonly DS[][] dateParsingStates = {
+        private static readonly DS[][] s_dateParsingStates = {
 // DS.BEGIN                                                                             // DS.BEGIN
 new DS[] { DS.BEGIN,  DS.ERROR,   DS.TX_N,    DS.N,       DS.D_Nd,    DS.T_Nt,    DS.ERROR,   DS.D_M,     DS.D_M,     DS.D_S,     DS.T_S,         DS.BEGIN,     DS.D_Y,     DS.D_Y,     DS.ERROR,   DS.BEGIN,  DS.BEGIN,    DS.ERROR },
 
@@ -615,7 +615,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             str.GetRegularToken(out tokenType, out tokenValue, dtfi);
 
 #if _LOGGING
-            if (_tracingEnabled)
+            if (s_tracingEnabled)
             {
                 Trace($"Lex({Hex(str.Value)})\tpos:{str.Index}({Hex(str.m_current)}), {tokenType}, DS.{dps}");
             }
@@ -720,8 +720,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                 case TokenType.SEP_DateOrOffset:
                                     // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                     // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                    if ((dateParsingStates[(int)dps][(int)DTT.YearDateSep] == DS.ERROR)
-                                        && (dateParsingStates[(int)dps][(int)DTT.YearSpace] > DS.ERROR))
+                                    if ((s_dateParsingStates[(int)dps][(int)DTT.YearDateSep] == DS.ERROR)
+                                        && (s_dateParsingStates[(int)dps][(int)DTT.YearSpace] > DS.ERROR))
                                     {
                                         str.Index = indexBeforeSeparator;
                                         str.m_current = charBeforeSeparator;
@@ -779,7 +779,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                 // Fix AM/PM parsing case, e.g. "1/10 5 AM"
                                 if (dps == DS.D_NN)
                                 {
-                                    if (!ProcessTerminalState(DS.DX_NN, ref str, ref result, ref styles, ref raw, dtfi))
+                                    if (!ProcessTerminalState(DS.DX_NN, ref result, ref styles, ref raw, dtfi))
                                     {
                                         return false;
                                     }
@@ -812,8 +812,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         case TokenType.SEP_DateOrOffset:
                             // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                             // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                            if ((dateParsingStates[(int)dps][(int)DTT.NumDatesep] == DS.ERROR)
-                                && (dateParsingStates[(int)dps][(int)DTT.NumSpace] > DS.ERROR))
+                            if ((s_dateParsingStates[(int)dps][(int)DTT.NumDatesep] == DS.ERROR)
+                                && (s_dateParsingStates[(int)dps][(int)DTT.NumSpace] > DS.ERROR))
                             {
                                 str.Index = indexBeforeSeparator;
                                 str.m_current = charBeforeSeparator;
@@ -896,7 +896,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                 case TokenType.SEP_DateOrOffset:
                                     // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                     // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                    if (dateParsingStates[(int)dps][(int)DTT.YearSpace] > DS.ERROR)
+                                    if (s_dateParsingStates[(int)dps][(int)DTT.YearSpace] > DS.ERROR)
                                     {
                                         str.Index = indexBeforeSeparator;
                                         str.m_current = charBeforeSeparator;
@@ -941,8 +941,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             case TokenType.SEP_DateOrOffset:
                                 // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                 // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                if ((dateParsingStates[(int)dps][(int)DTT.NumDatesep] == DS.ERROR)
-                                    && (dateParsingStates[(int)dps][(int)DTT.NumSpace] > DS.ERROR))
+                                if ((s_dateParsingStates[(int)dps][(int)DTT.NumDatesep] == DS.ERROR)
+                                    && (s_dateParsingStates[(int)dps][(int)DTT.NumSpace] > DS.ERROR))
                                 {
                                     str.Index = indexBeforeSeparator;
                                     str.m_current = charBeforeSeparator;
@@ -1009,8 +1009,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             case TokenType.SEP_DateOrOffset:
                                 // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                 // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                if ((dateParsingStates[(int)dps][(int)DTT.MonthDatesep] == DS.ERROR)
-                                    && (dateParsingStates[(int)dps][(int)DTT.MonthSpace] > DS.ERROR))
+                                if ((s_dateParsingStates[(int)dps][(int)DTT.MonthDatesep] == DS.ERROR)
+                                    && (s_dateParsingStates[(int)dps][(int)DTT.MonthSpace] > DS.ERROR))
                                 {
                                     str.Index = indexBeforeSeparator;
                                     str.m_current = charBeforeSeparator;
@@ -1676,8 +1676,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 }
                 if (yearMonthOrder == ORDER_MY)
                 {
-                    int year;
-                    if (!TryAdjustYear(ref result, raw.GetNumber(0), out year) || !SetDateYMD(ref result, year, raw.month, 1))
+                    if (!TryAdjustYear(ref result, raw.GetNumber(0), out int year) || !SetDateYMD(ref result, year, raw.month, 1))
                     {
                         result.SetBadDateTimeFailure();
                         return false;
@@ -1759,8 +1758,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 }
                 if (yearMonthOrder == ORDER_YM)
                 {
-                    int year;
-                    if (!TryAdjustYear(ref result, raw.GetNumber(0), out year) || !SetDateYMD(ref result, year, raw.month, 1))
+                    if (!TryAdjustYear(ref result, raw.GetNumber(0), out int year) || !SetDateYMD(ref result, year, raw.month, 1))
                     {
                         result.SetBadDateTimeFailure();
                         return false;
@@ -2345,7 +2343,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // A terminal state has been reached, call the appropriate function to fill in the parsing result.
         // Return true if the state is a terminal state.
         //
-        internal static bool ProcessTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static bool ProcessTerminalState(DS dps, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             bool passed = true;
             switch (dps)
@@ -2504,7 +2502,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DTFITrace(dtfi);
 #endif
 
-            DateTime time;
             //
             // First try the predefined format.
             //
@@ -2605,7 +2602,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         }
 
                         bool atEnd = str.AtEnd();
-                        if (dateParsingStates[(int)dps][(int)dtok.dtt] == DS.ERROR || atEnd)
+                        if (s_dateParsingStates[(int)dps][(int)dtok.dtt] == DS.ERROR || atEnd)
                         {
                             switch (dtok.dtt)
                             {
@@ -2623,7 +2620,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     //
                     // Advance to the next state, and continue
                     //
-                    dps = dateParsingStates[(int)dps][(int)dtok.dtt];
+                    dps = s_dateParsingStates[(int)dps][(int)dtok.dtt];
 
                     if (dps == DS.ERROR)
                     {
@@ -2643,7 +2640,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         }
                         else
                         {
-                            if (!ProcessTerminalState(dps, ref str, ref result, ref styles, ref raw, dtfi))
+                            if (!ProcessTerminalState(dps, ref result, ref styles, ref raw, dtfi))
                             {
                                 TPTraceExit("0060 (ProcessTerminalState)", dps);
                                 return false;
@@ -2689,6 +2686,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
+            DateTime time;
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out time))
             {
@@ -2941,8 +2939,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // Convert the GMT time to local time.
                     DateTime utcDt = new DateTime(resultTicks, DateTimeKind.Utc);
-                    bool isDaylightSavings = false;
-                    resultTicks += TimeZoneInfo.GetUtcOffsetFromUtc(utcDt, TimeZoneInfo.Local, out isDaylightSavings, out isAmbiguousLocalDst).Ticks;
+                    resultTicks += TimeZoneInfo.GetUtcOffsetFromUtc(utcDt, TimeZoneInfo.Local, out _, out isAmbiguousLocalDst).Ticks;
                 }
             }
             if (resultTicks < DateTime.MinTicks || resultTicks > DateTime.MaxTicks)
@@ -3879,7 +3876,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DateTimeFormatInfo dtfi,
             ref DateTimeResult result)
         {
-            int tokenLen = 0;
+            int tokenLen;
             int tempYear = 0, tempMonth = 0, tempDay = 0, tempDayOfWeek = 0, tempHour = 0, tempMinute = 0, tempSecond = 0;
             double tempFraction = 0;
             TM tempTimeMark = 0;
@@ -4009,7 +4006,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case 'g':
-                    tokenLen = format.GetRepeatCount();
+                    _ = format.GetRepeatCount();
                     // Put the era value in result.era.
                     if (!MatchEraName(ref str, dtfi, ref result.era))
                     {
@@ -4507,12 +4504,11 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 formatParam = ExpandPredefinedFormat(formatParam, ref dtfi, ref parseInfo, ref result);
             }
 
-            bool bTimeOnly = false;
             result.calendar = parseInfo.calendar;
 
             if (parseInfo.calendar.ID == CalendarId.HEBREW)
             {
-                parseInfo.parseNumberDelegate = m_hebrewNumberParser;
+                parseInfo.parseNumberDelegate = s_hebrewNumberParser;
                 parseInfo.fCustomNumberParser = true;
             }
 
@@ -4625,7 +4621,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
 
             // Check if the parsed string only contains hour/minute/second values.
-            bTimeOnly = (result.Year == -1 && result.Month == -1 && result.Day == -1);
+            bool bTimeOnly = (result.Year == -1 && result.Month == -1 && result.Day == -1);
             if (!CheckDefaultDateTime(ref result, ref parseInfo.calendar, styles))
             {
                 return false;
@@ -5111,7 +5107,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static void LexTraceExit(string message, DS dps)
         {
 #if _LOGGING
-            if (!_tracingEnabled)
+            if (!s_tracingEnabled)
                 return;
             Trace($"Lex return {message}, DS.{dps}");
 #endif // _LOGGING
@@ -5120,7 +5116,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static void PTSTraceExit(DS dps, bool passed)
         {
 #if _LOGGING
-            if (!_tracingEnabled)
+            if (!s_tracingEnabled)
                 return;
             Trace($"ProcessTerminalState {(passed ? "passed" : "failed")} @ DS.{dps}");
 #endif // _LOGGING
@@ -5129,7 +5125,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static void TPTraceExit(string message, DS dps)
         {
 #if _LOGGING
-            if (!_tracingEnabled)
+            if (!s_tracingEnabled)
                 return;
             Trace($"TryParse return {message}, DS.{dps}");
 #endif // _LOGGING
@@ -5138,7 +5134,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static void DTFITrace(DateTimeFormatInfo dtfi)
         {
 #if _LOGGING
-            if (!_tracingEnabled)
+            if (!s_tracingEnabled)
                 return;
 
             Trace("DateTimeFormatInfo Properties");
@@ -5164,14 +5160,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (strs.Length == 1)
                 return Hex(strs[0]);
 
-            int curLineLength = 0;
             const int MaxLineLength = 55;
             const int NewLinePadding = 20;
 
             // invariant: strs.Length >= 2
             StringBuilder buffer = new StringBuilder();
             buffer.Append(Hex(strs[0]));
-            curLineLength = buffer.Length;
+            int curLineLength = buffer.Length;
             string s;
 
             for (int i = 1; i < strs.Length - 1; i++)
@@ -5239,7 +5234,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // for testing; do not make this readonly
-        private static bool _tracingEnabled = false;
+        private static bool s_tracingEnabled = false;
 #endif // _LOGGING
     }
 
@@ -5382,11 +5377,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Re-scan using the staring Index to see if this is a token.
                     Index = start;  // To include the first digit.
                     m_current = Value[Index];
-                    TokenType tempType;
-                    int tempValue;
                     // This DTFI has tokens starting with digits.
                     // E.g. mn-MN has month name like "\x0031\x00a0\x0434\x04af\x0433\x044d\x044d\x0440\x00a0\x0441\x0430\x0440"
-                    if (dtfi.Tokenize(TokenType.RegularTokenMask, out tempType, out tempValue, ref this))
+                    if (dtfi.Tokenize(TokenType.RegularTokenMask, out TokenType tempType, out int tempValue, ref this))
                     {
                         tokenType = tempType;
                         tokenValue = tempValue;

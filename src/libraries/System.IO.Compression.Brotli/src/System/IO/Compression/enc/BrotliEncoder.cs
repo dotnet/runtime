@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using size_t = System.IntPtr;
@@ -11,7 +12,7 @@ namespace System.IO.Compression
 {
     public partial struct BrotliEncoder : IDisposable
     {
-        internal SafeBrotliEncoderHandle _state;
+        internal SafeBrotliEncoderHandle? _state;
         private bool _disposed;
 
         public BrotliEncoder(int quality, int window)
@@ -64,6 +65,7 @@ namespace System.IO.Compression
             if (_state == null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
+                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
             {
@@ -81,6 +83,7 @@ namespace System.IO.Compression
             if (_state == null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
+                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
             {
@@ -119,6 +122,8 @@ namespace System.IO.Compression
         internal OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
             EnsureInitialized();
+            Debug.Assert(_state != null);
+
             bytesWritten = 0;
             bytesConsumed = 0;
             size_t availableOutput = (size_t)destination.Length;

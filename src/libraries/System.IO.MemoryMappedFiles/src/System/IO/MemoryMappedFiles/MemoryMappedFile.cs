@@ -4,7 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Security;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -12,7 +11,7 @@ namespace System.IO.MemoryMappedFiles
     {
         private readonly SafeMemoryMappedFileHandle _handle;
         private readonly bool _leaveOpen;
-        private readonly FileStream _fileStream;
+        private readonly FileStream? _fileStream;
         internal const int DefaultSize = 0;
 
         // Private constructors to be used by the factory methods.
@@ -99,17 +98,17 @@ namespace System.IO.MemoryMappedFiles
             return CreateFromFile(path, mode, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName)
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName)
         {
             return CreateFromFile(path, mode, mapName, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName, long capacity)
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity)
         {
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
             if (path == null)
@@ -173,7 +172,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
-            SafeMemoryMappedFileHandle handle = null;
+            SafeMemoryMappedFileHandle? handle = null;
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,
@@ -190,7 +189,7 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileStream, false);
         }
 
-        public static MemoryMappedFile CreateFromFile(FileStream fileStream, string mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(FileStream fileStream, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
         {
@@ -257,19 +256,19 @@ namespace System.IO.MemoryMappedFiles
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal
         // for IPC, when mapName != null.
-        public static MemoryMappedFile CreateNew(string mapName, long capacity)
+        public static MemoryMappedFile CreateNew(string? mapName, long capacity)
         {
             return CreateNew(mapName, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
-        public static MemoryMappedFile CreateNew(string mapName, long capacity, MemoryMappedFileAccess access)
+        public static MemoryMappedFile CreateNew(string? mapName, long capacity, MemoryMappedFileAccess access)
         {
             return CreateNew(mapName, capacity, access, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
-        public static MemoryMappedFile CreateNew(string mapName, long capacity, MemoryMappedFileAccess access,
+        public static MemoryMappedFile CreateNew(string? mapName, long capacity, MemoryMappedFileAccess access,
                                                     MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {

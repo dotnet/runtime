@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             //
             // Combination of RC4 over a CAPI certificate.
             //
-            //  This works as long as the PKCS implementation opens the cert using CAPI. If he creates a CNG wrapper handle (by passing CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG),
+            //  This works as long as the PKCS implementation opens the cert using CAPI. If it creates a CNG wrapper handle (by passing CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG),
             //  the test fails with a NOTSUPPORTED crypto exception inside Decrypt(). The same happens if the key is genuinely CNG.
             //
 

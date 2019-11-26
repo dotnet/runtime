@@ -392,7 +392,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     else
     {
-        // EE expects a DWORD, so we give him 0
+        // EE expects a DWORD, so we provide 0
         inst_IV(INS_push_hide, 0);
     }
 

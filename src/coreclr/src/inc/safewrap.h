@@ -157,7 +157,7 @@ DWORD inline SafeGetFileSize(HANDLE hFile, DWORD *pdwHigh)
             // note that a success return of (hi=0,lo=0xffffffff) will be
             // treated as an error by the caller. Again, that's part of the
             // price of being a slacker and not handling the high dword.
-            // We'll set a lasterror for him to pick up.
+            // We'll set a lasterror for them to pick up.
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         }
 

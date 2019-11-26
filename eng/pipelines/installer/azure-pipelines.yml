@@ -6,7 +6,7 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/installer/manpages/*
+    - docs/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*
@@ -27,7 +27,7 @@ pr:
   paths:
     include:
     - '*'
-    - docs/installer/manpages/*
+    - docs/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*

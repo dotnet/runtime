@@ -257,7 +257,7 @@ namespace System.Net.Sockets
             // Here we check to see if the user is trying to use a Broadcast IP address
             // we only detect IPAddress.Broadcast (which is not the only Broadcast address)
             // and in that case we set SocketOptionName.Broadcast on the socket to allow its use.
-            // if the user really wants complete control over Broadcast addresses he needs to
+            // if the user really wants complete control over Broadcast addresses they need to
             // inherit from UdpClient and gain control over the Socket and do whatever is appropriate.
             if (_clientSocket != null && !_isBroadcast && IsBroadcast(ipAddress))
             {

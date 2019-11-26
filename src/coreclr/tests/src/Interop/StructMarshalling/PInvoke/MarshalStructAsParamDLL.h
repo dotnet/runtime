@@ -589,6 +589,7 @@ void ChangeStringStructSequentialUnicode(StringStructSequentialUnicode* str)
 struct S8
 {
     LPCSTR name;
+    CHAR fullName[128];
     BOOL gender;
     INT i32;
     UINT ui32;
@@ -598,6 +599,7 @@ struct S8
 void PrintS8(S8* str, char const * name)
 {
 	printf("\t%s.name = %s\n",name, str->name);
+	printf("\t%s.fullName = %s\n", name, str->fullName);
 	printf("\t%s.gender = %d\n", name, str->gender);
 	printf("\t%s.jobNum = %d\n",name, str->jobNum);
 	printf("\t%s.i32 = %d\n", name, str->i32);
@@ -607,6 +609,8 @@ void PrintS8(S8* str, char const * name)
 bool IsCorrectS8(S8* str)
 {
 	if(memcmp( str->name,"hello", strlen("hello")*sizeof(char)+1 )!= 0)
+		return false;
+	if (str->fullName[0] != 0)
 		return false;
 	if(!str->gender)
 		return false;
@@ -622,6 +626,7 @@ bool IsCorrectS8(S8* str)
 void ChangeS8(S8* str)
 {
 	str->name = CoStrDup("world");
+	sprintf_s(str->fullName, 128, "HelloWorldAgain");
 	str->gender = false;
 	str->jobNum = 1;
 	str->i32 = 256;

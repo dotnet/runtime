@@ -221,6 +221,7 @@ namespace System.Text.RegularExpressions
                 value = null;
                 return false;
             }
+
             value = group;
             return true;
         }

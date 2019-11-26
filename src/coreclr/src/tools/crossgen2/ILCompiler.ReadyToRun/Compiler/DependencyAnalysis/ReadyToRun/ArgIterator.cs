@@ -7,15 +7,13 @@
 // provided with information mapping that argument into registers and/or stack locations.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-
-using ILCompiler;
 
 using Internal.JitInterface;
 using Internal.NativeFormat;
-using Internal.Runtime;
 using Internal.TypeSystem;
+using Internal.CorConstants;
+
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {

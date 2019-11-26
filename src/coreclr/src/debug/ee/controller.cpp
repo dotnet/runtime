@@ -7557,7 +7557,7 @@ void DebuggerStepper::TriggerUnwind(Thread *thread,
 
 
 // Prepare for sending an event.
-// This is called 1:1 w/ SendEvent, but this guy can be called in a GC_TRIGGERABLE context
+// This is called 1:1 w/ SendEvent, but this method can be called in a GC_TRIGGERABLE context
 // whereas SendEvent is pretty strict.
 // Caller ensures that it's safe to run a stack trace.
 void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)

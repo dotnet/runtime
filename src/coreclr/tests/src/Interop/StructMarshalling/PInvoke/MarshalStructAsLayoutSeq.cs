@@ -502,8 +502,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 cloneS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByVal11...");
                     if (!MarshalStructAsParam_AsSeqByVal11(sourceS8))
@@ -904,8 +904,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 changeS8 = Helper.NewS8("world", false, 1, 256, 256, 64);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByRef11...");
                     if (!MarshalStructAsParam_AsSeqByRef11(ref sourceS8))
@@ -1129,8 +1129,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 cloneS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValIn11...");
                     if (!MarshalStructAsParam_AsSeqByValIn11(sourceS8))
@@ -1355,8 +1355,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 cloneS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByRefIn11...");
                     if (!MarshalStructAsParam_AsSeqByRefIn11(ref sourceS8))
@@ -1580,8 +1580,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 cloneS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValOut11...");
                     if (!MarshalStructAsParam_AsSeqByValOut11(sourceS8))
@@ -1806,8 +1806,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 changeS8 = Helper.NewS8("world", false, 1, 256, 256, 64);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByRefOut11...");
                     if (!MarshalStructAsParam_AsSeqByRefOut11(out sourceS8))
@@ -2035,8 +2035,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 cloneS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValInOut11...");
                     if (!MarshalStructAsParam_AsSeqByValInOut11(sourceS8))
@@ -2261,8 +2261,8 @@ public class Managed
                     }
                     break;    
                 case StructID.S8Id:
-                    S8 sourceS8 = Helper.NewS8("hello", true, 10, 128, 128, 32);
-                    S8 changeS8 = Helper.NewS8("world", false, 1, 256, 256, 64);
+                    S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
+                    S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
 
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByRefInOut11...");
                     if (!MarshalStructAsParam_AsSeqByRefInOut11(ref sourceS8))

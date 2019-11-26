@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate rsp -->
   <Import Project="GenerateCompilerResponseFile.targets" />
 
@@ -19,6 +18,8 @@
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <!-- Re-enable once issue: https://github.com/dotnet/runtime/issues/273 is fixed. -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(BinDir)IL/</OutputPath>
@@ -56,7 +57,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>CORECLR;netcoreapp</DefineConstants>
+    <DefineConstants>CORECLR;NETCOREAPP</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -413,7 +414,7 @@
     <Compile Include="$(CommonPath)\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\SR.cs" />
   </ItemGroup>
-  <Import Project="$(CoreLibSharedDir)System.Private.CoreLib.Shared.projitems" />
+  <Import Project="$(CoreLibSharedDir)System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
   </PropertyGroup>
@@ -472,11 +473,6 @@
     <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)">
       <LogicalName>$(MSBuildProjectName).xml</LogicalName>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- This is the T4 template service and is added by VS anytime you modify a T4 template -->
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
   <Import Project="ILLink.targets" />

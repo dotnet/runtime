@@ -14,6 +14,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 #endif
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -115,8 +116,8 @@ namespace System.Text.RegularExpressions
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ?
                 CultureInfo.InvariantCulture :
                 CultureInfo.CurrentCulture;
-            var key = new CachedCodeEntryKey(options, culture.ToString(), pattern);
-            CachedCodeEntry? cached = GetCachedCode(key, false);
+            var key = new CachedCodeEntryKey(pattern, culture.ToString(), options, matchTimeout != InfiniteMatchTimeout);
+            CachedCodeEntry? cached = GetCachedCode(key, isToAdd: false);
 
             if (cached == null)
             {
@@ -165,7 +166,7 @@ namespace System.Text.RegularExpressions
             // if the compile option is set, then compile the code if it's not already
             if (UseOptionC() && factory == null)
             {
-                factory = Compile(_code!, roptions);
+                factory = Compile(_code!, roptions, matchTimeout != InfiniteMatchTimeout);
 
                 if (addToCache && cached != null)
                 {
@@ -186,10 +187,7 @@ namespace System.Text.RegularExpressions
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? Caps
         {
-            get
-            {
-                return caps;
-            }
+            get => caps;
             set
             {
                 if (value == null)
@@ -202,10 +200,7 @@ namespace System.Text.RegularExpressions
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? CapNames
         {
-            get
-            {
-                return capnames;
-            }
+            get => capnames;
             set
             {
                 if (value == null)
@@ -221,10 +216,10 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions, bool hasTimeout)
         {
-            return RegexCompiler.Compile(code!, roptions);
+            return RegexCompiler.Compile(code!, roptions, hasTimeout);
         }
 #endif
 
@@ -304,18 +299,15 @@ namespace System.Text.RegularExpressions
 
             if (capslist == null)
             {
-                int max = capsize;
-                result = new string[max];
-
-                for (int i = 0; i < max; i++)
+                result = new string[capsize];
+                for (int i = 0; i < result.Length; i++)
                 {
-                    result[i] = Convert.ToString(i, CultureInfo.InvariantCulture);
+                    result[i] = i.ToString();
                 }
             }
             else
             {
-                result = new string[capslist.Length];
-                Array.Copy(capslist, result, capslist.Length);
+                result = capslist.AsSpan().ToArray();
             }
 
             return result;
@@ -374,7 +366,7 @@ namespace System.Text.RegularExpressions
             if (capslist == null)
             {
                 if (i >= 0 && i < capsize)
-                    return i.ToString(CultureInfo.InvariantCulture);
+                    return i.ToString();
 
                 return string.Empty;
             }
@@ -405,38 +397,32 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public int GroupNumberFromName(string name)
         {
-            int result = -1;
-
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
+
+            int result;
 
             // look up name if we have a hashtable of names
             if (capnames != null)
             {
-                if (!capnames.TryGetValue(name, out result))
-                    return -1;
-
-                return result;
+                return capnames.TryGetValue(name, out result) ? result : -1;
             }
 
             // convert to an int if it looks like a number
             result = 0;
             for (int i = 0; i < name.Length; i++)
             {
-                char ch = name[i];
-
-                if (ch > '9' || ch < '0')
+                uint digit = (uint)(name[i] - '0');
+                if (digit > 9)
+                {
                     return -1;
+                }
 
-                result *= 10;
-                result += (ch - '0');
+                result = (result * 10) + (int)digit;
             }
 
             // return int if it's in range
-            if (result >= 0 && result < capsize)
-                return result;
-
-            return -1;
+            return result >= 0 && result < capsize ? result : -1;
         }
 
         protected void InitializeReferences()
@@ -468,10 +454,9 @@ namespace System.Text.RegularExpressions
             if (runner == null)
             {
                 // Use the compiled RegexRunner factory if the code was compiled to MSIL
-                if (factory != null)
-                    runner = factory.CreateInstance();
-                else
-                    runner = new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                runner = factory != null ?
+                    factory.CreateInstance() :
+                    new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
             }
 
             Match? match;
@@ -495,9 +480,7 @@ namespace System.Text.RegularExpressions
 
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
-        /*
-         * True if the L option was set
-         */
+        /// <summary>True if the L option was set</summary>
         protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
 
         internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;

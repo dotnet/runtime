@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.JitInterface;
 using Internal.Text;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle, _token.Module, _signatureContext);
+            dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.StringHandle, _token.Module, _signatureContext);
             dataBuilder.EmitUInt(_token.TokenRid);
 
             return dataBuilder.ToObjectData();

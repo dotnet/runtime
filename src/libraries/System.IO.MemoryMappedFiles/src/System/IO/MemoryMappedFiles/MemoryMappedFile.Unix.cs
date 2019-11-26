@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Security;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -15,7 +14,7 @@ namespace System.IO.MemoryMappedFiles
         /// out empty).
         /// </summary>
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
-            FileStream fileStream, string mapName,
+            FileStream? fileStream, string? mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
@@ -138,7 +137,7 @@ namespace System.IO.MemoryMappedFiles
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static FileStream CreateSharedBackingObjectUsingMemory(
+        private static FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
             // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.

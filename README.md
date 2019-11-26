@@ -4,7 +4,7 @@
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 
 This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
-all supported platforms, as wel as the sources to .NET Core runtime and libraries.
+all supported platforms, as well as the sources to .NET Core runtime and libraries.
 
 ## What is .NET Core?
 

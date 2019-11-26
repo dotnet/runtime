@@ -507,7 +507,7 @@ MethodDesc *NativeImageInliningIterator::GetMethodDesc()
 
 //---------------------------------------------------------------------------------------
 //
-// ICorProfilerInfo4::RequestReJIT calls into this guy to do most of the
+// ICorProfilerInfo4::RequestReJIT calls into this method to do most of the
 // work. Takes care of finding the appropriate ReJitManager instances to
 // record the rejit requests and perform jmp-stamping.
 //
@@ -751,7 +751,7 @@ HRESULT ReJitManager::UpdateActiveILVersion(
         hr = S_OK;
         EX_TRY
         {
-            // This guy throws when out of memory, but remains internally
+            // This throws when out of memory, but remains internally
             // consistent (without adding the new element)
             pMgrToCodeActivationBatch->Add(pCodeActivationBatch);
         }

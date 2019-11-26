@@ -125,6 +125,13 @@ namespace System.StubHelpers
 
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
         {
+            if (strManaged == null)
+            {
+                if (length > 0)
+                    *(byte*)pNativeBuffer = 0;
+                return;
+            }
+
             int numChars = strManaged.Length;
             if (numChars >= length)
             {

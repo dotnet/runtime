@@ -654,7 +654,7 @@ namespace System
             m_value = new RuntimeMethodHandleInternal(methodHandleValue);
         }
 
-        private object m_keepalive;
+        private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
 #pragma warning disable CA1823, 414
@@ -690,7 +690,7 @@ namespace System
             return method;
         }
 
-        private IRuntimeMethodInfo m_value;
+        private readonly IRuntimeMethodInfo m_value;
 
         internal RuntimeMethodHandle(IRuntimeMethodInfo method)
         {
@@ -1016,7 +1016,7 @@ namespace System
             return new RuntimeFieldHandle(field);
         }
 
-        private IRuntimeFieldInfo m_ptr;
+        private readonly IRuntimeFieldInfo m_ptr;
 
         internal RuntimeFieldHandle(IRuntimeFieldInfo fieldInfo)
         {
@@ -1124,7 +1124,7 @@ namespace System
         }
 
         #region Private Data Members
-        private RuntimeModule m_ptr;
+        private readonly RuntimeModule m_ptr;
         #endregion
 
         #region Constructor

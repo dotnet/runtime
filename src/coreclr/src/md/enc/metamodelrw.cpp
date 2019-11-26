@@ -5882,7 +5882,7 @@ CMiniMdRW::FixParamSequence(
     // Param table should not be empty at this point.
     _ASSERTE(ixEnd > ixStart);
 
-    // Get a pointer to the new guy.
+    // Get a pointer to the new parameter.
     RID ridNew;
     ParamPtrRec * pNewParamPtr = NULL;
     if (HasIndirectTable(TBL_Param))
@@ -5930,7 +5930,7 @@ CMiniMdRW::FixParamSequence(
     }
 
     // If the item is out of order, move everything down one slot and
-    // copy the new guy into the new location.  Because the heap can be
+    // copy the new parameter into the new location.  Because the heap can be
     // split, this must be done carefully.
     //<TODO>@Future: one could write a more complicated but faster routine that
     // copies blocks within heaps.</TODO>

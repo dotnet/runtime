@@ -11,11 +11,10 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
-    /*
-     * This collection returns the Captures for a group
-     * in the order in which they were matched (left to right
-     * or right to left). It is created by Group.Captures
-     */
+    // This collection returns the Captures for a group
+    // in the order in which they were matched (left to right
+    // or right to left). It is created by Group.Captures.
+
     /// <summary>
     /// Represents a sequence of capture substrings. The object is used
     /// to return the set of captures done by a single capturing group.

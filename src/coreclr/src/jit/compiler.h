@@ -4129,6 +4129,9 @@ private:
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
 
+    bool impIsClassExact(CORINFO_CLASS_HANDLE classHnd);
+    bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
+
     CORINFO_RESOLVED_TOKEN* impAllocateToken(const CORINFO_RESOLVED_TOKEN& token);
 
     /*
