@@ -3,16 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Collections.Concurrent;
+using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Threading.Tasks.Tests
 {
-    public partial class AsyncTaskMethodBuilderTests
+    public class AsyncTaskMethodBuilderTests
     {
         // Test captured sync context with successful completion (SetResult)
         [Fact]
@@ -573,7 +573,53 @@ namespace System.Threading.Tasks.Tests
             GC.KeepAlive(t); // ensure the object is stored in the state machine
         }
 
+        [OuterLoop]
+        [Fact]
+        public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        NeverCompletes();
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.WaitForPendingFinalizers();
+                    });
+
+                    Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    EventWrittenEventArgs iam = events.SingleOrDefault(e => e.EventName == "IncompleteAsyncMethod");
+                    Assert.NotNull(iam);
+                    Assert.NotNull(iam.Payload);
+
+                    string description = iam.Payload[0] as string;
+                    Assert.NotNull(description);
+                    Assert.Contains(nameof(NeverCompletesAsync), description);
+                    Assert.Contains("__state", description);
+                    Assert.Contains("local1", description);
+                    Assert.Contains("local2", description);
+                    Assert.Contains("42", description);
+                    Assert.Contains("stored data", description);
+                }
+            }).Dispose();
+        }
+
         #region Helper Methods / Classes
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void NeverCompletes() { var ignored = NeverCompletesAsync(); }
+
+        private static async Task NeverCompletesAsync()
+        {
+            int local1 = 42;
+            string local2 = "stored data";
+            await new TaskCompletionSource<bool>().Task; // await will never complete
+            GC.KeepAlive(local1);
+            GC.KeepAlive(local2);
+        }
 
         private static void ValidateFaultedTask(Task t)
         {
