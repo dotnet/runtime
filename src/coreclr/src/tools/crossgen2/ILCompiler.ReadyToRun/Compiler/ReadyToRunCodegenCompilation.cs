@@ -223,6 +223,8 @@ namespace ILCompiler
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
+
+            CorInfoImpl.RegisterJITModule(configProvider);
         }
 
         public override void Compile(string outputFile)
@@ -282,7 +284,7 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }

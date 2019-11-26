@@ -58,8 +58,6 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        private static bool s_jitRegistered = RegisterJITModule();
-
         [DllImport(JitLibrary)]
         private extern static IntPtr PAL_RegisterModule([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);
 
@@ -113,50 +111,41 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private JitConfigProvider _jitConfig;
+        private static JitConfigProvider s_jitConfig;
 
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
-        private static bool RegisterJITModule()
+        public static void RegisterJITModule(JitConfigProvider jitConfig)
         {
-            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
-            {
-                return PAL_RegisterModule("libclrjitilc.so") != (IntPtr)1;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        private IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libHandle = IntPtr.Zero;
-            if (libraryName == JitLibrary)
-            {
-                libHandle = NativeLibrary.Load(_jitConfig.JitPath, assembly, searchPath);
-            }
-            return libHandle;
-        }
-
-        public CorInfoImpl(JitConfigProvider jitConfig)
-        {
-            //
-            // Global initialization
-            //
-            _jitConfig = jitConfig;
-            if (!s_jitRegistered)
-            {
-                throw new IOException("Failed to register JIT");
-            }
-
-            if (_jitConfig.JitPath != null)
+            s_jitConfig = jitConfig;
+            if (jitConfig.JitPath != null)
             {
                 NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
             }
 
-            jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                // TODO: The PAL_RegisterModule export should be removed from the JIT
+                // and the call to PAL_InitializeDLL should be moved to jitStartup.
+                // https://github.com/dotnet/coreclr/issues/27941
+                PAL_RegisterModule("libclrjitilc.so");
+            }
 
+            jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
+        }
+
+        private static IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            IntPtr libHandle = IntPtr.Zero;
+            if (libraryName == JitLibrary)
+            {
+                libHandle = NativeLibrary.Load(s_jitConfig.JitPath, assembly, searchPath);
+            }
+            return libHandle;
+        }
+
+        public CorInfoImpl()
+        {
             _jit = getJit();
             if (_jit == IntPtr.Zero)
             {
@@ -264,7 +253,7 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = _jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = s_jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -3032,7 +3021,7 @@ namespace Internal.JitInterface
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
-            foreach (var flag in _jitConfig.Flags)
+            foreach (var flag in s_jitConfig.Flags)
                 flags.Set(flag);
 
             // Set the rest of the flags that don't make sense to expose publically.
