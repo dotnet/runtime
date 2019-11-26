@@ -1,9 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <!-- Generate rsp -->
-  <Import Project="GenerateCompilerResponseFile.targets" />
-
-  <Target Name="GenerateTheRSPFile" BeforeTargets="CoreCompile" DependsOnTargets="GenerateCompilerResponseFile">
-  </Target>
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -48,6 +43,7 @@
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
     <SubsystemVersion>6.00</SubsystemVersion>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <Utf8Output>true</Utf8Output>
     <HighEntropyVA>true</HighEntropyVA>
     <ErrorReport>prompt</ErrorReport>
