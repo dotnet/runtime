@@ -54,8 +54,8 @@ namespace System.IO
         /// This extension method for FileStream returns a FileSecurity object containing security descriptors from the Access, Owner, and Group AccessControlSections.
         /// </summary>
         /// <param name="fileStream">An object that represents the file for retrieving security descriptors from</param>
-        /// <exception cref="ArgumentNullException">is <see langword="null" />.</exception>
-        /// <exception cref="ObjectDisposedException">File is closed.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> is <see langword="null" />.</exception>
+        /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
             if (fileStream == null)
@@ -76,7 +76,7 @@ namespace System.IO
         /// <param name="fileStream">An object that represents the file to apply security changes to.</param>
         /// <param name="fileSecurity">An object that determines the access control and audit security for the file.</param>
         /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> or <paramref name="fileSecurity" /> is <see langword="null" />.</exception>
-        /// <exception cref="ObjectDisposedException">File is closed.</exception>
+        /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
             if (fileStream == null)
