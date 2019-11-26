@@ -128,25 +128,6 @@ namespace Systen.Net.Mail.Tests
 
                         AuthMethodUsed = parts[1];
 
-                        // PLAIN is not supported by SmtpClient
-                        /*
-                        if (parts[1].Equals("PLAIN", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string base64;
-                            if (parts.Length == 2)
-                            {
-                                await SendMessageAsync("334");
-                                base64 = await ReceiveMessageAsync();
-                            }
-                            else
-                            {
-                                base64 = parts[2];
-                            }
-                            UsernamePassword = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-                            await SendMessageAsync("235 Authentication successful");
-                        }
-                        else
-                        */
                         if (parts[1].Equals("LOGIN", StringComparison.OrdinalIgnoreCase))
                         {
                             if (parts.Length == 2)

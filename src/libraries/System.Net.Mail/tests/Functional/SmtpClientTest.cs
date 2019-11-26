@@ -372,7 +372,7 @@ namespace System.Net.Mail.Tests
 
             client.Credentials = cache;
 
-            // The mock server doesn't actually understand NTML, but still advertises support for it
+            // The mock server doesn't actually understand NTLM, but still advertises support for it
             server.AdvertiseNtlmAuthSupport = true;
             await Assert.ThrowsAsync<SmtpException>(async () => await client.SendMailAsync(msg));
 
