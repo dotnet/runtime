@@ -12,6 +12,8 @@ variables:
   - template: variables.yml
 
 jobs:
+  - template: /eng/pipelines/common/checkout-job.yml
+
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
@@ -20,7 +22,7 @@ jobs:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
         - Windows_NT_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - Windows_NT_x86
+          - Windows_NT_x64
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - Linux_rhel6_x64
         - ${{ if eq(variables['isFullMatrix'], true) }}:

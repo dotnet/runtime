@@ -86,7 +86,7 @@ jobs:
 
       steps:
       - checkout: none
-      clean: true
+        clean: true
 
       - download: current
         artifact: Checkout_bundle
