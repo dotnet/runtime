@@ -170,6 +170,8 @@ jobs:
           isFullMatrix: ${{ variables['isFullMatrix'] }}
           testScope: innerloop
           framework: netcoreapp
+          ${{ if eq(variables['isFullMatrix'], true) }}:
+            dependsOnBuildConfiguration: Release
     
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - template: /eng/pipelines/common/platform-matrix.yml
