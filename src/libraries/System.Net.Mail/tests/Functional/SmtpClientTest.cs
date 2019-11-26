@@ -14,6 +14,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Systen.Net.Mail.Tests;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -290,29 +291,18 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestMailDelivery()
         {
-            SmtpServer server = new SmtpServer();
-            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
             client.Credentials = new NetworkCredential("user", "password");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-            string clientDomain = IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
-            try
-            {
-                Thread t = new Thread(server.Run);
-                t.Start();
-                client.Send(msg);
-                t.Join();
+            client.Send(msg);
 
-                Assert.Equal("<foo@example.com>", server.MailFrom);
-                Assert.Equal("<bar@example.com>", server.MailTo);
-                Assert.Equal("hello", server.Subject);
-                Assert.Equal("howdydoo", server.Body);
-                Assert.Equal(clientDomain, server.ClientDomain);
-            }
-            finally
-            {
-                server.Stop();
-            }
+            Assert.Equal("<foo@example.com>", server.MailFrom);
+            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Message.Subject);
+            Assert.Equal("howdydoo", server.Message.Body);
+            Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
         [Fact]
@@ -349,60 +339,38 @@ namespace System.Net.Mail.Tests
         [InlineData(null)]
         public async Task TestMailDeliveryAsync(string body)
         {
-            SmtpServer server = new SmtpServer();
-            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
-            string clientDomain = IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
-            try
-            {
-                Thread t = new Thread(server.Run);
-                t.Start();
-                await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
-                t.Join();
+            await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
 
-                Assert.Equal("<foo@example.com>", server.MailFrom);
-                Assert.Equal("<bar@example.com>", server.MailTo);
-                Assert.Equal("hello", server.Subject);
-                Assert.Equal(body ?? "", server.Body);
-                Assert.Equal(clientDomain, server.ClientDomain);
-            }
-            finally
-            {
-                server.Stop();
-            }
+            Assert.Equal("<foo@example.com>", server.MailFrom);
+            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Message.Subject);
+            Assert.Equal(body ?? "", server.Message.Body);
+            Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
         [Fact]
         public async Task TestCredentialsCopyInAsyncContext()
         {
-            SmtpServer server = new SmtpServer();
-            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-            string clientDomain = IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
             CredentialCache cache = new CredentialCache();
-            cache.Add("localhost", server.EndPoint.Port, "NTLM", CredentialCache.DefaultNetworkCredentials);
+            cache.Add("localhost", server.Port, "NTLM", CredentialCache.DefaultNetworkCredentials);
 
             client.Credentials = cache;
 
-            try
-            {
-                Thread t = new Thread(server.Run);
-                t.Start();
-                await client.SendMailAsync(msg);
-                t.Join();
+            await client.SendMailAsync(msg);
 
-                Assert.Equal("<foo@example.com>", server.MailFrom);
-                Assert.Equal("<bar@example.com>", server.MailTo);
-                Assert.Equal("hello", server.Subject);
-                Assert.Equal("howdydoo", server.Body);
-                Assert.Equal(clientDomain, server.ClientDomain);
-            }
-            finally
-            {
-                server.Stop();
-            }
+            Assert.Equal("<foo@example.com>", server.MailFrom);
+            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Message.Subject);
+            Assert.Equal("howdydoo", server.Message.Body);
+            Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
 
@@ -423,12 +391,11 @@ namespace System.Net.Mail.Tests
             // If the server does not support `SMTPUTF8` or use `SmtpDeliveryFormat.SevenBit`, the server should received this subject.
             const string subjectBase64 = "=?utf-8?B?VGVzdCDmtYvor5UgQ29udGFpbiDljIXlkKsgVVRGOA==?=";
 
-            SmtpServer server = new SmtpServer();
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
 
             // Setting up Server Support for `SMTPUTF8`.
             server.SupportSmtpUTF8 = useSmtpUTF8;
-
-            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
 
             if (useSevenBit)
             {
@@ -444,33 +411,25 @@ namespace System.Net.Mail.Tests
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", subjectText, "hello \u9ad8\u575a\u679c");
             msg.HeadersEncoding = msg.BodyEncoding = msg.SubjectEncoding = System.Text.Encoding.UTF8;
 
-            try
+            if (useAsyncSend)
             {
-                Thread t = new Thread(server.Run);
-                t.Start();
-
-                if (useAsyncSend)
-                {
-                    client.SendMailAsync(msg).Wait();
-                }
-                else
-                {
-                    client.Send(msg);
-                }
-
-                if (useSevenBit || !useSmtpUTF8)
-                {
-                    Assert.Equal(subjectBase64, server.Subject);
-                }
-                else
-                {
-                    Assert.Equal(subjectText, server.Subject);
-                }
+                client.SendMailAsync(msg).Wait();
             }
-            finally
+            else
             {
-                server.Stop();
+                client.Send(msg);
+            }
+
+            if (useSevenBit || !useSmtpUTF8)
+            {
+                Assert.Equal(subjectBase64, server.Message.Subject);
+            }
+            else
+            {
+                Assert.Equal(subjectText, server.Message.Subject);
             }
         }
+
+        private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim();
     }
 }
