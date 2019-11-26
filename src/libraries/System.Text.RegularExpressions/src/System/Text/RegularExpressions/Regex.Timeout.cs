@@ -18,7 +18,7 @@ namespace System.Text.RegularExpressions
         // InfiniteMatchTimeout specifies that match timeout is switched OFF. It allows for faster code paths
         // compared to simply having a very large timeout.
         // We do not want to ask users to use System.Threading.Timeout.InfiniteTimeSpan as a parameter because:
-        //   (1) We do not want to imply any relation between using a Regx timeout and using multi-threading.
+        //   (1) We do not want to imply any relation between using a Regex timeout and using multi-threading.
         //   (2) We do not want to require users to take ref to a contract assembly for threading just to use RegEx.
         // We create a public Regex.InfiniteMatchTimeout constant, which for consistency uses the same underlying
         // value as Timeout.InfiniteTimeSpan, creating an implementation detail dependency only.
