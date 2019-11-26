@@ -171,8 +171,17 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public static IntPtr MaxValue => (IntPtr)nint.MaxValue;
-        public static IntPtr MinValue => (IntPtr)nint.MinValue;
+        public static IntPtr MaxValue
+        {
+            [NonVersionable]
+            get => (IntPtr)nint.MaxValue;
+        }    
+            
+        public static IntPtr MinValue
+        {
+            [NonVersionable]
+            get => (IntPtr)nint.MinValue;
+        }    
 
         public int CompareTo(object? value) => ((nint)_value).CompareTo(value);
 
@@ -192,16 +201,14 @@ namespace System
 
         public static bool TryParse(string? s, out IntPtr result)
         {
-            var res = nint.TryParse(s, out var value);
-            result = (IntPtr)value;
-            return res;
+            Unsafe.SkipInit(out result);
+            return nint.TryParse(s, Unsafe.As<IntPtr, nint>(ref result));
         }
 
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
-            var res = nint.TryParse(s, style, provider, out var value);
-            result = (IntPtr)value;
-            return res;
+            Unsafe.SkipInit(out result);
+            return nint.TryParse(s, style, provider, Unsafe.As<IntPtr, nint>(ref result));
         }
     }
 }
