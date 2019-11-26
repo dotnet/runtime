@@ -45,11 +45,10 @@ struct READYTORUN_SECTION
 
 enum ReadyToRunFlag
 {
-    // Set if the original IL assembly was platform-neutral
-    READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE         = 0x00000001,
-    READYTORUN_FLAG_SKIP_TYPE_VALIDATION            = 0x00000002,
-    // Set of methods with native code was determined using profile data
-    READYTORUN_FLAG_PARTIAL                         = 0x00000004,
+    READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE     = 0x00000001,   // Set if the original IL assembly was platform-neutral
+    READYTORUN_FLAG_SKIP_TYPE_VALIDATION        = 0x00000002,   // Set of methods with native code was determined using profile data
+    READYTORUN_FLAG_PARTIAL                     = 0x00000004,
+    READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008    // PInvoke stubs compiled into image are non-shareable (no secret parameter)
 };
 
 enum ReadyToRunSectionType

@@ -11,16 +11,17 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-
-using ReadyToRunHelper = ILCompiler.ReadyToRunHelper;
 
 namespace Internal.JitInterface
 {
@@ -139,8 +140,8 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
 
-        public CorInfoImpl(ReadyToRunCodegenCompilation compilation, JitConfigProvider jitConfig)
-            : this(jitConfig)
+        public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
+            : this()
         {
             _compilation = compilation;
         }
@@ -224,7 +225,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -234,7 +235,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -247,7 +248,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -260,7 +261,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -269,7 +270,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -661,6 +662,9 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc)
                 {
+                    if (resultDef is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        resultDef = rawPinvoke.Target;
+
                     Debug.Assert(resultDef is EcmaMethod);
                     Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
@@ -911,7 +915,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
             {
-                throw new BadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
             exactType = type;
@@ -1033,14 +1037,14 @@ namespace Internal.JitInterface
                 // Static methods are always direct calls
                 directCall = true;
             }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            {
+                directCall = true;
+            }
             else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
             {
                 // Backwards compat: calls to abstract interface methods are treated as callvirt
                 directCall = false;
-            }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
-            {
-                directCall = true;
             }
             else
             {
@@ -1086,6 +1090,14 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                // Direct calls to abstract methods are not allowed
+                if (targetMethod.IsAbstract &&
+                    // Compensate for always treating delegates as direct calls above
+                    !(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0) && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && !resolvedCallVirt))
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                }
+
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
                 if (!allowInstParam && canonMethod.RequiresInstArg())
@@ -1403,6 +1415,10 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        {
+                            nonUnboxingMethod = rawPinvoke.Target;
+                        }
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
@@ -1453,14 +1469,14 @@ namespace Internal.JitInterface
                     MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
                             new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType),
                             signatureContext: GetSignatureContext()));
                     }
                     else
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeDictionary,
                             exactType,
                             signatureContext: GetSignatureContext()));
@@ -1683,21 +1699,31 @@ namespace Internal.JitInterface
                 switch (pResult.handleType)
                 {
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeHandle,
                             HandleToObject(pResolvedToken.hClass),
                             GetSignatureContext());
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
-                            ReadyToRunHelperId.MethodHandle,
-                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                            GetSignatureContext());
+                        {
+                            MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                            TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                            if (td.IsValueType)
+                            {
+                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                            }
+
+                            symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.MethodHandle,
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                GetSignatureContext());
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.FieldHandle,
                             HandleToObject(pResolvedToken.hField),
                             GetSignatureContext());
@@ -1926,7 +1952,10 @@ namespace Internal.JitInterface
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
-            EcmaMethod ecmaMethod = (EcmaMethod)HandleToObject(method);
+            MethodDesc methodDesc = HandleToObject(method);
+            if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
+                methodDesc = rawPInvoke.Target;
+            EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
             
@@ -1944,13 +1973,26 @@ namespace Internal.JitInterface
 
             if (handle != null)
             {
-                EcmaMethod method = (EcmaMethod)HandleToObject(handle);
-                return MethodRequiresMarshaling(method);
+                var method = HandleToObject(handle);
+                if (method.IsRawPInvoke())
+                {
+                    return false;
+                }
+
+                MethodIL stubIL = _compilation.GetMethodIL(method);
+                if (stubIL == null)
+                {
+                    // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
+                    Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                    return true;
+                }
+
+                return ((PInvokeILStubMethodIL)stubIL).IsMarshallingRequired;
             }
             else
             {
                 var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
-                return SignatureRequiresMarshaling(sig);
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
             }
         }
 
@@ -1964,86 +2006,6 @@ namespace Internal.JitInterface
             // If we answer "true" here, RyuJIT is going to ask for the cookie and for the CORINFO_HELP_PINVOKE_CALLI
             // helper. The helper doesn't exist in ReadyToRun, so let's just throw right here.
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
-        }
-
-        private bool MethodRequiresMarshaling(EcmaMethod method)
-        {
-            if (method.GetPInvokeMethodMetadata().Flags.SetLastError)
-            {
-                // SetLastError is handled by stub
-                return true;
-            }
-
-            if ((method.ImplAttributes & MethodImplAttributes.PreserveSig) == 0)
-            {
-                // HRESULT swapping is handled by stub
-                return true;
-            }
-
-            return SignatureRequiresMarshaling(method.Signature);
-        }
-
-        private bool SignatureRequiresMarshaling(MethodSignature sig)
-        {
-            if (TypeRequiresMarshaling(sig.ReturnType, isReturnType: true))
-            {
-                return true;
-            }
-
-            foreach (TypeDesc argType in sig)
-            {
-                if (TypeRequiresMarshaling(argType, isReturnType: false))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType)
-        {
-            switch (type.Category)
-            {
-                case TypeFlags.Pointer:
-                    // TODO: custom modifiers S(NeedsCopyConstructorModifier, IsCopyConstructed)
-                    break;
-
-                case TypeFlags.Enum:
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                    {
-                        return true;
-                    }
-                    break;
-
-                case TypeFlags.ValueType:
-                    if (!MarshalUtils.IsBlittableType(type))
-                    {
-                        return true;
-                    }
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-                    {
-                        return true;
-                    }
-                    if (isReturnType && !type.IsPrimitive)
-                    {
-                        return true;
-                    }
-                    break;
-
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                    return true;
-
-                default:
-                    if (!type.IsPrimitive)
-                    {
-                        return true;
-                    }
-                    break;
-            }
-
-            return false;
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;

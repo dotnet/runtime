@@ -6,12 +6,13 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/installer/manpages/*
+    - docs/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
+    - eng/pipelines/common/*
     - docs/*
     - README.md
     - CONTRIBUTING.md
@@ -26,12 +27,13 @@ pr:
   paths:
     include:
     - '*'
-    - docs/installer/manpages/*
+    - docs/manpages/*
     exclude:
     - src/coreclr/*
     - src/libraries/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
+    - eng/pipelines/common/*
     - docs/*
     - README.md
     - CONTRIBUTING.md

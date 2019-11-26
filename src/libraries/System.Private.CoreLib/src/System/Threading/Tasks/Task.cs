@@ -4229,6 +4229,7 @@ namespace System.Threading.Tasks
         /// <param name="continuationTask">The continuation task itself.</param>
         /// <param name="scheduler">TaskScheduler with which to associate continuation task.</param>
         /// <param name="options">Restrictions on when the continuation becomes active.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         internal void ContinueWithCore(Task continuationTask,
                                        TaskScheduler scheduler,
                                        CancellationToken cancellationToken,

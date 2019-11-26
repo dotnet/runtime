@@ -9,6 +9,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -83,15 +84,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (_runtimeLookupKind)
             {
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.TypeDictionaryLookup;
                     break;
 
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.MethodDictionaryLookup;
                     break;
 
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.ThisObjDictionaryLookup;
                     contextTypeToEmit = _methodContext.ContextType;
                     break;
 

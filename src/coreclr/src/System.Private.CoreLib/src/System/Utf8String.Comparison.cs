@@ -185,7 +185,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().Contains(value.ToString(), comparison);
+            return ToString().Contains(value.ToString(), comparison);
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().Contains(value.ToString(), comparison);
+            return ToString().Contains(value.ToString(), comparison);
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().EndsWith(value.ToString(), comparison);
+            return ToString().EndsWith(value.ToString(), comparison);
         }
 
         /// <summary>
@@ -290,7 +290,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().EndsWith(value.ToString(), comparison);
+            return ToString().EndsWith(value.ToString(), comparison);
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().StartsWith(value.ToString(), comparison);
+            return ToString().StartsWith(value.ToString(), comparison);
         }
 
         /// <summary>
@@ -365,7 +365,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-            return this.ToString().StartsWith(value.ToString(), comparison);
+            return ToString().StartsWith(value.ToString(), comparison);
         }
     }
 }

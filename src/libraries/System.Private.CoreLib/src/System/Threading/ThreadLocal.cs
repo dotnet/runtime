@@ -805,6 +805,7 @@ namespace System.Threading
         public bool IsValueCreated => _tlocal.IsValueCreated;
 
         /// <summary>Returns the value of the ThreadLocal object.</summary>
+        [MaybeNull]
         public T Value => _tlocal.ValueForDebugDisplay;
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>

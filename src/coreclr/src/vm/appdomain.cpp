@@ -648,9 +648,6 @@ BaseDomain::BaseDomain()
     }
     CONTRACTL_END;
 
-    m_fDisableInterfaceCache = FALSE;
-
-    m_pFusionContext = NULL;
     m_pTPABinderContext = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
@@ -794,7 +791,7 @@ void BaseDomain::InitVSD()
 
 #ifndef CROSSGEN_COMPILE
 
-void BaseDomain::ClearFusionContext()
+void BaseDomain::ClearBinderContext()
 {
     CONTRACTL
     {
@@ -804,10 +801,6 @@ void BaseDomain::ClearFusionContext()
     }
     CONTRACTL_END;
 
-    if(m_pFusionContext) {
-        m_pFusionContext->Release();
-        m_pFusionContext = NULL;
-    }
     if (m_pTPABinderContext) {
         m_pTPABinderContext->Release();
         m_pTPABinderContext = NULL;
@@ -917,33 +910,6 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
     }
 }
 
-void AppDomain::ReleaseFiles()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Shutdown assemblies
-    AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
-        kIncludeLoaded  | kIncludeExecution | kIncludeFailedToLoad | kIncludeLoading));
-    CollectibleAssemblyHolder<DomainAssembly *> pAsm;
-
-    while (i.Next(pAsm.This()))
-    {
-        if (pAsm->GetCurrentAssembly() == NULL)
-        {
-            // Might be domain neutral or not, but should have no live objects as it has not been
-            // really loaded yet. Just reset it.
-            _ASSERTE(FitsIn<DWORD>(i.GetIndex()));
-            m_Assemblies.Set(this, static_cast<DWORD>(i.GetIndex()), NULL);
-            delete pAsm.Extract();
-        }
-        else
-        {
-            pAsm->ReleaseFiles();
-        }
-    }
-} // AppDomain::ReleaseFiles
-
-
 OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate)
 {
     CONTRACTL
@@ -1031,29 +997,6 @@ void AppDomain::InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert /*=FALSE
     }
 }
 
-void AppDomain::InsertClassForCLSID(MethodTable* pMT, GUID *pGuid)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(CheckPointer(pGuid));
-    }
-    CONTRACT_END;
-
-    LPVOID val = (LPVOID)pMT;
-    {
-        LockHolder lh(this);
-
-        CVID* cvid = pGuid;
-        if (LookupClass(*cvid) != pMT)
-        {
-            m_clsidHash.InsertValue(GetKeyFromGUID(pGuid), val);
-        }
-    }
-
-    RETURN;
-}
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP
@@ -1705,10 +1648,10 @@ void SystemDomain::DetachEnd()
     if(m_pSystemDomain)
     {
         GCX_PREEMP();
-        m_pSystemDomain->ClearFusionContext();
+        m_pSystemDomain->ClearBinderContext();
         AppDomain* pAppDomain = GetAppDomain();
         if (pAppDomain)
-            pAppDomain->ClearFusionContext();
+            pAppDomain->ClearBinderContext();
     }
 }
 
@@ -2506,28 +2449,14 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     if (frame && frame->GetFrameType() == Frame::TYPE_MULTICAST)
     {
-        // This must be either a secure delegate frame or a true multicast delegate invocation.
+        // This must be either a multicast delegate invocation.
 
         _ASSERTE(pFunc->GetMethodTable()->IsDelegate());
 
-        DELEGATEREF del = (DELEGATEREF)((SecureDelegateFrame*)frame)->GetThis(); // This can throw.
+        DELEGATEREF del = (DELEGATEREF)((MulticastFrame*)frame)->GetThis(); // This can throw.
 
-        if (COMDelegate::IsSecureDelegate(del))
-        {
-            if (del->IsWrapperDelegate())
-            {
-                // On ARM, we use secure delegate infrastructure to preserve R4 register.
-                return SWA_CONTINUE;
-            }
-            // For a secure delegate frame, we should return the delegate creator instead
-            // of the delegate method itself.
-            pFunc = (MethodDesc*) del->GetMethodPtrAux();
-        }
-        else
-        {
-            _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
-            return SWA_CONTINUE;
-        }
+        _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
+        return SWA_CONTINUE;
     }
 
     // Return the first non-reflection/remoting frame if no stack mark was
@@ -2682,30 +2611,6 @@ void SystemDomain::AddDomain(AppDomain* pDomain)
         pDomain));
 }
 
-BOOL SystemDomain::RemoveDomain(AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pDomain));
-        PRECONDITION(!pDomain->IsDefaultDomain());
-    }
-    CONTRACTL_END;
-
-    // You can not remove the default domain.
-
-
-    if (!pDomain->IsActive())
-        return FALSE;
-
-    pDomain->Release();
-
-    return TRUE;
-}
-
-
 #ifdef PROFILING_SUPPORTED
 void SystemDomain::NotifyProfilerStartup()
 {
@@ -2829,8 +2734,6 @@ AppDomain::AppDomain()
 
 #ifdef _DEBUG
     m_dwIterHolders=0;
-    m_dwRefTakers=0;
-    m_dwCreationHolders=0;
 #endif
 
 #ifdef FEATURE_TYPEEQUIVALENCE
@@ -2861,8 +2764,6 @@ AppDomain::~AppDomain()
     CONTRACTL_END;
 
 #ifndef CROSSGEN_COMPILE
-
-    _ASSERTE(m_dwCreationHolders == 0);
 
     // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
     // can only be released once all threads in the AppDomain have exited.
@@ -4749,14 +4650,13 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     BOOL fFailure = TRUE;
     *ppFailedSpec = pPrePolicySpec;
 
-
     PEAssemblyHolder result;
 
     if ((EEFileLoadException::GetFileLoadKind(hrBindResult) == kFileNotFoundException) ||
         (hrBindResult == FUSION_E_REF_DEF_MISMATCH) ||
         (hrBindResult == FUSION_E_INVALID_NAME))
     {
-        result = TryResolveAssembly(*ppFailedSpec);
+        result = TryResolveAssemblyUsingEvent(*ppFailedSpec);
 
         if (result != NULL && pPrePolicySpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
         {
@@ -4983,7 +4883,7 @@ EndTry2:;
     {
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;
-        
+
         bool isCached = false;
         EX_TRY
         {
@@ -5165,22 +5065,30 @@ EndTry2:;
 
 
 
-PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec)
+PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    PEAssembly *result = NULL;
+    // No assembly resolve on codebase binds
+    if (pSpec->GetName() == nullptr)
+        return nullptr;
 
+    PEAssembly *result = nullptr;
     EX_TRY
     {
-        result = pSpec->ResolveAssemblyFile(this);
+        Assembly *pAssembly = RaiseAssemblyResolveEvent(pSpec);
+        if (pAssembly != nullptr)
+        {
+            PEAssembly *pFile = pAssembly->GetManifestFile();
+            pFile->AddRef();
+            result = pFile;
+        }
     }
     EX_HOOK
     {
         Exception *pEx = GET_EXCEPTION();
-
         if (!pEx->IsTransient())
         {
             AddExceptionToCache(pSpec, pEx);
@@ -5351,7 +5259,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
 #endif // CROSSGEN_COMPILE
 
-IUnknown *AppDomain::CreateFusionContext()
+IUnknown *AppDomain::CreateBinderContext()
 {
     CONTRACT(IUnknown *)
     {
@@ -5363,23 +5271,17 @@ IUnknown *AppDomain::CreateFusionContext()
     }
     CONTRACT_END;
 
-    if (!m_pFusionContext)
+    if (!m_pTPABinderContext)
     {
         ETWOnStartup (FusionAppCtx_V1, FusionAppCtxEnd_V1);
-        CLRPrivBinderCoreCLR *pTPABinder = NULL;
 
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &pTPABinder));
-        m_pFusionContext = reinterpret_cast<IUnknown *>(pTPABinder);
-
-        // By default, initial binding context setup for CoreCLR is also the TPABinding context
-        (m_pTPABinderContext = pTPABinder)->AddRef();
-
+        IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(DefaultADID, &m_pTPABinderContext));
     }
 
-    RETURN m_pFusionContext;
+    RETURN m_pTPABinderContext;
 }
 
 
@@ -5461,21 +5363,6 @@ void AppDomain::NotifyDebuggerUnload()
     }
 }
 #endif // DEBUGGING_SUPPORTED
-
-void AppDomain::SetSystemAssemblyLoadEventSent(BOOL fFlag)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (fFlag == TRUE)
-        m_dwFlags |= LOAD_SYSTEM_ASSEMBLY_EVENT_SENT;
-    else
-        m_dwFlags &= ~LOAD_SYSTEM_ASSEMBLY_EVENT_SENT;
-}
-
-BOOL AppDomain::WasSystemAssemblyLoadEventSent(void)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ((m_dwFlags & LOAD_SYSTEM_ASSEMBLY_EVENT_SENT) == 0) ? FALSE : TRUE;
-}
 
 #ifndef CROSSGEN_COMPILE
 
@@ -6901,7 +6788,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
 
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths)
 {
-    CLRPrivBinderCoreCLR *pBinder = static_cast<CLRPrivBinderCoreCLR*>(((CompilationDomain *)pDomain)->GetFusionContext());
+    CLRPrivBinderCoreCLR *pBinder = ((CompilationDomain *)pDomain)->GetTPABinderContext();
     _ASSERTE(pBinder != NULL);
     pBinder->SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths);
 #ifdef FEATURE_COMINTEROP

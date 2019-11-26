@@ -336,6 +336,7 @@ enum InstructionSet
     InstructionSet_ArmBase_Arm64,
     InstructionSet_Atomics,       // ID_AA64ISAR0_EL1.Atomic is 2 or better
     InstructionSet_Crc32,         // ID_AA64ISAR0_EL1.CRC32 is 1 or better
+    InstructionSet_Crc32_Arm64,
     InstructionSet_Dcpop,         // ID_AA64ISAR1_EL1.DPB is 1 or better
     InstructionSet_Dp,            // ID_AA64ISAR0_EL1.DP is 1 or better
     InstructionSet_Fcma,          // ID_AA64ISAR1_EL1.FCMA is 1 or better

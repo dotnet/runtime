@@ -5,6 +5,7 @@ Param(
   [switch]$buildtests,
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
+  [string]$vs,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -18,6 +19,7 @@ Param(
 function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                 Build a subset, print availabe subsets with -subset help"
+  Write-Host "  -subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
   Write-Host "  -os                     Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
   Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
@@ -55,8 +57,12 @@ if ($MyInvocation.InvocationName -eq ".") {
   exit 0
 }
 
+$subsetCategory = $subsetCategory.ToLowerInvariant()
+
 # VS Test Explorer support for libraries
-if ($vs -and $subsetCategory -eq "libraries") {
+if ($vs) {
+  . $PSScriptRoot\common\tools.ps1
+
   if (-Not (Test-Path $vs)) {
     $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
   }
@@ -65,6 +71,9 @@ if ($vs -and $subsetCategory -eq "libraries") {
 
   # This tells .NET Core to use the same dotnet.exe that build scripts use
   $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp-Windows_NT-$configuration-$archTestHost";
+
+  # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
+  $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
 
   # This tells .NET Core not to go looking for .NET Core in other places
   $env:DOTNET_MULTILEVEL_LOOKUP=0;
@@ -85,8 +94,23 @@ if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
 }
 
-if (!$actionPassedIn -or $subsetCategory -ne "libraries") {
+if (!$actionPassedIn) {
   $arguments = "-restore -build"
+}
+
+$possibleDirToBuild = if($properties.Length -gt 0) { $properties[0]; } else { $null }
+
+if ($null -ne $possibleDirToBuild -and $subsetCategory -eq "libraries") {
+  $dtb = $possibleDirToBuild.TrimEnd('\')
+  if (Test-Path $dtb) {
+    $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+  }
+  else {
+    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $dtb
+    if (Test-Path $dtb) {
+      $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+    }
+  }
 }
 
 foreach ($argument in $PSBoundParameters.Keys)

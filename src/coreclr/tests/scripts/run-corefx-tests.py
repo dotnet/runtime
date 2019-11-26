@@ -300,7 +300,7 @@ def main(args):
 
     common_config_args = '-configuration Release -framework netcoreapp -os %s -arch %s' % (clr_os, arch)
     build_args = '-build -restore'
-    build_test_args = '-buildtests  /p:ArchiveTests=Tests'
+    build_test_args = '-buildtests  /p:ArchiveTests=true'
 
     if not no_run_tests:
         build_test_args += ' -test'

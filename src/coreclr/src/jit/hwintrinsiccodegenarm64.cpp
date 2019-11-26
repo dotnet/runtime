@@ -162,7 +162,51 @@ void CodeGen::genSpecialIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*  op2        = node->gtGetOp2();
     regNumber targetReg  = node->GetRegNum();
     var_types targetType = node->TypeGet();
-    var_types baseType   = (category == HW_Category_Scalar) ? op1->TypeGet() : node->gtSIMDBaseType;
+    var_types baseType   = node->gtSIMDBaseType;
+
+    if (baseType == TYP_UNKNOWN)
+    {
+        assert(category == HW_Category_Scalar);
+
+        if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsicId))
+        {
+            assert(op1 != nullptr);
+            baseType = op1->TypeGet();
+        }
+        else if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsicId))
+        {
+            assert(op2 != nullptr);
+            baseType = op2->TypeGet();
+        }
+        else
+        {
+            baseType = targetType;
+        }
+    }
+
+    switch (intrinsicId)
+    {
+        case NI_Crc32_ComputeCrc32:
+        case NI_Crc32_ComputeCrc32C:
+        {
+            if (baseType == TYP_INT)
+            {
+                baseType = TYP_UINT;
+            }
+            break;
+        }
+
+        case NI_Crc32_Arm64_ComputeCrc32:
+        case NI_Crc32_Arm64_ComputeCrc32C:
+        {
+            assert(baseType == TYP_LONG);
+            baseType = TYP_ULONG;
+            break;
+        }
+
+        default:
+            break;
+    }
 
     instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
     assert(ins != INS_invalid);
@@ -212,6 +256,20 @@ void CodeGen::genSpecialIntrinsic(GenTreeHWIntrinsic* node)
 
             op1Reg = op1->GetRegNum();
             emit->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
+            break;
+        }
+
+        case NI_Crc32_ComputeCrc32:
+        case NI_Crc32_ComputeCrc32C:
+        case NI_Crc32_Arm64_ComputeCrc32:
+        case NI_Crc32_Arm64_ComputeCrc32C:
+        {
+            assert(op1 != nullptr);
+            assert(op2 != nullptr);
+
+            op1Reg = op1->GetRegNum();
+            op2Reg = op2->GetRegNum();
+            emit->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg);
             break;
         }
 

@@ -3,13 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.JitInterface;
-using System.Collections.Immutable;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -612,7 +614,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                EmitByte((byte)(fixupKind | ReadyToRunFixupKind.READYTORUN_FIXUP_ModuleOverride));
+                EmitByte((byte)(fixupKind | ReadyToRunFixupKind.ModuleOverride));
                 EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
                 return outerContext.InnerContext(targetModule);
             }

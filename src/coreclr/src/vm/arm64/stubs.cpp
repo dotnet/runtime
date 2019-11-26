@@ -1732,6 +1732,61 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     EmitJumpRegister(IntReg(16));
 }
 
+// Emits code to adjust arguments for static delegate target.
+VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
+{
+    STANDARD_VM_CONTRACT;
+
+    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
+    {
+        _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
+        _ASSERTE(pEntry->srcofs & ShuffleEntry::REGMASK);
+        _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
+        _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
+
+        EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSMASK));
+    }
+
+    MetaSig msig(pSharedMD);
+    ArgIterator argit(&msig);
+
+    if (argit.HasParamType())
+    {
+        ArgLocDesc sInstArgLoc;
+        argit.GetParamTypeLoc(&sInstArgLoc);
+        int regHidden = sInstArgLoc.m_idxGenReg;
+        _ASSERTE(regHidden != -1);
+
+        if (extraArg == NULL)
+        {
+            if (pSharedMD->RequiresInstMethodTableArg())
+            {
+                // Unboxing stub case
+                // Fill param arg with methodtable of this pointer
+                // ldr regHidden, [x0, #0]
+                EmitLoadStoreRegImm(eLOAD, IntReg(regHidden), IntReg(0), 0);
+            }
+        }
+        else
+        {
+            EmitMovConstant(IntReg(regHidden), (UINT64)extraArg);
+        }
+    }
+
+    if (extraArg == NULL)
+    {
+        // Unboxing stub case
+        // Address of the value type is address of the boxed instance plus sizeof(MethodDesc*).
+        //  add x0, #sizeof(MethodDesc*)
+        EmitAddImm(IntReg(0), IntReg(0), sizeof(MethodDesc*));
+    }
+
+    // Tail call the real target.
+    EmitCallManagedMethod(pSharedMD, TRUE /* tail call */);
+}
+
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
     BranchInstructionFormat::VariationCodes variationCode = BranchInstructionFormat::VariationCodes::BIF_VAR_JUMP;
@@ -1758,18 +1813,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 }
 
 #ifndef CROSSGEN_COMPILE
-
-void StubLinkerCPU::EmitUnboxMethodStub(MethodDesc *pMD)
-{
-    _ASSERTE(!pMD->RequiresInstMethodDescArg());
-
-    // Address of the value type is address of the boxed instance plus sizeof(MethodDesc*).
-    //  add x0, #sizeof(MethodDesc*)
-    EmitAddImm(IntReg(0), IntReg(0), sizeof(MethodDesc*));
-
-    // Tail call the real target.
-    EmitCallManagedMethod(pMD, TRUE /* tail call */);
-}
 
 #ifdef FEATURE_READYTORUN
 

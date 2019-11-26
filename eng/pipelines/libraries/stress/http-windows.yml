@@ -1,5 +1,10 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+    - "*"
+
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
@@ -8,30 +13,44 @@ schedules:
     - master
 
 pool:
-  name: Hosted VS2017
+  vmImage: 'windows-latest'
 
 variables:
   - template: ../variables.yml
   - name: httpStressProject
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
+  - name: sdkBaseImage
+    value: sdk-corefx-current
+  - name: httpStressImage
+    value: httpstress
 
 steps:
 - checkout: self
   clean: true
-  fetchDepth: 0
+  fetchDepth: 1
   lfs: false
 
 - powershell: |
-    .\$(buildScriptFileName).cmd -ci -c $(BUILD_CONFIGURATION)
-  displayName: Build Corefx
+    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
+    docker build -t $(sdkBaseImage) `
+        --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) `
+        --build-arg TESTHOST_LOCATION=. `
+        -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile `
+        artifacts/bin/testhost
+
+  displayName: Build Libraries
 
 - powershell: |
     cd '$(HttpStressProject)'
-    # Load testhost sdk in environment
-    . .\load-corefx-testhost.ps1 -c $(BUILD_CONFIGURATION) -b
-    # Run the stress suite
-    dotnet run -c $(BUILD_CONFIGURATION) -- $(HTTPSTRESS_ARGS)
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
+  displayName: Build HttpStress
+
+- bash: |
+    cd '$(HttpStressProject)'
+    docker-compose up --abort-on-container-exit --no-color
   displayName: Run HttpStress
+  env:
+    HTTPSTRESS_IMAGE: $(httpStressImage)
 
 - task: PublishBuildArtifacts@1
   displayName: Publish Logs

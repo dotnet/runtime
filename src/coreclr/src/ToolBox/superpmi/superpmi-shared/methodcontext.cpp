@@ -1363,7 +1363,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         value.instParamLookup.accessType = (DWORD)pResult->instParamLookup.accessType;
         value.instParamLookup.handle     = (DWORDLONG)pResult->instParamLookup.handle;
-        value.secureDelegateInvoke       = (DWORD)pResult->secureDelegateInvoke;
+        value.wrapperDelegateInvoke       = (DWORD)pResult->wrapperDelegateInvoke;
     }
     else
         ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO));
@@ -1388,7 +1388,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
            value.hMethod, value.methodFlags, value.classFlags,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig).c_str(), value.instParamLookup.accessType,
-           value.instParamLookup.handle, value.secureDelegateInvoke, value.exceptionCode,
+           value.instParamLookup.handle, value.wrapperDelegateInvoke, value.exceptionCode,
            SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.stubLookup).c_str());
 }
 void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -1471,7 +1471,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
     pResult->instParamLookup.handle     = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-    pResult->secureDelegateInvoke       = (BOOL)value.secureDelegateInvoke;
+    pResult->wrapperDelegateInvoke       = (BOOL)value.wrapperDelegateInvoke;
     *exceptionCode                      = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpGetCallInfo(key, value));
@@ -3888,7 +3888,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
     value.offsetOfDelegateFirstTarget                = (DWORD)pEEInfoOut->offsetOfDelegateFirstTarget;
-    value.offsetOfSecureDelegateIndirectCell         = (DWORD)pEEInfoOut->offsetOfSecureDelegateIndirectCell;
+    value.offsetOfWrapperDelegateIndirectCell        = (DWORD)pEEInfoOut->offsetOfWrapperDelegateIndirectCell;
     value.offsetOfTransparentProxyRP                 = (DWORD)pEEInfoOut->offsetOfTransparentProxyRP;
     value.offsetOfRealProxyServer                    = (DWORD)pEEInfoOut->offsetOfRealProxyServer;
     value.offsetOfObjArrayData                       = (DWORD)pEEInfoOut->offsetOfObjArrayData;
@@ -3914,7 +3914,7 @@ void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& valu
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
-           value.offsetOfDelegateFirstTarget, value.offsetOfSecureDelegateIndirectCell,
+           value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
            value.offsetOfTransparentProxyRP, value.offsetOfRealProxyServer, value.offsetOfObjArrayData,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
            value.osType, value.osMajor, value.osMinor, value.osBuild);
@@ -3943,7 +3943,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
         pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
         pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->offsetOfSecureDelegateIndirectCell = (unsigned)value.offsetOfSecureDelegateIndirectCell;
+        pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
         pEEInfoOut->offsetOfTransparentProxyRP         = (unsigned)value.offsetOfTransparentProxyRP;
         pEEInfoOut->offsetOfRealProxyServer            = (unsigned)value.offsetOfRealProxyServer;
         pEEInfoOut->offsetOfObjArrayData               = (unsigned)value.offsetOfObjArrayData;
@@ -3971,7 +3971,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
         pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
         pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
-        pEEInfoOut->offsetOfSecureDelegateIndirectCell         = (unsigned)0x40;
+        pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
         pEEInfoOut->offsetOfTransparentProxyRP                 = (unsigned)0x8;
         pEEInfoOut->offsetOfRealProxyServer                    = (unsigned)0x18;
         pEEInfoOut->offsetOfObjArrayData                       = (unsigned)0x18;

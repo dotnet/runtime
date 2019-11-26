@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace System.Threading

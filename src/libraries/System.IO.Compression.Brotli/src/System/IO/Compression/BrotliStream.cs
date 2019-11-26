@@ -98,14 +98,14 @@ namespace System.IO.Compression
 
         private void ReleaseStateForDispose()
         {
-            _stream = null;
+            _stream = null!;
             _encoder.Dispose();
             _decoder.Dispose();
 
             byte[] buffer = _buffer;
             if (buffer != null)
             {
-                _buffer = null;
+                _buffer = null!;
                 if (!AsyncOperationIsActive)
                 {
                     ArrayPool<byte>.Shared.Return(buffer);

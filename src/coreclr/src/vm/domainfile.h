@@ -139,9 +139,6 @@ class DomainFile
     }
 #endif
 
-
-    void ReleaseFiles() DAC_EMPTY();
-
     virtual BOOL IsAssembly() = 0;
 
     DomainAssembly *GetDomainAssembly();
@@ -220,9 +217,6 @@ class DomainFile
         WRAPPER_NO_CONTRACT;
         return EnsureLoadLevel(FILE_LOAD_LOADLIBRARY);
     }
-
-    // This wraps EnsureActive, suppressing non-transient exceptions
-    BOOL TryEnsureActive();
 
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
@@ -499,10 +493,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pLoaderAllocator;
     }
-
-#ifndef DACCESS_COMPILE
-    void ReleaseFiles();
-#endif // DACCESS_COMPILE
 
     // Finds only loaded hmods
     DomainFile *FindIJWModule(HMODULE hMod);

@@ -6,8 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Xml.Serialization;
+
+using Internal.CorConstants;
 
 namespace R2RDump
 {

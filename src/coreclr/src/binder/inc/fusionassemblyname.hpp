@@ -79,7 +79,7 @@ public:
     CAssemblyName();
     virtual ~CAssemblyName();
 
-    HRESULT Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd);
+    HRESULT SetName(LPCTSTR pszAssemblyName);
     HRESULT Parse(LPCWSTR szDisplayName);
 };
 
@@ -88,12 +88,6 @@ CreateAssemblyNameObject(
     LPASSEMBLYNAME    *ppAssemblyName,
     LPCOLESTR          szAssemblyName,
     bool               parseDisplayName);
-
-STDAPI
-CreateAssemblyNameObjectFromMetaData(
-    LPASSEMBLYNAME    *ppAssemblyName,
-    LPCOLESTR          szAssemblyName,
-    ASSEMBLYMETADATA  *pamd);
 
 namespace fusion
 {

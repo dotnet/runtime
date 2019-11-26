@@ -77,36 +77,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
 }
 FCIMPLEND
 
-FCIMPL1(Object*, AssemblyNameNative::ToString, Object* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pObj          = NULL;
-    ASSEMBLYNAMEREF pThis   = (ASSEMBLYNAMEREF) (OBJECTREF) refThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
-
-    AssemblySpec spec;
-    spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF*) &pThis, FALSE);
-
-    StackSString name;
-    spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
-                              ASM_DISPLAYF_CULTURE |
-                              ASM_DISPLAYF_PUBLIC_KEY_TOKEN,
-                              name);
-
-    pObj = (OBJECTREF) StringObject::NewString(name);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(pObj);
-}
-FCIMPLEND
-
-
 FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 {
     FCALL_CONTRACT;

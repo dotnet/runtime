@@ -688,7 +688,7 @@ HRESULT CorHost2::_CreateAppDomain(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
-    pDomain->CreateFusionContext();
+    pDomain->CreateBinderContext();
 
     {
         GCX_COOP();

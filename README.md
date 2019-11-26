@@ -6,6 +6,8 @@
 This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
 all supported platforms, as wel as the sources to .NET Core runtime and libraries.
 
+## What is .NET Core?
+
 Official Starting Page: https://dotnet.microsoft.com/
 
 * [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
@@ -16,13 +18,20 @@ Official Starting Page: https://dotnet.microsoft.com/
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 
-## How to Engage, Contribute and Provide Feedback
+## How can I contribute?
 
-Some of the best ways to contribute are to try things out, file bugs, join in design conversations, and fix issues.
+We welcome contributions! Many people all over the world have helped make this project better.
 
-* If you have a question or idea, [file a new issue](https://github.com/dotnet/corefx/issues/new).
+* If you have a question or idea, [file a new issue](https://github.com/dotnet/runtime/issues/new).
 
-If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+	* Is your feedback for .NET Framework? This repo is for .NET Core. If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+
+* If you want to contribute a fix or improvement, you'll want to check out these links
+
+    * Requirements to build this repo ([Linux](docs/building/linux-requirements.md), [macOS](docs/building/macos-requirements.md), [Windows](docs/building/windows-requirements.md))
+    * What kind of contributions you might want to make [in the runtime](docs/coreclr/project-docs/contributing.md) and [in the libraries](docs/libraries/project-docs/contributing.md)
+	* [How you can make a change happen!](docs/coreclr/project-docs/contributing-workflow.md)
+	* How to build and test your change [in the runtime](docs/coreclr/project-docs/developer-guide.md) and [in the libraries](docs/libraries/project-docs/developer-guide.md)
 
 ## Reporting security issues and security bugs
 
@@ -31,11 +40,20 @@ Security issues and bugs should be reported privately, via email, to the Microso
 Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Program](https://www.microsoft.com/msrc/bounty-dot-net-core).
 
 ## Filing issues
-This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the "muxer" (the `dotnet` binary) and installation of the .NET Core runtime and libraries.
+
+This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET Core runtime and libraries.
 
 For other issues, please use the following repos:
 
-- For overall .NET Core SDK issues, file on [dotnet/toolset](https://github.com/dotnet/toolset) repo
+- For overall .NET Core SDK issues, file in the [dotnet/toolset](https://github.com/dotnet/toolset) repo
+- For ASP.NET issues, file in the [aspnet/aspnetcore](http://github.com/aspnet/aspnetcore) repo.
+
+## Useful Links
+
+* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
+* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
+* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
+* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 
 ## Daily Builds
 
@@ -872,13 +890,6 @@ There are many .NET related projects on GitHub.
 This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
 General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoundation.org)
-
-## Useful Links
-
-* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
-* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
-* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 
 ## License
 

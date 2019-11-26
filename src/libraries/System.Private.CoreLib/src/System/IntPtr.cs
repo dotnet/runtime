@@ -29,14 +29,12 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe IntPtr(int value)
         {
             _value = (void*)value;
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe IntPtr(long value)
         {
@@ -48,7 +46,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [Intrinsic]
         [NonVersionable]
         public unsafe IntPtr(void* value)
         {
@@ -90,7 +87,6 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe int ToInt32()
         {
@@ -102,34 +98,28 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe long ToInt64() =>
             (nint)_value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator IntPtr(int value) =>
             new IntPtr(value);
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator IntPtr(long value) =>
             new IntPtr(value);
 
         [CLSCompliant(false)]
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator IntPtr(void* value) =>
             new IntPtr(value);
 
         [CLSCompliant(false)]
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator void*(IntPtr value) =>
             value._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator int(IntPtr value)
         {
@@ -141,17 +131,14 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator long(IntPtr value) =>
             (nint)value._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe bool operator ==(IntPtr value1, IntPtr value2) =>
             value1._value == value2._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe bool operator !=(IntPtr value1, IntPtr value2) =>
             value1._value != value2._value;
@@ -160,7 +147,6 @@ namespace System
         public static IntPtr Add(IntPtr pointer, int offset) =>
             pointer + offset;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
             new IntPtr((nint)pointer._value + offset);
@@ -169,20 +155,17 @@ namespace System
         public static IntPtr Subtract(IntPtr pointer, int offset) =>
             pointer - offset;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
             new IntPtr((nint)pointer._value - offset);
 
         public static int Size
         {
-            [Intrinsic]
             [NonVersionable]
             get => sizeof(nint);
         }
 
         [CLSCompliant(false)]
-        [Intrinsic]
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 

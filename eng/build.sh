@@ -16,6 +16,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print availabe subsets with -subset help"
+  echo "  --subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
@@ -51,9 +52,10 @@ extraargs=''
 build=false
 buildtests=false
 subsetCategory=''
+checkedPossibleDirectoryToBuild=false
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "rebuild" "t" "test" "buildtests")
+declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 
 while [[ $# > 0 ]]; do
@@ -64,8 +66,8 @@ while [[ $# > 0 ]]; do
       exit 0
       ;;
      -subsetcategory)
-      subsetCategory=$2
-      arguments="$arguments /p:SubsetCategory=$2"
+      subsetCategory="$(echo "$2" | awk '{print tolower($0)}')"
+      arguments="$arguments /p:SubsetCategory=$subsetCategory"
       shift 2
       ;;
      -subset)
@@ -117,6 +119,17 @@ while [[ $# > 0 ]]; do
       ;;
       *)
       ea=$1
+      
+      if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
+        checkedPossibleDirectoryToBuild=true
+
+        if [[ -d "$1" ]]; then
+          ea="/p:DirectoryToBuild=$1"
+        elif [[ -d "$scriptroot/../src/libraries/$1" ]]; then
+          ea="/p:DirectoryToBuild=$scriptroot/../src/libraries/$1"
+        fi
+      fi
+
       extraargs="$extraargs $ea"
       shift 1
       ;;
@@ -131,7 +144,7 @@ if [[ "$buildtests" == true ]]; then
   fi
 fi
 
-if [ ${#actInt[@]} -eq 0 ] || [ "$subsetCategory" != "libraries" ]; then
+if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 

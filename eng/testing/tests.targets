@@ -1,0 +1,127 @@
+<Project>
+  <PropertyGroup>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
+    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
+
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.Windows.txt</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.Unix.txt</RunScriptInputName>
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+
+    <RunScriptHostDir Condition="'$(TargetOS)' == 'Windows_NT'">%RUNTIME_PATH%\</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(TargetOS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
+
+    <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
+    <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+  </PropertyGroup>
+
+  <!-- Archive test binaries. -->
+  <Target Name="ArchiveTests"
+          Condition="'$(ArchiveTests)' == 'true'"
+          AfterTargets="PrepareForRun"
+          DependsOnTargets="GenerateRunScript">
+    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
+
+    <MakeDir Directories="$(TestArchiveTestsDir)" />
+    <ZipDirectory SourceDirectory="$(OutDir)"
+                  DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
+                  Overwrite="true" />
+  </Target>
+
+  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <Target Name="GenerateRunScript">
+    <PropertyGroup>
+      <!-- RSP file support. -->
+      <RunArguments Condition="'$(TargetOS)' == 'Windows_NT'">$(RunArguments) %RSP_FILE%</RunArguments>
+      <RunArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(RunArguments) $RSP_FILE</RunArguments>
+
+      <!-- Escape arguments with user inputs. -->
+      <RunArguments>$([MSBuild]::Escape('$(RunArguments)'))</RunArguments>
+
+      <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(RunCommand) $(RunArguments)</RunScriptCommand>
+    </PropertyGroup>
+
+    <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
+    <PropertyGroup Condition="'$(TestDebugger)' != ''">
+      <RunScriptCommand Condition="!$(TestDebugger.Contains('devenv'))">$(TestDebugger) $(RunScriptCommand)</RunScriptCommand>
+      <RunScriptCommand Condition=" $(TestDebugger.Contains('devenv'))">$(TestDebugger) /debugexe $(RunScriptCommand)</RunScriptCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!--
+        If the PreExecutionTestScript property is set, then it should be set to the full path to a script that will be directly incorporated
+        into the generated runtests script, immediately before the test is run. This can be used to set a number of JIT stress modes,
+        for example. It is intended that this be as late as possible in the generated script, as close as possible to the running of the
+        test. That is why this doesn't appear higher in this file. The idea is that if the included script alters managed code behavior, such as
+        setting various JIT stress modes, we don't want those changes to affect any other managed code invocation (such as test infrastructure
+        written in managed code).
+      -->
+      <RunScriptCommands Condition="'$(PreExecutionTestScript)' != ''" Include="$([System.IO.File]::ReadAllText('$(PreExecutionTestScript)'))" />
+
+      <RunScriptCommands Include="$(RunScriptCommand)" />
+
+      <!-- Do not put anything between this and the GenerateRunScript invocation. -->
+      <RunScriptCommands Include="@(PostRunScriptCommands)" />
+    </ItemGroup>
+
+    <GenerateRunScript RunCommands="@(RunScriptCommands)"
+                       TemplatePath="$(RunScriptInputPath)"
+                       OutputPath="$(RunScriptOutputPath)" />
+
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+  </Target>
+
+  <Target Name="ValidateTestPlatform">
+    <ItemGroup>
+      <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
+    </PropertyGroup>
+
+    <Message Text="ValidateTestPlatform found TargetOS of [$(TargetOS)]." Importance="Low" />
+
+    <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
+             Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
+
+    <Message Condition="'$(ConfigurationErrorMsg)' != ''"
+             Text="Skipping tests in $(AssemblyName) because there is no configuration compatible with the current BuildConfiguration." />
+  </Target>
+
+  <Target Name="RunTests"
+          Condition="'$(TestDisabled)' != 'true'"
+          DependsOnTargets="ValidateTestPlatform">
+    <Error Condition="!Exists('$(TargetPath)')"
+           Text="Test assembly couldn't be found. Make sure to build the test project first." />
+
+    <PropertyGroup>
+      <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TestRspFile)' != ''">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+    </PropertyGroup>
+
+    <!-- Invoke the run script with the test host as the runtime path. -->
+    <Exec Command="$(RunTestsCommand)"
+          ContinueOnError="true"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
+      <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
+    </PropertyGroup>
+
+    <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
+
+  <!-- Main test targets -->
+  <Target Name="Test" DependsOnTargets="GenerateRunScript;RunTests" />
+  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
+</Project>

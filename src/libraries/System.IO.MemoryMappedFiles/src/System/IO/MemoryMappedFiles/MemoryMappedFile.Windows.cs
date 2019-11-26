@@ -5,7 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 
 namespace System.IO.MemoryMappedFiles
@@ -19,10 +18,10 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
 
         private static SafeMemoryMappedFileHandle CreateCore(
-            FileStream fileStream, string mapName, HandleInheritability inheritability,
+            FileStream? fileStream, string? mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
         {
-            SafeFileHandle fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
+            SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
 
@@ -89,7 +88,7 @@ namespace System.IO.MemoryMappedFiles
 
             Debug.Assert(access != MemoryMappedFileAccess.Write, "Callers requesting write access shouldn't try to create a mmf");
 
-            SafeMemoryMappedFileHandle handle = null;
+            SafeMemoryMappedFileHandle? handle = null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
             int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins

@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
+    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

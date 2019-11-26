@@ -14,11 +14,11 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
     # disable Linux x64 for now untill OOMs are resolved.
@@ -29,9 +29,9 @@ jobs:
     jobParameters:
       testGroup: gc-simulator
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: release
     platforms:
     # disable Linux x64 for now untill OOMs are resolved.
@@ -40,5 +40,6 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_arm64
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: gc-simulator

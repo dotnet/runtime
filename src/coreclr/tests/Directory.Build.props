@@ -10,7 +10,7 @@
 
   <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
-  </PropertyGroup>  
+  </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
@@ -51,27 +51,14 @@
     <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
-    <BuildVersionFile>$(BaseIntermediateOutputPath)BuildVersion-$(OfficialBuildId).props</BuildVersionFile>
-  </PropertyGroup>
-
-  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in artifacts/obj -->
-  <Import Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'" Project="$(BuildVersionFile)" />
-
-  <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
-    <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
-    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
-    <PackageVersionArg>/p:MicrosoftNETCoreRuntimeCoreCLRPackageVersion=$(VersionToRestore)</PackageVersionArg>
-  </PropertyGroup>
-
   <!-- Which tests shall we build? Default: Priority 0 tests.
     At the command-line, the user can specify /p:CLRTestPriorityToBuild=666 (for example), and
-    all tests with CLRTestPriority 666,..., 1 AND 0 will build. 
-    
+    all tests with CLRTestPriority 666,..., 1 AND 0 will build.
+
     Consequently, specifying CLRTestPriorityToBuild=1 will build all tests with CLRTestPriority 1 and 0.
-    
-    CLRTestPriority = 0 will build only priority 0 cases. 
-  
+
+    CLRTestPriority = 0 will build only priority 0 cases.
+
     In other words, the CLRTestPriority cases of 0 are *essential* testcases. The higher the value,
     the less priority we give them.
    -->
@@ -86,5 +73,5 @@
     <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(TestHostVersion)'))</NETCoreAppTestHostFxrPath>
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(TestHostVersion)'))</NETCoreAppTestSharedFrameworkPath>
   </PropertyGroup>
-  
+
 </Project>

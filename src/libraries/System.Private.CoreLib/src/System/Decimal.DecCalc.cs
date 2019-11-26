@@ -874,6 +874,8 @@ ThrowOverflow:
             /// Adds or subtracts two decimal values.
             /// On return, d1 contains the result of the operation and d2 is trashed.
             /// </summary>
+            /// <param name="d1">First decimal to add or subtract.</param>
+            /// <param name="d2">Second decimal to add or subtract.</param>
             /// <param name="sign">True means subtract and false means add.</param>
             internal static unsafe void DecAddSub(ref DecCalc d1, ref DecCalc d2, bool sign)
             {

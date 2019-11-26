@@ -192,6 +192,44 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.True(rsa.VerifyData(new MemoryStream(new byte[] { 42 }), new byte[1] { 24 }, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
         }
 
+        [Fact]
+        public void RSAEncryptionPadding_Equality()
+        {
+            Assert.True(RSAEncryptionPadding.Pkcs1.Equals(RSAEncryptionPadding.Pkcs1));
+            Assert.True(RSAEncryptionPadding.Pkcs1.Equals((object)RSAEncryptionPadding.Pkcs1));
+            Assert.True(RSAEncryptionPadding.Pkcs1 == RSAEncryptionPadding.Pkcs1);
+            Assert.False(RSAEncryptionPadding.Pkcs1 != RSAEncryptionPadding.Pkcs1);
+
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals(RSAEncryptionPadding.OaepSHA1));
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals((object)RSAEncryptionPadding.OaepSHA1));
+            Assert.False(RSAEncryptionPadding.Pkcs1 == RSAEncryptionPadding.OaepSHA1);
+            Assert.True(RSAEncryptionPadding.Pkcs1 != RSAEncryptionPadding.OaepSHA1);
+
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals(null));
+            Assert.False(RSAEncryptionPadding.Pkcs1.Equals((object)null));
+            Assert.False(RSAEncryptionPadding.Pkcs1 == null);
+            Assert.True(RSAEncryptionPadding.Pkcs1 != null);
+        }
+
+        [Fact]
+        public void RSASignaturePadding_Equality()
+        {
+            Assert.True(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.Pkcs1));
+            Assert.True(RSASignaturePadding.Pkcs1.Equals((object)RSASignaturePadding.Pkcs1));
+            Assert.True(RSASignaturePadding.Pkcs1 == RSASignaturePadding.Pkcs1);
+            Assert.False(RSASignaturePadding.Pkcs1 != RSASignaturePadding.Pkcs1);
+
+            Assert.False(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.Pss));
+            Assert.False(RSASignaturePadding.Pkcs1.Equals((object)RSASignaturePadding.Pss));
+            Assert.False(RSASignaturePadding.Pkcs1 == RSASignaturePadding.Pss);
+            Assert.True(RSASignaturePadding.Pkcs1 != RSASignaturePadding.Pss);
+
+            Assert.False(RSASignaturePadding.Pkcs1.Equals(null));
+            Assert.False(RSASignaturePadding.Pkcs1.Equals((object)null));
+            Assert.False(RSASignaturePadding.Pkcs1 == null);
+            Assert.True(RSASignaturePadding.Pkcs1 != null);
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();

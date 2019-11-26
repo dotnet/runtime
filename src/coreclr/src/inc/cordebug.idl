@@ -6507,7 +6507,7 @@ interface ICorDebugDelegateObjectValue : IUnknown
      *      - NULL if the delegate function is a static function or an open delegate
      *  - HRESULT CORDBG_E_UNSUPPORTED_DELEGATE for curently unsupported delegates.
      *      In this case, the value of ppObject should not be used. Some of these
-     *      include: Secure wrappers, Open Virual delegates.
+     *      include: Wrapper delegates, Open Virual delegates.
      */
     HRESULT GetTarget([out] ICorDebugReferenceValue **ppObject);
 
@@ -6519,7 +6519,7 @@ interface ICorDebugDelegateObjectValue : IUnknown
      *        such as generic methods, which won't contain the instantiation.
      *  - HRESULT CORDBG_E_UNSUPPORTED_DELEGATE for curently unsupported delegates.
      *      In this case, the value of ppObject should not be used. Some of these
-     *      include: Secure wrappers, Open Virual delegates.
+     *      include: Wrapper delegates, Open Virual delegates.
      */
     HRESULT GetFunction([out] ICorDebugFunction **ppFunction);
 }

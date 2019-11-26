@@ -652,22 +652,6 @@ void AssemblySpec::SetCodeBase(StackingAllocator* alloc, STRINGREF *pCodeBase)
 
 #endif // CROSSGEN_COMPILE
 
-
-void AssemblySpec::MatchRetargetedPublicKeys(Assembly *pAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pAssembly));
-    }
-    CONTRACTL_END;
-    ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-}
-
-
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
 // Throws an appropriate exception in case of a mismatch
 void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
@@ -680,71 +664,44 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
         MODE_ANY;
     }
     CONTRACTL_END;
+
     // Check that the public keys are the same as in the AR.
-    if (IsStrongNamed()) {
+    if (!IsStrongNamed())
+        return;
 
-        const void *pbPublicKey;
-        DWORD cbPublicKey;
-        pbPublicKey = pAssembly->GetPublicKey(&cbPublicKey);
-        if (cbPublicKey == 0)
-            ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
+    const void *pbPublicKey;
+    DWORD cbPublicKey;
+    pbPublicKey = pAssembly->GetPublicKey(&cbPublicKey);
+    if (cbPublicKey == 0)
+        ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
 
-        if (m_dwFlags & afPublicKey) {
-            if ((m_cbPublicKeyOrToken != cbPublicKey) ||
-                memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
-                return MatchRetargetedPublicKeys(pAssembly);
-        }
-
-        // Ref has a token
-        else {
-            StrongNameBufferHolder<BYTE> pbStrongNameToken;
-            DWORD cbStrongNameToken;
-
-            if (!StrongNameTokenFromPublicKey((BYTE*) pbPublicKey,
-                                              cbPublicKey,
-                                              &pbStrongNameToken,
-                                              &cbStrongNameToken))
-                ThrowHR(StrongNameErrorInfo());
-            if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
-                memcmp(m_pbPublicKeyOrToken,
-                       pbStrongNameToken,
-                       cbStrongNameToken)) {
-                return MatchRetargetedPublicKeys(pAssembly);
-            }
-        }
-    }
-}
-
-
-PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain)
-{
-    CONTRACT(PEAssembly *)
+    if (IsAfPublicKey(m_dwFlags))
     {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
+        if ((m_cbPublicKeyOrToken != cbPublicKey) ||
+            memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
+        {
+            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
+        }
     }
-    CONTRACT_END;
+    else
+    {
+        // Ref has a token
+        StrongNameBufferHolder<BYTE> pbStrongNameToken;
+        DWORD cbStrongNameToken;
 
-    // No assembly resolve on codebase binds
-    if (GetName() == NULL)
-        RETURN NULL;
+        if (!StrongNameTokenFromPublicKey((BYTE*) pbPublicKey,
+                                            cbPublicKey,
+                                            &pbStrongNameToken,
+                                            &cbStrongNameToken))
+            ThrowHR(StrongNameErrorInfo());
 
-    Assembly *pAssembly = pDomain->RaiseAssemblyResolveEvent(this);
-
-    if (pAssembly != NULL) {
-        PEAssembly *pFile = pAssembly->GetManifestFile();
-        pFile->AddRef();
-
-        RETURN pFile;
+        if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
+            memcmp(m_pbPublicKeyOrToken, pbStrongNameToken, cbStrongNameToken))
+        {
+            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
+        }
     }
-
-    RETURN NULL;
 }
-
 
 Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound)
 {
@@ -850,7 +807,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
             // TPABinder context anyways.
             //
             // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
+            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
         }
     }
 
@@ -887,7 +844,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
+        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
     }
 
     return pParentAssemblyBinder;
@@ -1264,7 +1221,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     else
     {
         // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
-        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetFusionContext());
+        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetTPABinderContext());
     }
 
     if (pBinderContextForLookup != NULL)

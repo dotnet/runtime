@@ -132,24 +132,6 @@ PEFile::~PEFile()
     }
 }
 
-#ifndef  DACCESS_COMPILE
-void PEFile::ReleaseIL()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_openedILimage!=NULL )
-    {
-        ReleaseMetadataInterfaces(TRUE, TRUE);
-        if (m_identity != NULL)
-        {
-            m_identity->Release();
-            m_identity=NULL;
-        }
-        m_openedILimage->Release();
-        m_openedILimage = NULL;
-    }
-}
-#endif
-
 /* static */
 PEFile *PEFile::Open(PEImage *image)
 {
@@ -1993,31 +1975,7 @@ PEAssembly::~PEAssembly()
 
 }
 
-#ifndef  DACCESS_COMPILE
-void PEAssembly::ReleaseIL()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    if (m_creator != NULL)
-    {
-        m_creator->Release();
-        m_creator=NULL;
-    }
-
-    PEFile::ReleaseIL();
-}
-#endif
-
 /* static */
-
 PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 {
     STANDARD_VM_CONTRACT;

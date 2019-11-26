@@ -71,9 +71,7 @@ namespace System.Resources
         public ResourceSet(IResourceReader reader)
             : this()
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-            Reader = reader;
+            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
             ReadResources();
         }
 

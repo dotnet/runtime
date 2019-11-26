@@ -49,7 +49,7 @@ namespace System.Linq.Parallel
         // Check whether value is in set
         internal bool TryGetValue(TKey key, [MaybeNullWhen(false), AllowNull] ref TValue value)
         {
-            return Find(key, false, false, ref value);
+            return Find(key, false, false, ref value!);
         }
 
         internal TValue this[TKey key]
@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
                     comparer.Equals(key1, key2));
         }
 
-        private bool Find(TKey key, bool add, bool set, ref TValue value)
+        private bool Find(TKey key, bool add, bool set, [MaybeNullWhen(false)] ref TValue value)
         {
             int hashCode = GetKeyHashCode(key);
 

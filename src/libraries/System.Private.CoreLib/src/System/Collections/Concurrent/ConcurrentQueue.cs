@@ -544,7 +544,7 @@ namespace System.Collections.Concurrent
             }
 
             // Return the value from the slot.
-            return segment._slots[i].Item;
+            return segment._slots[i].Item!;
         }
 
         private IEnumerator<T> Enumerate(ConcurrentQueueSegment<T> head, int headHead, ConcurrentQueueSegment<T> tail, int tailTail)

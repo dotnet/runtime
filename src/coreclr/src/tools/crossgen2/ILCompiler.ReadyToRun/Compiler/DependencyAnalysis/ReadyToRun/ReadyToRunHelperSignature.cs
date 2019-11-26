@@ -4,7 +4,9 @@
 
 using System;
 using System.Diagnostics;
+
 using Internal.Text;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -24,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
-            builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_Helper);
+            builder.EmitByte((byte)ReadyToRunFixupKind.Helper);
             builder.EmitUInt((uint)_helperID);
             return builder.ToObjectData();
         }

@@ -210,7 +210,7 @@ namespace System.Text
             }
         }
 
-        public int CompareTo(Rune other) => this._value.CompareTo(other._value);
+        public int CompareTo(Rune other) => _value.CompareTo(other._value);
 
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
@@ -699,7 +699,7 @@ namespace System.Text
             return bytesWritten;
         }
 
-        public override bool Equals(object? obj) => (obj is Rune other) && this.Equals(other);
+        public override bool Equals(object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
 

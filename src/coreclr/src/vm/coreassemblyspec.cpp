@@ -324,20 +324,10 @@ HRESULT BaseAssemblySpec::ParseName()
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        IUnknown *pIUnknownBinder = pDomain->GetFusionContext();
-
-        if (pIUnknownBinder != NULL)
+        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        if (pBinder != NULL)
         {
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            if (pDomain->GetFusionContext() != pDomain->GetTPABinderContext())
-            {
-                pAppContext = (static_cast<CLRPrivBinderAssemblyLoadContext *>(static_cast<ICLRPrivBinder*>(pIUnknownBinder)))->GetAppContext();
-            }
-            else
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            {
-                pAppContext = (static_cast<CLRPrivBinderCoreCLR *>(pIUnknownBinder))->GetAppContext();
-            }
+            pAppContext = pBinder->GetAppContext();
         }
 
         hr = CCoreCLRBinderHelper::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);

@@ -354,21 +354,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <!-- If we want to overwrite the desired CoreCLR package version, we need to get the new version from the generated props file in artifacts/obj -->
-  <Import Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'" Project="$(BuildVersionFile)" />
-
-  <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
-    <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
-    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
-    <DesiredPackageVersionArg>$(VersionToRestore)</DesiredPackageVersionArg>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)../tests.targets" />
   <Import Project="$(MSBuildThisFileDirectory)../publishdependency.targets" />
-
-  <PropertyGroup>
-    <DesiredPackageVersionArg Condition="'$(DesiredPackageVersionArg)' == ''">$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</DesiredPackageVersionArg>
-  </PropertyGroup>
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"

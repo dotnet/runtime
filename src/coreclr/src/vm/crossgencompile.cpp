@@ -299,7 +299,7 @@ void Frame::Pop()
 {
 }
 
-PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
+PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {
     return (PCODE)(0x12345);
 }
