@@ -16049,13 +16049,16 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
         if ((lhs->OperGet() == GT_LCL_VAR) && (rhs->OperIsBinary()))
         {
             unsigned lhsLclNum = lhs->AsLclVarCommon()->GetLclNum();
-            GenTree* rhsop1    = rhs->AsOp()->gtOp1;
-            GenTree* rhsop2    = rhs->AsOp()->gtOp2;
-            if ((rhsop1 != nullptr) && (rhsop2 != nullptr) && (rhsop1->OperGet() == GT_LCL_VAR) &&
-                (rhsop1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
+            GenTree* rhsOp1    = rhs->AsOp()->gtOp1;
+            GenTree* rhsOp2    = rhs->AsOp()->gtOp2;
+
+            // Some operators, such as HWINTRINSIC, are currently decalred as binary but
+            // do not have two operands. We must check that both operands actually exist.
+            if ((rhsOp1 != nullptr) && (rhsOp2 != nullptr) && (rhsOp1->OperGet() == GT_LCL_VAR) &&
+                (rhsOp1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
             {
                 lclNum      = lhsLclNum;
-                *pOtherTree = rhsop2;
+                *pOtherTree = rhsOp2;
                 *pOper      = rhs->OperGet();
             }
         }
