@@ -174,9 +174,9 @@ namespace System
         public bool Equals(UIntPtr other) => (nuint)this == (nuint)other;
 
         public override string ToString() => ((nuint)this).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string format) => ((nuint)this).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(string? format) => ((nuint)this).ToString(format, CultureInfo.InvariantCulture);
         public string ToString(IFormatProvider provider) => ((nuint)this).ToString(provider);
-        public string ToString(string format, IFormatProvider provider) => ((nuint)this).ToString(format, provider);
+        public string ToString(string? format, IFormatProvider provider) => ((nuint)this).ToString(format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint.Parse(s);
         public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint.Parse(s, style);
