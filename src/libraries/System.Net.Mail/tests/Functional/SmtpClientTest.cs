@@ -291,9 +291,12 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestMailDelivery()
         {
+            const string Username = "Foo";
+            const string Password = "Bar";
+
             using var server = new MockSmtpServer();
             using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential("user", "password");
+            client.Credentials = new NetworkCredential(Username, Password);
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             client.Send(msg);
@@ -303,6 +306,9 @@ namespace System.Net.Mail.Tests
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
+            Assert.Equal(Username, server.Username);
+            Assert.Equal(Password, server.Password);
+            Assert.Equal("login", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -364,13 +370,11 @@ namespace System.Net.Mail.Tests
 
             client.Credentials = cache;
 
-            await client.SendMailAsync(msg);
+            // The mock server doesn't actually understand NTML, but still advertises support for it
+            server.AdvertiseNtlmAuthSupport = true;
+            await Assert.ThrowsAsync<SmtpException>(async () => await client.SendMailAsync(msg));
 
-            Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
-            Assert.Equal("hello", server.Message.Subject);
-            Assert.Equal("howdydoo", server.Message.Body);
-            Assert.Equal(GetClientDomain(), server.ClientDomain);
+            Assert.Equal("ntlm", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
 

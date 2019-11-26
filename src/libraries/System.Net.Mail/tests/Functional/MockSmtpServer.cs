@@ -18,6 +18,7 @@ namespace Systen.Net.Mail.Tests
 
         public bool ReceiveMultipleConnections = false;
         public bool SupportSmtpUTF8 = false;
+        public bool AdvertiseNtlmAuthSupport = false;
 
         private bool _disposed = false;
         private readonly Socket _listenSocket;
@@ -110,7 +111,7 @@ namespace Systen.Net.Mail.Tests
 
                 await SendMessageAsync("250-localhost, mock server here");
                 if (SupportSmtpUTF8) await SendMessageAsync("250-SMTPUTF8");
-                await SendMessageAsync("250 AUTH PLAIN LOGIN");
+                await SendMessageAsync("250 AUTH PLAIN LOGIN" + (AdvertiseNtlmAuthSupport ? " NTLM" : ""));
 
                 while ((message = await ReceiveMessageAsync()) != null)
                 {
@@ -161,6 +162,10 @@ namespace Systen.Net.Mail.Tests
                             Password = Encoding.UTF8.GetString(Convert.FromBase64String(await ReceiveMessageAsync()));
                             UsernamePassword = Username + Password;
                             await SendMessageAsync("235 Authentication successful");
+                        }
+                        else if (parts[1].Equals("NTLM", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await SendMessageAsync("12345 I lied, I can't speak NTLM - here's an invalid response");
                         }
                         else await SendMessageAsync("504 scheme not supported");
                         continue;
