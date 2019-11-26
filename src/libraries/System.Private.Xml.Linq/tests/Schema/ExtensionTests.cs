@@ -152,14 +152,12 @@ namespace CoreXml.Test.XLinq
                     beforeNoOfElements++;
                     if (!elementsEnumerator.Current.HasAttributes)
                         continue;
-                    else
-                    {
+
                         IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
                         IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
                         while (attributesEnumerator.MoveNext())
                             beforeNoOfAttributes++;
-                    }
-                }
+            }
 
             // Populate XML with PSVI.
             validationSucceded = true;
@@ -177,13 +175,11 @@ namespace CoreXml.Test.XLinq
                 afterNoOfElements++;
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
-                else
-                {
+
                     IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
                     IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
                     while (attributesEnumerator.MoveNext())
                         afterNoOfAttributes++;
-                }
             }
 
             Assert.True(afterNoOfAttributes >= beforeNoOfAttributes, "XDocumentAddSchemaInfoValidate, wrong newAttributes value.");
@@ -207,13 +203,11 @@ namespace CoreXml.Test.XLinq
                 beforeNoOfElements++;
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
-                else
-                {
+
                     IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
                     IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
                     while (attributesEnumerator.MoveNext())
                         beforeNoOfAttributes++;
-                }
             }
 
             // Don't populate XML with PSVI.
@@ -232,13 +226,11 @@ namespace CoreXml.Test.XLinq
                 afterNoOfElements++;
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
-                else
-                {
+
                     IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
                     IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
                     while (attributesEnumerator.MoveNext())
                         afterNoOfAttributes++;
-                }
             }
 
             Assert.Equal(afterNoOfAttributes, beforeNoOfAttributes);
@@ -275,7 +267,7 @@ namespace CoreXml.Test.XLinq
             string attributeName = "date";
             object attributeValue = "2010-12-32";
 
-            // Aalidate the entire document.
+            // Validate the entire document.
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler),true);
@@ -300,7 +292,7 @@ namespace CoreXml.Test.XLinq
             string attributeName =  "date";
             object attributeValue =  "2010-12-32";
 
-            // Calidate the entire document.
+            // Validate the entire document.
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler),true);
