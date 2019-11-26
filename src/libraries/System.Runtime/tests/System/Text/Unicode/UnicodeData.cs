@@ -18,7 +18,7 @@ namespace System.Text.Unicode.Tests
 
     public static class UnicodeData
     {
-        private const string UnicodeDataFilename = "UnicodeData.11.0.txt";
+        private const string UnicodeDataFilename = "UnicodeData.12.1.txt";
         private const string CaseFoldingFilename = "CaseFolding-12.1.0.txt";
         private const string PropListFilename = "PropList-12.1.0.txt";
 

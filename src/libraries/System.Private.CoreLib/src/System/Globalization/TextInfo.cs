@@ -643,7 +643,7 @@ namespace System.Globalization
             for (int i = 0; i < str.Length; i++)
             {
                 int charLen;
-                UnicodeCategory charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                UnicodeCategory charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
                 if (char.CheckLetter(charType))
                 {
                     // Special case to check for Dutch specific titlecasing with "IJ" characters
@@ -670,7 +670,7 @@ namespace System.Globalization
                     // Use a loop to find all of the other letters following this letter.
                     while (i < str.Length)
                     {
-                        charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                        charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
                         if (IsLetterCategory(charType))
                         {
                             if (charType == UnicodeCategory.LowercaseLetter)
