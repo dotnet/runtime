@@ -63,9 +63,7 @@ namespace System.IO
 
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
-            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
-            }
 
             return new FileSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
@@ -85,12 +83,9 @@ namespace System.IO
             if (fileSecurity == null)
                 throw new ArgumentNullException(nameof(fileSecurity));
 
-
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
-            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
-            }
 
             fileSecurity.Persist(handle, fileStream.Name);
         }
