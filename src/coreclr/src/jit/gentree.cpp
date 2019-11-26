@@ -16045,16 +16045,18 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
     if (OperIs(GT_ASG))
     {
         GenTree* lhs = AsOp()->gtOp1;
-        if (lhs->OperGet() == GT_LCL_VAR)
+        GenTree* rhs = AsOp()->gtOp2;
+        if ((lhs->OperGet() == GT_LCL_VAR) && (rhs->OperIsBinary()))
         {
             unsigned lhsLclNum = lhs->AsLclVarCommon()->GetLclNum();
-            GenTree* rhs       = AsOp()->gtOp2;
-            if (rhs->OperIsBinary() && (rhs->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-                (rhs->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
+            GenTree* rhsop1    = rhs->AsOp()->gtOp1;
+            GenTree* rhsop2    = rhs->AsOp()->gtOp2;
+            if ((rhsop1 != nullptr) && (rhsop2 != nullptr) && (rhsop1->OperGet() == GT_LCL_VAR) &&
+                (rhsop1->AsLclVarCommon()->GetLclNum() == lhsLclNum))
             {
                 lclNum      = lhsLclNum;
-                *pOtherTree = rhs->AsOp()->gtOp2;
-                *pOper      = rhs->gtOper;
+                *pOtherTree = rhsop2;
+                *pOper      = rhs->OperGet();
             }
         }
     }
