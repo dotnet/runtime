@@ -48,8 +48,8 @@ jobs:
             displayName: Test Assets
             cleanUnpackFolder: false
             unpackFolder: $(Build.SourcesDirectory)/artifacts
-            artifactName: ${{ format('libraries_test_assets_{0}_{1}_x64_Release', parameters.framework, parameters.osGroup) }}
-            artifactFileName: ${{ format('libraries_test_assets_{0}_{1}_x64_Release', parameters.framework, parameters.osGroup) }}$(archiveExtension)
+            artifactName: ${{ format('libraries_test_assets_{0}_{1}_x64_{2}', parameters.framework, parameters.osGroup, parameters.dependsOnBuildConfiguration) }}
+            artifactFileName: ${{ format('libraries_test_assets_{0}_{1}_x64_{2}', parameters.framework, parameters.osGroup, parameters.dependsOnBuildConfiguration) }}$(archiveExtension)
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
