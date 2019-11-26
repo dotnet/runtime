@@ -822,28 +822,6 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
             }
 
-            // Check that all virtual methods are defined
-            foreach(MethodDesc virtualMd in metadataType.EnumAllVirtualSlots())
-            {
-                if (virtualMd.IsAbstract)
-                {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
-                }
-            }
-
-            // Check that all methods of the interfaces that the type implements are defined
-            foreach (TypeDesc interfaceTd in metadataType.RuntimeInterfaces)
-            {
-                foreach (MethodDesc md in interfaceTd.GetMethods())
-                {
-                    MethodDesc mdImpl = metadataType.ResolveInterfaceMethodToVirtualMethodOnType(md);
-                    if (mdImpl == null)
-                    {
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
-                    }
-                }
-            }
-
             if (pHasSideEffects != null)
             {
                 *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
