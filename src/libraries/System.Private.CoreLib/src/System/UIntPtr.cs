@@ -162,7 +162,37 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString() =>
-            ((nuint)_value).ToString(CultureInfo.InvariantCulture);
+        public static UIntPtr MaxValue => (UIntPtr)nuint.MaxValue;
+        public static UIntPtr MinValue => (UIntPtr)nuint.MinValue;
+
+        public int CompareTo(object? value) => ((nuint)this).CompareTo(value);
+
+        public int CompareTo(UIntPtr value) => ((nuint)this).CompareTo((nuint)value);
+
+        public bool Equals(UIntPtr other) => (nuint)this == (nuint)other;
+
+        public override string ToString() => ((nuint)this).ToString(CultureInfo.InvariantCulture);
+        public string ToString(string format) => ((nuint)this).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(IFormatProvider provider) => ((nuint)this).ToString(provider);
+        public string ToString(string format, IFormatProvider provider) => ((nuint)this).ToString(format, provider);
+
+        public static UIntPtr Parse(string s) => (UIntPtr)nuint.Parse(s);
+        public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint.Parse(s, style);
+        public static UIntPtr Parse(string s, IFormatProvider? provider) => (UIntPtr)nuint.Parse(s, provider);
+        public static UIntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (UIntPtr)nuint.Parse(s, style, provider);
+
+        public static bool TryParse(string? s, out UIntPtr result)
+        {
+            var res = nuint.TryParse(s, out var value);
+            result = (UIntPtr)value;
+            return res;
+        }
+
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out UIntPtr result)
+        {
+            var res = nuint.TryParse(s, style, provider, out var value);
+            result = (UIntPtr)value;
+            return res;
+        }
     }
 }
