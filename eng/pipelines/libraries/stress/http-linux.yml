@@ -35,7 +35,8 @@ steps:
   displayName: Build Libraries
 
 - bash: |
-    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/Dockerfile src/libraries 
+    cd '$(HttpStressProject)'
+    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) .
   displayName: Build HttpStress
 
 - bash: |

@@ -182,7 +182,7 @@ namespace HttpStress
                 }
 
                 // send back a checksum of all the echoed headers
-                ulong checksum = CRCHelpers.CalculateHeaderCrc(headersToEcho);
+                ulong checksum = CRC.CalculateHeaderCrc(headersToEcho);
                 AppendChecksumHeader(context.Response.Headers, checksum);
 
                 await context.Response.WriteAsync("ok");
@@ -235,14 +235,14 @@ namespace HttpStress
                 ArrayPool<byte> bufferPool = ArrayPool<byte>.Shared;
 
                 byte[] buffer = bufferPool.Rent(512);
-                ulong hashAcc = CRCHelpers.InitialCrc;
+                ulong hashAcc = CRC.InitialCrc;
                 int read;
 
                 try
                 {
                     while ((read = await context.Request.Body.ReadAsync(buffer)) != 0)
                     {
-                        hashAcc = CRC.UpdateCRC(hashAcc, new ReadOnlySpan<byte>(buffer, 0, read));
+                        hashAcc = CRC.update_crc(hashAcc, buffer, read);
                         await context.Response.Body.WriteAsync(buffer, 0, read);
                     }
                 }
@@ -251,7 +251,7 @@ namespace HttpStress
                     bufferPool.Return(buffer);
                 }
 
-                hashAcc = CRCHelpers.InitialCrc ^ hashAcc;
+                hashAcc = CRC.InitialCrc ^ hashAcc;
 
                 if (context.Response.SupportsTrailers())
                 {
@@ -262,14 +262,14 @@ namespace HttpStress
             {
                 // Echos back the requested content in a full duplex manner, but one byte at a time.
                 var buffer = new byte[1];
-                ulong hashAcc = CRCHelpers.InitialCrc;
+                ulong hashAcc = CRC.InitialCrc;
                 while ((await context.Request.Body.ReadAsync(buffer)) != 0)
                 {
-                    hashAcc = CRC.UpdateCRC(hashAcc, buffer);
+                    hashAcc = CRC.update_crc(hashAcc, buffer, buffer.Length);
                     await context.Response.Body.WriteAsync(buffer);
                 }
 
-                hashAcc = CRCHelpers.InitialCrc ^ hashAcc;
+                hashAcc = CRC.InitialCrc ^ hashAcc;
 
                 if (context.Response.SupportsTrailers())
                 {

@@ -213,7 +213,7 @@ namespace HttpStress
                 {
                     using var req = new HttpRequestMessage(HttpMethod.Get, "/headers");
                     ctx.PopulateWithRandomHeaders(req.Headers);
-                    ulong expectedChecksum = CRCHelpers.CalculateHeaderCrc(req.Headers.Select(x => (x.Key, x.Value)));
+                    ulong expectedChecksum = CRC.CalculateHeaderCrc(req.Headers.Select(x => (x.Key, x.Value)));
 
                     using HttpResponseMessage res = await ctx.SendAsync(req);
 
@@ -323,7 +323,7 @@ namespace HttpStress
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
-                    ulong checksum = CRCHelpers.CalculateCRC(content);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringDuplexContent(content) };
                     using HttpResponseMessage m = await ctx.SendAsync(req);
@@ -337,7 +337,7 @@ namespace HttpStress
                 async ctx =>
                 {
                     (string expected, MultipartContent formDataContent) formData = GetMultipartContent(ctx, ctx.MaxRequestParameters);
-                    ulong checksum = CRCHelpers.CalculateCRC(formData.expected);
+                    ulong checksum = CRC.CalculateCRC(formData.expected);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = formData.formDataContent };
                     using HttpResponseMessage m = await ctx.SendAsync(req);
@@ -351,7 +351,7 @@ namespace HttpStress
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
-                    ulong checksum = CRCHelpers.CalculateCRC(content);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) };
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
@@ -405,7 +405,7 @@ namespace HttpStress
                 async ctx =>
                 {
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
-                    ulong checksum = CRCHelpers.CalculateCRC(content);
+                    ulong checksum = CRC.CalculateCRC(content);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/") { Content = new StringContent(content) };
 

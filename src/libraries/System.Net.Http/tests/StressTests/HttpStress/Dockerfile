@@ -3,7 +3,6 @@ FROM $SDK_BASE_IMAGE
 
 WORKDIR /app
 COPY . .
-WORKDIR /app/System.Net.Http/tests/StressTests/HttpStress 
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $CONFIGURATION
