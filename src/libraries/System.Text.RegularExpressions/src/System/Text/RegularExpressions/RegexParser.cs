@@ -183,15 +183,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string Unescape(string input)
         {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (input[i] == '\\')
-                {
-                    return UnescapeImpl(input, i);
-                }
-            }
-
-            return input;
+            int i = input.IndexOf('\\');
+            return i >= 0 ?
+                UnescapeImpl(input, i) :
+                input;
         }
 
         private static string UnescapeImpl(string input, int i)
