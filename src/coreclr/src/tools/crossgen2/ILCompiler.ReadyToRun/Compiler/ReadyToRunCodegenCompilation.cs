@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 
