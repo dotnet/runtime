@@ -27,11 +27,13 @@ class Test27937
         } while (pb < eb);
     }
 
-    static unsafe void Main()
+    static unsafe int Main()
     {
         float* a = stackalloc float[16];
         float* b = stackalloc float[16];
 
         calc(a, b);
+
+        return 100;
     }
 }
