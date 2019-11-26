@@ -169,10 +169,37 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public override unsafe string ToString() =>
-            ((nint)_value).ToString(CultureInfo.InvariantCulture);
+        public static IntPtr MaxValue => (IntPtr)nint.MaxValue;
+        public static IntPtr MinValue => (IntPtr)nint.MinValue;
 
-        public unsafe string ToString(string format) =>
-            ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public int CompareTo(object? value) => ((nint)this).CompareTo(value);
+
+        public int CompareTo(IntPtr value) => ((nint)this).CompareTo((nint)value);
+
+        public bool Equals(IntPtr other) => (nint)this == (nint)other;
+
+        public override string ToString() => ((nint)this).ToString(CultureInfo.InvariantCulture);
+        public string ToString(string format) => ((nint)this).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(IFormatProvider provider) => ((nint)this).ToString(provider);
+        public string ToString(string format, IFormatProvider provider) => ((nint)this).ToString(format, provider);
+
+        public static IntPtr Parse(string s) => (IntPtr)nint.Parse(s);
+        public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint.Parse(s, style);
+        public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint.Parse(s, provider);
+        public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint.Parse(s, style, provider);
+
+        public static bool TryParse(string? s, out IntPtr result)
+        {
+            var res = nint.TryParse(s, out var value);
+            result = (IntPtr)value;
+            return res;
+        }
+
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        {
+            var res = nint.TryParse(s, style, provider, out var value);
+            result = (IntPtr)value;
+            return res;
+        }
     }
 }
