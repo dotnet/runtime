@@ -164,19 +164,28 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        public static UIntPtr MaxValue => (UIntPtr)nuint.MaxValue;
-        public static UIntPtr MinValue => (UIntPtr)nuint.MinValue;
+        public static UIntPtr MaxValue
+        {
+            [NonVersionable]
+            get => (UIntPtr)nuint.MaxValue;
+        }
+        
+        public static UIntPtr MinValue
+        {
+            [NonVersionable]
+            get => (UIntPtr)nuint.MinValue;
+        }
 
-        public int CompareTo(object? value) => ((nuint)this).CompareTo(value);
+        public int CompareTo(object? value) => ((nuint)_value).CompareTo(value);
 
-        public int CompareTo(UIntPtr value) => ((nuint)this).CompareTo((nuint)value);
+        public int CompareTo(UIntPtr value) => ((nuint)_value).CompareTo((nuint)value);
 
-        public bool Equals(UIntPtr other) => (nuint)this == (nuint)other;
+        public bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
 
-        public override string ToString() => ((nuint)this).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string? format) => ((nuint)this).ToString(format, CultureInfo.InvariantCulture);
-        public string ToString(IFormatProvider provider) => ((nuint)this).ToString(provider);
-        public string ToString(string? format, IFormatProvider provider) => ((nuint)this).ToString(format, provider);
+        public override string ToString() => ((nuint)_value).ToString(CultureInfo.InvariantCulture);
+        public string ToString(string? format) => ((nuint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(IFormatProvider provider) => ((nuint)_value).ToString(provider);
+        public string ToString(string? format, IFormatProvider provider) => ((nuint)_value).ToString(format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint.Parse(s);
         public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint.Parse(s, style);
@@ -185,16 +194,14 @@ namespace System
 
         public static bool TryParse(string? s, out UIntPtr result)
         {
-            var res = nuint.TryParse(s, out var value);
-            result = (UIntPtr)value;
-            return res;
+            Unsafe.SkipInit(out result);
+            return nuint.TryParse(s, out Unsafe.As<UIntPtr, nuint>(ref result));
         }
 
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out UIntPtr result)
         {
-            var res = nuint.TryParse(s, style, provider, out var value);
-            result = (UIntPtr)value;
-            return res;
+            Unsafe.SkipInit(out result);
+            return nuint.TryParse(s, style, provider, out Unsafe.As<UIntPtr, nuint>(ref result));
         }
     }
 }
