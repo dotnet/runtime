@@ -97,14 +97,49 @@ namespace System.IO.Tests
         private sealed class CustomMemoryStream : MemoryStream
         {
             private readonly bool _spanCopy;
+            private readonly bool _sync;
 
-            public CustomMemoryStream(bool spanCopy)
+            public CustomMemoryStream(bool spanCopy, bool sync)
             : base()
             {
                 _spanCopy = spanCopy;
+                _sync = sync;
             }
 
             public override void CopyTo(Stream destination, int bufferSize)
+            {
+                if (_sync)
+                {
+                    CopyToInternal(destination, bufferSize);
+                }
+                else
+                {
+                    CopyToAsyncInternal(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
+                }
+            }
+
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                if (!_sync)
+                {
+                    return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
+                }
+                else
+                {
+                    try
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        CopyToInternal(destination, bufferSize);
+                        return Task.CompletedTask;
+                    }
+                    catch (Exception e)
+                    {
+                        return Task.FromException(e);
+                    }
+                }
+            }
+
+            private void CopyToInternal(Stream destination, int bufferSize)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
@@ -124,7 +159,7 @@ namespace System.IO.Tests
                 }
             }
 
-            public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
@@ -148,9 +183,10 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> CopyTo_TestData()
         {
-            foreach (var spanCopy in new[] { false, true })
-                yield return new object[] { new CustomMemoryStream(spanCopy) };
-            
+            foreach (var sync in new[] { false, true })
+                foreach (var spanCopy in new[] { false, true })
+                    yield return new object[] { new CustomMemoryStream(spanCopy, sync) };
+
             yield return new object[] { new MemoryStream() };
         }
     }
