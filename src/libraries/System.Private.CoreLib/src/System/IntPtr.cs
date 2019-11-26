@@ -174,16 +174,16 @@ namespace System
         public static IntPtr MaxValue => (IntPtr)nint.MaxValue;
         public static IntPtr MinValue => (IntPtr)nint.MinValue;
 
-        public int CompareTo(object? value) => ((nint)this).CompareTo(value);
+        public int CompareTo(object? value) => ((nint)_value).CompareTo(value);
 
-        public int CompareTo(IntPtr value) => ((nint)this).CompareTo((nint)value);
+        public int CompareTo(IntPtr value) => ((nint)_value).CompareTo((nint)value);
 
-        public bool Equals(IntPtr other) => (nint)this == (nint)other;
+        public bool Equals(IntPtr other) => (nint)_value == (nint)other;
 
-        public override string ToString() => ((nint)this).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string? format) => ((nint)this).ToString(format, CultureInfo.InvariantCulture);
-        public string ToString(IFormatProvider provider) => ((nint)this).ToString(provider);
-        public string ToString(string? format, IFormatProvider provider) => ((nint)this).ToString(format, provider);
+        public override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
+        public string ToString(string? format) => ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(IFormatProvider provider) => ((nint)_value).ToString(provider);
+        public string ToString(string? format, IFormatProvider provider) => ((nint)_value).ToString(format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint.Parse(s, style);
