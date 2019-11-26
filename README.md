@@ -24,14 +24,14 @@ We welcome contributions! Many people all over the world have helped make this p
 
 * If you have a question or idea, [file a new issue](https://github.com/dotnet/runtime/issues/new).
 
-	* Is your feedback for .NET Framework? This repo is for .NET Core. If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+    * Is your feedback for .NET Framework? This repo is for .NET Core. If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is the [Report a Problem](https://aka.ms/vs-rap) tool, which is integrated with the [VS Developer Community Portal](https://developercommunity.visualstudio.com/); or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
 
 * If you want to contribute a fix or improvement, you'll want to check out these links
 
-    * Requirements to build this repo ([Linux](docs/building/linux-requirements.md), [macOS](docs/building/macos-requirements.md), [Windows](docs/building/windows-requirements.md))
-    * What kind of contributions you might want to make [in the runtime](docs/coreclr/project-docs/contributing.md) and [in the libraries](docs/libraries/project-docs/contributing.md)
-	* [How you can make a change happen!](docs/coreclr/project-docs/contributing-workflow.md)
-	* How to build and test your change [in the runtime](docs/coreclr/project-docs/developer-guide.md) and [in the libraries](docs/libraries/project-docs/developer-guide.md)
+    * Requirements to build this repo ([Linux](docs/workflow/linux-requirements.md), [macOS](docs/workflow/macos-requirements.md), [Windows](docs/workflow/windows-requirements.md))
+    * What kind of contributions you might want to make [in the runtime](docs/coreclr/project-docs/contributing.md) and [in the libraries](docs/project/changing-corelib.md)
+    * [How you can make a change happen!](docs/workflow/README.md)
+    * How to build and test your change [in the runtime](docs/workflow/building/coreclr/REAMDE.md) and [in the libraries](docs/workflow/building/libraries/README.md)
 
 ## Reporting security issues and security bugs
 
@@ -893,4 +893,4 @@ General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoun
 
 ## License
 
-.NET (including the runtime repo) is licensed under the [MIT](LICENSE) license.
+.NET (including the runtime repo) is licensed under the [MIT](LICENSE.TXT) license.
