@@ -2467,6 +2467,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
+    GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq);
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
@@ -2543,6 +2544,12 @@ public:
 
     GenTree* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
     GenTree* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
+
+    GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclFldAddrNode(unsigned      lclNum,
+                                       unsigned      lclOffs,
+                                       FieldSeqNode* fieldSeq,
+                                       var_types     type = TYP_I_IMPL);
 
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(

@@ -6723,6 +6723,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     {
         switch (oper)
         {
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
+                assert(lvaVarAddrExposed(tree->AsLclVarCommon()->GetLclNum()));
+                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                break;
+
             case GT_LCL_VAR:
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();

@@ -3611,6 +3611,14 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
+    if (tree->OperIsLocalAddr())
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        assert(varDsc->lvAddrExposed);
+        varDsc->incRefCnts(weight, this);
+        return;
+    }
+
     if ((tree->gtOper != GT_LCL_VAR) && (tree->gtOper != GT_LCL_FLD))
     {
         return;

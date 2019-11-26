@@ -1312,6 +1312,8 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
+                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
+                // side effect free leaf nodes that like constant can be evaluated at any point.
                 if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
                 {
                     prevArgTabEntry->needTmp = true;
@@ -18151,6 +18153,15 @@ private:
         }
 #endif // _TARGET_64BIT_
 
+        // For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
+        // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
+        // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
+        // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
+        if (user->OperIs(GT_CALL, GT_ASG))
+        {
+            MorphLocalAddress(val);
+        }
+
         INDEBUG(val.Consume();)
     }
 
@@ -18306,6 +18317,57 @@ private:
                 assert(indir->OperIs(GT_IND, GT_DYN_BLK));
                 return 0;
         }
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalAddress: Change a tree that represents a local variable address
+    //    to a single LCL_VAR_ADDR or LCL_FLD_ADDR node.
+    //
+    // Arguments:
+    //    val - a value that represents the local address
+    //
+    void MorphLocalAddress(const Value& val)
+    {
+        assert(val.IsAddress());
+        assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
+        assert(m_compiler->lvaVarAddrExposed(val.LclNum()));
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
+
+        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        {
+            // Ignore promoted and "implict by ref" variables for now,
+            // they require additional changes in subsequent phases.
+            return;
+        }
+
+        GenTree* addr = val.Node();
+
+        if (val.Offset() > UINT16_MAX)
+        {
+            // The offset is too large to store in a LCL_FLD_ADDR node,
+            // use ADD(LCL_VAR_ADDR, offset) instead.
+            addr->ChangeOper(GT_ADD);
+            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(val.LclNum());
+            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(val.Offset(), val.FieldSeq());
+        }
+        else if ((val.Offset() != 0) || (val.FieldSeq() != nullptr))
+        {
+            addr->ChangeOper(GT_LCL_FLD_ADDR);
+            addr->AsLclFld()->SetLclNum(val.LclNum());
+            addr->AsLclFld()->SetLclOffs(val.Offset());
+            addr->AsLclFld()->SetFieldSeq(val.FieldSeq());
+        }
+        else
+        {
+            addr->ChangeOper(GT_LCL_VAR_ADDR);
+            addr->AsLclVar()->SetLclNum(val.LclNum());
+        }
+
+        // Local address nodes never have side effects (nor any other flags, at least at this point).
+        addr->gtFlags = 0;
+
+        INDEBUG(m_stmtModified = true;)
     }
 
     //------------------------------------------------------------------------

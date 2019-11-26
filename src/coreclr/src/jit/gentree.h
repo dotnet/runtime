@@ -1016,6 +1016,17 @@ public:
     void dumpLIRFlags();
 #endif
 
+    bool TypeIs(var_types type) const
+    {
+        return gtType == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
+
     bool OperIs(genTreeOps oper) const
     {
         return OperGet() == oper;
