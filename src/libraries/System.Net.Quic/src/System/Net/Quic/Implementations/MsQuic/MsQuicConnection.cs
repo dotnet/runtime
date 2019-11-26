@@ -33,6 +33,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // constructor for inbound connections
         public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _remoteEndPoint = remoteEndPoint;
             _logBaseString = "[Connection Server]";
 
@@ -41,13 +42,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             SetCallbackHandler();
             SetIdleTimeout(TimeSpan.FromSeconds(120));
-
-            Log("Created connection");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // constructor for outbound connections
         public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr, SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _logBaseString = "[Connection Client]";
 
             _remoteEndPoint = remoteEndPoint;
@@ -56,6 +57,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             SetCallbackHandler();
 
             Log("Created connection");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override IPEndPoint LocalEndPoint => throw new NotImplementedException();
@@ -132,10 +134,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventConnected(ConnectionEvent connectionEvent)
         {
-            Log("Connection Connected");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             // TODO don't use tcs here.
             _connectTcs?.SetResult(null);
             _connectTcs = null;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;
         }
 
@@ -146,9 +149,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventShutdownBegin(ConnectionEvent connectionEvent)
         {
-            Log($"Shutdown begin {MsQuicConstants.ErrorTypeFromErrorCode(connectionEvent.ShutdownBeginStatus)}");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.ErrorTypeFromErrorCode(connectionEvent.ShutdownBeginStatus)}");
+
             _connectTcs?.SetResult(null);
             _connectTcs = null;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Success;
         }
 
@@ -159,17 +168,25 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventShutdownComplete(ConnectionEvent connectionEvent)
         {
-            Log($"Shutdown complete");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown Complete");
+
             _shutdownTcs?.SetResult(null);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventNewStream(ConnectionEvent connectionEvent)
         {
-            Log("New stream");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.Data.NewStream.Stream);
 
             _acceptQueue.Writer.TryWrite(msQuicStream);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
         }
@@ -181,13 +198,18 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken))
             {
                 if (_acceptQueue.Reader.TryRead(out MsQuicStream stream))
                 {
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                     return stream;
                 }
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return null;
         }
@@ -199,7 +221,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
-            // TODO
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
@@ -374,6 +395,26 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void Close()
         {
             Dispose(false);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_nativeObjPtr != IntPtr.Zero)
+            {
+                await ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).ConfigureAwait(false);
+                _api.ConnectionCloseDelegate?.Invoke(_nativeObjPtr);
+            }
+
+            _nativeObjPtr = IntPtr.Zero;
+            _api = null;
+
+            _handle.Free();
+            _disposed = true;
         }
     }
 }

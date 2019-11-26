@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations
 {
-    internal abstract class QuicStreamProvider : IDisposable
+    internal abstract class QuicStreamProvider : IDisposable, IAsyncDisposable
     {
         internal abstract long StreamId { get; }
 
@@ -32,5 +32,7 @@ namespace System.Net.Quic.Implementations
         internal abstract Task FlushAsync(CancellationToken cancellationToken);
 
         public abstract void Dispose();
+
+        public abstract ValueTask DisposeAsync();
     }
 }

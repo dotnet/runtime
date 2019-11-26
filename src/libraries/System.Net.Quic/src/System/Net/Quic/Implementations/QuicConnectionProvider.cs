@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations
 {
-    internal abstract class QuicConnectionProvider : IDisposable
+    internal abstract class QuicConnectionProvider : IDisposable, IAsyncDisposable
     {
         internal abstract bool Connected { get; }
 
@@ -28,5 +28,7 @@ namespace System.Net.Quic.Implementations
         internal abstract void Close();
 
         public abstract void Dispose();
+
+        public abstract ValueTask DisposeAsync();
     }
 }

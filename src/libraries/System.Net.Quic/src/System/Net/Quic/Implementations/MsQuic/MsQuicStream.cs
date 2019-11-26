@@ -457,11 +457,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_nativeObjPtr != IntPtr.Zero)
             {
-                // TODO can shutdown hang?
-                Console.WriteLine("Started shutdown");
                 ShutdownAsync(QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0).GetAwaiter().GetResult();
                 Api.StreamCloseDelegate?.Invoke(_nativeObjPtr);
-                Console.WriteLine("Finished shutdown");
             }
 
             _handle.Free();
@@ -489,6 +486,27 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async Task FlushAsync(CancellationToken cancellationToken)
         {
             await SendAsync(new ReadOnlySequence<byte>(Memory<byte>.Empty), QUIC_SEND_FLAG.NONE);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_nativeObjPtr != IntPtr.Zero)
+            {
+                // TODO can shutdown hang?
+                await ShutdownAsync(QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0).ConfigureAwait(false);
+                Api.StreamCloseDelegate?.Invoke(_nativeObjPtr);
+            }
+
+            _handle.Free();
+            _nativeObjPtr = IntPtr.Zero;
+            Api = null;
+
+            _disposed = true;
         }
     }
 }
