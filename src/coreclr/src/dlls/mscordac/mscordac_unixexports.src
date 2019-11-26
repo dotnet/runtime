@@ -175,7 +175,6 @@ nativeStringResourceTable_mscorrc_debug
 #SysAllocStringLen
 #SysFreeString
 #TerminateProcess
-#UTF8ToUnicode
 #VirtualAlloc
 #VirtualAllocExNuma
 #VirtualFree

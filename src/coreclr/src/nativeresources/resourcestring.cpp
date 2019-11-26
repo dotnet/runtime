@@ -37,7 +37,7 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
 
         if (resourceEntry != NULL)
         {
-            len = UTF8ToUnicode(resourceEntry->resourceString, strlen(resourceEntry->resourceString) + 1, szBuffer, iMax, 0);
+            len = MultiByteToWideChar(CP_UTF8, 0, resourceEntry->resourceString, -1, szBuffer, iMax);
             if (len == 0)
             {
                 int hr = HRESULT_FROM_GetLastError();
