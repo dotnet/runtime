@@ -249,7 +249,7 @@ exit:
             };
             size_t itemsCount = sizeof(items) / sizeof(items[0]);
 
-            int itemsWritten = 0;
+            size_t itemsWritten = 0;
 
             result = pthread_mutex_lock(&mutex);
 
@@ -266,7 +266,7 @@ exit:
             {
                 result = writev(fd, items + itemsWritten, itemsCount - itemsWritten);
 
-                if (result == bytesRemaining)
+                if ((size_t)result == bytesRemaining)
                     break;
 
                 if (result == -1)
@@ -278,7 +278,7 @@ exit:
                 }
 
                 // Detect unexpected failure cases.
-                _ASSERTE(bytesRemaining > result);
+                _ASSERTE(bytesRemaining > (size_t)result);
                 _ASSERTE(result > 0);
 
                 // Handle partial write case
@@ -287,7 +287,7 @@ exit:
 
                 do
                 {
-                    if (result < items[itemsWritten].iov_len)
+                    if ((size_t)result < items[itemsWritten].iov_len)
                     {
                         items[itemsWritten].iov_len -= result;
                         items[itemsWritten].iov_base = (void*)((size_t) items[itemsWritten].iov_base + result);
