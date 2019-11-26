@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Runtime.CompilerServices.Tests
 {
@@ -29,14 +30,11 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        [SkipOnMono]
         public static void DynamicCode_Jit()
         {
-            // some modes on Mono don't support these features
-            if (!PlatformDetection.IsMonoRuntime)
-            {
-                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
-                Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
-            }
+            Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+            Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
         }
     }
 }
