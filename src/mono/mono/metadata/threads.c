@@ -6689,6 +6689,11 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 
 	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
 
+#ifdef DISABLE_THREADS
+	mono_error_set_not_supported (error, NULL);
+	return;
+#endif
+
 	LOCK_THREAD (internal);
 
 	if ((internal->state & ThreadState_Unstarted) == 0) {
