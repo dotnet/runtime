@@ -359,6 +359,8 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue(28961)]
+        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required
         public async Task TestCredentialsCopyInAsyncContext()
         {
             using var server = new MockSmtpServer();
