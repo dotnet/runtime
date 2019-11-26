@@ -11,6 +11,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
@@ -235,6 +236,8 @@ namespace SslStress
             {
                 if (Volatile.Read(ref messagesInFlight) > 5000)
                 {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+
                     lock (Console.Out)
                     {
                         Console.ForegroundColor = ConsoleColor.Yellow;
@@ -247,6 +250,8 @@ namespace SslStress
                     {
                         await Task.Delay(20);
                     }
+
+                    Console.WriteLine($"worker #{workerId}: resuming tx after {stopwatch.Elapsed}");
                 }
             }
         }
