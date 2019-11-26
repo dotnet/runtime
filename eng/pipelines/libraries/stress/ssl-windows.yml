@@ -1,5 +1,10 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+    - "*"
+
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: SslStress nightly run
@@ -8,38 +13,54 @@ schedules:
     - master
 
 pool:
-  name: Hosted VS2017
+  vmImage: 'windows-latest'
 
 variables:
   - template: ../variables.yml
-  - name: httpStressProject
-    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
   - name: sslStressProject
     value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress/
+    # Avoid duplication by referencing corefx build infrastructure hosted in HttpStress
+    # TODO move to eng/ folder.
+  - name: httpStressProject
+    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
+  - name: sdkBaseImage
+    value: sdk-corefx-current
+  - name: sslStressImage
+    value: sslstress
 
 steps:
 - checkout: self
   clean: true
-  fetchDepth: 0
+  fetchDepth: 1
   lfs: false
 
 - powershell: |
-    .\$(buildScriptFileName).cmd -ci -c $(BUILD_CONFIGURATION)
-  displayName: Build Corefx
+    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
+    docker build -t $(sdkBaseImage) `
+        --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) `
+        --build-arg TESTHOST_LOCATION=. `
+        -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile `
+        artifacts/bin/testhost
+
+  displayName: Build Libraries
 
 - powershell: |
-    # Load testhost sdk in environment
-    . '$(httpStressProject)\load-corefx-testhost.ps1' -c $(BUILD_CONFIGURATION) -b
-    # Run the stress suite
+    # we need to include the entire src/libraries folder in the build context due to Common/ dependencies
+    docker build -t $(sslStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(sslStressProject)/windows.Dockerfile src/libraries
+  displayName: Build SslStress
+
+- powershell: |
     cd '$(sslStressProject)'
-    dotnet run -c $(BUILD_CONFIGURATION) -- $(SSLSTRESS_ARGS)
-  displayName: Run HttpStress
+    docker-compose up --abort-on-container-exit --no-color
+  displayName: Run SslStress
+  env:
+    SSLTRESS_IMAGE: $(sslStressImage)
 
 - task: PublishBuildArtifacts@1
   displayName: Publish Logs
   inputs:
     PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(BUILD_CONFIGURATION)'
     PublishLocation: Container
-    ArtifactName: 'httpstress_$(Agent.Os)_$(Agent.JobName)'
+    ArtifactName: 'sslstress_$(Agent.Os)_$(Agent.JobName)'
   continueOnError: true
   condition: always()

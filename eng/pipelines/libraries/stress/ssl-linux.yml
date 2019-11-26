@@ -16,9 +16,9 @@ pool:
   name: Hosted Ubuntu 1604
 
 variables:
+  - template: ../variables.yml
   - name: sslStressProject
     value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress/
-  - template: ../variables.yml
     # Avoid duplication by referencing corefx build infrastructure hosted in HttpStress
     # TODO move to eng/ folder.
   - name: httpStressProject

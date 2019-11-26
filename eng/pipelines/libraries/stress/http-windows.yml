@@ -45,7 +45,7 @@ steps:
     docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
   displayName: Build HttpStress
 
-- bash: |
+- powershell: |
     cd '$(HttpStressProject)'
     docker-compose up --abort-on-container-exit --no-color
   displayName: Run HttpStress
