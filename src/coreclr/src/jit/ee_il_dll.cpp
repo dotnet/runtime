@@ -208,7 +208,7 @@ DLLEXPORT ICorJitCompiler* __stdcall getJit()
 {
     if (!g_jitInitialized)
     {
-        return NULL;
+        return nullptr;
     }
 
     if (ILJitter == nullptr)
