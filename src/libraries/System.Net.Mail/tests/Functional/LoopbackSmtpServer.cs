@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Systen.Net.Mail.Tests
 {
-    public class MockSmtpServer : IDisposable
+    public class LoopbackSmtpServer : IDisposable
     {
         private static readonly ReadOnlyMemory<byte> MessageTerminator = new byte[] { (byte)'\r', (byte)'\n' };
         private static readonly ReadOnlyMemory<byte> BodyTerminator = new byte[] { (byte)'\r', (byte)'\n', (byte)'.', (byte)'\r', (byte)'\n' };
@@ -46,7 +46,7 @@ namespace Systen.Net.Mail.Tests
         public int ConnectionCount { get; private set; }
         public int MessagesReceived { get; private set; }
 
-        public MockSmtpServer()
+        public LoopbackSmtpServer()
         {
             _socketsToDispose = new ConcurrentBag<Socket>();
             _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

@@ -291,12 +291,9 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestMailDelivery()
         {
-            const string Username = "Foo";
-            const string Password = "Bar";
-
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential(Username, Password);
+            client.Credentials = new NetworkCredential("Foo", "Bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             client.Send(msg);
@@ -306,9 +303,9 @@ namespace System.Net.Mail.Tests
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
-            Assert.Equal(Username, server.Username);
-            Assert.Equal(Password, server.Password);
-            Assert.Equal("login", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal("Foo", server.Username);
+            Assert.Equal("Bar", server.Password);
+            Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -345,7 +342,7 @@ namespace System.Net.Mail.Tests
         [InlineData(null)]
         public async Task TestMailDeliveryAsync(string body)
         {
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
 
@@ -359,11 +356,10 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue(28961)]
-        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required
+        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/corefx/issues/28961
         public async Task TestCredentialsCopyInAsyncContext()
         {
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
@@ -376,7 +372,7 @@ namespace System.Net.Mail.Tests
             server.AdvertiseNtlmAuthSupport = true;
             await Assert.ThrowsAsync<SmtpException>(async () => await client.SendMailAsync(msg));
 
-            Assert.Equal("ntlm", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal("NTLM", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
 
@@ -397,7 +393,7 @@ namespace System.Net.Mail.Tests
             // If the server does not support `SMTPUTF8` or use `SmtpDeliveryFormat.SevenBit`, the server should received this subject.
             const string subjectBase64 = "=?utf-8?B?VGVzdCDmtYvor5UgQ29udGFpbiDljIXlkKsgVVRGOA==?=";
 
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
 
             // Setting up Server Support for `SMTPUTF8`.
@@ -439,7 +435,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void SendMailAsync_CanBeCanceled_CancellationToken_SetAlready()
         {
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -456,7 +452,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken()
         {
-            using var server = new MockSmtpServer();
+            using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
 
             server.ReceiveMultipleConnections = true;
