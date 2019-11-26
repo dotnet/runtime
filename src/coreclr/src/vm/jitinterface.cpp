@@ -7504,12 +7504,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
 
         static BYTE ilcode[] = { CEE_LDARG_0,         // stack contains [ O ] = <theObj>
                                  CEE_LDFLDA,0,0,0,0,  // stack contains [ & ] = ref <theObj>.firstField
-#ifdef _TARGET_64BIT_
-                                 CEE_LDC_I4_8,        // stack contains [ &, int32 ]
-#else
-                                 CEE_LDC_I4_4,        // stack contains [ &, int32 ]
-#endif
-                                 CEE_NEG,             // stack contains [ &, int32 ]
+                                 CEE_LDC_I4_S,0,      // stack contains [ &, int32 ] = -IntPtr.Size
                                  CEE_ADD,             // stack contains [ & ] = ref <theObj>.methodTablePtr
                                  CEE_LDIND_I,         // stack contains [ native int ] = <theObj>.methodTablePtr
                                  CEE_RET };
@@ -7518,6 +7513,8 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         ilcode[3] = (BYTE)(tokRawData >> 8);
         ilcode[4] = (BYTE)(tokRawData >> 16);
         ilcode[5] = (BYTE)(tokRawData >> 24);
+
+        ilcode[7] = (BYTE)(-TARGET_POINTER_SIZE);
 
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
