@@ -50,23 +50,43 @@ namespace System.IO
             fileSecurity.Persist(fullPath);
         }
 
+        /// <summary>
+        /// This extension method for FileStream returns a FileSecurity object containing security descriptors from the Access, Owner, and Group AccessControlSections.
+        /// </summary>
+        /// <param name="fileStream">An object that represents the file for retrieving security descriptors from</param>
+        /// <exception cref="ArgumentNullException">is <see langword="null" />.</exception>
+        /// <exception cref="ObjectDisposedException">File is closed.</exception>
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
+            if (fileStream == null)
+                throw new ArgumentNullException(nameof(fileStream));
+
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
             }
+
             return new FileSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
+        /// <summary>
+        /// This extension method for FileStream sets the security descriptors for the file using a FileSecurity instance.
+        /// </summary>
+        /// <param name="fileStream">An object that represents the file to apply security changes to.</param>
+        /// <param name="fileSecurity">An object that determines the access control and audit security for the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> or <paramref name="fileSecurity" /> is <see langword="null" />.</exception>
+        /// <exception cref="ObjectDisposedException">File is closed.</exception>
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
-            SafeFileHandle handle = fileStream.SafeFileHandle;
+            if (fileStream == null)
+                throw new ArgumentNullException(nameof(fileStream));
 
             if (fileSecurity == null)
                 throw new ArgumentNullException(nameof(fileSecurity));
 
+
+            SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
@@ -116,14 +136,10 @@ namespace System.IO
         public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
         {
             if (fileInfo == null)
-            {
                 throw new ArgumentNullException(nameof(fileInfo));
-            }
 
             if (fileSecurity == null)
-            {
                 throw new ArgumentNullException(nameof(fileSecurity));
-            }
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
