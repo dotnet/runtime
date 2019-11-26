@@ -176,9 +176,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                fieldList: MetadataTokens.FieldDefinitionHandle(1),
                methodList: MetadataTokens.MethodDefinitionHandle(1));
 
-            IEnumerable<AssemblyName> manifestAssemblies = _moduleIdToAssemblyNameMap.OrderBy(x => x.Key).Select(x => x.Value);
-            foreach (AssemblyName assemblyName in manifestAssemblies)
+            foreach (var idAndAssemblyName in _moduleIdToAssemblyNameMap.OrderBy(x => x.Key))
             {
+                AssemblyName assemblyName = idAndAssemblyName.Value;
                 AssemblyFlags assemblyFlags = 0;
                 byte[] publicKeyOrToken;
                 if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
