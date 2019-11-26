@@ -40,7 +40,7 @@ public class Foo  {
 
 	public static int Main() {
 		/* Allocate an object down the stack so it doesn't get pinned */
-		CreateFoo (100);
+		typeof (Foo).GetMethod ("CreateFoo").Invoke (null, new object [] { 100 });
 
 		Console.WriteLine (".");
 

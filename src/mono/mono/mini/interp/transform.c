@@ -2387,7 +2387,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		for (i = csignature->sentinelpos; i < csignature->param_count; ++i) {
 			int align, arg_size;
 			arg_size = mono_type_stack_size (csignature->params [i], &align);
-			vararg_stack += ALIGN_TO (arg_size, align);
+			vararg_stack = ALIGN_TO (vararg_stack, align);
+			vararg_stack += arg_size;
 		}
 		/* allocate space for the pointer to varargs space start */
 		vararg_stack += sizeof (gpointer);
@@ -3171,6 +3172,33 @@ interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
 		return FALSE;
 	}
 	return TRUE;
+}
+
+/*
+ * emit_convert:
+ *
+ *   Emit some implicit conversions which are not part of the .net spec, but are allowed by MS.NET.
+ */
+static void
+emit_convert (TransformData *td, int stack_type, MonoType *ftype)
+{
+	ftype = mini_get_underlying_type (ftype);
+
+	// FIXME: Add more
+	switch (ftype->type) {
+	case MONO_TYPE_I8: {
+		switch (stack_type) {
+		case STACK_TYPE_I4:
+			interp_add_ins (td, MINT_CONV_I8_I4);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 static void
@@ -4942,6 +4970,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			mt = mint_type (ftype);
 
+			emit_convert (td, td->sp [-1].type, ftype);
+
 			/* the vtable of the field might not be initialized at this point */
 			MonoClass *fld_klass = mono_class_from_mono_type_internal (ftype);
 			mono_class_vtable_checked (domain, fld_klass, error);
@@ -5906,6 +5936,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case CEE_MONO_SAVE_LAST_ERROR:
 				save_last_error = TRUE;
+				++td->ip;
+				break;
+			case CEE_MONO_GET_SP:
+				interp_add_ins (td, MINT_MONO_GET_SP);
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				++td->ip;
 				break;
 			default:
@@ -7432,7 +7467,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	rtm->stack_size = ALIGN_TO (rtm->stack_size, MINT_VT_ALIGNMENT);
 	rtm->vt_stack_size = td->max_vt_sp;
 	rtm->total_locals_size = td->total_locals_size;
-	rtm->alloca_size = rtm->total_locals_size + rtm->vt_stack_size + rtm->stack_size;
+	rtm->alloca_size = ALIGN_TO (rtm->total_locals_size + rtm->vt_stack_size + rtm->stack_size, 8);
 	rtm->data_items = (gpointer*)mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 

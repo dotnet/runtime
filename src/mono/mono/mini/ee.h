@@ -51,6 +51,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (gpointer, frame_get_local, (MonoInterpFrameHandle frame, int pos)) \
 	MONO_EE_CALLBACK (gpointer, frame_get_this, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (gpointer, frame_get_res, (MonoInterpFrameHandle frame)) \
+	MONO_EE_CALLBACK (gpointer, frame_get_native_stack_addr, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (void, frame_arg_to_data, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)) \
 	MONO_EE_CALLBACK (void, data_to_frame_arg, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)) \
 	MONO_EE_CALLBACK (gpointer, frame_arg_to_storage, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)) \
@@ -60,6 +61,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, stop_single_stepping, (void)) \
 	MONO_EE_CALLBACK (void, free_context, (gpointer)) \
 	MONO_EE_CALLBACK (void, cleanup, (void)) \
+	MONO_EE_CALLBACK (void, mark_stack, (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise)) \
 
 typedef struct _MonoEECallbacks {
 

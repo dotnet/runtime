@@ -71,6 +71,13 @@ stub_frame_get_res (MonoInterpFrameHandle frame)
 	return NULL;
 }
 
+static gpointer
+stub_frame_get_native_stack_addr (MonoInterpFrameHandle frame)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static void
 stub_start_single_stepping (void)
 {
@@ -211,6 +218,11 @@ static void
 stub_free_context (gpointer context)
 {
 	g_assert_not_reached ();
+}
+
+static void
+stub_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboolean precise)
+{
 }
 
 #undef MONO_EE_CALLBACK

@@ -2293,6 +2293,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 	SGEN_TV_GETTIME (scan_thread_data_start);
 
+	if (gc_callbacks.interp_mark_func)
+		/* The interpreter code uses only compiler write barriers so have to synchronize with it */
+		mono_memory_barrier_process_wide ();
+
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		int skip_reason = 0;
 		void *aligned_stack_start;
@@ -2353,6 +2357,14 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 						start_nursery, end_nursery, PIN_TYPE_STACK);
 				}
 			}
+		}
+		if (gc_callbacks.interp_mark_func) {
+			PinHandleStackInteriorPtrData ud;
+			memset (&ud, 0, sizeof (ud));
+			ud.start_nursery = (void**)start_nursery;
+			ud.end_nursery = (void**)end_nursery;
+			SGEN_LOG (3, "Scanning thread %p interp stack", info);
+			gc_callbacks.interp_mark_func (&info->client_info.info, pin_handle_stack_interior_ptrs, &ud, precise);
 		}
 		if (info->client_info.info.handle_stack) {
 			/*

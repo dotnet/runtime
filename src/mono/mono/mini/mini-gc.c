@@ -2542,6 +2542,8 @@ mini_gc_init (void)
 	/* Comment this out to disable precise stack marking */
 	cb.thread_mark_func = thread_mark_func;
 	cb.get_provenance_func = get_provenance_func;
+	if (mono_use_interpreter)
+		cb.interp_mark_func = mini_get_interp_callbacks ()->mark_stack;
 	mono_gc_set_gc_callbacks (&cb);
 
 	logfile = mono_gc_get_logfile ();
@@ -2604,6 +2606,8 @@ mini_gc_init (void)
 	MonoGCCallbacks cb;
 	memset (&cb, 0, sizeof (cb));
 	cb.get_provenance_func = get_provenance_func;
+	if (mono_use_interpreter)
+		cb.interp_mark_func = mini_get_interp_callbacks ()->mark_stack;
 	mono_gc_set_gc_callbacks (&cb);
 }
 

@@ -324,6 +324,7 @@ OPDEF(CEE_MONO_GET_RGCTX_ARG, "mono_get_rgctx_arg", Pop0, PushI, InlineNone, 0, 
 OPDEF(CEE_MONO_LDPTR_PROFILER_ALLOCATION_COUNT, "mono_ldptr_profiler_allocation_count", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1D, NEXT)
 OPDEF(CEE_MONO_LD_DELEGATE_METHOD_PTR, "mono_ld_delegate_method_ptr", Pop1, PushI, InlineNone, 0, 2, 0xF0, 0x1E, NEXT)
 OPDEF(CEE_MONO_RETHROW, "mono_rethrow", PopRef, Push0, InlineNone, 0, 2, 0xF0, 0x1F, ERROR)
+OPDEF(CEE_MONO_GET_SP, "mono_get_sp", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x20, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

@@ -3335,4 +3335,18 @@ L_3:
     IL_0012:  ldloc.2
     IL_0013:  ret
   } // end of method Tests::test_10_rconv_to_u8_ovf_un
+
+  .field private static int64 TestLong
+
+/* Disabled until its fixed on i386
+  .method public static int32 test_1_stsfld_conv () cil managed
+  {
+	ldc.i4.2
+	stsfld int64 Tests::TestLong
+	ldsfld int64 Tests::TestLong
+	ldc.i8 2
+	ceq
+	ret
+   }
+*/
 }

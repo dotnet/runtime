@@ -176,14 +176,43 @@ typedef struct _InterpMethod
 #endif
 } InterpMethod;
 
+typedef struct _StackFragment StackFragment;
+struct _StackFragment {
+	guint8 *pos, *end;
+	struct _StackFragment *next;
+	double data [1];
+};
+
+typedef struct {
+	StackFragment *first, *last, *current;
+	/* For GC sync */
+	int inited;
+} FrameStack;
+
+/* State of the interpreter main loop */
+typedef struct {
+	stackval *sp;
+	unsigned char *vt_sp;
+	const unsigned short  *ip;
+	GSList *finally_ips;
+	gpointer clause_args;
+} InterpState;
+
 struct _InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
+	/* An address on the native stack associated with the frame, used during EH */
+	gpointer       native_stack_addr;
+	/* Stack fragments this frame was allocated from */
+	StackFragment *iframe_frag, *data_frag;
 	/* exception info */
 	const unsigned short  *ip;
+	/* State saved before calls */
+	/* This is valid if state.ip != NULL */
+	InterpState state;
 };
 
 #define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
@@ -199,6 +228,10 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 	/* Exception that is being thrown. Set with rest of resume state */
 	guint32 exc_gchandle;
+	/* Stack of InterpFrames */
+	FrameStack iframe_stack;
+	/* Stack of frame data */
+	FrameStack data_stack;
 } ThreadContext;
 
 typedef struct {
