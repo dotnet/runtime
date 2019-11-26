@@ -67,7 +67,9 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
 #ifdef FEATURE_PAL
     int err = PAL_InitializeDLL();
     if (err != 0)
+    {
         return;
+    }
 #endif
 
     g_jitHost = jitHost;
