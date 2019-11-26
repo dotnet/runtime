@@ -181,9 +181,9 @@ namespace System
         public bool Equals(IntPtr other) => (nint)this == (nint)other;
 
         public override string ToString() => ((nint)this).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string format) => ((nint)this).ToString(format, CultureInfo.InvariantCulture);
+        public string ToString(string? format) => ((nint)this).ToString(format, CultureInfo.InvariantCulture);
         public string ToString(IFormatProvider provider) => ((nint)this).ToString(provider);
-        public string ToString(string format, IFormatProvider provider) => ((nint)this).ToString(format, provider);
+        public string ToString(string? format, IFormatProvider provider) => ((nint)this).ToString(format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint.Parse(s, style);
