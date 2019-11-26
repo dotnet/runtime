@@ -145,7 +145,7 @@ namespace System.Collections.Immutable
         /// <param name="comparer">The comparer to use for initializing and adding members to the sorted set.</param>
         /// <returns>An immutable set.</returns>
         [Pure]
-        public static ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this IEnumerable<TSource> source, IComparer<TSource> comparer)
+        public static ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
             var existingSet = source as ImmutableSortedSet<TSource>;
             if (existingSet != null)

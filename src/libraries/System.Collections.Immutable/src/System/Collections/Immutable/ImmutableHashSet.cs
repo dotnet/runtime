@@ -145,10 +145,9 @@ namespace System.Collections.Immutable
         /// <param name="equalityComparer">The equality comparer to use for initializing and adding members to the hash set.</param>
         /// <returns>An immutable set.</returns>
         [Pure]
-        public static ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource> equalityComparer)
+        public static ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? equalityComparer)
         {
-            var existingSet = source as ImmutableHashSet<TSource>;
-            if (existingSet != null)
+            if (source is ImmutableHashSet<TSource>  existingSet)
             {
                 return existingSet.WithComparer(equalityComparer);
             }

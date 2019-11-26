@@ -113,7 +113,7 @@ namespace System.Collections.Immutable
                         {
                             for (int i = value; i < this.Count; i++)
                             {
-                                _elements[i] = default(T);
+                                _elements[i] = default(T)!;
                             }
                         }
                     }

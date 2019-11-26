@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the currently enumerated value.
             /// </summary>
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get { return this.Current; }
             }

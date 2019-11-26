@@ -697,7 +697,7 @@ namespace System.Collections.Immutable
                 return self;
             }
 
-            List<int> removeIndices = null;
+            List<int>? removeIndices = null;
             for (int i = 0; i < self.array.Length; i++)
             {
                 if (match(self.array[i]))
@@ -1000,7 +1000,7 @@ namespace System.Collections.Immutable
         /// </returns>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw new NotSupportedException();
         }
@@ -1023,11 +1023,11 @@ namespace System.Collections.Immutable
         /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
         [ExcludeFromCodeCoverage]
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return self.Contains((T)value);
+            return self.Contains((T)value!);
         }
 
         /// <summary>
@@ -1038,11 +1038,11 @@ namespace System.Collections.Immutable
         /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
         [ExcludeFromCodeCoverage]
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return self.IndexOf((T)value);
+            return self.IndexOf((T)value!);
         }
 
         /// <summary>
@@ -1052,7 +1052,7 @@ namespace System.Collections.Immutable
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw new NotSupportedException();
         }
@@ -1129,7 +1129,7 @@ namespace System.Collections.Immutable
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw new NotSupportedException();
         }
@@ -1156,7 +1156,7 @@ namespace System.Collections.Immutable
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [ExcludeFromCodeCoverage]
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -1186,14 +1186,13 @@ namespace System.Collections.Immutable
         /// <param name="other">The object to compare with the current instance.</param>
         /// <param name="comparer">An object that determines whether the current instance and other are equal.</param>
         /// <returns>true if the two objects are equal; otherwise, false.</returns>
-        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer)
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
             var self = this;
-            Array otherArray = other as Array;
+            Array? otherArray = other as Array;
             if (otherArray == null)
             {
-                var theirs = other as IImmutableArray;
-                if (theirs != null)
+                if (other is IImmutableArray theirs)
                 {
                     otherArray = theirs.Array;
 
@@ -1237,14 +1236,13 @@ namespace System.Collections.Immutable
         /// An integer that indicates the relationship of the current collection object
         /// to other.
         /// </returns>
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             var self = this;
-            Array otherArray = other as Array;
+            Array? otherArray = other as Array;
             if (otherArray == null)
             {
-                var theirs = other as IImmutableArray;
-                if (theirs != null)
+                if (other is IImmutableArray theirs)
                 {
                     otherArray = theirs.Array;
 
@@ -1258,8 +1256,7 @@ namespace System.Collections.Immutable
                     }
                 }
             }
-
-            if (otherArray != null)
+            else
             {
                 IStructuralComparable ours = self.array;
                 if (ours == null)

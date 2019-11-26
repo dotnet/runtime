@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableSortedSet<T> _immutable;
+            private ImmutableSortedSet<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -492,7 +492,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
+                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;

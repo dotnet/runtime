@@ -82,7 +82,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentOutOfRangeException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Range(bool condition, string parameterName, string message = null)
+        public static void Range(bool condition, string parameterName, string? message = null)
         {
             if (!condition)
             {
@@ -94,7 +94,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentOutOfRangeException"/>.
         /// </summary>
         [DebuggerStepThrough]
-        public static void FailRange(string parameterName, string message = null)
+        public static void FailRange(string parameterName, string? message = null)
         {
             if (string.IsNullOrEmpty(message))
             {
@@ -142,7 +142,7 @@ namespace System.Collections.Immutable
         {
             // separating out this throwing helps with inlining of the caller, especially
             // due to the retrieval of the type's name
-            throw new ObjectDisposedException(disposed.GetType().FullName);
+            throw new ObjectDisposedException(disposed!.GetType().FullName);
         }
     }
 }

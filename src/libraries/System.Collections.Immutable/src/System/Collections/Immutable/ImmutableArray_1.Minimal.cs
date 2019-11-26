@@ -311,15 +311,9 @@ namespace System.Collections.Immutable
         ///   <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         [Pure]
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            IImmutableArray other = obj as IImmutableArray;
-            if (other != null)
-            {
-                return this.array == other.Array;
-            }
-
-            return false;
+            return obj is IImmutableArray other && this.array == other.Array;
         }
 
         /// <summary>
@@ -381,7 +375,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableArray<TOther> As<TOther>() where TOther : class
         {
-            return new ImmutableArray<TOther>(this.array as TOther[]);
+            return new ImmutableArray<TOther>((this.array as TOther[])!);
         }
 
         /// <summary>
