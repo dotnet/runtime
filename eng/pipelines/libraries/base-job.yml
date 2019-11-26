@@ -12,6 +12,7 @@ parameters:
   variables: {}
   name: ''
   displayName: ''
+  testScope: ''
   pool: ''
   stepName: ''
 
@@ -37,6 +38,10 @@ jobs:
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
         - _buildScript: $(buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
+        - _testScopeArg: ''
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_rhel6')) }}:
           - _runtimeOSArg: /p:RuntimeOS=rhel.6
@@ -72,7 +77,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
         - ${{ parameters.variables }}
 
       dependsOn:

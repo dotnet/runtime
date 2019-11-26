@@ -11,6 +11,7 @@ parameters:
   variables: {}
   pool: ''
   runTests: false
+  testScope: ''
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -25,6 +26,7 @@ jobs:
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
+      testScope: ${{ parameters.testScope }}
       stepName: Build
 
       variables:

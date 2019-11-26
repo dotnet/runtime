@@ -25,6 +25,7 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
+      testScope: ${{ parameters.testScope }}
       stepName: Test
 
       dependsOn:
@@ -49,7 +50,6 @@ jobs:
 
         - script: $(_buildScript)
                 -buildtests
-                -testScope ${{ parameters.testScope }}
                 $(_buildArguments)
                 $(_archiveTestsParameter)
           displayName: Build
