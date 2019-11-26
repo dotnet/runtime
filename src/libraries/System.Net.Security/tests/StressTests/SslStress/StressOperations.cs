@@ -180,8 +180,7 @@ namespace SslStress
         protected override async Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, CancellationToken token)
         {
             long messagesInFlight = 0;
-
-            await Utils.TaskExtensions.WhenAllThrowOnFirstException(token, Sender, Receiver);
+            await StressTaskExtensions.WhenAllThrowOnFirstException(token, Sender, Receiver);
 
             async Task Sender(CancellationToken taskToken)
             {
@@ -219,16 +218,37 @@ namespace SslStress
 
             async Task Receiver(CancellationToken token)
             {
-                var serializer = new DataSegmentSerializer();
-                await stream.ReadLinesUsingPipesAsync(Callback, token, separator: '\n');
-
-                Task Callback(ReadOnlySequence<byte> buffer)
+                DateTime lastReadTime = DateTime.Now;
+                await StressTaskExtensions.WhenAllThrowOnFirstException(token, LineReader, ReadMonitor);
+                
+                Task LineReader(CancellationToken token)
                 {
-                    // deserialize to validate the checksum, then discard
-                    DataSegment chunk = serializer.Deserialize(buffer);
-                    chunk.Return();
-                    Interlocked.Decrement(ref messagesInFlight);
-                    return Task.CompletedTask;
+                    var serializer = new DataSegmentSerializer();
+                    return stream.ReadLinesUsingPipesAsync(Callback, token, separator: '\n');
+
+                    Task Callback(ReadOnlySequence<byte> buffer)
+                    {
+                        // deserialize to validate the checksum, then discard
+                        DataSegment chunk = serializer.Deserialize(buffer);
+                        chunk.Return();
+                        Interlocked.Decrement(ref messagesInFlight);
+                        lastReadTime = DateTime.Now;
+                        return Task.CompletedTask;
+                    }
+                }
+
+                async Task ReadMonitor(CancellationToken token)
+                {
+                    do 
+                    {
+                        await Task.Delay(500);
+
+                        if((DateTime.Now - lastReadTime) >= TimeSpan.FromSeconds(10))
+                        {
+                            throw new Exception($"worker #{workerId} has stopped receiving bytes from server");
+                        }
+                    }
+                    while(!token.IsCancellationRequested);
                 }
             }
 

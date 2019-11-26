@@ -20,7 +20,7 @@ namespace SslStress.Utils
 
             try
             {
-                await TaskExtensions.WhenAllThrowOnFirstException(token, FillPipeAsync, ReadPipeAsync);
+                await StressTaskExtensions.WhenAllThrowOnFirstException(token, FillPipeAsync, ReadPipeAsync);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {

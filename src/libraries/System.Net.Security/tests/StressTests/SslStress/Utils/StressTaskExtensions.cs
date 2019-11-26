@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SslStress.Utils
 {
-    public static class TaskExtensions
+    public static class StressTaskExtensions
     {
 
         /// <summary>
