@@ -5,7 +5,7 @@
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump.Arm64
+namespace ILCompiler.Reflection.ReadyToRun.Arm64
 {
     public class Epilog
     {

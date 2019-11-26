@@ -8,7 +8,7 @@ using System.IO;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public struct R2RSection
     {

@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using ILCompiler.Reflection.ReadyToRun;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -166,18 +171,18 @@ namespace R2RDump
             {
                 writer.WriteLine($"UnwindRVA: 0x{theThis.UnwindRVA:X8}");
             }
-            if (theThis.UnwindInfo is Amd64.UnwindInfo amd64UnwindInfo)
+            if (theThis.UnwindInfo is ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo amd64UnwindInfo)
             {
                 string parsedFlags = "";
-                if ((amd64UnwindInfo.Flags & (int)Amd64.UnwindFlags.UNW_FLAG_EHANDLER) != 0)
+                if ((amd64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_EHANDLER) != 0)
                 {
                     parsedFlags += " EHANDLER";
                 }
-                if ((amd64UnwindInfo.Flags & (int)Amd64.UnwindFlags.UNW_FLAG_UHANDLER) != 0)
+                if ((amd64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_UHANDLER) != 0)
                 {
                     parsedFlags += " UHANDLER";
                 }
-                if ((amd64UnwindInfo.Flags & (int)Amd64.UnwindFlags.UNW_FLAG_CHAININFO) != 0)
+                if ((amd64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) != 0)
                 {
                     parsedFlags += " CHAININFO";
                 }
@@ -198,7 +203,7 @@ namespace R2RDump
 
                 for (int unwindCodeIndex = 0; unwindCodeIndex < amd64UnwindInfo.CountOfUnwindCodes; unwindCodeIndex++)
                 {
-                    Amd64.UnwindCode unwindCode = amd64UnwindInfo.UnwindCodeArray[unwindCodeIndex];
+                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode unwindCode = amd64UnwindInfo.UnwindCodeArray[unwindCodeIndex];
                     writer.Write($"UnwindCode[{unwindCode.Index}]: ");
                     writer.Write($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
                     writer.Write($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
@@ -209,7 +214,7 @@ namespace R2RDump
             }
             writer.WriteLine();
 
-            if (theThis.Method.GcInfo is Amd64.GcInfo gcInfo)
+            if (theThis.Method.GcInfo is ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo)
             {
                 writer.WriteLine("GC info:");
                 writer.WriteLine($@"    Version:                           {gcInfo.Version}");
@@ -228,7 +233,7 @@ namespace R2RDump
                 writer.WriteLine($@"    NumInterruptibleRanges:            {gcInfo.NumInterruptibleRanges}");
 
                 writer.WriteLine($@"    SafePointOffsets: {gcInfo.SafePointOffsets.Count}");
-                foreach (Amd64.GcInfo.SafePointOffset safePoint in gcInfo.SafePointOffsets)
+                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo.SafePointOffset safePoint in gcInfo.SafePointOffsets)
                 {
                     writer.WriteLine($@"        Index: {safePoint.Index,2}; Value: 0x{safePoint.Value:X4}");
                     if (gcInfo.LiveSlotsAtSafepoints != null)
@@ -236,7 +241,7 @@ namespace R2RDump
                 }
 
                 writer.WriteLine($@"    InterruptibleRanges: {gcInfo.InterruptibleRanges.Count}");
-                foreach (Amd64.InterruptibleRange range in gcInfo.InterruptibleRanges)
+                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.InterruptibleRange range in gcInfo.InterruptibleRanges)
                 {
                     writer.WriteLine($@"        Index: {range.Index,2}; StartOffset: 0x{range.StartOffset:X4}; StopOffset: 0x{range.StopOffset:X4}");
                 }
@@ -247,7 +252,7 @@ namespace R2RDump
                 writer.WriteLine($@"        NumUntracked:  {gcInfo.SlotTable.NumUntracked}");
                 writer.WriteLine($@"        NumSlots:      {gcInfo.SlotTable.NumSlots}");
                 writer.WriteLine($@"        GcSlots:       {gcInfo.SlotTable.GcSlots.Count}");
-                foreach (Amd64.GcSlotTable.GcSlot slot in gcInfo.SlotTable.GcSlots)
+                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot in gcInfo.SlotTable.GcSlots)
                 {
                     writer.WriteLine($@"            Index: {slot.Index,2}; RegisterNumber: {slot.RegisterNumber,2}; Flags: {slot.Flags}");
                 }

@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public enum CORCOMPILE_GCREFMAP_TOKENS
     {

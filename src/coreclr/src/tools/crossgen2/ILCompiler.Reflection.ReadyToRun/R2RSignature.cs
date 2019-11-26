@@ -10,7 +10,7 @@ using System.Text;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// Helper class for converting metadata tokens into their textual representation.

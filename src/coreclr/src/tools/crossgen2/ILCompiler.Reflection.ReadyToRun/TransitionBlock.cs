@@ -8,7 +8,7 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.IO;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public abstract class TransitionBlock
     {

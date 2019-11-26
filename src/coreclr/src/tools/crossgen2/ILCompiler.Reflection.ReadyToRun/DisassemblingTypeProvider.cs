@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public class DisassemblingGenericContext
     {

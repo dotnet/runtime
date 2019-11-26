@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace R2RDump.Arm64
+namespace ILCompiler.Reflection.ReadyToRun.Arm64
 {
     public enum Registers
     {

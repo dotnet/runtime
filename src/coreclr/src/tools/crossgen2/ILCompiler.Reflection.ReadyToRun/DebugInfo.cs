@@ -9,7 +9,7 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// Represents the debug information for a single method in the ready-to-run image.

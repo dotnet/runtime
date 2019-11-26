@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public struct DebugInfoBoundsEntry
     {

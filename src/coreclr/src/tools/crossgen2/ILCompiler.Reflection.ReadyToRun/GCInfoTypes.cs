@@ -6,7 +6,7 @@ using System;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> infoHdrAdjustConstants

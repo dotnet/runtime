@@ -9,7 +9,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump.Amd64
+namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
     public class GcInfo : BaseGcInfo
     {

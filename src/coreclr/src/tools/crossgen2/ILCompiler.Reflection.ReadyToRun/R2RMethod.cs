@@ -12,7 +12,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public abstract class BaseUnwindInfo
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace R2RDump.x86
+namespace ILCompiler.Reflection.ReadyToRun.x86
 {
     class CallPattern
     {

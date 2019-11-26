@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     public class NativeReader
     {

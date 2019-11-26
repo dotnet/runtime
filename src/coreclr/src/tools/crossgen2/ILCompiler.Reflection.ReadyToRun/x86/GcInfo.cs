@@ -8,7 +8,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump.x86
+namespace ILCompiler.Reflection.ReadyToRun.x86
 {
     public class GcInfo : BaseGcInfo
     {

@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace R2RDump.Arm
+namespace ILCompiler.Reflection.ReadyToRun.Arm
 {
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/jit/unwindarm.cpp">src/jit/unwindarm.cpp</a> mapRegNumToDwarfReg

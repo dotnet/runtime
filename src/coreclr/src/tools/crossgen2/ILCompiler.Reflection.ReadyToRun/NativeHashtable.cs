@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeParser</a>

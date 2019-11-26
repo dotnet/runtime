@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump.x86
+namespace ILCompiler.Reflection.ReadyToRun.x86
 {
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> InfoHdrSmall

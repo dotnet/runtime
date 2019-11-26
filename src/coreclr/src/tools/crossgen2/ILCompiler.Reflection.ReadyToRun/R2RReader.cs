@@ -15,7 +15,7 @@ using System.Xml.Serialization;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 
-namespace R2RDump
+namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
     /// This structure represents a single precode fixup cell decoded from the
