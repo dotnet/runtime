@@ -434,6 +434,57 @@ namespace System.Net.Mail.Tests
             }
         }
 
+        [Fact]
+        public void SendMailAsync_CanBeCanceled_CancellationToken_SetAlready()
+        {
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
+
+            Task sendTask = client.SendMailAsync(message, cts.Token);
+
+            // Tests an implementation detail - if a CT is already set a canceled task will be returned
+            Assert.True(sendTask.IsCanceled);
+        }
+
+        [Fact]
+        public async Task SendMailAsync_CanBeCanceled_CancellationToken()
+        {
+            using var server = new MockSmtpServer();
+            using SmtpClient client = server.CreateClient();
+
+            server.ReceiveMultipleConnections = true;
+
+            // The server will introduce some fake latency so that the operation can be canceled before the request completes
+            ManualResetEvent serverMre = new ManualResetEvent(false);
+            server.OnConnected += _ => serverMre.WaitOne();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
+
+            Task sendTask = client.SendMailAsync(message, cts.Token);
+
+            cts.Cancel();
+            await Task.Delay(500);
+            serverMre.Set();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask);
+
+            // We should still be able to send mail on the SmtpClient instance
+            await client.SendMailAsync(message);
+
+            Assert.Equal("<foo@internet.com>", server.MailFrom);
+            Assert.Equal("<bar@internet.com>", server.MailTo);
+            Assert.Equal("Foo", server.Message.Subject);
+            Assert.Equal("Bar", server.Message.Body);
+            Assert.Equal(GetClientDomain(), server.ClientDomain);
+        }
+
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim();
     }
 }
