@@ -6,6 +6,8 @@ namespace System.Text.RegularExpressions
 {
     internal readonly struct RegexPrefix
     {
+        internal static RegexPrefix Empty { get; } = new RegexPrefix(string.Empty, false);
+
         internal RegexPrefix(string prefix, bool ci)
         {
             Prefix = prefix;
@@ -13,8 +15,6 @@ namespace System.Text.RegularExpressions
         }
 
         internal bool CaseInsensitive { get; }
-
-        internal static RegexPrefix Empty { get; } = new RegexPrefix(string.Empty, false);
 
         internal string Prefix { get; }
     }

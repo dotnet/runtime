@@ -33,10 +33,10 @@ namespace System.Text.RegularExpressions
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
-            Span<char> buffer = stackalloc char[256];
-            ValueStringBuilder vsb = new ValueStringBuilder(buffer);
-            List<string> strings = new List<string>();
-            List<int> rules = new List<int>();
+            Span<char> vsbStack = stackalloc char[256];
+            var vsb = new ValueStringBuilder(vsbStack);
+            var strings = new List<string>();
+            var rules = new List<int>();
 
             for (int i = 0; i < concat.ChildCount(); i++)
             {
@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions
                         {
                             rules.Add(strings.Count);
                             strings.Add(vsb.ToString());
-                            vsb.Length = 0;
+                            vsb = new ValueStringBuilder(vsbStack);
                         }
                         int slot = child.M;
 
@@ -203,8 +203,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                Span<char> charInitSpan = stackalloc char[256];
-                var vsb = new ValueStringBuilder(charInitSpan);
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
 
                 if (!regex.RightToLeft)
                 {

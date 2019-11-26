@@ -42,16 +42,7 @@ namespace System.Text.RegularExpressions
         /// group, in innermost-leftmost-first order (or innermost-rightmost-first order if
         /// compiled with the "r" option). The collection may have zero or more items.
         /// </summary>
-        public CaptureCollection Captures
-        {
-            get
-            {
-                if (_capcoll == null)
-                    _capcoll = new CaptureCollection(this);
-
-                return _capcoll;
-            }
-        }
+        public CaptureCollection Captures => _capcoll ??= new CaptureCollection(this);
 
         /// <summary>
         /// Returns a Group object equivalent to the one supplied that is safe to share between

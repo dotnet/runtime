@@ -8,6 +8,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -26,10 +27,7 @@ namespace System.Text.RegularExpressions
 
         public static int CacheSize
         {
-            get
-            {
-                return s_cacheSize;
-            }
+            get => s_cacheSize;
             set
             {
                 if (value < 0)
@@ -76,8 +74,9 @@ namespace System.Text.RegularExpressions
         {
             // to avoid lock:
             CachedCodeEntry? first = s_cacheFirst;
-            if (first?.Key == key)
+            if (first != null && first.Key.Equals(key))
                 return first;
+
             if (s_cacheSize == 0)
                 return null;
 
@@ -90,10 +89,12 @@ namespace System.Text.RegularExpressions
             {
                 // first look for it in the cache and move it to the head
                 CachedCodeEntry? entry = LookupCachedAndPromote(key);
+
                 // it wasn't in the cache, so we'll add a new one
                 if (entry == null && isToAdd && s_cacheSize != 0) // check cache size again in case it changed
                 {
                     entry = new CachedCodeEntry(key, capnames!, capslist!, _code!, caps!, capsize, _runnerref!, _replref!);
+
                     // put first in linked list:
                     if (s_cacheFirst != null)
                     {
@@ -107,9 +108,14 @@ namespace System.Text.RegularExpressions
                     if (s_cacheCount >= CacheDictionarySwitchLimit)
                     {
                         if (s_cacheCount == CacheDictionarySwitchLimit)
+                        {
                             FillCacheDictionary();
+                        }
                         else
+                        {
                             s_cache.Add(key, entry);
+                        }
+
                         SysDebug.Assert(s_cacheCount == s_cache.Count);
                     }
 
@@ -134,8 +140,8 @@ namespace System.Text.RegularExpressions
                         s_cacheLast = last.Next;
                         s_cacheCount--;
                     }
-
                 }
+
                 return entry;
             }
         }
@@ -167,24 +173,31 @@ namespace System.Text.RegularExpressions
 
         private static bool TryGetCacheValueSmall(CachedCodeEntryKey key, [NotNullWhen(true)] out CachedCodeEntry? entry)
         {
-            entry = s_cacheFirst?.Previous; // first already checked
-            while (entry != null)
+            CachedCodeEntry? current = s_cacheFirst; // first already checked
+            if (current != null)
             {
-                if (entry.Key == key)
-                    return true;
-                entry = entry.Previous;
+                for (current = current.Previous; current != null; current = current.Previous)
+                {
+                    if (current.Key.Equals(key))
+                    {
+                        entry = current;
+                        return true;
+                    }
+                }
             }
 
+            entry = null;
             return false;
         }
 
         private static CachedCodeEntry? LookupCachedAndPromote(CachedCodeEntryKey key)
         {
             SysDebug.Assert(Monitor.IsEntered(s_cache));
-            if (s_cacheFirst?.Key == key) // again check this as could have been promoted by other thread
-                return s_cacheFirst;
 
-            if (TryGetCacheValue(key, out CachedCodeEntry? entry))
+            CachedCodeEntry? entry = s_cacheFirst;
+            if (entry != null &&
+                !entry.Key.Equals(key) && // again check this as could have been promoted by other thread
+                TryGetCacheValue(key, out entry))
             {
                 // promote:
                 SysDebug.Assert(s_cacheFirst != entry, "key should not get s_livecode_first");
@@ -220,44 +233,42 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal readonly struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
         {
-            private readonly RegexOptions _options;
-            private readonly string _cultureKey;
             private readonly string _pattern;
+            private readonly string _cultureKey;
+            private readonly RegexOptions _options;
+            private readonly bool _hasTimeout;
 
-            public CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
+            public CachedCodeEntryKey(string pattern, string cultureKey, RegexOptions options, bool hasTimeout)
             {
-                SysDebug.Assert(cultureKey != null, "Culture must be provided");
                 SysDebug.Assert(pattern != null, "Pattern must be provided");
+                SysDebug.Assert(cultureKey != null, "Culture must be provided");
 
-                _options = options;
-                _cultureKey = cultureKey;
                 _pattern = pattern;
+                _cultureKey = cultureKey;
+                _options = options;
+                _hasTimeout = hasTimeout;
             }
 
-            public override bool Equals(object? obj)
-            {
-                return obj is CachedCodeEntryKey && Equals((CachedCodeEntryKey)obj);
-            }
+            public override bool Equals(object? obj) =>
+                obj is CachedCodeEntryKey other && Equals(other);
 
-            public bool Equals(CachedCodeEntryKey other)
-            {
-                return _pattern.Equals(other._pattern) && _options == other._options && _cultureKey.Equals(other._cultureKey);
-            }
+            public bool Equals(CachedCodeEntryKey other) =>
+                _pattern.Equals(other._pattern) &&
+                _cultureKey.Equals(other._cultureKey) &&
+                _options == other._options &&
+                _hasTimeout == other._hasTimeout;
 
-            public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right)
-            {
-                return left.Equals(right);
-            }
+            public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+                left.Equals(right);
 
-            public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right)
-            {
-                return !left.Equals(right);
-            }
+            public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+                !left.Equals(right);
 
-            public override int GetHashCode()
-            {
-                return ((int)_options) ^ _cultureKey.GetHashCode() ^ _pattern.GetHashCode();
-            }
+            public override int GetHashCode() =>
+                _pattern.GetHashCode() ^
+                _cultureKey.GetHashCode() ^
+                ((int)_options);
+                // no need to include timeout in the hashcode; it'll almost always be the same
         }
 
         /// <summary>

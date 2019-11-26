@@ -161,8 +161,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                Span<char> charInitSpan = stackalloc char[ReplaceBufferSize];
-                var vsb = new ValueStringBuilder(charInitSpan);
+                var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
 
                 if (!regex.RightToLeft)
                 {

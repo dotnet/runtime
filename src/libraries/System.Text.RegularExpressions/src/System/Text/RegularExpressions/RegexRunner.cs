@@ -195,10 +195,7 @@ namespace System.Text.RegularExpressions
             // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
             // overflow it will still stay ahead of Environment.TickCount for comparisons made
             // in DoCheckTimeout():
-            unchecked
-            {
-                _timeoutOccursAt = Environment.TickCount + _timeout;
-            }
+            _timeoutOccursAt = Environment.TickCount + _timeout;
         }
 
         protected void CheckTimeout()
