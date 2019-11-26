@@ -37,7 +37,7 @@ int LoadNativeStringResource(const NativeStringResourceTable &nativeStringResour
 
         if (resourceEntry != NULL)
         {
-            len = PAL_GetResourceString(NULL, resourceEntry->resourceString, szBuffer, iMax);
+            len = UTF8ToUnicode(resourceEntry->resourceString, strlen(resourceEntry->resourceString) + 1, szBuffer, iMax, 0);
             if (len == 0)
             {
                 int hr = HRESULT_FROM_GetLastError();

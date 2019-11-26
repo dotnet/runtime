@@ -31,15 +31,6 @@ extern "C"
 
 /*++
 Function :
-    UTF8ToUnicode
-
-    Convert a string from UTF-8 to UTF-16 (UCS-2)
---*/
-int UTF8ToUnicode(LPCSTR lpSrcStr, int cchSrc, LPWSTR lpDestStr, int cchDest, DWORD dwFlags);
-
-
-/*++
-Function :
     UnicodeToUTF8
 
     Convert a string from UTF-16 (UCS-2) to UTF-8

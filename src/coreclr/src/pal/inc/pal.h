@@ -3000,19 +3000,16 @@ WideCharToMultiByte(
             IN LPCSTR lpDefaultChar,
             OUT LPBOOL lpUsedDefaultChar);
 
+/*++
+Function :
+    UTF8ToUnicode
+
+    Convert a string from UTF-8 to UTF-16 (UCS-2)
+--*/
 PALIMPORT
 int
 PALAPI
-PAL_GetResourceString(
-        IN LPCSTR lpDomain,
-        IN LPCSTR lpResourceStr,
-        OUT LPWSTR lpWideCharStr,
-        IN int cchWideChar);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_BindResources(IN LPCSTR lpDomain);
+UTF8ToUnicode(LPCSTR lpSrcStr, int cchSrc, LPWSTR lpDestStr, int cchDest, DWORD dwFlags);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
