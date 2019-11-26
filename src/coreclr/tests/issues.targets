@@ -123,9 +123,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/**/*">
-            <Issue>168</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
