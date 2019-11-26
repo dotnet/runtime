@@ -1993,11 +1993,23 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                MethodIL stubIL = _compilation.GetMethodIL(method);
-                if (stubIL == null)
+                MethodIL stubIL = null;
+                try
                 {
-                    // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
-                    Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                    stubIL = _compilation.GetMethodIL(method);
+                    if (stubIL == null)
+                    {
+                        // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
+                        Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                        return true;
+                    }
+                }
+                catch (RequiresRuntimeJitException)
+                {
+                    // The PInvoke IL emitter will throw for known unsupported scenario. We cannot propagate the exception here since
+                    // this interface call might be used to check if a certain pinvoke can be inlined in the caller. Throwing means that the
+                    // caller will not get compiled. Instead, we'll return true to let the JIT know that it cannot inline the pinvoke, and
+                    // the actual pinvoke call will be handled by a stub that we create and compile in the runtime.
                     return true;
                 }
 
