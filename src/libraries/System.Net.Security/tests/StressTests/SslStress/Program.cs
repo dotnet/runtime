@@ -74,8 +74,17 @@ namespace SslStress
 
             try
             {
-                if (client != null) await client.StopAsync();
-                if (server != null) await server.StopAsync();
+                if (client != null) 
+                {
+                    await client.StopAsync();
+                    Console.WriteLine("client stopped");
+                }
+
+                if (server != null) 
+                {
+                    await server.StopAsync();
+                    Console.WriteLine("server stopped");
+                }
             }
             finally
             {

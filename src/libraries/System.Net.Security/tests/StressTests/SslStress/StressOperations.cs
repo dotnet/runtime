@@ -180,7 +180,10 @@ namespace SslStress
         protected override async Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, CancellationToken token)
         {
             long messagesInFlight = 0;
-            await StressTaskExtensions.WhenAllThrowOnFirstException(token, Sender, Receiver);
+            DateTime lastWrite = DateTime.Now;
+            DateTime lastRead = DateTime.Now;
+
+            await StressTaskExtensions.WhenAllThrowOnFirstException(token, Sender, Receiver, Monitor);
 
             async Task Sender(CancellationToken taskToken)
             {
@@ -199,6 +202,7 @@ namespace SslStress
                             stream.WriteByte((byte)'\n');
                             await stream.FlushAsync(token);
                             Interlocked.Increment(ref messagesInFlight);
+                            lastWrite = DateTime.Now;
                         }
                         finally
                         {
@@ -216,39 +220,19 @@ namespace SslStress
                 }
             }
 
-            async Task Receiver(CancellationToken token)
+            Task Receiver(CancellationToken token)
             {
-                DateTime lastReadTime = DateTime.Now;
-                await StressTaskExtensions.WhenAllThrowOnFirstException(token, LineReader, ReadMonitor);
-                
-                Task LineReader(CancellationToken token)
+                var serializer = new DataSegmentSerializer();
+                return stream.ReadLinesUsingPipesAsync(Callback, token, separator: '\n');
+
+                Task Callback(ReadOnlySequence<byte> buffer)
                 {
-                    var serializer = new DataSegmentSerializer();
-                    return stream.ReadLinesUsingPipesAsync(Callback, token, separator: '\n');
-
-                    Task Callback(ReadOnlySequence<byte> buffer)
-                    {
-                        // deserialize to validate the checksum, then discard
-                        DataSegment chunk = serializer.Deserialize(buffer);
-                        chunk.Return();
-                        Interlocked.Decrement(ref messagesInFlight);
-                        lastReadTime = DateTime.Now;
-                        return Task.CompletedTask;
-                    }
-                }
-
-                async Task ReadMonitor(CancellationToken token)
-                {
-                    do 
-                    {
-                        await Task.Delay(500);
-
-                        if((DateTime.Now - lastReadTime) >= TimeSpan.FromSeconds(10))
-                        {
-                            throw new Exception($"worker #{workerId} has stopped receiving bytes from server");
-                        }
-                    }
-                    while(!token.IsCancellationRequested);
+                    // deserialize to validate the checksum, then discard
+                    DataSegment chunk = serializer.Deserialize(buffer);
+                    chunk.Return();
+                    Interlocked.Decrement(ref messagesInFlight);
+                    lastRead = DateTime.Now;
+                    return Task.CompletedTask;
                 }
             }
 
@@ -273,6 +257,25 @@ namespace SslStress
 
                     Console.WriteLine($"worker #{workerId}: resuming tx after {stopwatch.Elapsed}");
                 }
+            }
+            
+            async Task Monitor(CancellationToken token)
+            {
+                do 
+                {
+                    await Task.Delay(500);
+
+                    if((DateTime.Now - lastWrite) >= TimeSpan.FromSeconds(10))
+                    {
+                        throw new Exception($"worker #{workerId} has stopped writing bytes to server");
+                    }
+
+                    if((DateTime.Now - lastRead) >= TimeSpan.FromSeconds(10))
+                    {
+                        throw new Exception($"worker #{workerId} has stopped receiving bytes from server");
+                    }
+                }
+                while(!token.IsCancellationRequested);
             }
         }
     }
