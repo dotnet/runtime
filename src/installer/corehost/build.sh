@@ -25,7 +25,7 @@ init_rid_plat()
                 # remove the last version number
                 VERSION_ID=${VERSION_ID%.*}
             fi
-            __rid_plat="$ID.$VERSION_ID"
+            __rid_plat="$ID${VERSION_ID:+.$VERSION_ID}"
             if [[ "$ID" == "alpine" ]]; then
                 __rid_plat="linux-musl"
             fi
