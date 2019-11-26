@@ -25,9 +25,3 @@ EXPORTS
         coreclr_initialize
         coreclr_shutdown
         coreclr_shutdown_2
-
-        ; il{d}asm
-        MetaDataGetDispenser
-        GetMetaDataInternalInterface
-        GetMetaDataInternalInterfaceFromPublic
-        GetMetaDataPublicInterfaceFromInternal

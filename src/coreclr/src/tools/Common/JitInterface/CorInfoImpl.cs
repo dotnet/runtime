@@ -58,9 +58,6 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary)]
-        private extern static IntPtr PAL_RegisterModule([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);
-
         [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
 
@@ -121,14 +118,6 @@ namespace Internal.JitInterface
             if (jitConfig.JitPath != null)
             {
                 NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                // TODO: The PAL_RegisterModule export should be removed from the JIT
-                // and the call to PAL_InitializeDLL should be moved to jitStartup.
-                // https://github.com/dotnet/coreclr/issues/27941
-                PAL_RegisterModule("libclrjitilc.so");
             }
 
             jitStartup(GetJitHost(jitConfig.UnmanagedInstance));

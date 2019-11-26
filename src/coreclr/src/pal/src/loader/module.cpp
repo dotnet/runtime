@@ -1709,13 +1709,7 @@ BOOL LOADInitializeCoreCLRModule()
         ERROR("Can not load the PAL module\n");
         return FALSE;
     }
-    PDLLMAIN pRuntimeDllMain = (PDLLMAIN)dlsym(module->dl_handle, "CoreDllMain");
-    if (!pRuntimeDllMain)
-    {
-        ERROR("Can not find the CoreDllMain entry point\n");
-        return FALSE;
-    }
-    return pRuntimeDllMain(module->hinstance, DLL_PROCESS_ATTACH, nullptr);
+    return TRUE;
 }
 
 /*++
