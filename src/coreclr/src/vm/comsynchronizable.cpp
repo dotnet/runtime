@@ -78,7 +78,7 @@ struct SharedState
 
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
-// is responsible for managing his own race conditions.
+// is responsible for managing their own race conditions.
 //
 // Note: if the internal Thread is NULL, this implies that the exposed object has
 //       finalized and then been resurrected.

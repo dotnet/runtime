@@ -1460,7 +1460,7 @@ namespace System.Xml
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
-            // whether ReadContentAsXxx calls are allowed on his node type
+            // whether ReadContentAsXxx calls are allowed on its node type
             Debug.Assert(0 == (CanReadContentAsBitmap & (1 << (int)XmlNodeType.None)));
             Debug.Assert(0 == (CanReadContentAsBitmap & (1 << (int)XmlNodeType.Element)));
             Debug.Assert(0 != (CanReadContentAsBitmap & (1 << (int)XmlNodeType.Attribute)));

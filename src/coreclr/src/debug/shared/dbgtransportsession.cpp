@@ -1339,7 +1339,7 @@ void DbgTransportSession::TransportWorker()
         }
 
         // Note that when resynching a session we may let in a connection from a different debugger. That's
-        // OK, we'll reject his SessionRequest message in due course and drop the connection.
+        // OK, we'll reject its SessionRequest message in due course and drop the connection.
 #endif // RIGHT_SIDE_COMPILE
 
         DBG_TRANSPORT_INC_STAT(Connections);

@@ -130,7 +130,7 @@ local void make_crc_table()
         crc_table_empty = 0;
     }
     else {      /* not first */
-        /* wait for the other guy to finish (not efficient, but rare) */
+        /* wait for the other task to finish (not efficient, but rare) */
         while (crc_table_empty)
             ;
     }

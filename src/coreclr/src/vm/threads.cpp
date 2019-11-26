@@ -678,7 +678,7 @@ Thread* SetupThread(BOOL fInternal)
             }
         }
 
-        // It's perfectly reasonable to not find this guy.  It's just an unrelated
+        // It's perfectly reasonable to not find the thread.  It's just an unrelated
         // thread spinning up.
         if (pThread)
         {
@@ -3268,7 +3268,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
     // If we're going to pump, we cannot use WAIT_ALL.  That's because the wait would
     // only be satisfied if a message arrives while the handles are signalled.  If we
     // want true WAIT_ALL, we need to fire up a different thread in the MTA and wait
-    // on his result.  This isn't implemented yet.
+    // on its result.  This isn't implemented yet.
     //
     // A change was added to WaitHandleNative::CorWaitMultipleNative to disable WaitAll
     // in an STA with more than one handle.
