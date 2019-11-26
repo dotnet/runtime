@@ -20,16 +20,13 @@ namespace System.Net.Quic.Tests
             // Verify same cert as kestrel
             // Get stub tls
             // Figure out the
-            //            Exception thrown at 0x00007FF920D25A29 in dotnet.exe: Microsoft C++exception: EETypeLoadException at memory location 0x0000003620BEE990.
-            //Exception thrown at 0x00007FF920D25A29 in dotnet.exe: Microsoft C++exception: [rethrow] at memory location 0x0000000000000000.
-            //Exception thrown at 0x00007FF920D25A29 in dotnet.exe: Microsoft C++ exception: EETypeLoadException at memory location 0x0000003620BEE990.
             var store = new X509Store(StoreLocation.LocalMachine);
             store.Open(OpenFlags.ReadOnly);
             X509Certificate2Collection cers = store.Certificates.Find(X509FindType.FindBySubjectName, "localhost", false);
 
             var sslServerOptions = new SslServerAuthenticationOptions()
             {
-                ServerCertificate = cers[0], // TODO add cert
+                ServerCertificate = cers[0],
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
             };
 

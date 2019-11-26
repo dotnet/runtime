@@ -161,5 +161,18 @@ namespace System.Net.Quic.Implementations.Mock
                 _socket = null;
             }
         }
+
+        public override ValueTask DisposeAsync()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+
+                _socket?.Dispose();
+                _socket = null;
+            }
+
+            return default;
+        }
     }
 }

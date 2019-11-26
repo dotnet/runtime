@@ -1,14 +1,16 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal class MsQuicApi : IDisposable
     {
-        private bool _disposed = false;
+        private bool _disposed;
 
         private IntPtr _registrationContext;
 
