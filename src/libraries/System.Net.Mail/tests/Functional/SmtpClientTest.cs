@@ -485,6 +485,6 @@ namespace System.Net.Mail.Tests
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
-        private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim();
+        private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
     }
 }

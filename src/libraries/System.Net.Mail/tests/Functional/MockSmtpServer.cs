@@ -105,7 +105,7 @@ namespace Systen.Net.Mail.Tests
 
                 string message = await ReceiveMessageAsync();
                 Debug.Assert(message.ToLower().StartsWith("helo ") || message.ToLower().StartsWith("ehlo "));
-                ClientDomain = message.Substring(5);
+                ClientDomain = message.Substring(5).ToLower();
                 OnCommandReceived?.Invoke(message.Substring(0, 4), ClientDomain);
                 OnHelloReceived?.Invoke(ClientDomain);
 
