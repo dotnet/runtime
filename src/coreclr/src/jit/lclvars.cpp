@@ -2666,7 +2666,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 // Notes:
 //    Preferentially uses the tree's type, when available. Since not all
 //    tree kinds can track ref types, the stack type is used as a
-//    fallback.
+//    fallback. If there is no stack type, then the class is set to object.
 
 void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
@@ -2681,6 +2681,10 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
     else if (stackHnd != nullptr)
     {
         lvaSetClass(varNum, stackHnd);
+    }
+    else
+    {
+        lvaSetClass(varNum, impGetObjectClass());
     }
 }
 
