@@ -99,6 +99,9 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
     return result;
 }
 
+#endif // PLATFORM_WINDOWS
+
+
 extern "C"
 #ifdef FEATURE_PAL
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
