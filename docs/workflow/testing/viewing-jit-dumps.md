@@ -2,14 +2,15 @@
 
 This document is intended for people interested in seeing the disassembly, GC info, or other details the JIT generates for a managed program.
 
-To make sense of the results, it is recommended you also read the [Reading a JitDump](../botr/ryujit-overview.md#reading-a-jitdump) section of the RyuJIT Overview.
+To make sense of the results, it is recommended you also read the [Reading a JitDump](/docs/design/coreclr/botr/ryujit-overview.md#reading-a-jitdump) section of the RyuJIT Overview.
 
 ## Setting up our environment
 
 The first thing to do is setup the .NET Core app we want to dump. Here are the steps to do this, if you don't have one ready:
 
-* Perform a release build of the CoreCLR repo by passing `release` to the build command. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster. Note: the release build can be skipped, but in order to see optimized code of the core library it is needed.
-* Perform a debug build of the CoreCLR repo. Tests aren't needed as in the release build, so you can pass `skiptests` to the build command. Note: the debug build is necessary, so that the JIT recognizes the configuration knobs.
+* Cd into `src/coreclr`
+* Perform a release build of the runtime by passing `release` to the build command. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster. Note: the release build can be skipped, but in order to see optimized code of the core library it is needed.
+* Perform a debug build of the runtime. Tests aren't needed as in the release build, so you can pass `skiptests` to the build command. Note: the debug build is necessary, so that the JIT recognizes the configuration knobs.
 * Install the (latest) [.NET CLI](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md), which we'll use to compile/publish our app.
 * `cd` to where you want your app to be placed, and run `dotnet new console`.
 * Modify your `csproj` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `<RuntimeIdentifier>` tag. For example, for Windows 10 x64 machine, the project file is:
@@ -19,7 +20,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <TargetFramework>netcoreapp5.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
 
@@ -57,17 +58,17 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
     }
     ```
 
-* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `artifacts/Release/<configuration>/<rid>/publish`.
+* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/netcoreapp5.0/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
 
     ```shell
     # Windows
-    robocopy /e <coreclr path>\artifacts\Product\Windows_NT.<arch>.Release <app root>\artifacts\Release\netcoreapp3.0\<rid>\publish > NUL
-    copy /y <coreclr path>\artifacts\Product\Windows_NT.<arch>.Debug\clrjit.dll <app root>\artifacts\Release\netcoreapp3.0\<rid>\publish > NUL
+    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Release <app root>\bin\Release\netcoreapp5.0\<rid>\publish > NUL
+    copy /y <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Debug\clrjit.dll <app root>\bin\Release\netcoreapp5.0\<rid>\publish > NUL
 
     # Unix
-    cp -rT <coreclr path>/artifacts/Product/<OS>.<arch>.Release <app root>/artifacts/Release/netcoreapp3.0/<rid>/publish
-    cp <coreclr path>/artifacts/Product/<OS>.<arch>.Debug/libclrjit.so <app root>/artifacts/Release/netcoreapp3.0/<rid>/publish
+    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/netcoreapp5.0/<rid>/publish
+    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/netcoreapp5.0/<rid>/publish
     ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.
@@ -97,7 +98,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
@@ -147,7 +148,7 @@ The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In 
 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
-* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](../botr/ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](/docs/design/coreclr/botr/ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
 * `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
 * `COMPlus_JitGCDump`={method-list} – dump the GC information.
@@ -158,7 +159,7 @@ Below are some of the most useful `COMPlus` variables. Where {method-list} is sp
 
 ## Dumping native images
 
-If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in mscorlib, which (by default) is compiled ahead-of-time to a native image via [crossgen](../building/crossgen.md). Telling crossgen to dump the info works slightly differently.
+If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in mscorlib, which (by default) is compiled ahead-of-time to a native image via [crossgen](/docs/workflow/building/coreclr/crossgen.md). Telling crossgen to dump the info works slightly differently.
 
 * First, perform a debug build of the native parts of the repo: `build skipmscorlib skiptests`.
   * This should produce the binaries for crossgen in `artifacts/Product/<OS>.<arch>.Debug`.
