@@ -7,6 +7,7 @@ SHELL ["pwsh", "-Command"]
 
 WORKDIR /app
 COPY . .
+WORKDIR /app/System.Net.Security/tests/StressTests/SslStress 
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $env:CONFIGURATION
