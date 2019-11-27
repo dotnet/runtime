@@ -6393,6 +6393,13 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
     if (block->hasTryIndex())
     {
+        // This does not apply to the raw pinvoke call that is inside the pinvoke
+        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
+        // otherwise we would end up with a stub that recursively calls itself, and end
+        // up with a stack overflow.
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+            return true;
+
         return false;
     }
 #endif // _TARGET_64BIT_
