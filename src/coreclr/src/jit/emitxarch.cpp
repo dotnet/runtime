@@ -13891,26 +13891,38 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_lea:
             // uops.info
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
-                result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
+            result.insLatency    = PERFSCORE_LATENCY_1C;
 
-                regNumber indexReg = id->idAddr()->iiaAddrMode.amIndxReg;
-                if (indexReg != REG_NA)
+            if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
+            {
+                regNumber baseReg = id->idAddr()->iiaAddrMode.amBaseReg;
+                if (baseReg != REG_NA)
                 {
-                    regNumber baseReg = id->idAddr()->iiaAddrMode.amBaseReg;
-                    if (baseReg != REG_NA)
+                    ssize_t dsp = emitGetInsAmdAny(id);
+                    if (dsp != 0)
                     {
-                        ssize_t dsp = emitGetInsAmdAny(id);
-                        if (dsp != 0)
+                        // three components
+                        //
+                        // - throughput is only 1 per cycle
+                        //
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        if ((baseReg == REG_RBP) || (baseReg == REG_R13) || id->idIsDspReloc())
                         {
-                            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // three components
+                            // Increased Latency for these cases
+                            //  - see https://reviews.llvm.org/D32277
+                            //
+                            result.insLatency = PERFSCORE_LATENCY_3C;
                         }
                     }
                 }
                 if (id->idIsDspReloc())
                 {
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // RIP relative
+                    // RIP relative addressing
+                    //
+                    // - throughput is only 1 per cycle
+                    //
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 }
             }
             break;
@@ -14304,14 +14316,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
-                // movq   xmm, m32
+                // movd   xmm, m32
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
             }
             else
             {
-                // movq   m32, xmm
+                // movd   m32, xmm
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
             }
             break;
 
@@ -14326,12 +14340,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 // movq   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
             }
             else
             {
                 // movq   mem, reg
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
             }
             break;
 
@@ -14347,12 +14363,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 // ins   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
             }
             else
             {
                 // ins   mem, reg
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
             }
             break;
 
@@ -14400,6 +14418,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_vzeroupper:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            // insLatency is zero and is set when we Model the memory latency
             break;
 
         case INS_movss:
