@@ -13900,14 +13900,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 if (baseReg != REG_NA)
                 {
                     ssize_t dsp = emitGetInsAmdAny(id);
-                    if (dsp != 0)
+
+                    if ((dsp != 0) || baseRegisterRequiresDisplacement(baseReg))
                     {
                         // three components
                         //
                         // - throughput is only 1 per cycle
                         //
                         result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                        if ((baseReg == REG_RBP) || (baseReg == REG_R13) || id->idIsDspReloc())
+
+                        if (baseRegisterRequiresDisplacement(baseReg) || id->idIsDspReloc())
                         {
                             // Increased Latency for these cases
                             //  - see https://reviews.llvm.org/D32277
