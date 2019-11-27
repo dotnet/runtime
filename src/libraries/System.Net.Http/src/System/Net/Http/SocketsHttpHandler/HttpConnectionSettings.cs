@@ -23,6 +23,7 @@ namespace System.Net.Http
         internal bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
         internal IWebProxy _proxy;
         internal ICredentials _defaultProxyCredentials;
+        internal ICredentials _defaultCredentials = CredentialCache.DefaultCredentials;
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials _credentials;
@@ -72,6 +73,7 @@ namespace System.Net.Http
                 _connectTimeout = _connectTimeout,
                 _credentials = _credentials,
                 _defaultProxyCredentials = _defaultProxyCredentials,
+                _defaultCredentials = _defaultCredentials,
                 _expect100ContinueTimeout = _expect100ContinueTimeout,
                 _maxAutomaticRedirections = _maxAutomaticRedirections,
                 _maxConnectionsPerServer = _maxConnectionsPerServer,

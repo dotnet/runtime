@@ -165,7 +165,7 @@ namespace System.Net.Http
         private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
         {
             Uri uri = request.RequestUri;
-            bool defaultCredentialsUsed = _settings._credentials == CredentialCache.DefaultCredentials || _settings._defaultProxyCredentials == CredentialCache.DefaultCredentials || _proxy?.Credentials == CredentialCache.DefaultCredentials;
+            bool defaultCredentialsUsed = _settings._credentials == _settings._defaultCredentials|| _settings._defaultProxyCredentials == _settings._defaultCredentials || _proxy?.Credentials == _settings._defaultCredentials;
             string identity = defaultCredentialsUsed ? CurrentUserIdentityProvider.GetIdentity() : string.Empty;
 
             if (isProxyConnect)

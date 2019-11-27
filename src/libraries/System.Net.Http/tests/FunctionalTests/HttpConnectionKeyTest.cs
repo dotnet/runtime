@@ -26,7 +26,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(KeyComponents))]
         public void Equals_DifferentParameters_ReturnsTrueIfAllEqual(string kindString, string host, int port, string sslHostName, Uri proxyUri, string identity, bool expected)
         {
-            Debugger.Launch();
             Assembly assembly = typeof(HttpClientHandler).Assembly;
             Type connectionKindType = assembly.GetTypes().Where(t => t.Name == "HttpConnectionKind").First();
             Type poolManagerType = assembly.GetTypes().Where(t => t.Name == "HttpConnectionPoolManager").First();

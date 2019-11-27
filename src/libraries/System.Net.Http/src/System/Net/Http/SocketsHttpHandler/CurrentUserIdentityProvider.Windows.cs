@@ -10,7 +10,8 @@ namespace System.Net.Http
     {
         public static string GetIdentity()
         {
-            return WindowsIdentity.GetCurrent().Name;
+            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            return identity.Name;
         }
     }
 }
