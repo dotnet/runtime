@@ -248,8 +248,10 @@ void CodeGen::genSpecialIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_ArmBase_LeadingZeroCount:
+        case NI_ArmBase_ReverseElementBits:
         case NI_ArmBase_Arm64_LeadingSignCount:
         case NI_ArmBase_Arm64_LeadingZeroCount:
+        case NI_ArmBase_Arm64_ReverseElementBits:
         {
             assert(op1 != nullptr);
             assert(op2 == nullptr);

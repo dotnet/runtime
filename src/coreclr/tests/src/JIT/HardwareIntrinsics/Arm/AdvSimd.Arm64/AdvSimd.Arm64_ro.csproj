@@ -10,6 +10,10 @@
   <ItemGroup>
     <Compile Include="Abs.Vector128.Double.cs" />
     <Compile Include="Abs.Vector128.UInt64.cs" />
+    <Compile Include="ReverseElementBits.Vector128.Byte.cs" />
+    <Compile Include="ReverseElementBits.Vector128.SByte.cs" />
+    <Compile Include="ReverseElementBits.Vector64.Byte.cs" />
+    <Compile Include="ReverseElementBits.Vector64.SByte.cs" />
     <Compile Include="Program.AdvSimd.Arm64.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

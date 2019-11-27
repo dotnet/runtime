@@ -72,7 +72,36 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 <#
-    }
+        }
+
+        foreach (var type in new[] { (name: "byte", unsigned: "byte"),
+                                     (name: "int", unsigned: "uint"),
+                                     (name: "long", unsigned: "ulong"),
+                                     (name: "sbyte", unsigned: "byte"),
+                                     (name: "uint", unsigned: "uint"),
+                                     (name: "ulong", unsigned: "ulong") })
+        {
+#>
+        public static <#= type.name #> ReverseElementBits(<#= type.name #> op1)
+        {
+            <#= type.unsigned #> val = (<#= type.unsigned #>)op1;
+            <#= type.unsigned #> result = 0;
+            const int bitsize = sizeof(<#= type.unsigned #>) * 8;
+            const <#= type.unsigned #> cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (<#= type.unsigned #>)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (<#= type.name #>)result;
+        }
+<#
+        }
+
 #>
     }
 }
