@@ -1136,12 +1136,15 @@ arch_init (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
 	} else {
-		if (!(acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "thumb")))
+		if (!acfg->aot_opts.mtriple) {
 			g_string_append (acfg->llc_args, " -march=arm");
+		} else {
+			/* arch will be defined via mtriple, e.g. armv7s-ios or thumb. */
 
-		if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "ios")) {
-			g_string_append (acfg->llc_args, " -mattr=+v7");
-			g_string_append (acfg->llc_args, " -exception-model=dwarf -disable-fp-elim");
+			if (strstr (acfg->aot_opts.mtriple, "ios")) {
+				g_string_append (acfg->llc_args, " -mattr=+v7");
+				g_string_append (acfg->llc_args, " -exception-model=dwarf -disable-fp-elim");
+			}
 		}
 
 #if defined(ARM_FPU_VFP_HARD)
