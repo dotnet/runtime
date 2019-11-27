@@ -84,16 +84,11 @@
     <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
-  <!-- Set some shortcuts for more terse conditions in project files -->
-  <PropertyGroup>
-    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
-    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
-    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- Default to portable build if not explicitly set -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+    <!-- Used for launchSettings.json and runtime config files. -->
+    <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />

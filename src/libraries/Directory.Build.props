@@ -99,8 +99,6 @@
     <Platform>AnyCPU</Platform>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <!-- Used for launchSettings.json and runtime config files. -->
-    <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -144,6 +142,13 @@
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
+  </PropertyGroup>
+
+  <!-- Set some shortcuts for more terse conditions in project files -->
+  <PropertyGroup>
+    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
+    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
+    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
   </PropertyGroup>
 
   <!-- set properties for each vertical -->
