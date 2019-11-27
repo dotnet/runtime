@@ -18,6 +18,4 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
-  <Import Condition="'$(EnableAnalyzers)' == 'true'" Project="$(RepositoryEngineeringDir)Analyzers.props" />
-
 </Project>
