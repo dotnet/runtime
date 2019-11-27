@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
@@ -169,7 +170,7 @@ namespace System
             [NonVersionable]
             get => (UIntPtr)nuint.MaxValue;
         }
-        
+
         public static UIntPtr MinValue
         {
             [NonVersionable]
@@ -182,10 +183,10 @@ namespace System
 
         public bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
 
-        public override string ToString() => ((nuint)_value).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string? format) => ((nuint)_value).ToString(format, CultureInfo.InvariantCulture);
-        public string ToString(IFormatProvider provider) => ((nuint)_value).ToString(provider);
-        public string ToString(string? format, IFormatProvider provider) => ((nuint)_value).ToString(format, provider);
+        public unsafe override string ToString() => ((nuint)_value).ToString(CultureInfo.InvariantCulture);
+        public unsafe string ToString(string? format) => ((nuint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public unsafe string ToString(IFormatProvider? provider) => ((nuint)_value).ToString(provider);
+        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nuint)_value).ToString(format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint.Parse(s);
         public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint.Parse(s, style);
