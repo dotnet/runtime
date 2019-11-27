@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [SkipOnMono]
+        [SkipOnMono("Crashes with IsDynamicCodeCompiled interpreter set to false")]
         public static void DynamicCode_Jit()
         {
             Assert.True(RuntimeFeature.IsDynamicCodeSupported);
