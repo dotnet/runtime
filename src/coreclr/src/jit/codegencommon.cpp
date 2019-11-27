@@ -5489,7 +5489,14 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
             // Do not use argument registers as scratch registers in the jmp epilog.
             grabMask &= ~genJmpCallArgMask();
         }
-        regNumber tmpReg = REG_TMP_0;
+        else
+        {
+            // There should be many free registers, so could be conservative and exclude all int return regs.
+            grabMask &= ~RBM_LNGRET;
+        }
+        assert(grabMask != RBM_NONE);
+        regMaskTP regMask = genFindLowestBit(grabMask);
+        regNumber tmpReg  = genRegNumFromMask(regMask);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
