@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
@@ -175,13 +176,13 @@ namespace System
         {
             [NonVersionable]
             get => (IntPtr)nint.MaxValue;
-        }    
-            
+        }
+
         public static IntPtr MinValue
         {
             [NonVersionable]
             get => (IntPtr)nint.MinValue;
-        }    
+        }
 
         public int CompareTo(object? value) => ((nint)_value).CompareTo(value);
 
@@ -189,10 +190,10 @@ namespace System
 
         public bool Equals(IntPtr other) => (nint)_value == (nint)other;
 
-        public override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
-        public string ToString(string? format) => ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
-        public string ToString(IFormatProvider provider) => ((nint)_value).ToString(provider);
-        public string ToString(string? format, IFormatProvider provider) => ((nint)_value).ToString(format, provider);
+        public unsafe override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
+        public unsafe string ToString(string? format) => ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public unsafe string ToString(IFormatProvider? provider) => ((nint)_value).ToString(provider);
+        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint)_value).ToString(format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint.Parse(s, style);
