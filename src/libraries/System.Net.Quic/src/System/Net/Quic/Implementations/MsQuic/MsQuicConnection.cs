@@ -56,7 +56,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = api;
             SetCallbackHandler();
 
-            Log("Created connection");
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
@@ -136,6 +135,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             // TODO don't use tcs here.
+            // TODO need to get off of continuation here.
             _connectTcs?.SetResult(null);
             _connectTcs = null;
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -182,7 +182,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.Data.NewStream.Stream);
+            MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream, inbound: true);
 
             _acceptQueue.Writer.TryWrite(msQuicStream);
 
@@ -301,15 +301,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
                 out streamPtr);
+
             MsQuicStatusException.ThrowIfFailed(status);
 
-            return new MsQuicStream(_api, this, flags, streamPtr);
+            return new MsQuicStream(_api, this, flags, streamPtr, inbound: false);
         }
 
         public void SetCallbackHandler()
         {
             _handle = GCHandle.Alloc(this);
-            Log("Callback handler");
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
             _api.SetCallbackHandlerDelegate(
                 _nativeObjPtr,

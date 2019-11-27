@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;

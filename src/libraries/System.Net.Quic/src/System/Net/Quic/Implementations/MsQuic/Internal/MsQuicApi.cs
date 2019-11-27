@@ -86,7 +86,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             StreamSendDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamSendDelegate>(
                     NativeRegistration.StreamSend);
-
+            StreamReceiveCompleteDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveCompleteDelegate>(
+                    NativeRegistration.StreamReceiveComplete);
+            StreamReceiveSetEnabledDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveSetEnabledDelegate>(
+                    NativeRegistration.StreamReceiveSetEnabled);
             SetContextDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetContextDelegate>(
                     NativeRegistration.SetContext);
@@ -133,7 +138,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal MsQuicNativeMethods.StreamStartDelegate StreamStartDelegate { get; private set; }
         internal MsQuicNativeMethods.StreamShutdownDelegate StreamShutdownDelegate { get; private set; }
         internal MsQuicNativeMethods.StreamSendDelegate StreamSendDelegate { get; private set; }
-        internal MsQuicNativeMethods.StreamReceiveCompleteDelegate StreamReceiveComplete { get; private set; }
+        internal MsQuicNativeMethods.StreamReceiveCompleteDelegate StreamReceiveCompleteDelegate { get; private set; }
+        internal MsQuicNativeMethods.StreamReceiveSetEnabledDelegate StreamReceiveSetEnabledDelegate { get; private set; }
 
         internal MsQuicNativeMethods.SetContextDelegate SetContextDelegate { get; private set; }
         internal MsQuicNativeMethods.GetContextDelegate GetContextDelegate { get; private set; }

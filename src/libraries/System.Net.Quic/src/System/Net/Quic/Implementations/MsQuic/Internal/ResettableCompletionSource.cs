@@ -1,12 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information
-using System.Threading.Tasks;
 
+using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
+    /// <summary>
+    /// A resettable completion source which can be completed multiple times.
+    /// Used to make methods async between completed events and their associated async method.
+    /// </summary>
     internal abstract class ResettableCompletionSource<T> : IValueTaskSource<T>
     {
         protected ManualResetValueTaskSourceCore<T> _valueTaskSource;

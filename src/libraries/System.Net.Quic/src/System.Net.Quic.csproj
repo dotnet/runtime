@@ -7,7 +7,6 @@
   <ItemGroup>
     <!-- All configurations -->
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\IntResettableCompletionSource.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\UIntResettableCompletionSource.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicConstants.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicEnums.cs" />

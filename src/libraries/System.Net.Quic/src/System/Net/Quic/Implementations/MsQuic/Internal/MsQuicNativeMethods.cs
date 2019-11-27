@@ -57,6 +57,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr StreamShutdown;
             internal IntPtr StreamSend;
             internal IntPtr StreamReceiveComplete;
+            internal IntPtr StreamReceiveSetEnabled;
         }
 
         internal delegate uint SetContextDelegate(
@@ -518,6 +519,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamReceiveCompleteDelegate(
             IntPtr Stream,
             ulong BufferLength);
+
+        internal delegate uint StreamReceiveSetEnabledDelegate(
+            IntPtr Stream,
+            bool Enabled);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct QuicBuffer
