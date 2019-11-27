@@ -5426,7 +5426,7 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
  *  and set *pUnwindStarted = true.
  */
 
-void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted, bool jmpEpilog)
+void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
     assert(compiler->compGeneratingEpilog);
 
@@ -7920,7 +7920,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
             RBM_NONE)
     {
-        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted, jmpEpilog);
+        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }
 
     if (!unwindStarted)
@@ -8764,7 +8764,7 @@ void CodeGen::genFuncletEpilog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted, false);
+        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted);
     }
 
     if (!unwindStarted)
