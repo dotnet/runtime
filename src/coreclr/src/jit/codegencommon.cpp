@@ -5421,33 +5421,6 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
 
 /*-----------------------------------------------------------------------------
  *
- *  If we have a jmp call, then the argument registers cannot be used in the
- *  epilog. So return the current call's argument registers as the argument
- *  registers for the jmp call.
- */
-regMaskTP CodeGen::genJmpCallArgMask()
-{
-    assert(compiler->compGeneratingEpilog);
-
-    regMaskTP argMask = RBM_NONE;
-    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; ++varNum)
-    {
-        const LclVarDsc* desc = compiler->lvaGetDesc(varNum);
-        if (desc->lvIsRegArg)
-        {
-            argMask |= genRegMask(desc->GetArgReg());
-            if (varTypeIsMultiReg(desc))
-            {
-                assert(desc->GetOtherArgReg() != REG_STK);
-                argMask |= genRegMask(desc->GetOtherArgReg());
-            }
-        }
-    }
-    return argMask;
-}
-
-/*-----------------------------------------------------------------------------
- *
  *  Free the local stack frame: add to SP.
  *  If epilog unwind hasn't been started, and we generate code, we start unwind
  *  and set *pUnwindStarted = true.
@@ -5483,22 +5456,8 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     }
     else
     {
-        regMaskTP grabMask = RBM_INT_CALLEE_TRASH;
-        if (jmpEpilog)
-        {
-            // Do not use argument registers as scratch registers in the jmp epilog.
-            // It looks a lot like `intRegState.rsCalleeRegArgMaskLiveIn` but the last
-            // loses `rsMaskPreSpillRegs struct registers in prolog generation.
-            grabMask &= ~genJmpCallArgMask();
-        }
-        else
-        {
-            // There should be many free registers, so could be conservative and exclude all int return regs.
-            grabMask &= ~RBM_LNGRET;
-        }
-        assert(grabMask != RBM_NONE);
-        regMaskTP regMask = genFindLowestBit(grabMask);
-        regNumber tmpReg  = genRegNumFromMask(regMask);
+        // R12 doesn't hold arguments or return values, so can be used as temp.
+        regNumber tmpReg = REG_R12;
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
