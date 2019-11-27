@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [SkipOnMono]
+        [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
         public static void DynamicCode_Jit()
         {
             Assert.True(RuntimeFeature.IsDynamicCodeSupported);
