@@ -1597,10 +1597,11 @@ namespace Internal.JitInterface
                         return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                     }
                 }
-                else if (!md.IsConstructor && !typeToInit.IsValueType)
+                else if (!md.IsConstructor && !typeToInit.IsValueType && !typeToInit.IsInterface)
                 {
                     // According to the spec, we should be able to do this optimization for both reference and valuetypes.
                     // To maintain backward compatibility, we are doing it for reference types only.
+                    // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
                     // semantics, we can assume that the .ctor triggerred the
                     // type initialization.
