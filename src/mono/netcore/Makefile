@@ -282,5 +282,32 @@ run-tests-coreclr-%: prepare update-tests-coreclr
 		echo "Test file $*.sh not found"; \
 	fi
 
+# dump asm for all methods in BCL using LLVM AOT, e.g.:
+#   make dump-asm-bcl DUMPASM_OUT=dumps/before-my-jit-fix
+dump-asm-bcl: patch-local-dotnet
+	mkdir -p $(DUMPASM_OUT)
+	@if test -z "$(DUMPASM_OUT)"; then echo "DUMPASM_OUT is not set"; exit 1; fi
+	for assembly in ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/*.dll; do \
+		printf  "\n[AOT] $$(basename $$assembly):\n\n"; \
+		PATH="../llvm/usr/bin/:$(PATH)" \
+		MONO_ENV_OPTIONS="--aot=llvm,mcpu=native" \
+		$(DOTNET) $$assembly ; \
+		objdump -d "$$assembly$(PLATFORM_AOT_SUFFIX)" > "$(DUMPASM_OUT)/$$(basename $$assembly)$(PLATFORM_AOT_SUFFIX).dasm" ; \
+	done; \
+	cd ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME) && rm *.dll$(PLATFORM_AOT_SUFFIX)
+
+# Generate asm diffs, a typical workflow may look like this:
+# 
+#   make dump-asm-bcl DUMPASM_OUT=dumps/before-my-jit-fix
+# (apply some runtime changes)
+#   make runtime
+#   make dump-asm-bcl DUMPASM_OUT=dumps/after-my-jit-fix
+#   make jitdiff BEFORE=dumps/before-my-jit-fix AFTER=dumps/after-my-jit-fix
+#
+jitdiff:
+	@if test -z "$(BEFORE)"; then echo "BEFORE is not set"; exit 1; fi
+	@if test -z "$(AFTER)"; then echo "AFTER is not set"; exit 1; fi
+	cd tools/jitdiff && $(DOTNET) run -c Release -- "$(BEFORE)" "$(AFTER)"
+
 distdir:
 distclean:
