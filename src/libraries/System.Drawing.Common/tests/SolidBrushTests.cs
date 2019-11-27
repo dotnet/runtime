@@ -14,7 +14,7 @@ namespace System.Drawing.Tests
             yield return new object[] { Color.PapayaWhip, Color.PapayaWhip };
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(Colors_TestData))]
         public void Ctor_Color(Color color, Color expectedColor)
         {
@@ -59,7 +59,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Color_EmptyAndGetDisposed_ThrowsArgumentException()
         {
             var brush = new SolidBrush(new Color());

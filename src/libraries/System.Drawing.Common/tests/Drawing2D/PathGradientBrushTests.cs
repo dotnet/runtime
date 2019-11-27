@@ -36,7 +36,7 @@ namespace System.Drawing.Drawing2D.Tests
         private readonly PointF[] _defaultFloatPoints = new PointF[2] { new PointF(1, 2), new PointF(20, 30) };
         private readonly RectangleF _defaultRectangle = new RectangleF(1, 2, 19, 28);
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_Points_ReturnsExpected()
         {
             using (PathGradientBrush bi = new PathGradientBrush(_defaultIntPoints))
@@ -58,7 +58,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { WrapMode.TileFlipY };
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(WrapMode_TestData))]
         public void Ctor_PointsWrapMode_ReturnsExpected(WrapMode wrapMode)
         {
@@ -100,7 +100,7 @@ namespace System.Drawing.Drawing2D.Tests
                 new PathGradientBrush(_defaultFloatPoints, (WrapMode)int.MaxValue));
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_Path_ReturnsExpected()
         {
             using (GraphicsPath path = new GraphicsPath(_defaultFloatPoints, new byte[] { 0, 1 }))
@@ -128,7 +128,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Clone_ReturnsExpected()
         {
             using (GraphicsPath path = new GraphicsPath(_defaultFloatPoints, new byte[] { 0, 1 }))
@@ -171,7 +171,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.CenterColor = Color.Blue);
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void SurroundColors_ReturnsExpected()
         {
             Color[] expectedColors = new Color[2] { Color.FromArgb(255, 0, 0, 255), Color.FromArgb(255, 255, 0, 0) };
@@ -275,7 +275,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new float[1] { 1 }, new float[3] { 0, 3, 1 } };
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(Blend_FactorsPositions_TestData))]
         public void Blend_ReturnsExpected(float[] factors, float[] positions)
         {
@@ -597,7 +597,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void InterpolationColors_CannotChange()
         {
             Color[] colors = new Color[2] { Color.FromArgb(255, 0, 0, 255), Color.FromArgb(255, 255, 0, 0) };

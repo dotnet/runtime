@@ -14,7 +14,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
         public void IsAtLeastLibgdiplus6()
         {
-            Assert.True(Helpers.GetIsAtLeastLibgdiplus6());
+            Assert.True(Helpers.GetIsWindowsOrAtLeastLibgdiplus6());
         }
     }
 }

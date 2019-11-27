@@ -13,7 +13,7 @@ namespace System.Drawing
     public static class Helpers
     {
         public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
-        public const string IsAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsAtLeastLibgdiplus6);
+        public const string IsWindowsOrAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsWindowsOrAtLeastLibgdiplus6);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -23,7 +23,7 @@ namespace System.Drawing
 
         public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
-        public static bool GetIsAtLeastLibgdiplus6()
+        public static bool GetIsWindowsOrAtLeastLibgdiplus6()
         {
             if (!PlatformDetection.IsDrawingSupported)
             {

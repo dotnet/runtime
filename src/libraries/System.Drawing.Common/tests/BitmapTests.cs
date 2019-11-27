@@ -71,14 +71,14 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_NullFilePath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Bitmap((string)null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Bitmap((string)null, false));
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData("", "path")]
         [InlineData("\0", "path")]
         [InlineData("NoSuchPath", null)]
@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null, false));
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_InvalidBytesInStream_ThrowsArgumentException()
         {
             using (var stream = new MemoryStream(new byte[0]))
@@ -263,7 +263,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(1, height, 0, PixelFormat.Format16bppArgb1555, IntPtr.Zero));
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.Undefined - 1)]
         [InlineData(PixelFormat.Undefined)]
         [InlineData(PixelFormat.Gdi - 1)]
@@ -610,7 +610,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void GetPixel_InvalidX_ThrowsArgumentOutOfRangeException(int x)
@@ -621,7 +621,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void GetPixel_InvalidY_ThrowsArgumentOutOfRangeException(int y)
@@ -963,7 +963,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void MakeTransparent_Icon_ThrowsInvalidOperationException()
         {
             using (var bitmap = new Bitmap(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -998,7 +998,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void SetPixel_InvalidX_ThrowsArgumentOutOfRangeException(int x)
@@ -1009,7 +1009,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void SetPixel_InvalidY_ThrowsArgumentOutOfRangeException(int y)
@@ -1200,7 +1200,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1, 0, 1, 1)]
         [InlineData(2, 0, 1, 1)]
         [InlineData(0, -1, 1, 1)]
@@ -1224,7 +1224,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.DontCare)]
         [InlineData(PixelFormat.Max)]
         [InlineData(PixelFormat.Indexed)]
@@ -1338,7 +1338,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.Indexed)]
         [InlineData(PixelFormat.Gdi)]
         public void UnlockBits_InvalidPixelFormat_Nop(PixelFormat format)
@@ -1361,7 +1361,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void UnlockBits_NotLocked_ThrowsExternalException()
         {
             using (var bitmap = new Bitmap(1, 1))
@@ -1370,7 +1370,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void UnlockBits_AlreadyUnlocked_ThrowsExternalException()
         {
             using (var bitmap = new Bitmap(1, 1))

@@ -41,7 +41,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { fillPath, null, LineCap.Flat, 0f, LineCap.Flat };
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(Ctor_Path_Path_LineCap_Float_TestData))]
         public void Ctor_Path_Path_LineCap_Float(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap, float baseInset, LineCap expectedCap)
         {
@@ -56,7 +56,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         // These values are outside the valid range of the LineCap enum.
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
@@ -112,7 +112,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(LineCap.SquareAnchor, LineCap.SquareAnchor)]
         [InlineData(LineCap.Custom, LineCap.Custom)]
         [InlineData(LineCap.Square, LineCap.Custom)]
@@ -166,7 +166,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(LineCap.NoAnchor)]
         [InlineData(LineCap.SquareAnchor)]
         [InlineData(LineCap.RoundAnchor)]

@@ -128,7 +128,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsAtLeastLibgdiplus6)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void BaseCap_ReturnsTriangle()
         {
             using (AdjustableArrowCap arrowCap = new AdjustableArrowCap(1, 1))
