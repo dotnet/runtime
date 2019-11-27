@@ -87,6 +87,7 @@
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <XUnitXmlTestLoggerVersion>2.1.26</XUnitXmlTestLoggerVersion>
     <!-- Test data -->
+    <CoreFxPrivateTestUtilitiesUnicodeTestDataVersion>1.0.0</CoreFxPrivateTestUtilitiesUnicodeTestDataVersion>
     <SystemIOCompressionTestDataVersion>1.0.16</SystemIOCompressionTestDataVersion>
     <SystemIOPackagingTestDataVersion>1.0.4</SystemIOPackagingTestDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>1.0.7</SystemSecurityCryptographyX509CertificatesTestDataVersion>

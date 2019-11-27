@@ -8,15 +8,13 @@ namespace System.Text.Unicode
 {
     internal static class Resources
     {
-        private const string Version = "12.1";
-
-        public const string CaseFolding = "CaseFolding-" + Version + ".0.txt";
-        public const string DerivedBidiClass = "DerivedBidiClass-" + Version + ".0.txt";
-        public const string DerivedName = "DerivedName-" + Version + ".0.txt";
-        public const string EmojiData = "emoji-data-" + Version + ".txt";
-        public const string GraphemeBreakProperty = "GraphemeBreakProperty-" + Version + ".0.txt";
-        public const string PropList = "PropList-" + Version + ".0.txt";
-        public const string UnicodeData = "UnicodeData." + Version + ".txt";
+        public const string CaseFolding = "CaseFolding.txt";
+        public const string DerivedBidiClass = "DerivedBidiClass.txt";
+        public const string DerivedName = "DerivedName.txt";
+        public const string EmojiData = "emoji-data.txt";
+        public const string GraphemeBreakProperty = "GraphemeBreakProperty.txt";
+        public const string PropList = "PropList.txt";
+        public const string UnicodeData = "UnicodeData.txt";
 
         public static Stream OpenResource(string resourceName)
         {
