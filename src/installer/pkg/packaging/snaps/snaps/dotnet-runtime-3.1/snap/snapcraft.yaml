@@ -1,0 +1,45 @@
+name: dotnet-runtime-31
+base: core18
+version: 3.1.0-preview2
+summary: Cross-Platform .NET Core Runtime. 
+description: |
+  .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
+  .NET Core is a general purpose development platform maintained by Microsoft. 
+
+grade: stable
+confinement: strict
+
+apps:
+  dotnet:
+    command: dotnet
+    plugs:
+      - network
+      - network-bind
+      - removable-media
+      - home
+
+slots:
+  dotnet-runtime:
+    content: dotnet-runtime-31
+    interface: content
+    read: [/]
+
+parts:
+  dotnet-runtime:
+    plugin: dump
+    source: https://download.visualstudio.microsoft.com/download/pr/476a6956-9b31-43f6-bc06-e43e090c1d29/2ffe100cd8c6f4a8793745fbd0fdeb20/aspnetcore-runtime-3.1.0-preview2.19528.8-linux-x64.tar.gz
+    source-checksum: sha512/f6109e54e71bc784524ea43f2b27b2659e095bfbd98c585b4ec593dc5e009052a27a2426370d00c80fb35d57f29a00094fb44e0415e74308a08cb88304f053cc
+    stage-packages:
+      - libicu60
+      - libssl1.0.0
+      - libcurl3
+      - libgssapi-krb5-2
+      - liblttng-ust0
+      - libstdc++6
+      - zlib1g
+      - libgcc1
+      - lldb
+      - libunwind8
+      - libtinfo5
+      - libdb5.3
+      - libc6
