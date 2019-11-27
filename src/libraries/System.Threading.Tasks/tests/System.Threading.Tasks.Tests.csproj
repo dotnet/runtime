@@ -36,15 +36,21 @@
     <Compile Include="Task\TaskRtTests.cs" />
     <Compile Include="Task\TaskRtTests_Core.cs" />
     <Compile Include="Task\TaskAPMTest.cs" />
+    <Compile Include="Task\TaskCanceledExceptionTests.cs" />
     <!-- TaskFactory -->
     <Compile Include="TaskFactory\TaskFactory_FromAsyncTests.cs" />
     <Compile Include="TaskFactory\TaskFactoryTests.cs" />
     <!-- TaskScheduler -->
     <Compile Include="TaskScheduler\TaskSchedulerTests.cs" />
     <!-- System.Runtime.CompilerServices -->
+    <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
-    <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
@@ -52,16 +58,5 @@
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
     <Compile Include="Task\TaskDisposeTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="CancellationTokenTests.netcoreapp.cs" />
-    <Compile Include="Task\TaskCanceledExceptionTests.netcoreapp.cs" />
-    <Compile Include="Task\TaskStatusTest.netcoreapp.cs" />
-    <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.netcoreapp.cs" />
-    <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.netcoreapp.cs" />
-    <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.netcoreapp.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>
