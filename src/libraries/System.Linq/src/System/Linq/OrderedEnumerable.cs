@@ -60,9 +60,9 @@ namespace System.Linq
             }
         }
 
-        private EnumerableSorter<TElement> GetEnumerableSorter() => GetEnumerableSorter(null);
+        private EnumerableSorter<TElement> GetEnumerableSorter() => GetEnumerableSorter(EnumerableSorterRoot<TElement>.Instance);
 
-        internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
+        internal abstract EnumerableSorter<TElement> GetEnumerableSorter(IEnumerableSorter<TElement> next);
 
         private CachingComparer<TElement> GetComparer() => GetComparer(null);
 
@@ -167,7 +167,7 @@ namespace System.Linq
             _descending = descending;
         }
 
-        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
+        internal override EnumerableSorter<TElement> GetEnumerableSorter(IEnumerableSorter<TElement> next)
         {
             // Special case the common use of string with default comparer. Comparer<string>.Default checks the
             // thread's Culture on each call which is an overhead which is not required, because we are about to
@@ -273,41 +273,94 @@ namespace System.Linq
         }
     }
 
-    internal abstract class EnumerableSorter<TElement>
+    internal interface IEnumerableSorter<TElement>
     {
-        internal abstract void ComputeKeys(TElement[] elements, int count);
+        void ComputeKeys(TElement[] elements, int count);
 
-        internal abstract int CompareAnyKeys(int index1, int index2);
+        int CompareAnyKeys(int index1, int index2);
 
-        private int[] ComputeMap(TElement[] elements, int count)
+        bool IsAscending { get; }
+
+        void InitializeSortByLayer(int size);
+
+        void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count);
+    }
+
+    internal class EnumerableSorterRoot<TElement> : IEnumerableSorter<TElement>
+    {
+        public static IEnumerableSorter<TElement> Instance { get; } = new EnumerableSorterRoot<TElement>();
+
+        private EnumerableSorterRoot() { }
+
+        public int CompareAnyKeys(int index1, int index2) => index1 - index2;
+
+        public void ComputeKeys(TElement[] elements, int count) { }
+
+        public bool IsAscending => true;
+
+        public void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count) => Array.Sort(indexes, startIdx, count);
+
+        public void InitializeSortByLayer(int size) { }
+    }
+
+    internal abstract class EnumerableSorter<TElement> : IEnumerableSorter<TElement>
+    {
+        public abstract void InitializeSortByLayer(int size);
+        public abstract void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count);
+        public abstract void ComputeKeys(TElement[] elements, int count);
+        public abstract int CompareAnyKeys(int index1, int index2);
+
+        private int[] ComputeKeysAndMap(TElement[] elements, int count)
         {
             ComputeKeys(elements, count);
+            return ComputeMap(count);
+        }
+
+        private static int[] ComputeMap(int count)
+        {
             int[] map = new int[count];
             for (int i = 0; i < map.Length; i++)
             {
                 map[i] = i;
             }
-
             return map;
         }
 
+        protected abstract bool IsValueType { get; }
+        public abstract bool IsAscending { get; }
+
         internal int[] Sort(TElement[] elements, int count)
         {
-            int[] map = ComputeMap(elements, count);
-            QuickSort(map, 0, count - 1);
-            return map;
+            // check that we can use the layered sort. This adds (as a first level approximation) O(N) comparisons
+            // to the sort, but this is offset by simpler comparers (i.e. removes a level of indirection),
+            // Array.Sort optimizations (for primitives), removes level of indirection from objects (i.e. accessing
+            // directly in array by sort, rather than an index into another array) and increases caching affects
+            // due to location in array.
+            if (IsValueType && IsAscending)
+            {
+                InitializeSortByLayer(count);
+                int[] map = ComputeMap(count);
+                SortByLayer(elements, map, 0, count);
+                return map;
+            }
+            else
+            {
+                int[] map = ComputeKeysAndMap(elements, count);
+                QuickSort(map, 0, count - 1);
+                return map;
+            }
         }
 
         internal int[] Sort(TElement[] elements, int count, int minIdx, int maxIdx)
         {
-            int[] map = ComputeMap(elements, count);
+            int[] map = ComputeKeysAndMap(elements, count);
             PartialQuickSort(map, 0, count - 1, minIdx, maxIdx);
             return map;
         }
 
         internal TElement ElementAt(TElement[] elements, int count, int idx)
         {
-            int[] map = ComputeMap(elements, count);
+            int[] map = ComputeKeysAndMap(elements, count);
             return idx == 0 ?
                 elements[Min(map, count)] :
                 elements[QuickSelect(map, count - 1, idx)];
@@ -331,10 +384,10 @@ namespace System.Linq
         private readonly Func<TElement, TKey> _keySelector;
         private readonly IComparer<TKey> _comparer;
         private readonly bool _descending;
-        private readonly EnumerableSorter<TElement>? _next;
+        private readonly IEnumerableSorter<TElement> _next;
         private TKey[]? _keys;
 
-        internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement>? next)
+        internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, IEnumerableSorter<TElement> next)
         {
             _keySelector = keySelector;
             _comparer = comparer;
@@ -342,7 +395,60 @@ namespace System.Linq
             _next = next;
         }
 
-        internal override void ComputeKeys(TElement[] elements, int count)
+        protected override bool IsValueType => default(TKey)! != null;
+
+        public override bool IsAscending => !_descending && _next.IsAscending;
+
+        public override void InitializeSortByLayer(int size)
+        {
+            _keys = new TKey[size];
+            _next.InitializeSortByLayer(size);
+        }
+
+        public override void SortByLayer(TElement[] data, int[] indexes, int startIdx, int count)
+        {
+            Debug.Assert(_keys != null);
+            Debug.Assert(_next != null);
+
+            int exclusiveEndIdx = startIdx + count;
+
+            // copy the keys that we need
+            for (int idx = startIdx; idx < exclusiveEndIdx; ++idx)
+            {
+                _keys[idx] = _keySelector(data[indexes[idx]]);
+            }
+
+            // unstable sort
+            Array.Sort(_keys, indexes, startIdx, count, _comparer);
+
+            // now find duplicate keys, and go to the lower level to sort
+            TKey examplar = _keys[startIdx];
+            int examplarIdx = startIdx;
+
+            int batchCount;
+            for (int idx = startIdx + 1; idx < exclusiveEndIdx; ++idx)
+            {
+                if (_comparer.Compare(examplar, _keys[idx]) != 0)
+                {
+                    batchCount = idx - examplarIdx;
+                    if (batchCount > 1)
+                    {
+                        _next.SortByLayer(data, indexes, examplarIdx, batchCount);
+                    }
+                    examplar = _keys[idx];
+                    examplarIdx = idx;
+                }
+            }
+
+            // handle the remainders
+            batchCount = exclusiveEndIdx - examplarIdx;
+            if (batchCount > 1)
+            {
+                _next.SortByLayer(data, indexes, examplarIdx, batchCount);
+            }
+        }
+
+        public override void ComputeKeys(TElement[] elements, int count)
         {
             _keys = new TKey[count];
             for (int i = 0; i < count; i++)
@@ -353,18 +459,13 @@ namespace System.Linq
             _next?.ComputeKeys(elements, count);
         }
 
-        internal override int CompareAnyKeys(int index1, int index2)
+        public override int CompareAnyKeys(int index1, int index2)
         {
             Debug.Assert(_keys != null);
 
             int c = _comparer.Compare(_keys[index1], _keys[index2]);
             if (c == 0)
             {
-                if (_next == null)
-                {
-                    return index1 - index2; // ensure stability of sort
-                }
-
                 return _next.CompareAnyKeys(index1, index2);
             }
 
