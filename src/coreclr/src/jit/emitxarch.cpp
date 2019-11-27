@@ -13894,32 +13894,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
-            {
-                regNumber baseReg = id->idAddr()->iiaAddrMode.amBaseReg;
-                if (baseReg != REG_NA)
-                {
-                    ssize_t dsp = emitGetInsAmdAny(id);
-
-                    if ((dsp != 0) || baseRegisterRequiresDisplacement(baseReg))
-                    {
-                        // three components
-                        //
-                        // - throughput is only 1 per cycle
-                        //
-                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-
-                        if (baseRegisterRequiresDisplacement(baseReg) || id->idIsDspReloc())
-                        {
-                            // Increased Latency for these cases
-                            //  - see https://reviews.llvm.org/D32277
-                            //
-                            result.insLatency = PERFSCORE_LATENCY_3C;
-                        }
-                    }
-                }
-            }
-            if (id->idIsDspReloc())
+            if (id->idInsFmt() == IF_RWR_LABEL)
             {
                 // RIP relative addressing
                 //
@@ -13927,6 +13902,35 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 //
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
+            else if (id->idInsFmt() != IF_RWR_SRD)
+            {
+                if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
+                {
+                    regNumber baseReg = id->idAddr()->iiaAddrMode.amBaseReg;
+                    if (baseReg != REG_NA)
+                    {
+                        ssize_t dsp = emitGetInsAmdAny(id);
+
+                        if ((dsp != 0) || baseRegisterRequiresDisplacement(baseReg))
+                        {
+                            // three components
+                            //
+                            // - throughput is only 1 per cycle
+                            //
+                            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+                            if (baseRegisterRequiresDisplacement(baseReg) || id->idIsDspReloc())
+                            {
+                                // Increased Latency for these cases
+                                //  - see https://reviews.llvm.org/D32277
+                                //
+                                result.insLatency = PERFSCORE_LATENCY_3C;
+                            }
+                        }
+                    }
+                }
+            }
+
             break;
 
         case INS_imul_AX:
