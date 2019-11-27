@@ -73,7 +73,7 @@ Add Kitware's APT feed to your configuration for a newer version of CMake. See t
 
 Install the following packages for the toolchain:
 
-- cmake (at least 3.14)
+- cmake (at least 3.15.5)
 - llvm-3.9
 - clang-9
 - libunwind8
