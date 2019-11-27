@@ -5432,10 +5432,15 @@ regMaskTP CodeGen::genJmpCallArgMask()
     regMaskTP argMask = RBM_NONE;
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; ++varNum)
     {
-        const LclVarDsc& desc = compiler->lvaTable[varNum];
-        if (desc.lvIsRegArg)
+        const LclVarDsc* desc = compiler->lvaGetDesc(varNum);
+        if (desc->lvIsRegArg)
         {
-            argMask |= genRegMask(desc.GetArgReg());
+            argMask |= genRegMask(desc->GetArgReg());
+            if (varTypeIsMultiReg(desc))
+            {
+                assert(desc->GetOtherArgReg() != REG_STK);
+                argMask |= genRegMask(desc->GetOtherArgReg());
+            }
         }
     }
     return argMask;
