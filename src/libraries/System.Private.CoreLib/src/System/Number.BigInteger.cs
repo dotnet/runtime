@@ -1039,6 +1039,7 @@ namespace System
                     default:
                         SetValue(out BigInteger temp, ref this);
                         Multiply(ref temp, ref value, ref this);
+                        break;
                 }
             }
 
