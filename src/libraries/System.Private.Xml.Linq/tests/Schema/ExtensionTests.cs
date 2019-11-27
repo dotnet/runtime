@@ -32,7 +32,7 @@ namespace CoreXml.Test.XLinq
         public static XDocument xmlDocument;
         public static bool validationSucceded;
 
-        // Initialize values for tests.
+        // initialize values for tests
         public SchemaExtensionsTests()
         {
             xsdString = @"<?xml version='1.0'?>
@@ -85,13 +85,13 @@ namespace CoreXml.Test.XLinq
             //LoadOutsideDocuments("c:\\note.xsd", "c:\\note.xml");
         }
 
-        // This gets called when a validation error occurs.
+        // this gets called when a validation error occurs
         private void TestValidationHandler(object sender, ValidationEventArgs e)
         {
             validationSucceded = false;
         }
 
-        // Test succesful validation.
+        // test succesful validation
         [Fact]
         public void XDocumentSuccessValidate()
         {
@@ -101,14 +101,14 @@ namespace CoreXml.Test.XLinq
             Assert.True(validationSucceded);
         }
 
-        // Test failed validation.
+        // test failed validation
         [Fact]
         public void XDocumentFailValidate()
         {
             string elementName = "AlteringElementName";
             object elementValue = "AlteringElementValue";
 
-            // Alter XML document to invalidate.
+            // alter XML document to invalidate
             var newElement = new XElement(elementName, elementValue);
             xmlDocument.Root.Add(newElement);
 
@@ -128,7 +128,7 @@ namespace CoreXml.Test.XLinq
             string elementName = "AlteringElementName";
             object elementValue = "AlteringElementValue";
 
-            // Alter XML document to invalidate.
+            // alter XML document to invalidate
             var newElement = new XElement(elementName, elementValue);
             xmlDocument.Root.Add(newElement);
 
@@ -142,30 +142,30 @@ namespace CoreXml.Test.XLinq
         [Fact]
         public void XDocumentAddSchemaInfoValidate()
         {
-            // No. of elements before validation.
+            // no. of elements before validation
             IEnumerable<XElement> elements = xmlDocument.Elements();
             IEnumerator<XElement> elementsEnumerator = elements.GetEnumerator();
             int beforeNoOfElements = 0;
             int beforeNoOfAttributes = 0;
             while (elementsEnumerator.MoveNext())
             {
-                    beforeNoOfElements++;
-                    if (!elementsEnumerator.Current.HasAttributes)
-                        continue;
+                beforeNoOfElements++;
+                if (!elementsEnumerator.Current.HasAttributes)
+                    continue;
 
-                        IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
-                        IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
-                        while (attributesEnumerator.MoveNext())
-                            beforeNoOfAttributes++;
+                IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
+                IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
+                while (attributesEnumerator.MoveNext())
+                    beforeNoOfAttributes++;
             }
 
-            // Populate XML with PSVI.
+            // populate XML with PSVI
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // No. of elements after validation.
+            // no. of elements after validation
             elements = xmlDocument.Elements();
             elementsEnumerator = elements.GetEnumerator();
             int afterNoOfElements = 0;
@@ -176,10 +176,10 @@ namespace CoreXml.Test.XLinq
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
 
-                    IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
-                    IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
-                    while (attributesEnumerator.MoveNext())
-                        afterNoOfAttributes++;
+                IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
+                IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
+                while (attributesEnumerator.MoveNext())
+                    afterNoOfAttributes++;
             }
 
             Assert.True(afterNoOfAttributes >= beforeNoOfAttributes, "XDocumentAddSchemaInfoValidate, wrong newAttributes value.");
@@ -193,7 +193,7 @@ namespace CoreXml.Test.XLinq
         [Fact]
         public void XDocumentNoSchemaInfoValidate()
         {
-            // No. of elements before validation.
+            // no. of elements before validation
             IEnumerable<XElement> elements = xmlDocument.Elements();
             IEnumerator<XElement> elementsEnumerator = elements.GetEnumerator();
             int beforeNoOfElements = 0;
@@ -204,19 +204,19 @@ namespace CoreXml.Test.XLinq
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
 
-                    IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
-                    IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
-                    while (attributesEnumerator.MoveNext())
-                        beforeNoOfAttributes++;
+                IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
+                IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
+                while (attributesEnumerator.MoveNext())
+                   beforeNoOfAttributes++;
             }
 
-            // Don't populate XML with PSVI.
+            // don't populate XML with PSVI
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), false);
             Assert.True(validationSucceded);
 
-            // No. of elements after validation.
+            // no. of elements after validation
             elements = xmlDocument.Elements();
             elementsEnumerator = elements.GetEnumerator();
             int afterNoOfElements = 0;
@@ -227,17 +227,17 @@ namespace CoreXml.Test.XLinq
                 if (!elementsEnumerator.Current.HasAttributes)
                     continue;
 
-                    IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
-                    IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
-                    while (attributesEnumerator.MoveNext())
-                        afterNoOfAttributes++;
+                IEnumerable<XAttribute> attributes = elementsEnumerator.Current.Attributes();
+                IEnumerator<XAttribute> attributesEnumerator = attributes.GetEnumerator();
+                while (attributesEnumerator.MoveNext())
+                    afterNoOfAttributes++;
             }
 
             Assert.Equal(afterNoOfAttributes, beforeNoOfAttributes);
             Assert.Equal(afterNoOfElements, beforeNoOfElements);
         }
 
-        // Attribute validation succeeds after change.
+        // attribute validation succeeds after change
         [Fact]
         public void XAttributeSuccessValidate()
         {
@@ -245,13 +245,13 @@ namespace CoreXml.Test.XLinq
             string attributeName = "date";
             object attributeValue = "2010-05-27";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Change and re-validate attribute value.
+            // change and re-validate attribute value
             XAttribute date = xmlDocument.Element(elementName).Attribute(attributeName);
             date.SetValue(attributeValue);
             ExtensionsClass.Validate(date, date.GetSchemaInfo().SchemaAttribute,schemaSet,
@@ -259,7 +259,7 @@ namespace CoreXml.Test.XLinq
             Assert.True(validationSucceded);
         }
 
-        // Attribute validation fails after change.
+        // attribute validation fails after change
         [Fact]
         public void XAttributeFailValidate()
         {
@@ -267,13 +267,13 @@ namespace CoreXml.Test.XLinq
             string attributeName = "date";
             object attributeValue = "2010-12-32";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler),true);
             Assert.True(validationSucceded);
 
-            // Change and re-validate attribute value.
+            // change and re-validate attribute value
             XAttribute date = xmlDocument.Element(elementName).Attribute(attributeName);
             date.SetValue(attributeValue);
             ExtensionsClass.Validate(date, date.GetSchemaInfo().SchemaAttribute, schemaSet,
@@ -292,19 +292,19 @@ namespace CoreXml.Test.XLinq
             string attributeName =  "date";
             object attributeValue =  "2010-12-32";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler),true);
             Assert.True(validationSucceded);
 
-            // Change and re-validate attribute value.
+            // change and re-validate attribute value
             XAttribute date = xmlDocument.Element(elementName).Attribute(attributeName);
             date.SetValue(attributeValue);
             Assert.Throws<XmlSchemaValidationException>(() => ExtensionsClass.Validate(date, date.GetSchemaInfo().SchemaAttribute, schemaSet, null));
         }
 
-        // Element validation succeeds after change.
+        // element validation succeeds after change
         [Fact]
         public void XElementSuccessValidate()
         {
@@ -312,13 +312,13 @@ namespace CoreXml.Test.XLinq
             string childElementName = "body";
             object childElementValue = "Please call me!";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Alter element.
+            // alter element
             XElement root = xmlDocument.Element(parentElementName);
             root.SetElementValue(childElementName, childElementValue);
 
@@ -327,7 +327,7 @@ namespace CoreXml.Test.XLinq
             Assert.True(validationSucceded);
         }
 
-        // Element validation fails after change.
+        // element validation fails after change
         [Fact]
         public void XElementFailValidate()
         {
@@ -335,13 +335,13 @@ namespace CoreXml.Test.XLinq
             string childElementName = "body";
             object childElementValue = "Don't forget to call me! Please!";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Alter element.
+            // alter element
             XElement root = xmlDocument.Element(parentElementName);
             root.SetElementValue(childElementName, childElementValue);
 
@@ -362,33 +362,33 @@ namespace CoreXml.Test.XLinq
             string childElementName = "body";
             object childElementValue = "Don't forget to call me! Please!";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Alter element.
+            // alter element
             XElement root = xmlDocument.Element(parentElementName);
             root.SetElementValue(childElementName, childElementValue);
 
             Assert.Throws<XmlSchemaValidationException>(() => ExtensionsClass.Validate(root, root.GetSchemaInfo().SchemaElement, schemaSet, null));
         }
 
-        // Test attribute schema info.
+        // test attribute schema info
         [Fact]
         public void XAttributeGetSchemaInfo()
         {
             string elementName =  "note";
             string attributeName = "date";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Validate attribute.
+            // validate attribute
             XAttribute date = xmlDocument.Element(elementName).Attribute(attributeName);
             ExtensionsClass.Validate(date, date.GetSchemaInfo().SchemaAttribute, schemaSet,
                 new ValidationEventHandler(TestValidationHandler));
@@ -398,19 +398,19 @@ namespace CoreXml.Test.XLinq
             Assert.NotNull(schemaInfo);
         }
 
-        // Test element schema info.
+        // test element schema info
         [Fact]
         public void XElementGetSchemaInfo()
         {
             string elementName = "body";
 
-            // Validate the entire document.
+            // validate the entire document
             validationSucceded = true;
             ExtensionsClass.Validate(xmlDocument, schemaSet,
                 new ValidationEventHandler(TestValidationHandler), true);
             Assert.True(validationSucceded);
 
-            // Validate element.
+            // validate element
             XElement body = xmlDocument.Root.Element(elementName);
             ExtensionsClass.Validate(body, body.GetSchemaInfo().SchemaElement, schemaSet,
                 new ValidationEventHandler(TestValidationHandler));
