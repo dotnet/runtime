@@ -340,6 +340,7 @@ namespace System.Net.Mail.Tests
         [InlineData("howdydoo")]
         [InlineData("")]
         [InlineData(null)]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestMailDeliveryAsync(string body)
         {
             using var server = new LoopbackSmtpServer();

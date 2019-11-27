@@ -808,6 +808,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
         public void Match_ExcessPrefix()
         {
             RemoteExecutor.Invoke(() =>
