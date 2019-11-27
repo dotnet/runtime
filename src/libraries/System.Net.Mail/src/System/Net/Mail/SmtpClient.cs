@@ -808,13 +808,37 @@ namespace System.Net.Mail
             }
 
             // Create a TaskCompletionSource to represent the operation
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<object>();
 
             CancellationTokenRegistration ctr = default;
 
+            // Indicates whether the CTR has been set - captured in handler
+            int state = 0;
+
             // Register a handler that will transfer completion results to the TCS Task
             SendCompletedEventHandler handler = null;
-            handler = (sender, e) => HandleCompletion(tcs, ctr, e, handler);
+            handler = (sender, e) =>
+            {
+                if (e.UserState == tcs)
+                {
+                    try
+                    {
+                        ((SmtpClient)sender).SendCompleted -= handler;
+                        if (Interlocked.Exchange(ref state, 1) != 0)
+                        {
+                            // A CTR has been set, we have to wait until it completes before completing the task
+                            ctr.Dispose();
+                        }
+                    }
+                    catch (ObjectDisposedException) { } // SendAsyncCancel will throw if SmtpClient was disposed
+                    finally
+                    {
+                        if (e.Error != null) tcs.TrySetException(e.Error);
+                        else if (e.Cancelled) tcs.TrySetCanceled();
+                        else tcs.TrySetResult(null);
+                    }
+                }
+            };
             SendCompleted += handler;
 
             // Start the async operation.
@@ -828,47 +852,19 @@ namespace System.Net.Mail
                 throw;
             }
 
-            // Only register on the CT if HandleCompletion hasn't started to ensure the CTR is disposed
-            bool lockTaken = false;
-            try
+            ctr = cancellationToken.Register(s =>
             {
-                Monitor.TryEnter(tcs, ref lockTaken);
-                if (lockTaken && !tcs.Task.IsCompleted)
-                {
-                    ctr = cancellationToken.Register(s =>
-                    {
-                        ((SmtpClient)s).SendAsyncCancel();
-                    }, this);
-                }
-            }
-            finally
+                ((SmtpClient)s).SendAsyncCancel();
+            }, this);
+
+            if (Interlocked.Exchange(ref state, 1) != 0)
             {
-                if (lockTaken) Monitor.Exit(tcs);
+                // SendCompleted was already invoked, ensure the CTR completes before returning the task
+                ctr.Dispose();
             }
 
             // Return the task to represent the asynchronous operation
             return tcs.Task;
-        }
-
-        private void HandleCompletion(TaskCompletionSource<object> tcs, CancellationTokenRegistration ctr, AsyncCompletedEventArgs e, SendCompletedEventHandler handler)
-        {
-            if (e.UserState == tcs)
-            {
-                lock (tcs)
-                {
-                    try
-                    {
-                        SendCompleted -= handler;
-                        ctr.Dispose();
-                    }
-                    finally
-                    {
-                        if (e.Error != null) tcs.TrySetException(e.Error);
-                        else if (e.Cancelled) tcs.TrySetCanceled();
-                        else tcs.TrySetResult(null);
-                    }
-                }
-            }
         }
 
 
