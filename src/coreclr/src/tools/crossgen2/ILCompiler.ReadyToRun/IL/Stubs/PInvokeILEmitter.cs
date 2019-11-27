@@ -76,13 +76,6 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitIL()
         {
-            // Temp workaround to disable PInvoke stubs that require marshalling.
-            // https://github.com/dotnet/runtime/issues/248
-            {
-                if (Marshaller.IsMarshallingRequired(_targetMethod))
-                    throw new NotSupportedException();
-            }
-
             if (!_importMetadata.Flags.PreserveSig)
                 throw new NotSupportedException();
 
@@ -95,13 +88,11 @@ namespace Internal.IL.Stubs
             ILCodeStream unmarshallingCodestream = pInvokeILCodeStreams.UnmarshallingCodestream;
             ILCodeStream cleanupCodestream = pInvokeILCodeStreams.CleanupCodeStream;
 
-            /* Temp workaround: disable EH blocks because of https://github.com/dotnet/runtime/issues/248
-
             // Marshalling is wrapped in a finally block to guarantee cleanup
             ILExceptionRegionBuilder tryFinally = emitter.NewFinallyRegion();
 
             marshallingCodestream.BeginTry(tryFinally);
-            cleanupCodestream.BeginHandler(tryFinally);*/
+            cleanupCodestream.BeginHandler(tryFinally);
 
             // Marshal the arguments
             for (int i = 0; i < _marshallers.Length; i++)
@@ -112,12 +103,11 @@ namespace Internal.IL.Stubs
             EmitPInvokeCall(pInvokeILCodeStreams);
 
             ILCodeLabel lReturn = emitter.NewCodeLabel();
-            /* Temp workaround: disable EH blocks because of https://github.com/dotnet/runtime/issues/248
             unmarshallingCodestream.Emit(ILOpcode.leave, lReturn);
             unmarshallingCodestream.EndTry(tryFinally);
 
             cleanupCodestream.Emit(ILOpcode.endfinally);
-            cleanupCodestream.EndHandler(tryFinally);*/
+            cleanupCodestream.EndHandler(tryFinally);
 
             cleanupCodestream.EmitLabel(lReturn);
 
