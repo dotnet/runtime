@@ -685,7 +685,7 @@ namespace System
                 return quotient;
             }
 
-            public static void Multiply(ref BigInteger lhs, uint value, ref BigInteger result)
+            public static void Multiply(ref BigInteger lhs, uint value, out BigInteger result)
             {
                 if (lhs.IsZero() || (value == 1))
                 {
@@ -724,7 +724,7 @@ namespace System
                 }
             }
 
-            public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, ref BigInteger result)
+            public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
             {
                 if (lhs.IsZero() || rhs.IsOne())
                 {
@@ -862,7 +862,7 @@ namespace System
                         fixed (uint* pBigNumEntry = &s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]])
                         {
                             ref BigInteger rhs = ref *(BigInteger*)(pBigNumEntry);
-                            Multiply(ref lhs, ref rhs, ref product);
+                            Multiply(ref lhs, ref rhs, out product);
                         }
 
                         // Swap to the next temporary
@@ -1023,7 +1023,7 @@ namespace System
 
             public void Multiply(uint value)
             {
-                Multiply(ref this, value, ref this);
+                Multiply(ref this, value, out this);
             }
 
             public void Multiply(ref BigInteger value)
@@ -1038,7 +1038,7 @@ namespace System
                         break;
                     default:
                         SetValue(out BigInteger temp, ref this);
-                        Multiply(ref temp, ref value, ref this);
+                        Multiply(ref temp, ref value, out this);
                         break;
                 }
             }

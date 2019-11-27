@@ -223,7 +223,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -243,7 +243,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -302,7 +302,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -347,7 +347,7 @@ namespace System
 
                     if (pScaledMarginHigh != &scaledMarginLow)
                     {
-                        BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                        BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                     }
 
                     digitExponent--;
