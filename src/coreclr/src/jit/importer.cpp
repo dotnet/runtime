@@ -6394,7 +6394,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     if (block->hasTryIndex())
     {
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
-            opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM))
+            !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM))
         {
             // This does not apply to the actual pinvoke call that is inside the pinvoke
             // ILStub, when the secret parameter is not used. In this case, we have to inline
