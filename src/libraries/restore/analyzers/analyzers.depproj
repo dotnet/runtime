@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableBinPlacing>false</EnableBinPlacing>
+    <EnableAnalyzers>true</EnableAnalyzers>
     <Language>C#</Language>
   </PropertyGroup>
-
-  <!-- Import PackageReferences containing analyzers -->
-  <Import Project="$(RepositoryEngineeringDir)analyzers.props" />
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
 

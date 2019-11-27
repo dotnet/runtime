@@ -59,6 +59,7 @@
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -436,12 +437,6 @@
   <!-- Setup ILLink.targets -->
   <ItemGroup>
     <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
-  </ItemGroup>
-
-  <!-- Analyzers -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.66" PrivateAssets="all" />
   </ItemGroup>
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />

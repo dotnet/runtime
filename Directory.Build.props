@@ -84,12 +84,6 @@
     <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
-  <!-- Analyzers -->
-  <PropertyGroup>
-    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
-  </PropertyGroup>
-
   <!-- Set some shortcuts for more terse conditions in project files -->
   <PropertyGroup>
     <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
@@ -101,5 +95,7 @@
     <!-- Default to portable build if not explicitly set -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
 
 </Project>
