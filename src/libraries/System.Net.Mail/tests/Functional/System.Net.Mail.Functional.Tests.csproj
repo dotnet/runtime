@@ -20,7 +20,7 @@
     <Compile Include="MailMessageTest.cs" />
     <Compile Include="SmtpClientTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
-    <Compile Include="SmtpServer.cs" />
+    <Compile Include="LoopbackSmtpServer.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
