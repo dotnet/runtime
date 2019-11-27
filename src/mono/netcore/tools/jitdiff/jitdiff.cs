@@ -17,6 +17,7 @@ namespace JitDiffTools
 
 			string [] filesBefore = Directory.GetFiles (args [0], "*.dasm");
 			string [] filesAfter = Directory.GetFiles (args [1], "*.dasm");
+			var pairs = new List<Tuple<string, string>> ();
 
 			foreach (string fileBefore in filesBefore)
 			{
@@ -24,8 +25,28 @@ namespace JitDiffTools
 				string fileAfter = filesAfter.FirstOrDefault (f =>
 					Path.GetFileName (f).Equals (fileName, StringComparison.InvariantCultureIgnoreCase));
 
-				if (fileAfter != null) 
-					PrintDiffs (fileBefore, fileAfter);
+				if (fileAfter != null)
+					pairs.Add (new Tuple<string, string> (fileBefore, fileAfter));
+			}
+
+			long totalFileDiff = 0;
+			Console.WriteLine ();
+			foreach (var pair in pairs)
+			{
+				long sizeBefore = new FileInfo (pair.Item1).Length;
+				long sizeAfter = new FileInfo (pair.Item2).Length;
+				long diff = sizeAfter - sizeBefore;
+				totalFileDiff += diff;
+				if (diff != 0)
+					Console.WriteLine ($"Total diff for {Path.GetFileName (pair.Item1)}: {diff} bytes");
+			}
+			if (totalFileDiff != 0)
+				Console.WriteLine ($"Total diff for all files: {totalFileDiff} bytes");
+
+			Console.WriteLine ("\n=====================\n= Per-method diffs (may take a while):\n=====================\n");
+			foreach (var pair in pairs)
+			{
+				PrintDiffs (pair.Item1, pair.Item2);
 			}
 			Console.WriteLine ("Done.");
 		}
@@ -61,7 +82,7 @@ namespace JitDiffTools
 			Console.WriteLine (Path.GetFileNameWithoutExtension (fileBefore));
 			Console.WriteLine ($"Methods \"regressed\": {methodRegressed}");
 			Console.WriteLine ($"Methods \"improved\": {methodImproved}");
-			Console.WriteLine ($"Total regression: {totalRegression}, Total improvement: {totalImprovement}");
+			Console.WriteLine ($"Total regression: {totalRegression} lines, Total improvement: {totalImprovement} lines.");
 			Console.WriteLine ("\n");
 		}
 
@@ -164,7 +185,7 @@ namespace JitDiffTools
 		static int CalculateBytes (FunctionInfo info)
 		{
 			// TODO: calculate bytes
-			return info.Body.Count;
+			return info?.Body?.Count ?? 0;
 		}
 
 		public bool HasChanges => Diff != 0;
