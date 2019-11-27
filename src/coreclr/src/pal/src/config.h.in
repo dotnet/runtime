@@ -23,7 +23,6 @@
 #cmakedefine01 HAVE_NUMA_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
-#cmakedefine01 HAVE_LIBINTL_H
 
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_PTHREAD_SUSPEND
