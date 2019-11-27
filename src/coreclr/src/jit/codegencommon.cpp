@@ -5487,6 +5487,8 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
         if (jmpEpilog)
         {
             // Do not use argument registers as scratch registers in the jmp epilog.
+            // It looks a lot like `intRegState.rsCalleeRegArgMaskLiveIn` but the last
+            // loses `rsMaskPreSpillRegs struct registers in prolog generation.
             grabMask &= ~genJmpCallArgMask();
         }
         else
