@@ -421,11 +421,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
-            if (!UseSocketsHttpHandler)
-            {
-                return; // Skip test since the fix is only in SocketsHttpHandler.
-            }
-
             string addressUri = $"https://{Configuration.Http.SecureHost}/";
             bool connectionAccepted = false;
 
@@ -542,7 +537,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
-            using (HttpClient client = CreateHttpClient(UseSocketsHttpHandler.ToString(), UseHttp2.ToString()))
+            using (HttpClient client = CreateHttpClient(UseHttp2.ToString()))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -1827,17 +1822,15 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.SendAsync(req))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    if (UseSocketsHttpHandler)
+
+                    const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
+                    if (expectContinue == true && (version == "1.1" || version == "2.0"))
                     {
-                        const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
-                        {
-                            Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
-                        }
-                        else
-                        {
-                            Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
-                        }
+                        Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                    }
+                    else
+                    {
+                        Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                     }
                 }
             }
@@ -2366,7 +2359,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
-                    if (method == "TRACE" && (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || UseSocketsHttpHandler))
+                    if (method == "TRACE")
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE'
                         // verb and a request body. The usual response from a server is "400 Bad Request".
@@ -2404,14 +2397,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
+        [ActiveIssue(339)] // Manicka: Only for WinHttpHandler
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (UseSocketsHttpHandler)
-            {
-                return;
-            }
-
             // The default value for HttpRequestMessage.Version is Version(1,1).
             // So, we need to set something different (0,0), to test the "unknown" version.
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));

@@ -156,12 +156,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SupportedSSLVersionServers))]
         public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #26186: SocketsHttpHandler is failing on some OSes.
-                return;
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 handler.SslProtocols = sslProtocols;

@@ -20,7 +20,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
@@ -33,14 +32,11 @@ namespace System.Net.Http.Functional.Tests
             where T : Exception
         {
             Exception e = await Assert.ThrowsAsync<T>(() => task);
-            if (UseSocketsHttpHandler)
-            {
-                string text = e.ToString();
-                Assert.Contains(((int)errorCode).ToString("x"), text);
-                Assert.Contains(
-                    Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
-                    text);
-            }
+            string text = e.ToString();
+            Assert.Contains(((int)errorCode).ToString("x"), text);
+            Assert.Contains(
+                Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
+                text);
         }
 
         private Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
