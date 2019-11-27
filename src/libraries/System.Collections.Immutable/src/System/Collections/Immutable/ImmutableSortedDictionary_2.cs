@@ -382,7 +382,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer)
+        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer)
         {
             return this.WithComparers(keyComparer, _valueComparer);
         }
@@ -484,10 +484,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            return _root.TryGetValue(key, _keyComparer, out value);
+            return _root.TryGetValue(key, _keyComparer, out value!);
         }
 
         /// <summary>
@@ -800,8 +800,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -887,9 +886,8 @@ namespace System.Collections.Immutable
                 return other.WithComparers(this.KeyComparer, this.ValueComparer);
             }
 
-            var itemsAsDictionary = items as IDictionary<TKey, TValue>;
             SortedDictionary<TKey, TValue> dictionary;
-            if (itemsAsDictionary != null)
+            if (items is IDictionary<TKey, TValue> itemsAsDictionary)
             {
                 dictionary = new SortedDictionary<TKey, TValue>(itemsAsDictionary, this.KeyComparer);
             }

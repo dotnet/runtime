@@ -75,7 +75,7 @@ namespace System.Collections.Immutable
             /// A shareable singleton for enumerating empty arrays.
             /// </summary>
             private static readonly IEnumerator<T> s_EmptyEnumerator =
-                new EnumeratorObject(ImmutableArray<T>.Empty.array);
+                new EnumeratorObject(ImmutableArray<T>.Empty.array!);
 
             /// <summary>
             /// The array being enumerated.

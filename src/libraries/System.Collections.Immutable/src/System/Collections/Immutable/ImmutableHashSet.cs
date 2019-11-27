@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
         /// The immutable collection.
         /// </returns>
         [Pure]
-        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T> equalityComparer)
+        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer);
         }
@@ -57,7 +57,7 @@ namespace System.Collections.Immutable
         /// <param name="item">The item to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T> equalityComparer, T item)
+        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, T item)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer).Add(item);
         }
@@ -82,7 +82,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableHashSet<T> CreateRange<T>(IEqualityComparer<T> equalityComparer, IEnumerable<T> items)
+        public static ImmutableHashSet<T> CreateRange<T>(IEqualityComparer<T>? equalityComparer, IEnumerable<T> items)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer).Union(items);
         }
@@ -107,7 +107,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T> equalityComparer, params T[] items)
+        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params T[] items)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer).Union(items);
         }
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
         /// The immutable collection.
         /// </returns>
         [Pure]
-        public static ImmutableHashSet<T>.Builder CreateBuilder<T>(IEqualityComparer<T> equalityComparer)
+        public static ImmutableHashSet<T>.Builder CreateBuilder<T>(IEqualityComparer<T>? equalityComparer)
         {
             return Create<T>(equalityComparer).ToBuilder();
         }
@@ -147,7 +147,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? equalityComparer)
         {
-            if (source is ImmutableHashSet<TSource>  existingSet)
+            if (source is ImmutableHashSet<TSource> existingSet)
             {
                 return existingSet.WithComparer(equalityComparer);
             }

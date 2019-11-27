@@ -401,6 +401,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
+            [return: MaybeNull]
             public T Find(Predicate<T> match) => _root.Find(match);
 
             /// <summary>
@@ -474,6 +475,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
+            [return: MaybeNull]
             public T FindLast(Predicate<T> match) => _root.FindLast(match);
 
             /// <summary>
@@ -597,7 +599,7 @@ namespace System.Collections.Immutable
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) =>
+            public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.IndexOf(item, index, count, equalityComparer);
 
             /// <summary>
@@ -693,7 +695,7 @@ namespace System.Collections.Immutable
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer) =>
+            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.LastIndexOf(item, startIndex, count, equalityComparer);
 
             /// <summary>
@@ -823,7 +825,7 @@ namespace System.Collections.Immutable
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
-            public void Sort(IComparer<T> comparer)
+            public void Sort(IComparer<T>? comparer)
             {
                 this.Root = this.Root.Sort(comparer);
             }
@@ -842,7 +844,7 @@ namespace System.Collections.Immutable
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
-            public void Sort(int index, int count, IComparer<T> comparer)
+            public void Sort(int index, int count, IComparer<T>? comparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));

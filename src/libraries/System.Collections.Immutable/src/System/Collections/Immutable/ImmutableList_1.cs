@@ -279,7 +279,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableList<T> Remove(T value, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> Remove(T value, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(value, equalityComparer);
             return index < 0 ? this : this.RemoveAt(index);
@@ -329,7 +329,7 @@ namespace System.Collections.Immutable
         /// A new list with the elements removed.
         /// </returns>
         [Pure]
-        public ImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(items, nameof(items));
 
@@ -400,7 +400,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(oldValue, equalityComparer);
             if (index < 0)
@@ -460,7 +460,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
-        public ImmutableList<T> Sort(IComparer<T> comparer) => this.Wrap(_root.Sort(comparer));
+        public ImmutableList<T> Sort(IComparer<T>? comparer) => this.Wrap(_root.Sort(comparer));
 
         /// <summary>
         /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
@@ -478,7 +478,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
-        public ImmutableList<T> Sort(int index, int count, IComparer<T> comparer)
+        public ImmutableList<T> Sort(int index, int count, IComparer<T>? comparer)
         {
             Requires.Range(index >= 0, nameof(index));
             Requires.Range(count >= 0, nameof(count));
@@ -767,7 +767,7 @@ namespace System.Collections.Immutable
         /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
+        public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
@@ -790,7 +790,7 @@ namespace System.Collections.Immutable
         /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
+        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
 
         /// <summary>
         /// Determines whether every element in the <see cref="ImmutableList{T}"/>
@@ -858,7 +858,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T> equalityComparer) => this.Remove(value, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T>? equalityComparer) => this.Remove(value, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
@@ -870,7 +870,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer) => this.RemoveRange(items, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) => this.RemoveRange(items, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
@@ -906,7 +906,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The new list.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
-        IImmutableList<T> IImmutableList<T>.Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer) => this.Replace(oldValue, newValue, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer) => this.Replace(oldValue, newValue, equalityComparer);
 
         #endregion
 

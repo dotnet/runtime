@@ -26,7 +26,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The key associated with this node.
             /// </summary>
-            private T _key = default!;
+            private T _key = default!; // Defaulting for EmptyNode, shouldn't be null for non empty nodes so didn't annotated with [MaybeNull]
 
             /// <summary>
             /// A value indicating whether this node has been frozen (made immutable).
@@ -578,7 +578,7 @@ namespace System.Collections.Immutable
             /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
-            internal Node Sort(IComparer<T> comparer) => this.Sort(0, this.Count, comparer);
+            internal Node Sort(IComparer<T>? comparer) => this.Sort(0, this.Count, comparer);
 
             /// <summary>
             /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
@@ -595,7 +595,7 @@ namespace System.Collections.Immutable
             /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
-            internal Node Sort(int index, int count, IComparer<T> comparer)
+            internal Node Sort(int index, int count, IComparer<T>? comparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -705,7 +705,7 @@ namespace System.Collections.Immutable
             /// <see cref="ImmutableList{T}"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int IndexOf(T item, IEqualityComparer<T> equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
+            internal int IndexOf(T item, IEqualityComparer<T>? equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
 
             /// <summary>
             /// Searches for the specified object and returns <c>true</c> if it is found, <c>false</c> otherwise.
@@ -749,7 +749,7 @@ namespace System.Collections.Immutable
             /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
+            internal int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -792,7 +792,7 @@ namespace System.Collections.Immutable
             /// and ends at <paramref name="index"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
+            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));

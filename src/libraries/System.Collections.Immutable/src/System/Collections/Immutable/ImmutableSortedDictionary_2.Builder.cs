@@ -183,7 +183,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     TValue value;
-                    if (this.TryGetValue(key, out value))
+                    if (this.TryGetValue(key, out value!))
                     {
                         return value;
                     }
@@ -470,9 +470,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
-            public bool TryGetValue(TKey key, out TValue value)
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
-                return this.Root.TryGetValue(key, _keyComparer, out value);
+                return this.Root.TryGetValue(key, _keyComparer, out value!);
             }
 
             /// <summary>
@@ -631,7 +631,7 @@ namespace System.Collections.Immutable
                 Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
-                if (this.TryGetValue(key, out value))
+                if (this.TryGetValue(key, out value!))
                 {
                     return value;
                 }

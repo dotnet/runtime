@@ -48,8 +48,7 @@ namespace System.Collections.Immutable
                 }
 
                 // Get the stack that corresponds to the T
-                object? stackObj;
-                if (!typesToStacks.TryGetValue(s_typeOfT, out stackObj))
+                if (!typesToStacks.TryGetValue(s_typeOfT, out object? stackObj))
                 {
                     stackObj = new Stack<RefAsValueType<T>>(MaxSize);
                     typesToStacks.Add(s_typeOfT, stackObj);

@@ -476,7 +476,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey> keyComparer)
+        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer)
         {
             return this.WithComparers(keyComparer, _comparers.ValueComparer);
         }
@@ -879,8 +879,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -1060,7 +1059,7 @@ namespace System.Collections.Immutable
         /// <param name="root">The root of the data structure.</param>
         /// <param name="adjustedCountIfDifferentRoot">The adjusted count if the root has changed.</param>
         /// <returns>The immutable collection.</returns>
-        private ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket> root, int adjustedCountIfDifferentRoot)
+        private ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket>? root, int adjustedCountIfDifferentRoot)
         {
             if (root == null)
             {
@@ -1090,8 +1089,7 @@ namespace System.Collections.Immutable
             {
                 // If the items being added actually come from an ImmutableDictionary<TKey, TValue>
                 // then there is no value in reconstructing it.
-                ImmutableDictionary<TKey, TValue>? other;
-                if (TryCastToImmutableMap(pairs, out other))
+                if (TryCastToImmutableMap(pairs, out ImmutableDictionary<TKey, TValue>? other))
                 {
                     return other.WithComparers(this.KeyComparer, this.ValueComparer);
                 }

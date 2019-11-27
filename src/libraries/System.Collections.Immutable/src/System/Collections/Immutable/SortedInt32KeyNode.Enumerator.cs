@@ -116,8 +116,7 @@ namespace System.Collections.Immutable
             {
                 _root = null!;
                 _current = null;
-                Stack<RefAsValueType<SortedInt32KeyNode<TValue>>> stack;
-                if (_stack != null && _stack.TryUse(ref this, out stack!))
+                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
                     s_enumeratingStacks.TryAdd(this, _stack!);

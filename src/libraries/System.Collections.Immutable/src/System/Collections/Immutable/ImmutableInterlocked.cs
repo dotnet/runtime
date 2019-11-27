@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[] oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref location.array);
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray));
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[] oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref location.array);
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray), transformerArgument);
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
