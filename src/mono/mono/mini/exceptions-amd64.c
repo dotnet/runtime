@@ -898,9 +898,21 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
 	gpointer *sp;
-	int frame_size;
-	MonoContext *copied_ctx;
+	MonoJitTlsData *jit_tls = NULL;
+	MonoContext *copied_ctx = NULL;
 	gboolean nullref = TRUE;
+
+	jit_tls = mono_tls_get_jit_tls ();
+	g_assert (jit_tls);
+
+	/* use TLS as temporary storage as we want to avoid
+	 * (1) stack allocation on the application stack
+	 * (2) calling malloc, because it is not async-safe
+	 * (3) using a global storage, because this function is not reentrant
+	 *
+	 * tls->orig_ex_ctx is used by the stack walker, which shouldn't be running at this point.
+	 */
+	copied_ctx = &jit_tls->orig_ex_ctx;
 
 	if (!mono_is_addr_implicit_null_check (fault_addr))
 		nullref = FALSE;
@@ -908,24 +920,17 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
 
-	/* setup a call frame on the real stack so that control is returned there
-	 * and exception handling can continue.
-	 * The frame looks like:
-	 *   ucontext struct
-	 *   ...
-	 *   return ip
-	 * 128 is the size of the red zone
+	/* setup the call frame on the application stack so that control is
+	 * returned there and exception handling can continue. we want the call
+	 * frame to be minimal as possible, for example no argument passing that
+	 * requires allocation on the stack, as this wouldn't be encoded in unwind
+	 * information for the caller frame.
 	 */
-	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4 + 128;
-	frame_size += 15;
-	frame_size &= ~15;
-	sp = (gpointer *)(UCONTEXT_REG_RSP (sigctx) & ~15);
-	sp = (gpointer *)((char*)sp - frame_size);
-	copied_ctx = (MonoContext*)(sp + 4);
-	/* the arguments must be aligned */
+	sp = (gpointer *)UCONTEXT_REG_RSP (sigctx);
+	g_assertf (((unsigned long) sp & 15) == 0, "sp: %p\n", sp);
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
 	mono_sigctx_to_monoctx (sigctx, copied_ctx);
-	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
+	/* at the return from the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
 	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
 	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(copied_ctx);
