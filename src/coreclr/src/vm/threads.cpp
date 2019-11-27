@@ -54,6 +54,41 @@
 #include "eventpipebuffermanager.h"
 #endif // FEATURE_PERFTRACING
 
+static PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
+
+TailCallTls::TailCallTls()
+    : m_frame(&g_sentinelTailCallFrame)
+    , m_argBuffer(NULL)
+    , m_argBufferSize(0)
+    , m_argBufferGCDesc(NULL)
+{
+}
+
+void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
+{
+    m_argBufferSize = size;
+
+    if (size > sizeof(m_argBufferInline))
+        m_argBuffer = new char[size];
+    else
+        m_argBuffer = m_argBufferInline;
+
+    if (gcDesc != NULL)
+    {
+        memset(m_argBuffer, 0, size);
+        m_argBufferGCDesc = gcDesc;
+    }
+
+    return m_argBuffer;
+}
+
+void TailCallTls::FreeArgBuffer()
+{
+    m_argBufferGCDesc = NULL;
+    if (m_argBufferSize > sizeof(m_argBufferInline))
+        delete[] m_argBuffer;
+}
+
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);

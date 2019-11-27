@@ -66,6 +66,8 @@
 #include "perfmap.h"
 #endif
 
+#include "tailcallhelp.h"
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -2217,20 +2219,29 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result = 0;
+    unsigned result;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
+    result = getClassGClayoutStatic(VMClsHnd, gcPtrs);
 
-    MethodTable* pMT = VMClsHnd.GetMethodTable();
+    EE_TO_JIT_TRANSITION();
 
-    if (VMClsHnd.IsNativeValueType())
+    return result;
+}
+
+unsigned CEEInfo::getClassGClayoutStatic(TypeHandle th, BYTE* gcPtrs)
+{
+    unsigned result = 0;
+    MethodTable* pMT = th.GetMethodTable();
+
+    if (th.IsNativeValueType())
     {
         // native value types have no GC pointers
         result = 0;
         memset(gcPtrs, TYPE_GC_NONE,
-               (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+               (th.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
     }
     else if (pMT->IsByRefLike())
     {
@@ -2245,11 +2256,11 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         else
         {
             memset(gcPtrs, TYPE_GC_NONE,
-                (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+                (th.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
             // Note: This case is more complicated than the TypedReference case
             // due to ByRefLike structs being included as fields in other value
             // types (TypedReference can not be.)
-            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
+            result = ComputeGCLayout(th.AsMethodTable(), gcPtrs);
         }
     }
     else
@@ -2262,7 +2273,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         _ASSERTE(isValueClass || !IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
 #endif
 
-        unsigned int size = isValueClass ? VMClsHnd.GetSize() : pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
+        unsigned int size = isValueClass ? th.GetSize() : pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
 
         // assume no GC pointers at first
         result = 0;
@@ -2292,8 +2303,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -13932,6 +13941,83 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
 #endif // (_TARGET_AMD64_ || _TARGET_ARM_) && !FEATURE_PAL
 
     return ftn;
+}
+
+bool CEEInfo::getTailCallHelpersHelper(CORINFO_RESOLVED_TOKEN* callToken,
+                                       CORINFO_SIG_INFO* sig,
+                                       CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                       CORINFO_TAILCALL_HELPERS* pResult)
+{
+    MethodDesc* pTargetMD = NULL;
+
+    if (callToken != NULL)
+    {
+        pTargetMD = (MethodDesc*)callToken->hMethod;
+        _ASSERTE(pTargetMD != NULL);
+
+        if (pTargetMD->IsWrapperStub())
+        {
+            pTargetMD = pTargetMD->GetWrappedMethodDesc();
+        }
+
+        // We currently do not handle generating the proper call to managed
+        // varargs methods.
+        if (pTargetMD->IsVarArg())
+        {
+            return false;
+        }
+    }
+
+    SigTypeContext typeCtx;
+    GetTypeContext(&sig->sigInst, &typeCtx);
+
+    MetaSig msig(sig->pSig, sig->cbSig, GetModule(sig->scope), &typeCtx);
+
+    bool isCallvirt = (flags & CORINFO_TAILCALL_IS_CALLVIRT) != 0;
+
+    MethodDesc* pStoreArgsMD;
+    MethodDesc* pCallTargetMD;
+    bool needsTarget;
+
+    TailCallHelp::CreateTailCallHelperStubs(
+        m_pMethodBeingCompiled, pTargetMD,
+        msig, isCallvirt,
+        &pStoreArgsMD, &needsTarget,
+        &pCallTargetMD);
+
+    unsigned outFlags = 0;
+    if (needsTarget)
+    {
+        outFlags |= CORINFO_TAILCALL_STORE_TARGET;
+    }
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    return true;
+}
+
+bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
+                                 CORINFO_SIG_INFO* sig,
+                                 CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                 CORINFO_TAILCALL_HELPERS* pResult)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool success = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    success = getTailCallHelpersHelper(callToken, sig, flags, pResult);
+
+    EE_TO_JIT_TRANSITION();
+
+    return success;
 }
 
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)

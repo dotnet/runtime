@@ -3448,6 +3448,56 @@ public:
     regMaskTP GetABIReturnRegs();
 };
 
+class TailCallSiteInfo
+{
+    bool                   m_isCallvirt : 1;
+    bool                   m_isCalli : 1;
+    CORINFO_SIG_INFO       m_sig;
+    CORINFO_RESOLVED_TOKEN m_token;
+
+public:
+    bool IsCallvirt()
+    {
+        return m_isCallvirt;
+    }
+    bool IsCalli()
+    {
+        return m_isCalli;
+    }
+    CORINFO_RESOLVED_TOKEN* GetToken()
+    {
+        assert(!IsCalli());
+        return &m_token;
+    }
+    CORINFO_SIG_INFO* GetSig()
+    {
+        return &m_sig;
+    }
+
+    void SetCalli(CORINFO_SIG_INFO* sig)
+    {
+        m_isCallvirt = false;
+        m_isCalli    = true;
+        m_sig        = *sig;
+    }
+
+    void SetCallvirt(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
+    {
+        m_isCallvirt = true;
+        m_isCalli    = false;
+        m_sig        = *sig;
+        m_token      = *token;
+    }
+
+    void SetCall(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
+    {
+        m_isCallvirt = false;
+        m_isCalli    = false;
+        m_sig        = *sig;
+        m_token      = *token;
+    }
+};
+
 class fgArgInfo;
 
 struct GenTreeCall final : public GenTree
@@ -3579,9 +3629,12 @@ struct GenTreeCall final : public GenTree
     regList regArgList;
 #endif
 
-    // TODO-Throughput: Revisit this (this used to be only defined if
-    // FEATURE_FIXED_OUT_ARGS was enabled, so this makes GenTreeCall 4 bytes bigger on x86).
-    CORINFO_SIG_INFO* callSig; // Used by tail calls and to register callsites with the EE
+#ifdef DEBUG
+    // Used to register callsites with the EE
+    CORINFO_SIG_INFO* callSig;
+#endif
+
+    TailCallSiteInfo* tailCallInfo;
 
 #if FEATURE_MULTIREG_RET
 
@@ -3844,7 +3897,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_NONVIRT_SAME_THIS       0x00000080 // GT_CALL -- callee "this" pointer is
                                                       // equal to caller this pointer (only for GTF_CALL_NONVIRT)
 #define GTF_CALL_M_FRAME_VAR_DEATH         0x00000100 // GT_CALL -- the compLvFrameListRoot variable dies here (last use)
-#define GTF_CALL_M_TAILCALL_VIA_HELPER     0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
+#define GTF_CALL_M_TAILCALL_VIA_JIT_HELPER 0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
 
 #if FEATURE_TAILCALL_OPT
 #define GTF_CALL_M_IMPLICIT_TAILCALL       0x00000400 // GT_CALL -- call is an opportunistic
@@ -3988,15 +4041,26 @@ struct GenTreeCall final : public GenTree
         return IsTailPrefixedCall() || IsImplicitTailCall();
     }
 
-    bool IsTailCallViaHelper() const
+    // Check whether this is a tailcall dispatched via JIT helper. We only use
+    // this mechanism on x86 as it is faster than our other more general
+    // tailcall mechanism.
+    bool IsTailCallViaJitHelper() const
     {
-        return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER);
+#ifdef _TARGET_X86_
+        return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
+#else
+        return false;
+#endif
     }
 
 #if FEATURE_FASTTAILCALL
     bool IsFastTailCall() const
     {
-        return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER);
+#ifdef _TARGET_X86_
+        return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
+#else
+        return IsTailCall();
+#endif
     }
 #else  // !FEATURE_FASTTAILCALL
     bool IsFastTailCall() const
@@ -4384,6 +4448,10 @@ struct GenTreeFptrVal : public GenTree
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
     {
+#ifdef FEATURE_READYTORUN_COMPILER
+        gtEntryPoint.addr       = nullptr;
+        gtEntryPoint.accessType = IAT_VALUE;
+#endif
     }
 #if DEBUGGABLE_GENTREE
     GenTreeFptrVal() : GenTree()

@@ -100,6 +100,8 @@ public:
         int posDelta = pos - m_Pos;
         m_Pos = pos + 1;
 
+        _ASSERTE(posDelta >= 0);
+
         if (posDelta != 0)
         {
             if (posDelta < 4)

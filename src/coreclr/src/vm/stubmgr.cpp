@@ -1087,7 +1087,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call
     // here, so we'd miss if we patched the prestub. Therefore, we go right to the IL method and patch IL offset 0
     // by using TRACE_UNJITTED_METHOD.
-    if (!pMD->IsIL())
+    if (!pMD->IsIL() && !pMD->IsILStub())
     {
         trace->InitForStub(GetPreStubEntryPoint());
     }
@@ -2365,7 +2365,7 @@ void TailCallStubManager::Init()
     StubManager::AddStubManager(new TailCallStubManager());
 }
 
-bool TailCallStubManager::IsTailCallStubHelper(PCODE code)
+bool TailCallStubManager::IsTailCallJitHelper(PCODE code)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2381,7 +2381,7 @@ BOOL TailCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     bool fIsStub = false;
 
 #if !defined(DACCESS_COMPILE)
-    fIsStub = IsTailCallStubHelper(stubStartAddress);
+    fIsStub = IsTailCallJitHelper(stubStartAddress);
 #endif // !DACCESS_COMPILE
 
     return fIsStub;

@@ -1935,11 +1935,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             {
                 op1->AsFptrVal()->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
             }
-            else
-            {
-                op1->AsFptrVal()->gtEntryPoint.addr       = nullptr;
-                op1->AsFptrVal()->gtEntryPoint.accessType = IAT_VALUE;
-            }
 #endif
             break;
 
@@ -3506,6 +3501,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #else
     assert(intrinsicID != CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr);
 #endif
+
+    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
+    {
+        // For now we just avoid inlining anything into these methods since
+        // this intrinsic is only rarely used. We could do this better if we
+        // wanted to by trying to match which call is the one we need to get
+        // the return address of.
+        info.compHasNextCallRetAddr = true;
+        return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
 
     GenTree* retNode = nullptr;
 
@@ -7381,14 +7386,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         sig = &calliSig;
 
-#ifdef DEBUG
-        // We cannot lazily obtain the signature of a CALLI call because it has no method
-        // handle that we can use, so we need to save its full call signature here.
-        assert(call->AsCall()->callSig == nullptr);
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = calliSig;
-#endif // DEBUG
-
         if (IsTargetAbi(CORINFO_CORERT_ABI))
         {
             bool managedCall = (((calliSig.callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_STDCALL) &&
@@ -7868,11 +7865,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // !FEATURE_VARARG
 
 #ifdef UNIX_X86_ABI
-    if (call->AsCall()->callSig == nullptr)
-    {
-        call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-        *call->AsCall()->callSig = *sig;
-    }
+    // On Unix x86 we usually use caller-cleaned convention.
+    if (!call->AsCall()->IsUnmanaged() && IsCallerPop(sig->callConv))
+        call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
@@ -7909,14 +7904,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             unsigned numArgsDef = sig->numArgs;
 #endif
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
-
-#ifdef DEBUG
-            // We cannot lazily obtain the signature of a vararg call because using its method
-            // handle will give us only the declared argument list, not the full argument list.
-            assert(call->AsCall()->callSig == nullptr);
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-#endif
 
             // For vararg calls we must be sure to load the return type of the
             // method actually being called, as well as the return types of the
@@ -8363,6 +8350,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DONE:
 
+#ifdef DEBUG
+    // In debug we want to be able to register callsites with the EE.
+    assert(call->AsCall()->callSig == nullptr);
+    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    *call->AsCall()->callSig = *sig;
+#endif
+
     if (tailCall)
     {
         // This check cannot be performed for implicit tail calls for the reason
@@ -8466,7 +8460,27 @@ DONE:
 #endif // FEATURE_TAILCALL_OPT
                 }
 
-                // we can't report success just yet...
+                // This might or might not turn into a tailcall. We do more
+                // checks in morph. For explicit tailcalls we need more
+                // information in morph in case it turns out to be a
+                // helper-based tailcall.
+                if (explicitTailCall)
+                {
+                    assert(call->AsCall()->tailCallInfo == nullptr);
+                    call->AsCall()->tailCallInfo = new (this, CMK_CorTailCallInfo) TailCallSiteInfo;
+                    switch (opcode)
+                    {
+                        case CEE_CALLI:
+                            call->AsCall()->tailCallInfo->SetCalli(sig);
+                            break;
+                        case CEE_CALLVIRT:
+                            call->AsCall()->tailCallInfo->SetCallvirt(sig, pResolvedToken);
+                            break;
+                        default:
+                            call->AsCall()->tailCallInfo->SetCall(sig, pResolvedToken);
+                            break;
+                    }
+                }
             }
             else
             {
@@ -8519,15 +8533,7 @@ DONE:
         //
 
         assert(call->gtOper == GT_CALL);
-        assert(sig != nullptr);
-
-        // Tail calls require us to save the call site's sig info so we can obtain an argument
-        // copying thunk from the EE later on.
-        if (call->AsCall()->callSig == nullptr)
-        {
-            call->AsCall()->callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
-            *call->AsCall()->callSig = *sig;
-        }
+        assert(callInfo != nullptr);
 
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
         {
@@ -19546,6 +19552,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
+        return;
+    }
+
+    // Don't inline into callers that use the NextCallReturnAddress intrinsic.
+    if (info.compHasNextCallRetAddr)
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
         return;
     }
 

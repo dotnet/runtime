@@ -128,6 +128,8 @@ public:
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
 #endif
+
+    static FCDECL0(void*,           NextCallReturnAddress);
 };
 
 #endif  // __STUBHELPERS_h__

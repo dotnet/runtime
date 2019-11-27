@@ -5974,6 +5974,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
+    info.compHasNextCallRetAddr = false;
+
     switch (methodInfo->args.getCallConv())
     {
         case CORINFO_CALLCONV_VARARG:
@@ -9493,9 +9495,9 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_FRAME_VAR_DEATH]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER)
                     {
-                        chars += printf("[CALL_M_TAILCALL_VIA_HELPER]");
+                        chars += printf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");
                     }
 #if FEATURE_TAILCALL_OPT
                     if (call->gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL)

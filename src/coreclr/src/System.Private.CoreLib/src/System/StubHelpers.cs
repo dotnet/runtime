@@ -1870,5 +1870,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
 }
