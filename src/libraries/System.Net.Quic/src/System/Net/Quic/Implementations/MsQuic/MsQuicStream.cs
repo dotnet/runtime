@@ -62,6 +62,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Used by the class to indicate that the stream is writable.
         private bool _canWrite;
 
+        private bool CanComplete;
+
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicApi api, MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
@@ -136,6 +138,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_transferBuffer.Length == 0)
                 {
                     _transferBuffer = buffer;
+                    CanComplete = true;
                     return _receiveResettableCompletionSource.GetValueTask();
                 }
 
@@ -146,6 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 readableBuffer.CopyTo(buffer);
 
                 ArrayPool<byte>.Shared.Return(_rentedBuffer);
+                _transferBuffer = Memory<byte>.Empty;
 
                 EnableReceive();
                 return new ValueTask<int>(actual);
@@ -159,12 +163,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void ShutdownRead()
         {
-            throw new NotImplementedException();
+            // TODO doesn't seem to be much point for this API.
         }
 
         internal override void ShutdownWrite()
         {
-            throw new NotImplementedException();
+            _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0);
         }
 
         internal override void Flush()
@@ -330,10 +334,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 buffer = buffer.Slice(0, actual);
                 buffer.CopyTo(destinationBuffer.Span);
 
-                //EnableReceive();
                 ReceiveComplete(actual);
 
-                ThreadPool.UnsafeQueueUserWorkItem(_ => _receiveResettableCompletionSource.Complete(actual), state: null);
+                _transferBuffer = Memory<byte>.Empty;
+                if (!CanComplete)
+                {
+                    throw new Exception();
+                }
+                _receiveResettableCompletionSource.Complete(actual);
+                CanComplete = false;
             }
         }
 
@@ -358,7 +367,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Log("Start complete");
             _started = StartState.Finished;
-            ThreadPool.UnsafeQueueUserWorkItem(_ =>_sendResettableCompletionSource.Complete(MsQuicConstants.Success), state: null);
+            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
             return MsQuicConstants.Success;
         }
 
@@ -371,7 +380,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventShutdownComplete()
         {
             Log("Shutdown complete");
-            ThreadPool.UnsafeQueueUserWorkItem(_ => _sendResettableCompletionSource.Complete(MsQuicConstants.Success), state: null);
+            // TODO use another cts here.
+            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
             return MsQuicConstants.Success;
         }
 
@@ -392,7 +402,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             // TODO check this error code.
             uint errorCode = evt.Data.SendComplete.Canceled;
-            ThreadPool.UnsafeQueueUserWorkItem(_ => _sendResettableCompletionSource.Complete(MsQuicConstants.Success), state: null);
+           _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
 
             return MsQuicConstants.Success;
         }
