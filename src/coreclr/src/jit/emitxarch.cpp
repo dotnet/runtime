@@ -13918,14 +13918,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                         }
                     }
                 }
-                if (id->idIsDspReloc())
-                {
-                    // RIP relative addressing
-                    //
-                    // - throughput is only 1 per cycle
-                    //
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                }
+            }
+            if (id->idIsDspReloc())
+            {
+                // RIP relative addressing
+                //
+                // - throughput is only 1 per cycle
+                //
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
 
