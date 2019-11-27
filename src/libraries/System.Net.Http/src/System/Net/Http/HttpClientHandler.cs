@@ -14,33 +14,6 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        // This partial implementation contains members common to all HttpClientHandler implementations.
-        private const string SocketsHttpHandlerEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
-        private const string SocketsHttpHandlerAppCtxSettingName = "System.Net.Http.UseSocketsHttpHandler";
-
-        private static bool UseSocketsHttpHandler
-        {
-            get
-            {
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(SocketsHttpHandlerAppCtxSettingName, out bool useSocketsHttpHandler))
-                {
-                    return useSocketsHttpHandler;
-                }
-
-                // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-                string envVar = Environment.GetEnvironmentVariable(SocketsHttpHandlerEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Use WinHttpHandler on Windows.
-                    return false;
-                }
-
-                // Default to using SocketsHttpHandler.
-                return true;
-            }
-        }
-
         private readonly SocketsHttpHandler _socketsHttpHandler;
         private readonly DiagnosticsHandler _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
