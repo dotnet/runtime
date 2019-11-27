@@ -1,0 +1,97 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - release/*.*
+  paths:
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/installer/*
+    - eng/pipelines/common/*
+
+pr:
+  branches:
+    include:
+    - master
+    - release/*.*
+  paths:
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/coreclr/*
+    - eng/pipelines/coreclr/*
+    - eng/pipelines/installer/*
+    - eng/pipelines/common/*
+
+pool:
+  vmImage: 'ubuntu-16.04'
+
+variables:
+  - template: ../variables.yml
+  - name: enterpriseTestsSetup
+    value: $(sourcesRoot)/Common/tests/System/Net/EnterpriseTests/setup
+  - name: containerRunTestsCommand
+    value: /repo/.dotnet/dotnet msbuild /t:rebuildandtest
+  - name: containerLibrariesRoot
+    value: /repo/src/libraries
+
+steps:
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose build
+  displayName: Build test machine images
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose up -d
+  displayName: Start test network and machines
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- bash: |
+    docker exec linuxclient bash /setup/test-webserver.sh
+  displayName: Test linuxclient connection to web server
+
+- bash: |
+    docker exec linuxclient bash /repo/libraries.sh
+  displayName: Build product sources
+
+- bash: |
+    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
+    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
+  displayName: Build and run tests
+
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose down
+  displayName: Stop test network and machines
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- task: PublishTestResults@2
+  inputs:
+    testRunner: 'xUnit'
+    testResultsFiles: '**/testResults.xml'
+    testRunTitle: 'Enterprise Tests'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
