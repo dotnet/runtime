@@ -1485,6 +1485,29 @@ TRY_END_b029:
 TRY_END_b030:
 
 
+	.try
+	{
+		call void test::test_001c()
+		ldstr "Fail: test_001c"
+		call void [System.Console]System.Console::WriteLine(string)
+		ldc.i4 1
+		stloc 0
+		leave TRY_END_c001
+	}
+	catch [mscorlib]System.IndexOutOfRangeException
+	{
+		leave TRY_END_c001
+	}
+	catch [mscorlib]System.Exception
+	{
+		ldstr "Fail: test_001c"
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
+		ldc.i4 1
+		stloc 0
+		leave TRY_END_c001
+	}
+TRY_END_c001:
 
 
 
@@ -4137,6 +4160,55 @@ FOR_TEST:
 
 
 
+
+  .method public static void test_001c() cil managed
+  {
+// Check for exception
+// use int32
+// Exceed array bounds with greater than
+// with a back branch that goes to a try region
+// so Jit can't clone the loop check and transofm it
+// to a postcondition loop.
+
+
+	.locals init (int32[], int32)
+
+	
+	ldc.i4 100
+	newarr int32
+	stloc 0
+
+
+FOR_START:
+	ldloc 1
+	ldc.i4 100
+	bgt FOR_END
+
+	.try
+	{
+        ldloc 0
+        ldloc 1
+        ldloc 1
+        stelem.i4
+        leave TRY_END_a
+    }
+    catch [mscorlib]System.NullReferenceException
+    {
+        leave TRY_END_a
+    }
+    TRY_END_a:
+
+	ldloc 1
+	ldc.i4 1
+	add
+	stloc 1
+	br FOR_START
+
+FOR_END:
+
+	ret   
+		
+  }
 
 
 
