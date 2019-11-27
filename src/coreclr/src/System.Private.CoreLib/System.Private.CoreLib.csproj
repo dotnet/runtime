@@ -6,9 +6,7 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-
-    <OutputType>Library</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
@@ -34,7 +32,6 @@
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
-    <ProjectGuid>{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
