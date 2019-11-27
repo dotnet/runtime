@@ -73,9 +73,9 @@ namespace System.IO
         /// <summary>
         /// Creates a stream over a SafeBuffer.
         /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
+        /// <param name="buffer">The buffer to contain the unmanaged memory stream.</param>
+        /// <param name="offset">The byte position in the buffer at which to start the unmanaged memory stream.</param>
+        /// <param name="length">The length of the unmanaged memory stream.</param>
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length)
         {
             Initialize(buffer, offset, length, FileAccess.Read);
@@ -92,10 +92,10 @@ namespace System.IO
         /// <summary>
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <param name="access"></param>
+        /// <param name="buffer">The buffer to contain the unmanaged memory stream.</param>
+        /// <param name="offset">The byte position in the buffer at which to start the unmanaged memory stream.</param>
+        /// <param name="length">The length of the unmanaged memory stream.</param>
+        /// <param name="access">The mode of file access to the unmanaged memory stream.</param>
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
             if (buffer == null)
@@ -288,7 +288,7 @@ namespace System.IO
         /// <summary>
         /// Closes the stream. The stream's memory needs to be dealt with separately.
         /// </summary>
-        /// <param name="disposing"></param>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;
@@ -329,8 +329,8 @@ namespace System.IO
         /// <summary>
         /// Since it's a memory stream, this method does nothing specific.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous flush operation.</returns>
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -592,7 +592,7 @@ namespace System.IO
         /// <summary>
         /// Returns the byte at the stream current Position and advances the Position.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The unsigned byte cast to an Int32 object, or -1 if at the end of the stream.</returns>
         public override int ReadByte()
         {
             EnsureNotClosed();
@@ -639,7 +639,7 @@ namespace System.IO
         /// </summary>
         /// <param name="offset">Offset from the loc parameter.</param>
         /// <param name="loc">Origin for the offset parameter.</param>
-        /// <returns></returns>
+        /// <returns>The new position in the stream.</returns>
         public override long Seek(long offset, SeekOrigin loc)
         {
             EnsureNotClosed();
@@ -678,7 +678,7 @@ namespace System.IO
         /// <summary>
         /// Sets the Length of the stream.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">The length of the stream.</param>
         public override void SetLength(long value)
         {
             if (value < 0)
@@ -882,7 +882,7 @@ namespace System.IO
         /// <summary>
         /// Writes a byte to the stream and advances the current Position.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">A byte value written to the stream.</param>
         public override void WriteByte(byte value)
         {
             EnsureNotClosed();
