@@ -249,7 +249,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight; // the block weight used for this insGroup
+    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
+    double               igPerfScore; // The PerfScore for this insGroup
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -1235,6 +1236,7 @@ protected:
 #define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_33C 33.0f // slower - 33 cycles
 #define PERFSCORE_THROUGHPUT_52C 52.0f // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C 57.0f // slower - 57 cycles
 
@@ -1253,6 +1255,8 @@ protected:
 #define PERFSCORE_LATENCY_6C 6.0f
 #define PERFSCORE_LATENCY_7C 7.0f
 #define PERFSCORE_LATENCY_8C 8.0f
+#define PERFSCORE_LATENCY_9C 9.0f
+#define PERFSCORE_LATENCY_10C 10.0f
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
@@ -1261,6 +1265,7 @@ protected:
 #define PERFSCORE_LATENCY_26C 26.0f
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f
+#define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instuctions
 
 #define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
 #define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction

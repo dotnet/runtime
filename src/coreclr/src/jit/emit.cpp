@@ -1105,13 +1105,13 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     assert(throughput > 0.0);
     assert(latency >= 0.0);
 
-    if ((memAccessKind == PERFSCORE_MEMORY_WRITE) && (latency <= PERFSCORE_LATENCY_WR_GENERAL))
+    if (memAccessKind == PERFSCORE_MEMORY_WRITE)
     {
-        // We assume that we won't read back from memory for any writes
-        // Thus we don't pay latency costs for writes.
-        latency = 0.0;
+        // We assume that we won't read back from memory for the next WR_GENERAL (3) cycles
+        // Thus we normally won't pay latency costs for writes.
+        latency = max(0.0f, latency - PERFSCORE_LATENCY_WR_GENERAL);
     }
-    if (latency >= 1.0)
+    else if (latency >= 1.0) // Otherwise, If we aren't performing a memory write
     {
         // We assume that the processor's speculation will typically eliminate one cycle of latency
         //
@@ -2376,7 +2376,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 #if defined(DEBUG) || defined(LATE_DISASM)
     else
     {
-        emitCurIG->igWeight = getCurrentBlockWeight();
+        emitCurIG->igWeight    = getCurrentBlockWeight();
+        emitCurIG->igPerfScore = 0.0;
     }
 #endif
 
@@ -3289,7 +3290,12 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
     else
     {
-        printf("offs=%06XH, size=%04XH, bbWeight=%s", ig->igOffs, ig->igSize, refCntWtd2str(ig->igWeight));
+        printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+
+        if (emitComp->compCodeGenDone)
+        {
+            printf(", bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+        }
 
         if (ig->igFlags & IGF_GC_VARS)
         {
@@ -3415,7 +3421,9 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if defined(DEBUG) || defined(LATE_DISASM)
     float insExeCost = insEvaluateExecutionCost(id);
     // All compPerfScore calculations must be performed using doubles
-    emitComp->info.compPerfScore += (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+    double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+    emitComp->info.compPerfScore += insPerfScore;
+    ig->igPerfScore += insPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 // printf("[S=%02u]\n", emitCurStackLvl);
@@ -4841,7 +4849,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         instrDesc* id = (instrDesc*)ig->igData;
 
 #ifdef DEBUG
-
         /* Print the IG label, but only if it is a branch label */
 
         if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
@@ -4853,17 +4860,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:", Compiler::s_compMethodsCount, ig->igNum);
-
-                // Display the block weight, but only when it isn't the standard BB_UNITY_WEIGHT
-                if (ig->igWeight != BB_UNITY_WEIGHT)
-                {
-                    printf("\t\t;; bbWeight=%s", refCntWtd2str(ig->igWeight));
-                }
-                printf("\n");
+                printf("\nG_M%03u_IG%02u:\n", Compiler::s_compMethodsCount, ig->igNum);
             }
         }
-
 #endif // DEBUG
 
         BYTE* bp = cp;
@@ -4951,6 +4950,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         {
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
         }
+
+#ifdef DEBUG
+        if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+        {
+            printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+        }
+#endif // DEBUG
 
         emitCurIG = nullptr;
 
@@ -6846,7 +6852,8 @@ insGroup* emitter::emitAllocIG()
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
-    ig->igWeight = getCurrentBlockWeight();
+    ig->igWeight    = getCurrentBlockWeight();
+    ig->igPerfScore = 0.0;
 #endif
 
 #if EMITTER_STATS
