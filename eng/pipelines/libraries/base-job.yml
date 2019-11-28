@@ -30,6 +30,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
+        - buildScriptFileName: libraries
         - _BuildConfig: Debug
         - ${{ if eq(parameters.buildConfig, 'release') }}:
           - _BuildConfig: Release
