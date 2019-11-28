@@ -677,6 +677,36 @@ namespace System.Memory.Tests.SequenceReader
         }
 
         [Fact]
+        public void AdvanceTo_End_Multiple()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            reader.AdvanceToEnd();
+            reader.AdvanceToEnd();
+            reader.AdvanceToEnd();
+
+            Assert.Equal(data.Length, reader.Length);
+            Assert.Equal(data.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+        }
+
+        [Fact]
         public void UnreadSequence()
         {
             ReadOnlySpan<T> data = (T[])_inputData.Clone();
