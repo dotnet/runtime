@@ -4497,25 +4497,27 @@ struct GenTreeIntrinsic : public GenTreeOp
 /* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
 struct GenTreeSIMD : public GenTreeOp
 {
-    var_types       gtSIMDBaseType;    // SIMD vector base type
-    unsigned        gtSIMDSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
     SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
+    var_types       gtSIMDBaseType;    // SIMD vector base type
+    uint16_t        gtSIMDSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
 
     GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
         : GenTreeOp(GT_SIMD, type, op1, nullptr)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
         , gtSIMDIntrinsicID(simdIntrinsicID)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(static_cast<uint16_t>(size))
     {
+        assert(size < UINT16_MAX);
     }
 
     GenTreeSIMD(
         var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
         : GenTreeOp(GT_SIMD, type, op1, op2)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
         , gtSIMDIntrinsicID(simdIntrinsicID)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(static_cast<uint16_t>(size))
     {
+        assert(size < UINT16_MAX);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4534,27 +4536,30 @@ struct GenTreeSIMD : public GenTreeOp
 
 struct GenTreeHWIntrinsic : public GenTreeOp
 {
-    var_types      gtSIMDBaseType; // SIMD vector base type
-    unsigned       gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
+    var_types      gtSIMDBaseType;  // SIMD vector base type
     var_types      gtIndexBaseType; // for AVX2 Gather* intrinsics
+    uint16_t       gtSIMDSize;      // SIMD vector size in bytes, use 0 for scalar intrinsics
 
     GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
         : GenTreeOp(GT_HWINTRINSIC, type, nullptr, nullptr)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
+        , gtSIMDBaseType(baseType)
         , gtIndexBaseType(TYP_UNKNOWN)
+        , gtSIMDSize(static_cast<uint16_t>(size))
     {
+        assert(size < UINT16_MAX);
     }
 
     GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
         : GenTreeOp(GT_HWINTRINSIC, type, op1, nullptr)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
+        , gtSIMDBaseType(baseType)
         , gtIndexBaseType(TYP_UNKNOWN)
+        , gtSIMDSize(static_cast<uint16_t>(size))
     {
+        assert(size < UINT16_MAX);
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
@@ -4564,11 +4569,13 @@ struct GenTreeHWIntrinsic : public GenTreeOp
     GenTreeHWIntrinsic(
         var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
         : GenTreeOp(GT_HWINTRINSIC, type, op1, op2)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
+        , gtSIMDBaseType(baseType)
         , gtIndexBaseType(TYP_UNKNOWN)
+        , gtSIMDSize(static_cast<uint16_t>(size))
     {
+        assert(size < UINT16_MAX);
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
