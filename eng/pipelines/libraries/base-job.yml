@@ -81,7 +81,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration $(_BuildConfig) -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
         - ${{ parameters.variables }}
 
       dependsOn:
