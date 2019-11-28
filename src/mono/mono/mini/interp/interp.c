@@ -3728,26 +3728,32 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
+			InterpMethod *imethod;
 			stackval *retval;
+			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
 			frame->ip = ip;
-			
+
 			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 			ip += 2;
 			--sp;
-			retval = sp;
-			child_frame = alloc_frame (context, &retval, frame, (InterpMethod*)sp->data.p, NULL, retval);
+
+			imethod = (InterpMethod*)sp->data.p;
+			if (imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (imethod->method, FALSE, FALSE), error);
+				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
+			}
+
+			if (csignature->ret->type != MONO_TYPE_VOID)
+				retval = sp;
+			else
+				retval = NULL;
 
 			sp->data.p = vt_sp;
 			/* decrement by the actual number of args */
 			sp -= csignature->param_count;
 			if (csignature->hasthis)
 				--sp;
-
-			if (child_frame->imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				child_frame->imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (child_frame->imethod->method, FALSE, FALSE), error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-			}
 
 			if (csignature->hasthis) {
 				MonoObject *this_arg = (MonoObject*)sp->data.p;
@@ -3758,13 +3764,33 @@ main_loop:
 				}
 			}
 
-			child_frame->stack_args = sp;
-			interp_exec_method (child_frame, context, error);
-			CHECK_RESUME_STATE (context);
-			if (csignature->ret->type != MONO_TYPE_VOID) {
-				*sp = *retval;
-				sp++;
+			/* Non-recursive call */
+			SAVE_INTERP_STATE (frame);
+
+			if (G_UNLIKELY (!imethod->transformed)) {
+				MonoException *ex;
+				gboolean tracing;
+
+				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+				method_entry (context, child_frame, &tracing, &ex);
+				if (G_UNLIKELY (ex)) {
+					frame = child_frame;
+					frame->ip = NULL;
+					THROW_EX (ex, NULL);
+					EXCEPTION_CHECKPOINT;
+				}
+			} else {
+				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+				alloc_stack_data (context, child_frame, imethod->alloca_size);
+#if DEBUG_INTERP
+				debug_enter (child_frame, out_tracing);
+#endif
 			}
+
+			frame = child_frame;
+			INIT_INTERP_STATE (frame, NULL);
+			clause_args = NULL;
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
