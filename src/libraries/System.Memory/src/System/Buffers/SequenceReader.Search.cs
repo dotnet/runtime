@@ -691,6 +691,7 @@ namespace System.Buffers
                 CurrentSpan = default;
                 CurrentSpanIndex = 0;
                 _currentPosition = Sequence.End;
+                _nextPosition = default;
                 _moreData = false;
             }
         }
