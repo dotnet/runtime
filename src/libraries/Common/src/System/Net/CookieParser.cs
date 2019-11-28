@@ -752,6 +752,7 @@ namespace System.Net
                     }
                 }
             } while (!_tokenizer.Eof && !_tokenizer.EndOfCookie);
+
             if (!expiresSet && cookie != null)
                 cookie.Expires = DateTime.MaxValue;
 
