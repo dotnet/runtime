@@ -817,11 +817,6 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
             }
 
-            if (metadataType.IsGenericDefinition)
-            {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
-            }
-
             if (pHasSideEffects != null)
             {
                 *pHasSideEffects = (byte)(type.HasFinalizer ? 1 : 0);
