@@ -1542,8 +1542,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					ins->opcode = OP_MOVE;
 					break;
 				case OP_LDLEN:
-					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, 
-											ins->dreg, ins->sreg1, ins->inst_imm, ins->flags | MONO_INST_LDLEN);
+					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
+											ins->inst_imm, ins->flags);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
@@ -1586,8 +1586,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					break;
 				case OP_STRLEN:
 					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, ins->dreg,
-														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), 
-														 ins->flags | MONO_INST_INVARIANT_LOAD | MONO_INST_LDLEN);
+														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
 					break;
 				default:
 					break;

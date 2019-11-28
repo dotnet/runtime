@@ -867,7 +867,6 @@ enum {
 	MONO_INST_GC_CALLSITE = 128,
 	/* On comparisons, mark the branch following the condition as likely to be taken */
 	MONO_INST_LIKELY = 128,
-	MONO_INST_LDLEN = 128, /* means LOAD is actually OP_LDLEN */
 };
 
 #define inst_c0 data.op[0].const_val
