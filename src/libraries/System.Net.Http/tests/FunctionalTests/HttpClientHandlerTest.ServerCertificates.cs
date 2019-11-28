@@ -78,12 +78,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
         {
-            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
-            {
-                // Issue #27612
-                return;
-            }
-
             var options = new LoopbackProxyServer.Options
                 { AuthenticationSchemes = AuthenticationSchemes.Basic,
                   ConnectionCloseAfter407 = true

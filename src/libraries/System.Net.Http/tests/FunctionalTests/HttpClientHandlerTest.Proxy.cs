@@ -67,12 +67,6 @@ namespace System.Net.Http.Functional.Tests
             bool secureServer,
             bool proxyClosesConnectionAfterFirst407Response)
         {
-            if (PlatformDetection.IsWindowsNanoServer && IsWinHttpHandler && proxyAuthScheme == AuthenticationSchemes.Digest)
-            {
-                // WinHTTP doesn't support Digest very well and is disabled on Nano.
-                return;
-            }
-
             if (!PlatformDetection.IsWindows &&
                 (proxyAuthScheme == AuthenticationSchemes.Negotiate || proxyAuthScheme == AuthenticationSchemes.Ntlm))
             {

@@ -89,12 +89,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
-            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
-            {
-                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -197,12 +191,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
-            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
-            {
-                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -494,12 +482,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
-            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
-            {
-                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
-                return;
-            }
-
             Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
             Uri redirectUri = remoteServer.RedirectUriForCreds(
                 statusCode: statusCode,
@@ -526,12 +508,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
-            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
-            {
-                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {

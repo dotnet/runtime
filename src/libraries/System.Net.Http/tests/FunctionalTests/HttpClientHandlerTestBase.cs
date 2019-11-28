@@ -22,9 +22,6 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual bool UseHttp2 => false;
 
-        // Manicka: remove
-        protected bool IsWinHttpHandler => false && PlatformDetection.IsWindows;
-
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
             _output = output;

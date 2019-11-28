@@ -576,11 +576,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
-            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
-            {
-                return;
-            }
-
             string name = "X-Cust-Header-NoValue";
             string value = "";
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -706,12 +701,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, true)]
         public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
         {
-            if (IsWinHttpHandler)
-            {
-                // [ActiveIssue(39136)]
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -730,17 +719,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
-            if (IsWinHttpHandler)
-            {
-                // Issue #27171
-                // Fails consistently with:
-                // System.InvalidCastException: "Unable to cast object of type 'System.Object[]' to type 'System.Net.Http.WinHttpRequestState'"
-                // This appears to be due to adding the Expect: 100-continue header, which causes winhttp
-                // to fail with a "The parameter is incorrect" error, which in turn causes the request to
-                // be torn down, and in doing so, we handle this during disposal of the SafeWinHttpHandle.
-                return;
-            }
-
             const string content = "hello world";
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
@@ -2061,10 +2039,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
-            // WinHttpHandler and CurlHandler will hang, waiting for additional response.
-            // Other handlers will accept 101 as a final response.
-            if (IsWinHttpHandler) return;
-
             if (LoopbackServerFactory.IsHttp2)
             {
                 throw new SkipTestException("Upgrade is not supported on HTTP/2");
@@ -2411,11 +2385,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
-            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
-            {
-                // Skip this test if running on Windows but on a release prior to Windows 10 Creators Update.
-                throw new SkipTestException("Skipping test due to Windows 10 version prior to Version 1703.");
-            }
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
             var request = new HttpRequestMessage(HttpMethod.Get, server);

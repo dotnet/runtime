@@ -211,17 +211,11 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(35466)]
         [ConditionalTheory(nameof(SupportsAlpn))]
-        [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR, true)]
-        [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR, true)]
-        [InlineData(SettingId.InitialWindowSize, 0x80000000, ProtocolErrors.FLOW_CONTROL_ERROR, false)]
-        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value, ProtocolErrors expectedError, bool skipForWinHttp)
+        [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR)]
+        [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR)]
+        [InlineData(SettingId.InitialWindowSize, 0x80000000, ProtocolErrors.FLOW_CONTROL_ERROR)]
+        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value, ProtocolErrors expectedError)
         {
-            if (IsWinHttpHandler && skipForWinHttp)
-            {
-                // WinHTTP does not treat these as errors, it seems to ignore the invalid setting.
-                return;
-            }
-
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
@@ -237,13 +231,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServerBeforeHeadersSent_RequestFails()
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHTTP does not genenerate an exception here.
-                // It seems to ignore a RST_STREAM sent before headers are sent, and continue to wait for HEADERS.
-                return;
-            }
-
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
@@ -412,12 +399,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task DataFrame_IdleStream_ConnectionError()
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHTTP does not treat this as an error, it seems to ignore the invalid frame.
-                return;
-            }
-
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
@@ -444,12 +425,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task HeadersFrame_IdleStream_ConnectionError()
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHTTP does not treat this as an error, it seems to ignore the HEADERS frame.
-                return;
-            }
-
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
