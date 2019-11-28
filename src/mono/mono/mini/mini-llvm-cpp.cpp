@@ -230,6 +230,18 @@ mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const cha
 }
 
 void
+mono_llvm_add_range_metadata_i32 (LLVMValueRef insref, uint64_t min_value, uint64_t max_value)
+{
+	auto ins = unwrap<Instruction> (insref);
+	auto &ctx = ins->getContext ();
+	IntegerType *Int32Ty = Type::getInt32Ty (ctx);
+	Metadata *range_md [] = {
+		ConstantAsMetadata::get (ConstantInt::get(Int32Ty, min_value)),
+		ConstantAsMetadata::get (ConstantInt::get(Int32Ty, max_value))};
+	ins->setMetadata (LLVMContext::MD_range, MDNode::get (ctx, range_md));
+}
+
+void
 mono_llvm_set_implicit_branch (LLVMBuilderRef builder, LLVMValueRef branch)
 {
 	auto b = unwrap (builder);

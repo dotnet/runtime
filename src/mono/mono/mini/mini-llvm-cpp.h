@@ -99,6 +99,9 @@ void
 mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text);
 
 void
+mono_llvm_add_range_metadata_i32 (LLVMValueRef insref, uint64_t min_value, uint64_t max_value);
+
+void
 mono_llvm_set_implicit_branch (LLVMBuilderRef builder, LLVMValueRef branch);
 
 void

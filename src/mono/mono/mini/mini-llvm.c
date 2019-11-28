@@ -5781,6 +5781,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			addr = convert (ctx, addr, LLVMPointerType (t, 0));
 
 			values [ins->dreg] = emit_load (ctx, bb, &builder, size, addr, base, dname, is_faulting, is_volatile, LLVM_BARRIER_NONE);
+			
+			if ((ins->flags & MONO_INST_LDLEN) != 0)
+				mono_llvm_add_range_metadata_i32 (values [ins->dreg], 0, 2147483648 /* int.MaxValue + 1 */);
 
 			if (!(is_faulting || is_volatile) && (ins->flags & MONO_INST_INVARIANT_LOAD)) {
 				/*
