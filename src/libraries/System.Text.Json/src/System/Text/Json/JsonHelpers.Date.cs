@@ -42,44 +42,6 @@ namespace System.Text.Json
             return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
         }
 
-        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTime value)
-        {
-            if (!IsValidDateTimeOffsetParseLength(source.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            int length = JsonReaderHelper.GetUtf8ByteCount(source);
-
-            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
-                : new byte[length];
-
-            JsonReaderHelper.GetUtf8FromText(source, bytes);
-
-            return TryParseAsISO(bytes.Slice(0, length), out value);
-        }
-
-        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTimeOffset value)
-        {
-            if (!IsValidDateTimeOffsetParseLength(source.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            int length = JsonReaderHelper.GetUtf8ByteCount(source);
-
-            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
-                : new byte[length];
-
-            JsonReaderHelper.GetUtf8FromText(source, bytes);
-
-            return TryParseAsISO(bytes.Slice(0, length), out value);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidDateTimeOffsetParseLength(int length)
         {

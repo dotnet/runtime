@@ -84,7 +84,7 @@ namespace System.Text.Json
         /// <exception cref="FormatException">
         ///   Text value of this instance is not in an ISO 8601 defined DateTime format.
         /// </exception>
-        public DateTime GetDateTime() => JsonHelpers.TryParseAsISO(_value.AsSpan(), out DateTime value) ? value : throw new FormatException(SR.FormatDateTime);
+        public DateTime GetDateTime() => TryGetDateTime(out DateTime value) ? value : throw new FormatException(SR.FormatDateTime);
 
         /// <summary>
         ///   Converts the ISO 8601 text value of this instance to <see cref="DateTimeOffset"/> equivalent.
@@ -93,7 +93,7 @@ namespace System.Text.Json
         /// <exception cref="FormatException">
         ///   Text value of this instance is not in an ISO 8601 defined DateTimeOffset format.
         /// </exception>
-        public DateTimeOffset GetDateTimeOffset() => JsonHelpers.TryParseAsISO(_value.AsSpan(), out DateTimeOffset value) ? value : throw new FormatException(SR.FormatDateTimeOffset);
+        public DateTimeOffset GetDateTimeOffset() => TryGetDateTimeOffset(out DateTimeOffset value) ? value : throw new FormatException(SR.FormatDateTimeOffset);
 
         /// <summary>
         ///   Converts the text value of this instance to its <see cref="Guid"/> equivalent.
@@ -109,14 +109,45 @@ namespace System.Text.Json
         ///   A return value indicates whether the conversion succeeded.
         /// </summary>
         /// <param name="value">
-        ///   When this method returns, contains the see cref="DateTime"/> value equivalent of the text contained in this instance,
+        ///   When this method returns, contains the <see cref="DateTime"/> value equivalent of the text contained in this instance,
         ///   if the conversion succeeded, or zero if the conversion failed.
         /// </param>
         /// <returns>
         ///  <see langword="true"/> if instance was converted successfully;
         ///  otherwise, <see langword="false"/>
         /// </returns>
-        public bool TryGetDateTime(out DateTime value) => JsonHelpers.TryParseAsISO(_value.AsSpan(), out value);
+        public bool TryGetDateTime(out DateTime value)
+        {
+            ReadOnlySpan<char> span = _value.AsSpan();
+
+            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(span.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            bool isQuoted = span[0] == JsonConstants.Quote && span[span.Length - 1] == JsonConstants.Quote;
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(span);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(span, bytes);
+
+            // trim beginning and ending quotes
+            bytes = isQuoted ? bytes.Slice(1, length - 2) : bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            return JsonHelpers.TryParseAsISO(bytes, out value);
+        }
 
         /// <summary>
         ///   Converts the ISO 8601 text value of this instance to its <see cref="DateTimeOffset"/> equivalent.
@@ -130,7 +161,38 @@ namespace System.Text.Json
         ///  <see langword="true"/> if instance was converted successfully;
         ///  otherwise, <see langword="false"/>
         /// </returns>
-        public bool TryGetDateTimeOffset(out DateTimeOffset value) => JsonHelpers.TryParseAsISO(_value.AsSpan(), out value);
+        public bool TryGetDateTimeOffset(out DateTimeOffset value)
+        {
+            ReadOnlySpan<char> span = _value.AsSpan();
+
+            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(span.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            bool isQuoted = span[0] == JsonConstants.Quote && span[span.Length - 1] == JsonConstants.Quote;
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(span);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(span, bytes);
+
+            // trim beginning and ending quotes
+            bytes = isQuoted ? bytes.Slice(1, length - 2) : bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            return JsonHelpers.TryParseAsISO(bytes, out value);
+        }
 
         /// <summary>
         ///   Converts the text value of this instance to its <see cref="Guid"/> equivalent.

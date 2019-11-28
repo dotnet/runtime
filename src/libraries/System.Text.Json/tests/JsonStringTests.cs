@@ -110,6 +110,23 @@ namespace System.Text.Json.Tests
             Assert.Equal(dateTimeOffset, dateTimeOffset2);
         }
 
+        [Theory]
+        [MemberData(nameof(JsonDateTimeTestData.ValidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTimeAndDateTimeOffsetWithEscapedChars(string testStr, string iso8601Str)
+        {
+            var jsonString = new JsonString(testStr);
+            var dateTime = DateTime.Parse(iso8601Str);
+            var dateTimeOffset = DateTimeOffset.Parse(iso8601Str);
+
+            Assert.Equal(dateTime, jsonString.GetDateTime());
+            Assert.True(jsonString.TryGetDateTime(out DateTime dateTime2));
+            Assert.Equal(dateTime, dateTime2);
+
+            Assert.Equal(dateTimeOffset, jsonString.GetDateTimeOffset());
+            Assert.True(jsonString.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset2));
+            Assert.Equal(dateTimeOffset, dateTimeOffset2);
+        }
+
         [Fact]
         public static void TestChangingValue()
         {
