@@ -757,6 +757,7 @@ namespace System
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
 
                 // Zero out result internal blocks.
+                result._length = maxResultLength;
                 Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), (uint)maxResultLength * sizeof(uint));
 
                 int smallIndex = 0;
@@ -793,10 +794,6 @@ namespace System
                 if ((maxResultLength > 0) && (result._blocks[maxResultLength - 1] == 0))
                 {
                     result._length = (maxResultLength - 1);
-                }
-                else
-                {
-                    result._length = maxResultLength;
                 }
             }
 
