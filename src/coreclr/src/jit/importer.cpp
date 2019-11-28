@@ -6398,7 +6398,9 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         // otherwise we would end up with a stub that recursively calls itself, and end
         // up with a stack overflow.
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+        {
             return true;
+        }
 
         return false;
     }
