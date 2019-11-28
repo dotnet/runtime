@@ -908,6 +908,11 @@ namespace Internal.JitInterface
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
+
             // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
             // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at
             // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/jitinterface.cpp#L1141
