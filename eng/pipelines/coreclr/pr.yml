@@ -20,7 +20,9 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
+    - Linux_x64
     - Windows_NT_x86
+    - Windows_NT_x64
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
@@ -34,7 +36,9 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
+    - Linux_x64
     - Windows_NT_x86
+    - Windows_NT_x64
     - Windows_NT_arm64
     jobParameters:
       isOfficialBuild: false
@@ -50,7 +54,9 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
+    - Linux_x64
     - Windows_NT_x86
+    - Windows_NT_x64
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
@@ -65,7 +71,9 @@ jobs:
     buildConfig: checked
     platforms:
     - OSX_x64
+    - Linux_x64
     - Windows_NT_x86
+    - Windows_NT_x64
     - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
