@@ -22,7 +22,6 @@ trigger:
     - src/coreclr/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/installer/*
-    - eng/pipelines/common/*
 
 pr:
   branches:
@@ -43,30 +42,6 @@ pr:
     - src/coreclr/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/installer/*
-    - eng/pipelines/common/*
-
-resources:
-  containers:
-  - container: centos7_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
-
-  - container: centos6_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-f39df28-20191023143802
-
-  - container: alpine_39_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
-
-  - container: alpine_37_arm64_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
-
-  - container: ubuntu_1604_arm64_cross_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20191023143847
-
-  - container: ubuntu_1604_arm_cross_container
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20191023143847
-
-  - container: ubuntu_1604
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191023143845
 
 variables:
   - template: variables.yml
@@ -83,55 +58,96 @@ variables:
     - name: _DotNetValidationArtifactsCategory
       value: .NETCore
 
-stages:
-  # Windows legs
-  - template: ${{ variables['pipelinesPath'] }}/windows.yml
+jobs:
+  - template: /eng/pipelines/common/checkout-job.yml
+
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
-  # Linux legs
-  - template: ${{ variables['pipelinesPath'] }}/linux.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
-  # MacOS legs
-  - template: ${{ variables['pipelinesPath'] }}/macos.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
-    # FreeBSD leg is only for official builds
-    # - template: ${{ variables['pipelinesPath'] }}/freebsd.yml
-    #   parameters:
-    #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-    #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
-  # Publish and validation steps. Only run in official builds
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: ${{ variables['pipelinesPath'] }}/pre-publish.yml
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - Linux_rhel6_x64
+      - Windows_NT_x86
+      - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - OSX_x64
+        - Windows_NT_x64
+        - Linux_x64
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_musl_arm64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        framework: netcoreapp
+        ${{ if eq(variables['isOfficialBuild'], false) }}:
+          runTests: true
+          testScope: innerloop
+  
+  - ${{ if eq(variables['isFullMatrix'], false) }}:
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        dependsOn:
-          - WindowsStage
-          - LinuxStage
-          - MacOSStage
-          # - FreeBSD
+        jobTemplate: /eng/pipelines/libraries/build-job.yml
+        buildConfig: Debug
+        platforms:
+        - Windows_NT_x64
+        - OSX_x64
+        - Linux_x64
+        - Linux_musl_x64
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+        jobParameters:
+          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+          isFullMatrix: ${{ variables['isFullMatrix'] }}
+          testScope: innerloop
+          framework: netcoreapp
+          runTests: true
+  
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      ${{ if eq(variables['isFullMatrix'], false) }}:
+        buildConfig: Debug
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        buildConfig: Release
+      platforms:
+      - WebAssembly_wasm
+      - ${{ if eq(variables['isFullMatrix'], false) }}:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        framework: netcoreapp
+  
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - Windows_NT_x86
+      - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - Windows_NT_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        framework: netfx
+        ${{ if eq(variables['isOfficialBuild'], false) }}:
+          runTests: true
+          testScope: innerloop
 
-    - template: eng\common\templates\post-build\post-build.yml
-      parameters:
-        validateDependsOn:
-          - PrePublish
-        enableSymbolValidation: false # https://github.com/dotnet/arcade/issues/2871
-        SDLValidationParameters:
-          enable: true
-          params: ' -SourceToolsList @("policheck","credscan")
-          -TsaInstanceURL "$(TsaInstanceURL)"
-          -TsaProjectName "$(TsaProjectName)"
-          -TsaNotificationEmail "$(TsaNotificationEmail)"
-          -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
-          -TsaBugAreaPath "$(TsaBugAreaPath)"
-          -TsaIterationPath "$(TsaIterationPath)"
-          -TsaRepositoryName "CoreFX"
-          -TsaCodebaseName "CoreFX"
-          -TsaPublish $True'
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      ${{ if eq(variables['isFullMatrix'], false) }}:
+        buildConfig: Debug
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        buildConfig: Release
+      platforms:
+      - Windows_NT_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        framework: allConfigurations
+        ${{ if eq(variables['isOfficialBuild'], false) }}:
+          runTests: true

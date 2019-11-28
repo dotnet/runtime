@@ -1,0 +1,105 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  framework: ''
+  isOfficialBuild: false
+  timeoutInMinutes: 150
+  container: ''
+  steps: []
+  dependsOn: []
+  variables: {}
+  name: ''
+  displayName: ''
+  testScope: ''
+  pool: ''
+  stepName: ''
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.stepName, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if eq(parameters.framework, 'netcoreapp') }}:
+        displayName: ${{ format('{0} {1}{2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if ne(parameters.framework, 'netcoreapp') }}:
+        displayName: ${{ format('{0} {1} {2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+
+      enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
+      container: ${{ parameters.container }}
+      helixRepo: dotnet/runtime
+      pool: ${{ parameters.pool }}
+      variables:
+        - _BuildConfig: ${{ parameters.buildConfig }}
+        - _msbuildCommonParameters: ''
+        - _stripSymbolsArg: ''
+        - _runtimeOSArg: ''
+        - _portableArg: ''
+        - _finalFrameworkArg: -framework ${{ parameters.framework }}
+        - _buildScript: $(buildScriptFileName)$(scriptExt)
+        - _warnAsErrorArg: ''
+        - _testScopeArg: ''
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
+
+        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_rhel6')) }}:
+          - _runtimeOSArg: /p:RuntimeOS=rhel.6
+          - _portableArg: /p:PortableBuild=false
+        
+        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
+          - _runtimeOSArg: /p:RuntimeOS=linux-musl
+        
+        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
+          - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
+
+        - ${{ if and(or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'WebAssembly')), ne(parameters.container, '')) }}:
+          - _warnAsErrorArg: '-warnAsError false'
+
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
+        - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+          - _finalFrameworkArg: -allConfigurations
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        # Windows variables
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+          - _runtimeOSArg: /p:RuntimeOS=win10
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
+          - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _stripSymbolsArg: -stripSymbols
+
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - ${{ parameters.variables }}
+
+      dependsOn:
+      - checkout
+      - ${{ parameters.dependsOn }}
+      workspace:
+        clean: all
+
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+      steps:
+      - checkout: none
+        clean: true
+
+      - download: current
+        artifact: Checkout_bundle
+        displayName: Download Checkout.bundle
+
+      - script: |
+          git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
+          git remote set-url origin $(Build.Repository.Uri)
+        displayName: Clone the repository from Checkout.bundle
+
+      - ${{ parameters.steps }}

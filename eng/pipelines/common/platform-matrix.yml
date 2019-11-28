@@ -159,6 +159,22 @@ jobs:
           managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+- ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: WebAssembly
+      archType: wasm
+      platform: WebAssembly_wasm
+      container:
+        image: ubuntu-16.04-a50a721-20191023143845
+        registry: mcr
+      jobParameters:
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # FreeBSD
 
 # FreeBSD machines are currently offline. Re-enable in the official build when
