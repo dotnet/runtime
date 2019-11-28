@@ -378,6 +378,12 @@ namespace System
             }
         }
 
+        public static void AtLeastOneEquals<T>(T expected1, T expected2, T value) where T : IEquatable<T>
+        {
+            if (!(value.Equals(expected1) || value.Equals(expected2)))
+                throw new XunitException($"Expected: {expected1} || {expected2}{Environment.NewLine}Actual: {value}");
+        }
+
         public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);
 
         public delegate void AssertThrowsAction<T>(Span<T> span);

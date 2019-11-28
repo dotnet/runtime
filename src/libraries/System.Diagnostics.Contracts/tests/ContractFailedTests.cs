@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Diagnostics.Contracts.Tests
 {
-#if DEBUG
     public class ContractFailedTests
     {
         [Fact]
@@ -84,7 +83,5 @@ namespace System.Diagnostics.Contracts.Tests
                 Contract.Assume(false);
             }
         }
-
     }
-#endif
 }

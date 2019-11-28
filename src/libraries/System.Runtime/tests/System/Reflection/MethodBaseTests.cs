@@ -56,9 +56,11 @@ namespace System.Reflection.Tests
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
             MethodBody mb = mbase.GetMethodBody();
             Assert.True(mb.InitLocals);  // local variables are initialized
-#if DEBUG
-            Assert.Equal(2, mb.MaxStackSize);
-            Assert.Equal(3, mb.LocalVariables.Count);
+
+            // Debug code expects 2, Release 1.
+            AssertExtensions.AtLeastOneEquals(1, 2, mb.MaxStackSize);
+            // Debug code expects 3, Release 2.
+            AssertExtensions.AtLeastOneEquals(2, 3, mb.LocalVariables.Count);
 
             foreach (LocalVariableInfo lvi in mb.LocalVariables)
             {
@@ -66,16 +68,6 @@ namespace System.Reflection.Tests
                 if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
                 if (lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
             }
-#else
-            Assert.Equal(1, mb.MaxStackSize);
-            Assert.Equal(2, mb.LocalVariables.Count);
-
-            foreach (LocalVariableInfo lvi in mb.LocalVariables)
-            {
-                if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
-                if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
-            }
-#endif
         }
 
         private static int MyAnotherMethod(int x)

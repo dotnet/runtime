@@ -28,6 +28,7 @@ namespace System.Diagnostics.Contracts.Tests
         public static void AssertFalseRaisesEvent()
         {
             bool eventRaised = false;
+            bool inDebug = false;
             EventHandler<ContractFailedEventArgs> handler = (s, e) =>
             {
                 eventRaised = true;
@@ -36,11 +37,16 @@ namespace System.Diagnostics.Contracts.Tests
             using (Utilities.WithContractFailed(handler))
             {
                 Contract.Assert(false);
-#if DEBUG
-                Assert.True(eventRaised, "ContractFailed event not raised");
-#else
-                Assert.False(eventRaised, "ContractFailed event was raised");
-#endif
+                inDebug = Utilities.ReturnTrueIfCompiledInDebug;
+
+                if (inDebug)
+                {
+                    Assert.True(eventRaised, "ContractFailed event not raised");
+                }
+                else
+                {
+                    Assert.False(eventRaised, "ContractFailed event was raised");
+                }
             }
         }
 
@@ -48,6 +54,7 @@ namespace System.Diagnostics.Contracts.Tests
         public static void AssertFalseThrows()
         {
             bool eventRaised = false;
+            bool inDebug = false;
             EventHandler<ContractFailedEventArgs> handler = (s, e) =>
             {
                 eventRaised = true;
@@ -55,13 +62,17 @@ namespace System.Diagnostics.Contracts.Tests
             };
             using (Utilities.WithContractFailed(handler))
             {
-#if DEBUG
-                Utilities.AssertThrowsContractException(() => Contract.Assert(false, "Some kind of user message"));
-                Assert.True(eventRaised, "ContractFailed was not raised");
-#else
-                Contract.Assert(false, "Some kind of user message");
-                Assert.False(eventRaised, "ContractFailed event was raised");
-#endif
+                inDebug = Utilities.ReturnTrueIfCompiledInDebug;
+                if (inDebug)
+                {
+                    Utilities.AssertThrowsContractException(() => Contract.Assert(false, "Some kind of user message"));
+                    Assert.True(eventRaised, "ContractFailed was not raised");
+                }
+                else
+                {
+                    Contract.Assert(false, "Some kind of user message");
+                    Assert.False(eventRaised, "ContractFailed event was raised");
+                }
             }
         }
     }
