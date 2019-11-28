@@ -20,7 +20,7 @@ namespace Internal.TypeSystem
 
             if (type.IsGenericDefinition)
             {
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadUninstantiatedType, type.GetTypeDefinition());
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
 
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
