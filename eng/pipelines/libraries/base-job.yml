@@ -30,7 +30,10 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
-        - _BuildConfig: ${{ parameters.buildConfig }}
+        - _BuildConfig: Debug
+        - ${{ if eq(parameters.buildConfig, 'release') }}:
+          - _BuildConfig: Release
+
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _runtimeOSArg: ''

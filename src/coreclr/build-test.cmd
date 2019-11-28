@@ -481,6 +481,8 @@ REM === The test host includes a dotnet executable, system libraries and CoreCLR
 REM ===
 REM =========================================================================================
 
+if not "%__LocalCoreFXPath%" == "" goto SkipBuildingCoreFXTestHost
+
 echo %__MsgPrefix%Building CoreFX test host
 
 set __BuildLogRootName=Tests_CoreFX_Testhost
@@ -504,6 +506,8 @@ if errorlevel 1 (
     echo     %__BuildErr%
     exit /b 1
 )
+
+:SkipBuildingCoreFXTestHost
 
 REM =========================================================================================
 REM ===
@@ -577,8 +581,10 @@ REM ============================================================================
 
 if NOT "%__LocalCoreFXPath%"=="" (
     echo Patch CoreFX from %__LocalCoreFXPath%
+    set __CoreFXBuildType=Debug
+    if "!__BuildType!" == "release" (set __CoreFXBuildType=Release)
     set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
-    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__BuildType%
+    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__CoreFXBuildType%
     echo !NEXTCMD!
     !NEXTCMD!
 )

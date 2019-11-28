@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  useLiveLibraries: false
   displayNameArgs: ''
   condition: true
   stagedBuild: false
@@ -31,6 +32,7 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    useLiveLibraries: ${{ parameters.useLiveLibraries }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
 
@@ -55,7 +57,11 @@ jobs:
     # because it needs System.Private.Corelib; we should be able to remove this dependency
     # by switching over to using reference assembly.
     ${{ if ne(parameters.stagedBuild, true) }}:
-      dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      dependsOn:
+      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if eq(parameters.useLiveLibraries, true) }}:
+        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 90
@@ -75,6 +81,17 @@ jobs:
         displayName: Install native dependencies
 
 
+    # Optionally download live-built CoreFX artifacts
+    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(coreFxDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
+          artifactName: '$(coreFxArtifactName)'
+          displayName: 'live-built CoreFX'
+
+
     # Download product binaries directory
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
@@ -85,7 +102,7 @@ jobs:
 
 
     # Build managed test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(coreFxOverrideArg)
       displayName: Build managed test components
 
 

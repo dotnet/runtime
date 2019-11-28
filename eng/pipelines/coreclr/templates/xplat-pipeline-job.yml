@@ -11,6 +11,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   corefxTests: false
+  useLiveLibraries: false
   stagedBuild: false
   strategy: ''
   pool: ''
@@ -102,6 +103,18 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: '-priority=1'
+
+    - coreFxArtifactName: ''
+    - coreFxOverrideArg: ''
+    - coreFxDownloadDir: ''
+
+    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+      - coreFxArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - coreFxDownloadDir: $(Build.SourcesDirectory)/artifacts
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - coreFxOverrideArg: ' localcorefxpath $(Build.SourcesDirectory)'
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - coreFxOverrideArg: ' localcorefxpath=$(Build.SourcesDirectory)'
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}

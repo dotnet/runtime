@@ -5,6 +5,7 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
+  useLiveCoreClr: false
   timeoutInMinutes: 150
   preBuildSteps: []
   container: ''
@@ -29,6 +30,10 @@ jobs:
       testScope: ${{ parameters.testScope }}
       stepName: Build
 
+      ${{ if eq(parameters.useLiveCoreClr, true) }}:
+        dependsOn:
+        - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
         - _buildAction: -build
@@ -40,7 +45,31 @@ jobs:
           - ${{ if ne(parameters.framework, 'allConfigurations') }}:
             - _skipTestRestoreArg: /p:SkipTestRestore=false
 
+        - _coreClrArtifactName: ''
+        - _coreClrDownloadPath: ''
+        - _coreClrOverridePathArg: ''
+
+        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+          - _skipTestRestoreArg: /p:SkipTestRestore=true $(_coreClrOverridePathArg)
+
+        - _archiveExtension: '.tar.gz'
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _archiveExtension: '.zip'
+
+        - ${{ parameters.variables }}
+
       steps:
+        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(_coreClrDownloadPath)
+              artifactFileName: '$(_coreClrArtifactName)$(_archiveExtension)'
+              artifactName: '$(_coreClrArtifactName)'
+              displayName: 'CoreCLR build drop'
+
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
 
