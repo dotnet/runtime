@@ -4492,48 +4492,34 @@ struct GenTreeIntrinsic : public GenTreeOp
 #endif
 };
 
-struct GenTreeJitIntrinsic : public GenTreeOp
-{
-    var_types gtSIMDBaseType; // SIMD vector base type
-    unsigned  gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
-
-    GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
-        : GenTreeOp(oper, type, op1, op2), gtSIMDBaseType(baseType), gtSIMDSize(size)
-    {
-    }
-
-    bool isSIMD() const
-    {
-        return gtSIMDSize != 0;
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeJitIntrinsic() : GenTreeOp()
-    {
-    }
-#endif
-};
-
 #ifdef FEATURE_SIMD
 
 /* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
-struct GenTreeSIMD : public GenTreeJitIntrinsic
+struct GenTreeSIMD : public GenTreeOp
 {
+    var_types       gtSIMDBaseType;    // SIMD vector base type
+    unsigned        gtSIMDSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
     SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
 
     GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, baseType, size), gtSIMDIntrinsicID(simdIntrinsicID)
+        : GenTreeOp(GT_SIMD, type, op1, nullptr)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(size)
+        , gtSIMDIntrinsicID(simdIntrinsicID)
     {
     }
 
     GenTreeSIMD(
         var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, baseType, size), gtSIMDIntrinsicID(simdIntrinsicID)
+        : GenTreeOp(GT_SIMD, type, op1, op2)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(size)
+        , gtSIMDIntrinsicID(simdIntrinsicID)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeSIMD() : GenTreeJitIntrinsic()
+    GenTreeSIMD() : GenTreeOp()
     {
     }
 #endif
@@ -4541,20 +4527,31 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
+
+// Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
+// However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
+// supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
+
+struct GenTreeHWIntrinsic : public GenTreeOp
 {
+    var_types      gtSIMDBaseType; // SIMD vector base type
+    unsigned       gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
     var_types      gtIndexBaseType; // for AVX2 Gather* intrinsics
 
     GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, baseType, size)
+        : GenTreeOp(GT_HWINTRINSIC, type, nullptr, nullptr)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
     }
 
     GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, baseType, size)
+        : GenTreeOp(GT_HWINTRINSIC, type, op1, nullptr)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
@@ -4566,7 +4563,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     GenTreeHWIntrinsic(
         var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, baseType, size)
+        : GenTreeOp(GT_HWINTRINSIC, type, op1, op2)
+        , gtSIMDBaseType(baseType)
+        , gtSIMDSize(size)
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
@@ -4576,9 +4575,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
-    // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
-    // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
+    bool isSIMD() const
+    {
+        return gtSIMDSize != 0;
+    }
 
     bool OperIsMemoryLoad();        // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
@@ -4588,7 +4588,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                     // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
-    GenTreeHWIntrinsic() : GenTreeJitIntrinsic()
+    GenTreeHWIntrinsic() : GenTreeOp()
     {
     }
 #endif
