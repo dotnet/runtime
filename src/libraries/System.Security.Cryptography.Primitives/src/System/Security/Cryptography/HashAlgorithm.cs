@@ -99,24 +99,8 @@ namespace System.Security.Cryptography
             if (_disposed)
                 throw new ObjectDisposedException(null);
 
-            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+            inputStream.CopyTo((span, _) => HashCore(span), null, 4096);
 
-            int bytesRead;
-            int clearLimit = 0;
-
-            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                if (bytesRead > clearLimit)
-                {
-                    clearLimit = bytesRead;
-                }
-
-                HashCore(buffer, 0, bytesRead);
-            }
-
-            CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearLimit));
-            ArrayPool<byte>.Shared.Return(buffer, clearArray: false);
             return CaptureHashCodeAndReinitialize();
         }
 
@@ -136,24 +120,13 @@ namespace System.Security.Cryptography
             Stream inputStream,
             CancellationToken cancellationToken)
         {
-            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-            byte[] rented = ArrayPool<byte>.Shared.Rent(4096);
-            Memory<byte> buffer = rented;
-            int clearLimit = 0;
-            int bytesRead;
-
-            while ((bytesRead = await inputStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+            await inputStream.CopyToAsync((memory, _, __) =>
             {
-                if (bytesRead > clearLimit)
-                {
-                    clearLimit = bytesRead;
-                }
+                HashCore(memory.Span);
+                return default;
+            },
+            null, 4096, cancellationToken);
 
-                HashCore(rented, 0, bytesRead);
-            }
-
-            CryptographicOperations.ZeroMemory(rented.AsSpan(0, clearLimit));
-            ArrayPool<byte>.Shared.Return(rented, clearArray: false);
             return CaptureHashCodeAndReinitialize();
         }
 
