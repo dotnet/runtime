@@ -68,7 +68,6 @@ jobs:
       platforms:
       - Linux_rhel6_x64
       - Windows_NT_x86
-      - WebAssembly_wasm
       - ${{ if eq(variables['isFullMatrix'], true) }}:
         - OSX_x64
         - Windows_NT_x64
@@ -76,6 +75,45 @@ jobs:
         - Linux_arm
         - Linux_arm64
         - Linux_musl_x64
+        - Linux_musl_arm64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        framework: netcoreapp
+        ${{ if eq(variables['isOfficialBuild'], false) }}:
+          runTests: true
+          testScope: innerloop
+  
+  - ${{ if eq(variables['isFullMatrix'], false) }}:
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/libraries/build-job.yml
+        buildConfig: Debug
+        platforms:
+        - Windows_NT_x64
+        - OSX_x64
+        - Linux_x64
+        - Linux_musl_x64
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+        jobParameters:
+          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+          isFullMatrix: ${{ variables['isFullMatrix'] }}
+          testScope: innerloop
+          framework: netcoreapp
+          runTests: true
+  
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      ${{ if eq(variables['isFullMatrix'], false) }}:
+        buildConfig: Debug
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        buildConfig: Release
+      platforms:
+      - WebAssembly_wasm
+      - ${{ if eq(variables['isFullMatrix'], false) }}:
+        - Linux_arm
+        - Linux_arm64
         - Linux_musl_arm64
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
@@ -112,78 +150,3 @@ jobs:
         framework: allConfigurations
         ${{ if eq(variables['isOfficialBuild'], false) }}:
           runTests: true
-
-  - ${{ if eq(variables['isFullMatrix'], false) }}:
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/build-job.yml
-        buildConfig: Debug
-        platforms:
-        - Windows_NT_x64
-        - OSX_x64
-        - Linux_x64
-        - Linux_arm
-        - Linux_arm64
-        - Linux_musl_x64
-        - Linux_musl_arm64
-        jobParameters:
-          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          framework: netcoreapp
-
-  - ${{ if eq(variables['isOfficialBuild'], false) }}:
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-        ${{ if eq(variables['isFullMatrix'], false) }}:
-          buildConfig: Debug
-        ${{ if eq(variables['isFullMatrix'], true) }}:
-          buildConfig: Release
-        platforms:
-        - Windows_NT_x64
-        - OSX_x64
-        - Linux_x64
-        jobParameters:
-          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          testScope: innerloop
-          framework: netcoreapp
-
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-        buildConfig: Release
-        platforms:
-        - Linux_rhel6_x64
-        - Windows_NT_x86
-        - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - OSX_x64
-          - Windows_NT_x64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_musl_arm64
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        jobParameters:
-          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          isFullMatrix: ${{ variables['isFullMatrix'] }}
-          testScope: innerloop
-          framework: netcoreapp
-          ${{ if eq(variables['isFullMatrix'], true) }}:
-            dependsOnBuildConfiguration: Release
-    
-    - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Debug
-          platforms:
-          - Windows_NT_x64
-          - OSX_x64
-          - Linux_x64
-          - Linux_musl_x64
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          jobParameters:
-            isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-            isFullMatrix: ${{ variables['isFullMatrix'] }}
-            testScope: innerloop
-            framework: netcoreapp
