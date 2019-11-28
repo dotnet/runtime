@@ -47,6 +47,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
@@ -61,10 +62,9 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-
-  
 
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">

@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -34,17 +35,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // Resettable completions to be used for multiple calls to send, receive, start, and shutdown.
         internal ResettableCompletionSource<uint> _sendResettableCompletionSource;
-        internal ResettableCompletionSource<int> _receiveResettableCompletionSource;
 
         // Buffers to hold during a call to send.
         private MemoryHandle[] _bufferArrays;
 
         // Handle to hold when sending.
         private GCHandle _sendHandle;
-
-        // Used to transfer memory from a recieve callback and a call to ReadAsync
-        private Memory<byte> _transferBuffer;
-        private byte[] _rentedBuffer;
 
         // Used to check if StartAsync has been called.
         private StartState _started;
@@ -53,16 +49,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private MsQuicApi _api;
 
-        // Used to synchonize calls to ReadAsync and the receive callback.
-        private object _sync = new object();
-
         // Used by the class to indicate that the stream is m_Readable.
         private bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
         private bool _canWrite;
 
-        private bool CanComplete;
+        // Pipe for reads
+        private Pipe _requestPipe;
 
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicApi api, MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
@@ -87,9 +81,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _logBaseString = "[Stream Client]";
             }
+            var inputOptions = new PipeOptions(pool: null, PipeScheduler.ThreadPool, PipeScheduler.Inline, pauseWriterThreshold: 1, resumeWriterThreshold: 1, useSynchronizationContext: false);
 
+            _requestPipe = new Pipe(inputOptions);
             _sendResettableCompletionSource = new UIntResettableCompletionSource(this);
-            _receiveResettableCompletionSource = new IntResettableCompletionSource(this);
             SetCallbackHandler();
         }
 
@@ -131,28 +126,43 @@ namespace System.Net.Quic.Implementations.MsQuic
             await SendAsync(new ReadOnlySequence<byte>(buffer), QUIC_SEND_FLAG.NONE);
         }
 
-        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            lock (_sync)
+            while (true)
             {
-                if (_transferBuffer.Length == 0)
+                var result = await _requestPipe.Reader.ReadAsync(cancellationToken);
+
+                if (result.IsCanceled)
                 {
-                    _transferBuffer = buffer;
-                    CanComplete = true;
-                    return _receiveResettableCompletionSource.GetValueTask();
+                    throw new OperationCanceledException("The read was canceled");
                 }
 
-                Memory<byte> readableBuffer = _transferBuffer;
+                ReadOnlySequence<byte> buffer = result.Buffer;
+                var length = buffer.Length;
 
-                int actual = Math.Min(readableBuffer.Length, buffer.Length);
-                readableBuffer = readableBuffer.Slice(0, actual);
-                readableBuffer.CopyTo(buffer);
+                var consumed = buffer.End;
+                try
+                {
+                    if (length != 0)
+                    {
+                        var actual = (int)Math.Min(length, destination.Length);
 
-                ArrayPool<byte>.Shared.Return(_rentedBuffer);
-                _transferBuffer = Memory<byte>.Empty;
+                        var slice = actual == length ? buffer : buffer.Slice(0, actual);
+                        consumed = slice.End;
+                        slice.CopyTo(destination.Span);
 
-                EnableReceive();
-                return new ValueTask<int>(actual);
+                        return actual;
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        return 0;
+                    }
+                }
+                finally
+                {
+                    _requestPipe.Reader.AdvanceTo(consumed);
+                }
             }
         }
 
@@ -161,14 +171,20 @@ namespace System.Net.Quic.Implementations.MsQuic
             var status = _api.StreamReceiveSetEnabledDelegate(_ptr, true);
         }
 
+        private void DisableReceive()
+        {
+            var status = _api.StreamReceiveSetEnabledDelegate(_ptr, false);
+        }
+
         internal override void ShutdownRead()
         {
-            // TODO doesn't seem to be much point for this API.
+            _requestPipe.Reader.Complete();
         }
 
         internal override void ShutdownWrite()
         {
             _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0);
+            // TODO do anything to stop writes?
         }
 
         internal override void Flush()
@@ -308,41 +324,38 @@ namespace System.Net.Quic.Implementations.MsQuic
             return status;
         }
 
-        private unsafe void HandleEventRecv(ref MsQuicNativeMethods.StreamEvent evt)
+        private void HandleEventRecv(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            lock (_sync)
+            static unsafe void CopyToBuffer(Span<byte> buffer, StreamEvent evt)
             {
-                Log($"Received data {evt.Data.Recv.TotalBufferLength}");
-                int length = (int)evt.Data.Recv.TotalBufferLength;
-                Span<byte> buffer = new Span<byte>(evt.Data.Recv.Buffers[0].Buffer, length);
+                var length = (int)evt.Data.Recv.Buffers[0].Length;
+                new Span<byte>(evt.Data.Recv.Buffers[0].Buffer, length).CopyTo(buffer);
+            }
 
-                if (_transferBuffer.Length == 0)
-                {
-                    // TODO figure out if I need to disable the send here.
-                    Log($"Receieve with no pending read");
-                    _rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
-                    Memory<byte> transferBuffer = _rentedBuffer.AsMemory().Slice(0, length);
-                    buffer.CopyTo(transferBuffer.Span);
-                    _transferBuffer = transferBuffer;
-                    ReceiveComplete(0);
-                    return;
-                }
+            Log($"Received data {evt.Data.Recv.TotalBufferLength}");
 
-                Memory<byte> destinationBuffer = _transferBuffer;
+            var input = _requestPipe.Writer;
+            var length = (int)evt.Data.Recv.TotalBufferLength;
+            var result = input.GetSpan(length);
+            CopyToBuffer(result, evt);
 
-                int actual = Math.Min(destinationBuffer.Length, buffer.Length);
-                buffer = buffer.Slice(0, actual);
-                buffer.CopyTo(destinationBuffer.Span);
+            input.Advance(length);
 
-                ReceiveComplete(actual);
+            var flushTask = input.FlushAsync();
 
-                _transferBuffer = Memory<byte>.Empty;
-                if (!CanComplete)
-                {
-                    throw new Exception();
-                }
-                _receiveResettableCompletionSource.Complete(actual);
-                CanComplete = false;
+            if (!flushTask.IsCompletedSuccessfully)
+            {
+                DisableReceive();
+                ReceiveComplete(0);
+                _ = AwaitFlush(flushTask);
+                return;
+            }
+
+            async Task AwaitFlush(ValueTask<FlushResult> ft)
+            {
+                await ft;
+                EnableReceive();
+                ReceiveComplete(length);
             }
         }
 
@@ -388,25 +401,24 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventPeerSendClose()
         {
             Log("Peer send close");
+            _requestPipe.Writer.Complete();
             return MsQuicConstants.Success;
         }
 
         public uint HandleEventSendComplete(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            // send canceled?
             Log("Send complete");
             _sendHandle.Free();
             foreach (MemoryHandle gchBufferArray in _bufferArrays)
             {
                 gchBufferArray.Dispose();
             }
-            // TODO check this error code.
+            // TODO throw if a write failed?
             uint errorCode = evt.Data.SendComplete.Canceled;
-           _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
 
             return MsQuicConstants.Success;
         }
-
 
         public void SetCallbackHandler()
         {
@@ -541,34 +553,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         _valueTaskSource.Reset();
                         _stream._sendResettableCompletionSource = this;
-                    }
-                }
-            }
-        }
-
-        private class IntResettableCompletionSource : ResettableCompletionSource<int>
-        {
-            private readonly MsQuicStream _stream;
-
-            internal IntResettableCompletionSource(MsQuicStream stream)
-                : base()
-            {
-                _stream = stream;
-            }
-
-            public override int GetResult(short token)
-            {
-                bool isValid = token == _valueTaskSource.Version;
-                try
-                {
-                    return _valueTaskSource.GetResult(token);
-                }
-                finally
-                {
-                    if (isValid)
-                    {
-                        _valueTaskSource.Reset();
-                        _stream._receiveResettableCompletionSource = this;
                     }
                 }
             }
