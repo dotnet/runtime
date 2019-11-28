@@ -293,9 +293,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMethodILNode((EcmaMethod)method);
             });
 
-            _copiedFieldRvas = new NodeCache<EcmaField, CopiedFieldRvaNode>(ecmaField =>
+            _copiedFieldRvas = new NodeCache<int, CopiedFieldRvaNode>(rva =>
             {
-                return new CopiedFieldRvaNode(ecmaField);
+                return new CopiedFieldRvaNode(rva);
             });
 
             _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
@@ -843,7 +843,7 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private NodeCache<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas;
+        private NodeCache<int, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -861,7 +861,11 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            return _copiedFieldRvas.GetOrAdd(ecmaField);
+            CopiedFieldRvaNode result = _copiedFieldRvas.GetOrAdd(ecmaField.GetFieldRvaValue());
+            if (result.Data == null)
+                result.SetData(ecmaField.GetFieldRvaData(Target.PointerSize));
+
+            return result;
         }
 
         private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;

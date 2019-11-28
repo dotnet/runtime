@@ -5,7 +5,6 @@
 using System;
 
 using Internal.Text;
-using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -13,13 +12,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode
     {
-        private EcmaField _field;
+        public int Rva { get; private set; }
+        public byte[] Data { get; private set; }
 
-        public CopiedFieldRvaNode(EcmaField field)
+        public CopiedFieldRvaNode(int rva)
         {
-            Debug.Assert(field.HasRva);
+            Rva = rva;
+        }
 
-            _field = field;
+        public void SetData(byte[] data)
+        {
+            Data = data;
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -43,12 +46,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
+            Debug.Assert(Data != null);
+
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
-
-            builder.EmitBytes(_field.GetFieldRvaData());
-
+            builder.EmitBytes(Data);
             return builder.ToObjectData();
         }
 
@@ -57,12 +60,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($"_FieldRva_{nameMangler.GetMangledFieldName(_field)}");
+            sb.Append($"_FieldRvaData_{Rva}_{Data.Length}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_field, ((CopiedFieldRvaNode)other)._field);
+            return Rva - ((CopiedFieldRvaNode)other).Rva;
         }
     }
 }
