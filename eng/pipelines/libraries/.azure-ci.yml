@@ -79,6 +79,7 @@ jobs:
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
         framework: netcoreapp
         ${{ if eq(variables['isOfficialBuild'], false) }}:
           runTests: true
