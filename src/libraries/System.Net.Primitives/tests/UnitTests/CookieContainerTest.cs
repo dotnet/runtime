@@ -101,8 +101,8 @@ namespace System.Net.Primitives.Unit.Tests
                 new Cookie[]
                 {
                     c10,
-                    new Cookie("name98", "value98"),
-                    new Cookie("name99", "value99"),
+                    new Cookie("name98", "value98") {Expires = DateTime.MaxValue },
+                    new Cookie("name99", "value99") {Expires = DateTime.MaxValue },
                     c11
                 }
             }; // Simple
@@ -149,8 +149,8 @@ namespace System.Net.Primitives.Unit.Tests
                 "name98=value98; port=\"80, 90\", name99=value99",
                 new Cookie[]
                 {
-                    new Cookie("name99", "value99"),
-                    new Cookie("name98", "value98", "/", ".uri.com") { Port = "\"80, 90\"" },
+                    new Cookie("name99", "value99") { Expires = DateTime.MaxValue },
+                    new Cookie("name98", "value98", "/", ".uri.com") { Port = "\"80, 90\"", Expires = DateTime.MaxValue },
                 }
             }; // RFC 2965 (no path)
 
@@ -171,7 +171,7 @@ namespace System.Net.Primitives.Unit.Tests
                 "name98=value98; commentURL=invalidurl",
                 new Cookie[]
                 {
-                    new Cookie("name98", "value98")
+                    new Cookie("name98", "value98") { Expires = DateTime.MaxValue }
                 }
             }; // Ignore invalid comment url
 
@@ -181,7 +181,7 @@ namespace System.Net.Primitives.Unit.Tests
                 "name98=value98; unknown1; unknown2=unknown",
                 new Cookie[]
                 {
-                    new Cookie("name98", "value98")
+                    new Cookie("name98", "value98") { Expires = DateTime.MaxValue }
                 }
             }; // Ignore unknown tokens
 
@@ -191,7 +191,7 @@ namespace System.Net.Primitives.Unit.Tests
                 "name98=value98; =; token=",
                 new Cookie[]
                 {
-                    new Cookie("name98", "value98")
+                    new Cookie("name98", "value98") { Expires = DateTime.MaxValue }
                 }
             }; // Ignore invalid tokens
 
@@ -211,7 +211,7 @@ namespace System.Net.Primitives.Unit.Tests
                 "name98=\"\"",
                 new Cookie[]
                 {
-                    new Cookie("name98", "\"\"")
+                    new Cookie("name98", "\"\"") { Expires = DateTime.MaxValue }
                 }
             }; // Use escaped values (2)
 
@@ -221,10 +221,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Normal case
 
@@ -234,10 +234,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Normal case with secure URI
 
@@ -247,10 +247,10 @@ namespace System.Net.Primitives.Unit.Tests
                 ",locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header at the beginning
 
@@ -260,10 +260,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "          ,locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header composed of spaces at the beginning
 
@@ -273,10 +273,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en,, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header in the middle
 
@@ -286,10 +286,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46,       , country=US, _m_ask_fm_session=session1",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header composed of spaces in the middle
 
@@ -299,10 +299,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1,",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header at the end
 
@@ -312,10 +312,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1,   ",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header composed of spaces at the end
 
@@ -325,10 +325,10 @@ namespace System.Net.Primitives.Unit.Tests
                 "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1,   ,",
                 new Cookie[]
                 {
-                    new Cookie("locale", "en"),
-                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46"),
-                    new Cookie("country", "US"),
-                    new Cookie("_m_ask_fm_session", "session1")
+                    new Cookie("locale", "en") { Expires = DateTime.MaxValue },
+                    new Cookie("uuid", "4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46") { Expires = DateTime.MaxValue },
+                    new Cookie("country", "US") { Expires = DateTime.MaxValue },
+                    new Cookie("_m_ask_fm_session", "session1") { Expires = DateTime.MaxValue }
                 }
             }; // Empty header followed by another empty header at the end
 
@@ -340,7 +340,7 @@ namespace System.Net.Primitives.Unit.Tests
                     "hello world=value",
                     new Cookie[]
                     {
-                        new Cookie("hello world", "value"),
+                        new Cookie("hello world", "value") { Expires = DateTime.MaxValue },
                     }
                 }; // Name with space in it
             }
@@ -761,6 +761,8 @@ namespace System.Net.Primitives.Unit.Tests
                 Cookie c2 = cc2[i];
                 Assert.Equal(c1.Name, c2.Name); // Primitive check for equality
                 Assert.Equal(c1.Value, c2.Value);
+                if (c1.Expires == DateTime.MaxValue)
+                    Assert.Equal(DateTime.MaxValue, c2.Expires); // Session cookies don't have Expires property
             }
         }
     }
