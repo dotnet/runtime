@@ -50,6 +50,15 @@ namespace System.Buffers
         public readonly ReadOnlySequence<T> Sequence { get; }
 
         /// <summary>
+        /// The unread portion of the <see cref="Sequence"/>.
+        /// </summary>
+        public readonly ReadOnlySequence<T> UnreadSequence
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Sequence.Slice(Position);
+        }
+
+        /// <summary>
         /// The current position in the <see cref="Sequence"/>.
         /// </summary>
         public readonly SequencePosition Position

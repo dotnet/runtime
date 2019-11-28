@@ -422,6 +422,7 @@ namespace System.Buffers
         public readonly System.SequencePosition Position { get { throw null; } }
         public readonly long Remaining { get { throw null; } }
         public readonly System.Buffers.ReadOnlySequence<T> Sequence { get { throw null; } }
+        public readonly System.Buffers.ReadOnlySequence<T> UnreadSequence { get { throw null; } }
         public readonly System.ReadOnlySpan<T> UnreadSpan { get { throw null; } }
         public void Advance(long count) { }
         public long AdvancePast(T value) { throw null; }
@@ -429,6 +430,7 @@ namespace System.Buffers
         public long AdvancePastAny(T value0, T value1) { throw null; }
         public long AdvancePastAny(T value0, T value1, T value2) { throw null; }
         public long AdvancePastAny(T value0, T value1, T value2, T value3) { throw null; }
+        public void AdvanceToEnd() { throw null; }
         public bool IsNext(System.ReadOnlySpan<T> next, bool advancePast = false) { throw null; }
         public bool IsNext(T next, bool advancePast = false) { throw null; }
         public void Rewind(long count) { }
