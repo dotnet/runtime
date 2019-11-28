@@ -30,6 +30,7 @@ namespace AppWithSubDirs
                 Part("Noun") +
                 Part("Conjunction") +
                 Part("Noun", "Pronoun", "Another") + 
+                // The following part with a really long name is generated while running the test.
                 Part("This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation");
                       
             // This should print "Wow! We now say hello to the big world and you."
