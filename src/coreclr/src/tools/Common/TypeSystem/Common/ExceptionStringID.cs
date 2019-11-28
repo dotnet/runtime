@@ -16,6 +16,7 @@ namespace Internal.TypeSystem
         ClassLoadExplicitLayout,
         ClassLoadValueClassTooLarge,
         ClassLoadRankTooLarge,
+        ClassLoadUninstantiatedType,
 
         // MissingMethodException
         MissingMethod,

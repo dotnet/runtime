@@ -1357,11 +1357,6 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(type);
             }
 #endif
-            if (type.IsGenericDefinition)
-            {
-                ThrowHelper.ThrowInvalidProgramException();
-            }
-
             return (uint)classSize.AsInt;
         }
 
