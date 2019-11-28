@@ -101,17 +101,7 @@ namespace Microsoft.NET.HostModel.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-
-                // One of the sub-directories with a really long name is generated during test-runs
-                // rather than being checked in as a test asset.
-                // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
-                var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
-                var longDirPath = Path.Combine(TestFixture.TestProject.ProjectDirectory, "Sentence", longDirName);
-                Directory.CreateDirectory(longDirPath);
-                using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
-                {
-                    writer.Write(".");
-                }
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
 
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
