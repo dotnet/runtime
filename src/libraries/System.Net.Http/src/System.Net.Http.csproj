@@ -326,7 +326,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'net461' ">
+  <ItemGroup Condition=" '$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'net461' ">
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
