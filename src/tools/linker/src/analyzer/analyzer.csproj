@@ -1,49 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{4F328B3E-39C1-4E48-8093-F24390C58A5E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>LinkerAnalyzer</RootNamespace>
     <AssemblyName>illinkanalyzer</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ExternalConsole>true</ExternalConsole>
-    <PlatformTarget>x86</PlatformTarget>
+
+  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+    <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
+    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT'">netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ExternalConsole>true</ExternalConsole>
-    <PlatformTarget>x86</PlatformTarget>
+
+  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+    <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration.EndsWith('Debug'))">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration.EndsWith('Release'))">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Xml" />
     <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj">
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ConsoleDependencyGraph.cs" />
-    <Compile Include="Main.cs" />
-    <Compile Include="LinkerAnalyzerCore\DependencyGraph.cs" />
-    <Compile Include="LinkerAnalyzerCore\SpaceAnalyzer.cs" />
-    <Compile Include="common\Mono.Options\Options.cs">
-      <Link>Options.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>
