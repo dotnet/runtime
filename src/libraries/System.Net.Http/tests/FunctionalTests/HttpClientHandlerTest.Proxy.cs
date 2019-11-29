@@ -285,6 +285,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MultiProxy_PAC_Failover_Succeeds()
         {
             // Create our failing proxy server.
