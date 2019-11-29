@@ -184,11 +184,11 @@ namespace System
             get => (IntPtr)nint.MinValue;
         }
 
-        public int CompareTo(object? value) => ((nint)_value).CompareTo(value);
+        public unsafe int CompareTo(object? value) => ((nint)_value).CompareTo(value);
 
-        public int CompareTo(IntPtr value) => ((nint)_value).CompareTo((nint)value);
+        public unsafe int CompareTo(IntPtr value) => ((nint)_value).CompareTo((nint)value);
 
-        public bool Equals(IntPtr other) => (nint)_value == (nint)other;
+        public unsafe bool Equals(IntPtr other) => (nint)_value == (nint)other;
 
         public unsafe override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
         public unsafe string ToString(string? format) => ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
