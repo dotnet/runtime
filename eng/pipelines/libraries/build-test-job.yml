@@ -47,6 +47,7 @@ jobs:
             artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
             artifactFileName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
+            cleanUnpackFolder: false
         
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
           displayName: Restore
