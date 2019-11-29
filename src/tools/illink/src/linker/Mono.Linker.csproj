@@ -1,35 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Mono</RootNamespace>
+    <Copyright>(C) 2006, Jb Evain</Copyright>
+    <Version>0.2.0.0</Version>
+    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
     <!-- net46 build is disabled until cecil uses SDK-style projects. -->
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT'">netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
     <AssemblyName>monolinker</AssemblyName>
     <AssemblyTitle>Mono.Linker</AssemblyTitle>
     <Description>Mono CIL Linker</Description>
     <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Mono</RootNamespace>
-    <Copyright>(C) 2006, Jb Evain</Copyright>
-    <Version>0.2.0.0</Version>
+  <PropertyGroup Condition="$(Configuration.EndsWith('Debug'))">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" $(Configuration.EndsWith('Debug')) ">
-    <DebugSymbols Condition=" '$(DebugSymbols)' == '' ">true</DebugSymbols>
-    <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" $(Configuration.EndsWith('Release')) ">
-    <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+  <PropertyGroup Condition="$(Configuration.EndsWith('Release'))">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,7 +45,7 @@
   <Target Name="AddRuntimeDependenciesToContent"
           BeforeTargets="GetCopyToOutputDirectoryItems"
           DependsOnTargets="GenerateBuildDependencyFile;GenerateBuildRuntimeConfigurationFiles"
-          Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ItemGroup>
       <ContentWithTargetPath Include="$(ProjectDepsFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectDepsFileName)" />
       <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectRuntimeConfigFileName)" />

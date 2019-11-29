@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+  <PropertyGroup>
+    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
     <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
 
