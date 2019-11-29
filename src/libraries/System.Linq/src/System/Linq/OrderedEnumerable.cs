@@ -281,8 +281,6 @@ namespace System.Linq
 
         bool IsAscending { get; }
 
-        void InitializeSortByLayer(int size);
-
         void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count);
     }
 
@@ -299,13 +297,10 @@ namespace System.Linq
         public bool IsAscending => true;
 
         public void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count) => Array.Sort(indexes, startIdx, count);
-
-        public void InitializeSortByLayer(int size) { }
     }
 
     internal abstract class EnumerableSorter<TElement> : IEnumerableSorter<TElement>
     {
-        public abstract void InitializeSortByLayer(int size);
         public abstract void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count);
         public abstract void ComputeKeys(TElement[] elements, int count);
         public abstract int CompareAnyKeys(int index1, int index2);
@@ -338,7 +333,6 @@ namespace System.Linq
             // due to location in array.
             if (IsValueType && IsAscending)
             {
-                InitializeSortByLayer(count);
                 int[] map = ComputeMap(count);
                 SortByLayer(elements, map, 0, count);
                 return map;
@@ -399,16 +393,14 @@ namespace System.Linq
 
         public override bool IsAscending => !_descending && _next.IsAscending;
 
-        public override void InitializeSortByLayer(int size)
-        {
-            _keys = new TKey[size];
-            _next.InitializeSortByLayer(size);
-        }
-
         public override void SortByLayer(TElement[] data, int[] indexes, int startIdx, int count)
         {
-            Debug.Assert(_keys != null);
             Debug.Assert(_next != null);
+
+            if (_keys == null)
+            {
+                _keys = new TKey[data.Length];
+            }
 
             int exclusiveEndIdx = startIdx + count;
 
