@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Reflection {
@@ -22,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestMultiDimensionalArrayFullString ();
 			TestMultiDimensionalArrayAsmName ();
 			TestDeeplyNested ();
+			TestTypeOf ();
 		}
 
 		[Kept]
@@ -173,6 +172,15 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		static void TestDeeplyNested ()
 		{
 			var typeKept = Type.GetType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Nested1+N2+N3");
+		}
+
+		[Kept]
+		class TypeOfToKeep { }
+
+		[Kept]
+		static void TestTypeOf()
+		{
+			var typeKept = typeof(TypeOfToKeep);
 		}
 	}
 }
