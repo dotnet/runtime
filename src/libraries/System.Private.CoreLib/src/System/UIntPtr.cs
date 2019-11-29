@@ -177,11 +177,11 @@ namespace System
             get => (UIntPtr)nuint.MinValue;
         }
 
-        public int CompareTo(object? value) => ((nuint)_value).CompareTo(value);
+        public unsafe int CompareTo(object? value) => ((nuint)_value).CompareTo(value);
 
-        public int CompareTo(UIntPtr value) => ((nuint)_value).CompareTo((nuint)value);
+        public unsafe int CompareTo(UIntPtr value) => ((nuint)_value).CompareTo((nuint)value);
 
-        public bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
+        public unsafe bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
 
         public unsafe override string ToString() => ((nuint)_value).ToString(CultureInfo.InvariantCulture);
         public unsafe string ToString(string? format) => ((nuint)_value).ToString(format, CultureInfo.InvariantCulture);
