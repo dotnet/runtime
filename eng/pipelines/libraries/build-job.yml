@@ -50,14 +50,6 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: $(_coreClrDownloadPath)
-              artifactFileName: '$(_coreClrArtifactName)$(_archiveExtension)'
-              artifactName: '$(_coreClrArtifactName)'
-              displayName: 'CoreCLR build drop'
-
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
           displayName: Restore
 

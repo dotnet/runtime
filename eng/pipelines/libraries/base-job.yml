@@ -117,4 +117,12 @@ jobs:
           git remote set-url origin $(Build.Repository.Uri)
         displayName: Clone the repository from Checkout.bundle
 
+      - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(_coreClrDownloadPath)
+            artifactFileName: '$(_coreClrArtifactName)$(_archiveExtension)'
+            artifactName: '$(_coreClrArtifactName)'
+            displayName: 'CoreCLR build drop'
+
       - ${{ parameters.steps }}
