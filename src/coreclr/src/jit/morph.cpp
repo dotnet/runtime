@@ -18153,7 +18153,7 @@ private:
         }
 #endif // _TARGET_64BIT_
 
-        // For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
+        // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
         // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
         // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
@@ -18336,7 +18336,7 @@ private:
 
         if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
         {
-            // Ignore promoted and "implict by ref" variables for now,
+            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
             // they require additional changes in subsequent phases.
             return;
         }
