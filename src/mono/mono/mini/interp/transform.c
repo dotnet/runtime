@@ -1648,7 +1648,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->ip += 5;
 			return TRUE;
 		}
-	} else if (in_corlib && !strcmp (klass_name_space, "Internal.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
+	} else if (((in_corlib && !strcmp (klass_name_space, "Internal.Runtime.CompilerServices"))
+				|| !strcmp (klass_name_space, "System.Runtime.CompilerServices"))
+			   && !strcmp (klass_name, "Unsafe")) {
 #ifdef ENABLE_NETCORE
 		if (!strcmp (tm, "AddByteOffset"))
 			*op = MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET;
@@ -1708,6 +1710,26 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_LDC_I4_0;
 		} else if (!strcmp (tm, "ObjectHasComponentSize")) {
 			*op = MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE;
+		} else if (!strcmp (tm, "IsReferenceOrContainsReferences")) {
+			g_assert (csignature->param_count == 0);
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *t = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
+
+			gboolean has_refs;
+
+			MonoClass *klass = mono_class_from_mono_type_internal (t);
+			mono_class_init_internal (klass);
+			if (MONO_TYPE_IS_REFERENCE (t))
+				has_refs = TRUE;
+			else if (MONO_TYPE_IS_PRIMITIVE (t))
+				has_refs = FALSE;
+			else
+				has_refs = m_class_has_references (klass);
+
+			*op = has_refs ? MINT_LDC_I4_1 : MINT_LDC_I4_0;
 		}
 #endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {

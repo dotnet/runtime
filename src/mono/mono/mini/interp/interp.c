@@ -133,7 +133,7 @@ add_frag (FrameStack *stack, int size)
 
 	// FIXME:
 	int frag_size = 4096;
-	if (size > frag_size)
+	if (size + sizeof (StackFragment) > frag_size)
 		frag_size = size + sizeof (StackFragment);
 	new_frag = stack_frag_new (frag_size);
 	mono_compiler_barrier ();
