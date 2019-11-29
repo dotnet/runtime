@@ -165,13 +165,11 @@ namespace System.Net.Http
         private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
         {
             Uri uri = request.RequestUri;
-            bool defaultCredentialsUsed = _settings._credentials == _settings._defaultCredentials|| _settings._defaultProxyCredentials == _settings._defaultCredentials || _proxy?.Credentials == _settings._defaultCredentials;
-            string identity = defaultCredentialsUsed ? CurrentUserIdentityProvider.GetIdentity() : string.Empty;
 
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, identity);
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultSystemCredentialsUsedForProxy));
             }
 
             string sslHostName = null;
@@ -188,6 +186,8 @@ namespace System.Net.Http
                     sslHostName = uri.IdnHost;
                 }
             }
+
+            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri != null ? _settings._defaultSystemCredentialsUsedForProxy : _settings._defaultSystemCredentialsUsedForServer);
 
             if (proxyUri != null)
             {
@@ -408,6 +408,11 @@ namespace System.Net.Http
             // be returned to pools they weren't associated with.
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)
+        {
+            return defaultCredentialsUsed ? CurrentUserIdentityProvider.GetIdentity() : string.Empty;
         }
 
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>

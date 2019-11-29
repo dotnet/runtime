@@ -23,7 +23,8 @@ namespace System.Net.Http
         internal bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
         internal IWebProxy _proxy;
         internal ICredentials _defaultProxyCredentials;
-        internal ICredentials _defaultCredentials = CredentialCache.DefaultCredentials;
+        internal bool _defaultSystemCredentialsUsedForProxy;
+        internal bool _defaultSystemCredentialsUsedForServer;
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials _credentials;
@@ -54,6 +55,8 @@ namespace System.Net.Http
             bool allowHttp2 = AllowHttp2;
             _maxHttpVersion = allowHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
             _allowUnencryptedHttp2 = allowHttp2 && AllowUnencryptedHttp2;
+            _defaultSystemCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
+            _defaultSystemCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
@@ -73,7 +76,8 @@ namespace System.Net.Http
                 _connectTimeout = _connectTimeout,
                 _credentials = _credentials,
                 _defaultProxyCredentials = _defaultProxyCredentials,
-                _defaultCredentials = _defaultCredentials,
+                _defaultSystemCredentialsUsedForProxy = _defaultSystemCredentialsUsedForProxy,
+                _defaultSystemCredentialsUsedForServer = _defaultSystemCredentialsUsedForServer,
                 _expect100ContinueTimeout = _expect100ContinueTimeout,
                 _maxAutomaticRedirections = _maxAutomaticRedirections,
                 _maxConnectionsPerServer = _maxConnectionsPerServer,
