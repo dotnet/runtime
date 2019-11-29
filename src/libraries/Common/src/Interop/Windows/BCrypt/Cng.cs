@@ -77,45 +77,6 @@ namespace Internal.NativeCrypto
             return hAlgorithm;
         }
 
-        public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, ReadOnlySpan<byte> key)
-        {
-            unsafe
-            {
-                const string BCRYPT_KEY_DATA_BLOB = "KeyDataBlob";
-                int keySize = key.Length;
-                int blobSize = sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + keySize;
-                byte[] blob = new byte[blobSize];
-                fixed (byte* pbBlob = blob)
-                {
-                    BCRYPT_KEY_DATA_BLOB_HEADER* pBlob = (BCRYPT_KEY_DATA_BLOB_HEADER*)pbBlob;
-                    pBlob->dwMagic = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_MAGIC;
-                    pBlob->dwVersion = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_VERSION1;
-                    pBlob->cbKeyData = (uint)keySize;
-                }
-
-                key.CopyTo(blob.AsSpan(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER)));
-                SafeKeyHandle hKey;
-                NTSTATUS ntStatus = Interop.BCryptImportKey(hAlg, IntPtr.Zero, BCRYPT_KEY_DATA_BLOB, out hKey, IntPtr.Zero, 0, blob, blobSize, 0);
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw CreateCryptographicException(ntStatus);
-                }
-
-                return hKey;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct BCRYPT_KEY_DATA_BLOB_HEADER
-        {
-            public uint dwMagic;
-            public uint dwVersion;
-            public uint cbKeyData;
-
-            public const uint BCRYPT_KEY_DATA_BLOB_MAGIC = 0x4d42444b;
-            public const uint BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
-        }
-
         public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
         {
             NTSTATUS ntStatus = Interop.BCryptSetProperty(hAlg, BCryptPropertyStrings.BCRYPT_CHAINING_MODE, cipherMode, (cipherMode.Length + 1) * 2, 0);
@@ -217,9 +178,6 @@ namespace Internal.NativeCrypto
             {
                 return BCryptSetIntPropertyPrivate(hObject, pszProperty, ref pdwInput, sizeof(int), dwFlags);
             }
-
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, string pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
