@@ -142,7 +142,7 @@ namespace System.Data.SqlClient.SNI
                 }
                 else
                 {
-                    _socket = Connect(serverName, port, ts);
+                    _socket = Connect(serverName, port, ts, isInfiniteTimeOut);
                 }
 
                 if (_socket == null || !_socket.Connected)
@@ -177,7 +177,7 @@ namespace System.Data.SqlClient.SNI
             _status = TdsEnums.SNI_SUCCESS;
         }
 
-        private static Socket Connect(string serverName, int port, TimeSpan timeout)
+        private static Socket Connect(string serverName, int port, TimeSpan timeout, bool isInfiniteTimeout)
         {
             IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
             IPAddress serverIPv4 = null;
@@ -197,7 +197,15 @@ namespace System.Data.SqlClient.SNI
             Socket[] sockets = new Socket[2];
 
             CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(timeout);
+            if (isInfiniteTimeout)
+            {
+                cts.CancelAfter(-1);
+            }
+            else
+            {
+                cts.CancelAfter(timeout);
+            }
+
             void Cancel()
             {
                 for (int i = 0; i < sockets.Length; ++i)
