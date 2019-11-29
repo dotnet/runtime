@@ -30,6 +30,7 @@ endif
 ifeq ($(HOST_PLATFORM),macos)
 PLATFORM_AOT_SUFFIX := .dylib
 PLATFORM_AOT_PREFIX := lib
+OBJDUMP = objdump -x86-asm-syntax=intel --no-show-raw-insn -no-leading-addr -no-leading-headers -d
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
 XUNIT_INNER_ARGS = -notrait category=nonosxtests @../../../../CoreFX.issues_mac.rsp
@@ -40,6 +41,7 @@ endif
 ifeq ($(HOST_PLATFORM),linux)
 PLATFORM_AOT_SUFFIX := .so
 PLATFORM_AOT_PREFIX := lib
+OBJDUMP = objdump -M intel --no-show-raw-insn -d
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
 XUNIT_INNER_ARGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
@@ -110,7 +112,7 @@ patch-local-dotnet-aot-llvm: patch-local-dotnet
 	for assembly in ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/*.dll; do \
 		echo "[AOT] $$assembly"; \
 		PATH="../llvm/usr/bin/:$(PATH)" \
-		MONO_ENV_OPTIONS="--aot=llvm,llvmllc=\"-mcpu=native\"" \
+		MONO_ENV_OPTIONS="--aot=llvm,mcpu=native" \
 		$(DOTNET) $$assembly ; \
 	done; \
 
@@ -285,16 +287,24 @@ run-tests-coreclr-%: prepare update-tests-coreclr
 # dump asm for all methods in BCL using LLVM AOT, e.g.:
 #   make dump-asm-bcl DUMPASM_OUT=dumps/before-my-jit-fix
 dump-asm-bcl: patch-local-dotnet
-	mkdir -p $(DUMPASM_OUT)
 	@if test -z "$(DUMPASM_OUT)"; then echo "DUMPASM_OUT is not set"; exit 1; fi
+	mkdir -p $(DUMPASM_OUT)
 	for assembly in ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME)/*.dll; do \
 		printf  "\n[AOT] $$(basename $$assembly):\n\n"; \
-		PATH="../llvm/usr/bin/:$(PATH)" \
-		MONO_ENV_OPTIONS="--aot=llvm,mcpu=native" \
-		$(DOTNET) $$assembly ; \
-		objdump -d "$$assembly$(PLATFORM_AOT_SUFFIX)" > "$(DUMPASM_OUT)/$$(basename $$assembly)$(PLATFORM_AOT_SUFFIX).dasm" ; \
+		$(MAKE) dump-asm-lib DUMPASM_LIB=$$assembly ; \
 	done; \
 	cd ../.dotnet/shared/Microsoft.NETCore.App/$(BOOTSTRAP_RUNTIME) && rm *.dll$(PLATFORM_AOT_SUFFIX)
+
+# dump asm for a specific assembly using LLVM AOT, e.g.:
+#   make dump-asm-lib DUMPASM_OUT=dumps/before-my-jit-fix DUMPASM_LIB=/path/to/System.Private.CoreLib.dll
+dump-asm-lib: patch-local-dotnet
+	@if test -z "$(DUMPASM_LIB)"; then echo "DUMPASM_LIB is not set"; exit 1; fi
+	@if test -z "$(DUMPASM_OUT)"; then echo "DUMPASM_OUT is not set"; exit 1; fi
+	mkdir -p $(DUMPASM_OUT)
+	PATH="../llvm/usr/bin/:$(PATH)" \
+	MONO_ENV_OPTIONS="--aot=llvm,mcpu=native" \
+	$(DOTNET) $(DUMPASM_LIB)
+	$(OBJDUMP) "$(DUMPASM_LIB)$(PLATFORM_AOT_SUFFIX)" > "$(DUMPASM_OUT)/$(notdir $(DUMPASM_LIB))$(PLATFORM_AOT_SUFFIX).dasm"
 
 # Generate asm diffs, a typical workflow may look like this:
 # 

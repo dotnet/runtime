@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
 
@@ -116,7 +117,7 @@ namespace JitDiffTools
 			// depends on objdump, let's use the whole line as a name if it ends with `:`
 			if (str.EndsWith (':'))
 			{
-				name = str;
+				name = Regex.Replace(str, @"(?i)\b([a-f0-9]+){8,16}\b", m => "0xD1FFAB1E");
 				return true;
 			}
 			name = null;
