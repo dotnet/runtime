@@ -5,6 +5,7 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
+  useLiveCoreClr: false
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -22,14 +23,16 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      useLiveCoreClr: ${{ parameters.useLiveCoreClr }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
-      stepName: Test
+      name: test_build
+      displayName: 'Test Build'
 
       dependsOn:
-      - ${{ format('libraries_Build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       variables:
         - _archiveTestsParameter: /p:ArchiveTests=true
@@ -45,7 +48,7 @@ jobs:
             artifactFileName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
         
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
           displayName: Restore
 
         - script: $(_buildScript)

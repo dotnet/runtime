@@ -23,12 +23,14 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      useLiveCoreClr: ${{ parameters.useLiveCoreClr }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
-      stepName: Build
+      name: build
+      displayName: 'Build'
 
       ${{ if eq(parameters.useLiveCoreClr, true) }}:
         dependsOn:
@@ -42,22 +44,8 @@ jobs:
           - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
         - ${{ if eq(parameters.runTests, true) }}:
           - _buildAction: -build -buildtests /p:ArchiveTests=true
-          - ${{ if ne(parameters.framework, 'allConfigurations') }}:
+          - ${{ if and(ne(parameters.framework, 'allConfigurations'), not(parameters.useLiveCoreClr)) }}:
             - _skipTestRestoreArg: /p:SkipTestRestore=false
-
-        - _coreClrArtifactName: ''
-        - _coreClrDownloadPath: ''
-        - _coreClrOverridePathArg: ''
-
-        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
-          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
-          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
-          - _skipTestRestoreArg: /p:SkipTestRestore=true $(_coreClrOverridePathArg)
-
-        - _archiveExtension: '.tar.gz'
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - _archiveExtension: '.zip'
 
         - ${{ parameters.variables }}
 
@@ -70,7 +58,7 @@ jobs:
               artifactName: '$(_coreClrArtifactName)'
               displayName: 'CoreCLR build drop'
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
           displayName: Restore
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:

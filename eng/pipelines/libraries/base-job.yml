@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
+  useLiveCoreClr: false
   timeoutInMinutes: 150
   container: ''
   steps: []
@@ -14,16 +15,15 @@ parameters:
   displayName: ''
   testScope: ''
   pool: ''
-  stepName: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.stepName, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if eq(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1}{2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if ne(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1} {2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
@@ -69,15 +69,26 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
+        - _coreClrArtifactName: ''
+        - _coreClrDownloadPath: ''
+        - _coreClrOverridePathArg: ''
+
+        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
           - _runtimeOSArg: /p:RuntimeOS=win10
+          - _archiveExtension: '.zip'
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
           - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - _archiveExtension: '.tar.gz'
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
