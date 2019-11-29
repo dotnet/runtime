@@ -3835,6 +3835,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				}
 				td->last_ins->data [0] = exit_profiling;
 				WRITE32_INS (td->last_ins, 1, &vt_size);
+				POP_VT (td, vt_size);
 				++td->ip;
 			} else {
 				if (vt_size == 0)
@@ -3842,6 +3843,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				else {
 					interp_add_ins (td, MINT_RET_VT);
 					WRITE32_INS (td->last_ins, 0, &vt_size);
+					POP_VT (td, vt_size);
 					++td->ip;
 				}
 			}

@@ -3308,6 +3308,56 @@ L_3:
 		ret
 	 }
 
+	.method private hidebysig static valuetype [mscorlib]System.Nullable`1<int32> ret_some_vt(int32 val) cil managed
+	 {
+		.maxstack 8
+		ldarg.0
+		newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
+		ldarg.0
+		ldc.i4.0
+		ble.s second_vt
+
+		ldarg.0
+		ldc.i4.s 40
+		add
+		newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
+		pop
+		ret
+
+second_vt_2:
+		ldarg.0
+		ldc.i4.s 30
+		add
+		newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
+		ret
+
+second_vt:
+		pop
+		br second_vt_2
+	 }
+
+	// https://github.com/mono/mono/issues/17924
+	.method static public int32 test_0_vt_sp_tracking () cil managed
+	 {
+		.maxstack  2
+		.locals init (valuetype [mscorlib]System.Nullable`1<int32> V_0)
+
+		ldc.i4.s 10
+		call valuetype [mscorlib]System.Nullable`1<int32> Tests::ret_some_vt(int32)
+		stloc.0
+		ldloca.s V_0
+		call instance !0 valuetype [mscorlib]System.Nullable`1<int32>::get_Value()
+		ldc.i4.s 10
+		bne.un.s wrong
+
+		ldc.i4.0
+		ret
+
+wrong:
+		ldc.i4.1
+		ret
+	}
+
   .method public hidebysig static int32  test_10_rconv_to_u8_ovf_un() cil managed
   {
     // Code size       20 (0x14)
