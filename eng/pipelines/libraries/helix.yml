@@ -11,7 +11,7 @@ parameters:
 
 steps:
   - script: ${{ parameters.msbuildScript }}
-            $(sourcesRoot)/sendtohelix.proj
+            $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /t:test
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
