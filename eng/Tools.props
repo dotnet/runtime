@@ -42,7 +42,7 @@
     <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\docs.targets') and '$(DotNetBuildFromSource)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\optimizationData.targets') and '$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\illink.targets') and '$(ILLinkTrimAssembly)' != 'false'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" />
 </Project>
