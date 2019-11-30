@@ -17,4 +17,6 @@
 
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+
 </Project>
