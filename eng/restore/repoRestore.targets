@@ -1,4 +1,4 @@
-<Project InitialTargets="_ClearResolvePackageAssets;_ClearPackageReferences" TreatAsLocalProperty="ExcludeRestorePackageImports">
+<Project InitialTargets="_ClearResolvePackageAssets" TreatAsLocalProperty="ExcludeRestorePackageImports">
   <PropertyGroup>
     <!-- Disable restoring of package references in our projects -->
     <RestoreProjectStyle Condition="'$(MSBuildProjectExtension)' != '.depproj'">None</RestoreProjectStyle>
@@ -18,13 +18,6 @@
   <PropertyGroup>
     <ExcludeRestorePackageImports>$(_excludeRestorePackageImports)</ExcludeRestorePackageImports>
   </PropertyGroup>
-
-  <Target Name="_ClearPackageReferences"
-          Condition="'$(MSBuildProjectExtension)' != '.depproj'">
-    <ItemGroup>
-      <PackageReference Remove="@(PackageReference)" />
-    </ItemGroup>
-  </Target>
   
   <!--
   Hack workaround for not restoring each project. Instead, we turn off all the targets

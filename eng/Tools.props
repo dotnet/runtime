@@ -1,11 +1,12 @@
 <Project>
   <PropertyGroup>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- We need to import this props file which contains PackageReferences to analyzers so that
        analyzer build assets are imported via the Tools generated props and targets -->
-  <Import Project="$(RepositoryEngineeringDir)analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)Analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
 
   <!-- source-built packages -->
   <ItemGroup>
