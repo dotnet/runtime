@@ -130,7 +130,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             while (true)
             {
-                var result = await _requestPipe.Reader.ReadAsync(cancellationToken);
+                ReadResult result = await _requestPipe.Reader.ReadAsync(cancellationToken);
 
                 if (result.IsCanceled)
                 {
@@ -138,16 +138,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 ReadOnlySequence<byte> buffer = result.Buffer;
-                var length = buffer.Length;
+                long length = buffer.Length;
 
-                var consumed = buffer.End;
+                SequencePosition consumed = buffer.End;
                 try
                 {
                     if (length != 0)
                     {
-                        var actual = (int)Math.Min(length, destination.Length);
+                        int actual = (int)Math.Min(length, destination.Length);
 
-                        var slice = actual == length ? buffer : buffer.Slice(0, actual);
+                        ReadOnlySequence<byte> slice = actual == length ? buffer : buffer.Slice(0, actual);
                         consumed = slice.End;
                         slice.CopyTo(destination.Span);
 
@@ -168,12 +168,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
-            var status = _api.StreamReceiveSetEnabledDelegate(_ptr, true);
+            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, true);
         }
 
         private void DisableReceive()
         {
-            var status = _api.StreamReceiveSetEnabledDelegate(_ptr, false);
+            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, false);
         }
 
         internal override void ShutdownRead()
@@ -328,20 +328,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             static unsafe void CopyToBuffer(Span<byte> buffer, StreamEvent evt)
             {
-                var length = (int)evt.Data.Recv.Buffers[0].Length;
+                int length = (int)evt.Data.Recv.Buffers[0].Length;
                 new Span<byte>(evt.Data.Recv.Buffers[0].Buffer, length).CopyTo(buffer);
             }
 
             Log($"Received data {evt.Data.Recv.TotalBufferLength}");
 
-            var input = _requestPipe.Writer;
-            var length = (int)evt.Data.Recv.TotalBufferLength;
-            var result = input.GetSpan(length);
+            PipeWriter input = _requestPipe.Writer;
+            int length = (int)evt.Data.Recv.TotalBufferLength;
+            Span<byte> result = input.GetSpan(length);
             CopyToBuffer(result, evt);
 
             input.Advance(length);
 
-            var flushTask = input.FlushAsync();
+            ValueTask<FlushResult> flushTask = input.FlushAsync();
 
             if (!flushTask.IsCompletedSuccessfully)
             {
@@ -435,8 +435,8 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAG flags)
         {
-            var bufferCount = 0;
-            foreach (var memory in buffers)
+            int bufferCount = 0;
+            foreach (ReadOnlyMemory<byte> memory in buffers)
             {
                 bufferCount++;
             }
@@ -444,10 +444,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             var quicBufferArray = new QuicBuffer[bufferCount];
             _bufferArrays = new MemoryHandle[bufferCount];
 
-            var i = 0;
-            foreach (var memory in buffers)
+            int i = 0;
+            foreach (ReadOnlyMemory<byte> memory in buffers)
             {
-                var handle = memory.Pin();
+                MemoryHandle handle = memory.Pin();
                 _bufferArrays[i] = handle;
                 quicBufferArray[i].Length = (uint)memory.Length;
                 quicBufferArray[i].Buffer = (byte*)handle.Pointer;
@@ -458,7 +458,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(quicBufferArray, 0);
 
-            var status = _api.StreamSendDelegate(
+            uint status = _api.StreamSendDelegate(
                 _ptr,
                 quicBufferPointer,
                 (uint)bufferCount,

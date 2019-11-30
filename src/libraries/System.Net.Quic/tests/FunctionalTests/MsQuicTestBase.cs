@@ -9,11 +9,16 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
 {
-    public class MsQuicTestBase
+    public class MsQuicTestBase : IDisposable
     {
         public MsQuicTestBase()
         {
+            DefaultEndpoint = new IPEndPoint(IPAddress.Loopback, 8000);
+            DefaultListener = CreateQuicListener(DefaultEndpoint);
         }
+
+        public IPEndPoint DefaultEndpoint { get; }
+        public QuicListener DefaultListener { get; }
 
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
@@ -46,6 +51,11 @@ namespace System.Net.Quic.Tests
         public QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
             return new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
+        }
+
+        public void Dispose()
+        {
+            DefaultListener.Dispose();
         }
     }
 }
