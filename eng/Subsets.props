@@ -47,11 +47,12 @@
       artifacts to the test layout, then running the test subset.
   -->
 
-  <!-- Keep in sync with Directory.Build.props -->
   <PropertyGroup>
     <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
+    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
+    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
   </PropertyGroup>
 
   <PropertyGroup>

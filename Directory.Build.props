@@ -28,19 +28,18 @@
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
-    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+  <!--
+    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    $(Subset) automatically when creating project-to-project dependencies.
+  -->
+  <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
 
+  <PropertyGroup>
     <!-- Installer specific, required during restore. -->
     <InstallerTasksOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'installer.tasks'))</InstallerTasksOutputPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'netstandard2.0', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'net46', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-
-    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
-    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
-    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
