@@ -279,7 +279,7 @@ namespace System.Linq
 
         int CompareAnyKeys(int index1, int index2);
 
-        bool IsAscending { get; }
+        bool AreAllLayersAscending { get; }
 
         void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count);
     }
@@ -294,7 +294,7 @@ namespace System.Linq
 
         public void ComputeKeys(TElement[] elements, int count) { }
 
-        public bool IsAscending => true;
+        public bool AreAllLayersAscending => true;
 
         public void SortByLayer(TElement[] elements, int[] indexes, int startIdx, int count) => Array.Sort(indexes, startIdx, count);
     }
@@ -321,8 +321,8 @@ namespace System.Linq
             return map;
         }
 
-        protected abstract bool IsValueType { get; }
-        public abstract bool IsAscending { get; }
+        protected abstract bool IsOuterLayerValueType { get; }
+        public abstract bool AreAllLayersAscending { get; }
 
         internal int[] Sort(TElement[] elements, int count)
         {
@@ -331,7 +331,7 @@ namespace System.Linq
             // Array.Sort optimizations (for primitives), removes level of indirection from objects (i.e. accessing
             // directly in array by sort, rather than an index into another array) and increases caching affects
             // due to location in array.
-            if (IsValueType && IsAscending)
+            if (IsOuterLayerValueType && AreAllLayersAscending)
             {
                 int[] map = ComputeMap(count);
                 SortByLayer(elements, map, 0, count);
@@ -379,6 +379,7 @@ namespace System.Linq
         private readonly IComparer<TKey> _comparer;
         private readonly bool _descending;
         private readonly IEnumerableSorter<TElement> _next;
+
         private TKey[]? _keys;
 
         internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, IEnumerableSorter<TElement> next)
@@ -389,14 +390,12 @@ namespace System.Linq
             _next = next;
         }
 
-        protected override bool IsValueType => default(TKey)! != null;
+        protected override bool IsOuterLayerValueType => default(TKey)! != null;
 
-        public override bool IsAscending => !_descending && _next.IsAscending;
+        public override bool AreAllLayersAscending => !_descending && _next.AreAllLayersAscending;
 
         public override void SortByLayer(TElement[] data, int[] indexes, int startIdx, int count)
         {
-            Debug.Assert(_next != null);
-
             if (_keys == null)
             {
                 _keys = new TKey[data.Length];
@@ -448,7 +447,7 @@ namespace System.Linq
                 _keys[i] = _keySelector(elements[i]);
             }
 
-            _next?.ComputeKeys(elements, count);
+            _next.ComputeKeys(elements, count);
         }
 
         public override int CompareAnyKeys(int index1, int index2)
@@ -467,13 +466,10 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
-
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>
             Array.Sort(keys, lo, hi - lo + 1, Comparer<int>.Create(CompareAnyKeys)); // TODO #24115: Remove Create call when delegate-based overload is available
-
-
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.
