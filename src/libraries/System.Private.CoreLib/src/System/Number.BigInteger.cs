@@ -793,7 +793,7 @@ namespace System
 
                 if ((maxResultLength > 0) && (result._blocks[maxResultLength - 1] == 0))
                 {
-                    result._length = (maxResultLength - 1);
+                    result._length--;
                 }
             }
 
