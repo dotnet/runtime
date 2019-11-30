@@ -66,68 +66,155 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
+        public static unsafe int SequenceCompareTo(ref char firstStart, int firstLength, ref char secondStart, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);
 
-            int lengthDelta = firstLength - secondLength;
-
-            if (Unsafe.AreSame(ref first, ref second))
+            if (Unsafe.AreSame(ref firstStart, ref secondStart))
                 goto Equal;
 
-            IntPtr minLength = (IntPtr)((firstLength < secondLength) ? firstLength : secondLength);
-            IntPtr i = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            int minLength = (firstLength < secondLength) ? firstLength : secondLength;
 
-            if ((byte*)minLength >= (byte*)(sizeof(UIntPtr) / sizeof(char)))
+            int offset = 0;
+            int lengthToExamine = minLength;
+
+            if (Avx2.IsSupported)
             {
-                if (Vector.IsHardwareAccelerated && (byte*)minLength >= (byte*)Vector<ushort>.Count)
+                // When we move into a Vectorized block, we process everything of Vector size;
+                // and then for any remainder we do a final compare of Vector size but starting at
+                // the end and forwards, which may overlap on an earlier compare.
+                if (lengthToExamine >= Vector256<ushort>.Count)
                 {
-                    IntPtr nLength = minLength - Vector<ushort>.Count;
-                    do
+                    lengthToExamine -= Vector256<ushort>.Count;
+                    uint matches;
+                    while (lengthToExamine > offset)
                     {
-                        if (Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                            Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                        matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref firstStart, offset), LoadVector256(ref secondStart, offset)).AsByte());
+                        // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                        // So the bit position in 'matches' corresponds to the element offset.
+
+                        // 32 elements in Vector256<byte> so we compare to uint.MaxValue to check if everything matched
+                        if (matches == uint.MaxValue)
                         {
-                            break;
+                            // All matched
+                            offset += Vector256<ushort>.Count;
+                            continue;
                         }
-                        i += Vector<ushort>.Count;
-                    }
-                    while ((byte*)nLength >= (byte*)i);
-                }
 
-                while ((byte*)minLength >= (byte*)(i + sizeof(UIntPtr) / sizeof(char)))
-                {
-                    if (Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                        goto Difference;
+                    }
+                    // Move to Vector length from end for final compare
+                    offset = lengthToExamine;
+                    // Same as method as above
+                    matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref firstStart, offset), LoadVector256(ref secondStart, offset)).AsByte());
+                    if (matches == uint.MaxValue)
                     {
-                        break;
+                        // All matched
+                        goto Equal;
                     }
-                    i += sizeof(UIntPtr) / sizeof(char);
+                Difference:
+                    // Invert matches to find differences
+                    uint differences = ~matches;
+                    // Find bitflag offset of first difference and add to current offset,
+                    // flags are in bytes so divide for chars
+                    offset += BitOperations.TrailingZeroCount((int)differences) / sizeof(char);
+
+                    int result = Unsafe.Add(ref firstStart, offset).CompareTo(Unsafe.Add(ref secondStart, offset));
+                    Debug.Assert(result != 0);
+
+                    return result;
                 }
             }
 
-#if BIT64
-            if ((byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
+            if (Sse2.IsSupported)
             {
-                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) ==
-                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                // When we move into a Vectorized block, we process everything of Vector size;
+                // and then for any remainder we do a final compare of Vector size but starting at
+                // the end and forwards, which may overlap on an earlier compare.
+                if (lengthToExamine >= Vector128<ushort>.Count)
                 {
-                    i += sizeof(int) / sizeof(char);
+                    lengthToExamine -= Vector128<ushort>.Count;
+                    uint matches;
+                    while (lengthToExamine > offset)
+                    {
+                        matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref firstStart, offset), LoadVector128(ref secondStart, offset)).AsByte());
+                        // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                        // So the bit position in 'matches' corresponds to the element offset.
+
+                        // 16 elements in Vector128<byte> so we compare to ushort.MaxValue to check if everything matched
+                        if (matches == ushort.MaxValue)
+                        {
+                            // All matched
+                            offset += Vector128<ushort>.Count;
+                            continue;
+                        }
+
+                        goto Difference;
+                    }
+                    // Move to Vector length from end for final compare
+                    offset = lengthToExamine;
+                    // Same as method as above
+                    matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref firstStart, offset), LoadVector128(ref secondStart, offset)).AsByte());
+                    if (matches == ushort.MaxValue)
+                    {
+                        // All matched
+                        goto Equal;
+                    }
+                Difference:
+                    // Invert matches to find differences
+                    uint differences = ~matches;
+                    // Find bitflag offset of first difference and add to current offset,
+                    // flags are in bytes so divide for chars
+                    offset += BitOperations.TrailingZeroCount((int)differences) / sizeof(char);
+
+                    int result = Unsafe.Add(ref firstStart, offset).CompareTo(Unsafe.Add(ref secondStart, offset));
+                    Debug.Assert(result != 0);
+
+                    return result;
                 }
             }
-#endif
-
-            while ((byte*)i < (byte*)minLength)
+            else if (Vector.IsHardwareAccelerated)
             {
-                int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
+                if (lengthToExamine > Vector<ushort>.Count)
+                {
+                    lengthToExamine -= Vector<ushort>.Count;
+                    while (lengthToExamine > offset)
+                    {
+                        if (LoadVector(ref firstStart, offset) != LoadVector(ref secondStart, offset))
+                        {
+                            goto CharwiseCheck;
+                        }
+                        offset += Vector<ushort>.Count;
+                    }
+                    goto CharwiseCheck;
+                }
+            }
+
+            if (lengthToExamine > sizeof(UIntPtr) / sizeof(char))
+            {
+                lengthToExamine -= sizeof(UIntPtr) / sizeof(char);
+                while (lengthToExamine > offset)
+                {
+                    if (LoadUIntPtr(ref firstStart, offset) != LoadUIntPtr(ref secondStart, offset))
+                    {
+                        goto CharwiseCheck;
+                    }
+                    offset += sizeof(UIntPtr) / sizeof(char);
+                }
+            }
+
+        CharwiseCheck:
+            while (minLength > offset)
+            {
+                int result = Unsafe.Add(ref firstStart, offset).CompareTo(Unsafe.Add(ref secondStart, offset));
                 if (result != 0)
                     return result;
-                i += 1;
+                offset += 1;
             }
 
         Equal:
-            return lengthDelta;
+            return firstLength - secondLength;
         }
 
         // Adapted from IndexOf(...)
@@ -1032,6 +1119,10 @@ namespace System
         {
             return 3 - (BitOperations.LeadingZeroCount(match) >> 4);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe UIntPtr LoadUIntPtr(ref char start, nint offset)
+            => Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (IntPtr)offset)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector<ushort> LoadVector(ref char start, nint offset)
