@@ -102,7 +102,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
@@ -138,7 +138,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
