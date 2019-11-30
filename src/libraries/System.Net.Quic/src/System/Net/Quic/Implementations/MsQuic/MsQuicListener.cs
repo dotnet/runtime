@@ -129,15 +129,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             GC.SuppressFinalize(this);
         }
 
-        public ValueTask DisposeAsync()
+        public override ValueTask DisposeAsync()
         {
-            if (_disposed)
-            {
-                return default;
-            }
-
-            Dispose(true);
-
+            Dispose();
             return default;
         }
 

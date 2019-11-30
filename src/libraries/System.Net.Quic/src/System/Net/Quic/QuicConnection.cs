@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    public sealed class QuicConnection : IDisposable
+    public sealed class QuicConnection : IDisposable, IAsyncDisposable
     {
         private readonly QuicConnectionProvider _provider;
 
@@ -77,5 +77,7 @@ namespace System.Net.Quic
         public void Close() => _provider.Close();
 
         public void Dispose() => _provider.Dispose();
+
+        public ValueTask DisposeAsync() => _provider.DisposeAsync();
     }
 }

@@ -110,5 +110,11 @@ namespace System.Net.Quic.Implementations.Mock
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        public override ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
+        }
     }
 }

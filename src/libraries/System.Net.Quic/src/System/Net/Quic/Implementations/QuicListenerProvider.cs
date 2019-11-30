@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations
 {
-    internal abstract class QuicListenerProvider : IDisposable
+    internal abstract class QuicListenerProvider : IDisposable, IAsyncDisposable
     {
         internal abstract IPEndPoint ListenEndPoint { get; }
 
@@ -16,5 +16,7 @@ namespace System.Net.Quic.Implementations
         internal abstract void Close();
 
         public abstract void Dispose();
+
+        public abstract ValueTask DisposeAsync();
     }
 }
