@@ -1025,19 +1025,8 @@ namespace System
 
             public void Multiply(ref BigInteger value)
             {
-                switch (value._length)
-                {
-                    case 0:
-                        SetZero(out this);
-                        break;
-                    case 1:
-                        Multiply(value._blocks[0]);
-                        break;
-                    default:
-                        SetValue(out BigInteger temp, ref this);
-                        Multiply(ref temp, ref value, out this);
-                        break;
-                }
+                SetValue(out BigInteger temp, ref this);
+                Multiply(ref temp, ref value, out this);
             }
 
             public void Multiply10()
