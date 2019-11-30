@@ -116,6 +116,8 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
+      isFullMatrix: false
+      framework: netcoreapp
       testScope: innerloop
       useLiveCoreClr: true
       dependsOnBuildConfiguration: checked
