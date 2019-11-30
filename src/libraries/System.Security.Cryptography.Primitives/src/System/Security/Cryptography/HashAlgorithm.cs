@@ -99,7 +99,12 @@ namespace System.Security.Cryptography
             if (_disposed)
                 throw new ObjectDisposedException(null);
 
-            inputStream.CopyTo((span, _) => HashCore(span), null, 4096);
+            inputStream.CopyTo((span, state) =>
+            {
+                var hashAlgorithm = state as HashAlgorithm;
+                hashAlgorithm?.HashCore(span);
+            },
+            this, 4096);
 
             return CaptureHashCodeAndReinitialize();
         }
@@ -120,12 +125,15 @@ namespace System.Security.Cryptography
             Stream inputStream,
             CancellationToken cancellationToken)
         {
-            await inputStream.CopyToAsync((memory, _, __) =>
-            {
-                HashCore(memory.Span);
-                return default;
-            },
-            null, 4096, cancellationToken);
+            await inputStream
+                .CopyToAsync((memory, state, __) =>
+                {
+                    var hashAlgorithm = state as HashAlgorithm;
+                    hashAlgorithm?.HashCore(memory.Span);
+                    return default;
+                },
+                this, 4096, cancellationToken)
+                .ConfigureAwait(false);
 
             return CaptureHashCodeAndReinitialize();
         }
