@@ -120,8 +120,8 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
+            if (_size == 0) return;
             int numToCopy = _size;
-            if (numToCopy == 0) return;
 
             int firstPart = Math.Min(_array.Length - _head, numToCopy);
             Array.Copy(_array, _head, array, arrayIndex, firstPart);
@@ -160,8 +160,8 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
+            if (_size == 0) return;
             int numToCopy = _size;
-            if (numToCopy == 0) return;
 
             try
             {
