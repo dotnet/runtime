@@ -24,7 +24,7 @@
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
   </PropertyGroup>
 
-  <ItemGroup Condition="Exists('$(ILLinkTrimXml)')">
+  <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
     <EmbeddedResource Include="$(ILLinkTrimXml)">
       <LogicalName>$(AssemblyName).xml</LogicalName>
     </EmbeddedResource>

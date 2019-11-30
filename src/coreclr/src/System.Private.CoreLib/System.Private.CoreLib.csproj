@@ -21,7 +21,7 @@
 
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>unused</ILLinkTrimXml>
+    <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -435,12 +435,6 @@
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
   </Target>
-
-  <ItemGroup>
-    <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)">
-      <LogicalName>$(MSBuildProjectName).xml</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
 
   <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
   <Target Name="AddUntrackedResourcesForSourceLink"
