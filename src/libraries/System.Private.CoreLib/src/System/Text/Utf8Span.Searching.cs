@@ -530,7 +530,7 @@ namespace System.Text
         private static void CheckStringComparison(StringComparison comparisonType)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 #else
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
             if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)

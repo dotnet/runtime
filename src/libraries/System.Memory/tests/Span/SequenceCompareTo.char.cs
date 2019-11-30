@@ -71,9 +71,37 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void SequenceCompareToEqual_Char()
+        {
+            for (int length = 0; length < 128; length++)
+            {
+                var first = new char[length + 1];
+                var second = new char[length + 1];
+                // Add mismatch just outside of range to ensure no over read
+                first[length] = '\0';
+                second[length] = 'z';
+
+                for (int i = 0; i < length; i++)
+                {
+                    first[i] = second[i] = (char)(i + 1);
+                }
+
+                // Trim off the mismatch
+                var firstSpan = new Span<char>(first)[..^1];
+                var secondSpan = new Span<char>(second)[..^1];
+
+                Assert.Equal(length, firstSpan.Length);
+                Assert.Equal(length, secondSpan.Length);
+
+                Assert.Equal(0, firstSpan.SequenceCompareTo<char>(secondSpan));
+                Assert.Equal(0, secondSpan.SequenceCompareTo<char>(firstSpan));
+            }
+        }
+
+        [Fact]
         public static void SequenceCompareToWithSingleMismatch_Char()
         {
-            for (int length = 1; length < 32; length++)
+            for (int length = 1; length < 128; length++)
             {
                 for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
                 {
@@ -100,7 +128,7 @@ namespace System.SpanTests
         [Fact]
         public static void SequenceCompareToNoMatch_Char()
         {
-            for (int length = 1; length < 32; length++)
+            for (int length = 1; length < 128; length++)
             {
                 var first = new char[length];
                 var second = new char[length];

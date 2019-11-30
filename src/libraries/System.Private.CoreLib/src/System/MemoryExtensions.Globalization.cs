@@ -45,7 +45,7 @@ namespace System
         /// </summary>
         public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             switch (comparisonType)
             {
@@ -95,7 +95,7 @@ namespace System
         /// </summary>
         public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             switch (comparisonType)
             {
@@ -126,7 +126,7 @@ namespace System
         /// </summary>
         public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             if (comparisonType == StringComparison.Ordinal)
             {
@@ -161,7 +161,7 @@ namespace System
         /// </summary>
         public static int LastIndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             if (comparisonType == StringComparison.Ordinal)
             {
@@ -300,7 +300,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
         public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             switch (comparisonType)
             {
@@ -337,7 +337,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
         public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
-            string.CheckStringComparison(comparisonType);
+            string.ThrowIfStringComparisonInvalid(comparisonType);
 
             switch (comparisonType)
             {
