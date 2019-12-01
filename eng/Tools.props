@@ -23,6 +23,9 @@
 
     <!-- roslyn -->
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+
+    <!-- mono -->
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" GeneratePathProperty="true" />
   </ItemGroup>
 
   <!-- excluded from offline portion of source build -->
@@ -44,6 +47,4 @@
 
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
-  <!-- TODO: Remove when libraries use the ILLink.Tasks PackageReference in src projects. -->
-  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" />
 </Project>
