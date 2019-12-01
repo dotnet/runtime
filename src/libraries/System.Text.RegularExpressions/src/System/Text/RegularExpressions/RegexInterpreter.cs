@@ -241,16 +241,13 @@ namespace System.Text.RegularExpressions
             return _rightToLeft ? -1 : 1;
         }
 
-        private int Forwardchars()
-        {
-            return _rightToLeft ? runtextpos - runtextbeg : runtextend - runtextpos;
-        }
+        private int Forwardchars() => _rightToLeft ? runtextpos - runtextbeg : runtextend - runtextpos;
 
         private char Forwardcharnext()
         {
-            char ch = (_rightToLeft ? runtext![--runtextpos] : runtext![runtextpos++]);
+            char ch = _rightToLeft ? runtext![--runtextpos] : runtext![runtextpos++];
 
-            return (_caseInsensitive ? _culture.TextInfo.ToLower(ch) : ch);
+            return _caseInsensitive ? _culture.TextInfo.ToLower(ch) : ch;
         }
 
         private bool Stringmatch(string str)
@@ -418,27 +415,127 @@ namespace System.Text.RegularExpressions
             _caseInsensitive = _code.FCPrefix.GetValueOrDefault().CaseInsensitive;
             string set = _code.FCPrefix.GetValueOrDefault().Prefix;
 
+            // We now loop through looking for the first matching character.  This is a hot loop, so we lift out as many
+            // branches as we can.  Each operation requires knowing whether this is a) a singleton char vs a full character
+            // set, b) right-to-left vs left-to-right, and c) case-sensitive vs case-insensitive.  So, we split it all out
+            // into 8 loops, for each combination of these.  It's duplicated code, but it allows the inner loop to be much
+            // tighter than if everything were combined with multiple branches on each operation.
+
             if (RegexCharClass.IsSingleton(set))
             {
                 char ch = RegexCharClass.SingletonChar(set);
 
-                for (int i = Forwardchars(); i > 0; i--)
+                if (!_rightToLeft)
                 {
-                    if (ch == Forwardcharnext())
+                    if (!_caseInsensitive)
                     {
-                        Backwardnext();
-                        return true;
+                        // Singleton, left-to-right, case-sensitive
+                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
+                        if (i >= 0)
+                        {
+                            runtextpos += i;
+                            return true;
+                        }
+                    }
+                    else // _caseInsensitive
+                    {
+                        // Singleton, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos; i < runtextend; i++)
+                        {
+                            if (ch == ti.ToLower(runtext![i]))
+                            {
+                                runtextpos = i;
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else // _rightToLeft
+                {
+                    if (!_caseInsensitive)
+                    {
+                        // Singleton, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (ch == runtext![i])
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
+                    else // _caseInsensitive
+                    {
+                        // Singleton, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (ch == ti.ToLower(runtext![i]))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
                     }
                 }
             }
-            else
+            else // set
             {
-                for (int i = Forwardchars(); i > 0; i--)
+                if (!_rightToLeft)
                 {
-                    if (RegexCharClass.CharInClass(Forwardcharnext(), set))
+                    if (!_caseInsensitive)
                     {
-                        Backwardnext();
-                        return true;
+                        // Set, left-to-right, case-sensitive
+                        for (int i = runtextpos; i < runtextend; i++)
+                        {
+                            if (RegexCharClass.CharInClass(runtext![i], set))
+                            {
+                                runtextpos = i;
+                                return true;
+                            }
+                        }
+                    }
+                    else // _caseInsensitive
+                    {
+                        // Set, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos; i < runtextend; i++)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
+                            {
+                                runtextpos = i;
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else // _rightToLeft
+                {
+                    if (!_caseInsensitive)
+                    {
+                        // Set, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (RegexCharClass.CharInClass(runtext![i], set))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
+                    else // _caseInsensitive
+                    {
+                        // Set, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
                     }
                 }
             }
