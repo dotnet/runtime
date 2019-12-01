@@ -1,25 +1,10 @@
 <Project>
-  <!-- Base repo layout properties -->
-  <PropertyGroup>
-    <RepoRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), global.json))</RepoRoot>
-    <RepoRoot>$([MSBuild]::EnsureTrailingSlash('$(RepoRoot)'))</RepoRoot>
-    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
-    <LibrariesProjectRoot>$(MSBuildThisFileDirectory)</LibrariesProjectRoot>
-    <RepositoryUrl>git://github.com/dotnet/corefx</RepositoryUrl>
-  </PropertyGroup>
-
   <PropertyGroup>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!--
-    For non-SDK projects that import this file and then import Microsoft.Common.props,
-    tell Microsoft.Common.props not to import Directory.Build.props again
-    -->
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-
     <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
     This one sets UseSharedCompilation to false by default. -->
     <UseSharedCompilation>true</UseSharedCompilation>
@@ -80,11 +65,6 @@
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
   </PropertyGroup>
 
-  <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
-  <PropertyGroup>
-    <IsPrerelease>true</IsPrerelease>
-  </PropertyGroup>
-
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
 
   <!-- Define test projects and companions -->
@@ -108,8 +88,6 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin'))</ArtifactsBinDir>
-
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
     <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildConfiguration)'))</NativeBinDir>
 
@@ -119,16 +97,14 @@
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
-    <!-- Build as portable by default -->
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-    <!-- Used for launchSettings.json and runtime config files. -->
-    <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -247,23 +223,13 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- default to allowing all language features -->
-    <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <Features>strict;nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Deterministic>true</Deterministic>
-
     <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-
-    <!-- Suppress preview message as we are usually using preview SDK versions. -->
-    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-
-    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
-    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
+    <EnableAnalyzers Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -332,20 +298,8 @@
     <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
 
-    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
-
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Experimental packages should not be stable -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Experimental'))">true</SuppressFinalPackageVersion>
-    <IsShippingAssembly Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShippingAssembly>
-
-    <!-- We don't want Private packages to be shipped to NuGet.org -->
-    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -409,6 +363,4 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
-
-  <Import Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'" Project="$(RepositoryEngineeringDir)analyzers.props" />
 </Project>

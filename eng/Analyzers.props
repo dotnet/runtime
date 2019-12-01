@@ -1,5 +1,8 @@
 <Project>
-  <ItemGroup>
+  <PropertyGroup>
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableAnalyzers)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0-beta2-final" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6" />

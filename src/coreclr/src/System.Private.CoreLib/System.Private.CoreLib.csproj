@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -6,8 +6,6 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-
-    <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
@@ -20,6 +18,10 @@
     <OutputPath>$(BinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
+
+    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -34,7 +36,6 @@
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
-    <ProjectGuid>{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -62,6 +63,7 @@
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <EnableAnalyzers>false</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -96,10 +98,6 @@
 
   <!-- Assembly attributes -->
   <PropertyGroup>
-    <AssemblyName>System.Private.CoreLib</AssemblyName>
-    <AssemblyVersion>5.0.0.0</AssemblyVersion>
-    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <Description>$(AssemblyName)</Description>
   </PropertyGroup>
 
@@ -422,32 +420,15 @@
     <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
   </Target>
   <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
-    <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
-    <UseWin32Apis>true</UseWin32Apis>
     <OSGroup>Windows_NT</OSGroup>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>
   </PropertyGroup>
 
-  <!-- Globals used by ILLink.targets -->
-  <PropertyGroup>
-    <TargetName>$(MSBuildProjectName)</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-
   <!-- Setup ILLink.targets -->
   <ItemGroup>
     <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
-  </ItemGroup>
-
-  <!-- Analyzers -->
-  <PropertyGroup>
-    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.66" PrivateAssets="all" />
   </ItemGroup>
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
@@ -456,20 +437,12 @@
   </Target>
 
   <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
-  <Target Condition="'$(BuildingInsideVisualStudio)' != 'true'" Name="AddUntrackedResourcesForSourceLink"
-    BeforeTargets="CoreCompile"
-    DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;
-                      _GenerateResxSource" >
+  <Target Name="AddUntrackedResourcesForSourceLink"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;_GenerateResxSource" >
     <ItemGroup>
       <EmbeddedFiles Include="@(GeneratedResxSource)" />
     </ItemGroup>
-  </Target>
-
-  <ItemGroup>
-    <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)">
-      <LogicalName>$(MSBuildProjectName).xml</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <Import Project="ILLink.targets" />
+  </Target>  
 </Project>
