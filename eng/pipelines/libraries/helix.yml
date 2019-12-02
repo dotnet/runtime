@@ -13,6 +13,7 @@ steps:
   - script: ${{ parameters.msbuildScript }}
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /t:test
+            /v:diag
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
