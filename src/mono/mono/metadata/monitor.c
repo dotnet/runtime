@@ -89,6 +89,10 @@ static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
 static int array_size = 16;
 
+static MonoBoolean
+mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
+	MonoBoolean allow_interruption, MonoBoolean *lockTaken, MonoError* error);
+
 /* MonoThreadsSync status helpers */
 
 static guint32
@@ -1043,37 +1047,12 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj)
 {
-	gint32 res;
-	gboolean allow_interruption = TRUE;
-	if (G_UNLIKELY (!obj)) {
-		ERROR_DECL (error);
-		mono_error_set_argument_null (error, "obj", "");
-		mono_error_set_pending_exception (error);
-		return FALSE;
-	}
+	const int timeout_milliseconds = MONO_INFINITE_WAIT;
+	const gboolean allow_interruption = TRUE;
+	MonoError * const error = NULL;
+	MonoBoolean lock_taken;
 
-	/*
-	 * An inquisitive mind could ask what's the deal with this loop.
-	 * It exists to deal with interrupting a monitor enter that happened within an abort-protected block, like a .cctor.
-	 *
-	 * The thread will be set with a pending abort and the wait might even be interrupted. Either way, once we call mono_thread_interruption_checkpoint,
-	 * it will return NULL meaning we can't be aborted right now. Once that happens we switch to non-alertable.
-	 */
-	do {
-		res = mono_monitor_try_enter_internal (obj, MONO_INFINITE_WAIT, allow_interruption);
-		/*This means we got interrupted during the wait and didn't got the monitor.*/
-		if (res == -1) {
-			MonoException *exc = mono_thread_interruption_checkpoint ();
-			if (exc) {
-				mono_set_pending_exception (exc);
-				return FALSE;
-			} else {
-				//we detected a pending interruption but it turned out to be a false positive, we ignore it from now on (this feels like a hack, right?, threads.c should give us less confusing directions)
-				allow_interruption = FALSE;
-			}
-		}
-	} while (res == -1);
-	return TRUE;
+	return mono_monitor_try_enter_loop_if_interrupted (obj, timeout_milliseconds, allow_interruption, &lock_taken, error);
 }
 
 /**
@@ -1186,13 +1165,14 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 	*nest_offset = ENCODE_OFF_SIZE (MONO_STRUCT_OFFSET (MonoThreadsSync, nest), sizeof (ts.nest));
 }
 
-static void
-mono_monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean allow_interruption, MonoBoolean *lockTaken, MonoError* error)
+static MonoBoolean
+mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
+	MonoBoolean allow_interruption, MonoBoolean *lockTaken, MonoError* error)
 {
-	// The use of error here is unusual, but expedient, and easy enough to understand.
-	// Maybe clean it up later.
-
-	gint32 res;
+	// Return value and lockTaken are equivalent, except, to preserve prior behavior,
+	// *lockTaken is not always written to, i.e. in the error paths.
+	//
+	// Some callers have lockTaken and only use it, some only have the return value.
 
 	if (G_UNLIKELY (!obj)) {
 		if (error) {
@@ -1202,44 +1182,58 @@ mono_monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean
 			mono_error_set_argument_null (error, "obj", "");
 			mono_error_set_pending_exception (error);
 		}
-		return;
+		return FALSE;
 	}
 
+	gint32 res;
+
+	/*
+	 * An inquisitive mind could ask what's the deal with this loop.
+	 * It exists to deal with interrupting a monitor enter that happened within an abort-protected block, like a .cctor.
+	 *
+	 * The thread will be set with a pending abort and the wait might even be interrupted. Either way, once we call mono_thread_interruption_checkpoint,
+	 * it will return NULL meaning we can't be aborted right now. Once that happens we switch to non-alertable.
+	 */
 	do {
 		res = mono_monitor_try_enter_internal (obj, ms, allow_interruption);
-		/*This means we got interrupted during the wait and didn't got the monitor.*/
 		if (res == -1) {
-			MonoException *exc = mono_thread_interruption_checkpoint ();
+			// The wait was interrupted and the monitor was not acquired.
+			MonoException *exc;
+			HANDLE_FUNCTION_ENTER ();
+			exc = mono_thread_interruption_checkpoint ();
 			if (exc) {
-				if (error) { // implies icall and coop handle frame -- a little gross
-					MONO_HANDLE_NEW (MonoException, exc);
+				MONO_HANDLE_NEW (MonoException, exc);
+				if (error)
 					mono_error_set_exception_instance (error, exc);
-				} else {
+				else
 					mono_set_pending_exception (exc);
-				}
-				return;
-			} else {
-				//we detected a pending interruption but it turned out to be a false positive, we ignore it from now on (this feels like a hack, right?, threads.c should give us less confusing directions)
-				allow_interruption = FALSE;
 			}
+			HANDLE_FUNCTION_RETURN ();
+			if (exc)
+				return FALSE;
+			// The interrupt was a false positive. Ignore it from now on.
+			// This feels like a hack.
+			// threads.c should give us less confusing directions.
+			allow_interruption = FALSE;
 		}
 	} while (res == -1);
 
 	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
 	*lockTaken = res == 1;
+	return res;
 }
 
 #ifdef ENABLE_NETCORE
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObjectHandle obj, guint32 ms, MonoBoolean allow_interruption, MonoBoolean* lockTaken, MonoError* error)
 {
-	mono_monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj), ms, allow_interruption, lockTaken, error);
+	mono_monitor_try_enter_loop_if_interrupted (MONO_HANDLE_RAW (obj), ms, allow_interruption, lockTaken, error);
 }
 #else
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObjectHandle obj, guint32 ms, MonoBoolean* lockTaken, MonoError* error)
 {
-	mono_monitor_try_enter_with_atomic_var (MONO_HANDLE_RAW (obj), ms, TRUE, lockTaken, error);
+	mono_monitor_try_enter_loop_if_interrupted (MONO_HANDLE_RAW (obj), ms, TRUE, lockTaken, error);
 }
 #endif
 
@@ -1263,7 +1257,7 @@ mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
 		mono_error_set_pending_exception (error);
 		return;
 	}
-	mono_monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, FALSE, lock_taken, NULL);
+	mono_monitor_try_enter_loop_if_interrupted (obj, MONO_INFINITE_WAIT, FALSE, lock_taken, NULL);
 }
 
 /*
