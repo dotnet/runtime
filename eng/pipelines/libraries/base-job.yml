@@ -117,7 +117,7 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_coreClrDownloadPath)
-            artifactFileName: '$(_coreClrArtifactName)$(_archiveExtension)'
+            artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
             artifactName: '$(_coreClrArtifactName)'
             displayName: 'CoreCLR build drop'
 
