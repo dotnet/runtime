@@ -4020,15 +4020,6 @@ private:
 
     static LONG m_DebugWillSyncCount;
 
-    // IP cache used by QueueCleanupIP.
-    #define CLEANUP_IPS_PER_CHUNK 4
-    struct CleanupIPs {
-        IUnknown    *m_Slots[CLEANUP_IPS_PER_CHUNK];
-        CleanupIPs  *m_Next;
-        CleanupIPs() {LIMITED_METHOD_CONTRACT; memset(this, 0, sizeof(*this)); }
-    };
-    CleanupIPs   m_CleanupIPs;
-
 #define BEGIN_FORBID_TYPELOAD() _ASSERTE_IMPL((GetThreadNULLOk() == 0) || ++GetThreadNULLOk()->m_ulForbidTypeLoad)
 #define END_FORBID_TYPELOAD()   _ASSERTE_IMPL((GetThreadNULLOk() == 0) || GetThreadNULLOk()->m_ulForbidTypeLoad--)
 #define TRIGGERS_TYPELOAD()     _ASSERTE_IMPL((GetThreadNULLOk() == 0) || !GetThreadNULLOk()->m_ulForbidTypeLoad)
