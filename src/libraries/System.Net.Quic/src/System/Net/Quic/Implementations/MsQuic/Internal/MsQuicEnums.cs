@@ -121,11 +121,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal enum QUIC_STREAM_EVENT : byte
     {
         START_COMPLETE = 0,
-        RECV = 1,
+        RECEIVE = 1,
         SEND_COMPLETE = 2,
-        PEER_SEND_CLOSE = 3,
-        PEER_SEND_ABORT = 4,
-        PEER_RECV_ABORT = 5,
+        PEER_SEND_SHUTDOWN = 3,
+        PEER_SEND_ABORTED = 4,
+        PEER_RECEIVE_ABORTED = 5,
         SEND_SHUTDOWN_COMPLETE = 6,
         SHUTDOWN_COMPLETE = 7,
         IDEAL_SEND_BUFFER_SIZE = 8,
