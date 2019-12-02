@@ -12,7 +12,7 @@ namespace System.Net.Quic.Tests
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
-        [Fact]
+        [Fact(Skip = "Unskip when MsQuic depenency is resolved")]
         public async Task BasicTest()
         {
             Task listenTask = Task.Run(async () =>
@@ -50,8 +50,7 @@ namespace System.Net.Quic.Tests
             await Task.WhenAll(listenTask, clientTask);
         }
 
-
-        [Fact]
+        [Fact(Skip = "Unskip when MsQuic depenency is resolved")]
         public async Task MultipleReadsAndWrites()
         {
             Task listenTask = Task.Run(async () =>
