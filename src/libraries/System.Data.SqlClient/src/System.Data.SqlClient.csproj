@@ -6,9 +6,9 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard2.0'">4.6.0.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp5.0'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
     <Nullable>annotations</Nullable>
-    <DefineConstants Condition="'$(TargetGroup)' != 'netcoreapp'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' != 'netcoreapp5.0'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release;netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netcoreapp2.1-Unix-Debug;netcoreapp2.1-Unix-Release;netcoreapp2.1-Windows_NT-Debug;netcoreapp2.1-Windows_NT-Release;netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release;</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
@@ -229,7 +229,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetGroup)' != 'netcoreapp'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetGroup)' != 'netcoreapp5.0'">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">

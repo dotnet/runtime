@@ -12,7 +12,7 @@
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
   </ItemGroup>
   <!-- Required for CompileToAssembly API -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
     <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
   </ItemGroup>
 </Project>

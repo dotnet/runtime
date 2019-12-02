@@ -56,7 +56,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
     <Reference Include="System.ComponentModel.Primitives" />
   </ItemGroup>
 </Project>

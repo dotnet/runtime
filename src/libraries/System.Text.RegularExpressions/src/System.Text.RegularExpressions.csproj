@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp5.0'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp5.0'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
     <Nullable>enable</Nullable>
@@ -55,7 +55,7 @@
     <Compile Include="System\Text\ValueStringBuilder.Reverse.cs" />
   </ItemGroup>
   <!-- Files that enable compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
@@ -73,7 +73,7 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
   <!-- References required for compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
