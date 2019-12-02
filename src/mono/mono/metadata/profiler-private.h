@@ -98,11 +98,13 @@ typedef struct {
 extern MonoProfilerState mono_profiler_state;
 
 typedef struct {
+	guchar *cil_code;
+	guint32 count;
+} MonoProfilerCoverageInfoEntry;
+
+typedef struct {
 	guint32 entries;
-	struct {
-		guchar *cil_code;
-		guint32 count;
-	} data [1];
+	MonoProfilerCoverageInfoEntry data [MONO_ZERO_LEN_ARRAY];
 } MonoProfilerCoverageInfo;
 
 void mono_profiler_started (void);

@@ -435,7 +435,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries)
 
 	coverage_lock ();
 
-	MonoProfilerCoverageInfo *info = g_malloc0 (sizeof (MonoProfilerCoverageInfo) + SIZEOF_VOID_P * 2 * entries);
+	MonoProfilerCoverageInfo *info = g_malloc0 (sizeof (MonoProfilerCoverageInfo) + sizeof (MonoProfilerCoverageInfoEntry) * entries);
 
 	info->entries = entries;
 
