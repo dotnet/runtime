@@ -121,7 +121,7 @@ Set the maximum number of file-handles
 
 To ensure that your system can allocate enough file-handles for the libraries build run `sysctl fs.file-max`. If it is less than 100000, add `fs.file-max = 100000` to `/etc/sysctl.conf`, and then run `sudo sysctl -p`.
 
-Build the Runtime and Microsoft Core Library
+Build the Runtime and System.Private.CoreLib
 =============================================
 
 To build the runtime on Linux, run build.sh from the root of the runtime repository:
@@ -134,7 +134,7 @@ After the build is completed, there should some files placed in `runtime/artifac
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
-* `System.Private.CoreLib.dll`: Microsoft Core Library.
+* `System.Private.CoreLib.dll`: The core managed library, containing definitions of `Object` and base functionality.
 
 Create the Core_Root
 ===================
