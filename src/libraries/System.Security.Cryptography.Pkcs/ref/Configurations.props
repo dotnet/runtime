@@ -8,7 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations)
       netfx;
-      netcoreapp5.0      
+      $(TargetFrameworkVNext)      
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

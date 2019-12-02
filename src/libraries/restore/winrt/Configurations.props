@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp3.0;
-      netcoreapp5.0;
+      $(TargetFrameworkVNext);
       netstandard1.0;
     </BuildConfigurations>
   </PropertyGroup>

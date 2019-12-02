@@ -2,8 +2,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netfx-Windows_NT;
-      netcoreapp5.0-Unix;
-      netcoreapp5.0-Windows_NT;
+      $(TargetFrameworkVNext)-Unix;
+      $(TargetFrameworkVNext)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

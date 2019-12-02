@@ -8,7 +8,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp5.0;
+      $(TargetFrameworkVNext);
       netstandard2.0;
       netfx;
     </BuildConfigurations>

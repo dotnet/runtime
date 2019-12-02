@@ -9,8 +9,8 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netfx;
-      netcoreapp5.0-Windows_NT;
-      netcoreapp5.0-Unix;
+      $(TargetFrameworkVNext)-Windows_NT;
+      $(TargetFrameworkVNext)-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

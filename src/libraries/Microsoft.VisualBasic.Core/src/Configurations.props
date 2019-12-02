@@ -1,8 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp5.0;
-      netcoreapp5.0-Windows_NT;
+      $(TargetFrameworkVNext);
+      $(TargetFrameworkVNext)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

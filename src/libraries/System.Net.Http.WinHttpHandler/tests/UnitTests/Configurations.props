@@ -1,7 +1,7 @@
 <Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp5.0-Windows_NT;
+      $(TargetFrameworkVNext)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
