@@ -55,7 +55,6 @@ class ThreadExceptionState
 public:
 
     void FreeAllStackTraces();
-    void ClearThrowablesForUnload(IGCHandleStore* handleStore);
 
 #ifdef _DEBUG
     typedef enum

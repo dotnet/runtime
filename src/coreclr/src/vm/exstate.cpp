@@ -102,27 +102,6 @@ void ThreadExceptionState::FreeAllStackTraces()
     }
 }
 
-void ThreadExceptionState::ClearThrowablesForUnload(IGCHandleStore* handleStore)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* pNode = m_pCurrentTracker;
-#else // FEATURE_EH_FUNCLETS
-    ExInfo*           pNode = &m_currentExInfo;
-#endif // FEATURE_EH_FUNCLETS
-
-    for ( ;
-          pNode != NULL;
-          pNode = pNode->m_pPrevNestedInfo)
-    {
-        if (handleStore->ContainsHandle(pNode->m_hThrowable))
-        {
-            pNode->DestroyExceptionHandle();
-        }
-    }
-}
-
 OBJECTREF ThreadExceptionState::GetThrowable()
 {
     CONTRACTL
