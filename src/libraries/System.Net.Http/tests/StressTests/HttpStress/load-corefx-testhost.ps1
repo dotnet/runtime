@@ -7,7 +7,7 @@
 
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [string][Alias('f')]$framework = "netcoreapp",
+  [string][Alias('f')]$framework = "netcoreapp5.0",
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('a')]$arch = "x64",
   [string][Alias('o')]$os = "",

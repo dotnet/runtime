@@ -19,9 +19,9 @@ COREFX_ROOT_DIR=$(cd -P "$SOURCE_DIR" && git rev-parse --show-toplevel)
 usage()
 {
     echo "Usage:"
-    echo "    -f <moniker>  Target framework: defaults to netcoreapp"
+    echo "    -f <moniker>  Target framework: defaults to netcoreapp5.0"
     echo "    -c <config>   Build configuration: defaults to Debug"
-    echo "    -a <arch>     Build architecture: defaults to netcoreapp"
+    echo "    -a <arch>     Build architecture: defaults to netcoreapp5.0"
     echo "    -o <os>       Operating system"
     echo "    -b            Copy AspNetCore bits from bootstrap SDK"
 }
@@ -40,7 +40,7 @@ detect_os()
 # parse command line args
 OS=$(detect_os)
 ARCH=x64
-FRAMEWORK=netcoreapp
+FRAMEWORK=netcoreapp5.0
 CONFIGURATION=Debug
 COPY_ASPNETCORE_BITS="false"
 
