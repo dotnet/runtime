@@ -279,5 +279,26 @@ namespace System.Text.Json.Tests
             Assert.IsType<JsonArray>(jsonObject["array"]);
             Assert.IsType<JsonNumber>(nestedObject["array"]);
         }
+
+        [Fact]
+        public static void TestInvalidJsonNodeOptions()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
+            {
+                CommentHandling = (JsonCommentHandling)Enum.GetNames(typeof(JsonCommentHandling)).Length
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
+            {
+                MaxDepth = -1
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
+            {
+                DuplicatePropertyNameHandling = (DuplicatePropertyNameHandlingStrategy)Enum.GetNames(typeof(DuplicatePropertyNameHandlingStrategy)).Length
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
+            {
+                DuplicatePropertyNameHandling = (DuplicatePropertyNameHandlingStrategy)(-1)
+            });
+        }
     }
 }
