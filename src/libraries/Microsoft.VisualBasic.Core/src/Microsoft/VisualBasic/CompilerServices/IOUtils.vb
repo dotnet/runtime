@@ -2,9 +2,9 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 ' See the LICENSE file in the project root for more information.
 
-Imports System
-Imports System.Security
 Imports System.IO
+Imports System.Reflection
+Imports System.Security
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -17,53 +17,50 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Sub New()
         End Sub
 
-        Friend Shared Function FindFirstFile(ByVal assem As System.Reflection.Assembly, ByVal PathName As String, ByVal Attributes As IO.FileAttributes) As String
-            Dim Dir As DirectoryInfo
-            Dim DirName As String = Nothing
-            Dim FileName As String
+        Friend Shared Function FindFirstFile(assem As Assembly, pathName As String, attributes As FileAttributes) As String
+            Dim dir As DirectoryInfo
+            Dim dirName As String = Nothing
+            Dim fileName As String = "*.*"
             Dim files() As FileSystemInfo
             Dim oAssemblyData As AssemblyData
             Const DiskNotReadyError As Integer = &H80070015
 
-            If PathName.Length > 0 AndAlso PathName.Chars(PathName.Length - 1) = Path.DirectorySeparatorChar Then
-                DirName = Path.GetFullPath(PathName)
-                FileName = "*.*"
+            If pathName.Length > 0 AndAlso pathName.Chars(pathName.Length - 1) = Path.DirectorySeparatorChar Then
+                dirName = Path.GetFullPath(pathName)
             Else
-                If PathName.Length = 0 Then
-                    FileName = "*.*"
-                Else
-                    FileName = Path.GetFileName(PathName)
-                    DirName = Path.GetDirectoryName(PathName)
+                If pathName.Length <> 0 Then
+                    fileName = Path.GetFileName(pathName)
+                    dirName = Path.GetDirectoryName(pathName)
 
-                    If (FileName Is Nothing) OrElse (FileName.Length = 0) OrElse (FileName = ".") Then
-                        FileName = "*.*"
+                    If (fileName Is Nothing) OrElse (fileName.Length = 0) OrElse (fileName = ".") Then
+                        fileName = "*.*"
                     End If
                 End If
 
-                If (DirName Is Nothing) OrElse (DirName.Length = 0) Then
-                    If Path.IsPathRooted(PathName) Then
-                        DirName = Path.GetPathRoot(PathName)
+                If (dirName Is Nothing) OrElse (dirName.Length = 0) Then
+                    If Path.IsPathRooted(pathName) Then
+                        dirName = Path.GetPathRoot(pathName)
                     Else
-                        DirName = Environment.CurrentDirectory
-                        If DirName.Chars(DirName.Length - 1) <> Path.DirectorySeparatorChar Then
-                            DirName = DirName & Path.DirectorySeparatorChar
+                        dirName = Environment.CurrentDirectory
+                        If dirName.Chars(dirName.Length - 1) <> Path.DirectorySeparatorChar Then
+                            dirName = dirName & Path.DirectorySeparatorChar
                         End If
                     End If
                 Else
-                    If DirName.Chars(DirName.Length - 1) <> Path.DirectorySeparatorChar Then
-                        DirName = DirName & Path.DirectorySeparatorChar
+                    If dirName.Chars(dirName.Length - 1) <> Path.DirectorySeparatorChar Then
+                        dirName &= Path.DirectorySeparatorChar
                     End If
                 End If
 
-                If FileName = ".." Then
-                    DirName = DirName & "..\"
-                    FileName = "*.*"
+                If fileName = ".." Then
+                    dirName &= "..\"
+                    fileName = "*.*"
                 End If
             End If
 
             Try
-                Dir = Directory.GetParent(DirName & FileName)
-                files = Dir.GetFileSystemInfos(FileName)
+                dir = Directory.GetParent(dirName & fileName)
+                files = dir.GetFileSystemInfos(fileName)
             Catch ex As SecurityException
                 Throw ex
             Catch IOex As IOException When _
@@ -82,7 +79,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             oAssemblyData = ProjectData.GetProjectData().GetAssemblyData(assem)
             oAssemblyData.m_DirFiles = files
             oAssemblyData.m_DirNextFileIndex = 0
-            oAssemblyData.m_DirAttributes = Attributes
+            oAssemblyData.m_DirAttributes = attributes
 
             If (files Is Nothing) OrElse (files.Length = 0) Then
                 Return ""
@@ -91,7 +88,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return FindFileFilter(oAssemblyData)
         End Function
 
-        Friend Shared Function FindNextFile(ByVal assem As System.Reflection.Assembly) As String
+        Friend Shared Function FindNextFile(assem As Assembly) As String
             Dim oAssemblyData As AssemblyData
 
             oAssemblyData = ProjectData.GetProjectData().GetAssemblyData(assem)
@@ -110,30 +107,26 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return FindFileFilter(oAssemblyData)
         End Function
 
-        Private Shared Function FindFileFilter(ByVal oAssemblyData As AssemblyData) As String
-            Dim Index As Integer
-            Dim files() As FileSystemInfo
-            Dim file As FileSystemInfo
-
-            files = oAssemblyData.m_DirFiles
-            Index = oAssemblyData.m_DirNextFileIndex
+        Private Shared Function FindFileFilter(oAssemblyData As AssemblyData) As String
+            Dim index As Integer = oAssemblyData.m_DirNextFileIndex
+            Dim files() As FileSystemInfo = oAssemblyData.m_DirFiles
 
             Do While True
-                If Index > files.GetUpperBound(0) Then
+                If index > files.GetUpperBound(0) Then
                     oAssemblyData.m_DirFiles = Nothing
                     oAssemblyData.m_DirNextFileIndex = 0
                     Return Nothing
                 End If
 
-                file = files(Index)
+                Dim file As FileSystemInfo = files(Index)
 
                 If ((file.Attributes And (FileAttributes.Directory Or FileAttributes.System Or FileAttributes.Hidden)) = 0) OrElse
            ((file.Attributes And oAssemblyData.m_DirAttributes) <> 0) Then
-                    oAssemblyData.m_DirNextFileIndex = Index + 1
-                    Return files(Index).Name
+                    oAssemblyData.m_DirNextFileIndex = index + 1
+                    Return files(index).Name
                 End If
 
-                Index += 1
+                index += 1
             Loop
             Return Nothing
         End Function
