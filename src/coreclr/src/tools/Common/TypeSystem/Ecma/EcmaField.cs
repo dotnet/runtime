@@ -3,14 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
-
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -291,53 +287,18 @@ namespace Internal.TypeSystem.Ecma
         /// <summary>
         /// Retrieves the data associated with an RVA mapped field from the PE module.
         /// </summary>
-        public static unsafe byte[] GetFieldRvaData(this EcmaField field, int targetPointerSize)
+        public static byte[] GetFieldRvaData(this EcmaField field)
         {
             Debug.Assert(field.HasRva);
-
-            MetadataReader metadataReader = field.MetadataReader;
-            int rva = metadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
-            ImmutableArray<byte> memBlock = field.Module.PEReader.GetSectionData(rva).GetContent();
+            int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
+            var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
 
             int size = field.FieldType.GetElementSize().AsInt;
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 
-            byte[] result = new byte[AlignmentHelper.AlignUp(size, targetPointerSize)];
+            byte[] result = new byte[size];
             memBlock.CopyTo(0, result, 0, size);
-
-            // We need to handle overlapping fields by reusing blobs based on the rva, and just update
-            // the size and contents
-            BlobReader metadataBlob = new BlobReader(field.Module.PEReader.GetMetadata().Pointer, field.Module.PEReader.GetMetadata().Length);
-            metadataBlob.Offset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
-            for (int i = 1; i <= metadataReader.GetTableRowCount(TableIndex.FieldRva); i++)
-            {
-                int currentFieldRva = metadataBlob.ReadInt32();
-                short currentFieldRid = metadataBlob.ReadInt16();
-
-                if (currentFieldRva != rva)
-                    continue;
-
-                FieldDefinitionHandle currentFieldHandle = MetadataTokens.FieldDefinitionHandle(currentFieldRid);
-                if (field.Handle == currentFieldHandle)
-                    continue;
-
-                EcmaField overlappingField = (EcmaField)field.Module.GetField(currentFieldHandle);
-                Debug.Assert(overlappingField.HasRva && overlappingField != field);
-
-                int overlappingSize = overlappingField.FieldType.GetElementSize().AsInt;
-                if (overlappingSize > size)
-                {
-                    if (overlappingSize > memBlock.Length)
-                        throw new BadImageFormatException();
-
-                    // We hit another RVA field with the same RVA as our input field, but with more data. Update the
-                    // data blob size and contents
-                    size = overlappingSize;
-                    result = new byte[AlignmentHelper.AlignUp(size, targetPointerSize)];
-                    memBlock.CopyTo(0, result, 0, size);
-                }
-            }
 
             return result;
         }
