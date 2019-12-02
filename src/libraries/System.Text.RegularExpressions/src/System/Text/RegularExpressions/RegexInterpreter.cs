@@ -171,6 +171,7 @@ namespace System.Text.RegularExpressions
             _codepos = newpos;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetOperator(int op)
         {
             _caseInsensitive = (0 != (op & RegexCode.Ci));
