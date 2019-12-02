@@ -60,12 +60,6 @@ namespace System.Net.Http.Functional.Tests
             return handler;
         }
 
-        // Manicka: remove
-        protected static bool IsSocketsHttpHandler(HttpClientHandler handler) =>
-            GetUnderlyingSocketsHttpHandler(handler) != null;
-
-        
-        // Manicka: remove
         protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -94,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
 
             // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
             // So, skip this verification if we're not using SocketsHttpHandler.
-            if (PlatformDetection.SupportsAlpn && IsSocketsHttpHandler(httpClientHandler))
+            if (PlatformDetection.SupportsAlpn)
             {
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }

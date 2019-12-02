@@ -2371,7 +2371,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        [ActiveIssue(339)] // Manicka: Only for WinHttpHandler
+        [ActiveIssue(339)]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
             // The default value for HttpRequestMessage.Version is Version(1,1).
