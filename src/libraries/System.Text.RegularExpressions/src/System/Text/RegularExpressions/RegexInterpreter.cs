@@ -416,125 +416,65 @@ namespace System.Text.RegularExpressions
             string set = _code.FCPrefix.GetValueOrDefault().Prefix;
 
             // We now loop through looking for the first matching character.  This is a hot loop, so we lift out as many
-            // branches as we can.  Each operation requires knowing whether this is a) a singleton char vs a full character
-            // set, b) right-to-left vs left-to-right, and c) case-sensitive vs case-insensitive.  So, we split it all out
-            // into 8 loops, for each combination of these.  It's duplicated code, but it allows the inner loop to be much
-            // tighter than if everything were combined with multiple branches on each operation.
+            // branches as we can.  Each operation requires knowing whether this is a) right-to-left vs left-to-right, and
+            // b) case-sensitive vs case-insensitive.  So, we split it all out into 4 loops, for each combination of these.
+            // It's duplicated code, but it allows the inner loop to be much tighter than if everything were combined with
+            // multiple branches on each operation.  We can also then use spans to avoid bounds checks in at least the forward
+            // iteration direction where the JIT is able to detect the pattern.
 
-            if (RegexCharClass.IsSingleton(set))
+            if (!_rightToLeft)
             {
-                char ch = RegexCharClass.SingletonChar(set);
-
-                if (!_rightToLeft)
+                ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                if (!_caseInsensitive)
                 {
-                    if (!_caseInsensitive)
+                    // left-to-right, case-sensitive
+                    for (int i = 0; i < span.Length; i++)
                     {
-                        // Singleton, left-to-right, case-sensitive
-                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
-                        if (i >= 0)
+                        if (RegexCharClass.CharInClass(span[i], set))
                         {
                             runtextpos += i;
                             return true;
                         }
                     }
-                    else // _caseInsensitive
-                    {
-                        // Singleton, left-to-right, case-insensitive
-                        TextInfo ti = _culture.TextInfo;
-                        for (int i = runtextpos; i < runtextend; i++)
-                        {
-                            if (ch == ti.ToLower(runtext![i]))
-                            {
-                                runtextpos = i;
-                                return true;
-                            }
-                        }
-                    }
                 }
-                else // _rightToLeft
+                else
                 {
-                    if (!_caseInsensitive)
-                    {
-                        // Singleton, right-to-left, case-sensitive
-                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                    // left-to-right, case-insensitive
+                    TextInfo ti = _culture.TextInfo;
+                    for (int i = 0; i < span.Length; i++)
                         {
-                            if (ch == runtext![i])
-                            {
-                                runtextpos = i + 1;
-                                return true;
-                            }
-                        }
-                    }
-                    else // _caseInsensitive
-                    {
-                        // Singleton, right-to-left, case-insensitive
-                        TextInfo ti = _culture.TextInfo;
-                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set))
                         {
-                            if (ch == ti.ToLower(runtext![i]))
-                            {
-                                runtextpos = i + 1;
-                                return true;
-                            }
+                            runtextpos += i;
+                            return true;
                         }
                     }
                 }
             }
-            else // set
+            else
             {
-                if (!_rightToLeft)
+                if (!_caseInsensitive)
                 {
-                    if (!_caseInsensitive)
+                    // right-to-left, case-sensitive
+                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
                     {
-                        // Set, left-to-right, case-sensitive
-                        for (int i = runtextpos; i < runtextend; i++)
+                        if (RegexCharClass.CharInClass(runtext![i], set))
                         {
-                            if (RegexCharClass.CharInClass(runtext![i], set))
-                            {
-                                runtextpos = i;
-                                return true;
-                            }
-                        }
-                    }
-                    else // _caseInsensitive
-                    {
-                        // Set, left-to-right, case-insensitive
-                        TextInfo ti = _culture.TextInfo;
-                        for (int i = runtextpos; i < runtextend; i++)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
-                            {
-                                runtextpos = i;
-                                return true;
-                            }
+                            runtextpos = i + 1;
+                            return true;
                         }
                     }
                 }
-                else // _rightToLeft
+                else
                 {
-                    if (!_caseInsensitive)
+                    // right-to-left, case-insensitive
+                    TextInfo ti = _culture.TextInfo;
+                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
                     {
-                        // Set, right-to-left, case-sensitive
-                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
                         {
-                            if (RegexCharClass.CharInClass(runtext![i], set))
-                            {
-                                runtextpos = i + 1;
-                                return true;
-                            }
-                        }
-                    }
-                    else // _caseInsensitive
-                    {
-                        // Set, right-to-left, case-insensitive
-                        TextInfo ti = _culture.TextInfo;
-                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
-                            {
-                                runtextpos = i + 1;
-                                return true;
-                            }
+                            runtextpos = i + 1;
+                            return true;
                         }
                     }
                 }
