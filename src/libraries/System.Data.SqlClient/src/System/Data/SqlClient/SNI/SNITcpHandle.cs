@@ -220,7 +220,6 @@ namespace System.Data.SqlClient.SNI
                 cts.CancelAfter(timeout);
                 cts.Token.Register(Cancel);
             }
-            
 
             Socket availableSocket = null;
             try
