@@ -290,12 +290,17 @@ namespace SslStress
         protected override async Task HandleConnection(SslStream sslStream, TcpClient client, CancellationToken token)
         {
             using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            DateTime lastReadTime = DateTime.Now;
 
             var serializer = new DataSegmentSerializer();
+
+            _ = Task.Run(Monitor);
             await sslStream.ReadLinesUsingPipesAsync(Callback, cts.Token, separator: '\n');
 
             async Task Callback(ReadOnlySequence<byte> buffer)
             {
+                lastReadTime = DateTime.Now;
+
                 // got an empty line, client is closing the connection
                 if (buffer.Length == 0)
                 {
@@ -327,6 +332,20 @@ namespace SslStress
                 {
                     chunk?.Return();
                 }
+            }
+
+            async Task Monitor()
+            {
+                do
+                {
+                    await Task.Delay(1000);
+
+                    if (DateTime.Now - lastReadTime >= TimeSpan.FromSeconds(10))
+                    {
+                        cts.Cancel();
+                    }
+
+                } while (!cts.IsCancellationRequested);
             }
         }
     }

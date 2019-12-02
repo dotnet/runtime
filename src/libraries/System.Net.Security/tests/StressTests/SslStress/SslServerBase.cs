@@ -26,6 +26,7 @@ namespace SslStress
         private readonly X509Certificate2 _certificate;
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private readonly SemaphoreSlim _acceptConnectionLatch = new SemaphoreSlim(initialCount: 1);
         private readonly Lazy<Task> _serverTask;
 
         public EndPoint ServerEndpoint => _listener.LocalEndpoint;
@@ -36,7 +37,7 @@ namespace SslStress
 
             _config = config;
             _certificate = CreateSelfSignedCertificate();
-            _listener = new TcpListener(config.ServerEndpoint) { ExclusiveAddressUse = (config.MaxConnections == 1) };
+            _listener = new TcpListener(config.ServerEndpoint);
             _serverTask = new Lazy<Task>(Task.Run(StartCore));
         }
 
@@ -81,7 +82,7 @@ namespace SslStress
         private async Task StartCore()
         {
             _listener.Start();
-            IEnumerable<Task> workers = Enumerable.Range(1, _config.MaxConnections).Select(_ => RunSingleWorker());
+            IEnumerable<Task> workers = Enumerable.Range(1, 2 * _config.MaxConnections).Select(_ => RunSingleWorker());
             try
             {
                 await Task.WhenAll(workers);
@@ -121,13 +122,25 @@ namespace SslStress
                 }
             }
 
+            // workaround for TcpListener not accepting cancellation tokens
             async Task<TcpClient> AcceptTcpClientAsync(CancellationToken token)
             {
                 while (!token.IsCancellationRequested)
                 {
                     if (_listener.Pending())
                     {
-                        return await _listener.AcceptTcpClientAsync();
+                        // Need to ensure AcceptTcpClientAsync() returns immediately,
+                        // so we synchronize here to avoid races between workers
+                        await _acceptConnectionLatch.WaitAsync(token);
+                        try
+                        {
+                            if (_listener.Pending())
+                                return await _listener.AcceptTcpClientAsync();
+                        }
+                        finally
+                        {
+                            _acceptConnectionLatch.Release();
+                        }
                     }
 
                     await Task.Delay(20);
