@@ -636,14 +636,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                if (method.IsRawPInvoke())
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-            }
 
 #if READYTORUN
             if (method.RequireSecObject)
@@ -660,7 +653,11 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsRawPInvoke())
+            {
+                result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
+            }
+            else if (method.IsNoInlining)
             {
                 /* Function marked as not inlineable */
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
