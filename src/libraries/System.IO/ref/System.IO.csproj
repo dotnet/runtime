@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Manual.cs" />

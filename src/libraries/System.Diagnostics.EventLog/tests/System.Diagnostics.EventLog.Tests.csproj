@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />

@@ -4,7 +4,7 @@
     <AssemblyName>System.Resources.Writer</AssemblyName>
     <RootNamespace>System.Resources</RootNamespace>
     <Nullable>enable</Nullable>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Resources\__FastResourceComparer.cs" />

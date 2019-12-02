@@ -4,7 +4,7 @@
     <!-- Setting a custom TargetFrameworkAttribute in AssemblyAttributes.cs -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TestRuntime>true</TestRuntime>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

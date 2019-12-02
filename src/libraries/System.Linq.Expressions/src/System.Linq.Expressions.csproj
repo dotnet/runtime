@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
     <FeatureInterpret>true</FeatureInterpret>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyName>System.Linq.Expressions</AssemblyName>

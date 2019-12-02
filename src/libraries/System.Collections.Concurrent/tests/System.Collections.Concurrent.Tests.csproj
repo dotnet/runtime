@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">

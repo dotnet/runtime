@@ -5,7 +5,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

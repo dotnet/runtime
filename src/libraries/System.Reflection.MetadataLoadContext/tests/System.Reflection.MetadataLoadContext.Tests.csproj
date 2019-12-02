@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
