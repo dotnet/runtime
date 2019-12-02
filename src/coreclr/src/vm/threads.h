@@ -3134,29 +3134,6 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
-    // During a <clinit>, this thread must not be asynchronously
-    // stopped or interrupted.  That would leave the class unavailable
-    // and is therefore a security hole.
-    static void        IncPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_PreventAbort);
-    }
-    static void        DecPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockDecrement((LONG*)&pThread->m_PreventAbort);
-    }
-
-    BOOL IsAbortPrevented()
-    {
-        return m_PreventAbort != 0;
-    }
-
-    typedef StateHolder<Thread::IncPreventAbort, Thread::DecPreventAbort> ThreadPreventAbortHolder;
-
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -4040,7 +4017,6 @@ private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
-    int         m_PreventAbort;
 
     static LONG m_DebugWillSyncCount;
 
@@ -4898,7 +4874,6 @@ private:
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
-typedef Thread::ThreadPreventAbortHolder ThreadPreventAbortHolder;
 
 // Combines ForBindSuspendThreadHolder and CrstHolder into one.
 class ForbidSuspendThreadCrstHolder

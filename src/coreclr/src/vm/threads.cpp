@@ -3350,12 +3350,6 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
     }
     CONTRACTL_END;
 
-    // If thread abort is prevented, we do not want this thread to see thread abort and thread interrupt exception.
-    if (IsAbortPrevented())
-    {
-        return;
-    }
-
     // A word about ordering for Interrupt.  If someone tries to interrupt a thread
     // that's in the interruptible state, we queue an APC.  But if they try to interrupt
     // a thread that's not in the interruptible state, we just record that fact.  So

@@ -1029,25 +1029,6 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-    if (IsAbortPrevented())
-    {
-        //
-        // If the thread is marked to have a FuncEval abort request, then allow that to go through
-        // since we dont want to block funcEval aborts. Such requests are initiated by the
-        // right-side when the thread is doing funcEval and the exception would be caught in the
-        // left-side's funcEval implementation that will then clear the funcEval-abort-state from the thread.
-        //
-        // If another thread also marked this one for a non-FuncEval abort, then the left-side will
-        // proceed to [re]throw that exception post funcEval abort. When we come here next, we would follow
-        // the usual rules to raise the exception and if raised, to prevent the abort if applicable.
-        //
-        if (!IsFuncEvalAbort())
-        {
-            STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  prevent abort\n");
-            return FALSE;
-        }
-    }
-
     // The thread requests not to be aborted.  Honor this for safe abort.
     if (!IsRudeAbort() && IsAsyncPrevented())
     {
