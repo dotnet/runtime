@@ -18,7 +18,7 @@
 
 struct HWIntrinsic final
 {
-    HWIntrinsic(GenTreeHWIntrinsic* node)
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
         : op1(nullptr), op2(nullptr), op3(nullptr), numOperands(0), baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
@@ -50,16 +50,14 @@ struct HWIntrinsic final
     var_types           baseType;
 
 private:
-    void InitializeOperands(GenTreeHWIntrinsic* node)
+    void InitializeOperands(const GenTreeHWIntrinsic* node)
     {
         op1 = node->gtGetOp1();
         op2 = node->gtGetOp2();
 
-        if (op1 == nullptr)
-        {
-            unreached();
-        }
-        else if (op1->OperIsList())
+        assert(op1 != nullptr);
+
+        if (op1->OperIsList())
         {
             assert(op2 == nullptr);
 
@@ -84,7 +82,7 @@ private:
         }
     }
 
-    void InitializeBaseType(GenTreeHWIntrinsic* node)
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
     {
         baseType = node->gtSIMDBaseType;
 
