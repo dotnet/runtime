@@ -66,6 +66,9 @@
     <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs">
       <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs">
+      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs">
       <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
     </Compile>
@@ -125,9 +128,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs">
       <Link>ProductionCode\WinHttpTransportContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>ProductionCode\WinInetProxyHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs">
       <Link>ProductionCode\HttpWindowsProxy.cs</Link>

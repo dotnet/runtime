@@ -526,13 +526,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsyncWithBasicAuth_ReceiveSetCookie_CookieSent()
         {
-            if (IsWinHttpHandler)
-            {
-                // Issue #26986
-                // WinHttpHandler does not process the cookie.
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
