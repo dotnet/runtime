@@ -530,7 +530,6 @@ LONG    Thread::m_DebugWillSyncCount = -1;
 LONG    Thread::m_DetachCount = 0;
 LONG    Thread::m_ActiveDetachCount = 0;
 int     Thread::m_offset_counter = 0;
-Volatile<LONG> Thread::m_threadsAtUnsafePlaces = 0;
 
 //-------------------------------------------------------------------------
 // Public function: SetupThreadNoThrow()

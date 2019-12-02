@@ -2831,9 +2831,6 @@ void Thread::PerformPreemptiveGC()
         || ThreadStore::HoldingThreadStore())
         return;
 
-    if (Thread::ThreadsAtUnsafePlaces())
-        return;
-
 #ifdef DEBUGGING_SUPPORTED
     // Don't collect if the debugger is attach and either 1) there
     // are any threads held at unsafe places or 2) this thread is
@@ -6540,8 +6537,7 @@ retry_for_debugger:
         // at a safepoint - since this is the exact same behaviour
         // that the debugger needs, just use it's code.
         if ((hr == ERROR_TIMEOUT)
-            || Thread::ThreadsAtUnsafePlaces()
-#ifdef DEBUGGING_SUPPORTED  // seriously?  When would we want to disable debugging support? :)
+#ifdef DEBUGGING_SUPPORTED
              || (CORDebuggerAttached() &&
             // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
             // threadstore lock and synchronization cannot complete until the debugger can get the

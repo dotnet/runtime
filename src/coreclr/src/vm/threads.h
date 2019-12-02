@@ -1477,8 +1477,6 @@ public:
     static LONG     m_DetachCount;
     static LONG     m_ActiveDetachCount;  // Count how many non-background detached
 
-    static Volatile<LONG>     m_threadsAtUnsafePlaces;
-
     // Offsets for the following variables need to fit in 1 byte, so keep near
     // the top of the object.  Also, we want cache line filling to work for us
     // so the critical stuff is ordered based on frequency of use.
@@ -4030,25 +4028,6 @@ public:
 
     typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
     //-------------------------------------------------------------------------
-
-    static bool ThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_threadsAtUnsafePlaces != (LONG)0);
-    }
-
-    static void IncThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_threadsAtUnsafePlaces);
-    }
-
-    static void DecThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedDecrement(&m_threadsAtUnsafePlaces);
-    }
 
     void PrepareForEERestart(BOOL SuspendSucceeded)
     {
