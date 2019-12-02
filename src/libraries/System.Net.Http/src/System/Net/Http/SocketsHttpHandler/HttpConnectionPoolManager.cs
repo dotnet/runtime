@@ -169,7 +169,7 @@ namespace System.Net.Http
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultSystemCredentialsUsedForProxy));
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
             }
 
             string sslHostName = null;
@@ -187,7 +187,7 @@ namespace System.Net.Http
                 }
             }
 
-            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri != null ? _settings._defaultSystemCredentialsUsedForProxy : _settings._defaultSystemCredentialsUsedForServer);
+            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri != null ? _settings._defaultCredentialsUsedForProxy : _settings._defaultCredentialsUsedForServer);
 
             if (proxyUri != null)
             {
