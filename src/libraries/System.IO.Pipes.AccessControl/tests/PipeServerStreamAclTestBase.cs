@@ -12,7 +12,7 @@ namespace System.IO.Pipes.Tests
         protected const HandleInheritability DefaultInheritability = HandleInheritability.None;
         protected const int DefaultBufferSize = 1;
 
-        // As it is documented in the source definition of the PipeAccessRights enum, we do not have a 0 value on purpose (can't grand nor deny "nothing").
+        // As it is documented in the source definition of the PipeAccessRights enum, we do not have a 0 value on purpose (can't grant nor deny "nothing").
         // So ReadWrite will be used in these unit tests the sole minimum additional granted right, considering that AnonymousPipeServerStreams can only
         // get created with either ReadWrite or FullControl.
         protected const PipeAccessRights DefaultAccessRight = PipeAccessRights.ReadWrite;
