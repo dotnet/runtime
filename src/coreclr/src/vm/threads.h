@@ -326,12 +326,6 @@ public:
         return (BYTE)ofs;
     }
 
-    void SetLoadingFile(DomainFile *pFile)
-    {
-    }
-
-    typedef Holder<Thread *, DoNothing, DoNothing> LoadingFileHolder;
-
     enum ThreadState
     {
     };
@@ -3910,14 +3904,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-private:
-
-    //-------------------------------------------------------------------------
-    // Support creation of assemblies in DllMain (see ceemain.cpp)
-    //-------------------------------------------------------------------------
-    DomainFile* m_pLoadingFile;
-
-
 public:
 
     void SetInteropDebuggingHijacked(BOOL f)
@@ -4049,35 +4035,6 @@ public:
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
-
-    void SetLoadingFile(DomainFile *pFile)
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(m_pLoadingFile == NULL);
-        m_pLoadingFile = pFile;
-    }
-
-    void ClearLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pLoadingFile = NULL;
-    }
-
-    DomainFile *GetLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoadingFile;
-    }
-
-private:
-    static void LoadingFileRelease(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThread->ClearLoadingFile();
-    }
-
-public:
-     typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
 
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because

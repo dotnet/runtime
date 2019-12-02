@@ -1448,7 +1448,6 @@ Thread::Thread()
     m_OSContext = NULL;
     m_ThreadTasks = (ThreadTasks)0;
     m_pLoadLimiter= NULL;
-    m_pLoadingFile = NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
