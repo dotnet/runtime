@@ -3,7 +3,7 @@
     <RootNamespace>System.Diagnostics.TraceSource</RootNamespace>
     <AssemblyName>System.Diagnostics.TraceSource</AssemblyName>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
-    <Configurations>netcoreapp5.0-FreeBSD-Debug;netcoreapp5.0-FreeBSD-Release;netcoreapp5.0-Linux-Debug;netcoreapp5.0-Linux-Release;netcoreapp5.0-OSX-Debug;netcoreapp5.0-OSX-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-FreeBSD-Debug;$(TargetFrameworkVNext)-FreeBSD-Release;$(TargetFrameworkVNext)-Linux-Debug;$(TargetFrameworkVNext)-Linux-Release;$(TargetFrameworkVNext)-OSX-Debug;$(TargetFrameworkVNext)-OSX-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />

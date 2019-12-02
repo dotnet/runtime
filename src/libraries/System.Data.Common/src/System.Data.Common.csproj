@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />

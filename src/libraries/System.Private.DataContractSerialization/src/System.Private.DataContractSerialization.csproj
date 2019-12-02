@@ -8,7 +8,7 @@
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
   </PropertyGroup>

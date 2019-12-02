@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
     <NoWarn>436</NoWarn> <!-- Type conflicts on "Interop" due to InternalsVisibleTo access -->
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">

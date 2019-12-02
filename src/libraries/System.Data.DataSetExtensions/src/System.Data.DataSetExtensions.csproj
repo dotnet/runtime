@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Data.DataSetExtensions</AssemblyName>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup>

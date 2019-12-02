@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
     <DefineConstants Condition="'$(TargetGroup)'!='netfx'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

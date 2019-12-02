@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
@@ -146,7 +146,7 @@
     <None Include="SQL\ParameterTest\SqlParameterTest_DebugMode.bsl" />
     <None Include="SQL\ParameterTest\SqlParameterTest_ReleaseMode.bsl" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)'">
     <Compile Include="SQL\ConnectionPoolTest\PoolBlockPeriodTest.netcoreapp.cs" />
     <Compile Include="SQL\SqlFileStreamTest\SqlFileStreamTest.cs" />
   </ItemGroup>

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CookieTest.cs" />
@@ -25,7 +25,7 @@
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)'">
     <Compile Include="CookieCollectionTest.netcoreapp.cs" />
     <Compile Include="IPAddressSpanTest.cs" />
     <Compile Include="IPAddressParsingSpan.cs" />

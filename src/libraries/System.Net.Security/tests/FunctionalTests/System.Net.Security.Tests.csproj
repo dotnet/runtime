@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true'">true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp5.0-OSX-Debug;netcoreapp5.0-OSX-Release;netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-OSX-Debug;$(TargetFrameworkVNext)-OSX-Release;$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Choose>
     <!-- Disable the whole workitem on Windows arm64 until https://github.com/dotnet/core-eng/issues/5118 is fixed. -->

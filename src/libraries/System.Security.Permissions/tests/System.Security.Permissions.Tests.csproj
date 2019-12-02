@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
@@ -18,7 +18,7 @@
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp5.0' And '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)' And '$(TargetsWindows)' == 'true'">
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
 </Project>

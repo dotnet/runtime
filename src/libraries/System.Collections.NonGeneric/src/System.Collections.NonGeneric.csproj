@@ -3,7 +3,7 @@
     <RootNamespace>System.Collections.NonGeneric</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

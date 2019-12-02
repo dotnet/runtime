@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS0067: unused event, reference assembly does not care -->
     <NoWarn>$(NoWarn);0067</NoWarn>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

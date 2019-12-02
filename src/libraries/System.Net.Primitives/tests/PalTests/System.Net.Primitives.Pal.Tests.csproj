@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 

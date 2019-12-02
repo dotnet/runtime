@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />

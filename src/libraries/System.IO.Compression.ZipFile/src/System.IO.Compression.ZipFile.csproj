@@ -3,7 +3,7 @@
     <AssemblyName>System.IO.Compression.ZipFile</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>

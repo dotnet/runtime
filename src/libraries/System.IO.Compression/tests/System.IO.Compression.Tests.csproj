@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- This constant is only here for usage in $(CommonTestPath), since not all projects using these tests have been updated yet-->
     <DefineConstants>$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
-    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompressionStreamUnitTests.Deflate.cs" />

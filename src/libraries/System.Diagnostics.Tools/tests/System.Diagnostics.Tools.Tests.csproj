@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System</RootNamespace>
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

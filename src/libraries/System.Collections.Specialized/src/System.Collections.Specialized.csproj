@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Collections.Specialized</RootNamespace>
     <AssemblyName>System.Collections.Specialized</AssemblyName>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

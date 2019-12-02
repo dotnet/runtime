@@ -5,7 +5,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp5.0-Debug;netcoreapp5.0-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">

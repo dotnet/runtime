@@ -3,7 +3,7 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp5.0-Unix-Debug;netcoreapp5.0-Unix-Release;netcoreapp5.0-Windows_NT-Debug;netcoreapp5.0-Windows_NT-Release</Configurations>
+    <Configurations>$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
@@ -68,7 +68,7 @@
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp5.0' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == '$(TargetFrameworkVNext)' ">
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
