@@ -37,7 +37,7 @@ namespace SslStress
             _config = config;
             _certificate = CreateSelfSignedCertificate();
             _listener = new TcpListener(config.ServerEndpoint) { ExclusiveAddressUse = (config.MaxConnections == 1) };
-            _serverTask = new Lazy<Task>(StartCore);
+            _serverTask = new Lazy<Task>(Task.Run(StartCore));
         }
 
         protected abstract Task HandleConnection(SslStream sslStream, TcpClient client, CancellationToken token);

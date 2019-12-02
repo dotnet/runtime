@@ -31,7 +31,7 @@ namespace SslStress
 
             _config = config;
             _aggregator = new StressResultAggregator(config.MaxConnections);
-            _clientTask = new Lazy<Task>(StartCore);
+            _clientTask = new Lazy<Task>(Task.Run(StartCore));
         }
 
         protected abstract Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, CancellationToken token);
