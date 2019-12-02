@@ -1223,20 +1223,6 @@ HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
     return E_NOTIMPL;
 }
 
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(pMSEX);
-    _ASSERTE (fRet);
-}
-
 // This is the instance that exposes interfaces out to all the other DLLs of the CLR
 // so they can use our services for TLS, synchronization, memory allocation, etc.
 static BYTE g_CEEInstance[sizeof(CExecutionEngine)];
