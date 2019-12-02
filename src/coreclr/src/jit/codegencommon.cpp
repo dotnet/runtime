@@ -5419,13 +5419,17 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     GetEmitter()->emitIns_R_I(INS_vpop, EA_8BYTE, lowReg, slots / 2);
 }
 
-/*-----------------------------------------------------------------------------
- *
- *  Free the local stack frame: add to SP.
- *  If epilog unwind hasn't been started, and we generate code, we start unwind
- *  and set *pUnwindStarted = true.
- */
-
+//------------------------------------------------------------------------
+// genFreeLclFrame: free the local stack frame by adding `frameSize` to SP.
+//
+// Arguments:
+//   frameSize - the frame size to free;
+//   pUnwindStarted - was epilog unwind started or not.
+//
+// Notes:
+//   If epilog unwind hasn't been started, and we generate code, we start unwind
+//    and set* pUnwindStarted = true.
+//
 void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
     assert(compiler->compGeneratingEpilog);
