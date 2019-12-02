@@ -81,9 +81,10 @@ namespace System.Text.RegularExpressions
             _textend = textend;
             _textstart = textstart;
 
-            for (int i = 0; i < _matchcount.Length; i++)
+            int[] matchcount = _matchcount;
+            for (int i = 0; i < matchcount.Length; i++)
             {
-                _matchcount[i] = 0;
+                matchcount[i] = 0;
             }
 
             _balancing = false;
@@ -170,21 +171,23 @@ namespace System.Text.RegularExpressions
         internal void AddMatch(int cap, int start, int len)
         {
             _matches[cap] ??= new int[2];
+            int[][] matches = _matches;
 
-            int capcount = _matchcount[cap];
+            int[] matchcount = _matchcount;
+            int capcount = matchcount[cap];
 
-            if (capcount * 2 + 2 > _matches[cap].Length)
+            if (capcount * 2 + 2 > matches[cap].Length)
             {
-                int[] oldmatches = _matches[cap];
+                int[] oldmatches = matches[cap];
                 int[] newmatches = new int[capcount * 8];
                 for (int j = 0; j < capcount * 2; j++)
                     newmatches[j] = oldmatches[j];
-                _matches[cap] = newmatches;
+                matches[cap] = newmatches;
             }
 
-            _matches[cap][capcount * 2] = start;
-            _matches[cap][capcount * 2 + 1] = len;
-            _matchcount[cap] = capcount + 1;
+            matches[cap][capcount * 2] = start;
+            matches[cap][capcount * 2 + 1] = len;
+            matchcount[cap] = capcount + 1;
         }
 
         /*
@@ -204,15 +207,16 @@ namespace System.Text.RegularExpressions
 
             // first see if it is negative, and therefore is a reference to the next available
             // capture group for balancing.  If it is, we'll reset target to point to that capture.
-            if (_matches[cap][target] < 0)
-                target = -3 - _matches[cap][target];
+            int[][] matches = _matches;
+            if (matches[cap][target] < 0)
+                target = -3 - matches[cap][target];
 
             // move back to the previous capture
             target -= 2;
 
             // if the previous capture is a reference, just copy that reference to the end.  Otherwise, point to it.
-            if (target >= 0 && _matches[cap][target] < 0)
-                AddMatch(cap, _matches[cap][target], _matches[cap][target + 1]);
+            if (target >= 0 && matches[cap][target] < 0)
+                AddMatch(cap, matches[cap][target], matches[cap][target + 1]);
             else
                 AddMatch(cap, -3 - target, -4 - target /* == -3 - (target + 1) */ );
         }
@@ -230,7 +234,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal bool IsMatched(int cap)
         {
-            return cap < _matchcount.Length && _matchcount[cap] > 0 && _matches[cap][_matchcount[cap] * 2 - 1] != (-3 + 1);
+            int[] matchcount = _matchcount;
+            return (uint)cap < (uint)matchcount.Length && matchcount[cap] > 0 && _matches[cap][matchcount[cap] * 2 - 1] != (-3 + 1);
         }
 
         /// <summary>
@@ -238,11 +243,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal int MatchIndex(int cap)
         {
-            int i = _matches[cap][_matchcount[cap] * 2 - 2];
+            int[][] matches = _matches;
+
+            int i = matches[cap][_matchcount[cap] * 2 - 2];
             if (i >= 0)
                 return i;
 
-            return _matches[cap][-3 - i];
+            return matches[cap][-3 - i];
         }
 
         /// <summary>
@@ -250,11 +257,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal int MatchLength(int cap)
         {
-            int i = _matches[cap][_matchcount[cap] * 2 - 1];
+            int[][] matches = _matches;
+
+            int i = matches[cap][_matchcount[cap] * 2 - 1];
             if (i >= 0)
                 return i;
 
-            return _matches[cap][-3 - i];
+            return matches[cap][-3 - i];
         }
 
         /// <summary>
@@ -262,11 +271,15 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal void Tidy(int textpos)
         {
-            int[] interval = _matches[0];
+            int[][] matches = _matches;
+
+            int[] interval = matches[0];
             Index = interval[0];
             Length = interval[1];
             _textpos = textpos;
-            _capcount = _matchcount[0];
+
+            int[] matchcount = _matchcount;
+            _capcount = matchcount[0];
 
             if (_balancing)
             {
@@ -276,13 +289,13 @@ namespace System.Text.RegularExpressions
                 // until we find a balance captures.  Then we check each subsequent entry.  If it's a balance
                 // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy
                 // it down to the last free position.
-                for (int cap = 0; cap < _matchcount.Length; cap++)
+                for (int cap = 0; cap < matchcount.Length; cap++)
                 {
                     int limit;
                     int[] matcharray;
 
-                    limit = _matchcount[cap] * 2;
-                    matcharray = _matches[cap];
+                    limit = matchcount[cap] * 2;
+                    matcharray = matches[cap];
 
                     int i = 0;
                     int j;
@@ -310,7 +323,7 @@ namespace System.Text.RegularExpressions
                         }
                     }
 
-                    _matchcount[cap] = j / 2;
+                    matchcount[cap] = j / 2;
                 }
 
                 _balancing = false;

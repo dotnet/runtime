@@ -7,6 +7,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -83,36 +84,61 @@ namespace System.Text.RegularExpressions
 
         private void TrackPush(int I1)
         {
-            runtrack![--runtrackpos] = I1;
-            runtrack[--runtrackpos] = _codepos;
+            int[] localruntrack = runtrack!;
+            int localruntrackpos = runtrackpos;
+
+            localruntrack[--localruntrackpos] = I1;
+            localruntrack[--localruntrackpos] = _codepos;
+
+            runtrackpos = localruntrackpos;
         }
 
         private void TrackPush(int I1, int I2)
         {
-            runtrack![--runtrackpos] = I1;
-            runtrack[--runtrackpos] = I2;
-            runtrack[--runtrackpos] = _codepos;
+            int[] localruntrack = runtrack!;
+            int localruntrackpos = runtrackpos;
+
+            localruntrack[--localruntrackpos] = I1;
+            localruntrack[--localruntrackpos] = I2;
+            localruntrack[--localruntrackpos] = _codepos;
+
+            runtrackpos = localruntrackpos;
         }
 
         private void TrackPush(int I1, int I2, int I3)
         {
-            runtrack![--runtrackpos] = I1;
-            runtrack[--runtrackpos] = I2;
-            runtrack[--runtrackpos] = I3;
-            runtrack[--runtrackpos] = _codepos;
+            int[] localruntrack = runtrack!;
+            int localruntrackpos = runtrackpos;
+
+            localruntrack[--localruntrackpos] = I1;
+            localruntrack[--localruntrackpos] = I2;
+            localruntrack[--localruntrackpos] = I3;
+            localruntrack[--localruntrackpos] = _codepos;
+
+            runtrackpos = localruntrackpos;
         }
 
         private void TrackPush2(int I1)
         {
-            runtrack![--runtrackpos] = I1;
-            runtrack[--runtrackpos] = -_codepos;
+            int[] localruntrack = runtrack!;
+            int localruntrackpos = runtrackpos;
+
+            localruntrack[--localruntrackpos] = I1;
+            localruntrack[--localruntrackpos] = -_codepos;
+
+            runtrackpos = localruntrackpos;
         }
 
         private void TrackPush2(int I1, int I2)
         {
-            runtrack![--runtrackpos] = I1;
-            runtrack[--runtrackpos] = I2;
-            runtrack[--runtrackpos] = -_codepos;
+            int[] localruntrack = runtrack!;
+            int localruntrackpos = runtrackpos;
+
+            localruntrack[--localruntrackpos] = I1;
+            localruntrack[--localruntrackpos] = I2;
+            localruntrack[--localruntrackpos] = -_codepos;
+
+            runtrackpos = localruntrackpos;
         }
 
         private void Backtrack()
@@ -186,8 +212,13 @@ namespace System.Text.RegularExpressions
 
         private void StackPush(int I1, int I2)
         {
-            runstack![--runstackpos] = I1;
-            runstack[--runstackpos] = I2;
+            int[] localrunstack = runstack!;
+            int localrunstackpos = runstackpos;
+
+            localrunstack[--localrunstackpos] = I1;
+            localrunstack[--localrunstackpos] = I2;
+
+            runstackpos = localrunstackpos;
         }
 
         private void StackPop()
@@ -278,8 +309,9 @@ namespace System.Text.RegularExpressions
             }
             else
             {
+                TextInfo ti = _culture.TextInfo;
                 while (c != 0)
-                    if (str[--c] != _culture.TextInfo.ToLower(runtext![--pos]))
+                    if (str[--c] != ti.ToLower(runtext![--pos]))
                         return false;
             }
 
@@ -325,8 +357,9 @@ namespace System.Text.RegularExpressions
             }
             else
             {
+                TextInfo ti = _culture.TextInfo;
                 while (c-- != 0)
-                    if (_culture.TextInfo.ToLower(runtext![--cmpos]) != _culture.TextInfo.ToLower(runtext[--pos]))
+                    if (ti.ToLower(runtext![--cmpos]) != ti.ToLower(runtext[--pos]))
                         return false;
             }
 
@@ -1031,8 +1064,9 @@ namespace System.Text.RegularExpressions
                         {
                             int c = Operand(1);
 
-                            if (c > Forwardchars())
-                                c = Forwardchars();
+                            int fc = Forwardchars();
+                            if (c > fc)
+                                c = fc;
 
                             char ch = (char)Operand(0);
                             int i;
@@ -1057,8 +1091,9 @@ namespace System.Text.RegularExpressions
                         {
                             int c = Operand(1);
 
-                            if (c > Forwardchars())
-                                c = Forwardchars();
+                            int fc = Forwardchars();
+                            if (c > fc)
+                                c = fc;
 
                             char ch = (char)Operand(0);
                             int i;
@@ -1083,8 +1118,9 @@ namespace System.Text.RegularExpressions
                         {
                             int c = Operand(1);
 
-                            if (c > Forwardchars())
-                                c = Forwardchars();
+                            int fc = Forwardchars();
+                            if (c > fc)
+                                c = fc;
 
                             int operand0 = Operand(0);
                             string set = _code.Strings[operand0];
@@ -1151,8 +1187,9 @@ namespace System.Text.RegularExpressions
                         {
                             int c = Operand(1);
 
-                            if (c > Forwardchars())
-                                c = Forwardchars();
+                            int fc = Forwardchars();
+                            if (c > fc)
+                                c = fc;
 
                             if (c > 0)
                                 TrackPush(c - 1, Textpos());
@@ -1165,8 +1202,9 @@ namespace System.Text.RegularExpressions
                         {
                             int c = Operand(1);
 
-                            if (c > Forwardchars())
-                                c = Forwardchars();
+                            int fc = Forwardchars();
+                            if (c > fc)
+                                c = fc;
 
                             if (c > 0)
                                 TrackPush(c - 1, Textpos());
