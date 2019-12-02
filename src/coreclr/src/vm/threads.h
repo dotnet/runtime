@@ -4862,9 +4862,6 @@ private:
     CrstHolder                  m_lock_holder;
 };
 
-ETaskType GetCurrentTaskType();
-
-
 
 typedef Thread::AVInRuntimeImplOkayHolder AVInRuntimeImplOkayHolder;
 

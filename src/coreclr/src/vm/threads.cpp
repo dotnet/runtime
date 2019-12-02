@@ -8152,57 +8152,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     }
 }
 
-ETaskType GetCurrentTaskType()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    ETaskType TaskType = TT_UNKNOWN;
-    size_t type = (size_t)ClrFlsGetValue (TlsIdx_ThreadType);
-    if (type & ThreadType_DbgHelper)
-    {
-        TaskType = TT_DEBUGGERHELPER;
-    }
-    else if (type & ThreadType_GC)
-    {
-        TaskType = TT_GC;
-    }
-    else if (type & ThreadType_Finalizer)
-    {
-        TaskType = TT_FINALIZER;
-    }
-    else if (type & ThreadType_Timer)
-    {
-        TaskType = TT_THREADPOOL_TIMER;
-    }
-    else if (type & ThreadType_Gate)
-    {
-        TaskType = TT_THREADPOOL_GATE;
-    }
-    else if (type & ThreadType_Wait)
-    {
-        TaskType = TT_THREADPOOL_WAIT;
-    }
-    else if (type & ThreadType_Threadpool_IOCompletion)
-    {
-        TaskType = TT_THREADPOOL_IOCOMPLETION;
-    }
-    else if (type & ThreadType_Threadpool_Worker)
-    {
-        TaskType = TT_THREADPOOL_WORKER;
-    }
-    else
-    {
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            TaskType = TT_USER;
-        }
-    }
-
-    return TaskType;
-}
-
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG

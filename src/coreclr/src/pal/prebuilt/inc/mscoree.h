@@ -132,22 +132,6 @@ enum __MIDL___MIDL_itf_mscoree_0000_0000_0003
         WAIT_NOTINDEADLOCK	= 0x4
     } 	WAIT_OPTION;
 
-typedef 
-enum ETaskType
-    {
-        TT_DEBUGGERHELPER	= 0x1,
-        TT_GC	= 0x2,
-        TT_FINALIZER	= 0x4,
-        TT_THREADPOOL_TIMER	= 0x8,
-        TT_THREADPOOL_GATE	= 0x10,
-        TT_THREADPOOL_WORKER	= 0x20,
-        TT_THREADPOOL_IOCOMPLETION	= 0x40,
-        TT_ADUNLOAD	= 0x80,
-        TT_USER	= 0x100,
-        TT_THREADPOOL_WAIT	= 0x200,
-        TT_UNKNOWN	= 0x80000000
-    } 	ETaskType;
-
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_mscoree_0000_0000_0004
     {
