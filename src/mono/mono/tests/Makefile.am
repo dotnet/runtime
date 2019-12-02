@@ -384,6 +384,7 @@ TESTS_CS_SRC=		\
 	reflection.cs		\
 	interface.cs		\
 	interface-2.cs		\
+	dim-generic.cs		\
 	iface.cs		\
 	iface2.cs		\
 	iface3.cs		\
