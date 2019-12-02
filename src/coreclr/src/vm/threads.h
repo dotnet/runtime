@@ -1166,7 +1166,7 @@ public:
         TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns
                                                       // SO during wait, we will either spin or make GC wait.
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
-        TSNC_SOWorkNeeded               = 0x00000040, // The thread needs to wake up AD unload helper thread to finish SO work
+        // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
         TSNC_UnsafeSkipEnterCooperative = 0x00000200, // This is a "fix" for deadlocks caused when cleaning up COM
@@ -1181,8 +1181,7 @@ public:
                                                       // After the thread is interrupted once, we turn off interruption
                                                       // at the beginning of wait.
         // unused                       = 0x00040000,
-        TSNC_CannotRecycle              = 0x00080000, // A host can not recycle this Thread object.  When a thread
-                                                      // has orphaned lock, we will apply this.
+        // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
         TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
@@ -4496,43 +4495,6 @@ private:
     }
 
     typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
-
-public:
-    void PrepareThreadForSOWork()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_HIJACK
-        UnhijackThread();
-#endif // FEATURE_HIJACK
-
-        ResetThrowControlForThread();
-
-        // Since this Thread has taken an SO, there may be state left-over after we
-        // short-circuited exception or other error handling, and so we don't want
-        // to risk recycling it.
-        SetThreadStateNC(TSNC_CannotRecycle);
-    }
-
-    void SetSOWorkNeeded()
-    {
-        SetThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    BOOL IsSOWorkNeeded()
-    {
-        return HasThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    void FinishSOWork();
-
-    void ClearExceptionStateAfterSO(void* pStackFrameSP)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Clear any stale exception state.
-        m_ExceptionState.ClearExceptionStateAfterSO(pStackFrameSP);
-    }
 
 private:
     BOOL m_fAllowProfilerCallbacks;

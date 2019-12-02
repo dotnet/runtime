@@ -103,9 +103,6 @@ public:
     void EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
 
-    // After unwinding from an SO, there may be stale exception state.
-    void ClearExceptionStateAfterSO(void* pStackFrameSP);
-
     enum ThreadExceptionFlag
     {
         TEF_None                          = 0x00000000,

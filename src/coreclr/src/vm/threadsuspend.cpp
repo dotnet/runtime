@@ -994,11 +994,6 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-    if (IsAbortRequested() && HasThreadStateNC(TSNC_SOWorkNeeded))
-    {
-        return TRUE;
-    }
-
     if (GetThread() == this && HasThreadStateNC (TSNC_PreparingAbort) && !IsRudeAbort() )
     {
         STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  PreparingAbort\n");
@@ -2665,11 +2660,6 @@ void Thread::HandleThreadAbort ()
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-
-    // It's possible we could go through here if we hit a hard SO and MC++ has called back
-    // into the runtime on this thread
-
-    FinishSOWork();
 
     if (IsAbortRequested() && GetAbortEndTime() < CLRGetTickCount64())
     {

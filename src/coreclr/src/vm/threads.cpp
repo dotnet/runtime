@@ -850,8 +850,6 @@ void DestroyThread(Thread *th)
 
     _ASSERTE(g_fEEShutDown || th->m_dwLockCount == 0 || th->m_fRudeAborted);
 
-    th->FinishSOWork();
-
     GCX_PREEMP_NO_DTOR();
 
     if (th->IsAbortRequested()) {
@@ -941,8 +939,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
     _ASSERTE (this == GetThread());
-
-    FinishSOWork();
 
     FastInterlockIncrement(&Thread::m_DetachCount);
 
@@ -7030,8 +7026,6 @@ VOID Thread::RestoreGuardPage()
         }
     }
 
-    FinishSOWork();
-
     INDEBUG(DebugLogStackMBIs());
 
     return;
@@ -8077,8 +8071,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     CONTRACTL_END;
 
     _ASSERTE (this == GetThread());
-
-    FinishSOWork();
 
     INT32 nPriority = ThreadNative::PRIORITY_NORMAL;
 
