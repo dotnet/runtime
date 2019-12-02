@@ -4041,23 +4041,6 @@ private:
     // it is performing a <clinit>)
     int         m_PreventAsync;
     int         m_PreventAbort;
-    int         m_nNestedMarshalingExceptions;
-    BOOL IsMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_nNestedMarshalingExceptions != 0);
-    }
-    int StartedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nNestedMarshalingExceptions++;
-    }
-    void FinishedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_nNestedMarshalingExceptions > 0);
-        m_nNestedMarshalingExceptions--;
-    }
 
     static LONG m_DebugWillSyncCount;
 

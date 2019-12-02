@@ -1436,8 +1436,6 @@ Thread::Thread()
 
     m_RequestedStackSize = 0;
     m_PreventAsync = 0;
-    m_PreventAbort = 0;
-    m_nNestedMarshalingExceptions = 0;
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
