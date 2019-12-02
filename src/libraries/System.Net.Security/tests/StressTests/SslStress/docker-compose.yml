@@ -11,4 +11,4 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - SSLSTRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${SSLTRESS_SERVER_ARGS}
+      - SSLSTRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${SSLSTRESS_SERVER_ARGS}
