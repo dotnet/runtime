@@ -49,6 +49,7 @@ private const string SimpleVecOpTest_ValidationLogic = @"
 private static readonly (string templateFileName, string outputTemplateName, Dictionary<string, string> templateData)[] Templates = new[]
 {
     ("_BinaryOpTestTemplate.template",        "SimpleBinOpTest.template",       new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
+    ("_TernaryOpTestTemplate.template",       "SimpleTernOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
     ("_UnaryOpTestTemplate.template",         "SimpleUnOpTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
     ("_UnaryOpTestTemplate.template",         "SimpleVecOpTest.template",       new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
 };
