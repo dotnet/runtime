@@ -58,7 +58,7 @@ jobs:
           parameters:
             targetOS: ${{ parameters.osGroup }}
             archGroup: ${{ parameters.archType }}
-            configuration: ${{ parameters.buildConfig }}
+            configuration: $(_BuildConfig)
             helixQueues: ${{ join('+', parameters.helixQueues) }}
             msbuildScript: $(_msbuildCommand)
             framework: ${{ parameters.framework }}
