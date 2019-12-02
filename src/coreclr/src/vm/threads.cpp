@@ -529,7 +529,6 @@ DWORD Thread::StartThread()
 LONG    Thread::m_DebugWillSyncCount = -1;
 LONG    Thread::m_DetachCount = 0;
 LONG    Thread::m_ActiveDetachCount = 0;
-int     Thread::m_offset_counter = 0;
 
 //-------------------------------------------------------------------------
 // Public function: SetupThreadNoThrow()
@@ -2064,28 +2063,6 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     return bRet;
 }
 
-
-// This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
-// which can significantly impact performance with HyperThreading enabled
-DWORD WINAPI Thread::intermediateThreadProc(PVOID arg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_offset_counter++;
-    if (m_offset_counter * offset_multiplier > (int) GetOsPageSize())
-        m_offset_counter = 0;
-
-    (void)_alloca(m_offset_counter * offset_multiplier);
-
-    intermediateThreadParam* param = (intermediateThreadParam*)arg;
-
-    LPTHREAD_START_ROUTINE ThreadFcnPtr = param->lpThreadFunction;
-    PVOID args = param->lpArg;
-    delete param;
-
-    return ThreadFcnPtr(args);
-}
-
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2261,13 +2238,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
 #endif // !FEATURE_PAL
 
-    intermediateThreadParam* lpThreadArgs = new (nothrow) intermediateThreadParam;
-    if (lpThreadArgs == NULL)
-    {
-        return FALSE;
-    }
-    NewHolder<intermediateThreadParam> argHolder(lpThreadArgs);
-
     // Make sure we have all our handles, in case someone tries to suspend us
     // as we are starting up.
     if (!AllocHandles())
@@ -2276,24 +2246,19 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
         return FALSE;
     }
 
-    lpThreadArgs->lpThreadFunction = start;
-    lpThreadArgs->lpArg = args;
-
 #ifdef FEATURE_PAL
     h = ::PAL_CreateThread64(NULL     /*=SECURITY_ATTRIBUTES*/,
 #else
     h = ::CreateThread(      NULL     /*=SECURITY_ATTRIBUTES*/,
 #endif
                              sizeToCommitOrReserve,
-                             intermediateThreadProc,
-                             lpThreadArgs,
+                             start,
+                             args,
                              dwCreationFlags,
                              &ourId);
 
     if (h == NULL)
         return FALSE;
-
-    argHolder.SuppressRelease();
 
     _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
 

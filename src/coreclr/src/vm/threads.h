@@ -4207,18 +4207,6 @@ public:
     // Is the current thread currently executing within a constrained execution region?
     static BOOL IsExecutingWithinCer();
 
-private:
-    // used to pad stack on thread creation to avoid aliasing penalty in P4 HyperThread scenarios
-
-    static DWORD WINAPI intermediateThreadProc(PVOID arg);
-    static int m_offset_counter;
-    static const int offset_multiplier = 128;
-
-    typedef struct {
-        LPTHREAD_START_ROUTINE  lpThreadFunction;
-        PVOID lpArg;
-    } intermediateThreadParam;
-
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:
