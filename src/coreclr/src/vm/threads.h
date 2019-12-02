@@ -4846,23 +4846,6 @@ private:
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
-
-// Combines ForBindSuspendThreadHolder and CrstHolder into one.
-class ForbidSuspendThreadCrstHolder
-{
-public:
-    // Note: member initialization is intentionally ordered.
-    ForbidSuspendThreadCrstHolder(CrstBase * pCrst)
-        : m_forbid_suspend_holder()
-        , m_lock_holder(pCrst)
-    { WRAPPER_NO_CONTRACT; }
-
-private:
-    ForbidSuspendThreadHolder   m_forbid_suspend_holder;
-    CrstHolder                  m_lock_holder;
-};
-
-
 typedef Thread::AVInRuntimeImplOkayHolder AVInRuntimeImplOkayHolder;
 
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken);
