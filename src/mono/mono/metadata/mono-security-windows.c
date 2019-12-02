@@ -443,7 +443,7 @@ mono_security_win_protect_user (const gunichar2 *path, MonoError *error)
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *root, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *root)
 {
 	DWORD flags = 0;
 
@@ -454,31 +454,44 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunicha
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path)
 {
 	/* no one, but the owner, should have write access to the directory */
-	return (MonoBoolean)mono_security_win_is_machine_protected (path, error);
+	ERROR_DECL (error);
+	MonoBoolean result = (MonoBoolean)mono_security_win_is_machine_protected (path, error);
+	mono_error_set_pending_exception (error);
+	return result;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path)
 {
 	/* no one, but the user, should have access to the directory */
-	return (MonoBoolean)mono_security_win_is_user_protected (path, error);
+	ERROR_DECL (error);
+	MonoBoolean result = (MonoBoolean)mono_security_win_is_user_protected (path, error);
+	mono_error_set_pending_exception (error);
+	return result;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path)
 {
 	/* read/write to owner, read to everyone else */
-	return (MonoBoolean)mono_security_win_protect_machine (path, error);
+	ERROR_DECL (error);
+	MonoBoolean result = (MonoBoolean)mono_security_win_protect_machine (path, error);
+	mono_error_set_pending_exception (error);
+	return result;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path)
 {
 	/* read/write to user, no access to everyone else */
-	return (MonoBoolean)mono_security_win_protect_user (path, error);
+	ERROR_DECL (error);
+	MonoBoolean result = (MonoBoolean)mono_security_win_protect_user (path, error);
+	mono_error_set_pending_exception (error);
+	return result;
+
 }
 
 #endif /* HOST_WIN32 */

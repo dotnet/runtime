@@ -526,7 +526,7 @@ Protect (const gunichar2 *path, gint32 file_mode, gint32 add_dir_mode)
 #ifdef HAVE_CHMOD
 			result = (chmod (utf8_name, mode) == 0);
 #else
-			result = -1;
+			result = -1; // FIXME Huh? This must be TRUE or FALSE.
 #endif
 		}
 		g_free (utf8_name);
@@ -535,14 +535,14 @@ Protect (const gunichar2 *path, gint32 file_mode, gint32 add_dir_mode)
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *path)
 {
 	/* we assume some kind of security is applicable outside Windows */
 	return TRUE;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path)
 {
 	gboolean ret = FALSE;
 
@@ -552,7 +552,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (cons
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path)
 {
 	gboolean ret = FALSE;
 
@@ -562,7 +562,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const g
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path)
 {
 	gboolean ret = FALSE;
 
@@ -572,7 +572,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gu
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path, MonoError *error)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path)
 {
 	gboolean ret = FALSE;
 	
