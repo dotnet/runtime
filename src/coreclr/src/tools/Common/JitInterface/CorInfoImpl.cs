@@ -653,11 +653,7 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsRawPInvoke())
-            {
-                result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-            }
-            else if (method.IsNoInlining)
+            if (method.IsNoInlining)
             {
                 /* Function marked as not inlineable */
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
