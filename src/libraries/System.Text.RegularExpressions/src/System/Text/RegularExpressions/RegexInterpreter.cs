@@ -430,7 +430,7 @@ namespace System.Text.RegularExpressions
                     // left-to-right, case-sensitive
                     for (int i = 0; i < span.Length; i++)
                     {
-                        if (RegexCharClass.CharInClass(span[i], set))
+                        if (RegexCharClass.CharInClass(span[i], set, ref _code.FCPrefixAsciiLookup))
                         {
                             runtextpos += i;
                             return true;
@@ -442,8 +442,8 @@ namespace System.Text.RegularExpressions
                     // left-to-right, case-insensitive
                     TextInfo ti = _culture.TextInfo;
                     for (int i = 0; i < span.Length; i++)
-                        {
-                        if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set))
+                    {
+                        if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.FCPrefixAsciiLookup))
                         {
                             runtextpos += i;
                             return true;
@@ -458,7 +458,7 @@ namespace System.Text.RegularExpressions
                     // right-to-left, case-sensitive
                     for (int i = runtextpos - 1; i >= runtextbeg; i--)
                     {
-                        if (RegexCharClass.CharInClass(runtext![i], set))
+                        if (RegexCharClass.CharInClass(runtext![i], set, ref _code.FCPrefixAsciiLookup))
                         {
                             runtextpos = i + 1;
                             return true;
@@ -471,7 +471,7 @@ namespace System.Text.RegularExpressions
                     TextInfo ti = _culture.TextInfo;
                     for (int i = runtextpos - 1; i >= runtextbeg; i--)
                     {
-                        if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set))
+                        if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.FCPrefixAsciiLookup))
                         {
                             runtextpos = i + 1;
                             return true;
@@ -924,8 +924,14 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.Set:
-                        if (Forwardchars() < 1 || !RegexCharClass.CharInClass(Forwardcharnext(), _code.Strings[Operand(0)]))
+                        if (Forwardchars() < 1)
                             break;
+
+                        {
+                            int operand = Operand(0);
+                            if (!RegexCharClass.CharInClass(Forwardcharnext(), _code.Strings[operand], ref _code.StringsAsciiLookup[operand]))
+                                break;
+                        }
 
                         advance = 1;
                         continue;
@@ -999,7 +1005,9 @@ namespace System.Text.RegularExpressions
                             if (Forwardchars() < c)
                                 break;
 
-                            string set = _code.Strings[Operand(0)];
+                            int operand0 = Operand(0);
+                            string set = _code.Strings[operand0];
+                            ref int[]? setLookup = ref _code.StringsAsciiLookup[operand0];
 
                             while (c-- > 0)
                             {
@@ -1011,7 +1019,7 @@ namespace System.Text.RegularExpressions
                                     CheckTimeout();
                                 }
 
-                                if (!RegexCharClass.CharInClass(Forwardcharnext(), set))
+                                if (!RegexCharClass.CharInClass(Forwardcharnext(), set, ref setLookup))
                                     goto BreakBackward;
                             }
 
@@ -1078,7 +1086,9 @@ namespace System.Text.RegularExpressions
                             if (c > Forwardchars())
                                 c = Forwardchars();
 
-                            string set = _code.Strings[Operand(0)];
+                            int operand0 = Operand(0);
+                            string set = _code.Strings[operand0];
+                            ref int[]? setLookup = ref _code.StringsAsciiLookup[operand0];
                             int i;
 
                             for (i = c; i > 0; i--)
@@ -1091,7 +1101,7 @@ namespace System.Text.RegularExpressions
                                     CheckTimeout();
                                 }
 
-                                if (!RegexCharClass.CharInClass(Forwardcharnext(), set))
+                                if (!RegexCharClass.CharInClass(Forwardcharnext(), set, ref setLookup))
                                 {
                                     Backwardnext();
                                     break;
@@ -1207,7 +1217,8 @@ namespace System.Text.RegularExpressions
                             int pos = TrackPeek(1);
                             Textto(pos);
 
-                            if (!RegexCharClass.CharInClass(Forwardcharnext(), _code.Strings[Operand(0)]))
+                            int operand0 = Operand(0);
+                            if (!RegexCharClass.CharInClass(Forwardcharnext(), _code.Strings[operand0], ref _code.StringsAsciiLookup[operand0]))
                                 break;
 
                             int i = TrackPeek();
