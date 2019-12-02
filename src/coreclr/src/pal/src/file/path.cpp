@@ -596,8 +596,6 @@ FILEDosToUnixPathA(
        LPSTR lpPath)
 {
     LPSTR p;
-    LPSTR pPointAtDot=NULL;
-    char charBeforeFirstDot='\0';
 
     TRACE("Original DOS path = [%s]\n", lpPath);
 
