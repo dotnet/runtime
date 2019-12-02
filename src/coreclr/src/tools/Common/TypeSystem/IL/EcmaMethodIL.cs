@@ -97,7 +97,9 @@ namespace Internal.IL
 
             EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
             LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
-            return (_locals = locals);
+
+            Interlocked.CompareExchange(ref _locals, locals, null);
+            return _locals;
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
@@ -131,7 +133,8 @@ namespace Internal.IL
                 }
             }
 
-            return (_ilExceptionRegions = ilExceptionRegions);
+            Interlocked.CompareExchange(ref _ilExceptionRegions, ilExceptionRegions, null);
+            return _ilExceptionRegions;
         }
 
         public override object GetObject(int token)

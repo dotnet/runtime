@@ -14,30 +14,4 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands>
-  <![CDATA[
-$(CLRTestBatchPreCommands)
-set CoreRT_DeterminismSeed=1
-mkdir seed1
-%CORE_ROOT%\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.exe compile-directory -cr %CORE_ROOT% -in %CORE_ROOT% --nojit --noexe --large-bubble --release --nocleanup -out seed1
-
-set CoreRT_DeterminismSeed=2
-mkdir seed2
-%CORE_ROOT%\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.exe compile-directory -cr %CORE_ROOT% -in %CORE_ROOT% --nojit --noexe --large-bubble --release --nocleanup -out seed2
-
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands>
-  <![CDATA[
-$(BashCLRTestPreCommands)
-export CoreRT_DeterminismSeed=1
-mkdir seed1
-$CORE_ROOT/ReadyToRun.SuperIlc/ReadyToRun.SuperIlc.exe compile-directory -cr $CORE_ROOT -in $CORE_ROOT --nojit --noexe --large-bubble --release --nocleanup -out seed1
-
-export CoreRT_DeterminismSeed=2
-mkdir seed2
-$CORE_ROOT/ReadyToRun.SuperIlc/ReadyToRun.SuperIlc.exe compile-directory -cr $CORE_ROOT -in $CORE_ROOT --nojit --noexe --large-bubble --release --nocleanup -out seed2
-
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>
