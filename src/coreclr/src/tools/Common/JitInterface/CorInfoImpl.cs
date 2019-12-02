@@ -1642,7 +1642,7 @@ namespace Internal.JitInterface
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
                 // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
                 // doing it for perf reasons.
-                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
                     if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
                     {

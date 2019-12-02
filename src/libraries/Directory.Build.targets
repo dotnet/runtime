@@ -7,28 +7,6 @@
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
   </PropertyGroup>
-  
-  <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
-  <Choose>
-    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-      </PropertyGroup>
-      <ItemGroup>
-        <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
-
-  <PropertyGroup>
-    <!--
-    For non-SDK projects that import this file and then import Microsoft.Common.targets,
-    tell Microsoft.Common.targets not to import Directory.Build.targets again
-    -->
-    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
-    <!-- This is a workaround to allow the SDK to accept the netcoreapp5.0 tfm until the SDK supports targeting this tfm. -->
-    <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
-  </PropertyGroup>
 
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
@@ -198,5 +176,17 @@
        by the NuGet package generation -->
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
+
+  <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
+  <Choose>
+    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
 </Project>
