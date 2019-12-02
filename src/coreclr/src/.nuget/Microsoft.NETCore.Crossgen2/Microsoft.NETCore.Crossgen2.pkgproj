@@ -19,10 +19,10 @@
     <Crossgen2RuntimeConfigContents>
 {
   "runtimeOptions": {
-    "tfm": "netcoreapp3.0",
+    "tfm": "netcoreapp5.0",
     "framework": {
       "name": "Microsoft.NETCore.App",
-      "version": "5.0.0-alpha1.0"
+      "version": "5.0.100-alpha1-015772"
     }
   }
 }
