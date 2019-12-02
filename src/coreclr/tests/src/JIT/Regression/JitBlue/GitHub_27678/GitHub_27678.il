@@ -4,6 +4,20 @@
 
 // Do an IL jmp instruction in a method with a big local frame,
 // where SP restore needs a free register to free local frame (sp += frameSize).
+// In the past codegen was always using R3 as a temp without checking that it could
+// be occupied by an argument value.
+
+// asm example for arm32 windows:
+//
+// movw    r10, 0x1040	// [V01 arg0] <- restore 8 byte V01 arg (r2, r2) from the stack.
+// str     r2, [sp+r10]	// [V01 arg0]
+// movw    r10, 0x1044	// [V01 arg0+0x04]
+// str     r3, [sp+r10]	// [V01 arg0+0x04] 
+// __epilog:
+// movw    r3, frameSize
+// add     sp, r3 <- corrupt r3 value to free local frame.
+// pop     {r10,lr}
+// bx      jumpAddress
 
 .assembly extern System.Runtime {}
 .assembly extern System.Diagnostics.Debug {}
