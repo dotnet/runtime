@@ -3,8 +3,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectAssetsFile>$(SourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
-    <NuGetTargetMoniker>$(NetCoreAppvNextTFMFull)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppvNextTFM)</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTFMFull)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrentTFM)</NuGetTargetMonikerShort>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,7 +7,7 @@
     <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(BuildArch)').ToUpper())</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
-    <TargetFramework>$(NetCoreAppvNextTFM)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrentTFM)</TargetFramework>
     <ProjectAssetsFile>$(SourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
   <ItemGroup>

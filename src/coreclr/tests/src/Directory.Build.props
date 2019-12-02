@@ -142,7 +142,7 @@
     <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>$(NetCoreAppvNextTFMFull)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppvNextTFM)</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTFMFull)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrentTFM)</NuGetTargetMonikerShort>
   </PropertyGroup>
 </Project>

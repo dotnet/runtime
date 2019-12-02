@@ -28,8 +28,8 @@
 
   <!-- The NetCoreApp TFM to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppvNextTFMFull>.NETCoreApp,Version=v5.0</NetCoreAppvNextTFMFull>
-    <NetCoreAppvNextTFM>netcoreapp5.0</NetCoreAppvNextTFM>
+    <NetCoreAppCurrentTFMFull>.NETCoreApp,Version=v5.0</NetCoreAppCurrentTFMFull>
+    <NetCoreAppCurrentTFM>netcoreapp5.0</NetCoreAppCurrentTFM>
   </PropertyGroup>
 
   <!--

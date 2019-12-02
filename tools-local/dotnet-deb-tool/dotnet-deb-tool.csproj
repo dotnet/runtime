@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppvNextTFM)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrentTFM)</TargetFramework>
     <AssemblyName>dotnet-deb-tool</AssemblyName>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
