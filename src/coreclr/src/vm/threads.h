@@ -4629,34 +4629,6 @@ private:
     Exception *m_pCreatingThrowableForException;
     friend OBJECTREF CLRException::GetThrowable();
 
-#ifdef _DEBUG
-private:
-    int m_dwDisableAbortCheckCount; // Disable check before calling managed code.
-                                    // !!! Use this very carefully.  If managed code runs user code
-                                    // !!! or blocks on locks, the thread may not be aborted.
-public:
-    static void        DisableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-    static void        EnableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        _ASSERTE (pThread->m_dwDisableAbortCheckCount > 0);
-        FastInterlockDecrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-
-    BOOL IsAbortCheckDisabled()
-    {
-        return m_dwDisableAbortCheckCount > 0;
-    }
-
-    typedef StateHolder<Thread::DisableAbortCheck, Thread::EnableAbortCheck> DisableAbortCheckHolder;
-#endif
-
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.

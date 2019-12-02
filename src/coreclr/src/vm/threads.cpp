@@ -1519,9 +1519,6 @@ Thread::Thread()
     SetProfilerCallbacksAllowed(TRUE);
 
     m_pCreatingThrowableForException = NULL;
-#ifdef _DEBUG
-    m_dwDisableAbortCheckCount = 0;
-#endif // _DEBUG
 
 #ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
