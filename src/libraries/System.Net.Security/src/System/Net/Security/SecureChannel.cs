@@ -626,7 +626,7 @@ namespace System.Net.Security
         //
         // Acquire Server Side Certificate information and set it on the class.
         //
-        private bool AcquireServerCredentials(ref byte[] thumbPrint, byte[] clientHello)
+        private bool AcquireServerCredentials(ref byte[] thumbPrint, byte[] clientHello, int offset, int count)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
@@ -640,7 +640,7 @@ namespace System.Net.Security
             // with .NET Framework), and if neither is set we fall back to using ServerCertificate.
             if (_sslAuthenticationOptions.ServerCertSelectionDelegate != null)
             {
-                string serverIdentity = SniHelper.GetServerName(clientHello);
+                string serverIdentity = SniHelper.GetServerName(clientHello, offset, count);
                 localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(serverIdentity);
 
                 if (localCertificate == null)
@@ -797,7 +797,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint, input)
+                                        ? AcquireServerCredentials(ref thumbPrint, input, offset, count)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 
@@ -806,7 +806,7 @@ namespace System.Net.Security
                         status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle,
                                       ref _securityContext,
-                                      input != null ? new ArraySegment<byte>(input, offset, count) : default,
+                                      input, offset, count,
                                       ref result,
                                       _sslAuthenticationOptions);
                     }
@@ -816,7 +816,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
-                                      input != null ? new ArraySegment<byte>(input, offset, count) : default,
+                                       input, offset, count,
                                        ref result,
                                        _sslAuthenticationOptions);
                     }

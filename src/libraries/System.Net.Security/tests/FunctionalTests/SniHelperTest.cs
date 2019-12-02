@@ -32,7 +32,7 @@ namespace System.Net.Security.Tests
 
         private void InvalidClientHello(byte[] clientHello, int id, bool shouldPass)
         {
-            string ret = SniHelper.GetServerName(clientHello);
+            string ret = SniHelper.GetServerName(clientHello, 0, clientHello.Length);
             if (shouldPass)
                 Assert.NotNull(ret);
             else

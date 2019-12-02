@@ -387,6 +387,49 @@ namespace System.Net.Security
             }
         }
 
+        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken)
+        {
+            _Framing = Framing.Unknown;
+            ProtocolToken message;
+            SslReadAsync adapter = new SslReadAsync(this, cancellationToken);
+
+            if (!receiveFirst)
+            {
+                message =_context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
+                if (message.Failed)
+                {
+                    // tracing done in NextMessage()
+                    throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                }
+
+                await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+            }
+
+            do
+            {
+                message  = await ReceiveBlobAsync(adapter, null, cancellationToken).ConfigureAwait(false);
+                if (message.Size > 0)
+                {
+                    // If there is message send it out even if call failed. It may contain TLS Altert.
+                    await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (message.Failed)
+                {
+                    throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                }
+            } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
+
+            ProtocolToken alertToken = null;
+            if (!CompleteHandshake(ref alertToken))
+            {
+                StartSendAuthResetSignal(alertToken, null, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                return;
+            }
+
+            return;
+        }
+
         private void EndProcessAuthentication(IAsyncResult result)
         {
             if (result == null)
@@ -617,6 +660,43 @@ namespace System.Net.Security
             ProcessReceivedBlob(buffer, readBytes + restBytes, asyncRequest);
         }
 
+        private async Task<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, CancellationToken cancellationToken)
+        {
+            ResetReadBuffer();
+            int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
+            if (readBytes == 0)
+            {
+                throw new IOException(SR.net_io_eof);
+            }
+
+            if (_Framing == Framing.Unified || _Framing == Framing.Unknown)
+            {
+                _Framing = DetectFraming(_internalBuffer, readBytes);
+            }
+
+            int payloadBytes = GetRemainingFrameSize(_internalBuffer, _internalOffset, readBytes);
+            if (payloadBytes < 0)
+            {
+                throw new IOException(SR.net_frame_read_size);
+            }
+
+            int frameSize = SecureChannel.ReadHeaderSize + payloadBytes;
+            if (readBytes < frameSize)
+            {
+                readBytes = await FillBufferAsync(adapter, frameSize).ConfigureAwait(false);
+                 Debug.Assert(readBytes >= 0);
+                 if (readBytes == 0)
+                 {
+                    throw new IOException(SR.net_io_eof);
+                }
+            }
+
+            ProtocolToken token = ProcessBlob(_internalBuffer, _internalOffset, frameSize);
+            ConsumeBufferedBytes(frameSize);
+
+            return token;
+        }
+
         private void ProcessReceivedBlob(byte[] buffer, int count, AsyncProtocolRequest asyncRequest)
         {
             if (count == 0)
@@ -662,6 +742,43 @@ namespace System.Net.Security
 
             StartSendBlob(buffer, count, asyncRequest);
         }
+
+        private ProtocolToken ProcessBlob(byte[] buffer, int bufferOffset, int count)
+        {
+            if (_pendingReHandshake)
+            {
+                int offset = 0;
+                SecurityStatusPal status = PrivateDecryptData(buffer, ref offset, ref count);
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                {
+                    Exception e = EnqueueOldKeyDecryptedData(buffer, offset, count);
+                    if (e != null)
+                    {
+                        ExceptionDispatchInfo.Throw(e);
+                    }
+
+                    _Framing = Framing.Unknown;
+                    return null;
+                }
+                else if (status.ErrorCode != SecurityStatusPalErrorCode.Renegotiate)
+                {
+                    // Fail re-handshake.
+                    ProtocolToken message = new ProtocolToken(null, status);
+                    throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                }
+
+                // We expect only handshake messages from now.
+                _pendingReHandshake = false;
+                if (offset != 0)
+                {
+                    Buffer.BlockCopy(buffer, offset, buffer, 0, buffer.Length);
+                }
+            }
+
+            return _context.NextMessage(buffer, bufferOffset, count);
+        }
+
 
         //
         //  This is to reset auth state on remote side.

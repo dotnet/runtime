@@ -225,7 +225,17 @@ namespace System.Net
                     _fromConnection.Enqueue(buf[offset + i]);
                 }
             }
+        }
 
+        internal void Write(ReadOnlySpan<byte> buf)
+        {
+            lock (_fromConnection)
+            {
+                for (int i = 0; i < buf.Length; i++)
+                {
+                    _fromConnection.Enqueue(buf[i]);
+                }
+            }
         }
 
         internal int BytesReadyForConnection => _toConnection.Count;

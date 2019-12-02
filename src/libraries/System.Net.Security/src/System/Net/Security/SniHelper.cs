@@ -16,9 +16,9 @@ namespace System.Net.Security
         private static readonly IdnMapping s_idnMapping = CreateIdnMapping();
         private static readonly Encoding s_encoding = CreateEncoding();
 
-        public static string GetServerName(byte[] clientHello)
+        public static string GetServerName(byte[] clientHello, int offset, int count)
         {
-            return GetSniFromSslPlainText(clientHello);
+            return GetSniFromSslPlainText(new ReadOnlySpan<byte>(clientHello, offset, count));
         }
 
         private static string GetSniFromSslPlainText(ReadOnlySpan<byte> sslPlainText)

@@ -76,6 +76,11 @@ namespace System.Net.Security
         private void ReturnReadBufferIfEmpty()
         {
         }
+
+        private Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken)
+        {
+            return Task.Run(() => {});
+        }
     }
 
     internal class SecureChannel
