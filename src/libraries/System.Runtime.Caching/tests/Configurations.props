@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Windows_NT;
+      netcoreapp5.0-Windows_NT;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

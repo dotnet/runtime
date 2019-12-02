@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp-Windows_NT;
+      netcoreapp5.0-Windows_NT;
       _netfx;
     </BuildConfigurations>
   </PropertyGroup>

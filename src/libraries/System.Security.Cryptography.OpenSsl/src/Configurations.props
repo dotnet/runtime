@@ -7,8 +7,8 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp-Unix;
-      netcoreapp;
+      netcoreapp5.0-Unix;
+      netcoreapp5.0
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

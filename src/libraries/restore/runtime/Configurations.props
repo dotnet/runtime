@@ -3,8 +3,8 @@
     <BuildConfigurations>
       netcoreapp3.0-Windows_NT;
       netcoreapp3.0-Unix;
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
+      netcoreapp5.0-Windows_NT;
+      netcoreapp5.0-Unix;
       mono;
     </BuildConfigurations>
   </PropertyGroup>

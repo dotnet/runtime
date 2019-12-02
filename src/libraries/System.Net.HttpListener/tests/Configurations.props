@@ -1,9 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Windows_NT;
-      netcoreapp-OSX;
-      netcoreapp-Unix;
+      netcoreapp5.0-Windows_NT;
+      netcoreapp5.0-OSX;
+      netcoreapp5.0-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

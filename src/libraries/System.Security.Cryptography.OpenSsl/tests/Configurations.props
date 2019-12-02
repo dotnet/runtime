@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Unix;
+      netcoreapp5.0-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

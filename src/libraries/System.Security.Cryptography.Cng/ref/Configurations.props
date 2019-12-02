@@ -9,7 +9,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      netcoreapp;
+      netcoreapp5.0
       netfx;
     </BuildConfigurations>
   </PropertyGroup>
