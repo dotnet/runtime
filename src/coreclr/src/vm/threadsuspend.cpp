@@ -937,29 +937,6 @@ BOOL Thread::IsExecutingWithinCer()
     return sContext.fWithinCer;
 }
 
-
-// Context structure used during stack walks to determine whether a given method is executing within a CER.
-struct CerStackCrawlContext
-{
-    MethodDesc *m_pStartMethod;         // First method we crawl (here for debug purposes)
-    bool        m_fFirstFrame;          // True for first callback only
-    bool        m_fWithinCer;           // The result
-};
-
-
-// Determine whether the method at the given depth in the thread's execution stack is executing within a CER.
-BOOL Thread::IsWithinCer(CrawlFrame *pCf)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return FALSE;
-}
-
 #if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 {

@@ -4216,9 +4216,6 @@ public:
     // Is the current thread currently executing within a constrained execution region?
     static BOOL IsExecutingWithinCer();
 
-    // Determine whether the method at the given frame in the thread's execution stack is executing within a CER.
-    BOOL IsWithinCer(CrawlFrame *pCf);
-
 private:
     // used to pad stack on thread creation to avoid aliasing penalty in P4 HyperThread scenarios
 
