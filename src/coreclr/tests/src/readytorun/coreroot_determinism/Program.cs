@@ -63,7 +63,7 @@ internal class Program
 
     public static void CompileWithSeed(int seed, string outDir)
     {
-        string coreRootPath = Environment.GetEnvironmentVariable("Core_Root");
+        string coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
         string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", OSExeSuffix("ReadyToRun.SuperIlc"));
 
         Console.WriteLine($"================================== Compiling with seed {seed} ==================================");
