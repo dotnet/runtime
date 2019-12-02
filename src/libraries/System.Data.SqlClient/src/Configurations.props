@@ -9,7 +9,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      netcoreapp5.0
+      netcoreapp5.0;
       netcoreapp5.0-Unix;
       netcoreapp5.0-Windows_NT;
       _netfx-Windows_NT;

@@ -7,7 +7,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp5.0-Windows_NT;
-      netcoreapp5.0
+      netcoreapp5.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

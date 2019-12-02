@@ -3,7 +3,7 @@
     <!-- Needs netfx configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
     <BuildConfigurations>
       netfx;
-      netcoreapp5.0
+      netcoreapp5.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

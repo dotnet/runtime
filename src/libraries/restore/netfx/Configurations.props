@@ -10,7 +10,7 @@
       net47;
       net471;
       netfx;
-      netcoreapp5.0
+      netcoreapp5.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
