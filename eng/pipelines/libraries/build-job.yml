@@ -44,7 +44,7 @@ jobs:
           - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
         - ${{ if eq(parameters.runTests, true) }}:
           - _buildAction: -build -buildtests /p:ArchiveTests=true
-          - ${{ if and(ne(parameters.framework, 'allConfigurations'), not(parameters.useLiveCoreClr)) }}:
+          - ${{ if and(ne(parameters.framework, 'allConfigurations'), ne(parameters.useLiveCoreClr, true)) }}:
             - _skipTestRestoreArg: /p:SkipTestRestore=false
 
         - ${{ parameters.variables }}

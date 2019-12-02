@@ -111,7 +111,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x86
     - Windows_NT_x64
-    - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:

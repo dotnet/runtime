@@ -1,7 +1,4 @@
 <Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
-
-  <Import Project="Directory.Build.props" />
-
   <PropertyGroup>
     <!-- Set helix source -->
     <HelixSourcePrefix>pr/</HelixSourcePrefix>
@@ -87,9 +84,6 @@
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TargetGroup)' != 'AllConfigurations'">
 
-    <Message Importance="High" Text="CompressRuntimeDirectory: TestArchiveRuntimeRoot=$(TestArchiveRuntimeRoot)" />
-    <Message Importance="High" Text="CompressRuntimeDirectory: TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)" />
-
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
@@ -99,11 +93,6 @@
 
   <Target Name="BuildHelixWorkItems"
           DependsOnTargets="CompressRuntimeDirectory">
-
-    <Message Importance="High" Text="BuildHelixWorkItems: _RuntimeInputs = @(_RuntimeInputs)" />
-    <Message Importance="High" Text="BuildHelixWorkItems: TestArchiveRuntimeDependency = @(TestArchiveRuntimeDependency)" />
-    <Message Importance="High" Text="BuildHelixWorkItems: TestArchiveRuntimeFile = @(TestArchiveRuntimeFile)" />
-    <Message Importance="High" Text="BuildHelixWorkItems: TargetGroup = @(TargetGroup)" />
 
     <ItemGroup>
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
