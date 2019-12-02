@@ -8,7 +8,7 @@
   <ItemGroup>
     <!-- 
       Microsoft.CodeAnalysis.Common shouldn't be referenced directly but is needed by the analyzer depproj restore.
-      TODO: Remove when project restore is enabled for non test projects.
+      TODO: Remove when project restore is enabled for non test projects: https://github.com/dotnet/corefx/issues/41512.
     -->
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0-beta2-final" PrivateAssets="all" />
   </ItemGroup>
