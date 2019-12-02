@@ -80,15 +80,11 @@ jobs:
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
           - _runtimeOSArg: /p:RuntimeOS=win10
-          - _archiveExtension: '.zip'
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
           - _buildScript: ./$(buildScriptFileName)$(scriptExt)
-          - _archiveExtension: '.tar.gz'
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 

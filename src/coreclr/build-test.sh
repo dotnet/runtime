@@ -136,9 +136,9 @@ patch_corefx_libraries()
 {
     echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath}"
 
-    __CoreFXBuildType=Debug
-    if [ "$__BuildType" == "release" ]; then
-        __CoreFXBuildType=Release
+    __CoreFXBuildType=Release
+    if [ "$__BuildType" == "debug" ]; then
+        __CoreFXBuildType=Debug
     fi
 
     patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__CoreFXBuildType}")

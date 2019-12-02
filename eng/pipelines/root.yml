@@ -1,0 +1,123 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+    - master
+    - release/*.*
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+#
+# Build CoreCLR
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+
+#
+# Build CoreFX using live CoreLib from CoreCLR
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      isOfficialBuild: false
+      testScope: empty
+      useLiveCoreClr: true
+
+#
+# Test builds using live CoreFX
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+      useLiveLibraries: true
+
+#
+# CoreCLR Test executions
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      useLiveLibraries: true
+
+#
+# CoreFX Test Build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      isOfficialBuild: false
+      testScope: innerloop
+      useLiveCoreClr: true
+
+#
+# CoreFX Test Execution
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Windows_NT_x86
+    - Windows_NT_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: false
+      framework: netcoreapp
+      testScope: innerloop
+      useLiveCoreClr: true
+      dependsOnBuildConfiguration: checked
