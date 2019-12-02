@@ -102,7 +102,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal const uint ProtocolError = 200000013;
             internal const uint VerNegError = 200000014;
 
-
             public static string GetError(uint status)
             {
                 switch (status)
