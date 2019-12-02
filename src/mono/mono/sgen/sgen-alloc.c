@@ -489,6 +489,10 @@ sgen_alloc_obj_pinned (GCVTable vtable, size_t size)
 	return p;
 }
 
+/*
+ * Used to allocate thread objects during attach. Doesn't trigger collections since
+ * the thread is not yet attached.
+ */
 GCObject*
 sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 {
@@ -499,7 +503,7 @@ sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 	size = ALIGN_UP (size);
 
 	LOCK_GC;
-	res = alloc_degraded (vtable, size, TRUE);
+	res = sgen_major_collector.alloc_degraded (vtable, size);
 	UNLOCK_GC;
 
 	if (res) {
