@@ -8003,6 +8003,9 @@ parse_cpu_features (const gchar *attr)
 	
 #elif defined(TARGET_ARM64)
 	// TODO: neon, sha1, sha2, asimd, etc...
+#elif defined(TARGET_WASM)
+	if (!strcmp (attr + prefix, "simd"))
+		feature = MONO_CPU_WASM_SIMD;
 #endif
 
 	if (enabled)

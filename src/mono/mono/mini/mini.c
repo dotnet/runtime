@@ -3049,6 +3049,20 @@ init_backend (MonoBackend *backend)
 #endif
 }
 
+static gboolean
+is_simd_supported (MonoCompile *cfg)
+{
+	// FIXME: Clean this up
+#ifdef TARGET_WASM
+	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)
+		return FALSE;
+#else
+	if (cfg->llvm_only)
+		return FALSE;
+#endif
+	return TRUE;
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3199,7 +3213,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!mono_debug_count ())
 		cfg->opt &= ~MONO_OPT_FLOAT32;
 	*/
-	if (cfg->llvm_only)
+	if (!is_simd_supported (cfg))
 		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
 	cfg->r4_stack_type = cfg->r4fp ? STACK_R4 : STACK_R8;

@@ -936,8 +936,9 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		class_ns = m_class_get_name_space (cmethod->klass->nested_in), class_name, cmethod->klass->nested_in;
 
 #ifdef TARGET_AMD64 // TODO: test and enable for x86 too
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86"))
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
 		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+	}
 #endif
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {

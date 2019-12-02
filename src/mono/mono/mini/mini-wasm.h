@@ -8,6 +8,7 @@
 
 #define MONO_MAX_IREGS 1
 #define MONO_MAX_FREGS 1
+#define MONO_MAX_XREGS 1
 
 #define WASM_REG_0 0
 
@@ -34,8 +35,9 @@
 //mini-codegen stubs - this doesn't do anything
 #define MONO_ARCH_CALLEE_REGS (1 << 0)
 #define MONO_ARCH_CALLEE_FREGS (1 << 1)
-#define MONO_ARCH_CALLEE_SAVED_FREGS (1 << 2)
-#define MONO_ARCH_CALLEE_SAVED_REGS (1 << 3)
+#define MONO_ARCH_CALLEE_XREGS (1 << 2)
+#define MONO_ARCH_CALLEE_SAVED_FREGS (1 << 3)
+#define MONO_ARCH_CALLEE_SAVED_REGS (1 << 4)
 #define MONO_ARCH_INST_FIXED_REG(desc) FALSE
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
@@ -88,19 +90,9 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 
-#define MONO_ARCH_EMULATE_FREM 1
-#define MONO_ARCH_FLOAT32_SUPPORTED 1
-
-//mini-codegen stubs - this doesn't do anything
-#define MONO_ARCH_CALLEE_REGS (1 << 0)
-#define MONO_ARCH_CALLEE_FREGS (1 << 1)
-#define MONO_ARCH_CALLEE_SAVED_FREGS (1 << 2)
-#define MONO_ARCH_CALLEE_SAVED_REGS (1 << 3)
-#define MONO_ARCH_INST_FIXED_REG(desc) FALSE
-#define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
-#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
-#define MONO_ARCH_INST_SREG2_MASK(ins) 0
-
+#ifdef ENABLE_NETCORE
+#define MONO_ARCH_SIMD_INTRINSICS 1
+#endif
 
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_HAS_REGISTER_ICALL 1

@@ -785,7 +785,7 @@ MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 
 /* SIMD opcodes. */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 
 MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)
 MINI_OP(OP_DIVPS, "divps", XREG, XREG, XREG)
