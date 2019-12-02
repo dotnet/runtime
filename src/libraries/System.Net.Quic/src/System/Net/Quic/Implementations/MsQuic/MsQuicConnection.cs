@@ -14,16 +14,28 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicConnection : QuicConnectionProvider
     {
+        // Functions to invoke in MsQuic
         public MsQuicApi _api;
-        private bool _disposed;
+
+        // Pointer to the underlying connection
         private IntPtr _nativeObjPtr;
+
+        // Handle to this object for native callbacks.
         private GCHandle _handle;
+
+        // Delegate that wraps the static function that will be called when receiving an event.
         private ConnectionCallbackDelegate _connectionDelegate;
-        private IPEndPoint _remoteEndPoint;
+
+        // Endpoint to either connect to or the endpoint already accepted.
+        private readonly IPEndPoint _remoteEndPoint;
+
+        // Some TCSs for making Connect and Shutdown "async" from callbacks. TODO replace with IValueTaskSource
         private TaskCompletionSource<object> _connectTcs = new TaskCompletionSource<object>();
         private TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>();
-        private string _logBaseString;
 
+        private bool _disposed;
+
+        // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -35,8 +47,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _remoteEndPoint = remoteEndPoint;
-            _logBaseString = "[Connection Server]";
-
             _api = api;
             _nativeObjPtr = nativeObjPtr;
 
@@ -49,7 +59,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr, SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            _logBaseString = "[Connection Client]";
 
             _remoteEndPoint = remoteEndPoint;
             _nativeObjPtr = nativeObjPtr;
@@ -104,7 +113,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     case QUIC_CONNECTION_EVENT.NEW_STREAM:
                         {
-                            // never receiving new stream event.
                             status = HandleEventNewStream(
                                 connectionEvent);
                         }
@@ -118,13 +126,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                         break;
 
                     default:
-                        Log($"Unexpected event {(connectionEvent.Type).ToString()}");
                         break;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log(ex.Message);
                 return MsQuicConstants.InternalError;
             }
 
@@ -134,17 +140,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventConnected(ConnectionEvent connectionEvent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            // TODO don't use tcs here.
-            // TODO need to get off of continuation here.
+
             _connectTcs?.SetResult(null);
             _connectTcs = null;
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;
-        }
-
-        private void Log(string log)
-        {
-            Console.WriteLine($"{_logBaseString} {log}");
         }
 
         private uint HandleEventShutdownBegin(ConnectionEvent connectionEvent)
@@ -294,6 +295,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         public MsQuicStream StreamOpen(
             QUIC_STREAM_OPEN_FLAG flags)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             IntPtr streamPtr = IntPtr.Zero;
             uint status = _api.StreamOpenDelegate(
                 _nativeObjPtr,
@@ -304,7 +307,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             MsQuicStatusException.ThrowIfFailed(status);
 
-            return new MsQuicStream(_api, this, flags, streamPtr, inbound: false);
+            MsQuicStream stream = new MsQuicStream(_api, this, flags, streamPtr, inbound: false);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return stream;
         }
 
         public void SetCallbackHandler()
@@ -321,11 +327,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             uint status = _api.ConnectionShutdownDelegate(
                 _nativeObjPtr,
                 (uint)Flags,
                 ErrorCode);
             MsQuicStatusException.ThrowIfFailed(status);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return _shutdownTcs.Task;
         }
 

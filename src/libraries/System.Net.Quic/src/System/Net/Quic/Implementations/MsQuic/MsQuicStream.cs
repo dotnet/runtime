@@ -15,9 +15,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicStream : QuicStreamProvider
     {
-        // To signal to calls to read that the read has been canceled.
-        private readonly CancellationTokenSource _streamClosedTokenSource = new CancellationTokenSource();
-
+        // Functions to invoke in MsQuic
+        private MsQuicApi _api;
 
         // Pointer to the underlying stream
         private readonly IntPtr _ptr;
@@ -31,8 +30,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Backing for StreamId
         private long _streamId = -1;
 
-        private volatile bool _disposed = false;
-
         // Resettable completions to be used for multiple calls to send, receive, start, and shutdown.
         internal ResettableCompletionSource<uint> _sendResettableCompletionSource;
 
@@ -45,18 +42,16 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Used to check if StartAsync has been called.
         private StartState _started;
 
-        private string _logBaseString;
-
-        private MsQuicApi _api;
-
         // Used by the class to indicate that the stream is m_Readable.
         private bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
         private bool _canWrite;
 
-        // Pipe for reads
+        // Pipe for reading.
         private Pipe _requestPipe;
+
+        private volatile bool _disposed = false;
 
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicApi api, MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
@@ -65,13 +60,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _api = api;
             _ptr = nativeObjPtr;
+
             if (inbound)
             {
                 _started = StartState.Finished;
 
                 _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _canRead = true;
-                _logBaseString = "[Stream Server]";
             }
             else
             {
@@ -79,8 +74,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 _canWrite = true;
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
-                _logBaseString = "[Stream Client]";
             }
+
+            // Options to effectively have a single buffer pipe
+            // Effectively this is a synchronization mechanism between calls to ReadAsync and Recv callbacks
+            // However, having a pipe here is nice for calling Complete,
+            // handing buffering, and handling synchronization.
             var inputOptions = new PipeOptions(pool: null, PipeScheduler.ThreadPool, PipeScheduler.Inline, pauseWriterThreshold: 1, resumeWriterThreshold: 1, useSynchronizationContext: false);
 
             _requestPipe = new Pipe(inputOptions);
@@ -105,18 +104,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override int Read(Span<byte> buffer)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal override void Write(ReadOnlySpan<byte> buffer)
-        {
-            throw new NotImplementedException();
-        }
-
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (_started == StartState.None)
             {
                 _started = StartState.Started;
@@ -124,10 +115,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             await SendAsync(new ReadOnlySequence<byte>(buffer), QUIC_SEND_FLAG.NONE);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             while (true)
             {
                 ReadResult result = await _requestPipe.Reader.ReadAsync(cancellationToken);
@@ -151,11 +146,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                         consumed = slice.End;
                         slice.CopyTo(destination.Span);
 
+                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                         return actual;
                     }
 
                     if (result.IsCompleted)
                     {
+                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                         return 0;
                     }
                 }
@@ -166,25 +163,34 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private void EnableReceive()
-        {
-            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, true);
-        }
-
-        private void DisableReceive()
-        {
-            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, false);
-        }
-
         internal override void ShutdownRead()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _requestPipe.Reader.Complete();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override void ShutdownWrite()
         {
-            _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             // TODO do anything to stop writes?
+            _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
+        }
+
+        internal override int Read(Span<byte> buffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void Write(ReadOnlySpan<byte> buffer)
+        {
+            throw new NotImplementedException();
         }
 
         internal override void Flush()
@@ -206,7 +212,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                // TODO can shutdown hang?
                 await ShutdownAsync(QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, 0).ConfigureAwait(false);
                 _api.StreamCloseDelegate?.Invoke(_ptr);
             }
@@ -228,6 +233,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
+        // Synchronous shutdown current does a graceful shutdown, which must go async
+        // Close can be done synchronously, but there is not guarantee that all data will be sent to the client
+        // We probably need to reconsider how to handle dispose/shutdown cases.
         private void Dispose(bool disposing)
         {
             if (_disposed)
@@ -245,6 +253,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = null;
 
             _disposed = true;
+        }
+
+        private void EnableReceive()
+        {
+            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, enabled: true);
+        }
+
+        private void DisableReceive()
+        {
+            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, enabled: false);
         }
 
         internal static uint NativeCallbackHandler(
@@ -288,13 +306,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                     case QUIC_STREAM_EVENT.PEER_SEND_ABORT:
                         {
                             // TODO why is this firing.
-                            _streamClosedTokenSource.Cancel();
                             status = HandleEventPeerSendAbort();
                         }
                         break;
                     case QUIC_STREAM_EVENT.PEER_RECV_ABORT:
                         {
-                            _streamClosedTokenSource.Cancel();
                             status = HandleEventPeerRecvAbort();
                         }
                         break;
@@ -305,19 +321,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                         break;
                     case QUIC_STREAM_EVENT.SHUTDOWN_COMPLETE:
                         {
-                            // TODO need to figure out if we should dispose here or not?
-                            // I think not, but we want to make sure close is called.
+                            // TODO make sure close is called.
                             status = HandleEventShutdownComplete();
                         }
                         break;
                     default:
-                        Log($"Unexpected event {((QUIC_STREAM_EVENT)evt.Type).ToString()}");
                         break;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log(ex.Message);
                 return MsQuicConstants.InternalError;
             }
 
@@ -332,8 +345,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 new Span<byte>(evt.Data.Recv.Buffers[0].Buffer, length).CopyTo(buffer);
             }
 
-            Log($"Received data {evt.Data.Recv.TotalBufferLength}");
-
+            // Need to think hard about backpressure here.
+            // Can this pipe grow infinitely if the consumer isn't reading large chunks?
+            // TODO add a test which does a bunch of large writes and small reads.
             PipeWriter input = _requestPipe.Writer;
             int length = (int)evt.Data.Recv.TotalBufferLength;
             Span<byte> result = input.GetSpan(length);
@@ -361,24 +375,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventPeerRecvAbort()
         {
-            Log("Peer recv abort");
             return MsQuicConstants.Success;
-        }
-
-        private void Log(string log)
-        {
-            Console.WriteLine($"{_logBaseString} {StreamId} {log}");
         }
 
         private uint HandleEventPeerSendAbort()
         {
-            Log("Peer send abort");
             return MsQuicConstants.Success;
         }
 
         private uint HandleStartComplete()
         {
-            Log("Start complete");
             _started = StartState.Finished;
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
             return MsQuicConstants.Success;
@@ -386,13 +392,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventSendShutdownComplete(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            Log("send shutdown complete");
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventShutdownComplete()
         {
-            Log("Shutdown complete");
             // TODO use another cts here.
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
             return MsQuicConstants.Success;
@@ -400,14 +404,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventPeerSendClose()
         {
-            Log("Peer send close");
             _requestPipe.Writer.Complete();
             return MsQuicConstants.Success;
         }
 
-        public uint HandleEventSendComplete(ref MsQuicNativeMethods.StreamEvent evt)
+        private uint HandleEventSendComplete(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            Log("Send complete");
             _sendHandle.Free();
             foreach (MemoryHandle gchBufferArray in _bufferArrays)
             {
@@ -420,7 +422,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicConstants.Success;
         }
 
-        public void SetCallbackHandler()
+        private void SetCallbackHandler()
         {
             _handle = GCHandle.Alloc(this);
 
@@ -431,6 +433,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
+        // TODO this probably can be ReadOnlyMemory
         public unsafe ValueTask<uint> SendAsync(
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAG flags)
@@ -470,7 +473,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetValueTask();
         }
 
-        public ValueTask<uint> StartAsync()
+        private ValueTask<uint> StartAsync()
         {
             uint status = _api.StreamStartDelegate(
               _ptr,
@@ -480,13 +483,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetValueTask();
         }
 
-        public void ReceiveComplete(int bufferLength)
+        private void ReceiveComplete(int bufferLength)
         {
             uint status = _api.StreamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
             MsQuicStatusException.ThrowIfFailed(status);
         }
 
-        public Task<uint> ShutdownAsync(
+        private Task<uint> ShutdownAsync(
             QUIC_STREAM_SHUTDOWN_FLAG flags,
             ushort errorCode)
         {
@@ -498,15 +501,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetValueTask().AsTask();
         }
 
-        public void Close()
-        {
-            uint status = (uint)_api.StreamCloseDelegate?.Invoke(_ptr);
-            MsQuicStatusException.ThrowIfFailed(status);
-        }
-
-
         // This can fail if the stream isn't started.
-        // TODO throw if it isn't started
         private unsafe long GetStreamId()
         {
             byte* ptr = stackalloc byte[sizeof(long)];

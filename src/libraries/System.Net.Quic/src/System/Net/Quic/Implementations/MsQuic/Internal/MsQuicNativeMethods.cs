@@ -61,34 +61,34 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         internal delegate uint SetContextDelegate(
-            IntPtr Handle,
-            IntPtr Context);
+            IntPtr handle,
+            IntPtr context);
 
         internal delegate IntPtr GetContextDelegate(
-            IntPtr Handle);
+            IntPtr handle);
 
         internal delegate void SetCallbackHandlerDelegate(
-            IntPtr Handle,
+            IntPtr handle,
             Delegate del,
-            IntPtr Context);
+            IntPtr context);
 
         internal delegate uint SetParamDelegate(
-            IntPtr Handle,
-            uint Level,
-            uint Param,
-            uint BufferLength,
-            byte* Buffer);
+            IntPtr handle,
+            uint level,
+            uint param,
+            uint bufferLength,
+            byte* buffer);
 
         internal delegate uint GetParamDelegate(
-            IntPtr Handle,
-            uint Level,
-            uint Param,
-            uint* BufferLength,
-            byte* Buffer);
+            IntPtr handle,
+            uint level,
+            uint param,
+            uint* bufferLength,
+            byte* buffer);
 
-        internal delegate uint RegistrationOpenDelegate(byte[] appName, out IntPtr RegistrationContext);
+        internal delegate uint RegistrationOpenDelegate(byte[] appName, out IntPtr registrationContext);
 
-        internal delegate void RegistrationCloseDelegate(IntPtr RegistrationContext);
+        internal delegate void RegistrationCloseDelegate(IntPtr registrationContext);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct CertHash
@@ -121,32 +121,32 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal byte[] StoreNameUtf8;
         }
 
-        internal delegate void SecConfigCreateCompleteDelegate(IntPtr Context, uint Status, IntPtr SecurityConfig);
+        internal delegate void SecConfigCreateCompleteDelegate(IntPtr context, uint status, IntPtr securityConfig);
 
         internal delegate uint SecConfigCreateDelegate(
-            IntPtr RegistrationContext,
-            uint Flags,
-            IntPtr Certificate,
-            [MarshalAs(UnmanagedType.LPStr)]string Principal,
-            IntPtr Context,
-            SecConfigCreateCompleteDelegate CompletionHandler);
+            IntPtr registrationContext,
+            uint flags,
+            IntPtr certificate,
+            [MarshalAs(UnmanagedType.LPStr)]string principal,
+            IntPtr context,
+            SecConfigCreateCompleteDelegate completionHandler);
 
         internal delegate void SecConfigDeleteDelegate(
-            IntPtr SecurityConfig);
+            IntPtr securityConfig);
 
         internal delegate uint SessionOpenDelegate(
-            IntPtr RegistrationContext,
+            IntPtr registrationContext,
             byte[] utf8String,
-            IntPtr Context,
-            ref IntPtr Session);
+            IntPtr context,
+            ref IntPtr session);
 
         internal delegate void SessionCloseDelegate(
-            IntPtr Session);
+            IntPtr session);
 
         internal delegate void SessionShutdownDelegate(
-            IntPtr Session,
-            uint Flags,
-            ushort ErrorCode);
+            IntPtr session,
+            uint flags,
+            ushort errorCode);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct ListenerEvent
@@ -324,30 +324,30 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         internal delegate uint ConnectionCallbackDelegate(
-         IntPtr Connection,
-         IntPtr Context,
-         ref ConnectionEvent Event);
+            IntPtr connection,
+            IntPtr context,
+            ref ConnectionEvent connectionEvent);
 
         internal delegate uint ConnectionOpenDelegate(
-            IntPtr Session,
-            ConnectionCallbackDelegate Handler,
-            IntPtr Context,
-            out IntPtr Connection);
+            IntPtr session,
+            ConnectionCallbackDelegate handler,
+            IntPtr context,
+            out IntPtr connection);
 
         internal delegate uint ConnectionCloseDelegate(
-            IntPtr Connection);
+            IntPtr connection);
 
         internal delegate uint ConnectionStartDelegate(
-            IntPtr Connection,
-            ushort Family,
+            IntPtr connection,
+            ushort family,
             [MarshalAs(UnmanagedType.LPStr)]
-            string ServerName,
-            ushort ServerPort);
+            string serverName,
+            ushort serverPort);
 
         internal delegate uint ConnectionShutdownDelegate(
-            IntPtr Connection,
-            uint Flags,
-            ushort ErrorCode);
+            IntPtr connection,
+            uint flags,
+            ushort errorCode);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataRecv
@@ -439,36 +439,36 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN6
         {
-            internal ushort sin6_family;
-            internal ushort sin6_port;
-            internal uint sin6_flowinfo;
-            internal byte sin6_addr0;
-            internal byte sin6_addr1;
-            internal byte sin6_addr2;
-            internal byte sin6_addr3;
-            internal byte sin6_addr4;
-            internal byte sin6_addr5;
-            internal byte sin6_addr6;
-            internal byte sin6_addr7;
-            internal byte sin6_addr8;
-            internal byte sin6_addr9;
-            internal byte sin6_addr10;
-            internal byte sin6_addr11;
-            internal byte sin6_addr12;
-            internal byte sin6_addr13;
-            internal byte sin6_addr14;
-            internal byte sin6_addr15;
-            internal uint sin6_scope_id;
+            internal ushort _family;
+            internal ushort _port;
+            internal uint _flowinfo;
+            internal byte _addr0;
+            internal byte _addr1;
+            internal byte _addr2;
+            internal byte _addr3;
+            internal byte _addr4;
+            internal byte _addr5;
+            internal byte _addr6;
+            internal byte _addr7;
+            internal byte _addr8;
+            internal byte _addr9;
+            internal byte _addr10;
+            internal byte _addr11;
+            internal byte _addr12;
+            internal byte _addr13;
+            internal byte _addr14;
+            internal byte _addr15;
+            internal uint _scope_id;
 
             internal byte[] Address
             {
                 get
                 {
                     return new byte[] {
-                    sin6_addr0, sin6_addr1, sin6_addr2, sin6_addr3,
-                    sin6_addr4, sin6_addr5, sin6_addr6, sin6_addr7,
-                    sin6_addr8, sin6_addr9, sin6_addr10, sin6_addr11,
-                    sin6_addr12, sin6_addr13, sin6_addr14, sin6_addr15 };
+                    _addr0, _addr1, _addr2, _addr3,
+                    _addr4, _addr5, _addr6, _addr7,
+                    _addr8, _addr9, _addr10, _addr11,
+                    _addr12, _addr13, _addr14, _addr15 };
                 }
             }
         }
@@ -485,44 +485,43 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         internal delegate uint StreamCallbackDelegate(
-            IntPtr Stream,
-            IntPtr Context,
-            StreamEvent Event);
+            IntPtr stream,
+            IntPtr context,
+            StreamEvent streamEvent);
 
         internal delegate uint StreamOpenDelegate(
-            IntPtr Connection,
-            uint Flags,
-            StreamCallbackDelegate Handler,
-            IntPtr Context,
-            out IntPtr Stream);
+            IntPtr connection,
+            uint flags,
+            StreamCallbackDelegate handler,
+            IntPtr context,
+            out IntPtr stream);
 
         internal delegate uint StreamStartDelegate(
-            IntPtr Stream,
-            uint Flags
-            );
+            IntPtr stream,
+            uint flags);
 
         internal delegate uint StreamCloseDelegate(
-            IntPtr Stream);
+            IntPtr stream);
 
         internal delegate uint StreamShutdownDelegate(
-            IntPtr Stream,
-            uint Flags,
-            ushort ErrorCode);
+            IntPtr stream,
+            uint flags,
+            ushort errorCode);
 
         internal delegate uint StreamSendDelegate(
-            IntPtr Stream,
-            QuicBuffer* Buffers,
-            uint BufferCount,
-            uint Flags,
-            IntPtr ClientSendContext);
+            IntPtr stream,
+            QuicBuffer* buffers,
+            uint bufferCount,
+            uint flags,
+            IntPtr clientSendContext);
 
         internal delegate uint StreamReceiveCompleteDelegate(
-            IntPtr Stream,
-            ulong BufferLength);
+            IntPtr stream,
+            ulong bufferLength);
 
         internal delegate uint StreamReceiveSetEnabledDelegate(
-            IntPtr Stream,
-            bool Enabled);
+            IntPtr stream,
+            bool enabled);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct QuicBuffer
@@ -550,23 +549,23 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         socketAddress.Ipv4.sin_family = IPv4;
                         break;
                     case AddressFamily.InterNetworkV6:
-                        socketAddress.Ipv6.sin6_addr0 = buffer[0];
-                        socketAddress.Ipv6.sin6_addr1 = buffer[1];
-                        socketAddress.Ipv6.sin6_addr2 = buffer[2];
-                        socketAddress.Ipv6.sin6_addr3 = buffer[3];
-                        socketAddress.Ipv6.sin6_addr4 = buffer[4];
-                        socketAddress.Ipv6.sin6_addr5 = buffer[5];
-                        socketAddress.Ipv6.sin6_addr6 = buffer[6];
-                        socketAddress.Ipv6.sin6_addr7 = buffer[7];
-                        socketAddress.Ipv6.sin6_addr8 = buffer[8];
-                        socketAddress.Ipv6.sin6_addr9 = buffer[9];
-                        socketAddress.Ipv6.sin6_addr10 = buffer[10];
-                        socketAddress.Ipv6.sin6_addr11 = buffer[11];
-                        socketAddress.Ipv6.sin6_addr12 = buffer[12];
-                        socketAddress.Ipv6.sin6_addr13 = buffer[13];
-                        socketAddress.Ipv6.sin6_addr14 = buffer[14];
-                        socketAddress.Ipv6.sin6_addr15 = buffer[15];
-                        socketAddress.Ipv6.sin6_family = IPv6;
+                        socketAddress.Ipv6._addr0 = buffer[0];
+                        socketAddress.Ipv6._addr1 = buffer[1];
+                        socketAddress.Ipv6._addr2 = buffer[2];
+                        socketAddress.Ipv6._addr3 = buffer[3];
+                        socketAddress.Ipv6._addr4 = buffer[4];
+                        socketAddress.Ipv6._addr5 = buffer[5];
+                        socketAddress.Ipv6._addr6 = buffer[6];
+                        socketAddress.Ipv6._addr7 = buffer[7];
+                        socketAddress.Ipv6._addr8 = buffer[8];
+                        socketAddress.Ipv6._addr9 = buffer[9];
+                        socketAddress.Ipv6._addr10 = buffer[10];
+                        socketAddress.Ipv6._addr11 = buffer[11];
+                        socketAddress.Ipv6._addr12 = buffer[12];
+                        socketAddress.Ipv6._addr13 = buffer[13];
+                        socketAddress.Ipv6._addr14 = buffer[14];
+                        socketAddress.Ipv6._addr15 = buffer[15];
+                        socketAddress.Ipv6._family = IPv6;
                         break;
                     default:
                         throw new ArgumentException("Only IPv4 or IPv6 are supported");
@@ -587,7 +586,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     break;
                 case AddressFamily.InterNetworkV6:
                 default:
-                    socketAddrInet.Ipv6.sin6_port = convertedPort;
+                    socketAddrInet.Ipv6._port = convertedPort;
                     break;
             }
         }

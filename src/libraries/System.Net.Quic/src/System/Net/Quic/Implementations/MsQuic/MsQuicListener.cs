@@ -14,14 +14,28 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal class MsQuicListener : QuicListenerProvider, IDisposable, IAsyncDisposable
     {
+        // Functions to invoke in MsQuic
         private MsQuicApi _api;
+
+        // Security configuration for MsQuic
         private MsQuicSecurityConfig _secConfig;
-        private bool _disposed;
+
+        // Pointer to the underlying listener
         private IntPtr _nativeObjPtr;
+
+        // Handle to this object for native callbacks.
         private GCHandle _handle;
+
+        // Delegate that wraps the static function that will be called when receiving an event.
         private ListenerCallbackDelegate _listenerDelegate;
+
+        // Ssl listening options (ALPN, cert, etc)
         private SslServerAuthenticationOptions _sslOptions;
+
+        // To prevent multiple calls to StartAsync
         private bool _started;
+
+        private volatile bool _disposed;
 
         private readonly Channel<MsQuicConnection> _acceptConnectionQueue = Channel.CreateUnbounded<MsQuicConnection>(new UnboundedChannelOptions
         {
@@ -41,6 +55,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (!_started)
             {
                 await StartAsync();
@@ -51,14 +67,60 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_acceptConnectionQueue.Reader.TryRead(out MsQuicConnection connection))
                 {
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
                     return connection;
                 }
             }
 
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return null;
         }
 
-        public async ValueTask StartAsync()
+        public override void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~MsQuicListener()
+        {
+            Dispose(false);
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            StopAcceptingConnections();
+
+            if (_nativeObjPtr != IntPtr.Zero)
+            {
+                _api.ListenerStopDelegate(_nativeObjPtr);
+                _api.ListenerCloseDelegate(_nativeObjPtr);
+            }
+
+            _nativeObjPtr = IntPtr.Zero;
+            _api = null;
+            _disposed = true;
+        }
+
+        internal override void Close()
+        {
+            Dispose();
+        }
+
+        private async ValueTask StartAsync()
         {
             _secConfig = await _api.CreateSecurityConfig(_sslOptions.ServerCertificate);
 
@@ -79,7 +141,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 case QUIC_LISTENER_EVENT.NEW_CONNECTION:
                     {
-                        Console.WriteLine("Receieved new connection");
                         evt.Data.NewConnection.SecurityConfig = _secConfig.NativeObjPtr;
                         MsQuicConnection msQuicConnection = new MsQuicConnection(ListenEndPoint, _api, evt.Data.NewConnection.Connection);
                         _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
@@ -116,48 +177,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _nativeObjPtr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));
-        }
-
-        ~MsQuicListener()
-        {
-            Dispose(false);
-        }
-
-        public override void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public override ValueTask DisposeAsync()
-        {
-            Dispose();
-            return default;
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            StopAcceptingConnections();
-
-            if (_nativeObjPtr != IntPtr.Zero)
-            {
-                _api.ListenerStopDelegate(_nativeObjPtr);
-                _api.ListenerCloseDelegate(_nativeObjPtr);
-            }
-
-            _nativeObjPtr = IntPtr.Zero;
-            _api = null;
-            _disposed = true;
-        }
-
-        internal override void Close()
-        {
-            Dispose();
         }
     }
 }

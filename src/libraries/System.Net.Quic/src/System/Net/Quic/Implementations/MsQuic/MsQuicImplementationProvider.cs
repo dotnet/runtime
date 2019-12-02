@@ -9,6 +9,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicImplementationProvider : QuicImplementationProvider
     {
+        // TODO these "session" objects should probably be statics and only create one.
+        // No need to create two different sessions for client and server.
         private MsQuicSession _clientSession = new MsQuicSession("client");
         private MsQuicSession _serverSession = new MsQuicSession("server");
 
