@@ -98,12 +98,6 @@
       <Imports>netcoreapp3.0</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
     </TargetGroups>
-    <!-- netcoreapp is an alias for netcoreapp5.0 -->
-    <TargetGroups Include="netcoreapp">
-      <TargetFramework>netcoreapp5.0</TargetFramework>
-      <Imports>netcoreapp5.0</Imports>
-      <CompatibleWith>netstandard2.1</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="net45">
       <TargetFramework>net45</TargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
