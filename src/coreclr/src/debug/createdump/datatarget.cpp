@@ -168,7 +168,7 @@ DumpDataTarget::ReadVirtual(
         *done = 0;
         return E_FAIL;
     }
-    *done = read;
+    *done = (ULONG32)read;
     return S_OK;
 }
 
