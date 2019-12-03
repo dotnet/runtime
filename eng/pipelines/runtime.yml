@@ -47,7 +47,6 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       isOfficialBuild: false
-      testScope: empty
       liveCoreClrBuildConfig: checked
 
 #
