@@ -138,12 +138,13 @@ namespace System.Buffers
                 return false;
             }
 
+            // Sum CurrentSpanIndex + offset could overflow as is but the value of offset should be very large
+            // because we check Remaining <= offset above so to overflow we should have a ReadOnlySequence close to 8 exabytes
+            Debug.Assert(CurrentSpanIndex + offset >= 0);
+
             // If offset doesn't fall inside current segment move to next until we find correct one
             if ((CurrentSpanIndex + offset) <= CurrentSpan.Length - 1)
             {
-                // Sum CurrentSpanIndex + offset could overflow as is but the value of offset should be very large
-                // because we check Remaining <= offset above so to overflow we should have a ReadOnlySequence close to 8 exabytes
-                Debug.Assert(CurrentSpanIndex + offset >= 0);
                 Debug.Assert(offset <= int.MaxValue);
 
                 value = CurrentSpan[CurrentSpanIndex + (int)offset];
