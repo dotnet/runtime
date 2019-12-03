@@ -5,11 +5,11 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipelines;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic
@@ -34,6 +34,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Resettable completions to be used for multiple calls to send, start, and shutdown.
         internal ResettableCompletionSource<uint> _sendResettableCompletionSource;
 
+        internal ResettableCompletionSource<uint> _receiveResettableCompletionSource;
+
         // Buffers to hold during a call to send.
         private MemoryHandle[] _bufferArrays;
 
@@ -43,16 +45,19 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Used to check if StartAsync has been called.
         private StartState _started;
 
+        private ReadState _readState;
+
         // Used by the class to indicate that the stream is m_Readable.
         private bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
         private bool _canWrite;
 
-        // Pipe for reading.
-        private Pipe _readingPipe;
-
         private volatile bool _disposed = false;
+
+        private QuicBuffer[] _quicBuffer = default;
+
+        private object _sync = new object();
 
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicApi api, MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
@@ -81,10 +86,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Effectively this is a synchronization mechanism between calls to ReadAsync and Recv callbacks
             // However, having a pipe here is nice for calling Complete,
             // handing buffering, and handling synchronization.
-            var inputOptions = new PipeOptions(pool: null, PipeScheduler.ThreadPool, PipeScheduler.Inline, pauseWriterThreshold: 1, resumeWriterThreshold: 1, useSynchronizationContext: false);
-
-            _readingPipe = new Pipe(inputOptions);
-            _sendResettableCompletionSource = new UIntResettableCompletionSource(this);
+            _sendResettableCompletionSource = new UIntResettableCompletionSource();
+            _receiveResettableCompletionSource = new UIntResettableCompletionSource();
             SetCallbackHandler();
         }
 
@@ -124,47 +127,61 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            ReadResult result = await _readingPipe.Reader.ReadAsync(cancellationToken);
-
-            ReadOnlySequence<byte> buffer = result.Buffer;
-            long length = buffer.Length;
-
-            SequencePosition consumed = buffer.End;
-            try
+            // TODO is there anything we can do with cancellation token?
+            lock (_sync)
             {
-                if (length != 0)
+                if (_readState == ReadState.ReadsCompleted)
                 {
-                    int actual = (int)Math.Min(length, destination.Length);
-
-                    ReadOnlySequence<byte> slice = actual == length ? buffer : buffer.Slice(0, actual);
-                    consumed = slice.End;
-                    slice.CopyTo(destination.Span);
-
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                    return actual;
+                    return 0;
                 }
-
-                Debug.Assert(result.IsCompleted);
-
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                return 0;
+                else if (_readState == ReadState.ReadsAborted)
+                {
+                    return -1;
+                }
             }
-            finally
+
+            // TODO there could potentially be a perf gain by storing the buffer from the inital read
+            // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
+            // longer than it needs to. We will need to benchmark this.
+
+            int length = (int)await _receiveResettableCompletionSource.GetValueTask();
+
+            static unsafe void CopyToBuffer(Span<byte> buffer, QuicBuffer[] quicBuffers)
             {
-                _readingPipe.Reader.AdvanceTo(consumed);
+                Span<byte> slicedBuffer = buffer;
+                for (int i = 0; i < quicBuffers.Length; i++)
+                {
+                    QuicBuffer nativeBuffer = quicBuffers[i];
+                    int length = Math.Min((int)nativeBuffer.Length, slicedBuffer.Length);
+                    new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
+                    if (length < slicedBuffer.Length)
+                    {
+                        return;
+                    }
+                    slicedBuffer = slicedBuffer.Slice(length);
+                }
             }
+
+            int actual = Math.Min(length, destination.Length);
+
+            CopyToBuffer(destination.Span, _quicBuffer);
+
+            EnableReceive();
+            ReceiveComplete(actual);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
+            return actual;
         }
 
         internal override void ShutdownRead()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO this will cause ReadAsync to start throwing rather than returning 0.
-            // Do we want this behavior?
-            // This is abortive behavior.
-            _readingPipe.Reader.Complete();
+            // TODO how should this affect ReadAsync? Should it start throwing?
 
             // TODO do we need to check if we have already gotten PEER_SEND_SHUTDOWN.
+            _readState = ReadState.ReadsCompleted;
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -293,7 +310,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Received data on the stream
                     case QUIC_STREAM_EVENT.RECEIVE:
                         {
-                            HandleEventRecv(ref evt);
+                            status = HandleEventRecv(ref evt);
                         }
                         break;
                     // Send has completed.
@@ -348,53 +365,25 @@ namespace System.Net.Quic.Implementations.MsQuic
             return status;
         }
 
-        private void HandleEventRecv(ref MsQuicNativeMethods.StreamEvent evt)
+        private unsafe uint HandleEventRecv(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            static unsafe void CopyToBuffer(Span<byte> buffer, StreamEvent evt)
+            // TODO this buffer isn't valid after returing pending...
+            StreamEventDataRecv receieveEvent = evt.Data.Recv;
+            _quicBuffer = new QuicBuffer[receieveEvent.BufferCount];
+            for (int i = 0; i < receieveEvent.BufferCount; i++)
             {
-                Span<byte> slicedBuffer = buffer;
-                for (int i = 0; i < evt.Data.Recv.BufferCount; i++)
-                {
-                    QuicBuffer nativeBuffer = evt.Data.Recv.Buffers[i];
-                    int length = (int)nativeBuffer.Length;
-                    new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
-                    slicedBuffer = slicedBuffer.Slice(length);
-                }
+                _quicBuffer[i] = receieveEvent.Buffers[i];
             }
 
-            // Need to think hard about backpressure here.
-            // Can this pipe grow infinitely if the consumer isn't reading large chunks?
-            // TODO add a test which does a bunch of large writes and small reads.
-            PipeWriter input = _readingPipe.Writer;
-            int length = (int)evt.Data.Recv.TotalBufferLength;
-            Span<byte> result = input.GetSpan(length);
-            CopyToBuffer(result, evt);
-
-            input.Advance(length);
-
-            ValueTask<FlushResult> flushTask = input.FlushAsync();
-
-            if (!flushTask.IsCompletedSuccessfully)
-            {
-                DisableReceive();
-                ReceiveComplete(0);
-                _ = AwaitFlush(flushTask);
-                return;
-            }
-
-            async Task AwaitFlush(ValueTask<FlushResult> ft)
-            {
-                await ft;
-                EnableReceive();
-                ReceiveComplete(length);
-            }
+            DisableReceive();
+            _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+            return MsQuicConstants.Pending;
         }
 
         private uint HandleEventPeerRecvAbort()
         {
             return MsQuicConstants.Success;
         }
-
 
         private uint HandleStartComplete()
         {
@@ -418,13 +407,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventPeerSendAborted()
         {
-            _readingPipe.Writer.Complete(new IOException("The stream has been aborted"));
+            // TODO Need to make ReadAsync always throw an exception.
+            lock (_sync)
+            {
+                _readState = ReadState.ReadsAborted;
+            }
+
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventPeerSendShutdown()
         {
-            _readingPipe.Writer.Complete();
+            // TODO need to make read async always return 0
+            lock (_sync)
+            {
+                _readState = ReadState.ReadsCompleted;
+            }
+
             return MsQuicConstants.Success;
         }
 
@@ -551,11 +550,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private class UIntResettableCompletionSource : ResettableCompletionSource<uint>
         {
-            private readonly MsQuicStream _stream;
 
-            internal UIntResettableCompletionSource(MsQuicStream stream)
+            internal UIntResettableCompletionSource()
             {
-                _stream = stream;
             }
 
             public override uint GetResult(short token)
@@ -570,7 +567,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     if (isValid)
                     {
                         _valueTaskSource.Reset();
-                        _stream._sendResettableCompletionSource = this;
                     }
                 }
             }
@@ -581,6 +577,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             None,
             Started,
             Finished
+        }
+
+        private enum ReadState
+        {
+            None,
+            ReadsCompleted,
+            ReadsAborted
         }
     }
 }

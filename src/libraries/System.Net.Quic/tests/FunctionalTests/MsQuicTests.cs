@@ -73,6 +73,7 @@ namespace System.Net.Quic.Tests
                             Assert.Equal(s_data.Length, bytesRead);
                             Assert.True(s_data.Span.SequenceEqual(buffer));
                         }
+
                         for (int i = 0; i < 100; i++)
                         {
                             await stream.WriteAsync(s_data);
@@ -87,34 +88,26 @@ namespace System.Net.Quic.Tests
             {
                 await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                 {
-                    try
+                    await connection.ConnectAsync();
+                    using (QuicStream stream = connection.OpenBidirectionalStream())
                     {
-                        await connection.ConnectAsync();
-                        using (QuicStream stream = connection.OpenBidirectionalStream())
+                        for (int i = 0; i < 100; i++)
                         {
-                            for (int i = 0; i < 100; i++)
-                            {
-                                await stream.WriteAsync(s_data);
-                            }
-
-                            stream.ShutdownWrite();
-
-                            byte[] memory = new byte[12];
-                            while (true)
-                            {
-                                int res = await stream.ReadAsync(memory);
-                                if (res == 0)
-                                {
-                                    break;
-                                }
-                                Assert.True(s_data.Span.SequenceEqual(memory));
-                            }
+                            await stream.WriteAsync(s_data);
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        throw;
+
+                        stream.ShutdownWrite();
+
+                        byte[] memory = new byte[12];
+                        while (true)
+                        {
+                            int res = await stream.ReadAsync(memory);
+                            if (res == 0)
+                            {
+                                break;
+                            }
+                            Assert.True(s_data.Span.SequenceEqual(memory));
+                        }
                     }
                 }
             });
