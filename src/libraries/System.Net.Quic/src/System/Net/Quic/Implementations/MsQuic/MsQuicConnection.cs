@@ -287,7 +287,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             SetIdleTimeout(TimeSpan.FromSeconds(120));
-            uint status = _api.ConnectionStartDelegate(
+            uint status = _api._connectionStartDelegate(
                 _nativeObjPtr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
@@ -304,7 +304,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             IntPtr streamPtr = IntPtr.Zero;
-            uint status = _api.StreamOpenDelegate(
+            uint status = _api._streamOpenDelegate(
                 _nativeObjPtr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
@@ -323,7 +323,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
-            _api.SetCallbackHandlerDelegate(
+            _api._setCallbackHandlerDelegate(
                 _nativeObjPtr,
                 _connectionDelegate,
                 GCHandle.ToIntPtr(_handle));
@@ -335,7 +335,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            uint status = _api.ConnectionShutdownDelegate(
+            uint status = _api._connectionShutdownDelegate(
                 _nativeObjPtr,
                 (uint)Flags,
                 ErrorCode);
@@ -377,7 +377,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_nativeObjPtr != IntPtr.Zero)
             {
                 ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).GetAwaiter().GetResult();
-                _api.ConnectionCloseDelegate?.Invoke(_nativeObjPtr);
+                _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
             }
 
             _nativeObjPtr = IntPtr.Zero;
@@ -423,7 +423,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_nativeObjPtr != IntPtr.Zero)
             {
                 await ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).ConfigureAwait(false);
-                _api.ConnectionCloseDelegate?.Invoke(_nativeObjPtr);
+                _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
             }
 
             _nativeObjPtr = IntPtr.Zero;

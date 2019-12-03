@@ -165,7 +165,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _readingPipe.Reader.Complete();
 
             // TODO do we need to check if we have already gotten PEER_SEND_SHUTDOWN.
-            _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
+            _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -175,7 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO do anything to stop writes?
-            _api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+            _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -211,7 +211,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                _api.StreamCloseDelegate?.Invoke(_ptr);
+                _api._streamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
@@ -247,7 +247,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 // If we make Dispose not do a graceful shutdown, we can remove sync over async here
                 // as abortive shutdown isn't async.
-                _api.StreamCloseDelegate?.Invoke(_ptr);
+                _api._streamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
@@ -258,12 +258,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
-            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, enabled: true);
+            uint status = _api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
         }
 
         private void DisableReceive()
         {
-            uint status = _api.StreamReceiveSetEnabledDelegate(_ptr, enabled: false);
+            uint status = _api._streamReceiveSetEnabledDelegate(_ptr, enabled: false);
         }
 
         internal static uint NativeCallbackHandler(
@@ -447,7 +447,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _handle = GCHandle.Alloc(this);
 
             _callback = new StreamCallbackDelegate(NativeCallbackHandler);
-            _api.SetCallbackHandlerDelegate(
+            _api._setCallbackHandlerDelegate(
                 _ptr,
                 _callback,
                 GCHandle.ToIntPtr(_handle));
@@ -481,7 +481,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(quicBufferArray, 0);
 
-            uint status = _api.StreamSendDelegate(
+            uint status = _api._streamSendDelegate(
                 _ptr,
                 quicBufferPointer,
                 (uint)bufferCount,
@@ -499,7 +499,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // as it doesn't block a thread.
         private ValueTask<uint> StartAsync()
         {
-            uint status = _api.StreamStartDelegate(
+            uint status = _api._streamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
@@ -509,7 +509,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
-            uint status = _api.StreamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
+            uint status = _api._streamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
             MsQuicStatusException.ThrowIfFailed(status);
         }
 
@@ -517,7 +517,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QUIC_STREAM_SHUTDOWN_FLAG flags,
             ushort errorCode)
         {
-            uint status = _api.StreamShutdownDelegate(
+            uint status = _api._streamShutdownDelegate(
                 _ptr,
                 (uint)flags,
                 errorCode);

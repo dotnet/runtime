@@ -106,8 +106,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_nativeObjPtr != IntPtr.Zero)
             {
-                _api.ListenerStopDelegate(_nativeObjPtr);
-                _api.ListenerCloseDelegate(_nativeObjPtr);
+                _api._listenerStopDelegate(_nativeObjPtr);
+                _api._listenerCloseDelegate(_nativeObjPtr);
             }
 
             _nativeObjPtr = IntPtr.Zero;
@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             SOCKADDR_INET address = MsQuicNativeMethods.Convert(ListenEndPoint);
 
-            uint status = _api.ListenerStartDelegate(
+            uint status = _api._listenerStartDelegate(
                 _nativeObjPtr,
                 ref address);
             MsQuicStatusException.ThrowIfFailed(status);
@@ -173,7 +173,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
-            _api.SetCallbackHandlerDelegate(
+            _api._setCallbackHandlerDelegate(
                 _nativeObjPtr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));

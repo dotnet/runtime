@@ -10,7 +10,9 @@ internal static partial class Interop
 {
     internal static  class MsQuic
     {
+#pragma warning disable BCL0015 // Invalid Pinvoke call
         [DllImport(Libraries.MsQuic)]
         internal static unsafe extern int MsQuicOpen(int version, out MsQuicNativeMethods.NativeApi* registration);
+#pragma warning restore BCL0015 // Invalid Pinvoke call
     }
 }

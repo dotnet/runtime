@@ -31,7 +31,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 SetPeerUnidirectionalStreamCount(100);
             }
 
-            uint status = _api.ConnectionOpenDelegate(
+            uint status = _api._connectionOpenDelegate(
                 _nativeObjPtr,
                 MsQuicConnection.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -53,7 +53,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 SetPeerUnidirectionalStreamCount(100);
             }
 
-            uint status = _api.ListenerOpenDelegate(
+            uint status = _api._listenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -69,7 +69,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {
-            _api.SessionShutdownDelegate(
+            _api._sessionShutdownDelegate(
                 _nativeObjPtr,
                 (uint)Flags,
                 ErrorCode);
@@ -145,7 +145,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            _api.SessionCloseDelegate?.Invoke(_nativeObjPtr);
+            _api._sessionCloseDelegate?.Invoke(_nativeObjPtr);
             _nativeObjPtr = IntPtr.Zero;
             _api = null;
 
