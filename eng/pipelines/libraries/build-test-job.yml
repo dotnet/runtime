@@ -12,6 +12,7 @@ parameters:
   pool: ''
   testScope: ''
   variables: {}
+  condition: true
   runTests: false
 
 jobs:
@@ -23,6 +24,7 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      condition: ${{ parameters.condition }}
       liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}

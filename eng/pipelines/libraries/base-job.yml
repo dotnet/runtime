@@ -7,6 +7,7 @@ parameters:
   isOfficialBuild: false
   liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
+  condition: true
   container: ''
   steps: []
   dependsOn: []
@@ -27,6 +28,7 @@ jobs:
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
+      condition: ${{ parameters.condition }}
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
