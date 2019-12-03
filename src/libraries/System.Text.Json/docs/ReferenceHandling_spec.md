@@ -142,15 +142,15 @@ private const string json =
 public static void ReadObject()
 {
     Employee angela = JsonSerializer.Deserialize<Employee>(json);
-    Console.WriteLine(angela.Identifier) //prints: "1".
-    Console.WriteLine(angela.Manager.Identifier) //prints: "2".
-    Console.WriteLine(angela.Manager.Manager.ExtensionData["$ref"]) //prints: "2".
+    Console.WriteLine(angela.Identifier); //prints: "1".
+    Console.WriteLine(angela.Manager.Identifier); //prints: "2".
+    Console.WriteLine(angela.Manager.Manager.ExtensionData["$ref"]); //prints: "2".
 }
 ```
 
 Note how you can annotate .Net properties to use properties that are meant for metadata and are added to the `JsonExtensionData` overflow dictionary, in case there is any, when opting-out of the `ReferenceHanding.Preserve` feature.
 
-For the next samples let's assume you have the following class:
+For the next samples, let's assume you have the following class:
 ```cs
 class Employee 
 { 
@@ -570,7 +570,7 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * Preserved array `$values` property is a primitive value
   * **Newtonsoft.Json**: Unexpected token while deserializing object: EndObject. Path ''.
-  * **S.T.Json**: Throw - The JSON value could not be converted to TArray. Path: $.$values
+  * **S.T.Json**: Throw - Preserved array $values property was not present or its value is not an array.
 
   ```json
   {
@@ -581,7 +581,7 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * Preserved array `$values` property contains object
   * **Newtonsoft.Json**: Unexpected token while deserializing object: EndObject. Path ''.
-  * **S.T.Json**: Throw - The property is already part of a preserved array object, cannot be read as a preserved array.
+  * **S.T.Json**: Throw - Preserved array $values property was not present or its value is not an array.
 
   ```json
   {
@@ -854,4 +854,4 @@ public static void WriteIgnoringReferenceLoopsAndReadPreservedReferences()
 3. While immutable types and `System.Arrays` can be serialized with preserve semantics, they will not be supported when trying to deserialize them as a reference. Those types are created with the help of an internal converter and they are not parsed until the entire block of JSON finishes. Nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 4. Value types, such as structs that contain preserve semantics, will not be supported when deserializing as well. This is because the serializer will never emit a reference object to those types and doing so implies boxing of value types.
 5. Additional features, such as converter support, `ReferenceResolver`, `JsonPropertyAttribute.IsReference` and `JsonPropertyAttribute.ReferenceLoopHandling`,  that build on top of `ReferenceLoopHandling` and `PreserveReferencesHandling` were considered but they can be added in the future based on customer requests.
-6. We are still looking for evidence that backs up supporting `ReferenceHandling.Ignore`, this option will not ship if said evidence is not found.
+6. We are still looking for evidence that backs up supporting `ReferenceHandling.Ignore`. This option will not ship if said evidence is not found.
