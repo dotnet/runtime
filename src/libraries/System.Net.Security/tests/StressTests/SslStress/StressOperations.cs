@@ -236,26 +236,36 @@ namespace SslStress
                 }
             }
 
+            /// Polls until number of in-flight messages falls below threshold
             async Task ApplyBackpressure(CancellationToken token)
             {
                 if (Volatile.Read(ref messagesInFlight) > 5000)
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();
-
-                    lock (Console.Out)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"worker #{workerId}: applying backpressure");
-                        Console.WriteLine();
-                        Console.ResetColor();
-                    }
+                    bool isLogged = false;
 
                     while (!token.IsCancellationRequested && Volatile.Read(ref messagesInFlight) > 2000)
                     {
+                        // only log if tx has been suspended for a while
+                        if (!isLogged && stopwatch.ElapsedMilliseconds < 1000)
+                        {
+                            isLogged = true;
+                            lock (Console.Out)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine($"worker #{workerId}: applying backpressure");
+                                Console.WriteLine();
+                                Console.ResetColor();
+                            }
+                        }
+
                         await Task.Delay(20);
                     }
 
-                    Console.WriteLine($"worker #{workerId}: resuming tx after {stopwatch.Elapsed}");
+                    if(isLogged)
+                    {
+                        Console.WriteLine($"worker #{workerId}: resumed tx after {stopwatch.Elapsed}");
+                    }
                 }
             }
             
