@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
         {
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
-                parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type, false);
+                parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
 
             type.m_listMethods.Add(m_methodBuilder);
 

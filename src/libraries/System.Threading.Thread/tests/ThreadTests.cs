@@ -22,7 +22,7 @@ namespace System.Threading.Threads.Tests
         public static string HostRunnerTest = RemoteExecutor.HostRunner;
     }
 
-    public static partial class ThreadTests
+    public static class ThreadTests
     {
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
@@ -1145,6 +1145,12 @@ namespace System.Threading.Threads.Tests
             {
                 Assert.Null(Thread.CurrentPrincipal);
             }).Dispose();
+        }
+
+        [Fact]
+        public static void GetCurrentProcessorId()
+        {
+            Assert.True(Thread.GetCurrentProcessorId() >= 0);
         }
     }
 }

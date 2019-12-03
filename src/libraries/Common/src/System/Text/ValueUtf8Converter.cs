@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 
 namespace System.Text
@@ -13,7 +14,7 @@ namespace System.Text
     /// </summary>
     internal ref struct ValueUtf8Converter
     {
-        private byte[] _arrayToReturnToPool;
+        private byte[]? _arrayToReturnToPool;
         private Span<byte> _bytes;
 
         public ValueUtf8Converter(Span<byte> initialBuffer)
@@ -40,7 +41,7 @@ namespace System.Text
 
         public void Dispose()
         {
-            byte[] toReturn = _arrayToReturnToPool;
+            byte[]? toReturn = _arrayToReturnToPool;
             if (toReturn != null)
             {
                 _arrayToReturnToPool = null;

@@ -4117,7 +4117,7 @@ void NativeImageDumper::IterateTypeRefToMTCallback( TADDR mtTarget,
     {
         RVA rva = CORCOMPILE_UNTAG_TOKEN(PTR_TO_TADDR(mt));
         //
-        // This guy writes two things FixupTargetValue and FixupTargetName
+        // This writes two things FixupTargetValue and FixupTargetName
         //
         WriteElementsFixupBlob( NULL,PTR_TO_TADDR(mt));
     }

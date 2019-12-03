@@ -16,12 +16,12 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-
-using ReadyToRunHelper = ILCompiler.ReadyToRunHelper;
 
 namespace Internal.JitInterface
 {
@@ -140,8 +140,8 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
 
-        public CorInfoImpl(ReadyToRunCodegenCompilation compilation, JitConfigProvider jitConfig)
-            : this(jitConfig)
+        public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
+            : this()
         {
             _compilation = compilation;
         }
@@ -182,6 +182,20 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            if (MethodBeingCompiled.IsAbstract)
+            {
+                return true;
+            }
+            if (MethodBeingCompiled.OwningType.IsDelegate && (
+                MethodBeingCompiled.IsConstructor ||
+                MethodBeingCompiled.Name == "BeginInvoke" ||
+                MethodBeingCompiled.Name == "Invoke" ||
+                MethodBeingCompiled.Name == "EndInvoke"))
+            {
+                // Special methods on delegate types
+                return true;
+            }
+
             return false;
         }
 
@@ -225,7 +239,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -235,7 +249,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -248,7 +262,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -261,7 +275,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -270,7 +284,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, GetSignatureContext()));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -601,6 +615,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -892,6 +908,11 @@ namespace Internal.JitInterface
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
+
             // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
             // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at
             // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/jitinterface.cpp#L1141
@@ -915,7 +936,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
             {
-                throw new BadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
             exactType = type;
@@ -1037,14 +1058,14 @@ namespace Internal.JitInterface
                 // Static methods are always direct calls
                 directCall = true;
             }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            {
+                directCall = true;
+            }
             else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
             {
                 // Backwards compat: calls to abstract interface methods are treated as callvirt
                 directCall = false;
-            }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
-            {
-                directCall = true;
             }
             else
             {
@@ -1090,6 +1111,14 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                // Direct calls to abstract methods are not allowed
+                if (targetMethod.IsAbstract &&
+                    // Compensate for always treating delegates as direct calls above
+                    !(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0) && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && !resolvedCallVirt))
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                }
+
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
                 if (!allowInstParam && canonMethod.RequiresInstArg())
@@ -1461,14 +1490,14 @@ namespace Internal.JitInterface
                     MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
                             new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType),
                             signatureContext: GetSignatureContext()));
                     }
                     else
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeDictionary,
                             exactType,
                             signatureContext: GetSignatureContext()));
@@ -1691,21 +1720,31 @@ namespace Internal.JitInterface
                 switch (pResult.handleType)
                 {
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeHandle,
                             HandleToObject(pResolvedToken.hClass),
                             GetSignatureContext());
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
-                            ReadyToRunHelperId.MethodHandle,
-                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                            GetSignatureContext());
+                        {
+                            MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                            TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                            if (td.IsValueType)
+                            {
+                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                            }
+
+                            symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.MethodHandle,
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                GetSignatureContext());
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD:
-                        symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
+                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.FieldHandle,
                             HandleToObject(pResolvedToken.hField),
                             GetSignatureContext());
@@ -1961,11 +2000,23 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                MethodIL stubIL = _compilation.GetMethodIL(method);
-                if (stubIL == null)
+                MethodIL stubIL = null;
+                try
                 {
-                    // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
-                    Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                    stubIL = _compilation.GetMethodIL(method);
+                    if (stubIL == null)
+                    {
+                        // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
+                        Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                        return true;
+                    }
+                }
+                catch (RequiresRuntimeJitException)
+                {
+                    // The PInvoke IL emitter will throw for known unsupported scenario. We cannot propagate the exception here since
+                    // this interface call might be used to check if a certain pinvoke can be inlined in the caller. Throwing means that the
+                    // caller will not get compiled. Instead, we'll return true to let the JIT know that it cannot inline the pinvoke, and
+                    // the actual pinvoke call will be handled by a stub that we create and compile in the runtime.
                     return true;
                 }
 

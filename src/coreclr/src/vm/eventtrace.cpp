@@ -3173,7 +3173,7 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
 //---------------------------------------------------------------------------------------
 //
 // Outermost level of ETW-type-logging.  Clients outside eventtrace.cpp call this to log
-// a TypeHandle and (recursively) its type parameters when present.  This guy then calls
+// a TypeHandle and (recursively) its type parameters when present.  This method then calls
 // into the appropriate BulkTypeEventLogger to do the batching and logging
 //
 // Arguments:
@@ -6096,14 +6096,14 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
     if (pdbInfoLast.m_pPdb70 != NULL)
     {
-        // The last guy is the IL (managed) PDB info
+        // The last item is the IL (managed) PDB info
         _ASSERTE(pdbInfoLast.m_cbPdb70 <= sizeof(*pCvInfoIL));      // Guaranteed by checks above
         memcpy(pCvInfoIL, pdbInfoLast.m_pPdb70, pdbInfoLast.m_cbPdb70);
     }
 
     if (pdbInfoNextToLast.m_pPdb70 != NULL)
     {
-        // The next-to-last guy is the NGEN (native) PDB info
+        // The next-to-last item is the NGEN (native) PDB info
         _ASSERTE(pdbInfoNextToLast.m_cbPdb70 <= sizeof(*pCvInfoNative));      // Guaranteed by checks above
         memcpy(pCvInfoNative, pdbInfoNextToLast.m_pPdb70, pdbInfoNextToLast.m_cbPdb70);
     }

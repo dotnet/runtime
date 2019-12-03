@@ -279,8 +279,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. If a set is a singleton, an inverse singleton,
-        /// or empty, it's transformed accordingly.
+        /// Simple optimization. If a set is an inverse singleton or empty, it's transformed accordingly.
         /// </summary>
         private RegexNode ReduceSet()
         {
@@ -292,12 +291,6 @@ namespace System.Text.RegularExpressions
             {
                 NType = Nothing;
                 Str = null;
-            }
-            else if (RegexCharClass.IsSingleton(Str))
-            {
-                Ch = RegexCharClass.SingletonChar(Str);
-                Str = null;
-                NType += (One - Set);
             }
             else if (RegexCharClass.IsSingletonInverse(Str))
             {
@@ -354,13 +347,12 @@ namespace System.Text.RegularExpressions
                         // Cannot merge sets if L or I options differ, or if either are negated.
                         optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
 
-
                         if (at.NType == Set)
                         {
-                            if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str!))
+                            if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str))
                             {
                                 wasLastSet = true;
-                                lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str!);
+                                lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str);
                                 optionsLast = optionsAt;
                                 break;
                             }
@@ -476,7 +468,7 @@ namespace System.Text.RegularExpressions
                     if (prev.NType == One)
                     {
                         prev.NType = Multi;
-                        prev.Str = Convert.ToString(prev.Ch, CultureInfo.InvariantCulture);
+                        prev.Str = prev.Ch.ToString();
                     }
 
                     if ((optionsAt & RegexOptions.RightToLeft) == 0)

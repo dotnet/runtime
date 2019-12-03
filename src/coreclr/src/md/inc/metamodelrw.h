@@ -596,7 +596,7 @@ public:
     // Add a new MemberRef to the hash table.
     __checkReturn
     HRESULT AddMemberRefToHash(             // Return code.
-        mdMemberRef mr);                    // Token of new guy.
+        mdMemberRef mr);                    // Token of new MemberRef.
 
     // If the hash is built, search for the item. Ignore token *ptkMemberRef.
     HashSearchResult FindMemberRefFromHash(
@@ -620,7 +620,7 @@ public:
     // Add a new MemberDef to the hash table.
     __checkReturn
     HRESULT AddMemberDefToHash(
-        mdToken tkMember,   // Token of new guy. It can be MethodDef or FieldDef
+        mdToken tkMember,   // Token of new def. It can be MethodDef or FieldDef
         mdToken tkParent);  // Parent token.
 
     // Create MemberDef Hash

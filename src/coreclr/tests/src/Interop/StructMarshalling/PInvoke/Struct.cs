@@ -190,6 +190,8 @@ public struct StringStructSequentialUnicode
 public struct S8
 {
     public string name;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+    public string fullName;
     public bool gender;
     [MarshalAs(UnmanagedType.Error)]
     public int i32;

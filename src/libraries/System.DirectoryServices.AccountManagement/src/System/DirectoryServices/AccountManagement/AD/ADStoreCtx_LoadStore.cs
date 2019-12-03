@@ -69,7 +69,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // We need to determine if this class is dervived from one of the base classes but has a different RdnPrefix
                         // For the base objects ( User, Computer and Group ) Their RDNPrefix is a required field along with the RDNPrefix for the
-                        // derived object.  This is only done for classes that derive from User, Computer or Group.  If a user derives his own class from AuthPrincipal
+                        // derived object.  This is only done for classes that derive from User, Computer or Group.  If a user derives their own class from AuthPrincipal
                         // they are responsible for setting all required base class properties.
 
                         if (principalType.IsSubclassOf(typeof(GroupPrincipal)) ||
@@ -1073,7 +1073,7 @@ namespace System.DirectoryServices.AccountManagement
             // We use the same logic as the AD Users & Computers snapin.  We scan the DACL,
             // looking for ALLOW or DENY ACEs for the "user can change password" right.  We scan
             // for both self and world ACEs.  If we find neither explitic allow nor explicit deny ACEs,
-            // we (like the AD U&C snapin) default to assuming the user can change his or her password.
+            // we (like the AD U&C snapin) default to assuming the user can change their password.
 
             // *******************************
             // retrieving ObjectSecurity after

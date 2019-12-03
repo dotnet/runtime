@@ -749,7 +749,7 @@ class Stub
         }
 
         //-------------------------------------------------------------------
-        // This is the guy that creates stubs.
+        // This creates stubs.
         //-------------------------------------------------------------------
         static Stub* NewStub(LoaderHeap *pLoaderHeap, UINT numCodeBytes,
                              DWORD flags = 0
@@ -848,7 +848,7 @@ class InterceptStub : public Stub
     friend class Stub;
     public:
         //-------------------------------------------------------------------
-        // This is the guy that creates stubs.
+        // This creates stubs.
         //-------------------------------------------------------------------
         static Stub* NewInterceptedStub(LoaderHeap *pHeap,
                                         UINT numCodeBytes,

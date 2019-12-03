@@ -757,9 +757,9 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        internal Node? FindRange(T from, T to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
+        internal Node? FindRange([AllowNull] T from, [AllowNull]  T to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
 
-        internal Node? FindRange(T from, T to, bool lowerBoundActive, bool upperBoundActive)
+        internal Node? FindRange([AllowNull] T from, [AllowNull] T to, bool lowerBoundActive, bool upperBoundActive)
         {
             Node? current = root;
             while (current != null)
@@ -1561,7 +1561,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public virtual SortedSet<T> GetViewBetween(T lowerValue, T upperValue)
+        public virtual SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
         {
             if (Comparer.Compare(lowerValue, upperValue) > 0)
             {

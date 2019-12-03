@@ -896,7 +896,7 @@ namespace System
         //
         private void CreateThisFromUri(Uri otherUri)
         {
-            // Clone the other guy but develop own UriInfo member
+            // Clone the other URI but develop own UriInfo member
             _info = null!;
 
             _flags = otherUri._flags;

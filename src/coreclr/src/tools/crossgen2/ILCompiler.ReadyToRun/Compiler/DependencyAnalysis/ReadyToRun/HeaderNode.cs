@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -119,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
 
             // ReadyToRunHeader.Flags
-            builder.EmitInt((int)ReadyToRunFlag.READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS);
+            builder.EmitInt((int)ReadyToRunFlag.READYTORUN_FLAG_NonSharedPInvokeStubs);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();

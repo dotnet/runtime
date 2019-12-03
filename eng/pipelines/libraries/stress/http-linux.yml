@@ -1,5 +1,10 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+    - "*"
+
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
@@ -22,12 +27,12 @@ variables:
 steps:
 - checkout: self
   clean: true
-  fetchDepth: 0
+  fetchDepth: 1
   lfs: false
 
 - bash: |
     docker build -t $(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) --build-arg BUILD_SCRIPT_NAME=$(buildScriptFileName) -f $(HttpStressProject)corefx.Dockerfile .
-  displayName: Build Corefx
+  displayName: Build Libraries
 
 - bash: |
     cd '$(HttpStressProject)'

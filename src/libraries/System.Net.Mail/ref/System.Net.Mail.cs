@@ -186,6 +186,8 @@ namespace System.Net.Mail
         public void SendAsyncCancel() { }
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message) { throw null; }
         public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body) { throw null; }
+        public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum SmtpDeliveryFormat
     {

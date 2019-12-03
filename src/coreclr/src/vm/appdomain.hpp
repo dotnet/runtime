@@ -967,23 +967,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    //****************************************************************************************
-    //
-    // This will look up interop data for a method table
-    //
-
-#endif // FEATURE_COMINTEROP
-
-    void SetDisableInterfaceCache()
-    {
-        m_fDisableInterfaceCache = TRUE;
-    }
-    BOOL GetDisableInterfaceCache()
-    {
-        return m_fDisableInterfaceCache;
-    }
-
-#ifdef FEATURE_COMINTEROP
     MngStdInterfacesInfo * GetMngStdInterfacesInfo()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1141,10 +1124,7 @@ public:
 
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
-
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
-
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1157,10 +1137,6 @@ protected:
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitLargeHeapHandleTable();
-
-    //****************************************************************************************
-    // Adds an assembly to the domain.
-    void AddAssemblyNoLock(Assembly* assem);
 
     //****************************************************************************************
     //
@@ -1181,15 +1157,9 @@ protected:
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
     // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
     CrstExplicitInit m_crstAssemblyList;
-    BOOL             m_fDisableInterfaceCache;  // RCW COM interface cache
     ListLock         m_ClassInitLock;
     JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
-
-    // Fusion context, used for adding assemblies to the is domain. It defines
-    // fusion properties for finding assemblyies such as SharedBinPath,
-    // PrivateBinPath, Application Directory, etc.
-    IUnknown *m_pFusionContext; // Current binding context for the domain
 
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
@@ -1215,7 +1185,7 @@ protected:
 public:
     // Only call this routine when you can guarantee there are no
     // loads in progress.
-    void ClearFusionContext();
+    void ClearBinderContext();
 
     //****************************************************************************************
     // Synchronization holders.
@@ -1696,8 +1666,6 @@ public:
     // final assembly cleanup
     void ShutdownFreeLoaderAllocators();
 
-    void ReleaseFiles();
-
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
@@ -2054,7 +2022,6 @@ public:
     PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
-    void CacheStringsForDAC();
 
     BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure = FALSE);
     BOOL RemoveFileFromCache(PEAssembly *pFile);
@@ -2152,7 +2119,6 @@ public:
     // Create a quick lookup for classes loaded into this domain based on their GUID.
     //
     void InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert = FALSE);
-    void InsertClassForCLSID(MethodTable* pMT, GUID *pGuid);
 
 #ifdef FEATURE_COMINTEROP
 private:
@@ -2260,7 +2226,7 @@ public:
         return m_tpIndex;
     }
 
-    IUnknown *CreateFusionContext();
+    IUnknown *CreateBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -2295,41 +2261,12 @@ public:
 
     static void ExceptionUnwind(Frame *pFrame);
 
-    static void RefTakerAcquire(AppDomain* pDomain)
-    {
-        WRAPPER_NO_CONTRACT;
-        if(!pDomain)
-            return;
-        pDomain->AddRef();
-#ifdef _DEBUG
-        FastInterlockIncrement(&pDomain->m_dwRefTakers);
-#endif
-    }
-
-    static void RefTakerRelease(AppDomain* pDomain)
-    {
-        WRAPPER_NO_CONTRACT;
-        if(!pDomain)
-            return;
-#ifdef _DEBUG
-        _ASSERTE(pDomain->m_dwRefTakers);
-        FastInterlockDecrement(&pDomain->m_dwRefTakers);
-#endif
-        pDomain->Release();
-    }
-
 #ifdef _DEBUG
 
     BOOL IsHeldByIterator()
     {
         LIMITED_METHOD_CONTRACT;
         return m_dwIterHolders>0;
-    }
-
-    BOOL IsHeldByRefTaker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwRefTakers>0;
     }
 
     void IteratorRelease()
@@ -2353,16 +2290,7 @@ public:
 
         return m_Stage >= STAGE_ACTIVE;
     }
-    // Range for normal execution of code in the appdomain, currently used for
-    // appdomain resource monitoring since we don't care to update resource usage
-    // unless it's in these stages (as fields of AppDomain may not be valid if it's
-    // not within these stages)
-    BOOL IsUserActive()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
 
-        return m_Stage >= STAGE_ACTIVE && m_Stage <= STAGE_OPEN;
-    }
     BOOL IsValid()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2376,36 +2304,6 @@ public:
 #endif
     }
 
-#ifdef _DEBUG
-    BOOL IsBeingCreated()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_dwCreationHolders > 0;
-    }
-
-    void IncCreationCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockIncrement(&m_dwCreationHolders);
-        _ASSERTE(m_dwCreationHolders > 0);
-    }
-
-    void DecCreationCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockDecrement(&m_dwCreationHolders);
-        _ASSERTE(m_dwCreationHolders > -1);
-    }
-#endif
-    BOOL NotReadyForManagedCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_Stage < STAGE_READYFORMANAGEDCODE;
-    }
 
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
@@ -2615,8 +2513,6 @@ private:
 
 #ifdef _DEBUG
     Volatile<LONG> m_dwIterHolders;
-    Volatile<LONG> m_dwRefTakers;
-    Volatile<LONG> m_dwCreationHolders;
 #endif
 
     //
@@ -2850,11 +2746,6 @@ public:
 #endif
 };  // class AppDomain
 
-
-// This holder is to be used to take a reference to make sure AppDomain* is still valid
-// Please do not use if you are aleady ADU-safe
-typedef Wrapper<AppDomain*,AppDomain::RefTakerAcquire,AppDomain::RefTakerRelease,NULL> AppDomainRefTaker;
-
 // Just a ref holder
 typedef ReleaseHolder<AppDomain> AppDomainRefHolder;
 
@@ -3015,10 +2906,6 @@ public:
     static void PublishAppDomainAndInformDebugger (AppDomain *pDomain);
 #endif // DEBUGGING_SUPPORTED
 
-    //****************************************************************************************
-    // Helper function to remove a domain from the system
-    BOOL RemoveDomain(AppDomain* pDomain); // Does not decrement the reference
-
 #ifdef PROFILING_SUPPORTED
     //****************************************************************************************
     // Tell profiler about system created domains which are created before the profiler is
@@ -3112,10 +2999,6 @@ public:
     }
 
 private:
-
-    //****************************************************************************************
-    // Helper function to create the single COM domain
-    void CreateDefaultDomain();
 
     //****************************************************************************************
     // Helper function to add a domain to the global list

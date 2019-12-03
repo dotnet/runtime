@@ -334,8 +334,7 @@ protected:
     regMaskTP genJmpCallArgMask();
 
     void genFreeLclFrame(unsigned           frameSize,
-                         /* IN OUT */ bool* pUnwindStarted,
-                         bool               jmpEpilog);
+                         /* IN OUT */ bool* pUnwindStarted);
 
     void genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg);
     void genMov32RelocatableDataLabel(unsigned value, regNumber reg);

@@ -7,8 +7,6 @@ using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using BundleTests.Helpers;
 using Microsoft.DotNet.CoreSetup.Test;
-using System.Xml.Linq;
-using System.IO;
 
 namespace AppHost.Bundle.Tests
 {
@@ -81,26 +79,22 @@ namespace AppHost.Bundle.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
                 TestFrameworkDependentFixture
                     .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
 
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture);
                 TestSelfContainedFixture
                     .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
 
                 TestAppWithEmptyFileFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                XDocument projectDoc = XDocument.Load(TestAppWithEmptyFileFixture.TestProject.ProjectFile);
-                projectDoc.Root.Add(
-                    new XElement("ItemGroup",
-                        new XElement("Content",
-                            new XAttribute("Include", "empty.txt"),
-                            new XElement("CopyToOutputDirectory", "PreserveNewest"))));
-                projectDoc.Save(TestAppWithEmptyFileFixture.TestProject.ProjectFile);
-                File.WriteAllBytes(Path.Combine(TestAppWithEmptyFileFixture.TestProject.Location, "empty.txt"), new byte[0]);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture);
+                BundleHelper.AddEmptyContentToApp(TestAppWithEmptyFileFixture);
                 TestAppWithEmptyFileFixture
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
@@ -111,6 +105,7 @@ namespace AppHost.Bundle.Tests
             {
                 TestFrameworkDependentFixture.Dispose();
                 TestSelfContainedFixture.Dispose();
+                TestAppWithEmptyFileFixture.Dispose();
             }
         }
     }

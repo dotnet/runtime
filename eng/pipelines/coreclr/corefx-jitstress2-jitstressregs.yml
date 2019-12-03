@@ -14,7 +14,7 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -44,6 +44,7 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_x86
     helixQueueGroup: corefx
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstress2-jitstressregs
       corefxTests: true

@@ -23,7 +23,6 @@ namespace Internal.IO
         /// Returns 0 on success, otherwise a Win32 error code.  Note that
         /// classes should use -1 as the uninitialized state for dataInitialized.
         /// </summary>
-        /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
         internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;

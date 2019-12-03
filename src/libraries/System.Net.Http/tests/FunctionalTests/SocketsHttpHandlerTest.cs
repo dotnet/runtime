@@ -23,8 +23,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Relies on finalization")]
@@ -91,8 +89,6 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
@@ -107,68 +103,56 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
         public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
     {
         public SocketsHttpHandler_DiagnosticsTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
     {
         public SocketsHttpHandler_HttpClient_SelectedSites_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientEKUTest : HttpClientEKUTest
     {
         public SocketsHttpHandler_HttpClientEKUTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http11_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http11_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Incurs a small delay")]
@@ -218,13 +202,10 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
         {
             SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
@@ -469,7 +450,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_PostScenarioTest : PostScenarioTest
     {
         public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [Theory]
         [InlineData(false)]
@@ -525,19 +505,16 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
         public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public SocketsHttpHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public abstract class SocketsHttpHandler_TrailingHeaders_Test : HttpClientHandlerTestBase
@@ -559,7 +536,6 @@ namespace System.Net.Http.Functional.Tests
     public class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [Theory]
         [InlineData(false)]
@@ -771,7 +747,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_Http2_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http2_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -951,56 +926,47 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
         public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool SupportsIdna => true;
     }
 
     public sealed class SocketsHttpHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
     {
         public SocketsHttpHandler_HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [Fact]
         public void ConnectTimeout_Default()
@@ -1173,13 +1139,11 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [Theory]
         [MemberData(nameof(Authentication_SocketsHttpHandler_TestData))]
@@ -1220,8 +1184,6 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_ConnectionUpgrade_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -1341,8 +1303,6 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -1431,8 +1391,6 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -1605,7 +1563,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await Http2LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandler : true, useHttp2LoopbackServer : true);
+                HttpClientHandler handler = CreateHttpClientHandler(useHttp2LoopbackServer : true);
                 SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 switch (timeoutPropertyName)
                 {
@@ -2089,85 +2047,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientHandlerTestBase
-    {
-        public SocketsHttpHandler_ExternalConfiguration_Test(ITestOutputHelper output) : base(output) { }
-
-        private const string EnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
-        private const string AppContextSettingName = "System.Net.Http.UseSocketsHttpHandler";
-
-        private static bool UseSocketsHttpHandlerEnvironmentVariableIsNotSet =>
-            string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnvironmentVariableSettingName));
-
-        [ConditionalTheory(nameof(UseSocketsHttpHandlerEnvironmentVariableIsNotSet))]
-        [InlineData("true", true)]
-        [InlineData("TRUE", true)]
-        [InlineData("tRuE", true)]
-        [InlineData("1", true)]
-        [InlineData("0", false)]
-        [InlineData("false", false)]
-        [InlineData("helloworld", true)]
-        [InlineData("", true)]
-        public void HttpClientHandler_SettingEnvironmentVariableChangesDefault(string envVarValue, bool expectedUseSocketsHandler)
-        {
-            RemoteExecutor.Invoke((innerEnvVarValue, innerExpectedUseSocketsHandler) =>
-            {
-                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, innerEnvVarValue);
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.Equal(bool.Parse(innerExpectedUseSocketsHandler), IsSocketsHttpHandler(handler));
-                }
-            }, envVarValue, expectedUseSocketsHandler.ToString()).Dispose();
-        }
-
-        [Fact]
-        public void HttpClientHandler_SettingAppContextChangesDefault()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                AppContext.SetSwitch(AppContextSettingName, isEnabled: true);
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.True(IsSocketsHttpHandler(handler));
-                }
-
-                AppContext.SetSwitch(AppContextSettingName, isEnabled: false);
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.False(IsSocketsHttpHandler(handler));
-                }
-            }).Dispose();
-        }
-
-        [Fact]
-        public void HttpClientHandler_AppContextOverridesEnvironmentVariable()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, "true");
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.True(IsSocketsHttpHandler(handler));
-                }
-
-                AppContext.SetSwitch(AppContextSettingName, isEnabled: false);
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.False(IsSocketsHttpHandler(handler));
-                }
-
-                AppContext.SetSwitch(AppContextSettingName, isEnabled: true);
-                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, null);
-                using (var handler = new HttpClientHandler())
-                {
-                    Assert.True(IsSocketsHttpHandler(handler));
-                }
-            }).Dispose();
-        }
-    }
-
     public sealed class SocketsHttpHandlerTest_LocationHeader
     {
         private static readonly byte[] s_redirectResponseBefore = Encoding.ASCII.GetBytes(
@@ -2225,14 +2104,12 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 
@@ -2240,21 +2117,18 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http2 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 
@@ -2262,7 +2136,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2 : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 }

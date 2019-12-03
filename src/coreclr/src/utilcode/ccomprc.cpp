@@ -289,16 +289,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
         _ASSERTE(!"Unsupported resource file");
     }
 
-#ifndef CROSSGEN_COMPILE
-    // PAL_BindResources requires that libcoreclr.so has been loaded,
-    // and thus can'be be called by crossgen.
-    if (!PAL_BindResources(m_pResourceDomain))
-    {
-        // The function can fail only due to OOM
-        return E_OUTOFMEMORY;
-    }
-#endif
-
 #endif // FEATURE_PAL
 
     if (m_csMap == NULL)

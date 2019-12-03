@@ -66,7 +66,7 @@ jobs:
       # parameter is empty, AzDO replaces it with empty space without chomping the extra newline.
       # This causes a newline in the arg string that causes failure.
       BuildArguments: >-
-        --ci --test
+        --restore --build --ci --test
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:DisableCrossgen=${{ parameters.disableCrossgen }}
         /p:PortableBuild=${{ parameters.portableBuild }}

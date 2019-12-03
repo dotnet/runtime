@@ -5,6 +5,7 @@
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {

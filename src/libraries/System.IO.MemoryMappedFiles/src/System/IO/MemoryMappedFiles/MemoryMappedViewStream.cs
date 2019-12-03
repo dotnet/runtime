@@ -4,7 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Security;
 
 namespace System.IO.MemoryMappedFiles
 {

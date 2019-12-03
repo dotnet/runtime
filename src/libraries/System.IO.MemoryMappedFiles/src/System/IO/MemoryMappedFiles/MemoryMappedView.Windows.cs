@@ -5,9 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.IO.MemoryMappedFiles
 {

@@ -18,6 +18,10 @@ namespace System.Diagnostics.Tracing
         /// Dispatch a single event with the specified event ID and payload.
         /// </summary>
         /// <param name="eventID">The eventID corresponding to the event as defined in the auto-generated portion of the NativeRuntimeEventSource class.</param>
+        /// <param name="osThreadID">The thread ID of the operating system thread.</param>
+        /// <param name="timeStamp">The current timestamp.</param>
+        /// <param name="activityId">The ID of the current activity.</param>
+        /// <param name="childActivityId">The ID of the current child activity.</param>
         /// <param name="payload">A span pointing to the data payload for the event.</param>
         [NonEvent]
         internal unsafe void ProcessEvent(uint eventID, uint osThreadID, DateTime timeStamp, Guid activityId, Guid childActivityId, ReadOnlySpan<byte> payload)

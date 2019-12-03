@@ -1709,8 +1709,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     GenTree::DumpNodeSizes(fout);
 #endif
 
-    BasicBlock::DisplayStaticSizes(fout);
-
 #if EMITTER_STATS
     emitterStaticStats(fout);
 #endif
@@ -3577,11 +3575,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         if (compSwitchedToOptimized)
         {
-            printf("OPTIONS: Tier-0 compilation, switched to FullOpts");
+            printf("OPTIONS: Tier-0 compilation, switched to FullOpts\n");
         }
         if (compSwitchedToMinOpts)
         {
-            printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts");
+            printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts\n");
         }
 
         printf("OPTIONS: compCodeOpt = %s\n",
@@ -5855,6 +5853,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 #endif
     }
 
+    compSwitchedToOptimized = false;
+    compSwitchedToMinOpts   = false;
+
     // compInitOptions will set the correct verbose flag.
 
     compInitOptions(compileFlags);
@@ -5946,9 +5947,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     info.compTotalHotCodeSize  = 0;
     info.compTotalColdCodeSize = 0;
 
-    compHasBackwardJump     = false;
-    compSwitchedToOptimized = false;
-    compSwitchedToMinOpts   = false;
+    compHasBackwardJump = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
@@ -9818,11 +9817,11 @@ int cLeafIR(Compiler* comp, GenTree* tree)
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {
-                chars += printf("%s+%u", ilName, tree->AsLclFld()->gtLclOffs);
+                chars += printf("%s+%u", ilName, tree->AsLclFld()->GetLclOffs());
             }
             else
             {
-                chars += printf("%s%d+%u", ilKind, ilNum, tree->AsLclFld()->gtLclOffs);
+                chars += printf("%s%d+%u", ilKind, ilNum, tree->AsLclFld()->GetLclOffs());
                 LclVarDsc* varDsc = comp->lvaTable + lclNum;
                 if (comp->dumpIRLocals)
                 {

@@ -11,8 +11,8 @@ using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
 
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Win32Resources;
 
 namespace ILCompiler.IBC

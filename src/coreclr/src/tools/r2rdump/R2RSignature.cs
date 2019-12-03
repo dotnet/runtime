@@ -3,14 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Xml.Serialization;
+
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace R2RDump
 {
@@ -632,13 +630,13 @@ namespace R2RDump
         {
             uint fixupType = ReadByte();
             EmitInlineSignatureBinaryBytes(builder, 1);
-            bool moduleOverride = (fixupType & (byte)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE) != 0;
+            bool moduleOverride = (fixupType & (byte)ReadyToRunFixupKind.ModuleOverride) != 0;
             SignatureDecoder moduleDecoder = this;
 
             // Check first byte for a module override being encoded
             if (moduleOverride)
             {
-                fixupType &= ~(uint)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE;
+                fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
                 int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
                 EcmaMetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
                 moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, _contextReader);
@@ -657,75 +655,75 @@ namespace R2RDump
         {
             switch (fixupType)
             {
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup:
+                case ReadyToRunFixupKind.ThisObjDictionaryLookup:
                     builder.Append("THISOBJ_DICTIONARY_LOOKUP @ ");
                     ParseType(builder);
                     builder.Append(": ");
                     ParseSignature(builder);
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup:
+                case ReadyToRunFixupKind.TypeDictionaryLookup:
                     builder.Append("TYPE_DICTIONARY_LOOKUP: ");
                     ParseSignature(builder);
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup:
+                case ReadyToRunFixupKind.MethodDictionaryLookup:
                     builder.Append("METHOD_DICTIONARY_LOOKUP: ");
                     ParseSignature(builder);
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle:
+                case ReadyToRunFixupKind.TypeHandle:
                     ParseType(builder);
                     builder.Append(" (TYPE_HANDLE)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle:
+                case ReadyToRunFixupKind.MethodHandle:
                     ParseMethod(builder);
                     builder.Append(" (METHOD_HANDLE)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle:
+                case ReadyToRunFixupKind.FieldHandle:
                     ParseField(builder);
                     builder.Append(" (FIELD_HANDLE)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry:
+                case ReadyToRunFixupKind.MethodEntry:
                     ParseMethod(builder);
                     builder.Append(" (METHOD_ENTRY)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken:
+                case ReadyToRunFixupKind.MethodEntry_DefToken:
                     ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken:
+                case ReadyToRunFixupKind.MethodEntry_RefToken:
                     ParseMethodRefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_REF_TOKEN)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry:
+                case ReadyToRunFixupKind.VirtualEntry:
                     ParseMethod(builder);
                     builder.Append(" (VIRTUAL_ENTRY)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_DefToken:
+                case ReadyToRunFixupKind.VirtualEntry_DefToken:
                     ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (VIRTUAL_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_RefToken:
+                case ReadyToRunFixupKind.VirtualEntry_RefToken:
                     ParseMethodRefToken(builder, owningTypeOverride: null);
                     builder.Append(" (VIRTUAL_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_REF_TOKEN)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_Slot:
+                case ReadyToRunFixupKind.VirtualEntry_Slot:
                     {
                         uint slot = ReadUIntAndEmitInlineSignatureBinary(builder);
                         ParseType(builder);
@@ -735,123 +733,123 @@ namespace R2RDump
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_Helper:
+                case ReadyToRunFixupKind.Helper:
                     ParseHelper(builder);
                     builder.Append(" (HELPER)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle:
+                case ReadyToRunFixupKind.StringHandle:
                     ParseStringHandle(builder);
                     builder.Append(" (STRING_HANDLE)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_NewObject:
+                case ReadyToRunFixupKind.NewObject:
                     ParseType(builder);
                     builder.Append(" (NEW_OBJECT)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray:
+                case ReadyToRunFixupKind.NewArray:
                     ParseType(builder);
                     builder.Append(" (NEW_ARRAY)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf:
+                case ReadyToRunFixupKind.IsInstanceOf:
                     ParseType(builder);
                     builder.Append(" (IS_INSTANCE_OF)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast:
+                case ReadyToRunFixupKind.ChkCast:
                     ParseType(builder);
                     builder.Append(" (CHK_CAST)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress:
+                case ReadyToRunFixupKind.FieldAddress:
                     ParseField(builder);
                     builder.Append(" (FIELD_ADDRESS)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger:
+                case ReadyToRunFixupKind.CctorTrigger:
                     ParseType(builder);
                     builder.Append(" (CCTOR_TRIGGER)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC:
+                case ReadyToRunFixupKind.StaticBaseNonGC:
                     ParseType(builder);
                     builder.Append(" (STATIC_BASE_NON_GC)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC:
+                case ReadyToRunFixupKind.StaticBaseGC:
                     ParseType(builder);
                     builder.Append(" (STATIC_BASE_GC)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseNonGC:
+                case ReadyToRunFixupKind.ThreadStaticBaseNonGC:
                     ParseType(builder);
                     builder.Append(" (THREAD_STATIC_BASE_NON_GC)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseGC:
+                case ReadyToRunFixupKind.ThreadStaticBaseGC:
                     ParseType(builder);
                     builder.Append(" (THREAD_STATIC_BASE_GC)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldBaseOffset:
+                case ReadyToRunFixupKind.FieldBaseOffset:
                     ParseType(builder);
                     builder.Append(" (FIELD_BASE_OFFSET)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldOffset:
+                case ReadyToRunFixupKind.FieldOffset:
                     ParseField(builder);
                     builder.Append(" (FIELD_OFFSET)");
                     // TODO
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary:
+                case ReadyToRunFixupKind.TypeDictionary:
                     ParseType(builder);
                     builder.Append(" (TYPE_DICTIONARY)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary:
+                case ReadyToRunFixupKind.MethodDictionary:
                     ParseMethod(builder);
                     builder.Append(" (METHOD_DICTIONARY)");
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_Check_TypeLayout:
+                case ReadyToRunFixupKind.Check_TypeLayout:
                     ParseType(builder);
                     builder.Append(" (CHECK_TYPE_LAYOUT)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_Check_FieldOffset:
+                case ReadyToRunFixupKind.Check_FieldOffset:
                     builder.Append("CHECK_FIELD_OFFSET");
                     // TODO
                     break;
 
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor:
+                case ReadyToRunFixupKind.DelegateCtor:
                     ParseMethod(builder);
                     builder.Append(" => ");
                     ParseType(builder);
                     builder.Append(" (DELEGATE_CTOR)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_DeclaringTypeHandle:
+                case ReadyToRunFixupKind.DeclaringTypeHandle:
                     ParseType(builder);
                     builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_IndirectPInvokeTarget:
+                case ReadyToRunFixupKind.IndirectPInvokeTarget:
                     ParseMethod(builder);
                     builder.Append(" (INDIRECT_PINVOKE_TARGET)");
                     break;
 
-                case ReadyToRunFixupKind.READYTORUN_FIXUP_PInvokeTarget:
+                case ReadyToRunFixupKind.PInvokeTarget:
                     ParseMethod(builder);
                     builder.Append(" (PINVOKE_TARGET)");
                     break;
@@ -1261,16 +1259,16 @@ namespace R2RDump
 
             switch ((ReadyToRunHelper)helperType)
             {
-                case ReadyToRunHelper.READYTORUN_HELPER_Invalid:
+                case ReadyToRunHelper.Invalid:
                     builder.Append("INVALID");
                     break;
 
                 // Not a real helper - handle to current module passed to delay load helpers.
-                case ReadyToRunHelper.READYTORUN_HELPER_Module:
+                case ReadyToRunHelper.Module:
                     builder.Append("MODULE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GSCookie:
+                case ReadyToRunHelper.GSCookie:
                     builder.Append("GC_COOKIE");
                     break;
 
@@ -1282,298 +1280,298 @@ namespace R2RDump
                 // All delay load helpers use custom calling convention:
                 // - scratch register - address of indirection cell. 0 = address is inferred from callsite.
                 // - stack - section index, module handle
-                case ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall:
+                case ReadyToRunHelper.DelayLoad_MethodCall:
                     builder.Append("DELAYLOAD_METHODCALL");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper:
+                case ReadyToRunHelper.DelayLoad_Helper:
                     builder.Append("DELAYLOAD_HELPER");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj:
+                case ReadyToRunHelper.DelayLoad_Helper_Obj:
                     builder.Append("DELAYLOAD_HELPER_OBJ");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_ObjObj:
+                case ReadyToRunHelper.DelayLoad_Helper_ObjObj:
                     builder.Append("DELAYLOAD_HELPER_OBJ_OBJ");
                     break;
 
                 // JIT helpers
 
                 // Exception handling helpers
-                case ReadyToRunHelper.READYTORUN_HELPER_Throw:
+                case ReadyToRunHelper.Throw:
                     builder.Append("THROW");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Rethrow:
+                case ReadyToRunHelper.Rethrow:
                     builder.Append("RETHROW");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Overflow:
+                case ReadyToRunHelper.Overflow:
                     builder.Append("OVERFLOW");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_RngChkFail:
+                case ReadyToRunHelper.RngChkFail:
                     builder.Append("RNG_CHK_FAIL");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_FailFast:
+                case ReadyToRunHelper.FailFast:
                     builder.Append("FAIL_FAST");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ThrowNullRef:
+                case ReadyToRunHelper.ThrowNullRef:
                     builder.Append("THROW_NULL_REF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ThrowDivZero:
+                case ReadyToRunHelper.ThrowDivZero:
                     builder.Append("THROW_DIV_ZERO");
                     break;
 
                 // Write barriers
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier:
+                case ReadyToRunHelper.WriteBarrier:
                     builder.Append("WRITE_BARRIER");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier:
+                case ReadyToRunHelper.CheckedWriteBarrier:
                     builder.Append("CHECKED_WRITE_BARRIER");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ByRefWriteBarrier:
+                case ReadyToRunHelper.ByRefWriteBarrier:
                     builder.Append("BYREF_WRITE_BARRIER");
                     break;
 
                 // Array helpers
-                case ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref:
+                case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Ldelema_Ref:
+                case ReadyToRunHelper.Ldelema_Ref:
                     builder.Append("LDELEMA_REF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_MemSet:
+                case ReadyToRunHelper.MemSet:
                     builder.Append("MEM_SET");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_MemCpy:
+                case ReadyToRunHelper.MemCpy:
                     builder.Append("MEM_CPY");
                     break;
 
                 // PInvoke helpers
-                case ReadyToRunHelper.READYTORUN_HELPER_PInvokeBegin:
+                case ReadyToRunHelper.PInvokeBegin:
                     builder.Append("PINVOKE_BEGIN");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_PInvokeEnd:
+                case ReadyToRunHelper.PInvokeEnd:
                     builder.Append("PINVOKE_END");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GCPoll:
+                case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
                     break;
 
                 // Get string handle lazily
-                case ReadyToRunHelper.READYTORUN_HELPER_GetString:
+                case ReadyToRunHelper.GetString:
                     builder.Append("GET_STRING");
                     break;
 
                 // Used by /Tuning for Profile optimizations
-                case ReadyToRunHelper.READYTORUN_HELPER_LogMethodEnter:
+                case ReadyToRunHelper.LogMethodEnter:
                     builder.Append("LOG_METHOD_ENTER");
                     break;
 
                 // Reflection helpers
-                case ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle:
+                case ReadyToRunHelper.GetRuntimeTypeHandle:
                     builder.Append("GET_RUNTIME_TYPE_HANDLE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeMethodHandle:
+                case ReadyToRunHelper.GetRuntimeMethodHandle:
                     builder.Append("GET_RUNTIME_METHOD_HANDLE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeFieldHandle:
+                case ReadyToRunHelper.GetRuntimeFieldHandle:
                     builder.Append("GET_RUNTIME_FIELD_HANDLE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Box:
+                case ReadyToRunHelper.Box:
                     builder.Append("BOX");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Box_Nullable:
+                case ReadyToRunHelper.Box_Nullable:
                     builder.Append("BOX_NULLABLE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Unbox:
+                case ReadyToRunHelper.Unbox:
                     builder.Append("UNBOX");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Unbox_Nullable:
+                case ReadyToRunHelper.Unbox_Nullable:
                     builder.Append("UNBOX_NULLABLE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr:
+                case ReadyToRunHelper.NewMultiDimArr:
                     builder.Append("NEW_MULTI_DIM_ARR");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg:
+                case ReadyToRunHelper.NewMultiDimArr_NonVarArg:
                     builder.Append("NEW_MULTI_DIM_ARR__NON_VAR_ARG");
                     break;
 
                 // Helpers used with generic handle lookup cases
-                case ReadyToRunHelper.READYTORUN_HELPER_NewObject:
+                case ReadyToRunHelper.NewObject:
                     builder.Append("NEW_OBJECT");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_NewArray:
+                case ReadyToRunHelper.NewArray:
                     builder.Append("NEW_ARRAY");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckCastAny:
+                case ReadyToRunHelper.CheckCastAny:
                     builder.Append("CHECK_CAST_ANY");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckInstanceAny:
+                case ReadyToRunHelper.CheckInstanceAny:
                     builder.Append("CHECK_INSTANCE_ANY");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase:
+                case ReadyToRunHelper.GenericGcStaticBase:
                     builder.Append("GENERIC_GC_STATIC_BASE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase:
+                case ReadyToRunHelper.GenericNonGcStaticBase:
                     builder.Append("GENERIC_NON_GC_STATIC_BASE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GenericGcTlsBase:
+                case ReadyToRunHelper.GenericGcTlsBase:
                     builder.Append("GENERIC_GC_TLS_BASE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcTlsBase:
+                case ReadyToRunHelper.GenericNonGcTlsBase:
                     builder.Append("GENERIC_NON_GC_TLS_BASE");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_VirtualFuncPtr:
+                case ReadyToRunHelper.VirtualFuncPtr:
                     builder.Append("VIRTUAL_FUNC_PTR");
                     break;
 
                 // Long mul/div/shift ops
-                case ReadyToRunHelper.READYTORUN_HELPER_LMul:
+                case ReadyToRunHelper.LMul:
                     builder.Append("LMUL");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LMulOfv:
+                case ReadyToRunHelper.LMulOfv:
                     builder.Append("LMUL_OFV");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ULMulOvf:
+                case ReadyToRunHelper.ULMulOvf:
                     builder.Append("ULMUL_OVF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LDiv:
+                case ReadyToRunHelper.LDiv:
                     builder.Append("LDIV");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LMod:
+                case ReadyToRunHelper.LMod:
                     builder.Append("LMOD");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ULDiv:
+                case ReadyToRunHelper.ULDiv:
                     builder.Append("ULDIV");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ULMod:
+                case ReadyToRunHelper.ULMod:
                     builder.Append("ULMOD");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LLsh:
+                case ReadyToRunHelper.LLsh:
                     builder.Append("LLSH");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LRsh:
+                case ReadyToRunHelper.LRsh:
                     builder.Append("LRSH");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_LRsz:
+                case ReadyToRunHelper.LRsz:
                     builder.Append("LRSZ");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Lng2Dbl:
+                case ReadyToRunHelper.Lng2Dbl:
                     builder.Append("LNG2DBL");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_ULng2Dbl:
+                case ReadyToRunHelper.ULng2Dbl:
                     builder.Append("ULNG2DBL");
                     break;
 
                 // 32-bit division helpers
-                case ReadyToRunHelper.READYTORUN_HELPER_Div:
+                case ReadyToRunHelper.Div:
                     builder.Append("DIV");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Mod:
+                case ReadyToRunHelper.Mod:
                     builder.Append("MOD");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_UDiv:
+                case ReadyToRunHelper.UDiv:
                     builder.Append("UDIV");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_UMod:
+                case ReadyToRunHelper.UMod:
                     builder.Append("UMOD");
                     break;
 
                 // Floating point conversions
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2Int:
+                case ReadyToRunHelper.Dbl2Int:
                     builder.Append("DBL2INT");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2IntOvf:
+                case ReadyToRunHelper.Dbl2IntOvf:
                     builder.Append("DBL2INTOVF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2Lng:
+                case ReadyToRunHelper.Dbl2Lng:
                     builder.Append("DBL2LNG");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2LngOvf:
+                case ReadyToRunHelper.Dbl2LngOvf:
                     builder.Append("DBL2LNGOVF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2UInt:
+                case ReadyToRunHelper.Dbl2UInt:
                     builder.Append("DBL2UINT");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2UIntOvf:
+                case ReadyToRunHelper.Dbl2UIntOvf:
                     builder.Append("DBL2UINTOVF");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULng:
+                case ReadyToRunHelper.Dbl2ULng:
                     builder.Append("DBL2ULNG");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULngOvf:
+                case ReadyToRunHelper.Dbl2ULngOvf:
                     builder.Append("DBL2ULNGOVF");
                     break;
 
                 // Floating point ops
-                case ReadyToRunHelper.READYTORUN_HELPER_DblRem:
+                case ReadyToRunHelper.DblRem:
                     builder.Append("DBL_REM");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_FltRem:
+                case ReadyToRunHelper.FltRem:
                     builder.Append("FLT_REM");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_DblRound:
+                case ReadyToRunHelper.DblRound:
                     builder.Append("DBL_ROUND");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_FltRound:
+                case ReadyToRunHelper.FltRound:
                     builder.Append("FLT_ROUND");
                     break;
 
                 // Personality rountines
-                case ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine:
+                case ReadyToRunHelper.PersonalityRoutine:
                     builder.Append("PERSONALITY_ROUTINE");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet:
+                case ReadyToRunHelper.PersonalityRoutineFilterFunclet:
                     builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
                     break;
 
@@ -1582,49 +1580,49 @@ namespace R2RDump
                 //
 
                 // JIT32 x86-specific write barriers
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EAX:
+                case ReadyToRunHelper.WriteBarrier_EAX:
                     builder.Append("WRITE_BARRIER_EAX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBX:
+                case ReadyToRunHelper.WriteBarrier_EBX:
                     builder.Append("WRITE_BARRIER_EBX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ECX:
+                case ReadyToRunHelper.WriteBarrier_ECX:
                     builder.Append("WRITE_BARRIER_ECX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ESI:
+                case ReadyToRunHelper.WriteBarrier_ESI:
                     builder.Append("WRITE_BARRIER_ESI");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EDI:
+                case ReadyToRunHelper.WriteBarrier_EDI:
                     builder.Append("WRITE_BARRIER_EDI");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBP:
+                case ReadyToRunHelper.WriteBarrier_EBP:
                     builder.Append("WRITE_BARRIER_EBP");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EAX:
+                case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     builder.Append("CHECKED_WRITE_BARRIER_EAX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBX:
+                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
                     builder.Append("CHECKED_WRITE_BARRIER_EBX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ECX:
+                case ReadyToRunHelper.CheckedWriteBarrier_ECX:
                     builder.Append("CHECKED_WRITE_BARRIER_ECX");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ESI:
+                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
                     builder.Append("CHECKED_WRITE_BARRIER_ESI");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EDI:
+                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
                     builder.Append("CHECKED_WRITE_BARRIER_EDI");
                     break;
-                case ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBP:
+                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
                     builder.Append("CHECKED_WRITE_BARRIER_EBP");
                     break;
 
                 // JIT32 x86-specific exception handling
-                case ReadyToRunHelper.READYTORUN_HELPER_EndCatch:
+                case ReadyToRunHelper.EndCatch:
                     builder.Append("END_CATCH");
                     break;
 
-                case ReadyToRunHelper.READYTORUN_HELPER_StackProbe:
+                case ReadyToRunHelper.StackProbe:
                     builder.Append("STACK_PROBE");
                     break;
 

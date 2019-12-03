@@ -807,7 +807,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
             // TPABinder context anyways.
             //
             // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
+            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
         }
     }
 
@@ -844,7 +844,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
+        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
     }
 
     return pParentAssemblyBinder;
@@ -1221,7 +1221,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     else
     {
         // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
-        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetFusionContext());
+        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetTPABinderContext());
     }
 
     if (pBinderContextForLookup != NULL)

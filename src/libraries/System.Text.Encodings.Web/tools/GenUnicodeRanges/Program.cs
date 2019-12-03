@@ -36,7 +36,7 @@ namespace GenDefinedCharList
             StringBuilder runtimeCodeBuilder = new StringBuilder();
             WriteCopyrightAndHeader(runtimeCodeBuilder);
             runtimeCodeBuilder.AppendLine();
-            runtimeCodeBuilder.AppendLine("#nullable enable");
+            runtimeCodeBuilder.AppendLine("#nullable restore");
             runtimeCodeBuilder.AppendLine();
             runtimeCodeBuilder.AppendLine("namespace System.Text.Unicode");
             runtimeCodeBuilder.AppendLine("{");

@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace System.IO
 {
     /// <summary>Provides methods to help in the implementation of Stream-derived types.</summary>

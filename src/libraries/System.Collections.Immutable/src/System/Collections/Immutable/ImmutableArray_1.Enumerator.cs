@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
                 {
                     // PERF: no need to do a range check, we already did in MoveNext.
                     // if user did not call MoveNext or ignored its result (incorrect use)
-                    // he will still get an exception from the array access range check.
+                    // they will still get an exception from the array access range check.
                     return _array[_index];
                 }
             }

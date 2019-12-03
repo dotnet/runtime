@@ -26,7 +26,7 @@ namespace ILCompiler
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
         private readonly DevirtualizationManager _devirtualizationManager;
-        private ILCache _methodILCache;
+        protected ILCache _methodILCache;
         private readonly HashSet<ModuleDesc> _modulesBeingInstrumented;
 
 
@@ -79,10 +79,6 @@ namespace ILCompiler
 
         public virtual MethodIL GetMethodIL(MethodDesc method)
         {
-            // Flush the cache when it grows too big
-            if (_methodILCache.Count > 1000)
-                _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
-
             return _methodILCache.GetOrCreateValue(method).MethodIL;
         }
 
@@ -106,7 +102,7 @@ namespace ILCompiler
             return _modulesBeingInstrumented.Contains(module);
         }
 
-        private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
+        public sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
         {
             public ILProvider ILProvider { get; }
             private readonly CompilationModuleGroup _compilationModuleGroup;
@@ -146,7 +142,7 @@ namespace ILCompiler
                 return new MethodILData() { Method = key, MethodIL = methodIL };
             }
 
-            internal class MethodILData
+            public class MethodILData
             {
                 public MethodDesc Method;
                 public MethodIL MethodIL;
@@ -223,6 +219,8 @@ namespace ILCompiler
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
+
+            CorInfoImpl.RegisterJITModule(configProvider);
         }
 
         public override void Compile(string outputFile)
@@ -282,7 +280,7 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }
@@ -300,6 +298,11 @@ namespace ILCompiler
                         Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                 }
+            }
+
+            if (_methodILCache.Count > 1000)
+            {
+                _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
             }
         }
 

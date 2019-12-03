@@ -15,10 +15,6 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
-  <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
   <Target Name="CheckSpecifiedSubsetValidity"
@@ -79,7 +75,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug"
+             Properties="Configuration=Debug;Platform=AnyCPU"
              Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"

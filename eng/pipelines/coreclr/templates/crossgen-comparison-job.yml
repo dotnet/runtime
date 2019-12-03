@@ -8,6 +8,7 @@ parameters:
   crossrootfsDir: ''
   stagedBuild: false
   variables: {}
+  pool: ''
 
 ### Crossgen-comparison job
 ###
@@ -23,6 +24,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'test/crossgen-comparison/'
+    pool: ${{ parameters.pool }}
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen_comparison_{0}{1}_{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -57,7 +59,7 @@ jobs:
     - ${{ parameters.variables }}
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -69,7 +71,7 @@ jobs:
     steps:
 
     # Download product build
-    - template: /eng/pipelines/coreclr/templates/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'

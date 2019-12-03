@@ -314,53 +314,29 @@ namespace System
         // This is never to be exposed externally.
         internal int CVType => _flags & TypeCodeBitMask;
 
-        public object? ToObject()
-        {
-            switch (CVType)
+        public object? ToObject() =>
+            CVType switch
             {
-                case CV_EMPTY:
-                    return null;
-                case CV_BOOLEAN:
-                    return (object)((int)_data != 0);
-                case CV_I1:
-                    return (object)((sbyte)_data);
-                case CV_U1:
-                    return (object)((byte)_data);
-                case CV_CHAR:
-                    return (object)((char)_data);
-                case CV_I2:
-                    return (object)((short)_data);
-                case CV_U2:
-                    return (object)((ushort)_data);
-                case CV_I4:
-                    return (object)((int)_data);
-                case CV_U4:
-                    return (object)((uint)_data);
-                case CV_I8:
-                    return (object)((long)_data);
-                case CV_U8:
-                    return (object)((ulong)_data);
-                case CV_R4:
-                    return (object)(BitConverter.Int32BitsToSingle((int)_data));
-                case CV_R8:
-                    return (object)(BitConverter.Int64BitsToDouble(_data));
-                case CV_DATETIME:
-                    return new DateTime(_data);
-                case CV_TIMESPAN:
-                    return new TimeSpan(_data);
-                case CV_ENUM:
-                    return BoxEnum();
-                case CV_MISSING:
-                    return Type.Missing;
-                case CV_NULL:
-                    return System.DBNull.Value;
-                case CV_DECIMAL:
-                case CV_STRING:
-                case CV_OBJECT:
-                default:
-                    return _objref;
-            }
-        }
+                CV_EMPTY => null,
+                CV_BOOLEAN => (int)_data != 0,
+                CV_I1 => (sbyte)_data,
+                CV_U1 => (byte)_data,
+                CV_CHAR => (char)_data,
+                CV_I2 => (short)_data,
+                CV_U2 => (ushort)_data,
+                CV_I4 => (int)_data,
+                CV_U4 => (uint)_data,
+                CV_I8 => _data,
+                CV_U8 => (ulong)_data,
+                CV_R4 => BitConverter.Int32BitsToSingle((int)_data),
+                CV_R8 => BitConverter.Int64BitsToDouble(_data),
+                CV_DATETIME => new DateTime(_data),
+                CV_TIMESPAN => new TimeSpan(_data),
+                CV_ENUM => BoxEnum(),
+                CV_MISSING => Type.Missing,
+                CV_NULL => System.DBNull.Value,
+                _ => _objref, // CV_DECIMAL, CV_STRING, CV_OBJECT
+            };
 
         // This routine will return an boxed enum.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -444,14 +420,10 @@ namespace System
                     case 8: /*VT_BSTR*/
                         if (pValue == null)
                         {
-                            v = new Variant(null);
-                            v._flags = CV_STRING;
+                            v = new Variant(null) { _flags = CV_STRING };
+                            break;
                         }
-                        else
-                        {
-                            throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
-                        }
-                        break;
+                        goto default;
 
                     default:
                         throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);

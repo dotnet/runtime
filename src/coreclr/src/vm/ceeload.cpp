@@ -3339,15 +3339,6 @@ void Module::StartUnload()
 }
 #endif // CROSSGEN_COMPILE
 
-void Module::ReleaseILData(void)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ReleaseISymUnmanagedReader();
-}
-
-
-
 //---------------------------------------------------------------------------------------
 //
 // Simple wrapper around calling IsAfContentType_WindowsRuntime() against the flags
@@ -6698,22 +6689,18 @@ LoaderHeap *Module::GetThunkHeap()
     }
     CONTRACT_END
 
-        if (!m_pThunkHeap)
+    if (!m_pThunkHeap)
+    {
+        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+            0,                                 // DWORD dwCommitBlockSize
+            ThunkHeapStubManager::g_pManager->GetRangeList(),
+            TRUE);                             // BOOL fMakeExecutable
+
+        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
-            size_t * pPrivatePCLBytes = NULL;
-            size_t * pGlobalPCLBytes = NULL;
-
-            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-                0,                                 // DWORD dwCommitBlockSize
-                pPrivatePCLBytes,
-                ThunkHeapStubManager::g_pManager->GetRangeList(),
-                TRUE);                             // BOOL fMakeExecutable
-
-            if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
-            {
-                delete pNewHeap;
-            }
+            delete pNewHeap;
         }
+    }
 
     RETURN m_pThunkHeap;
 }
@@ -13225,18 +13212,6 @@ void ReflectionModule::ResumeMetadataCapture()
     CaptureModuleMetaDataToMemory();
 }
 
-void ReflectionModule::ReleaseILData()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (m_pISymUnmanagedWriter)
-    {
-        m_pISymUnmanagedWriter->Release();
-        m_pISymUnmanagedWriter = NULL;
-    }
-
-    Module::ReleaseILData();
-}
 #endif // !CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

@@ -337,8 +337,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CALLEE_SAVED_REG_MAXSZ  (CNT_CALLEE_SAVED*REGSIZE_BYTES)  // EBX,ESI,EDI,EBP
 
-  #define REG_TMP_0                REG_EAX
-
   #define REG_LNGARG_LO             REG_EAX
   #define RBM_LNGARG_LO             RBM_EAX
   #define REG_LNGARG_HI             REG_EDX
@@ -660,8 +658,6 @@ typedef unsigned char   regNumberSmall;
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
 
-  #define REG_TMP_0                REG_EAX
-
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
   #define RBM_SHIFT                RBM_ECX
@@ -980,8 +976,6 @@ typedef unsigned char   regNumberSmall;
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT*sizeof(float))
 
-  #define REG_TMP_0                REG_R3
-
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_R12
   #define REG_GSCOOKIE_TMP_1       REG_LR
@@ -1296,8 +1290,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
-
-  #define REG_TMP_0                REG_R9
 
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_R9

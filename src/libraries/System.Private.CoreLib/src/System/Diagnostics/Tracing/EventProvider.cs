@@ -930,6 +930,9 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventDescriptor">
         /// Event Descriptor for this event.
         /// </param>
+        /// <param name="eventHandle">
+        /// Event handle for this event.
+        /// </param>
         /// <param name="activityID">
         /// A pointer to the activity ID GUID to log
         /// </param>
@@ -1131,6 +1134,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="eventDescriptor">
         /// Event Descriptor for this event.
+        /// </param>
+        /// <param name="eventHandle">
+        /// Event handle for this event.
         /// </param>
         /// <param name="activityID">
         /// A pointer to the activity ID to log

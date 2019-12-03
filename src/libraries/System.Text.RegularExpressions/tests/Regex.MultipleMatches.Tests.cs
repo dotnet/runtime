@@ -144,6 +144,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Matches_TestData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Matches_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
         public void Matches(string pattern, string input, RegexOptions options, CaptureData[] expected)
         {
             if (options == RegexOptions.None)

@@ -194,6 +194,7 @@ namespace System.Threading.Tasks
         /// <param name="TaskID">The task ID.</param>
         /// <param name="CreatingTaskID">The task ID</param>
         /// <param name="TaskCreationOptions">The options used to create the task.</param>
+        /// <param name="appDomain">The ID for the current AppDomain.</param>
         [Event(TASKSCHEDULED_ID, Task = Tasks.TaskScheduled, Version = 1, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void TaskScheduled(
@@ -392,11 +393,12 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
+        /// <param name="ContinueWithTaskId">The ID of the continuation object.</param>
         [Event(AWAITTASKCONTINUATIONSCHEDULED_ID, Task = Tasks.AwaitTaskContinuationScheduled, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void AwaitTaskContinuationScheduled(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
-            int ContinuwWithTaskId)
+            int ContinueWithTaskId)
         {
             if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
             {
@@ -410,11 +412,11 @@ namespace System.Threading.Tasks
                     eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
                     eventPayload[1].Reserved = 0;
                     eventPayload[2].Size = sizeof(int);
-                    eventPayload[2].DataPointer = ((IntPtr)(&ContinuwWithTaskId));
+                    eventPayload[2].DataPointer = ((IntPtr)(&ContinueWithTaskId));
                     eventPayload[2].Reserved = 0;
                     if (TasksSetActivityIds)
                     {
-                        Guid continuationActivityId = CreateGuidForTaskID(ContinuwWithTaskId);
+                        Guid continuationActivityId = CreateGuidForTaskID(ContinueWithTaskId);
                         WriteEventWithRelatedActivityIdCore(AWAITTASKCONTINUATIONSCHEDULED_ID, &continuationActivityId, 3, eventPayload);
                     }
                     else

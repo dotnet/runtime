@@ -27,7 +27,7 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Debug builds
@@ -91,7 +91,6 @@ jobs:
     - Windows_NT_arm64
     - Windows_NT_x64
     - Windows_NT_x86
-    helixQueueGroup: ci
     testGroup: outerloop
 
 #
@@ -103,6 +102,7 @@ jobs:
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
 
@@ -125,6 +125,7 @@ jobs:
     - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
       readyToRun: true
@@ -140,6 +141,7 @@ jobs:
     platforms:
     - Linux_arm
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 
 #
 # Formatting

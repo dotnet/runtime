@@ -2125,8 +2125,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     }
 
     AppDomain * pAppDomain = GetAppDomain();
-    if((flags & CF_QueryForIdentity) ||
-       (pAppDomain && pAppDomain->GetDisableInterfaceCache()))
+    if(flags & CF_QueryForIdentity)
     {
         IUnknown *pUnkTemp = NULL;
         HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IUnknown, &pUnkTemp);
@@ -3966,81 +3965,66 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     if (pUnk == NULL)
         RETURN NULL;
 
-    // See if we should cache the result in the fast inline cache. This cache can only store interface pointers
-    // returned from QI's in the same context where we created the RCW.
-    bool fAllowCache = true;
     bool fAllowOutOfContextCache = true;
-
     if (!pMT->IsProjectedFromWinRT() && !pMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) && !pMT->IsWinRTRedirectedDelegate())
     {
-        AppDomain *pAppDomain = GetAppDomain();
-        if (pAppDomain && pAppDomain->GetDisableInterfaceCache())
-        {
-            // Caching is disabled in this AD
-            fAllowCache = false;
-        }
-        else
-        {
-            // This is not a WinRT interface and we could in theory use the out-of-context auxiliary cache,
-            // at worst we would just do
-            // fAllowOutOfContextCache = !IsURTAggregated()
-            // however such a change has some breaking potential (COM proxies would live much longer) and is
-            // considered to risky for an in-place release.
+        // This is not a WinRT interface and we could in theory use the out-of-context auxiliary cache,
+        // at worst we would just do
+        // fAllowOutOfContextCache = !IsURTAggregated()
+        // however such a change has some breaking potential (COM proxies would live much longer) and is
+        // considered to risky for an in-place release.
 
-            fAllowOutOfContextCache = false;
+        fAllowOutOfContextCache = false;
+    }
+
+    // try to cache the interface pointer in the inline cache. This cache can only store interface pointers
+    // returned from QI's in the same context where we created the RCW.
+    bool fInterfaceCached = false;
+    if (GetWrapperCtxCookie() == pCtxCookie || IsFreeThreaded())
+    {
+        for (i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
+        {
+            if (m_aInterfaceEntries[i].IsFree() && m_aInterfaceEntries[i].Init(pMT, pUnk))
+            {
+                // If the component is not aggregated then we need to ref-count
+                if (!IsURTAggregated())
+                {
+                    // Get an extra addref to hold this reference alive in our cache
+                    cbRef = SafeAddRef(pUnk);
+                    LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in InterfaceEntry cache");
+
+                    // Notify Jupiter we have done a AddRef
+                    // We should do this *after* we made a AddRef because we should never
+                    // be in a state where report refs > actual refs
+                    RCWWalker::AfterInterfaceAddRef(this);
+                }
+
+                fInterfaceCached = true;
+                break;
+            }
         }
     }
 
-    // try to cache the interface pointer in the inline cache
-    bool fInterfaceCached = false;
-    if (fAllowCache)
+    if (!fInterfaceCached && fAllowOutOfContextCache)
     {
-        if (GetWrapperCtxCookie() == pCtxCookie || IsFreeThreaded())
+        // We couldn't insert into the inline cache, either because it didn't fit, or because
+        // we are in a wrong COM context. We'll use the RCWAuxiliaryData structure.
+        GetOrCreateAuxiliaryData()->CacheInterfacePointer(pMT, pUnk, (IsFreeThreaded() ? NULL : pCtxCookie));
+
+        // If the component is not aggregated then we need to ref-count
+        if (!IsURTAggregated())
         {
-            for (i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
-            {
-                if (m_aInterfaceEntries[i].IsFree() && m_aInterfaceEntries[i].Init(pMT, pUnk))
-                {
-                    // If the component is not aggregated then we need to ref-count
-                    if (!IsURTAggregated())
-                    {
-                        // Get an extra addref to hold this reference alive in our cache
-                        cbRef = SafeAddRef(pUnk);
-                        LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in InterfaceEntry cache");
+            // Get an extra addref to hold this reference alive in our cache
+            cbRef = SafeAddRef(pUnk);
+            LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in the auxiliary interface pointer cache");
 
-                        // Notify Jupiter we have done a AddRef
-                        // We should do this *after* we made a AddRef because we should never
-                        // be in a state where report refs > actual refs
-                        RCWWalker::AfterInterfaceAddRef(this);
-                    }
-
-                    fInterfaceCached = true;
-                    break;
-                }
-            }
+            // Notify Jupiter we have done a AddRef
+            // We should do this *after* we made a AddRef because we should never
+            // be in a state where report refs > actual refs
+            RCWWalker::AfterInterfaceAddRef(this);
         }
 
-        if (!fInterfaceCached && fAllowOutOfContextCache)
-        {
-            // We couldn't insert into the inline cache, either because it didn't fit, or because
-            // we are in a wrong COM context. We'll use the RCWAuxiliaryData structure.
-            GetOrCreateAuxiliaryData()->CacheInterfacePointer(pMT, pUnk, (IsFreeThreaded() ? NULL : pCtxCookie));
-
-            // If the component is not aggregated then we need to ref-count
-            if (!IsURTAggregated())
-            {
-                // Get an extra addref to hold this reference alive in our cache
-                cbRef = SafeAddRef(pUnk);
-                LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in the auxiliary interface pointer cache");
-
-                // Notify Jupiter we have done a AddRef
-                // We should do this *after* we made a AddRef because we should never
-                // be in a state where report refs > actual refs
-                RCWWalker::AfterInterfaceAddRef(this);
-            }
-
-            fInterfaceCached = true;
-        }
+        fInterfaceCached = true;
     }
 
     // Make sure we cache successful QI's for variant interfaces. This is so we can cast an RCW for

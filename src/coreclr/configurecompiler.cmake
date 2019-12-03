@@ -263,6 +263,7 @@ if (MSVC)
   add_link_options($<$<AND:$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>>:/NOVCFEATURE>)
 
   # Checked build specific flags
+  add_link_options($<$<CONFIG:CHECKED>:/INCREMENTAL:NO>) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
   add_link_options($<$<CONFIG:CHECKED>:/OPT:REF>)
   add_link_options($<$<CONFIG:CHECKED>:/OPT:NOICF>)
 

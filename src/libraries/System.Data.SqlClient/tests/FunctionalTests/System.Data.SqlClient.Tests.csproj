@@ -4,6 +4,7 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AADAccessTokenTest.cs" />
     <Compile Include="CloneTests.cs" />
     <Compile Include="BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />

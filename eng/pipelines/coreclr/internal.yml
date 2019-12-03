@@ -33,7 +33,7 @@ stages:
     #
     # Checkout repository
     #
-    - template: templates/checkout-job.yml
+    - template: /eng/pipelines/common/checkout-job.yml
 
   - stage: build
     displayName: Build
@@ -103,7 +103,6 @@ stages:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-        helixQueueGroup: all
         stagedBuild: true
         jobParameters:
           testGroup: outerloop
@@ -118,6 +117,7 @@ stages:
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         stagedBuild: true
         jobParameters:
           testGroup: outerloop
@@ -133,6 +133,7 @@ stages:
         platformGroup: all
         helixQueueGroup: all
         stagedBuild: true
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         jobParameters:
           readyToRun: true
           displayNameArgs: R2R

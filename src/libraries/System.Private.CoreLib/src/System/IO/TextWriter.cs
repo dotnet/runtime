@@ -567,6 +567,7 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         public virtual Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
             return
@@ -641,6 +642,7 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         public virtual Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
             return

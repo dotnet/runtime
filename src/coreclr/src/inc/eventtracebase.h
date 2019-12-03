@@ -281,7 +281,7 @@ public:
         _enabledKeywords = ParseEnabledKeywordsMask(keywordsComponent);
 
         auto levelComponent = GetNextComponentString(keywordsComponent.End + 1);
-        _level = ParseEnabledKeywordsMask(levelComponent);
+        _level = ParseLevel(levelComponent);
         _isValid = true;
     }
 

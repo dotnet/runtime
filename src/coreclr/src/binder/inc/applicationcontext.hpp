@@ -24,28 +24,6 @@ namespace BINDER_SPACE
 {
     //=============================================================================================
     // Data structures for Simple Name -> File Name hash
-    struct FileNameMapEntry
-    {
-        LPWSTR m_wszFileName;
-    };
-
-    class FileNameHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits< FileNameMapEntry > >
-    {
-     public:
-        typedef PCWSTR key_t;
-        static const FileNameMapEntry Null() { FileNameMapEntry e; e.m_wszFileName = nullptr; return e; }
-        static bool IsNull(const FileNameMapEntry & e) { return e.m_wszFileName == nullptr; }
-        static key_t GetKey(const FileNameMapEntry & e)
-        {
-            key_t key;
-            key = e.m_wszFileName;
-            return key;
-        }
-        static count_t Hash(const key_t &str) { return HashiString(str); }
-        static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (_wcsicmp(lhs, rhs) == 0); }
-    };
-
-    typedef SHash<FileNameHashTraits> TpaFileNameHash;
 
     // Entry in SHash table that maps namespace to list of files
     struct SimpleNameToFileNameMapEntry
@@ -133,7 +111,6 @@ namespace BINDER_SPACE
                                          HRESULT  hrBindResult);
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
-        inline TpaFileNameHash *GetTpaFileNameList();
         inline StringArrayList *GetPlatformResourceRoots();
         inline StringArrayList *GetAppNiPaths();
 
@@ -159,7 +136,6 @@ namespace BINDER_SPACE
         StringArrayList    m_appNiPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
-        TpaFileNameHash    * m_pFileNameHash;
     };
 
 #include "applicationcontext.inl"

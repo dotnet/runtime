@@ -15,6 +15,7 @@
     <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CompilerTests.cs" />
     <Compile Include="Array\ArrayAccessTests.cs" />
     <Compile Include="Array\ArrayArrayIndexTests.cs" />
