@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
                 }
             });
 
-            await Task.WhenAll(listenTask, clientTask);
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 30000);
         }
 
         [Fact]
@@ -77,6 +77,8 @@ namespace System.Net.Quic.Tests
                         {
                             await stream.WriteAsync(s_data);
                         }
+
+                        stream.ShutdownWrite();
                     }
                 }
             });
@@ -112,6 +114,7 @@ namespace System.Net.Quic.Tests
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
+                        throw;
                     }
                 }
             });
