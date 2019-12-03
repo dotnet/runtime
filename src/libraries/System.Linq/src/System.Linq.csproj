@@ -32,6 +32,12 @@
     <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs">
       <Link>System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.Linq.SpeedOpt.cs">
+      <Link>System\Collections\Generic\EnumerableHelpers.Linq.SpeedOpt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\ToArray.SpeedOpt.cs">
+      <Link>System\Collections\Generic\ToArray.SpeedOpt.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">

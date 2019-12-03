@@ -86,30 +86,5 @@ namespace System.Collections.Generic
 
             Debug.Assert(arrayIndex == endIndex);
         }
-
-        /// <summary>Converts an enumerable to an array.</summary>
-        /// <param name="source">The enumerable to convert.</param>
-        /// <returns>The resulting array.</returns>
-        internal static T[] ToArray<T>(IEnumerable<T> source)
-        {
-            Debug.Assert(source != null);
-
-            if (source is ICollection<T> collection)
-            {
-                int count = collection.Count;
-                if (count == 0)
-                {
-                    return Array.Empty<T>();
-                }
-
-                var result = new T[count];
-                collection.CopyTo(result, arrayIndex: 0);
-                return result;
-            }
-
-            var builder = new LargeArrayBuilder<T>(initialize: true);
-            builder.AddRange(source);
-            return builder.ToArray();
-        }
     }
 }

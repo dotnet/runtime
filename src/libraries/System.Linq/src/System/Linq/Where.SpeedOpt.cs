@@ -33,20 +33,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TSource[] ToArray() => ToArrayEnumerable<TSource>.Instance.ToArray(_source, _predicate);
 
             public List<TSource> ToList()
             {
@@ -89,20 +76,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Length);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TSource[] ToArray() => ToArrayArray<TSource>.Instance.ToArray(_source, _predicate);
 
             public List<TSource> ToList()
             {
