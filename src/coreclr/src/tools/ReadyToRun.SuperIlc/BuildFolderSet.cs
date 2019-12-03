@@ -41,6 +41,8 @@ namespace ReadyToRun.SuperIlc
             new FrameworkExclusion("Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token", crossgen2Only: true),
             new FrameworkExclusion("Microsoft.CodeAnalysis", "Ibc TypeToken 620001af unable to find external typedef", crossgen2Only: true),
             new FrameworkExclusion("Microsoft.CodeAnalysis.VisualBasic", "Ibc TypeToken 620002ce unable to find external typedef", crossgen2Only: true),
+            
+            new FrameworkExclusion("System.Runtime.Serialization.Formatters", "Assert in JIT on Linux", crossgen2Only: true)
         };
 
         private readonly IEnumerable<BuildFolder> _buildFolders;
