@@ -257,8 +257,9 @@ endfunction()
 
 include(configure.cmake)
 
+add_subdirectory(System.IO.Compression.Native)
+
 if (NOT CLR_CMAKE_PLATFORM_WASM)
-    add_subdirectory(System.IO.Compression.Native)
 	add_subdirectory(System.IO.Ports.Native)
 endif()
 

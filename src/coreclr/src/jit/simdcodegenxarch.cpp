@@ -849,7 +849,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             }
             else if (op1->OperIsLocalAddr())
             {
-                unsigned offset = (op1->OperGet() == GT_LCL_FLD_ADDR) ? op1->AsLclFld()->gtLclOffs : 0;
+                unsigned offset = op1->OperIs(GT_LCL_FLD_ADDR) ? op1->AsLclFld()->GetLclOffs() : 0;
                 GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->AsLclVarCommon()->GetLclNum(),
                                           offset);
             }
@@ -2458,7 +2458,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
             if (op1->OperGet() == GT_LCL_FLD)
             {
-                offset += op1->AsLclFld()->gtLclOffs;
+                offset += op1->AsLclFld()->GetLclOffs();
             }
             baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
         }
@@ -2916,7 +2916,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
     {
-        offs = treeNode->AsLclFld()->gtLclOffs;
+        offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
@@ -2958,7 +2958,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_LCL_FLD)
     {
-        offs = treeNode->AsLclFld()->gtLclOffs;
+        offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
     // Need an additional Xmm register that is different from targetReg to read upper 4 bytes.

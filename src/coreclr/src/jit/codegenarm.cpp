@@ -984,7 +984,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     noway_assert(targetType != TYP_STRUCT);
 
     // record the offset
-    unsigned offset = tree->gtLclOffs;
+    unsigned offset = tree->GetLclOffs();
 
     // We must have a stack store with GT_STORE_LCL_FLD
     noway_assert(targetReg == REG_NA);

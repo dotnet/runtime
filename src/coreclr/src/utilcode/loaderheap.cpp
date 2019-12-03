@@ -900,7 +900,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        DWORD dwCommitBlockSize,
                                        const BYTE* dwReservedRegionAddress,
                                        SIZE_T dwReservedRegionSize,
-                                       size_t *pPrivatePerfCounter_LoaderBytes,
                                        RangeList *pRangeList,
                                        BOOL fMakeExecutable)
 {
@@ -935,8 +934,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     m_fPermitStubsWithUnwindInfo = FALSE;
     m_fStubUnwindInfoUnregistered= FALSE;
 #endif
-
-    m_pPrivatePerfCounter_LoaderBytes = pPrivatePerfCounter_LoaderBytes;
 
     m_Options                    = 0;
 
@@ -994,9 +991,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
         fSuccess = ClrVirtualFree(m_reservedBlock.pVirtualAddress, 0, MEM_RELEASE);
         _ASSERTE(fSuccess);
     }
-
-    if (m_pPrivatePerfCounter_LoaderBytes)
-        *m_pPrivatePerfCounter_LoaderBytes = *m_pPrivatePerfCounter_LoaderBytes - (DWORD) m_dwTotalAlloc;
 
     INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
 }
@@ -1146,9 +1140,6 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
-    if (m_pPrivatePerfCounter_LoaderBytes)
-        *m_pPrivatePerfCounter_LoaderBytes = *m_pPrivatePerfCounter_LoaderBytes + (DWORD) dwSizeToCommit;
-
     // Record reserved range in range list, if one is specified
     // Do this AFTER the commit - otherwise we'll have bogus ranges included.
     if (m_pRangeList != NULL)
@@ -1229,9 +1220,6 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         void *pData = ClrVirtualAlloc(m_pPtrToEndOfCommittedRegion, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
         if (pData == NULL)
             return FALSE;
-
-        if (m_pPrivatePerfCounter_LoaderBytes)
-            *m_pPrivatePerfCounter_LoaderBytes = *m_pPrivatePerfCounter_LoaderBytes + (DWORD) dwSizeToCommit;
 
         m_dwTotalAlloc += dwSizeToCommit;
 

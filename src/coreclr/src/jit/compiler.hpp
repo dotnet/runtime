@@ -1456,13 +1456,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             Compiler*     compiler     = JitTls::GetCompiler();
             bool          isZeroOffset = compiler->GetZeroOffsetFieldMap()->Lookup(this, &zeroFieldSeq);
 
-            AsLclFld()->gtLclOffs  = 0;
-            AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
             if (zeroFieldSeq != nullptr)
             {
                 // Set the zeroFieldSeq in the GT_LCL_FLD node
-                AsLclFld()->gtFieldSeq = zeroFieldSeq;
+                AsLclFld()->SetFieldSeq(zeroFieldSeq);
                 // and remove the annotation from the ZeroOffsetFieldMap
                 compiler->GetZeroOffsetFieldMap()->Remove(this);
             }
