@@ -113,9 +113,9 @@ Having the following class:
 ```cs
 class Employee 
 { 
-    string Name { get; set; }
-    Employee Manager { get; set; }
-    List<Employee> Subordinates { get; set; }
+    public string Name { get; set; }
+    public Employee Manager { get; set; }
+    public List<Employee> Subordinates { get; set; }
 }
 ```
 
@@ -598,9 +598,9 @@ public static void TestDictionary_Collision()
 
 
 ## Immutable types
-Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes, nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
+Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes; nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 
-With that said, the deserializer will throw when it reads `$id` on any of these types.
+With that said, the deserializer will throw when it reads `$id` on any of these types; but regardless of that, when writing those types, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still being parsed into a collection type that it is supported.
 
 * **Immutable types**: i.e: `ImmutableList` and `ImmutableDictionary`
 * **System.Array**
@@ -608,7 +608,7 @@ With that said, the deserializer will throw when it reads `$id` on any of these 
 ## Value types
 
 * **Serialization**: 
-The serializer emits an `$id` for every JSON complex type, that means that if you have a custom struct, the serializer will append an id to it, however, there will never be a reference to these ids, since by default it uses `ReferenceEquals` when checking for references.
+The serializer emits an `$id` for every JSON complex type, that means that if you have a custom struct (which is value type), the serializer will append an `$id` to it, however, there will never be a reference to those `$id`s, since by default it uses `ReferenceEquals` when comparing the objects.
 
 ```cs
 public static void SerializeStructs()
@@ -733,12 +733,12 @@ Things that may build on top based on customer feedback:
 // Example of a class annotated with JsonReferenceHandling attributes.
 [JsonReferenceHandling(ReferenceHandling.Preserve)]
 public class Employee { 
-    string Name { get; set; }
+    public string Name { get; set; }
 
     [JsonReferenceHandling(ReferenceHandling.Ignore)]
-    Employee Manager { get; set; }
+    public Employee Manager { get; set; }
     
-    List<Employee> Subordinates { get; set; }
+    public List<Employee> Subordinates { get; set; }
 }
 ```
 
