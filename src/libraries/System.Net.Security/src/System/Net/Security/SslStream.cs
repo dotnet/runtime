@@ -270,21 +270,9 @@ namespace System.Net.Security
 
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
-        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
-        {
-            ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
+        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState) => TaskToApm.Begin(ShutdownAsync(), asyncCallback, asyncState);
 
-            ProtocolToken message = _context.CreateShutdownToken();
-            return TaskToApm.Begin(InnerStream.WriteAsync(message.Payload, 0, message.Payload.Length), asyncCallback, asyncState);
-        }
-
-        internal void EndShutdown(IAsyncResult asyncResult)
-        {
-            ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
-
-            TaskToApm.End(asyncResult);
-            _shutdown = true;
-        }
+        internal void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public TransportContext TransportContext => new SslStreamContext(this);
 
@@ -321,7 +309,7 @@ namespace System.Net.Security
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
             ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
-            ProcessAuthentication(null, default);
+            ProcessAuthentication();
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
@@ -353,7 +341,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
-            ProcessAuthentication(null, default);
+            ProcessAuthentication();
         }
         #endregion
 
@@ -424,11 +412,14 @@ namespace System.Net.Security
             return ForceAuthenticationAsync(true, null, cancellationToken);
         }
 
-        public virtual Task ShutdownAsync() =>
-            Task.Factory.FromAsync(
-                (callback, state) => ((SslStream)state).BeginShutdown(callback, state),
-                iar => ((SslStream)iar.AsyncState).EndShutdown(iar),
-                this);
+        public virtual Task ShutdownAsync()
+        {
+            ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
+
+            ProtocolToken message = _context.CreateShutdownToken();
+            _shutdown = true;
+            return InnerStream.WriteAsync(message.Payload, 0, message.Payload.Length);
+        }
         #endregion
 
         public override bool IsAuthenticated => _context != null && _context.IsValidContext && _exception == null && _handshakeCompleted;
