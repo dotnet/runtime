@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributedModelConventionExtensions.cs" />

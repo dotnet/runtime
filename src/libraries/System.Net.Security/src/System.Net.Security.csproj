@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Security</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(TargetFrameworkVNext)-OSX-Debug;$(TargetFrameworkVNext)-OSX-Release;$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-OSX-Debug;$(netcoreappCurrent)-OSX-Release;$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
   </PropertyGroup>

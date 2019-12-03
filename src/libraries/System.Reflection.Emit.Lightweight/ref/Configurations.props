@@ -5,7 +5,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent);
       <!-- Use inbox facade on netfx -->
       _netfx;
     </BuildConfigurations>

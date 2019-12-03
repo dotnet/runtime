@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.IO.FileSystem.Primitives</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />

@@ -9,9 +9,9 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      $(TargetFrameworkVNext);
-      $(TargetFrameworkVNext)-Unix;
-      $(TargetFrameworkVNext)-Windows_NT;
+      $(netcoreappCurrent);
+      $(netcoreappCurrent)-Unix;
+      $(netcoreappCurrent)-Windows_NT;
       _netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

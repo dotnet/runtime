@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(CommonTestPath)Tests.props" />
   <PropertyGroup>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NodeReaderTestHelper.cs" />

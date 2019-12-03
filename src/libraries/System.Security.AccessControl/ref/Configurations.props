@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent);
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

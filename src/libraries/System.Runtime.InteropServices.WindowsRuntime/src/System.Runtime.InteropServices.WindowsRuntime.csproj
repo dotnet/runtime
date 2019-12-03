@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.InteropServices.WindowsRuntime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

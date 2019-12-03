@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
     <AssemblyName>System.Composition.Tests</AssemblyName>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivationEventOrderingTests.cs" />

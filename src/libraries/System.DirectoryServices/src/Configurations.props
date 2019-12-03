@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(TargetFrameworkVNext)-Windows_NT;
+      $(netcoreappCurrent)-Windows_NT;
       _netfx;
     </BuildConfigurations>
   </PropertyGroup>

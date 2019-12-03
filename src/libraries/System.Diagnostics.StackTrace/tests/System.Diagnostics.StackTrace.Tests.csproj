@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -12,7 +12,7 @@
     <Compile Include="StackFrameTests.cs" />
     <Compile Include="StackFrameExtensionsTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(netcoreappCurrent)'">
     <Compile Include="StackTraceSymbolsTests.cs" />
   </ItemGroup>
 </Project>

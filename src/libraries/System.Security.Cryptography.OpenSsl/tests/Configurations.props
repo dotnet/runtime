@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext)-Unix;
+      $(netcoreappCurrent)-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

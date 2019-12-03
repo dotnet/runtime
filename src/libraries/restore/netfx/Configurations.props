@@ -10,7 +10,7 @@
       net47;
       net471;
       netfx;
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

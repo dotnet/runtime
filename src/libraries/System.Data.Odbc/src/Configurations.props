@@ -10,10 +10,10 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      $(TargetFrameworkVNext)-FreeBSD;
-      $(TargetFrameworkVNext)-Linux;
-      $(TargetFrameworkVNext)-OSX;
-      $(TargetFrameworkVNext)-Windows_NT;
+      $(netcoreappCurrent)-FreeBSD;
+      $(netcoreappCurrent)-Linux;
+      $(netcoreappCurrent)-OSX;
+      $(netcoreappCurrent)-Windows_NT;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

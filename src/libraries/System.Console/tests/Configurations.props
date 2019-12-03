@@ -1,8 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext);
-      $(TargetFrameworkVNext)-Windows_NT;
+      $(netcoreappCurrent);
+      $(netcoreappCurrent)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

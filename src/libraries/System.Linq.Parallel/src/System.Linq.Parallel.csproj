@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Linq.Parallel</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
 	<Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- Compiled Source Files -->

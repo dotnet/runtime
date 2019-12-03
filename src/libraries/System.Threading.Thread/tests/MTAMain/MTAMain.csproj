@@ -4,7 +4,7 @@
     <!-- To be consistent between netfx and others we override the SDK behavior which defaults to .dll -->
     <TargetExt>.exe</TargetExt>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MTAMain.cs" />

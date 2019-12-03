@@ -1,10 +1,10 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext)-Windows_NT;
-      $(TargetFrameworkVNext)-Linux;
-      $(TargetFrameworkVNext)-OSX;
-      $(TargetFrameworkVNext)-FreeBSD;
+      $(netcoreappCurrent)-Windows_NT;
+      $(netcoreappCurrent)-Linux;
+      $(netcoreappCurrent)-OSX;
+      $(netcoreappCurrent)-FreeBSD;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

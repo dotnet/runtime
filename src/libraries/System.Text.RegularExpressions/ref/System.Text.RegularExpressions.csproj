@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -12,7 +12,7 @@
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
   </ItemGroup>
   <!-- Required for CompileToAssembly API -->
-  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(netcoreappCurrent)'">
     <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
   </ItemGroup>
 </Project>

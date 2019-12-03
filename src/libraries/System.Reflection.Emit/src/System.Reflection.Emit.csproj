@@ -4,7 +4,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_RefEmit</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
-    <Configurations>$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">

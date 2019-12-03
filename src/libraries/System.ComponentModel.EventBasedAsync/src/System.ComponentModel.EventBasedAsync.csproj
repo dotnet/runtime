@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.ComponentModel.EventBasedAsync</RootNamespace>
     <AssemblyName>System.ComponentModel.EventBasedAsync</AssemblyName>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />

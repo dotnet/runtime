@@ -1,9 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext)-Windows_NT;
-      $(TargetFrameworkVNext)-OSX;
-      $(TargetFrameworkVNext)-Unix;
+      $(netcoreappCurrent)-Windows_NT;
+      $(netcoreappCurrent)-OSX;
+      $(netcoreappCurrent)-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

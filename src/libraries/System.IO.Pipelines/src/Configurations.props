@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

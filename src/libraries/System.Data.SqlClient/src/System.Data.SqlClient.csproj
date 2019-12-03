@@ -6,10 +6,10 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard2.0'">4.6.0.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == '$(netcoreappCurrent)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
     <Nullable>annotations</Nullable>
-    <DefineConstants Condition="'$(TargetGroup)' != '$(TargetFrameworkVNext)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release;$(TargetFrameworkVNext)-Unix-Debug;$(TargetFrameworkVNext)-Unix-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netcoreapp2.1-Unix-Debug;netcoreapp2.1-Unix-Release;netcoreapp2.1-Windows_NT-Debug;netcoreapp2.1-Windows_NT-Release;netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release;</Configurations>
+    <DefineConstants Condition="'$(TargetGroup)' != '$(netcoreappCurrent)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release;$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netcoreapp2.1-Unix-Debug;netcoreapp2.1-Unix-Release;netcoreapp2.1-Windows_NT-Debug;netcoreapp2.1-Windows_NT-Release;netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release;</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
@@ -229,7 +229,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetGroup)' != '$(TargetFrameworkVNext)'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetGroup)' != '$(netcoreappCurrent)'">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">

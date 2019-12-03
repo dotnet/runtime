@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent);
       _netfx;
     </BuildConfigurations>
   </PropertyGroup>

@@ -5,8 +5,8 @@
       netstandard1.1;
     </PackageConfigurations>
     <BuildConfigurations>
-      $(TargetFrameworkVNext)-Windows_NT;
-      $(TargetFrameworkVNext)-Unix;
+      $(netcoreappCurrent)-Windows_NT;
+      $(netcoreappCurrent)-Unix;
       $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>

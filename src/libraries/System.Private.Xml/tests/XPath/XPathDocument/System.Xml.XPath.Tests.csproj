@@ -3,7 +3,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.Tests</RootNamespace>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>

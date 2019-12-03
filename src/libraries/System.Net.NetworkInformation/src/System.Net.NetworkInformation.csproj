@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true'">$(NoWarn);CA1823</NoWarn>
-    <Configurations>$(TargetFrameworkVNext)-FreeBSD-Debug;$(TargetFrameworkVNext)-FreeBSD-Release;$(TargetFrameworkVNext)-Linux-Debug;$(TargetFrameworkVNext)-Linux-Release;$(TargetFrameworkVNext)-OSX-Debug;$(TargetFrameworkVNext)-OSX-Release;$(TargetFrameworkVNext)-Windows_NT-Debug;$(TargetFrameworkVNext)-Windows_NT-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-FreeBSD-Debug;$(netcoreappCurrent)-FreeBSD-Release;$(netcoreappCurrent)-Linux-Debug;$(netcoreappCurrent)-Linux-Release;$(netcoreappCurrent)-OSX-Debug;$(netcoreappCurrent)-OSX-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />

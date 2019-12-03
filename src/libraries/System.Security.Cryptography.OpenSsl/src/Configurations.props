@@ -7,8 +7,8 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(TargetFrameworkVNext)-Unix;
-      $(TargetFrameworkVNext);
+      $(netcoreappCurrent)-Unix;
+      $(netcoreappCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

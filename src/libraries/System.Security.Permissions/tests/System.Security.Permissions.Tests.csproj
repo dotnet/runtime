@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(TargetFrameworkVNext)-Debug;$(TargetFrameworkVNext)-Release</Configurations>
+    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
@@ -18,7 +18,7 @@
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(TargetFrameworkVNext)' And '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == '$(netcoreappCurrent)' And '$(TargetsWindows)' == 'true'">
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
 </Project>

@@ -1,8 +1,8 @@
 <Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      $(TargetFrameworkVNext)-Unix;
-      $(TargetFrameworkVNext)-Windows_NT;
+      $(netcoreappCurrent)-Unix;
+      $(netcoreappCurrent)-Windows_NT;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
