@@ -131,7 +131,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception)
             {
-                return MsQuicConstants.s_internalError;
+                return MsQuicConstants.InternalError;
             }
 
             return status;
@@ -152,7 +152,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.s_errorTypeFromErrorCode(connectionEvent.ShutdownBeginStatus)}");;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.GetError(connectionEvent.ShutdownBeginStatus)}");;
 
             _connectTcs?.SetResult(null);
             _connectTcs = null;
@@ -194,7 +194,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             else
             {
                 // Backlog too large, can't accept connections.
-                return MsQuicConstants.s_internalError;
+                return MsQuicConstants.InternalError;
             }
         }
 

@@ -147,7 +147,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                     break;
                 default:
-                    return MsQuicConstants.s_internalError;
+                    return MsQuicConstants.InternalError;
             }
 
             return MsQuicConstants.Success;

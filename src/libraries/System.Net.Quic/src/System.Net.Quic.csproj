@@ -7,9 +7,6 @@
   <ItemGroup>
     <!-- All configurations -->
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicConstants.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicEnums.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicNativeMethods.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicStatusException.cs" />
@@ -32,6 +29,9 @@
     <Compile Include="System\Net\Quic\QuicConnection.cs" />
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicStream.cs" />
+    <Compile Include="Interop\Interop.MsQuic.cs" />
+    <Compile Include="Interop\MsQuicEnums.cs" />
+    <Compile Include="Interop\MsQuicNativeMethods.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
@@ -44,12 +44,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="Interop\Windows\MsQuicConstants.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="Interop\Unix\MsQuicConstants.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

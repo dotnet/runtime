@@ -342,7 +342,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception)
             {
-                return MsQuicConstants.s_internalError;
+                return MsQuicConstants.InternalError;
             }
 
             return status;
