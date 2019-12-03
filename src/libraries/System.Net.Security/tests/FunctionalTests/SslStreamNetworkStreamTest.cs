@@ -161,8 +161,7 @@ namespace System.Net.Security.Tests
                 int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
 
                 // renegotiation will trigger validation callback again.
-                Assert.True(validationCount > 1);
-
+                Assert.InRange(validationCount, 2, int.MaxValue);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
