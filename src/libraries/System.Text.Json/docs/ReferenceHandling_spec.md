@@ -31,19 +31,20 @@
 
 # Terminology
 
-**Reference loops**: also referred as circular references, occur when a property of the object refers to the object itself, directly (a -> a) or indirectly (a -> b -> a). They also occur when the element of an array refers to the array itself (arr[0] -> arr). Multiple occurrences of the same reference does not imply circularity.
+**Reference loops**: Also referred as circular references, loops occur when a property of a .NET object refers to the object itself, either directly (a -> a) or indirectly (a -> b -> a). They also occur when the element of an array refers to the array itself (arr[0] -> arr). Multiple occurrences of the same reference do not imply a cycle.
 
-**Preserve duplicated references**: Semantically represent objects and/or arrays whose have been previously written, with a reference to them in subsequent founds.
+**Preserve duplicated references**: Semantically represent objects and/or arrays that have been previously written, with a reference to them when found again in the object graph (using reference equality for comparison).
 
-**Metadata**: Extra properties on JSON objects and/or arrays (that may change their schema) to enable reference preservation when round-tripping, those properties are only meant to be understand by the `JsonSerializer`.  
+**Metadata**: Extra properties on JSON objects and/or arrays (that may change their schema) to enable reference preservation when round-tripping. These additional properties are only meant to be understood by the `JsonSerializer`.  
 
 # Motivation
 
-Currently there is no mechanism to prevent infinite looping in circular objects (while serializing) nor to preserve references that round-trip when using System.Text.Json.
+Currently, there is no mechanism to avoid infinite loops while serializing .NET object instances that contain cycles nor to preserve references that round-trip when using `System.Text.Json`. The `JsonSerializer` throws a `JsonException` when a loop is found within the object graph.
 
-This is a heavily requested feature since it is consider by many as a very common scenario, specially when serializing POCOs that came from an ORM Framework, such as Entity Framework; even though the JSON specification does not support reference loops by default. Therefore, this will be implemented as an opt-in feature (for both serialization and deserialization).
+This is a heavily requested feature since it is considered by many as a very common scenario, specially when serializing POCOs that came from an ORM Framework, such as Entity Framework; even though the JSON specification does not support reference loops by default. Therefore, this will be implemented as an opt-in feature (for both serialization and deserialization).
 
-The current solution to deal with reference loops is to rely in MaxDepth and throw a JsonException after it is exceeded. Now, this is a decent and cheap solution but we will also offer other not-so-cheap options to deal with this problem while keeping the current one in order to not affect the out-of-the-box performance.
+The current solution to deal with cycles in the object graph while serializing is to rely on `MaxDepth` and throw a `JsonException` after it is exceeded. This was done to avoid perf overhead for cycle detection in the common case. The goal is to enable the new opt-in feature with minimal impact to existing performance.
+
 
 # Proposal
 
@@ -51,7 +52,8 @@ The current solution to deal with reference loops is to rely in MaxDepth and thr
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// This class defines the various ways the <see cref="JsonSerializer"/> can deal with references on Serialization and Deserialization.
+    /// This class defines the various ways the <see cref="JsonSerializer"/> 
+    /// can deal with references on Serialization and Deserialization.
     /// </summary>
     public sealed class ReferenceHandling
     {
@@ -74,26 +76,26 @@ See also the [internal implementation details](https://gist.github.com/Jozkee/b0
 
 ## In depth
 * **Default**: 
-   * **On Serialize**: Throw a `JsonException` when `MaxDepth` is exceeded, this may occur by either a reference loop or by passing a very deep object. This option will not affect the performance of the serializer.
-   * **On Deserialize**: Metadata properties will not be consumed, therefore they will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` dictionary.
+   * **On Serialize**: Throw a `JsonException` when `MaxDepth` is exceeded. This may occur by either a reference loop or by passing a very deep object. This option will not affect the performance of the serializer.
+   * **On Deserialize**: Metadata properties will not be consumed, therefore they will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` overflow dictionary.
 
 * **Preserve**:
-  * **On Serialize**: When writing complex types, the serializer also writes them metadata ($id, $values and $ref) properties in order re-use them by writing a reference to the object or array.
-  * **On Deserialize**: While the other options show no effect on Deserialization, `Preserve` does affect its behavior with the following: Metadata will be expected (although is not mandatory) and the deserializer will try to understand it. 
+  * **On Serialize**: When writing complex types (i.e. POCOs/non-primitive types), the serializer also writes the metadata ($id, $values and $ref) properties in order to reference them later by writing a reference to the previously written JSON object or array.
+  * **On Deserialize**: While the other options have no effect on deserialization, `Preserve` does affect its behavior, as follows: Metadata will be expected (although is not mandatory) and the deserializer will try to understand it. 
 
 * **Ignore**:
   * **On Serialize**: Ignores (skips writing) the property/element where the reference loop is detected.
   * **On Deserialize**: Metadata properties will not be consumed, therefore they will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` dictionary.
 
-For System.Text.Json, the goal is to stick to the same *metadata* semantics for preserve from Newtonsoft.Json and provide a similar usage in `JsonSerializerOptions` that encompasses the needed options (i.e. provide reference preservation).
+For `System.Text.Json`, the goal is to stick to the same *metadata* syntax used when preserving references using `Newtonsoft.Json` and provide a similar usage in `JsonSerializerOptions` that encompasses the needed options (i.e. provide reference preservation). This way, JSON output produced by `Newtonsoft.Json` can be deserialized by `System.Text.Json` and vice versa.
 
 This API is exposing the `ReferenceHandling` property as a class, to be extensible in the future; and provide built-in static instances of `Default` and `Preserve` that are useful to enable the most common behaviors by just setting those in `JsonSerializerOptions.ReferenceHandling`.
 
-With `ReferenceHandling` being a class, we can exclude things that, as of now, we are not sure are required and add them later based on customer feedback. For example, the `Object` and `Array` granularity of `Newtonsoft.Json's` `PreserveReferencesHandling` or the `ReferenceLoopHandling.Ignore` option.
+With `ReferenceHandling` being a class, we can exclude things that, as of now, we are not sure are required and add them later based on customer feedback. For example, the `Object` and `Array` granularity of `Newtonsoft.Json's` `PreserveReferencesHandling` feature or the `ReferenceLoopHandling.Ignore` option.
 
 ## Compatibility
 
-The next table show the combination of Newtonsoft's **ReferenceLoopHandling** and **PreserveReferencesHandling** and how to get its equivalent on System.Text.Json's *ReferenceHandling*:
+The next table show the combination of Newtonsoft's **ReferenceLoopHandling** (RLH) and **PreserveReferencesHandling** (PRH) and how to get its equivalent on System.Text.Json's *ReferenceHandling*:
 
 |       RLH\PRH |      None |              All |          Objects |           Arrays |
 |--------------:|----------:|-----------------:|-----------------:|-----------------:|
@@ -102,14 +104,14 @@ The next table show the combination of Newtonsoft's **ReferenceLoopHandling** an
 | **Serialize** |    future |       *Preserve* |           future |           future |
 
 Notes: 
-* Newtonsoft's `MetadataPropertyHandling.ReadAhead` will not be supported in this first effort.
-* `Objects` and `Arrays` granularity may apply to both, Serialization and Deserialization.
-* (overlap) means that preserve references will co-exist with Reference Loop Handling and we will need to define how to resolve that (On Newtonsoft.Json, `PreserveReferencesHandling` takes precedence); see [example](#using-a-custom-referencehandling-to-show-possible-future-usage).
+* We are deferring adding support for Newtonsoft's `MetadataPropertyHandling.ReadAhead` for now.
+* `Objects` and `Arrays` granularity may apply to both, serialization and deserialization.
+* (overlap) means that preserve references co-exists along with reference loop handling and we will need to define how to resolve that (On `Newtonsoft.Json`, `PreserveReferencesHandling` takes precedence); see [example](#using-a-custom-referencehandling-to-show-possible-future-usage).
 
 
 # Examples
 
-Having the following class:
+Let's assume you have the following class:
 ```cs
 class Employee 
 { 
@@ -142,7 +144,7 @@ angela.Manager = bob;
 bob.Subordinates = new List<Employee>{ angela };
 ```
 
-On System.Text.Json:
+On `System.Text.Json`:
 ```cs
 public static void WriteIgnoringReferenceLoops()
 {
@@ -157,7 +159,7 @@ public static void WriteIgnoringReferenceLoops()
 }
 ```
 
-On Newtonsoft.Json:
+On `Newtonsoft.Json`:
 ```cs
 public static void WriteIgnoringReferenceLoops()
 {
@@ -178,7 +180,7 @@ Output:
     "Name": "Angela",
     "Manager": {
         "Name": "Bob",
-        // Note how subordinates is empty due Angela is being ignored.
+        // Note how subordinates is empty because Angela is being ignored.
         "Subordinates": [] 
     }
 }
@@ -193,7 +195,7 @@ angela.Manager = bob;
 bob.Subordinates = new List<Employee>{ angela };
 ```
 
-On System.Text.Json:
+On `System.Text.Json`:
 ```cs
 public static void WritePreservingReference()
 {
@@ -208,7 +210,7 @@ public static void WritePreservingReference()
 }
 ```
 
-On Newtonsoft.Json:
+On `Newtonsoft.Json`:
 ```cs
 public static void WritePreservingReference()
 {
@@ -266,7 +268,7 @@ private const string json =
         }
     }";
 ```
-On System.Text.Json:
+On `System.Text.Json`:
 ```cs
 public static void ReadJsonWithPreservedReferences(){
     var options = new JsonSerializerOptions
@@ -279,12 +281,12 @@ public static void ReadJsonWithPreservedReferences(){
 }
 ```
 
-On Newtonsoft.Json:
+On `Newtonsoft.Json`:
 ```cs
 public static void ReadJsonWithPreservedReferences(){
     var options = new JsonSerializerSettings
     {
-        //Newtonsoft.Json reads metadata by default, just setting the option for ilustrative purposes.
+        //Newtonsoft.Json reads metadata by default, just setting the option for illustrative purposes.
         MetadataPropertyHanding = MetadataPropertyHandling.Default 
     };
 
