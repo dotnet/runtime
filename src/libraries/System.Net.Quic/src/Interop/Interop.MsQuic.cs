@@ -4,12 +4,13 @@
 
 using System;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static class MsQuic
+    internal static  class MsQuic
     {
         [DllImport(Libraries.MsQuic)]
-        internal static extern int MsQuicOpen(int version, out MsQuicNativeMethods.NativeApi* registration);    
+        internal static unsafe extern int MsQuicOpen(int version, out MsQuicNativeMethods.NativeApi* registration);
     }
 }

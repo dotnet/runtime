@@ -6,7 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- All configurations -->
-    <Compile Include="$(CommonPath)Interop\Interop.MsQuic.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicConstants.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicEnums.cs" />
@@ -36,6 +35,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
+    <Compile Include="Interop\Interop.MsQuic.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
