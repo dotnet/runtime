@@ -5,7 +5,9 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
+  liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
+  condition: true
   container: ''
   steps: []
   dependsOn: []
@@ -14,29 +16,31 @@ parameters:
   displayName: ''
   testScope: ''
   pool: ''
-  stepName: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.stepName, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if eq(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1}{2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if ne(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1} {2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
+      condition: ${{ parameters.condition }}
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
+        - _buildScriptFileName: libraries
         - _BuildConfig: ${{ parameters.buildConfig }}
+
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _runtimeOSArg: ''
         - _portableArg: ''
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
-        - _buildScript: $(buildScriptFileName)$(scriptExt)
+        - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
 
@@ -65,19 +69,26 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
+        - _coreClrArtifactName: ''
+        - _coreClrDownloadPath: ''
+        - _coreClrOverridePathArg: ''
+
+        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
+          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
           - _runtimeOSArg: /p:RuntimeOS=win10
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
-          - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters) $(_coreClrOverridePathArg)
         - ${{ parameters.variables }}
 
       dependsOn:
@@ -101,5 +112,13 @@ jobs:
           git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
           git remote set-url origin $(Build.Repository.Uri)
         displayName: Clone the repository from Checkout.bundle
+
+      - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(_coreClrDownloadPath)
+            artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
+            artifactName: '$(_coreClrArtifactName)'
+            displayName: 'CoreCLR build drop'
 
       - ${{ parameters.steps }}

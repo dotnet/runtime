@@ -9,10 +9,12 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   readyToRun: false
+  liveLibrariesBuildConfig: ''
   crossgen2: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
+  condition: true
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
@@ -38,6 +40,7 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
     pool: ${{ parameters.pool }}
 
@@ -105,6 +108,17 @@ jobs:
 
     steps:
 
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesArtifactName)'
+          displayName: 'live-built libraries'
+
+
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
@@ -151,19 +165,19 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Generate test host
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
 
