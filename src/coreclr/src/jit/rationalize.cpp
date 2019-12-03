@@ -340,8 +340,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
                 if (baseType != TYP_UNKNOWN)
                 {
-                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
+                    GenTreeSIMD* simdTree =
+                        comp->gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, genTypeSize(simdType), initVal);
                     assignment->AsOp()->gtOp2 = simdTree;
                     value                     = simdTree;
                     initVal->gtNext           = simdTree;

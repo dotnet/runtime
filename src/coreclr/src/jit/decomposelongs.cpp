@@ -1752,7 +1752,7 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     }
 
     GenTree* loResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar1, indexTimesTwo1, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+        m_compiler->gtNewSIMDNode(TYP_INT, SIMDIntrinsicGetItem, TYP_INT, simdSize, simdTmpVar1, indexTimesTwo1);
     Range().InsertBefore(simdTree, loResult);
 
     // Create:
@@ -1778,7 +1778,7 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     }
 
     GenTree* hiResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+        m_compiler->gtNewSIMDNode(TYP_INT, SIMDIntrinsicGetItem, TYP_INT, simdSize, simdTmpVar2, indexTimesTwoPlusOne);
     Range().InsertBefore(simdTree, hiResult);
 
     // Done with the original tree; remove it.

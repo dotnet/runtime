@@ -6553,9 +6553,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeSIMD* simdNode =
-        new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
-                                            varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(LargeVectorSaveType, SIMDIntrinsicUpperSave, varDsc->lvBaseType,
+                                                    genTypeSize(varDsc->lvType), saveLcl);
     SetLsraAdded(simdNode);
     simdNode->SetRegNum(spillReg);
     if (spillToMem)
@@ -6609,9 +6608,8 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     restoreLcl->SetRegNum(lclVarReg);
     SetLsraAdded(restoreLcl);
 
-    GenTreeSIMD* simdNode =
-        new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
-                                            varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(varDsc->lvType, SIMDIntrinsicUpperRestore, varDsc->lvBaseType,
+                                                    genTypeSize(varDsc->lvType), restoreLcl);
 
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdNode);

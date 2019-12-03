@@ -5981,7 +5981,7 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
     baseType         = genActualType(baseType);
     GenTree* initVal = gtNewZeroConNode(baseType);
     initVal->gtType  = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
+    return gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, size, initVal);
 }
 
 //---------------------------------------------------------------------
@@ -6015,7 +6015,7 @@ GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, un
 
     baseType        = genActualType(baseType);
     initVal->gtType = baseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
+    return gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, size, initVal);
 }
 #endif // FEATURE_SIMD
 
@@ -7370,8 +7370,8 @@ GenTree* Compiler::gtCloneExpr(
             case GT_SIMD:
             {
                 GenTreeSIMD* simdOp = tree->AsSIMD();
-                copy                = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtGetOp1(), simdOp->gtGetOp2IfPresent(),
-                                     simdOp->gtSIMDIntrinsicID, simdOp->gtSIMDBaseType, simdOp->gtSIMDSize);
+                copy = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtSIMDIntrinsicID, simdOp->gtSIMDBaseType,
+                                     simdOp->gtSIMDSize, simdOp->gtGetOp1(), simdOp->gtGetOp2IfPresent());
             }
             break;
 #endif
@@ -18016,24 +18016,21 @@ bool FieldSeqNode::IsPseudoField() const
 
 #ifdef FEATURE_SIMD
 GenTreeSIMD* Compiler::gtNewSIMDNode(
-    var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+    var_types type, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size, GenTree* op1)
 {
     assert(op1 != nullptr);
     SetOpLclRelatedToSIMDIntrinsic(op1);
-
-    GenTreeSIMD* simdNode = new (this, GT_SIMD) GenTreeSIMD(type, op1, simdIntrinsicID, baseType, size);
-    return simdNode;
+    return new (this, GT_SIMD) GenTreeSIMD(type, simdIntrinsicID, baseType, size, op1);
 }
 
 GenTreeSIMD* Compiler::gtNewSIMDNode(
-    var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+    var_types type, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size, GenTree* op1, GenTree* op2)
 {
     assert(op1 != nullptr);
+    assert(op2 != nullptr);
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
-
-    GenTreeSIMD* simdNode = new (this, GT_SIMD) GenTreeSIMD(type, op1, op2, simdIntrinsicID, baseType, size);
-    return simdNode;
+    return new (this, GT_SIMD) GenTreeSIMD(type, simdIntrinsicID, baseType, size, op1, op2);
 }
 
 //-------------------------------------------------------------------

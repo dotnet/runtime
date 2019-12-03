@@ -4501,23 +4501,26 @@ struct GenTreeSIMD : public GenTreeOp
     var_types       gtSIMDBaseType;    // SIMD vector base type
     uint16_t        gtSIMDSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
 
-    GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+    GenTreeSIMD(var_types type, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size, GenTree* op1)
         : GenTreeOp(GT_SIMD, type, op1, nullptr)
         , gtSIMDIntrinsicID(simdIntrinsicID)
         , gtSIMDBaseType(baseType)
         , gtSIMDSize(static_cast<uint16_t>(size))
     {
         assert(size < UINT16_MAX);
+        assert(op1 != nullptr);
     }
 
     GenTreeSIMD(
-        var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+        var_types type, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size, GenTree* op1, GenTree* op2)
         : GenTreeOp(GT_SIMD, type, op1, op2)
         , gtSIMDIntrinsicID(simdIntrinsicID)
         , gtSIMDBaseType(baseType)
         , gtSIMDSize(static_cast<uint16_t>(size))
     {
         assert(size < UINT16_MAX);
+        assert(op1 != nullptr);
+        assert(op2 != nullptr);
     }
 
 #if DEBUGGABLE_GENTREE

@@ -8979,7 +8979,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = new (this, GT_SIMD) GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->lvBaseType, size);
+                src = gtNewSIMDNode(asgType, SIMDIntrinsicInit, destVarDsc->lvBaseType, size, src);
             }
             else
 #endif
@@ -10743,7 +10743,7 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
     {
         assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
         GenTree* op2 = gtNewIconNode(index);
-        tree         = gtNewSIMDNode(baseType, simdStructNode, op2, SIMDIntrinsicGetItem, baseType, simdSize);
+        tree         = gtNewSIMDNode(baseType, SIMDIntrinsicGetItem, baseType, simdSize, simdStructNode, op2);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -10800,7 +10800,7 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
         GenTree* target = gtClone(simdOp1Struct);
         assert(target != nullptr);
         var_types simdType = target->gtType;
-        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, baseType, simdSize);
+        GenTree*  simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, simdSize, simdOp1Struct, op2);
 
         tree->AsOp()->gtOp1 = target;
         tree->AsOp()->gtOp2 = simdTree;
