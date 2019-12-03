@@ -11,7 +11,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   corefxTests: false
-  liveLibrariesBuildConfig: '';
+  liveLibrariesBuildConfig: ''
   stagedBuild: false
   strategy: ''
   pool: ''

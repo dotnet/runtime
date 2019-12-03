@@ -61,7 +61,7 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: Debug
+      liveLibrariesBuildConfig: Release
 
 #
 # CoreCLR Test executions
@@ -80,7 +80,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: Debug
+      liveLibrariesBuildConfig: Release
 
 #
 # CoreFX Test Build
@@ -119,5 +119,5 @@ jobs:
       isFullMatrix: false
       framework: netcoreapp
       testScope: innerloop
-      useLiveCoreClr: true
-      dependsOnBuildConfiguration: checked
+      liveCoreClrBuildConfig: checked
+      dependsOnBuildConfiguration: Release
