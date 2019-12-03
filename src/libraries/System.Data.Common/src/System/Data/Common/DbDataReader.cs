@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -82,11 +83,11 @@ namespace System.Data.Common
 
         public abstract byte GetByte(int ordinal);
 
-        public abstract long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
+        public abstract long GetBytes(int ordinal, long dataOffset, byte[]? buffer, int bufferOffset, int length);
 
         public abstract char GetChar(int ordinal);
 
-        public abstract long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
+        public abstract long GetChars(int ordinal, long dataOffset, char[]? buffer, int bufferOffset, int length);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public DbDataReader GetData(int ordinal) => GetDbDataReader(ordinal);
