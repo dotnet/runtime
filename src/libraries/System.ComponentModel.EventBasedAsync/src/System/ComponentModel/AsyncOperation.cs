@@ -9,14 +9,14 @@ namespace System.ComponentModel
     public sealed class AsyncOperation
     {
         private readonly SynchronizationContext _syncContext;
-        private readonly object _userSuppliedState;
+        private readonly object? _userSuppliedState;
         private bool _alreadyCompleted;
 
         /// <summary>
         ///     Constructor. Protected to avoid unwitting usage - AsyncOperation objects
         ///     are typically created by AsyncOperationManager calling CreateOperation.
         /// </summary>
-        private AsyncOperation(object userSuppliedState, SynchronizationContext syncContext)
+        private AsyncOperation(object? userSuppliedState, SynchronizationContext syncContext)
         {
             _userSuppliedState = userSuppliedState;
             _syncContext = syncContext;
@@ -35,7 +35,7 @@ namespace System.ComponentModel
             }
         }
 
-        public object UserSuppliedState
+        public object? UserSuppliedState
         {
             get
             {
@@ -51,12 +51,12 @@ namespace System.ComponentModel
             }
         }
 
-        public void Post(SendOrPostCallback d, object arg)
+        public void Post(SendOrPostCallback d, object? arg)
         {
             PostCore(d, arg, markCompleted: false);
         }
 
-        public void PostOperationCompleted(SendOrPostCallback d, object arg)
+        public void PostOperationCompleted(SendOrPostCallback d, object? arg)
         {
             PostCore(d, arg, markCompleted: true);
             OperationCompletedCore();
@@ -69,7 +69,7 @@ namespace System.ComponentModel
             OperationCompletedCore();
         }
 
-        private void PostCore(SendOrPostCallback d, object arg, bool markCompleted)
+        private void PostCore(SendOrPostCallback d, object? arg, bool markCompleted)
         {
             VerifyNotCompleted();
             VerifyDelegateNotNull(d);
@@ -115,7 +115,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     Only for use by AsyncOperationManager to create new AsyncOperation objects
         /// </summary>
-        internal static AsyncOperation CreateOperation(object userSuppliedState, SynchronizationContext syncContext)
+        internal static AsyncOperation CreateOperation(object? userSuppliedState, SynchronizationContext syncContext)
         {
             AsyncOperation newOp = new AsyncOperation(userSuppliedState, syncContext);
             return newOp;
