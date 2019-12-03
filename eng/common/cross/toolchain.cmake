@@ -71,8 +71,19 @@ endif()
 
 if(TARGET_ARCH_NAME MATCHES "^(arm|armel)$")
   add_compile_options(-mthumb)
-  add_compile_options(-mfpu=vfpv3)
-  if(TARGET_ARCH_NAME STREQUAL "armel")
+  set(FPUFLAG vfpv3)
+  if(DEFINED ENV{CLR_FPU_FLAGOVERRIDE})
+    set(FPUFLAG $ENV{CLR_FPU_FLAGOVERRIDE})
+  endif()
+
+  add_compile_options(-mfpu=${FPUFLAG})
+  set(FPUCAPABILITY 0x7)
+  if(DEFINED ENV{CLR_FPU_CAPABILITY})
+    set(FPUCAPABILITY $ENV{CLR_FPU_CAPABILITY})
+  endif()
+  add_compile_options(-DCLR_FPU_CAPABILITY=${FPUCAPABILITY})
+
+ if(TARGET_ARCH_NAME STREQUAL "armel")
     add_compile_options(-mfloat-abi=softfp)
     if(DEFINED TIZEN_TOOLCHAIN)
       add_compile_options(-Wno-deprecated-declarations) # compile-time option

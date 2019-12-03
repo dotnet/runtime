@@ -537,10 +537,20 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_UNIX_ARM)
+   set(FPUFLAG vfpv3)
+   if(DEFINED ENV{CLR_FPU_FLAGOVERRIDE})
+     set(FPUFLAG $ENV{CLR_FPU_FLAGOVERRIDE})
+   endif()
+
    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
    # we have to set the triple by adding a compiler argument
    add_compile_options(-mthumb)
-   add_compile_options(-mfpu=vfpv3)
+   add_compile_options(-mfpu=${FPUFLAG})
+   set(FPUCAPABILITY 0x7)
+   if(DEFINED ENV{CLR_FPU_CAPABILITY})
+     set(FPUCAPABILITY $ENV{CLR_FPU_CAPABILITY})
+   endif()
+   add_compile_options(-DCLR_FPU_CAPABILITY=${FPUCAPABILITY})
    add_compile_options(-march=armv7-a)
    if(ARM_SOFTFP)
      add_definitions(-DARM_SOFTFP)
