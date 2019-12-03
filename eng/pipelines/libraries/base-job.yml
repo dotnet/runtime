@@ -78,6 +78,10 @@ jobs:
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
           - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
 
+          # WebAssembly uses linux implementation detail
+          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+            - _coreClrArtifactName: 'CoreCLRProduct_Linux_x64_${{ parameters.liveCoreClrBuildConfig }}'
+
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           - _runtimeOSArg: /p:RuntimeOS=win10
