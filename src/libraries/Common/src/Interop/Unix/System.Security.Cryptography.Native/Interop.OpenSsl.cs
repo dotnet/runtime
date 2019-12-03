@@ -259,7 +259,7 @@ internal static partial class Interop
             sendCount = 0;
             Exception handshakeException = null;
 
-            if (input != null && input.Length > 0)
+            if (input.Length > 0)
             {
                 if (Ssl.BioWrite(context.InputBio, ref MemoryMarshal.GetReference(input), input.Length) != input.Length)
                 {

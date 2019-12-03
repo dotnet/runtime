@@ -217,23 +217,16 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-
-            lock (_fromConnection)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    _fromConnection.Enqueue(buf[offset + i]);
-                }
-            }
+            Write(buf.AsSpan(offset, count));
         }
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
             lock (_fromConnection)
             {
-                for (int i = 0; i < buf.Length; i++)
+                foreach (byte b in buf)
                 {
-                    _fromConnection.Enqueue(buf[i]);
+                    _fromConnection.Enqueue(b);
                 }
             }
         }
