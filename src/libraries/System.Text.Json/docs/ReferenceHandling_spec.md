@@ -6,6 +6,7 @@
   - [In depth](#in-depth)
   - [Compatibility](#compatibility)
 - [Examples](#examples)
+  - [Using Default on Deserialize](#using-default-on-deserialize)
   - [Using Default on Serialize](#using-default-on-serialize)
   - [Using Ignore on Serialize](#using-ignore-on-serialize)
   - [Using Preserve on Serialize](#using-preserve-on-serialize)
@@ -381,7 +382,7 @@ Similar: https://www.npmjs.com/package/json-cyclic
 ## flatted (JavaScript module) (probably not worth it)
 https://github.com/WebReflection/flatted
 
-* While stringifying, all Objects, including Arrays and strings, are flattened out and replaced with unique index.
+* While stringifying, all Objects, including Arrays and strings, are flattened out and replaced with a unique index.
 * Once parsed, all indexes will be replaced through the flattened collection.
 * It has 23M downloads per month.
 * Every single value (primitive and complex) is preserved.
@@ -643,13 +644,13 @@ public static void TestDictionary_Collision()
 ## Immutable types
 Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes; nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 
-With that said, the deserializer will throw when it reads `$id` on any of these types; but regardless of that, when writing those types, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still being parsed into a collection type that it is supported.
+With that said, the deserializer will throw when it reads `$id` on any of these types. When serializing (i.e. writing) those types, however, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still be parsed into a collection type that is supported.
 
 Note: By the same principle, `Newtonsoft.Json` does not support parsing JSON arrays into immutables as well.
 Note 2: When using immutable types and `ReferenceHandling.Preserve`, you will not be able to generate payloads that are capables of round-tripping.
 
 * **Immutable types**: i.e: `ImmutableList` and `ImmutableDictionary`
-* **System.Array**
+* **System.Array**: i.e: `Array<T>` and `T[]`
 
 ## Value types
 
