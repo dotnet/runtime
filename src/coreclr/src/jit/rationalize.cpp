@@ -83,8 +83,8 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         else
         {
             addr->SetOper(GT_LCL_FLD);
-            addr->AsLclFld()->gtLclOffs  = 0;
-            addr->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+            addr->AsLclFld()->SetLclOffs(0);
+            addr->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
             if (((addr->gtFlags & GTF_VAR_DEF) != 0) && (genTypeSize(simdType) < genTypeSize(lclType)))
             {
@@ -291,8 +291,8 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
     if (locationOp == GT_LCL_FLD)
     {
-        store->AsLclFld()->gtLclOffs  = var->AsLclFld()->gtLclOffs;
-        store->AsLclFld()->gtFieldSeq = var->AsLclFld()->gtFieldSeq;
+        store->AsLclFld()->SetLclOffs(var->AsLclFld()->GetLclOffs());
+        store->AsLclFld()->SetFieldSeq(var->AsLclFld()->GetFieldSeq());
     }
 
     copyFlags(store, var, GTF_LIVENESS_MASK);

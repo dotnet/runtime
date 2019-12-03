@@ -44,8 +44,8 @@
     IL_0018:  ldloc.3
     IL_0019:  call       int32 RVAOrderingTest::AddFields(int32*,
                                                           int32*)
-    ldsflda    int32 RVAOrderingTest::s_Another1
-    ldind.i4
+    ldsflda    int8 RVAOrderingTest::s_Another1
+    ldind.i1
     add
     
     IL_001e:  stloc.0
@@ -62,7 +62,7 @@
                                                                         object)
     IL_0036:  nop
     IL_0037:  ldloc.0
-    IL_0038:  ldc.i4     0x600000f2
+    IL_0038:  ldc.i4     0x500000f2
     IL_003d:  ceq
     IL_003f:  stloc.s    V_5
     IL_0041:  ldloc.s    V_5
@@ -139,13 +139,13 @@
   } // end of method RVAOrderingTest::.ctor
 
   .field public static int32 s_First at D_00014000
+  .field public static int32 s_Last at D_00014030
   .field public static int32 s_1 at D_00014008
-  .field public static int32 s_Another1 at D_00014008
+  .field public static int8 s_Another1 at D_00014008
   .field public static int32 s_2 at D_00014010
   .field public static int32 s_3 at D_00014018
   .field public static int32 s_4 at D_00014020
   .field public static int32 s_5 at D_00014028
-  .field public static int32 s_Last at D_00014030
   
 } // end of class RVAOrderingTest
 
