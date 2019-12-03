@@ -134,9 +134,9 @@ generate_layout()
 
 patch_corefx_libraries()
 {
-    echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath}"
+    echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath} (${__LocalCoreFXConfig})"
 
-    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__BuildType}")
+    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__LocalCoreFXConfig}")
     scriptPath="$__ProjectDir/tests/scripts"
     echo "python ${scriptPath}/patch-corefx.py ${patchCoreFXArguments[@]}"
     $__Python "${scriptPath}/patch-corefx.py" "${patchCoreFXArguments[@]}"
@@ -634,6 +634,10 @@ handle_arguments() {
             __LocalCoreFXPath=$(echo "$1" | cut -d'=' -f 2)
             ;;
 
+        localcorefxconfig=*|-localcorefxconfig=*)
+            __LocalCoreFXConfig=$(echo "$1" | cut -d'=' -f 2)
+            ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -680,6 +684,8 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
+__LocalCoreFXPath=
+__LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
 __cmakeargs=""
