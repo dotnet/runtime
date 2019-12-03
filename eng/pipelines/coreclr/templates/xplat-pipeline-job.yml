@@ -112,9 +112,9 @@ jobs:
       - librariesArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
       - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        - librariesOverrideArg: ' localcorefxpath $(Build.SourcesDirectory) localcorefxconfig $(parameters.liveLibrariesBuildConfig)'
+        - librariesOverrideArg: ' localcorefxpath $(Build.SourcesDirectory) localcorefxconfig ${{ parameters.liveLibrariesBuildConfig }}'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - librariesOverrideArg: ' localcorefxpath=$(Build.SourcesDirectory) localcorefxconfig=$(parameters.liveLibrariesBuildConfig)'
+        - librariesOverrideArg: ' localcorefxpath=$(Build.SourcesDirectory) localcorefxconfig=${{ parameters.liveLibrariesBuildConfig }}'
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
